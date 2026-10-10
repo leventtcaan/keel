@@ -4,7 +4,7 @@
  * timer after each set (G1 K-49: 2-3 min). Finishing asks whether each move's form was clean (G6 K-31). Everything goes
  * through the phone's queue (K-304), so it all works offline.
  */
-import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { AccessibilityInfo, AppState } from 'react-native';
 
 import type { components } from '@/api/schema';
@@ -17,6 +17,7 @@ import { focusPalette, tokens } from '@/theme/tokens';
 import { workoutParams } from '@/train/params';
 import { createSetEdits } from '@/train/setEdits';
 import { type Move, type TrainData, ownMove } from '@/train/trainData';
+import { formatLoad } from '@/units/units';
 
 import { nodeSqlite } from './support/nodeSqlite';
 
@@ -109,6 +110,7 @@ let mockUnits: 'METRIC' | 'IMPERIAL' = 'METRIC';
 let mockPause: { workout: string; pause: { pausedAt: number | null; pausedMs: number } } | null = null;
 let mockSkips: { workout: string; skips: Record<string, unknown> } | null = null;
 let mockSwaps: { workout: string; swaps: Record<string, string> } | null = null;
+let mockLeft: { workout: string; left: string[] } | null = null;
 let mockEditFails: Error | null = null;
 const mockWorkoutRecords = jest.fn(async () => mockRecords);
 let mockSave: (body: unknown) => Promise<{ data?: unknown; error?: unknown; response: Response }>;
@@ -155,11 +157,15 @@ const mockServices = {
   // The moves swapped in the open session, kept with its workout (K-972).
   sessionSwaps: {
     read: jest.fn(async (workout: string) => (mockSwaps?.workout === workout ? mockSwaps.swaps : {})),
-    keep: jest.fn(async (workout: string, swaps: Record<string, string>) => {
+    // The moves swapped away from, kept beside the swaps (K-973).
+    readLeft: jest.fn(async (workout: string) => (mockLeft?.workout === workout ? mockLeft.left : [])),
+    keep: jest.fn(async (workout: string, swaps: Record<string, string>, left: string[] = []) => {
       mockSwaps = { workout, swaps };
+      mockLeft = { workout, left };
     }),
     forget: jest.fn(async () => {
       mockSwaps = null;
+      mockLeft = null;
     }),
   },
   // The open session's pause, kept with its workout (K-972).
@@ -186,6 +192,7 @@ function reset() {
   mockPause = null;
   mockSkips = null;
   mockSwaps = null;
+  mockLeft = null;
   mockEditFails = null;
   mockDelete = async () => ({ response: new Response(null, { status: 204 }) });
   mockData = { program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: EXERCISES }, kept: false };
@@ -2865,5 +2872,458 @@ describe('a move swapped inside the session (K-972, ADR-073 #6, ADR-075 #5): thi
     mockData = { ...mockData, exercises: { state: 'ready', value: [...CATALOG, { id: 'barbell_squat_not_offered', load: 'EXTERNAL', unilateral: false } as Schemas['Exercise']] } };
     await show();
     expect(await within(await screen.findByTestId('move-head')).findByText('Bench press')).toBeOnTheScreen();
+  });
+});
+
+// K-973 (ADR-075 #3, Ek 1, Ek 8; user test 8 Oct): a move with no target starts with no weight picked, Log set waits for one,
+// the first set says whether the weight is found or light, and "Too heavy?" offers the server's lighter load. The phone
+// picks among the server's values and works none out.
+describe('a move with no target: pick a weight, then the weight is found (K-973)', () => {
+  const NEW_BENCH: Schemas['PlannedExercise'] = { exerciseId: 'bench_press', baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 1, calibrationStepKg: 2.5 };
+  const withBench = (bench: Schemas['PlannedExercise']) => {
+    mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, days: [{ ...DAY, exercises: [bench, DAY.exercises[1]] }] } } };
+  };
+  const load = (unit = 'units.kgUnit') => screen.getByLabelText(t('workout.loadLabel', { unit: t(unit) }));
+  const logButton = (number = 1) => screen.getByRole('button', { name: t('workout.log', { number }) });
+  const type = async (kg: string, reps = '8', rir?: string) => {
+    await fireEvent.changeText(load(), kg);
+    await fireEvent.changeText(screen.getByLabelText(t('workout.repsLabel')), reps);
+    if (rir !== undefined) await fireEvent.press(screen.getByRole('button', { name: rir }));
+    await fireEvent.press(logButton());
+  };
+  const press = (key: string) => fireEvent.press(screen.getByRole('button', { name: t(key) }));
+  beforeEach(() => withBench(NEW_BENCH));
+
+  test('the weight starts empty and says so: "Pick a weight", and Log set is off with the reason', async () => {
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    expect(load().props.value).toBe('');
+    expect(load().props.placeholder).toBe(t('workout.pick.placeholder'));
+    expect(screen.getByText(t('workout.pick.caption'))).toBeOnTheScreen();
+    expect(logButton()).toBeDisabled();
+    expect(screen.getByText(t('workout.pick.why'))).toBeOnTheScreen();
+    expect(within(screen.getByTestId('dock')).getByRole('button', { name: t('workout.log', { number: 1 }) })).toBeOnTheScreen();
+    await fireEvent.press(logButton());
+    expect(sets()).toEqual([]);
+    expect(screen.queryByText(t('workout.invalid'))).toBeNull();
+  });
+
+  test('a weight picked turns Log set on, and the reason goes', async () => {
+    await show();
+    await fireEvent.changeText(await screen.findByLabelText(t('workout.loadLabel', { unit: t('units.kgUnit') })), '40');
+    expect(logButton()).toBeEnabled();
+    expect(screen.queryByText(t('workout.pick.why'))).toBeNull();
+  });
+
+  test('the first tap on more weight is the smallest pair of plates without a gym', async () => {
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    await press('workout.stepper.moreLoad');
+    expect(load().props.value).toBe(String(workoutParams.loadStep.kg));
+    expect(logButton()).toBeEnabled();
+  });
+
+  test('the first tap on more weight is the empty bar at a gym with one', async () => {
+    const GYM = { barKg: 20, platesKg: [20, 10, 5, 2.5, 1.25], dumbbellsKg: [], stackStepKg: null, machineStepsKg: {} };
+    mockData = { ...mockData, gym: GYM, exercises: { state: 'ready', value: EXERCISES.map((m) => ({ ...m, equipment: 'BARBELL' })) as Schemas['Exercise'][] } };
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    await press('workout.stepper.moreLoad');
+    expect(load().props.value).toBe('20');
+  });
+
+  test('the first tap on more weight is the lightest dumbbell at a rack', async () => {
+    const RACK = { barKg: null, platesKg: [], dumbbellsKg: [4, 6, 8, 10], stackStepKg: null, machineStepsKg: {} };
+    mockData = { ...mockData, gym: RACK, exercises: { state: 'ready', value: EXERCISES.map((m) => ({ ...m, equipment: 'DUMBBELL' })) as Schemas['Exercise'][] } };
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    await press('workout.stepper.moreLoad');
+    expect(load().props.value).toBe('4');
+  });
+
+  test('the weight found: after a set in the range with 1 rep left, the screen says the starting weight is found', async () => {
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    expect(screen.queryByTestId('insight')).toBeNull();
+    await type('40', '8', '1');
+    expect(await screen.findByText(t('workout.calibrate.found', { load: '40 kg' }))).toBeOnTheScreen();
+    expect(screen.queryByText(t('workout.calibrate.light', { load: '42.5 kg' }))).toBeNull();
+  });
+
+  test('2+ reps left: the weight is light, and the next set is offered one step heavier, to take or keep', async () => {
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    await type('40', '8', '2+');
+    expect(await screen.findByText(t('workout.calibrate.light', { load: '42.5 kg' }))).toBeOnTheScreen();
+    expect(screen.queryByText(t('workout.calibrate.found', { load: '40 kg' }))).toBeNull();
+    expect(load().props.value).toBe('40'); // the next set carries the weight just lifted until the person takes the offer
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.tooHeavy.use', { load: '42.5 kg' }) }));
+    expect(load().props.value).toBe('42.5');
+    expect(screen.queryByText(t('workout.calibrate.light', { load: '42.5 kg' }))).toBeNull();
+    await fireEvent.press(logButton(2));
+    expect(sets()[1].body).toMatchObject({ loadKg: 42.5 });
+  });
+
+  test('keeping the weight puts the offer away, and the set is logged at it', async () => {
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    await type('40', '8', '2+');
+    await fireEvent.press(await screen.findByRole('button', { name: t('workout.tooHeavy.keep', { load: '40 kg' }) }));
+    expect(screen.queryByText(t('workout.calibrate.light', { load: '42.5 kg' }))).toBeNull();
+    expect(load().props.value).toBe('40');
+    await fireEvent.press(logButton(2));
+    expect(sets()[1].body).toMatchObject({ loadKg: 40 });
+  });
+
+  test("the offer is the gym's heavier load within the server's step; none where the gym makes nothing inside it", async () => {
+    const SPARSE = { barKg: 20, platesKg: [20, 10, 5], dumbbellsKg: [], stackStepKg: null, machineStepsKg: {} };
+    mockData = { ...mockData, gym: SPARSE, exercises: { state: 'ready', value: EXERCISES.map((m) => ({ ...m, equipment: 'BARBELL' })) as Schemas['Exercise'][] } };
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    await type('40', '8', '2+');
+    expect(await screen.findByText(t('workout.calibrate.found', { load: '40 kg' }))).toBeOnTheScreen();
+    expect(screen.queryByText(/Next set/)).toBeNull();
+  });
+
+  test('a move with a target is not calibrated: 2+ reps left says nothing of a heavier weight', async () => {
+    withBench({ ...NEW_BENCH, nextLoadKg: 62.5, nextReps: 6 });
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    await fireEvent.press(screen.getByRole('button', { name: '2+' }));
+    await fireEvent.press(logButton());
+    await screen.findByText(t('workout.log', { number: 2 }));
+    expect(screen.queryByText(/Next set/)).toBeNull();
+    expect(screen.queryByText(/Starting weight found/)).toBeNull();
+  });
+
+  test('the word follows the sets as they are: the set deleted, the word goes', async () => {
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    await type('40', '8', '1');
+    await screen.findByText(t('workout.calibrate.found', { load: '40 kg' }));
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.doneSet', { number: '1', set: '40 kg × 8', left: '1' }) }));
+    await fireEvent.press(within(screen.getByTestId('edit-set')).getByRole('button', { name: t('workout.edit.delete') }));
+    await waitFor(() => expect(screen.queryByText(t('workout.calibrate.found', { load: '40 kg' }))).toBeNull());
+  });
+
+  test('a lb user reads the word in lb', async () => {
+    mockUnits = 'IMPERIAL';
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    await fireEvent.changeText(load('units.lbUnit'), '90');
+    await fireEvent.changeText(screen.getByLabelText(t('workout.repsLabel')), '8');
+    await fireEvent.press(screen.getByRole('button', { name: '1' }));
+    await fireEvent.press(logButton());
+    expect(await screen.findByText(t('workout.calibrate.found', { load: formatLoad(90 * 0.45359237, 'IMPERIAL') }))).toBeOnTheScreen();
+  });
+});
+
+describe('"Too heavy?": the server\'s lighter load, to take or keep (K-973, G1 decision #61)', () => {
+  const TARGET: Schemas['PlannedExercise'] = { ...DAY.exercises[0], lighterLoadKg: 60, heavierLoadKg: 65 };
+  const load = () => screen.getByLabelText(t('workout.loadLabel', { unit: t('units.kgUnit') }));
+  const link = () => screen.getByRole('button', { name: t('workout.tooHeavy.label') });
+  const withBench = (bench: Schemas['PlannedExercise']) => {
+    mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, days: [{ ...DAY, exercises: [bench, DAY.exercises[1]] }] } } };
+  };
+  beforeEach(() => withBench(TARGET));
+
+  test('a link with the weight, far from both skips; a full touch target', async () => {
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    expect(link()).toBeOnTheScreen();
+    expect(link()).toHaveStyle({ minHeight: tokens.size.touch });
+    expect(screen.getByText(t('workout.tooHeavy.link'))).toBeOnTheScreen();
+    expect(within(screen.getByTestId('dock')).queryByText(t('workout.tooHeavy.link'))).toBeNull(); // Skip set is there
+    expect(within(screen.getByTestId('move-head')).queryByText(t('workout.tooHeavy.link'))).toBeNull(); // Skip move is there
+  });
+
+  test('asked: the advice and the two ways out, the lighter weight and the one shown', async () => {
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    expect(screen.queryByText(t('workout.tooHeavy.ask'))).toBeNull();
+    await fireEvent.press(link());
+    expect(screen.getByText(t('workout.tooHeavy.ask'))).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: t('workout.tooHeavy.use', { load: '60 kg' }) })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: t('workout.tooHeavy.keep', { load: '62.5 kg' }) })).toBeOnTheScreen();
+  });
+
+  test('Use takes the lighter weight; the set is logged at it and the next one carries it', async () => {
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    await fireEvent.press(link());
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.tooHeavy.use', { load: '60 kg' }) }));
+    expect(load().props.value).toBe('60');
+    expect(screen.queryByText(t('workout.tooHeavy.ask'))).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.log', { number: 1 }) }));
+    expect(sets()[0].body).toMatchObject({ loadKg: 60 });
+    await screen.findByText(t('workout.log', { number: 2 }));
+    expect(load().props.value).toBe('60');
+  });
+
+  test('Keep leaves the weight as it is and puts the question away', async () => {
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    await fireEvent.press(link());
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.tooHeavy.keep', { load: '62.5 kg' }) }));
+    expect(load().props.value).toBe('62.5');
+    expect(screen.queryByText(t('workout.tooHeavy.ask'))).toBeNull();
+  });
+
+  test('no link where the server has no lighter load, or the weight shown is not above it', async () => {
+    withBench({ ...DAY.exercises[0] });
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    expect(screen.queryByText(t('workout.tooHeavy.link'))).toBeNull();
+    await screen.unmount();
+    withBench(TARGET);
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    await fireEvent.changeText(load(), '57.5');
+    expect(screen.queryByText(t('workout.tooHeavy.link'))).toBeNull();
+  });
+
+  test('the asking is said (K-815), and it is the weight in the user\'s unit', async () => {
+    const said = jest.spyOn(AccessibilityInfo, 'announceForAccessibility');
+    try {
+      mockUnits = 'IMPERIAL';
+      await show();
+      await screen.findByText(t('workout.log', { number: 1 }));
+      await fireEvent.press(link());
+      expect(said).toHaveBeenLastCalledWith(t('workout.tooHeavy.ask'));
+      expect(screen.getByRole('button', { name: t('workout.tooHeavy.use', { load: formatLoad(60, 'IMPERIAL') }) })).toBeOnTheScreen();
+    } finally {
+      said.mockRestore();
+    }
+  });
+});
+
+describe('the target line when the target is last time (K-973)', () => {
+  const withBench = (bench: Schemas['PlannedExercise']) => {
+    mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, days: [{ ...DAY, exercises: [bench, DAY.exercises[1]] }] } } };
+  };
+
+  test('the target is the best set of last time: it is not beaten and last time at once', async () => {
+    withBench({ ...DAY.exercises[0], lastBestSet: { loadKg: 62.5, reps: 6, rir: 1 } });
+    await show();
+    const goal = within(await screen.findByTestId('goal'));
+    expect(goal.getByText(t('workout.goal.again'))).toBeOnTheScreen();
+    expect(goal.getByText('62.5 kg × 6')).toBeOnTheScreen();
+    expect(goal.queryByText(t('workout.goal.beat'))).toBeNull();
+    expect(goal.queryByText(/Last:/)).toBeNull();
+  });
+
+  test('a target past last time is still beat last time, with last time beside it', async () => {
+    withBench({ ...DAY.exercises[0], lastBestSet: { loadKg: 62.5, reps: 5, rir: 1 } });
+    await show();
+    const goal = within(await screen.findByTestId('goal'));
+    expect(goal.getByText(t('workout.goal.beat'))).toBeOnTheScreen();
+    expect(goal.getByText(t('workout.goal.last', { set: '62.5 kg × 5' }))).toBeOnTheScreen();
+  });
+
+  test('a move with its last time and no target: last time, and the weight to pick', async () => {
+    withBench({ exerciseId: 'bench_press', baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 1, lastBestSet: { loadKg: 60, reps: 8, rir: 1 }, calibrationStepKg: 2.5 });
+    await show();
+    const goal = within(await screen.findByTestId('goal'));
+    expect(goal.getByText(t('workout.goal.lastTime'))).toBeOnTheScreen();
+    expect(goal.getByText('60 kg × 8')).toBeOnTheScreen();
+    expect(goal.getByText(t('workout.goal.pick'))).toBeOnTheScreen();
+    expect(goal.queryByText(t('workout.goal.beat'))).toBeNull();
+  });
+});
+
+describe('a swapped move starts with the server\'s table for it (K-973, ADR-075 Ek 7, Ek 8)', () => {
+  const DUMBBELL = t('exercises.dumbbell_bench_press.name');
+  const INCLINE = t('exercises.incline_dumbbell_press.name');
+  const CATALOG = [
+    ...EXERCISES,
+    { id: 'dumbbell_bench_press', load: 'EXTERNAL', unilateral: false },
+    { id: 'incline_dumbbell_press', load: 'EXTERNAL', unilateral: false },
+  ] as Schemas['Exercise'][];
+  const TABLES = [
+    { exerciseId: 'dumbbell_bench_press', lastBestSet: { loadKg: 30, reps: 10, rir: 1 }, lighterLoadKg: 27.5, heavierLoadKg: 32.5, calibrationStepKg: 2.5 },
+    { exerciseId: 'incline_dumbbell_press', calibrationStepKg: 2.5 },
+  ];
+  const serve = (tables: typeof TABLES | undefined) => {
+    mockData = {
+      program: {
+        state: 'ready',
+        value: {
+          ...PROGRAM,
+          days: [
+            {
+              ...DAY,
+              exercises: [
+                { ...DAY.exercises[0], swapOptions: ['dumbbell_bench_press', 'incline_dumbbell_press'], ...(tables === undefined ? {} : { swapTables: tables }) },
+                { ...DAY.exercises[1], swapOptions: [] },
+              ],
+            },
+          ],
+        },
+      },
+      exercises: { state: 'ready', value: CATALOG },
+      kept: false,
+    };
+  };
+  const load = () => screen.getByLabelText(t('workout.loadLabel', { unit: t('units.kgUnit') }));
+  const swapTo = async (name: string, from = 'Bench press') => {
+    await fireEvent.press(await screen.findByRole('button', { name: t('swap.label', { move: from }) }));
+    await fireEvent.press(screen.getByRole('button', { name: new RegExp(`^${name}`) }));
+  };
+
+  test('no weight, its own last time, and Log set waiting for a weight', async () => {
+    serve(TABLES);
+    await show();
+    await swapTo(DUMBBELL);
+    expect(load().props.value).toBe('');
+    expect(screen.getByRole('button', { name: t('workout.log', { number: 1 }) })).toBeDisabled();
+    const goal = within(screen.getByTestId('goal'));
+    expect(goal.getByText(t('workout.goal.lastTime'))).toBeOnTheScreen();
+    expect(goal.getByText('30 kg × 10')).toBeOnTheScreen();
+  });
+
+  test('"Too heavy?" is the new move\'s own lighter load', async () => {
+    serve(TABLES);
+    await show();
+    await swapTo(DUMBBELL);
+    expect(screen.queryByText(t('workout.tooHeavy.link'))).toBeNull(); // no weight yet
+    await fireEvent.changeText(load(), '30');
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.tooHeavy.label') }));
+    expect(screen.getByRole('button', { name: t('workout.tooHeavy.use', { load: '27.5 kg' }) })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: t('workout.tooHeavy.keep', { load: '30 kg' }) })).toBeOnTheScreen();
+  });
+
+  test('2+ reps left on the first set offers the new move\'s calibration step', async () => {
+    serve(TABLES);
+    await show();
+    await swapTo(INCLINE);
+    await fireEvent.changeText(load(), '24');
+    await fireEvent.press(screen.getByRole('button', { name: '2+' }));
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.log', { number: 1 }) }));
+    expect(await screen.findByText(t('workout.calibrate.light', { load: '26.5 kg' }))).toBeOnTheScreen();
+  });
+
+  test('the planned move\'s own target is not the new move\'s: back to the planned move, its target is back', async () => {
+    serve(TABLES);
+    await show();
+    await swapTo(DUMBBELL);
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.undoLabel') }));
+    expect(load().props.value).toBe('62.5');
+    expect(within(screen.getByTestId('goal')).getByText(t('workout.goal.start'))).toBeOnTheScreen();
+  });
+
+  test('an older server sends no tables: the move starts bare, as before, with no Too heavy? and no offer', async () => {
+    serve(undefined);
+    await show();
+    await swapTo(DUMBBELL);
+    expect(load().props.value).toBe('');
+    expect(within(screen.getByTestId('goal')).getByText(t('workout.goal.first'))).toBeOnTheScreen();
+    await fireEvent.changeText(load(), '30');
+    expect(screen.queryByText(t('workout.tooHeavy.link'))).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: '2+' }));
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.log', { number: 1 }) }));
+    await screen.findByText(t('workout.log', { number: 2 }));
+    expect(screen.queryByText(/Next set/)).toBeNull();
+  });
+});
+
+describe('the moves swapped away from (K-973, ADR-075 Ek 7, Ek 8)', () => {
+  const DUMBBELL = t('exercises.dumbbell_bench_press.name');
+  const INCLINE = t('exercises.incline_dumbbell_press.name');
+  const ROW = t('exercises.one_arm_dumbbell_row.name');
+  const CATALOG = [
+    ...EXERCISES,
+    { id: 'dumbbell_bench_press', load: 'EXTERNAL', unilateral: false },
+    { id: 'incline_dumbbell_press', load: 'EXTERNAL', unilateral: false },
+  ] as Schemas['Exercise'][];
+  beforeEach(() => {
+    mockData = {
+      program: {
+        state: 'ready',
+        value: {
+          ...PROGRAM,
+          days: [{ ...DAY, exercises: [{ ...DAY.exercises[0], swapOptions: ['dumbbell_bench_press', 'incline_dumbbell_press'] }, { ...DAY.exercises[1], swapOptions: [] }] }],
+        },
+      },
+      exercises: { state: 'ready', value: CATALOG },
+      kept: false,
+    };
+  });
+  const swapTo = async (name: string, from = 'Bench press') => {
+    await fireEvent.press(await screen.findByRole('button', { name: t('swap.label', { move: from }) }));
+    await fireEvent.press(screen.getByRole('button', { name: new RegExp(`^${name}`) }));
+  };
+  const typeAndLog = async (button: string, kg = '20') => {
+    await fireEvent.changeText(screen.getByLabelText('Weight (kg)'), kg);
+    await fireEvent.changeText(screen.getByLabelText('Reps'), '10');
+    await fireEvent.press(await screen.findByText(button));
+  };
+  const side = (number: number, which: 'LEFT' | 'RIGHT') => t('workout.logSide', { number, side: t(`workout.sideName.${which}`) });
+  const partnerLine = (name: string) => t('superset.with', { names: name });
+
+  test('kept with the swaps: the move left, and the one it was swapped for in turn', async () => {
+    await show();
+    await swapTo(DUMBBELL);
+    expect(mockLeft).toEqual({ workout: 'w1', left: ['bench_press'] });
+    await typeAndLog(t('workout.log', { number: 1 }), '30');
+    await screen.findByText(t('workout.log', { number: 2 }));
+    await swapTo(INCLINE, DUMBBELL);
+    expect(mockSwaps).toEqual({ workout: 'w1', swaps: { bench_press: 'incline_dumbbell_press' } });
+    expect(mockLeft).toEqual({ workout: 'w1', left: ['bench_press', 'dumbbell_bench_press'] });
+  });
+
+  test('a swap\'s Undo keeps what was kept before it', async () => {
+    await show();
+    await swapTo(DUMBBELL);
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.undoLabel') }));
+    expect(mockSwaps).toEqual({ workout: 'w1', swaps: {} });
+    expect(mockLeft).toEqual({ workout: 'w1', left: [] });
+  });
+
+  test('opened again, the move swapped away from is not a member of the superset it left', async () => {
+    await show();
+    await fireEvent.press(await screen.findByRole('button', { name: t('superset.link') }));
+    await fireEvent.press(screen.getByRole('button', { name: t('superset.pick', { name: ROW }) }));
+    await swapTo(DUMBBELL);
+    await typeAndLog(t('workout.log', { number: 1 }), '30'); // the dumbbell press, set 1 of its own
+    await typeAndLog(side(1, 'LEFT'));
+    await typeAndLog(side(1, 'RIGHT'));
+    await screen.findByText(t('workout.log', { number: 2 }));
+    await swapTo(INCLINE, DUMBBELL); // swapped again: the dumbbell press is out of the round, its sets carry the superset
+    await typeAndLog(t('workout.log', { number: 1 }), '25');
+    await typeAndLog(side(2, 'LEFT'));
+    await typeAndLog(side(2, 'RIGHT'));
+    expect(await screen.findByText(t('workout.log', { number: 2 }))).toBeOnTheScreen();
+    expect(screen.getByText(partnerLine(ROW))).toBeOnTheScreen();
+    await screen.unmount();
+    await show();
+    expect(await screen.findByText(partnerLine(ROW))).toBeOnTheScreen();
+  });
+
+  test('a move swapped away from, its sets done, holds back neither the finish nor the next move', async () => {
+    await show();
+    await fireEvent.press(await screen.findByText(t('workout.log', { number: 1 }))); // the bench, set 1
+    await screen.findByText(t('workout.log', { number: 2 }));
+    await swapTo(DUMBBELL);
+    await typeAndLog(t('workout.log', { number: 1 }), '30');
+    await typeAndLog(t('workout.log', { number: 2 }), '30');
+    await typeAndLog(t('workout.log', { number: 3 }), '30');
+    await pickMove(ROW);
+    await typeAndLog(side(1, 'LEFT'));
+    await typeAndLog(side(1, 'RIGHT'));
+    await typeAndLog(side(2, 'LEFT'));
+    await typeAndLog(side(2, 'RIGHT'));
+    const dock = within(await screen.findByTestId('dock'));
+    expect(await dock.findByRole('button', { name: t('workout.finish') })).toBeOnTheScreen();
+    expect(dock.queryByRole('button', { name: t('workout.next', { name: 'Bench press' }) })).toBeNull();
+  });
+
+  test('its dot is there, with the sets it has, done', async () => {
+    await show();
+    await fireEvent.press(await screen.findByText(t('workout.log', { number: 1 })));
+    await screen.findByText(t('workout.log', { number: 2 }));
+    await swapTo(DUMBBELL);
+    await pickMove('Bench press');
+    expect(screen.getByLabelText(t('workout.doneSet', { number: '1', set: '62.5 kg × 6', left: '1' }))).toBeOnTheScreen();
+    expect(screen.queryByText(t('workout.log', { number: 2 }))).toBeNull(); // no open row to log
   });
 });

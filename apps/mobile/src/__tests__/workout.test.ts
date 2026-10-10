@@ -328,6 +328,20 @@ describe('a move added to the session, outside the plan (K-416)', () => {
     expect(extraPlan(benchMove, [], [done('squat', 100, 5)]).rows).toHaveLength(1);
   });
 
+  // K-973 (ADR-075 Ek 7, Ek 8): a move swapped away from keeps its sets but is no move to come back to; its one open row is not
+  // a set to do, so it is never "next" and never holds the finish.
+  test('closed (a move swapped away from): the sets done stay, no open row, nothing left to do', () => {
+    const plan = extraPlan(benchMove, [], [done('bench_press', 60, 8), done('bench_press', 60, 7)], true);
+    expect(plan.rows.map((r) => r.done?.reps ?? null)).toEqual([8, 7]);
+    expect(plan.current).toBeNull();
+    expect(exerciseStatus(plan)).toBe(t('workout.allDone'));
+  });
+
+  test('closed, a one-sided move with one side done is closed too', () => {
+    const plan = extraPlan(rowMove, [], [done('one_arm_dumbbell_row', 20, 10, 'LEFT')], true);
+    expect(plan.current).toBeNull();
+  });
+
   test("this session's set comes before last time's at the same row; last time's row is shown beside it", () => {
     const last = [done('bench_press', 50, 10), done('bench_press', 50, 10), done('bench_press', 50, 10)];
     const plan = extraPlan(benchMove, last, [done('bench_press', 60, 8)]);
@@ -425,5 +439,14 @@ describe("a move swapped in starts with nothing of its own (K-972, ADR-075 Ek 7)
   test('a bodyweight move is 0 either way', () => {
     const planned = { ...dumbbell, exerciseId: 'push_up' };
     expect(planExercise(planned, pushUp, [], [], undefined, true).rows[0].suggested.loadKg).toBe(0);
+  });
+
+  // K-973 (ADR-075 #3, Ek 8): the server says a move is at calibration (no target, a calibration step): the weight is picked,
+  // not the phone's guess from its own history; a server that says nothing of it leaves the move as it was.
+  test('a move the server calibrates starts with no weight whatever the phone remembers; with no step it is as before', () => {
+    const calibrating = { ...dumbbell, calibrationStepKg: 2.5 };
+    expect(planExercise(calibrating, dumbbellMove, last, []).rows[0].suggested).toEqual({ loadKg: null, reps: 6 });
+    expect(planExercise({ ...calibrating, nextLoadKg: 30 }, dumbbellMove, last, []).rows[0].suggested.loadKg).toBe(30);
+    expect(planExercise(dumbbell, dumbbellMove, last, []).rows[0].suggested.loadKg).toBe(32.5);
   });
 });

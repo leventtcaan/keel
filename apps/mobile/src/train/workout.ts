@@ -98,7 +98,7 @@ export function lastTime(records: LocalRecord[], exerciseId: string, except: str
  * one-sided move (left, then right). A row suggests the load just lifted in this session, else the server's next load,
  * else last time's; the server's next reps, else last time's, else the bottom of the range. A bodyweight move's load is
  * always 0 (an added load belongs to BODYWEIGHT_PLUS_EXTERNAL). Working sets beyond the plan show as more rows. A move
- * swapped in during the session (`fresh`, ADR-075 Ek 7) has no weight and no reps of its own to start from: last time's are
+ * swapped in during the session (`swappedIn`, ADR-075 Ek 7), or one the server calibrates (no target, a calibration step: Ek 8), has no weight and no reps of its own to start from: last time's are
  * not the aim of a move that was not the plan's (the weight is picked, as at a first session); the range's bottom for reps,
  * and what was just lifted in this session still carries to the next row. The move
  * is required: without the catalog the sides and the load model are unknown, and a guess is a set the server refuses.
@@ -111,8 +111,11 @@ export function planExercise(
   last: NewSet[],
   done: NewSet[],
   skipped: Skipped = NONE_SKIPPED,
-  fresh = false,
+  swappedIn = false,
 ): ExercisePlan {
+  // A swapped-in move, or one the server calibrates (no target, a calibration step: ADR-075 #3, Ek 8), has nothing of its own
+  // to start from: the weight is picked, not guessed from the phone's history.
+  const fresh = swappedIn || (planned.nextLoadKg === undefined && planned.calibrationStepKg !== undefined);
   const sides: Schemas['Side'][] = move.unilateral ? ['LEFT', 'RIGHT'] : ['BOTH'];
   const working = done.filter((s) => s.exerciseId === planned.exerciseId && s.setType === 'WORKING');
   const ofSide = (list: NewSet[], side: Schemas['Side']) => list.filter((s) => (s.side ?? 'BOTH') === side);
@@ -157,16 +160,17 @@ export function planExercise(
  * does, there is no planned count. The open row suggests the load just lifted on its side in this session, else last
  * time's at that row, else last time's heaviest on that side, else the set just done on the other side (the right after
  * the left); the reps likewise; never done before, nothing (the user types it). A bodyweight move's load is 0, a one-sided
- * move has a row a side, as for a planned move.
+ * move has a row a side, as for a planned move. `closed` (K-973, ADR-075 Ek 8): a move swapped away from in this session keeps
+ * its sets but has no open row and nothing left to do, so it is never the next move nor what holds the finish back.
  */
-export function extraPlan(move: Schemas['Exercise'], last: NewSet[], done: NewSet[]): ExercisePlan {
+export function extraPlan(move: Schemas['Exercise'], last: NewSet[], done: NewSet[], closed = false): ExercisePlan {
   const sides: Schemas['Side'][] = move.unilateral ? ['LEFT', 'RIGHT'] : ['BOTH'];
   const working = done.filter((s) => s.exerciseId === move.id && s.setType === 'WORKING');
   const ofSide = (list: NewSet[], side: Schemas['Side']) => list.filter((s) => (s.side ?? 'BOTH') === side);
   const counts = sides.map((side) => ofSide(working, side).length);
   const doneCount = Math.max(...counts);
   // A round with a side still to do is the open one; with every side done, a new round opens.
-  const rounds = counts.every((count) => count === doneCount) ? doneCount + 1 : doneCount;
+  const rounds = closed ? doneCount : counts.every((count) => count === doneCount) ? doneCount + 1 : doneCount;
   const rows: SetRow[] = [];
   for (let i = 0; i < rounds; i++) {
     for (const side of sides) {
@@ -184,7 +188,7 @@ export function extraPlan(move: Schemas['Exercise'], last: NewSet[], done: NewSe
     }
   }
   const current = rows.findIndex((row) => row.done === null);
-  return { exerciseId: move.id, rows, current: current < 0 ? null : current, open: true };
+  return { exerciseId: move.id, rows, current: closed || current < 0 ? null : current, open: true };
 }
 
 /**
