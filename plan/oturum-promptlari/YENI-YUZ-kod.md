@@ -10,7 +10,7 @@
 | 1 · Temel + motor | K-951, K-952, K-953, K-954, K-955, K-958, K-960, K-961, K-962, K-963 | Motor kuralları `kural-ekle` ile (R1-R4). K-953 K-909'u kapatır |
 | 2 · Sunucu + onboarding | K-956, K-957, K-959, K-964, K-965, K-966, K-967, K-968, K-983 (Levent) | K-983 Part 2 başında Levent'e: App Store Connect'te 2 hafta |
 | 3 · Ana ekranlar | K-969, K-970, K-971, K-972, K-973, K-974, K-978 | Oturum üç parça: A → B, C |
-| 4 · Kalan + kapanış | K-979, K-980, K-981, K-982, K-975, K-976 (Levent: Facebook App ID), K-977 (L: böl ya da v1.x'e — Levent'e sor), K-910, K-984 | K-984 TestFlight + Levent cihaz turu |
+| 4 · Kalan + kapanış | K-1013, K-1014, K-979, K-980, K-981, K-982, K-999, K-1009 (→ K-978 done), K-975, K-976 (Levent: Facebook App ID), K-977 (L: böl ya da v1.x'e — Levent'e sor), K-910, K-984 | K-984 TestFlight + Levent cihaz turu |
 
 ## Senkron kuralı (her part'ın BAŞINDA — atlanmaz)
 1. `oturum-baslat` (DURUM + son 3 oturum + git + açık PR'lar + Dependabot).
@@ -82,8 +82,14 @@ Bitiş: "Part 3 ÇIKIŞ" + özet + Part 4 prompt'u.
 
 ## Part 4 prompt'u
 ```
-oturum-baslat. Toplu mod. M9a PART 4 · Kalan + kapanış. Ortak talimat plan/oturum-promptlari/YENI-YUZ-kod.md (senkron kuralı başta).
-Başta AskUserQuestion: K-976 Facebook App ID hazır mı (Meta geliştirici hesabı Levent'te) · K-977 (hareketli çıkartma/videoya gömme) v1 mi v1.x mi.
-Sıra: K-979 → K-980 → K-981 → K-982 → K-975 → K-976 → (K-977 bölünür ya da ertelenir) → K-910 → K-984 (TestFlight; Levent cihaz turu).
+oturum-baslat. Toplu mod. M9a PART 4 · Kalan + kapanış. Ortak talimat plan/oturum-promptlari/YENI-YUZ-kod.md (senkron kuralı başta);
+uygulayıcı ajan talimatı plan/oturum-promptlari/ajan-brief.md. Ana orkestratör Opus, uygulayıcı ve inceleme ajanları Sonnet (model: sonnet).
+Başta AskUserQuestion: K-976 Facebook App ID hazır mı · K-977 v1 mi v1.x mi ·
+K-983 App Store Connect denemesi kuruldu mu.
+Önce: ekran kartlarında (K-979, K-980, K-981, K-982) prototip ↔ sözleşme boşluk taraması (her sayı/durum için sözleşmede alan var mı) →
+eksikler arka uç kartı olarak ÖNCE.
+Sıra: K-1013 + K-1014 (Part 3 yürüyüş bulguları) → K-1009 (K-978'i kapatır) → K-999 → K-979 → K-980 → K-981 → K-982 → K-975 → K-976 →
+(K-977) → K-910 → kullanıcı-gözü yürüyüşü (Tur 4, `../keel-sim/.sim/`) → K-984 (TestFlight; Levent cihaz turu; Part 3'te yapılamayanlar: SE, onboarding planı, Pause, bayat/çevrimdışı).
+Paralel: en çok 3 uygulayıcı; her PR'a inceleme ajanı; düzeltmeden sonra kısa doğrulama; birleştirmeden önce `gh pr update-branch`; göçlü PR'lar tek tek.
 Bitiş: "Part 4 ÇIKIŞ = M9a ÇIKIŞ" + özet + sıradaki: M9 Part 3 (beta kohortu, K-904) prompt'u.
 ```

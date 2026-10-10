@@ -3749,7 +3749,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-953, K-959]
     why: "ADR-077 #1: tek kahraman, ≤40 kelime; koç çubuğu ve paragraflar yok"
     acceptance:
@@ -3773,7 +3773,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-953, K-956, K-959, K-964]
     why: "ADR-073 #4-#6: kullanıcı programını ve bugününü değiştirebilir"
     acceptance:
@@ -3796,7 +3796,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-951]
     why: "ADR-075 #1-#2: Levent tur 2 'kullanışsız'; set tek dokunuş, dinlenme hiçbir düğmeyi kapatmaz"
     acceptance:
@@ -3815,7 +3815,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-971, K-961, K-964]
     why: "ADR-075 #5: telefona bakamayan kullanıcı kaybolmasın; geç kayıt sayar"
     acceptance:
@@ -3835,7 +3835,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-971, K-960, K-959, K-1011]
     why: "ADR-075 #3-#4, #6: 'kilo çıkmazsa ne olacak' sorusunun kaynaklı cevabı; telefon yalnız sunucunun değerini seçer"
     acceptance:
@@ -3855,7 +3855,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-971, K-965, K-959]
     why: "ADR-075 #7: 'başardım' anı; bilgi veren geri bildirim, rozet yok"
     acceptance:
@@ -3928,7 +3928,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: doing
     depends_on: [K-953, K-962, K-963]
     why: "ADR-077 #2-#4: ürünün ana anı tek akış; varsayılan uygulanır, 'Keep last week's plan'"
     acceptance:
@@ -3954,6 +3954,7 @@ tasks:
     depends_on: [K-953, K-965, K-974]
     why: "ADR-078: Levent 'en kötü ekran'; ilk gün eyleme dönük, sonra tek cümle sonuç"
     acceptance:
+      - "K-988 telefon tarafı: dönemin kilo değişimi cümlesi `Consistency.weightChange`'ten ('Down 3.8 kg.'; yön sunucudan, birim kullanıcının tercihi; sakin, U7)"
       - "#progress ilk gün: dört tıklanabilir hedef (Calories, Protein → öğün; Steps → Apple Health; Cardio → Antrenman), planlanan kas haritası, kilitli güç, 7 tartı noktası"
       - "Sonra: sonuç cümlesi, hareket çipli güç grafiği + efor satırı, kas başına set / hedef, kilo 7 günlük ortalama, 12 hafta ızgarası (spare week), Calls, Photos"
       - "Yenen kalori hedefe karşı aralık (U5); ilk görünüm ≤50 kelime"
@@ -4464,7 +4465,7 @@ tasks:
     module: decision
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-965]
     why: "ADR-078 #2 'Stronger on 4 of 5 lifts. Down 3.8 kg.'; K-965 training modülünde kaldı, training measurement/decision'a bağlanamaz (K-965 notu)"
     acceptance:
@@ -4533,7 +4534,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-990]
     why: "K-990 incelemesi: pazartesi 08:30'da bitirip 'Tell me Monday morning' açan kişi aynı gün 09:00'da 'A new week' bildirimi alıyor; sunucu o gün check-in vermiyor"
     acceptance:
@@ -4549,7 +4550,7 @@ tasks:
     module: decision
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-990]
     why: "Levent (8 Eki): profil kaydı ile plan arasında uygulama kapanıp günler sonra dönülürse planı görmediği günler 1. hafta kararında 'kaçırıldı' sayılıyor (U7); ADR-077 Ek 2 sapması"
     acceptance:
@@ -4566,7 +4567,7 @@ tasks:
     module: privacy
     type: test
     size: S
-    status: todo
+    status: done
     depends_on: []
     why: "8 Eki CI: theExportHoldsEverythingHeldAndNothingOfAnyoneElse dışa aktarımda '12345' olmamasını arıyor; rastgele program günü UUID'si bunu içerebiliyor (kırılgan test)"
     acceptance:
@@ -4581,12 +4582,12 @@ tasks:
     module: training
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-956, K-964]
     why: "K-970 (9 Eki): `PUT /v1/program` programı bütün halinde değiştiriyor (hedefler, gün kimlikleri, inceleme kaydı gidiyor, GENERATED → OWN); ADR-073 #4 'kaynak korunur, düzenlenen üretilmiş program OWN olmaz, değişiklik kaydı tutulur' ile çelişiyor. Split seçimi ve taşı önizlemesi için sunucu alanı yok (telefon kural işletmez)"
     acceptance:
+      - "Split seçimi K-1015'e ayrıldı (10 Eki; Levent kararı bekliyor); Split satırı salt okunur"
       - "`PATCH /v1/program`: gün ve hareket kimlikleriyle düzenleme (gün seç/taşı, hareket ekle/çıkar/değiştir, set/tekrar); dokunulmayan satırın hedefi (next_load_kg) ve kimliği kalır; kaynak GENERATED/OWN korunur; değişiklik kaydı tutulur, geri alınır; inceleme yeniden koşar"
-      - "Rebuild for me: split seçimi (full body / upper-lower / push-pull-legs) üretece gider; seçilen gün sayısına uymayan split reddedilir (mevcut şablon kuralıyla) — **Levent kararı bekliyor (9 Eki):** data/programs'ta her gün sayısının tek şablonu var (1-2 FB, 3 karışık, 4 UL, 5 karışık, 6 PPL), seçim fiilen tek seçenek; gerçek seçim yeni şablon (koçluk içeriği) ister. O zamana kadar Split satırı salt okunur"
       - "Taşı zinciri önizlemesi sunucudan (kayan günler, pazar sınırı → CONFLICT); telefon zinciri hesaplamaz"
       - "Bugünü değiştirmenin geri alınması: `POST /v1/program/today` FULL (kısa sürümü kaldırır) ve UNDO (o günün seansını taşıma/atlama öncesine döndürür; zincirle kayan günler de geri gelir); başlanmış seansta 409"
       - "`Program.week[]` günün seans durumunu taşır (yapıldı / açık seans + workoutId): Bu hafta ve Antrenman bitmiş seansta Start göstermez, açık seansta Continue açar; telefon antrenman listesinden eşleme yapmaz"
@@ -4603,7 +4604,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: []
     why: "Simülatör düzeneği (9 Eki): sunucu `nameKey: programDays.upper_a.name` gönderiyor (sözleşme metni ve ProgramGeneratorTests), telefon `programDays.${nameKey}.name` kuruyor; her üretilmiş gün adı eksik anahtar. Telefon testleri kısa anahtar ('upper_a') kullandığı için M4'ten beri yakalanmadı"
     acceptance:
@@ -4619,7 +4620,7 @@ tasks:
     module: nutrition
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-989]
     why: "#501 incelemesi (9 Eki): `/v1/days/{day}/budget` hedef yokken 404; ilk karardan önce hedef yok, yeni kullanıcı 7 güne kadar yemek satırı ve Log görmüyor. Prototip ilk haftada 'Food today N kcal', öğünden sonra 'Food left' aralığı (ADR-072 Ek 1, K-989)"
     acceptance:
@@ -4636,7 +4637,7 @@ tasks:
     module: training
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-961]
     why: "K-972 planı (9 Eki): ADR-075 #5 'Discard onaylı' ama sözleşmede seansı silen uç yok; setleri sunucuya gitmiş seans atılamıyor, boş seans haftayı sayar. Pause süreyi durdurur (ADR-075 #5, kullanıcı testi C14) ama sunucu duraklamayı bilmiyor; özet dakikası ve Health süresi ekran saatiyle çelişir"
     acceptance:
@@ -4669,7 +4670,7 @@ tasks:
     module: decision
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-962, K-963, K-995]
     why: "K-978 (9 Eki): ADR-077 #3 karar ekranı 'değişen hedefler (eski → yeni) · iki neden (veri + kural) · In this week's plan (varsayılan uygulanmış)' ve #4/Ek 1 '1. hafta gün seçimi, öneri dolu' istiyor; sunucu bunların hiçbirini göndermiyor (yalnız eylem ve reason.rule); karar PENDING kalıyor; observationDays ilk karardan sonra okunamıyor. Telefon geriye hesaplarsa kural işletir"
     acceptance:
@@ -4688,7 +4689,7 @@ tasks:
     module: training
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-965]
     why: "K-974 (9 Eki): ADR-075 #7 kutlamada 'ne arttı' istiyor; WorkoutSummary yalnız marks/liftedKg/workingSets/minutes/muscles taşıyor; eski workout-summary ekranı bunu telefonda e1RM ile hesaplıyordu (ADR-075 #7 'e1RM yok' ve telefon kural işletmez ile çelişir)"
     acceptance:
@@ -4720,7 +4721,7 @@ tasks:
     module: training
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-964]
     why: "K-972 P4 incelemesi (#533, 10 Eki): swapOptions sözleşmede yalnız kimlik; sunucunun TODAY swap satırı yeni hareket için lastBestSet, lighter/heavier, calibrationStepKg taşırken telefondaki seans içi swap hiçbirini alamıyor (telefon hesaplayamaz, U1). K-973 'değiştirilen hareket de kalibrasyonla başlar' bu olmadan karşılanamaz"
     acceptance:
@@ -4737,17 +4738,73 @@ tasks:
     module: training
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-1000, K-995]
     why: "K-978 PR2 (#537, 10 Eki): ADD_TRAINING_DAY kararında kullanıcı günü seçer ama PATCH /v1/program yeni günü ancak adı ve hareketleriyle alır; telefon gün içeriği uyduramaz (U1), generate bütün hedefleri siler. ADR-077 Ek 1 'gün ekle' dokunuşla uygulanmalı"
     acceptance:
-      - "Bir uç (ör. `POST /v1/program/days {weekday}`) seçilen haftanın gününe yeni bir antrenman günü ekler; günün adı ve hareketleri programın kendi üretecinden (split ve deneyime göre, mevcut günlerle denge), mevcut günlerin hedefleri korunur"
+      - "`POST /v1/program/days {weekday}` yeni günü programın kendi üretecinden ekler; mevcut günlerin hedefleri korunur. Levent kararı (10 Eki, ADR-073 Ek 9): yalnız 2 günlük GENERATED programdan 3'e; diğer gün sayılarında 409 → telefon Edit › Days (konuma göre seçim 3→4 ve sonrasında ardışık aynı bölge çıkarabiliyor)"
       - "Kendi programında (own program) uç 409 ya da açık bir kural (karar PR'da); dolu gün, haftada 7 gün → 409"
       - "Yanıt Program + review.edits (Undo K-970 yoluyla çalışır)"
       - "Telefon #537'deki 'Pick the day' bu uca bağlanır (Edit'e götürmek yerine)"
     tests: ["Tablo testi (üreteç + denge), API testi (CI), sözleşme testi, mobil ekran testi"]
     refs: ["plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md", "plan/kararlar/ADR-073-program-incelemesi-ve-degistirme.md"]
     learn: ["Bir kararın dokunuşla uygulanması"]
+
+  - id: K-1013
+    title: "Part 3 kullanıcı-gözü yürüyüşü düzeltmeleri (mobil): gün ekle çıkmazı, hero dokunma alanı, süperset satırı, 44 pt, metinler"
+    milestone: M9a
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-978, K-970, K-972, K-973]
+    why: "10 Eki simülatör yürüyüşü (6 persona, 13 senaryo; prototip/kullanici-testi.md › Tur 3): çökme ve U ihlali yok, ama ana akışlarda orta bulgular"
+    acceptance:
+      - "1. hafta 'gün ekle': 2 günlük olmayan programda seçim sonrası Edit'e düşerken neden söylenir ve seçilen gün Edit'te önceden işaretli; karar ekranında 'New day' yalnız gerçekten eklenebiliyorsa; 1. hafta kararında 'Keep last week's plan' yok; üç düğme (Sounds right / Change it / Got it) sadeleşir; 'Change it' başlığı"
+      - "Hero kartının tamamı dokunulur (yalnız ok değil); bekleyen kararda değişen satırı 'not applied yet' durumuyla ve tek birincil eylem"
+      - "Süperset partneri seçilince eylem satırı bozulmaz (dikey kırılan etiket yok, Skip move kaybolmaz)"
+      - "Açık seans kartı 'Finish anytime this week' değil, sunucunun kapanış süresi (unfinished_session_close_hours)"
+      - "'Monday reads what happened' sabit metni kullanıcının check-in gününden (sunucu alanı)"
+      - "Antrenman › This week listesinde biten günlerde tamamlanma işareti (Bu hafta şeridiyle aynı)"
+      - "Bu hafta kartı hareket sayısını gösterir (3 + 'and 7 more' ya da toplam)"
+      - "Edit: kaydedilmemiş değişiklikle kaydırma engellenince uyarı görünür yerde (üstte ya da sheet)"
+      - "Dokunma hedefleri ≥44 pt: check-in çipleri, Edit çipleri/Remove, Too heavy?"
+      - "Küçükler: vücut ağırlığı hareketinde (pull-up) 'Pick a weight'/ısınma satırı yok; 'Skipped' bandı kardiyo adımına taşmaz; atma sonrası eski 'Paused' bandı yok; 'Food today'/'Food left' etiketi tutarlı"
+      - "Add a move: yazmadan katalog listelenir; hızlı yazım cihazda doğrulanır (K-984)"
+    tests: ["Ekran testleri her madde için; simülatör senaryolarıyla görsel kontrol"]
+    refs: ["prototip/kullanici-testi.md", "plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md", "plan/kararlar/ADR-075-antrenman-oturumu.md"]
+    learn: ["Kullanıcı testinden kart çıkarmak"]
+
+  - id: K-1014
+    title: "Antrenman özetinde yarım seans tam seansla kıyaslanmaz (liftedChangePercent)"
+    milestone: M9a
+    module: training
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-965]
+    why: "10 Eki yürüyüşü: 2 setlik yarım seans özette '−81% vs last time' gösterdi; yarım seans tam seansla kıyaslanıyor (U7 tonu sınırda, sayı yanıltıcı)"
+    acceptance:
+      - "`liftedChangePercent` yalnız karşılaştırılabilir seanslar arasında (karar ve eşik PR'da, eşik `data/parameters`'ta, kaynaklı ya da ürün kararı olarak işaretli); değilse alan yok ve telefon yüzde göstermez"
+      - "Kısa sürüm (Short on time) ve atlanan hareketler dikkate alınır"
+    tests: ["Tablo testi, API testi (CI)"]
+    refs: ["plan/kararlar/ADR-075-antrenman-oturumu.md"]
+    learn: ["Karşılaştırılabilirlik"]
+
+  - id: K-1015
+    title: "Rebuild for me: split seçimi (full body / upper-lower / push-pull-legs)"
+    milestone: M11
+    module: training
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-995]
+    why: "K-995'ten ayrıldı (10 Eki). data/programs'ta her gün sayısının tek şablonu var (1-2 FB, 3 karışık, 4 UL, 5 karışık, 6 PPL); gerçek seçim yeni koçluk şablonu ister (U14) — Levent 10 Eki: v1.x'e ertelendi (M11); v1'de Split satırı salt okunur"
+    acceptance:
+      - "split seçimi (full body / upper-lower / push-pull-legs) üretece gider; seçilen gün sayısına uymayan split reddedilir (mevcut şablon kuralıyla) — **Levent kararı bekliyor (9 Eki):** data/programs'ta her gün sayısının tek şablonu var (1-2 FB, 3 karışık, 4 UL, 5 karışık, 6 PPL), seçim fiilen tek seçenek; gerçek seçim yeni şablon (koçluk içeriği) ister. O zamana kadar Split satırı salt okunur"
+    tests: ["Şablon tablo testi, API testi (CI), ekran testi"]
+    refs: ["plan/kararlar/ADR-073-program-incelemesi-ve-degistirme.md"]
+    learn: ["Koçluk içeriğinin şablona dökülmesi"]
 
   - id: K-1010
     title: "Sunucudaki ek siteler: Caddy /opt/sites altındaki *.caddy dosyalarını içeri alır"

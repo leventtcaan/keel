@@ -140,3 +140,31 @@ araması ve barkod, Instagram/TikTok paylaşımı, nasıl yapılır klipleri, fo
 
 Tur 1'dekiler aynen. Ek olarak: tam rıza metni taslaktır (kayıtlı sürüm `data/copy`'den); 12. hafta özetindeki rekor ve "What moved" satırları
 örnek veridir; İlerleme'deki kas haritası seansın gerçek kaslarından değil örnek dolumdan çizilir; tek "Full body B" listesi örnektir.
+
+## Tur 3 (kod, simülatör · 10 Eki, M9a Part 3 sonu)
+
+- **Yöntem:** 6 persona (yeni başlayan 1. hafta · düzenli Pazartesi kararı · hafta ortası salon · planı değişen · kendi programı · dönen/rızasız),
+  13 fikstür senaryosu, iPhone 16 Pro Max simülatörü, `origin/main` `a44c3eae` (Part 3'ün bütün PR'ları dahil). Fikstür sözleşmeye karşı
+  doğrulandı (14 senaryo, 843 yanıt, 0 hata). Açık ve koyu tema her personada.
+- **Sonuç:** çökme yok, U4-U7 ihlali yok. Çalışan: kalibrasyon ("Pick a weight", "Starting weight found", 2+ önerisi), özet sayıları girilen
+  setlerle birebir, karar ekranı (eski → yeni, kısa neden + kaynak simgesi, Keep → Not applied → Use this call, güvenlikte Keep yok, geçmiş
+  salt okunur), swap + "Back to the planned move", set düzelt/sil + Undo, Fill in later → Continue, Discard onayı + Undo, hedef kaybı uyarısı,
+  "Saved" + Undo, rızasız yüzler.
+- **Yapılamayan:** iPhone SE (667pt) ölçüsü (simülatör izni) · onboarding plan ekranı (Apple girişi) · canlı Pause (geliştirme düğmesi
+  örtüyor) · bayat/çevrimdışı seans ve gece yarısı → K-984 cihaz turu.
+
+### Bulgular → kartlar
+
+| Bulgu | Kart |
+|---|---|
+| 1. hafta "gün ekle": 2 günlük olmayan programda seçim sonrası açıklamasız Edit; "New day Tue" ama takvimde yok; üç düğme belirsiz; 1. haftada "Keep last week's plan" | K-1013 |
+| Hero kartı gövdesi dokunulmuyor (yalnız ok) · bekleyen kararda değişen satırı yok, iki birincil eylem | K-1013 |
+| Süperset partneri seçilince eylem satırı bozuluyor (dikey kırılan etiket, Skip move kayboluyor) | K-1013 |
+| Açık seans kartı "Finish anytime this week" (sunucu 24 sa'de kapatır) · "Monday reads what happened" sabit (check-in günü başka) | K-1013 |
+| Antrenman › This week listesinde tamamlanma işareti yok (şerit ✓ derken) · Bu hafta kartı 3 hareket, Antrenman 10 | K-1013 |
+| Edit: kaydedilmemişken kaydırma sessizce engelleniyor, uyarı katlanın altında | K-1013 |
+| Dokunma hedefleri 44 pt altı: check-in çipleri ≈35, Edit çipleri/Remove 30-32, "Too heavy?" ≈22 | K-1013 |
+| Yarım seans (2 set) özette "−81% vs last time" | K-1014 |
+| Başka cihazda açık seans devralınamıyor | K-999 |
+| Dönen kullanıcıya dönüş akışı yok, "Getting stronger/weaker" soruluyor | K-981 |
+| Küçükler: pull-up'ta "Pick a weight"/ısınma, "Skipped" bandı kardiyoya taşıyor, atma sonrası eski "Paused", Food today/left etiketi, Add a move boş liste | K-1013 |

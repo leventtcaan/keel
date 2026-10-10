@@ -1,11 +1,15 @@
 ---
-guncelleme: 2026-10-08
+guncelleme: 2026-10-10
 ---
 # DURUM
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (9 Eki akşam — M9a Part 3 YENİ SESSION'A DEVREDİLDİ)
+## ▶ DEVAM NOKTASI (10 Eki gece — M9a Part 3 BİTTİ)
+**Sıradaki session: M9a Part 4 · Kalan + kapanış** → `plan/oturum-promptlari/YENI-YUZ-kod.md` › "Part 4 prompt'u"; ayrıntı DURUM › M9a ilerleme › Part 3 ÇIKIŞ.
+İlk iş K-1013 (yürüyüş düzeltmeleri) + K-1014. Levent'i bekleyen: K-983 (ASC deneme), K-976 Facebook App ID, K-977 kapsamı.
+
+## (önceki) DEVAM NOKTASI (9 Eki akşam — M9a Part 3 YENİ SESSION'A DEVREDİLDİ)
 **Devam:** `plan/oturum-promptlari/YENI-YUZ-part3-devam-2.md` (yeni session prompt'u başında; açık PR'lar, kalan iş, Levent'e sorular, simülatör düzeneği `../keel-sim/.sim/`, ajan talimatı `ajan-brief.md`).
 
 ## (önceki) DEVAM NOKTASI (9 Eki — M9a Part 3 duraklatıldı)
@@ -872,6 +876,31 @@ Simülatör düzeneği (repoya girmez): `../keel-sim` worktree + scratchpad `sim
 | K-997 ilk hafta bütçesi (yeni) | ⏳ | | #504, nutrition |
 | K-998 seansı at + duraklama (yeni) | ✅ sunucu | #509 (V45) | FOR UPDATE, retarget, başlangıç ağırlığı `start_*` (rewrite korur), otomatik kapanışta dakika yok; telefon tarafı K-972 P2 |
 | K-996 gün adı nameKey (yeni) | ✅ | #498 | M4'ten beri her üretilmiş gün '[missing…]'; simülatör düzeneği yakaladı |
+
+**Part 3 ÇIKIŞ (10 Eki):** devam-2 session'ı (Opus düzenleyici + Sonnet uygulayıcı/inceleme ajanları; en çok 3 uygulayıcı). Açık PR yok; main `a44c3eae`+.
+- **Birleşen (10 Eki, 18):** #519 K-978 `/call` · #523 K-1008 · #524 K-969 kart `sessionState` · #525 K-997 sunucu · #526 K-993 (V47) · #527 K-972 P2
+  End/Fill later/Discard · #529 K-1000 karar alanları · #530 K-970 Days/Moves · #531 K-997 telefon · #532 K-993 telefon · #533 K-972 P4 swap ·
+  #535 K-1011 swap tabloları · #536/#537 K-978 PR2 (değişenler, kısa neden + kaynak simgesi, 1. hafta gün seçici) · #539/#542 K-973
+  (kalibrasyon, Too heavy?, analiz satırı, kardiyo adımı) · #540 K-1012 gün ekle · #541 K-974 What moved.
+- **Kart durumu:** done 18 (K-969..K-974, K-988 sunucu, K-992..K-998, K-1000, K-1008, K-1011, K-1012); K-978 doing (hareket hedefi satırı K-1009,
+  "3 days is enough" nedeni sunucuda yok); K-995 done, split K-1015'e ayrıldı. Yeni: K-1011, K-1012, K-1013 (yürüyüş düzeltmeleri), K-1014
+  (yarım seans yüzdesi), K-1015 (split, Levent).
+- **Levent kararları (10 Eki):** 1. hafta gün öneri kuralı ürün kararı KABUL (ADR-077 Ek 4) · gün ekle yalnız 2→3 (ADR-073 Ek 9).
+- **Teknik kararlar (agent):** ADR-075 Ek 6-9 (bayat seans, swap telefonda, kalibrasyon yalnız geçmişsiz harekette, kardiyo Done kuyrukta +
+  gönderilmemişken Undo) · ADR-073 Ek 8 (swapTables), Ek 9 · ADR-077 Ek 4 (varsayılan uygulanır, ruleShort, güvenlik kararı undo da 409) ·
+  kaynak türü karar ekranında simge + VoiceOver etiketi (`call` 45 korunur) · kısa nedenlerde birim tercihi (ADR-029).
+- **Levent cevapları (10 Eki, part sonu):** K-1015 split v1.x'e (M11; Split satırı salt okunur) · K-520/K-521 yüzeyden iner (ADR-077 Ek 5) ·
+  K1 listesi hepsi onaylı (#524 "bugün bitmiş herhangi bir seans → done" + "moved" fikstürü, #527 fikstür tarihleri, #530 edit-program, #531, #529).
+- **Yürüyüş (Tur 3, `prototip/kullanici-testi.md`):** 6 persona, 13 senaryo; çökme ve U ihlali yok; 15 orta/küçük bulgu → K-1013, K-1014, K-999,
+  K-981. SE ölçüsü, onboarding planı, canlı Pause, bayat/çevrimdışı seans → K-984 cihaz turu.
+- **Part 4'e takip:** Bu hafta bütçe/tartı okumaları telefonun günü (`program.today ?? day`) · #532 PUT bitmeden Continue → eski firstCall ·
+  `observationDays` güncel parametreyi okur · dinlenme gününde satırdan ikinci seans · K-1011 eşitlik testi kısmen totoloji · "Later today" kardiyo
+  → K-980 · rekor haptiği `expo-haptics` (native derleme) · kardiyo silme ucu yok (gönderildiyse Undo yok) · yanlış "G1 K-70" atıfları
+  (ProgramGenerator, ProgramGeneratorTests, openapi generate, onboarding.json max_training_days) · Dependabot 3 geçişli uyarı (braces, node-forge
+  yamasız; decode-uri-component 0.5.0) mobil araç zincirinde.
+- **Ders:** ekran işine başlamadan prototip ↔ sözleşme boşluk taraması (bu part'ta 9 arka uç kartı ortada çıktı); her PR'a inceleme + doğrulama
+  turu gerçek hatalar yakaladı (U13 arka kapı, kayıp STEPS, sıra-bağımlı seçim, kendi hareketi adı, süperset).
+
 
 ## M9 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M9.md`. Part prompt'ları `M9-part1.md`, `M9-part2.md`, `M9-part3.md`.

@@ -172,3 +172,10 @@ Karar ekranı (#3) ve 1. hafta gün seçimi (#4, Ek 1) telefonda hesap istemez (
   "Use this call" sunmak kullanıcıyı ortada bırakmaz).
 - **K1 notu:** varsayılan uygulama, check-in sonrası kararın PENDING gelmesini bekleyen DB/API testlerinin beklentisini değiştirir; bunlar bu ADR'den
   doğan, gevşetmeyen değişikliklerdir (K1 ADR değişikliği); PR'da liste halinde Levent'e sorulur.
+
+## Ek 5 · Koç soruları ve ilk haftalar risk mesajı yüzeyden iner (K-520, K-521; 2026-10-10, ürün kararı: **Levent KABUL**)
+- **Karar:** proaktif koç soruları (K-520) ve ilk 8 hafta / 5. hafta risk mesajı (K-521) yeni Bu hafta ekranında gösterilmez. Gerekçe #1: tek
+  kahraman; ekran kararı ve bugünü taşır, ikinci bir mesaj yüzeyi kahramanla yarışır.
+- **Kod:** silinmez; rota/bileşen girişsiz kalır (ADR-069 #3 kalıbı). Sunucu uçları yerinde.
+- **Reddedilen:** İlerleme sekmesinde kart (K-979'u şişirir) · check-in akışında satır (30 kelime bütçesi).
+

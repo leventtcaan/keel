@@ -219,3 +219,10 @@
 - takıldım: prototip sözleşmede olmayan alanlara dayanıyordu → 8 yeni arka uç kartı ortada çıktı (K-995..K-1009); yığılı PR + squash çakışmaları; her PR 2-3 inceleme turu (gerçek hatalar: veri kaybı, kilitlenme, kuyruk yarışı); iki token duraklaması
 - sıradaki: `plan/oturum-promptlari/YENI-YUZ-part3-devam-2.md` (yeni session prompt'u başında): açık PR'lar #519 #524 #525 #526 #527, K-1000 → K-978 PR2, K-972 P4 → K-973, Days/Moves, telefon parçaları, persona yürüyüşü, ÇIKIŞ
 - AI: bütün kod, test, inceleme ve kararlar agent (düzenleyici + 4 uygulayıcı + ~35 inceleme/doğrulama alt ajanı); Levent K1 listesini onayladı, iki kez duraklattı
+
+## 2026-10-10 · M9a Part 3 · devam 2 (Ana ekranlar) — toplu mod; Opus düzenleyici, Sonnet ajanlar; PART 3 BİTTİ
+- yaptım: 18 PR birleşti (#519-#542): karar ekranı (değişenler, kısa neden + kaynak simgesi, varsayılan uygulanır, 1. hafta gün seç/ekle), seans sonu (End/Fill later/Discard + Undo), seans içi swap + seçenek tabloları, kalibrasyon/Too heavy?/analiz/kardiyo adımı, Days/Moves düzenleme, What moved, ilk hafta bütçe + plan görüldü; 18 kart done; simülatör yürüyüşü Tur 3 (6 persona)
+- karar: Levent — 1. hafta gün öneri kuralı KABUL (ADR-077 Ek 4); gün ekle yalnız 2→3 (ADR-073 Ek 9). Agent — ADR-075 Ek 6-9, ADR-073 Ek 8, kaynak simgesi + VoiceOver, birim tercihi, kalibrasyon yalnız geçmişsiz harekette
+- takıldım: incelemeler gerçek hatalar buldu (U13 undo arka kapısı, ilk adım hedefi değişimi kayboluyordu, gün ekle ardışık bacak günü, süperset, lb'de "kg"); 3 yeni arka uç kartı ortada çıktı (K-1011, K-1012, K-1014); simülatörde SE ve onboarding yürünemedi
+- sıradaki: M9a Part 4 (`YENI-YUZ-kod.md` › Part 4 prompt'u): K-1013 + K-1014 yürüyüş düzeltmeleri → K-1009 → K-999 → K-979..K-982 → paylaşım → K-984
+- AI: bütün kod, test, inceleme agent (Opus düzenleyici + ~45 Sonnet uygulayıcı/inceleme ajanı); Levent iki ürün kararı verdi
