@@ -976,12 +976,13 @@
         "callScreen.week1.changeTitle",
         "callScreen.week1.changeHint",
         "callScreen.week1.suggestion",
+        "callScreen.week1.suggestionAdd",
         "callScreen.week1.keepSuggestion",
         "callScreen.week1.moveHead",
+        "callScreen.week1.addHead",
         "callScreen.week1.done",
         "callScreen.week1.daysLabel",
-        "callScreen.week1.suggestedDay",
-        "callScreen.week1.pickDay"
+        "callScreen.week1.newDay"
       ],
       "faces": [
         {
@@ -990,13 +991,14 @@
             "decision.add_training_day.label",
             "decision.add_training_day.first_week_add_day.title",
             "callScreen.week1.daysLabel",
-            "callScreen.week1.suggestedDay",
+            "callScreen.week1.newDay",
             "decision.ruleShort.first_week_add_day",
             "callScreen.observation",
             "callScreen.confidence",
             ["callScreen.level.LOW", "callScreen.level.MEDIUM", "callScreen.level.HIGH"],
             "callScreen.nextCall",
-            "callScreen.week1.pickDay",
+            "callScreen.week1.soundsRight",
+            "callScreen.week1.changeIt",
             "callScreen.gotIt"
           ],
           "dynamic": [{"what": "the day the call was made (Mon, Oct 12)", "words": 2}, {"what": "the next call's date (Mon, Oct 19)", "words": 2}, {"what": "the suggested day (Sat)", "words": 1}]
@@ -1007,8 +1009,10 @@
             "callScreen.week1.changeTitle",
             "callScreen.week1.changeHint",
             "callScreen.week1.suggestion",
+            "callScreen.week1.suggestionAdd",
             "callScreen.week1.keepSuggestion",
             "callScreen.week1.moveHead",
+            "callScreen.week1.addHead",
             "callScreen.week1.done",
             "callScreen.keep"
           ],

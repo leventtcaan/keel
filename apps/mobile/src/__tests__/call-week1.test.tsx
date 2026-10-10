@@ -350,16 +350,27 @@ const twoDays = (): Schemas['Program'] => {
 };
 const threeDays = (): Schemas['Program'] => ({ ...twoDays(), days: [...twoDays().days, { id: 'c', nameKey: 'full_body_c', weekday: 'SATURDAY', exercises: [exercise('c1')] }] });
 
-describe('one more day: the day saved by the server when the program has two (K-1012)', () => {
+describe('one more day (K-1012): the suggestion comes filled, like the move', () => {
   beforeEach(() => {
     mockAnswers['/v1/decisions/current'] = ok(addCall());
     mockAnswers['/v1/program'] = ok(twoDays());
+    mockPost = ok(threeDays());
   });
 
-  test('two days: the suggested weekday goes to POST /v1/program/days, then "saved" and back to the week; the program editor is not opened', async () => {
-    mockPost = ok(threeDays());
+  test('the count, the day suggested, "Sounds right" and "Change it"; no "Pick the day"', async () => {
     await show();
-    await press(w('pickDay'));
+    expect(screen.getByText(w('daysLabel'))).toBeOnTheScreen();
+    expect(screen.getByText('4')).toBeOnTheScreen();
+    expect(screen.getByText(w('newDay'))).toBeOnTheScreen();
+    expect(screen.getByText('Sat')).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: w('soundsRight') })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: w('changeIt') })).toBeOnTheScreen();
+    expect(JSON.stringify(screen.toJSON())).not.toContain('Pick the day');
+  });
+
+  test('"Sounds right", two days: the suggested weekday to POST /v1/program/days, then "saved" and back to the week; the editor is not opened', async () => {
+    await show();
+    await press(w('soundsRight'));
     expect(mockPOST).toHaveBeenCalledTimes(1);
     expect(mockPOST).toHaveBeenCalledWith('/v1/program/days', { body: { weekday: 'SATURDAY' } });
     expect(mockPush).not.toHaveBeenCalled();
@@ -372,7 +383,7 @@ describe('one more day: the day saved by the server when the program has two (K-
     let answer: (value: Answer) => void = () => {};
     mockPOST.mockImplementationOnce(() => new Promise<Answer>((resolve) => (answer = resolve)));
     await show();
-    const button = screen.getByRole('button', { name: w('pickDay') });
+    const button = screen.getByRole('button', { name: w('soundsRight') });
     await act(async () => {
       fireEvent.press(button);
       fireEvent.press(button);
@@ -381,18 +392,53 @@ describe('one more day: the day saved by the server when the program has two (K-
     expect(mockPOST).toHaveBeenCalledTimes(1);
   });
 
-  test('three days (not two): the program editor, as before; nothing sent to the server for it', async () => {
+  test('"Change it": the days the program does not train on to pick from (Mon and Wed are taken), the suggestion said', async () => {
+    await show();
+    await press(w('changeIt'));
+    expect(screen.getByText(w('changeTitle'))).toBeOnTheScreen();
+    expect(screen.getByText(t('callScreen.week1.changeHint', { suggestion: t('callScreen.week1.suggestionAdd', { day: 'Saturday' }) }))).toBeOnTheScreen();
+    expect(screen.getByText(w('addHead'))).toBeOnTheScreen();
+    for (const day of ['TUESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']) expect(screen.getByRole('button', { name: t(`programEditor.weekdayName.${day}`) })).toBeOnTheScreen();
+    for (const day of ['MONDAY', 'WEDNESDAY']) expect(screen.queryByRole('button', { name: t(`programEditor.weekdayName.${day}`) })).toBeNull();
+  });
+
+  test('"Change it", another day picked: the call shows it, its button reads "Done", and that weekday is the one sent', async () => {
+    await show();
+    await press(w('changeIt'));
+    await press(t('programEditor.weekdayName.SUNDAY'));
+    await press(w('done'));
+    expect(screen.getByText('Sun')).toBeOnTheScreen();
+    expect(screen.queryByText('Sat')).toBeNull();
+    expect(mockPOST).not.toHaveBeenCalled();
+    await press(w('done'));
+    expect(mockPOST).toHaveBeenCalledWith('/v1/program/days', { body: { weekday: 'SUNDAY' } });
+    expect(mockBack).toHaveBeenCalled();
+  });
+
+  test('"Keep the suggestion" after a pick: the suggested day again', async () => {
+    await show();
+    await press(w('changeIt'));
+    await press(t('programEditor.weekdayName.SUNDAY'));
+    await press(w('keepSuggestion'));
+    expect(screen.getByText('Sat')).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: w('soundsRight') })).toBeOnTheScreen();
+  });
+
+  test('not two days (three): the program editor, as before; nothing sent to the server for it', async () => {
     mockAnswers['/v1/program'] = ok(threeDays());
     await show();
-    await press(w('pickDay'));
+    await press(w('soundsRight'));
     expect(mockPOST).not.toHaveBeenCalled();
     expect(mockPush).toHaveBeenCalledWith('/edit-program?part=days');
   });
 
-  test('no day suggested: the program editor', async () => {
-    mockAnswers['/v1/decisions/current'] = ok(addCall([]));
+  test('not two days, a day picked in "Change it": the program editor too', async () => {
+    mockAnswers['/v1/program'] = ok(threeDays());
     await show();
-    await press(w('pickDay'));
+    await press(w('changeIt'));
+    await press(t('programEditor.weekdayName.SUNDAY'));
+    await press(w('done'));
+    await press(w('done'));
     expect(mockPOST).not.toHaveBeenCalled();
     expect(mockPush).toHaveBeenCalledWith('/edit-program?part=days');
   });
@@ -400,7 +446,7 @@ describe('one more day: the day saved by the server when the program has two (K-
   test('the server says no (409: a user\'s own program, a taken day, the days changed): the program editor, no note', async () => {
     mockPost = refused(409, 'CONFLICT');
     await show();
-    await press(w('pickDay'));
+    await press(w('soundsRight'));
     expect(mockPOST).toHaveBeenCalledTimes(1);
     expect(mockPush).toHaveBeenCalledWith('/edit-program?part=days');
     expect(mockBack).not.toHaveBeenCalled();
@@ -410,56 +456,46 @@ describe('one more day: the day saved by the server when the program has two (K-
   test('the day is outside what a program is (400): its own line, nothing opened, another try possible', async () => {
     mockPost = refused(400, 'VALIDATION_FAILED');
     await show();
-    await press(w('pickDay'));
+    await press(w('soundsRight'));
     expect(screen.getByText(w('refused'))).toBeOnTheScreen();
     expect(mockPush).not.toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: w('pickDay') })).toBeEnabled();
+    expect(screen.getByRole('button', { name: w('soundsRight') })).toBeEnabled();
   });
 
   test('no connection: said, and the button still there', async () => {
     mockPost = 'offline';
     await show();
-    await press(w('pickDay'));
+    await press(w('soundsRight'));
     expect(screen.getByText(w('offline'))).toBeOnTheScreen();
     expect(said).toHaveBeenCalledWith(w('offline'));
     expect(mockPush).not.toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: w('pickDay') })).toBeEnabled();
+    expect(screen.getByRole('button', { name: w('soundsRight') })).toBeEnabled();
   });
 
   test('any other refusal: ours, worth another try', async () => {
     mockPost = refused(500, 'INTERNAL');
     await show();
-    await press(w('pickDay'));
+    await press(w('soundsRight'));
     expect(screen.getByText(w('failed'))).toBeOnTheScreen();
     expect(mockPush).not.toHaveBeenCalled();
   });
-});
 
-describe('one more day', () => {
-  test('the count and the day suggested; the day is picked in the training days', async () => {
-    mockAnswers['/v1/decisions/current'] = ok(addCall());
-    await show();
-    expect(screen.getByText(w('daysLabel'))).toBeOnTheScreen();
-    expect(screen.getByText('4')).toBeOnTheScreen();
-    expect(screen.getByText(w('suggestedDay'))).toBeOnTheScreen();
-    expect(screen.getByText('Sat')).toBeOnTheScreen();
-    expect(screen.queryByRole('button', { name: w('soundsRight') })).toBeNull();
-    await press(w('pickDay'));
-    expect(mockPush).toHaveBeenCalledWith('/edit-program?part=days');
-    expect(mockPATCH).not.toHaveBeenCalled();
-  });
-
-  test('no free day to suggest: the count only', async () => {
+  test('no free day to suggest: "Pick a day", "Sounds right" waits for a pick in "Change it", then it is sent', async () => {
     mockAnswers['/v1/decisions/current'] = ok(addCall([]));
     await show();
-    expect(screen.queryByText(w('suggestedDay'))).toBeNull();
-    expect(screen.getByRole('button', { name: w('pickDay') })).toBeOnTheScreen();
+    expect(screen.getByText(w('noDay'))).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: w('soundsRight') })).toBeDisabled();
+    await press(w('changeIt'));
+    await press(t('programEditor.weekdayName.FRIDAY'));
+    await press(w('done'));
+    await press(w('done'));
+    expect(mockPOST).toHaveBeenCalledWith('/v1/program/days', { body: { weekday: 'FRIDAY' } });
   });
 
   test('"Got it" is still there', async () => {
-    mockAnswers['/v1/decisions/current'] = ok(addCall());
     await show();
     await press(t('callScreen.gotIt'));
     expect(mockBack).toHaveBeenCalled();
+    expect(mockPOST).not.toHaveBeenCalled();
   });
 });
