@@ -173,7 +173,7 @@ birinci taraf paketi, SDK sürümüyle uyumlu, başka iş yapmaz.
   hareket girer (kurulmuş ya da setlerden okunmuş, ilk setten önce ya da sonra); Undo ve "Back to the planned move" aynı eşlemeyle süpersetin yerini geri
   verir. Bu seansta swap'tan çıkan hareket (üzerinde set kalmış) süpersetin üyesi sayılmaz. **Neden:** kullanıcının kurduğu süperset korunur; grubu
   çözmek, kurulu süpersetin sessizce kaybolması demekti. **Bilinen sınır:** ekran kapatılıp açılınca, swap'tan çıkmış ara hareketin süperset kimlikli
-  setleri varsa o hareket yeniden üye görünür (swap'tan çıkış kalıcı tutulmaz); Undo ya da "Not a superset" ile düzelir.
+  setleri varsa o hareket yeniden üye görünür (swap'tan çıkış kalıcı tutulmaz); nokta çubuğundan hareket seçilerek ya da "Not a superset" ile düzelir (yeniden açılıştan sonra Undo yok); kalıcı `left` K-973 kapsamında.
 - **Kayıtlı swap yeniden doğrulanır:** `applySwaps`, kayıtlı `to`'yu planlı hareketin `swapOptions`'ına, telefonun kataloğuna ve günün başka planlı
   hareketi olmamasına karşı denetler; geçersizse yok sayar (onarmaz). **Neden:** hafta yeniden okunmuş ya da katalog değişmiş olabilir; geçersiz hareketin
   seti sunucuda reddedilir.
