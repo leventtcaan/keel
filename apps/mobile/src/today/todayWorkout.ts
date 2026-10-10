@@ -1,17 +1,18 @@
 /**
- * Today's workout on This week (K-969, ADR-077 #1): which card shows, read from what is already known. A workout under way
- * on this phone (its own records, K-405, K-961) comes first; then one finished on this phone whose finish may still wait
- * to be sent (offline, the session is still done); then the server's word on today's session (WeekSession.workout,
- * K-995: DONE, or OPEN on another phone); then this week's session as the server laid it out (Program.week, K-964:
- * today's, skipped, or moved to another day, each undoable when the server says so); a week off; rest. Nothing here
- * decides a session or a date. "Today" is still the phone's calendar day the lists were asked for; K-995 Program.today
- * replaces it once K-970's shared helper (src/train/week.ts) reads it.
+ * Today's workout on This week (K-969, ADR-077 #1): which card shows. Not decided here: the card reads what the Train card
+ * reads, by the same function (src/train/week.ts › sessionState and todayKind, K-970, K-995), so the two never differ:
+ * today is the server's (Program.today); a workout under way on this phone (its own records, K-405, K-961) is continued;
+ * a workout finished today, on this phone (its finish may still wait to be sent) or by the server's word (DONE), is done;
+ * OPEN on another phone is open there; then this week's session as the server laid it out (Program.week, K-964: today's,
+ * skipped, or moved off today, each undoable when the server says so); a week off; rest. Without the program (not read,
+ * none kept) only the phone's own records speak. Nothing here decides a session or a date.
  */
 import type { ApiClient } from '@/api/client';
 import type { components } from '@/api/schema';
 import type { LocalRecord } from '@/sync/store';
 import { type Move, ownMove } from '@/train/trainData';
-import type { ActiveWorkout } from '@/train/workout';
+import { type Done, finishedDay, finishedOnPhone, movedOffToday, sessionState, todayKind } from '@/train/week';
+import { activeWorkout } from '@/train/workout';
 
 import { type Loaded, load, localDay } from './today';
 import { weekdayOf } from './week';
@@ -22,6 +23,7 @@ type Day = Schemas['ProgramDay'];
 export type TodayCard =
   /** `onPhone`: the workout is on this phone and can be continued here; `sets` its sets so far (unknown when it is not). */
   | { kind: 'open'; day: Day | null; sets: number | null; onPhone: boolean }
+  /** `day`: the program day of the workout done (none: a free workout, or the program is not known). */
   | { kind: 'done'; day: Day | null; workoutId: string | null }
   | { kind: 'session'; day: Day; session: Schemas['WeekSession'] }
   /** `undoable`: the server says today's move or skip can be undone (WeekSession.undoable, K-995). */
@@ -31,56 +33,36 @@ export type TodayCard =
   | { kind: 'rest' }
   | { kind: 'none' };
 
-/** A workout finished today: the server's (its id), or the phone's own not sent yet (no id until the server has it). */
-export type Done = { workoutId: string | null; programDayId: string | null };
-
 type Input = {
+  /** The program as the Train tab reads it: the server's, or the copy kept on the phone (`kept`); none when neither. */
   program: Schemas['Program'] | null;
-  /** Today on the phone's calendar (the day the server's lists were asked for). */
-  day: string;
-  active: ActiveWorkout | null;
-  doneToday: Done | null;
+  kept: boolean;
+  /** The phone's own workout records (K-304): a workout under way here, a finish still waiting to be sent. */
+  records: LocalRecord[];
+  now: Date;
 };
 
-export function todayCardOf({ program, day, active, doneToday }: Input): TodayCard {
-  const dayOf = (id: string | null | undefined) => program?.days.find((d) => d.id === id) ?? null;
-  // The phone first: a workout under way here, then one finished here whose finish may still wait to be sent.
-  if (active !== null) return { kind: 'open', day: dayOf(active.programDayId), sets: active.sets.length, onPhone: true };
-  if (doneToday !== null) return { kind: 'done', day: dayOf(doneToday.programDayId), workoutId: doneToday.workoutId };
-  if (program === null) return { kind: 'none' };
-  const week = program.week ?? [];
-  const here = week.find((s) => s.date === day);
-  const named = here === undefined ? null : dayOf(here.programDayId);
-  // Then the server's word on today's session (K-995): done, or under way elsewhere (nothing to continue on this phone).
-  if (here?.workout?.state === 'DONE') return { kind: 'done', day: named, workoutId: here.workout.id };
-  if (here?.workout?.state === 'OPEN') return { kind: 'open', day: named, sets: null, onPhone: false };
-  if (program.restUntil !== undefined && day <= program.restUntil) return { kind: 'restWeek' };
-  if (here !== undefined && named !== null) {
-    return here.skipped === true ? { kind: 'skipped', day: named, undoable: here.undoable === true } : { kind: 'session', day: named, session: here };
+export function todayCardOf({ program, kept, records, now }: Input): TodayCard {
+  if (program === null) {
+    const active = activeWorkout(records);
+    if (active !== null) return { kind: 'open', day: null, sets: active.sets.length, onPhone: true };
+    const done = finishedOnPhone(records, localDay(now));
+    return done === null ? { kind: 'none' } : { kind: 'done', day: null, workoutId: done.workoutId };
   }
-  // Today's own session, moved by the user to another day of the week (the server's date).
-  const weekday = weekdayOf(day);
-  const away = week.find((s) => s.moved === true && s.date !== day && dayOf(s.programDayId)?.weekday === weekday);
-  const awayDay = away === undefined ? null : dayOf(away.programDayId);
-  if (away !== undefined && awayDay !== null) return { kind: 'moved', day: awayDay, to: away.date, undoable: away.undoable === true };
-  return { kind: 'rest' };
-}
-
-/** Records the server took or will take: a refused one is not part of what was done (as train/workout.ts reads them). */
-const kept = (record: LocalRecord) => record.state !== 'REJECTED';
-
-/**
- * The newest workout on this phone started today whose finish is kept (sent, or waiting to be): done, even before the
- * server has it. Its server id once it has one, for the summary.
- */
-export function finishedOnPhone(records: LocalRecord[], day: string): Done | null {
-  const finished = new Set(records.filter((r) => r.kind === 'finish' && kept(r)).map((r) => r.parentClientId));
-  const done = records
-    .filter((r) => r.kind === 'workout' && kept(r) && finished.has(r.clientId))
-    .filter((r) => localDay(new Date((r.body as Schemas['NewWorkout']).startedAt)) === day)
-    .sort((a, b) => b.seq - a.seq)[0];
-  if (done === undefined) return null;
-  return { workoutId: done.serverId, programDayId: (done.body as Schemas['NewWorkout']).programDayId ?? null };
+  const state = sessionState({ program, kept, records, now });
+  const dayOf = (id: string | null | undefined) => program.days.find((d) => d.id === id) ?? null;
+  if (state.onPhone !== null) return { kind: 'open', day: dayOf(state.onPhone.programDayId), sets: state.onPhone.sets.length, onPhone: true };
+  const { found, finished } = state;
+  const kind = todayKind(program, state);
+  if (kind === 'restWeek') return { kind };
+  if (kind === 'done') return { kind, day: finishedDay(program, state), workoutId: finished?.workoutId ?? null };
+  if (kind === 'openElsewhere') return { kind: 'open', day: found?.day ?? null, sets: null, onPhone: false };
+  if (found !== null) {
+    const { session, day } = found;
+    return session.skipped === true ? { kind: 'skipped', day, undoable: !state.stale && session.undoable === true } : { kind: 'session', day, session };
+  }
+  const away = kind === 'moved' ? movedOffToday(program) : null;
+  return away === null ? { kind: 'rest' } : { kind: 'moved', day: away.day, to: away.session.date, undoable: true };
 }
 
 export type TodayParts = {

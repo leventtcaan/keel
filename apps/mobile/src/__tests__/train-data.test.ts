@@ -42,6 +42,19 @@ test('read online: the server answer, and a copy kept', async () => {
   expect(kv.map.size).toBe(2);
 });
 
+test('the kept program alone, without the server (This week reads it when the program cannot be read)', async () => {
+  const kv = memoryKv();
+  const cache = createTrainingCache(kv);
+  expect(await cache.keptProgram()).toBeNull();
+  await cache.read(online);
+  expect(await cache.keptProgram()).toEqual(PROGRAM);
+  await kv.setItemAsync('train.program', 'not json');
+  expect(await cache.keptProgram()).toBeNull();
+  await cache.read(online);
+  await cache.forget();
+  expect(await cache.keptProgram()).toBeNull();
+});
+
 test('offline: the kept copy, saying it is one', async () => {
   const kv = memoryKv();
   await readTraining(online, kv);
