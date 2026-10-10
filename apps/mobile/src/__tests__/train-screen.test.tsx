@@ -598,6 +598,23 @@ test('a day without a session, one of the week picked and finished here: done', 
   expect(await screen.findByText(t('train.doneToday'))).toBeTruthy();
 });
 
+test("another day's session finished here while today's was planned: the card names the day that was done, not the planned one", async () => {
+  mockRecords = finishedToday('b');
+  await show();
+  expect(await screen.findByRole('header', { name: 'Lower A' })).toBeTruthy();
+  expect(screen.queryByRole('header', { name: 'Upper A' })).toBeNull();
+  expect(screen.getByText(t('train.doneToday'))).toBeTruthy();
+});
+
+test('a day without a session, one of the week picked and finished here: the card names that day, not Rest', async () => {
+  mockData = withProgram({ week: [THURSDAY] });
+  mockRecords = finishedToday('b');
+  await show();
+  expect(await screen.findByRole('header', { name: 'Lower A' })).toBeTruthy();
+  expect(screen.queryByRole('header', { name: 'Rest' })).toBeNull();
+  expect(screen.getByText(t('train.doneToday'))).toBeTruthy();
+});
+
 test('a week off from a copy kept before it ended: not a week off now, today starts as usual', async () => {
   mockData = { ...withProgram({ restUntil: '2026-09-20' }), kept: true };
   await show();

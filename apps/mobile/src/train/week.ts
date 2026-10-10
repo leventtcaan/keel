@@ -99,6 +99,15 @@ export function todayKind(program: Schemas['Program'], state: SessionState): Tod
 }
 
 /**
+ * The program day the workout finished today names (as the Train card's title and This week's card): that workout's own,
+ * not today's planned session; none for a free workout, or when nothing is done.
+ */
+export function finishedDay(program: Schemas['Program'], state: SessionState): Schemas['ProgramDay'] | null {
+  const id = state.finished?.programDayId;
+  return program.days.find((d) => d.id === id) ?? null;
+}
+
+/**
  * Today, as every training screen reads it (the Train card, Change, swap, the session): the server's (`Program.today`, the
  * user's calendar), unless the program is the copy kept offline or says none: then the phone's own day.
  */

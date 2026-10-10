@@ -11,7 +11,7 @@ import type { ApiClient } from '@/api/client';
 import type { components } from '@/api/schema';
 import type { LocalRecord } from '@/sync/store';
 import { type Move, ownMove } from '@/train/trainData';
-import { type Done, finishedOnPhone, movedOffToday, sessionState, todayKind } from '@/train/week';
+import { type Done, finishedDay, finishedOnPhone, movedOffToday, sessionState, todayKind } from '@/train/week';
 import { activeWorkout } from '@/train/workout';
 
 import { type Loaded, load, localDay } from './today';
@@ -55,7 +55,7 @@ export function todayCardOf({ program, kept, records, now }: Input): TodayCard {
   const { found, finished } = state;
   const kind = todayKind(program, state);
   if (kind === 'restWeek') return { kind };
-  if (kind === 'done') return { kind, day: dayOf(finished?.programDayId), workoutId: finished?.workoutId ?? null };
+  if (kind === 'done') return { kind, day: finishedDay(program, state), workoutId: finished?.workoutId ?? null };
   if (kind === 'openElsewhere') return { kind: 'open', day: found?.day ?? null, sets: null, onPhone: false };
   if (found !== null) {
     const { session, day } = found;

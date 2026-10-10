@@ -20,7 +20,7 @@ import { changeToday } from '@/train/changes';
 import { dayName, programNotes } from '@/train/program';
 import { TodayCard } from '@/train/TodayCard';
 import { movesOf } from '@/train/trainData';
-import { movedOffToday, sessionState, splitName, todayKind, weekRows } from '@/train/week';
+import { finishedDay, movedOffToday, sessionState, splitName, todayKind, weekRows } from '@/train/week';
 
 type Schemas = components['schemas'];
 
@@ -163,6 +163,7 @@ export default function TrainScreen() {
         date={session.today}
         kind={kind}
         stale={session.stale}
+        finishedDay={finishedDay(program, session)}
         movedAway={kind === 'moved' ? movedOffToday(program) : null}
         moves={moves}
         units={units}

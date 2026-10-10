@@ -29,6 +29,8 @@ type Props = {
   kind: TodayKind;
   /** The program is the copy kept offline: its Undo and its full-workout offer were the server's then, not now. */
   stale: boolean;
+  /** The day the workout finished today names (finishedDay), when it is done: the card's title, as This week names it. */
+  finishedDay: Schemas['ProgramDay'] | null;
   /** The session the server moved off today (moved and still undoable: movedOffToday), when today has none. */
   movedAway: Found | null;
   moves: ReadonlyMap<string, Move>;
@@ -64,7 +66,7 @@ export function TodayCard(props: Props) {
   );
 }
 
-function Body({ program, today, date, kind, stale, movedAway, moves, units, underWay, canPick, onStart, onChange, notice }: Props) {
+function Body({ program, today, date, kind, stale, finishedDay, movedAway, moves, units, underWay, canPick, onStart, onChange, notice }: Props) {
   const { color } = useTheme();
   // One sheet per tap: a second tap before the sheet is up must not open a second one (as Start, K-405 review).
   const opening = useRef(false);
@@ -84,7 +86,9 @@ function Body({ program, today, date, kind, stale, movedAway, moves, units, unde
   const session = restWeek || today === null || today.session.skipped === true || done || elsewhere ? null : today;
   const shown = session === null ? [] : sessionMoves(session.day, session.session);
   const meta = session === null ? '' : t(shown.length === 1 ? 'train.moveCount.one' : 'train.moveCount.other', { count: shown.length });
-  const title = session !== null ? dayName(session.day) : today !== null && !restWeek ? dayName(today.day) : t('train.rest');
+  // Done, the workout's own day (not the planned one, not Rest); a free workout has none, and the plan's day stays.
+  const named = done && finishedDay !== null ? finishedDay : (session ?? (restWeek ? null : today))?.day;
+  const title = named !== undefined && named !== null ? dayName(named) : t('train.rest');
 
   let line: string | null = null;
   if (restWeek) line = t('train.status.restWeekNote');

@@ -8,7 +8,7 @@
 import type { components } from '@/api/schema';
 import type { LocalRecord } from '@/sync/store';
 import { cardioToday, todayCardOf } from '@/today/todayWorkout';
-import { finishedOnPhone, sessionState, todayKind } from '@/train/week';
+import { finishedDay, finishedOnPhone, sessionState, todayKind } from '@/train/week';
 
 type Schemas = components['schemas'];
 
@@ -214,6 +214,23 @@ describe('the decision table: the Train card and This week read the one function
     expect(todayKind(p, sessionState({ program: p, kept, records, now }))).toBe(kind);
     // The card on This week is that kind, never another.
     expect(todayCardOf({ ...base, kept, records, program: p }).kind).toBe(cardKind[kind] ?? kind);
+  });
+});
+
+describe('both cards name the day that was done (the Train card reads finishedDay, This week the card)', () => {
+  const cases: [string, Schemas['Program'], LocalRecord[], Schemas['ProgramDay'] | null][] = [
+    ["today's session finished here", program([onFriday]), done('wa', 1, 'a'), A],
+    ["another day's session finished while today's is planned", program([onFriday]), done('wb', 1, 'b'), B],
+    ['a day without a session, one of the week picked', program([]), done('wb', 1, 'b'), B],
+    ["the server's DONE for today's session", program([{ ...onFriday, workout: { id: 'w', state: 'DONE' } }]), [], A],
+    ['a free workout: no day to name', program([onFriday]), done('wf', 1, null), null],
+  ];
+
+  test.each(cases)('%s', (_name, p, records, day) => {
+    const card = todayCardOf({ ...base, records, program: p });
+    expect(card.kind).toBe('done');
+    expect(card.kind === 'done' ? card.day : 'not done').toEqual(day);
+    expect(finishedDay(p, sessionState({ program: p, kept: false, records, now }))).toEqual(day);
   });
 });
 

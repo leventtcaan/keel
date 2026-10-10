@@ -639,6 +639,16 @@ describe("today's workout (#home)", () => {
       mockServices.workoutRecords.mockResolvedValueOnce(finishedOffline);
       await show();
       expect(screen.getByText(t('thisWeek.today.done'))).toBeOnTheScreen();
+      // Nothing to name it by: the program is not there, so no day is told.
+      expect(screen.queryByRole('header', { name: t('programDays.full_body_a.name') })).toBeNull();
+    });
+
+    test('with the copy the Train tab keeps and nothing done: the session it planned for today, to start', async () => {
+      mockAnswers['/v1/program'] = 'offline';
+      mockServices.training.keptProgram.mockResolvedValue(PROGRAM);
+      await show();
+      expect(screen.getByRole('header', { name: t('programDays.full_body_a.name') })).toBeOnTheScreen();
+      expect(screen.getByRole('button', { name: startFullBodyA() })).toBeOnTheScreen();
     });
 
     test("with the copy the Train tab keeps: the session it names, done from the phone's records, and no Undo of the server's old word", async () => {
@@ -650,6 +660,8 @@ describe("today's workout (#home)", () => {
       mockServices.workoutRecords.mockResolvedValueOnce(finishedOffline);
       await act(async () => mockRefocus());
       expect(screen.getByText(t('thisWeek.today.done'))).toBeOnTheScreen();
+      // The copy names the day that was done (its program day 'c'); without the copy no day is told.
+      expect(screen.getByRole('header', { name: t('programDays.full_body_a.name') })).toBeOnTheScreen();
     });
   });
 
