@@ -4,7 +4,7 @@
  * be read is no swap (a swap is the user's word, never made up).
  */
 import type { components } from '@/api/schema';
-import { applySwaps, createSessionSwaps, swapChoices } from '@/train/sessionSwaps';
+import { applySwaps, createSessionSwaps, swapChoices, validSwaps } from '@/train/sessionSwaps';
 
 type Planned = components['schemas']['PlannedExercise'];
 
@@ -64,14 +64,37 @@ describe('kept with its workout', () => {
 
 describe("the session's moves with the swaps applied", () => {
   test('a swapped move is the new move on the planned one: same sets, range and aim, and no target of its own', () => {
-    const [swapped, untouched] = applySwaps([BENCH, ROW], { bench_press: 'dumbbell_bench_press' });
+    const [swapped, untouched] = applySwaps([BENCH, ROW], { bench_press: 'dumbbell_bench_press' }, () => true);
     expect(swapped).toEqual({ exerciseId: 'dumbbell_bench_press', baseSets: 3, sets: 2, reps: { min: 6, max: 10 }, targetRir: 1 });
     expect(untouched).toBe(ROW);
   });
 
   test('nothing swapped, or a swap of a move the day has not: the day as it is', () => {
-    expect(applySwaps([BENCH, ROW], {})).toEqual([BENCH, ROW]);
-    expect(applySwaps([BENCH, ROW], { squat: 'leg_press' })).toEqual([BENCH, ROW]);
+    expect(applySwaps([BENCH, ROW], {}, () => true)).toEqual([BENCH, ROW]);
+    expect(applySwaps([BENCH, ROW], { squat: 'leg_press' }, () => true)).toEqual([BENCH, ROW]);
+  });
+});
+
+describe('a swap kept is checked against the plan again before it is applied', () => {
+  const known = () => true;
+
+  test("a move the server's list for the planned move does not hold is no swap", () => {
+    expect(validSwaps([BENCH, ROW], { bench_press: 'barbell_squat' }, known)).toEqual({});
+    expect(applySwaps([BENCH, ROW], { bench_press: 'barbell_squat' }, known)).toEqual([BENCH, ROW]);
+    expect(validSwaps([BENCH, ROW], { bench_press: 'push_up' }, known)).toEqual({ bench_press: 'push_up' });
+  });
+
+  test('a move the phone has no catalog entry for is no swap: a set of it would be refused', () => {
+    expect(validSwaps([BENCH, ROW], { bench_press: 'push_up' }, (id) => id !== 'push_up')).toEqual({});
+  });
+
+  test('a move that is another of the day\'s planned moves is no swap: it would be there twice', () => {
+    const rowOptions = { ...ROW, swapOptions: ['bench_press'] };
+    expect(validSwaps([BENCH, rowOptions], { barbell_row: 'bench_press' }, known)).toEqual({});
+  });
+
+  test('a move swapped for itself is no swap', () => {
+    expect(validSwaps([BENCH, ROW], { bench_press: 'bench_press' }, known)).toEqual({});
   });
 });
 

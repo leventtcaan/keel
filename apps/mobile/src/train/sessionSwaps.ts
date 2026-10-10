@@ -2,8 +2,9 @@
  * A move swapped inside the open session (K-972, ADR-073 #6, ADR-075 #5): for this workout only. Never sent: the server
  * refuses a swap for today once the day's workout has started (CONFLICT, ADR-073 Ek 3: "swaps in the session itself"), and
  * the sets done are what it learns from, each under the move it was done on. Kept on the phone with the workout it belongs
- * to, so a session opened again shows them; gone at the finish and at sign-out. The new move starts as the server's
- * own "From now on" row does: the planned move's sets, range and aim, no target of its own (it has its own history).
+ * to, so a session opened again shows them; gone at the finish and at sign-out. The new move takes the planned
+ * move's sets, range and aim and starts with no target and no weight of its own (ADR-075 Ek 7: the server's per-option
+ * table is K-1011's).
  */
 import type { components } from '@/api/schema';
 import type { KeyValue } from '@/units/preference';
@@ -38,10 +39,28 @@ export function createSessionSwaps(kv: KeyValue) {
   };
 }
 
+/**
+ * The swaps that still hold against the plan: what is kept on the phone is read back as the user left it, and the plan can
+ * have changed since (a week read again, a move out of the catalog). A swap holds when its planned move is in the session's
+ * moves, the new move is one the server offered for it (`swapOptions`) and the phone has in its catalog (a set of any other
+ * would be refused), and it is not another of the day's planned moves (it would be there twice). The rest are left out, not
+ * repaired: the planned move stands.
+ */
+export function validSwaps(today: Planned[], swaps: Swaps, known: (id: string) => boolean): Swaps {
+  const planned = new Set(today.map((p) => p.exerciseId));
+  return Object.fromEntries(
+    Object.entries(swaps).filter(([from, to]) => {
+      const options = today.find((p) => p.exerciseId === from)?.swapOptions ?? [];
+      return to !== from && options.includes(to) && known(to) && !planned.has(to);
+    }),
+  );
+}
+
 /** The session's moves with its swaps in place: a swapped move is the new one on the planned one's sets, range and aim. */
-export function applySwaps(today: Planned[], swaps: Swaps): Planned[] {
+export function applySwaps(today: Planned[], swaps: Swaps, known: (id: string) => boolean): Planned[] {
+  const held = validSwaps(today, swaps, known);
   return today.map((planned) => {
-    const to = swaps[planned.exerciseId];
+    const to = held[planned.exerciseId];
     return to === undefined ? planned : { exerciseId: to, baseSets: planned.baseSets, sets: planned.sets, reps: planned.reps, targetRir: planned.targetRir };
   });
 }

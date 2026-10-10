@@ -36,7 +36,7 @@ import { dayName, exerciseName } from '@/train/program';
 import { findMoves } from '@/train/moves';
 import { NOT_PAUSED, type Pause, pausedFor, toggle } from '@/train/pause';
 import type { Skips } from '@/train/skips';
-import { type Swaps, applySwaps, swapChoices } from '@/train/sessionSwaps';
+import { type Swaps, applySwaps, swapChoices, validSwaps } from '@/train/sessionSwaps';
 import { SwapSheet } from '@/train/SwapSheet';
 import { workoutParams } from '@/train/params';
 import { repsText } from '@/train/reps';
@@ -111,6 +111,10 @@ function Session() {
   // while `swapping`.
   const [swaps, setSwaps] = useState<Swaps>({});
   const [swapping, setSwapping] = useState(false);
+  // The moves swapped away from on this screen: they stay in the session with what was done on them, but are no longer
+  // the superset's members (its place is the planned move's, whoever stands in it). Not kept: opened again, a superset
+  // read back from sets lists the moves its sets were done on.
+  const [left, setLeft] = useState<string[]>([]);
   // The last skip, swap or delete, said, and how to take it back (K-972).
   const [undo, setUndo] = useState<{ said: string; run: () => void } | null>(null);
   // A set done being corrected (K-972): the set and its number as shown.
@@ -195,7 +199,12 @@ function Session() {
   const sessionDay = startDay !== null && startDay !== localDay(new Date(openedAt)) ? startDay : todayFor(program, data?.kept === true, new Date(openedAt));
   const today = day === null ? [] : sessionMoves(day, program?.week, sessionDay);
   // The moves swapped in this session in place (K-972); `today` stays the plan they were swapped from.
-  const shown = applySwaps(today, swaps);
+  // Checked against the plan again (K-972): a swap kept that the week no longer offers, or the catalog lacks, is no swap.
+  const known = (id: string) => moves.has(id);
+  const live = validSwaps(today, swaps, known);
+  const shown = applySwaps(today, swaps, known);
+  // The moves standing in a planned one's place: they start with nothing of their own (planExercise `fresh`).
+  const swappedIn = new Set(Object.values(live));
   const planIds = shown.map((p) => p.exerciseId);
   const extraIds = [...new Set([...done.map((s) => s.exerciseId).filter((id) => !added.includes(id)), ...added])].filter(
     (id) => !planIds.includes(id) && moves.has(id),
@@ -212,7 +221,7 @@ function Session() {
             ? null
             : planned === undefined
               ? extraPlan(move, last, done)
-              : planExercise(planned, move, last, done, skips[exerciseId] ?? NONE_SKIPPED);
+              : planExercise(planned, move, last, done, skips[exerciseId] ?? NONE_SKIPPED, swappedIn.has(exerciseId));
         });
   const firstOpen = plans.findIndex((plan) => plan !== null && plan.current !== null);
   // The move picked, by its id: the list can grow or change order under it.
@@ -228,10 +237,16 @@ function Session() {
   // A superset is two moves or more, in the order its round was started: those whose last work set carries its id, then
   // the ones linked here with no set in it yet. Unlinked, the next set has no id and the move is out, opened again too.
   const inForce = supersetsInForce(done.filter((s) => s.setType === 'WORKING'));
+  // A swap passes the superset on (K-972): a member is the place of a planned move, and whoever stands in it now takes the
+  // member's turn — the move swapped away from is out of the round, as the one swapped in is in it. Linked here, a member
+  // is kept as the planned move's place (`slotOf`), so Undo and Back find the superset where they left it.
+  const stand = (id: string) => live[id] ?? id;
+  const inRound = (id: string) => planIds.includes(id) || !left.includes(id);
   const groups = [...new Set([...inForce.keys(), ...formed.keys()])]
     .map((id): [string, string[]] => {
       const started = inForce.get(id) ?? [];
-      return [id, [...started, ...(formed.get(id) ?? []).filter((m) => !started.includes(m))]];
+      const members = [...started, ...(formed.get(id) ?? []).filter((m) => !started.includes(m))].map(stand).filter(inRound);
+      return [id, [...new Set(members)]];
     })
     .filter(([id, members]) => members.length > 1 && !unlinked.includes(id));
   const groupOf = (id: string | undefined) => groups.find(([, members]) => id !== undefined && members.includes(id));
@@ -422,8 +437,11 @@ function Session() {
   };
   const finishProblem = problem !== null && problem.row === FINISH ? <ProblemText style={[styles.text, { color: color.text }]} occurrence={problem}>{problem.text}</ProblemText> : null;
 
-  // Progress is the plan's: a move outside it is not one of the day's count.
-  const movesDone = plans.filter((p, i) => entries[i]?.planned !== undefined && p !== null && p.rows.some((r) => r.done !== null)).length;
+  // Progress is the plan's: a move outside it is not one of the day's count. A planned move's place counts once it has a set,
+  // on the move now standing in it or on the one it was swapped from (K-972): a swap does not take a move back out of the count.
+  const movesDone = entries.filter(
+    (e, i) => e.planned !== undefined && plans[i] !== null && (worked.includes(e.exerciseId) || (e.base !== undefined && worked.includes(e.base.exerciseId))),
+  ).length;
   // Nothing kept yet: close and send nothing. A workout kept without a working set: finish it, there is nothing to ask.
   const onFinish = () => {
     setEnding(false);
@@ -659,14 +677,19 @@ function Session() {
     const next = Object.fromEntries(Object.entries(swaps).filter(([id]) => id !== base.exerciseId));
     const back = to === base.exerciseId;
     const said = t(back ? 'workout.swappedBack' : 'workout.swapped', { name: name(to) });
+    const leftBefore = left;
     setUndo({
       said,
       run: () => {
         keepSwaps(before);
+        setLeft(leftBefore);
         setPicked(moveId);
       },
     });
     keepSwaps(back ? next : { ...next, [base.exerciseId]: to });
+    // The move swapped away from is out of its superset (the new one takes its place), and the new one is in it.
+    setLeft((was) => [...new Set([...was.filter((id) => id !== to), moveId])]);
+    // The rest running was for the move before: a swap changes what comes next, so the timer and its alert go, as for a skip.
     endRest();
     setPicked(to);
     setSwapping(false);
@@ -765,8 +788,10 @@ function Session() {
         problemOccurrence={problem}
       />
     );
+  // The planned move whose place a move holds (itself when it is not swapped in or is outside the plan).
+  const slotOf = (id: string) => entries.find((e) => e.exerciseId === id)?.base?.exerciseId ?? id;
   const linkWith = (partner: string) => {
-    if (moveId !== undefined) setFormed((before) => new Map([...before, [newClientId(), [moveId, partner]]]));
+    if (moveId !== undefined) setFormed((before) => new Map([...before, [newClientId(), [slotOf(moveId), slotOf(partner)]]]));
   };
   const unlink = () => {
     if (group !== undefined) setUnlinked((before) => [...before, group[0]]);

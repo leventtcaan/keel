@@ -2562,7 +2562,7 @@ describe('a move swapped inside the session (K-972, ADR-073 #6, ADR-075 #5): thi
     expect(await screen.findByText(t('workout.log', { number: 2 }))).toBeOnTheScreen();
   });
 
-  test('the new move starts from its own history: the weight it was last done with', async () => {
+  test('the new move starts with no weight of its own, whatever it was last done with: the sheet says to pick it', async () => {
     mockRecords = [
       ...lastWeek(),
       record('set', 's7', { clientId: 's7', exerciseId: 'dumbbell_bench_press', setType: 'WORKING', loadKg: 32.5, reps: 12 }, 'w0'),
@@ -2570,7 +2570,13 @@ describe('a move swapped inside the session (K-972, ADR-073 #6, ADR-075 #5): thi
     ];
     await show();
     await swapTo(DUMBBELL);
-    expect(screen.getByLabelText('Weight (kg)').props.value).toBe('32.5');
+    expect(screen.getByLabelText('Weight (kg)').props.value).toBe('');
+    expect(screen.getByLabelText('Reps').props.value).toBe('6'); // the planned range's bottom, not last time's 12
+    // The next set carries what was just lifted: that is this session's, not a guess.
+    await fireEvent.changeText(screen.getByLabelText('Weight (kg)'), '30');
+    await fireEvent.press(screen.getByText(t('workout.log', { number: 1 })));
+    await screen.findByText(t('workout.log', { number: 2 }));
+    expect(screen.getByLabelText('Weight (kg)').props.value).toBe('30');
   });
 
   test('it works offline: the phone has everything it needs', async () => {
@@ -2723,5 +2729,141 @@ describe('a move swapped inside the session (K-972, ADR-073 #6, ADR-075 #5): thi
       expect(o).toHaveStyle({ minHeight: tokens.size.touch });
       expect(o.props.accessibilityRole).toBe('button');
     }
+  });
+  describe('a swap inside a superset: the new move takes the old one\'s place in the round', () => {
+    const linkWithRow = async () => {
+      await fireEvent.press(await screen.findByRole('button', { name: t('superset.link') }));
+      await fireEvent.press(screen.getByRole('button', { name: t('superset.pick', { name: ROW }) }));
+    };
+    const typeAndLog = async (button: string, kg = '20') => {
+      await fireEvent.changeText(screen.getByLabelText('Weight (kg)'), kg);
+      await fireEvent.changeText(screen.getByLabelText('Reps'), '10');
+      await fireEvent.press(await screen.findByText(button));
+    };
+    const side = (number: number, which: 'LEFT' | 'RIGHT') => t('workout.logSide', { number, side: t(`workout.sideName.${which}`) });
+    const upNext = () => within(screen.getByTestId('up-next'));
+    const partnerLine = (name: string) => t('superset.with', { names: name });
+    const ids = () => sets().map((s) => s.body.supersetId);
+
+    test('under way: after the partner it is the swapped move that comes next, not the one it replaced', async () => {
+      await show();
+      await linkWithRow();
+      await fireEvent.press(screen.getByText(t('workout.log', { number: 1 }))); // the bench, set 1
+      await typeAndLog(side(1, 'LEFT'));
+      await typeAndLog(side(1, 'RIGHT'));
+      await screen.findByText(t('workout.log', { number: 2 })); // the bench again
+      await swapTo(DUMBBELL);
+      expect(screen.getByText(partnerLine(ROW))).toBeOnTheScreen(); // the superset goes with it
+      await typeAndLog(t('workout.log', { number: 1 }), '30'); // the dumbbell press, set 1 of its own
+      expect(await screen.findByText(side(2, 'LEFT'))).toBeOnTheScreen();
+      expect(screen.getByText(partnerLine(DUMBBELL))).toBeOnTheScreen(); // not "Bench press"
+      expect(upNext().getByText(DUMBBELL)).toBeOnTheScreen();
+      await typeAndLog(side(2, 'LEFT'));
+      await typeAndLog(side(2, 'RIGHT'));
+      expect(await screen.findByText(t('workout.log', { number: 2 }))).toBeOnTheScreen();
+      expect(head().getByText(DUMBBELL)).toBeOnTheScreen();
+      expect(sets().map((s) => s.body.exerciseId)).toEqual([
+        'bench_press',
+        'one_arm_dumbbell_row',
+        'one_arm_dumbbell_row',
+        'dumbbell_bench_press',
+        'one_arm_dumbbell_row',
+        'one_arm_dumbbell_row',
+      ]);
+      expect(new Set(ids()).size).toBe(1); // one superset all along
+      expect(ids()[0]).toEqual(expect.any(String));
+    });
+
+    test('before any set: the superset made is the new move\'s, and no ghost group holds the old one', async () => {
+      await show();
+      await linkWithRow();
+      await swapTo(DUMBBELL);
+      expect(screen.getByText(partnerLine(ROW))).toBeOnTheScreen();
+      await typeAndLog(t('workout.log', { number: 1 }), '30');
+      expect(await screen.findByText(side(1, 'LEFT'))).toBeOnTheScreen(); // the partner follows
+      expect(screen.getByText(partnerLine(DUMBBELL))).toBeOnTheScreen();
+      expect(upNext().getByText(DUMBBELL)).toBeOnTheScreen();
+      expect(sets()[0].body).toMatchObject({ exerciseId: 'dumbbell_bench_press', supersetId: expect.any(String) });
+      await typeAndLog(side(1, 'LEFT'));
+      await typeAndLog(side(1, 'RIGHT'));
+      expect(await screen.findByText(t('workout.log', { number: 2 }))).toBeOnTheScreen();
+      expect(head().getByText(DUMBBELL)).toBeOnTheScreen();
+      expect(new Set(ids()).size).toBe(1);
+    });
+
+    test('a link made on the swapped move goes with the planned move\'s place: Back keeps it', async () => {
+      await show();
+      await swapTo(DUMBBELL);
+      await linkWithRow();
+      expect(screen.getByText(partnerLine(ROW))).toBeOnTheScreen();
+      await openSwap(DUMBBELL);
+      await fireEvent.press(screen.getAllByTestId('swap-option')[0]);
+      expect(head().getByText('Bench press')).toBeOnTheScreen();
+      expect(screen.getByText(partnerLine(ROW))).toBeOnTheScreen();
+      await fireEvent.press(screen.getByText(t('workout.log', { number: 1 })));
+      expect(await screen.findByText(side(1, 'LEFT'))).toBeOnTheScreen();
+      expect(sets()[0].body).toMatchObject({ exerciseId: 'bench_press', supersetId: expect.any(String) });
+    });
+
+    test('Undo of the swap gives the superset back as it was', async () => {
+      await show();
+      await linkWithRow();
+      await swapTo(DUMBBELL);
+      await fireEvent.press(screen.getByRole('button', { name: t('workout.undoLabel') }));
+      expect(head().getByText('Bench press')).toBeOnTheScreen();
+      expect(screen.getByText(partnerLine(ROW))).toBeOnTheScreen();
+      await fireEvent.press(screen.getByText(t('workout.log', { number: 1 })));
+      expect(await screen.findByText(side(1, 'LEFT'))).toBeOnTheScreen();
+      expect(screen.getByText(partnerLine('Bench press'))).toBeOnTheScreen();
+      expect(sets()[0].body).toMatchObject({ exerciseId: 'bench_press', supersetId: expect.any(String) });
+    });
+
+    test('Back to the planned move after sets of the new one: the round goes on with the planned move', async () => {
+      await show();
+      await linkWithRow();
+      await swapTo(DUMBBELL);
+      await typeAndLog(t('workout.log', { number: 1 }), '30');
+      await typeAndLog(side(1, 'LEFT'));
+      await typeAndLog(side(1, 'RIGHT'));
+      await screen.findByText(t('workout.log', { number: 2 }));
+      await openSwap(DUMBBELL);
+      await fireEvent.press(screen.getAllByTestId('swap-option')[0]);
+      expect(head().getByText('Bench press')).toBeOnTheScreen();
+      expect(screen.getByText(partnerLine(ROW))).toBeOnTheScreen();
+      await typeAndLog(t('workout.log', { number: 1 }), '60');
+      expect(await screen.findByText(side(2, 'LEFT'))).toBeOnTheScreen();
+      expect(sets().at(-1)?.body).toMatchObject({ exerciseId: 'bench_press', supersetId: expect.any(String) });
+    });
+  });
+
+  test('the planned moves count: a move swapped after a set of it is still one done', async () => {
+    await show();
+    await fireEvent.press(await screen.findByText(t('workout.log', { number: 1 })));
+    await screen.findByText(t('workout.log', { number: 2 }));
+    expect(screen.getByText(t('workout.progress', { done: 1, count: 2 }))).toBeOnTheScreen();
+    await swapTo(DUMBBELL);
+    expect(screen.getByText(t('workout.progress', { done: 1, count: 2 }))).toBeOnTheScreen();
+  });
+
+  test('the planned moves count: sets of the swapped-in move make the place one done', async () => {
+    await show();
+    await swapTo(DUMBBELL);
+    expect(screen.getByText(t('workout.progress', { done: 0, count: 2 }))).toBeOnTheScreen();
+    await fireEvent.changeText(screen.getByLabelText('Weight (kg)'), '30');
+    await fireEvent.press(screen.getByText(t('workout.log', { number: 1 })));
+    await screen.findByText(t('workout.log', { number: 2 }));
+    expect(screen.getByText(t('workout.progress', { done: 1, count: 2 }))).toBeOnTheScreen();
+  });
+
+  test('a swap kept that the plan does not offer (or the phone has no move for) is no swap', async () => {
+    mockSwaps = { workout: 'w1', swaps: { bench_press: 'not_in_the_catalog' } };
+    await show();
+    expect(await within(await screen.findByTestId('move-head')).findByText('Bench press')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Weight (kg)').props.value).toBe('62.5');
+    await screen.unmount();
+    mockSwaps = { workout: 'w1', swaps: { bench_press: 'barbell_squat_not_offered' } };
+    mockData = { ...mockData, exercises: { state: 'ready', value: [...CATALOG, { id: 'barbell_squat_not_offered', load: 'EXTERNAL', unilateral: false } as Schemas['Exercise']] } };
+    await show();
+    expect(await within(await screen.findByTestId('move-head')).findByText('Bench press')).toBeOnTheScreen();
   });
 });
