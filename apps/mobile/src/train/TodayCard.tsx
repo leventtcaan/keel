@@ -15,7 +15,7 @@ import { dayName, exerciseName, rackNote } from './program';
 import { repCount } from './reps';
 import { swapChoice } from './swap';
 import type { Move } from './trainData';
-import { type Found, type SessionStatus, sessionMoves, weekdayOf } from './week';
+import { type Found, type TodayKind, sessionMoves, weekdayOf } from './week';
 
 type Schemas = components['schemas'];
 
@@ -25,10 +25,12 @@ type Props = {
   today: Found | null;
   /** Today (sessionState): the server's, or the phone's day when the program is the copy kept offline. */
   date: string;
-  /** Today's session under way on this phone, done, open on another phone, or none (sessionState). */
-  status: SessionStatus;
+  /** What the card says: a week off, done, open on another phone, skipped, today's session, moved off, rest (todayKind, as This week). */
+  kind: TodayKind;
   /** The program is the copy kept offline: its Undo and its full-workout offer were the server's then, not now. */
   stale: boolean;
+  /** The day the workout finished today names (finishedDay), when it is done: the card's title, as This week names it. */
+  finishedDay: Schemas['ProgramDay'] | null;
   /** The session the server moved off today (moved and still undoable: movedOffToday), when today has none. */
   movedAway: Found | null;
   moves: ReadonlyMap<string, Move>;
@@ -64,7 +66,7 @@ export function TodayCard(props: Props) {
   );
 }
 
-function Body({ program, today, date, status, stale, movedAway, moves, units, underWay, canPick, onStart, onChange, notice }: Props) {
+function Body({ program, today, date, kind, stale, finishedDay, movedAway, moves, units, underWay, canPick, onStart, onChange, notice }: Props) {
   const { color } = useTheme();
   // One sheet per tap: a second tap before the sheet is up must not open a second one (as Start, K-405 review).
   const opening = useRef(false);
@@ -78,13 +80,15 @@ function Body({ program, today, date, status, stale, movedAway, moves, units, un
     opening.current = true;
     router.push(href);
   };
-  const restWeek = program.restUntil !== undefined;
-  const done = status === 'done';
-  const elsewhere = status === 'openElsewhere';
+  const restWeek = kind === 'restWeek';
+  const done = kind === 'done';
+  const elsewhere = kind === 'openElsewhere';
   const session = restWeek || today === null || today.session.skipped === true || done || elsewhere ? null : today;
   const shown = session === null ? [] : sessionMoves(session.day, session.session);
   const meta = session === null ? '' : t(shown.length === 1 ? 'train.moveCount.one' : 'train.moveCount.other', { count: shown.length });
-  const title = session !== null ? dayName(session.day) : today !== null && !restWeek ? dayName(today.day) : t('train.rest');
+  // Done, the workout's own day (not the planned one, not Rest); a free workout has none, and the plan's day stays.
+  const named = done && finishedDay !== null ? finishedDay : (session ?? (restWeek ? null : today))?.day;
+  const title = named !== undefined && named !== null ? dayName(named) : t('train.rest');
 
   let line: string | null = null;
   if (restWeek) line = t('train.status.restWeekNote');

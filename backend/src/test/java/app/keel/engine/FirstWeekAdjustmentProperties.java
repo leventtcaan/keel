@@ -32,7 +32,7 @@ class FirstWeekAdjustmentProperties {
     void aProposedDayCountIsNeverUnderTheFloorNorUnderTheUsersOwn(@ForAll("weeks") Week week, @ForAll Week1Feel feel) {
         FirstWeekAdjustment.decide(week, feel, MONDAY, P).map(Decision::action).ifPresent(action -> {
             Statistics.collect(action.type());
-            if (action instanceof Action.AddTrainingDay(int toDays, int idealDays)) {
+            if (action instanceof Action.AddTrainingDay(int toDays, int idealDays, var _)) {
                 // One day more, never under the floor; toward the ideal, never past it.
                 assertThat(toDays).isGreaterThanOrEqualTo(FLOOR).isGreaterThan(week.trainingDays()).isLessThanOrEqualTo(idealDays);
                 assertThat(idealDays).isEqualTo(P.wholeNumber(ParameterKey.TRAINING_DAYS_IDEAL_MIN));
@@ -46,7 +46,7 @@ class FirstWeekAdjustmentProperties {
     @Property
     void theMissedSessionsMovedAreTheWeeksOwn(@ForAll("weeks") Week week, @ForAll Week1Feel feel) {
         FirstWeekAdjustment.decide(week, feel, MONDAY, P).map(Decision::action).ifPresent(action -> {
-            if (action instanceof Action.MoveMissedSessions(List<DayOfWeek> missed)) {
+            if (action instanceof Action.MoveMissedSessions(List<DayOfWeek> missed, var _)) {
                 assertThat(missed).isEqualTo(week.missed()).isNotEmpty();
             }
         });
@@ -81,6 +81,38 @@ class FirstWeekAdjustmentProperties {
     }
 
     @Property
+    void aSuggestedDayIsNeverATrainingDayNorTwiceAndNeverMoreThanTheCallNeeds(@ForAll("weeks") Week week, @ForAll Week1Feel feel) {
+        FirstWeekAdjustment.decide(week, feel, MONDAY, P).map(Decision::action).ifPresent(action -> {
+            List<DayOfWeek> suggested = switch (action) {
+                case Action.MoveMissedSessions move -> {
+                    assertThat(move.suggested().size()).isLessThanOrEqualTo(move.missed().size());
+                    yield move.suggested();
+                }
+                case Action.AddTrainingDay add -> {
+                    assertThat(add.suggested().size()).isLessThanOrEqualTo(add.toDays() - week.trainingDays());
+                    yield add.suggested();
+                }
+                default -> List.of();
+            };
+            assertThat(suggested).doesNotContainAnyElementsOf(week.weekdays()).doesNotHaveDuplicates();
+            Statistics.collect(suggested.isEmpty() ? "none suggested" : "suggested");
+        });
+    }
+
+    @Property
+    void asManyDaysAreSuggestedAsTheCallNeedsAndTheWeekHasFree(@ForAll("weeks") Week week, @ForAll Week1Feel feel) {
+        int free = week.weekdays().isEmpty() ? 0 : DayOfWeek.values().length - week.weekdays().size();
+        FirstWeekAdjustment.decide(week, feel, MONDAY, P).map(Decision::action).ifPresent(action -> {
+            switch (action) {
+                case Action.MoveMissedSessions move -> assertThat(move.suggested()).hasSize(Math.min(move.missed().size(), free));
+                case Action.AddTrainingDay add -> assertThat(add.suggested()).hasSize(Math.min(add.toDays() - week.trainingDays(), free));
+                default -> {
+                }
+            }
+        });
+    }
+
+    @Property
     void theSameWeekGivesTheSameCall(@ForAll("weeks") Week week, @ForAll Week1Feel feel) {
         assertThat(FirstWeekAdjustment.decide(week, feel, MONDAY, P)).isEqualTo(FirstWeekAdjustment.decide(week, feel, MONDAY, P));
     }
@@ -94,7 +126,7 @@ class FirstWeekAdjustmentProperties {
                 .as((planned, skip, extra, days, experience) -> {
                     List<DayOfWeek> missed = new ArrayList<>(planned.subList(0, Math.min(skip, planned.size())));
                     int done = planned.size() - missed.size() + extra;
-                    return new Week(planned.size(), done, Math.max(days, planned.isEmpty() ? 0 : 1), missed, experience);
+                    return new Week(planned.size(), done, Math.max(days, planned.isEmpty() ? 0 : 1), missed, experience, planned);
                 });
     }
 }

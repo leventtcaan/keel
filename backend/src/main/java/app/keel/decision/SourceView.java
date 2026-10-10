@@ -29,6 +29,13 @@ record SourceView(SourceTag tag) {
                 return sentReason;
             }).toList());
         }
+        // Required by the contract, absent from a first week call kept before K-1000: none suggested.
+        if (kept.get("action") instanceof Map<?, ?> action && List.of("MOVE_MISSED_SESSIONS", "ADD_TRAINING_DAY").contains(action.get("type"))
+                && !action.containsKey("suggested")) {
+            Map<Object, Object> withSuggested = new LinkedHashMap<>(action);
+            withSuggested.put("suggested", List.of());
+            call.put("action", withSuggested);
+        }
         return call;
     }
 }

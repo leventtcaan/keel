@@ -35,6 +35,7 @@ const DECISION: Schemas['Decision'] = {
   copyKey: 'decision.continue.toward_goal',
   application: { state: 'NOT_NEEDED' },
   declinable: false,
+  changes: [],
 };
 
 const PROGRAM: Schemas['Program'] = {

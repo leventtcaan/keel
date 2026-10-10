@@ -19,6 +19,7 @@ const call = (id: string, madeOn: string, extra: Partial<Decision> = {}): Decisi
   copyKey: 'decision.continue.toward_goal',
   application: { state: 'NOT_NEEDED' },
   declinable: false,
+  changes: [],
   ...extra,
 });
 

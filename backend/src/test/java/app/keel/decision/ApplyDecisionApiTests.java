@@ -246,6 +246,23 @@ class ApplyDecisionApiTests {
     }
 
     @Test
+    void aCallOnTheSafetyNetIsAppliedAndNotTakenBack() throws Exception {
+        // U13 (K-1000): applied by default and never declined; undoing it would be declining it by another name: CONFLICT.
+        AccountId account = onACut();
+        UUID call = pending(account, new Action.IncreaseCalories(500), CheckInWeek.weekOf(TODAY, java.time.DayOfWeek.MONDAY), Instant.now(), 2600,
+                "low_energy_availability");
+        assertThat(map(send(account, "POST", "/v1/decisions/" + call + "/apply"))).containsEntry("targetKcal", 3100);
+
+        assertThat(send(account, "POST", "/v1/decisions/" + call + "/undo")).hasStatus(409);
+        assertThat(send(account, "POST", "/v1/decisions/" + call + "/decline")).hasStatus(409);
+        assertThat(store.plan(account).orElseThrow().targetKcal()).isEqualTo(3100);
+        assertThat(store.byId(account, call).orElseThrow()).satisfies(kept -> {
+            assertThat(kept.application()).isEqualTo(CallStore.Application.APPLIED);
+            assertThat(kept.undoneAt()).isNull();
+        });
+    }
+
+    @Test
     void theUsersExportCarriesWhenACallWasAppliedAndThePlansAroundIt() throws Exception {
         AccountId account = onACut();
         UUID call = pending(account, new Action.AdjustCalories(-500));
@@ -559,7 +576,11 @@ class ApplyDecisionApiTests {
 
     /** A call as the engine would have kept it, made on a plan of {@code judgedKcal}. */
     private UUID pending(AccountId account, Action action, LocalDate weekOf, Instant at, int judgedKcal) {
-        Decision decision = new Decision(action, List.of(new Reason(new RuleId("r"), new Source("arastirma/x.md#1", SourceTag.LITERATURE))),
+        return pending(account, action, weekOf, at, judgedKcal, "r");
+    }
+
+    private UUID pending(AccountId account, Action action, LocalDate weekOf, Instant at, int judgedKcal, String rule) {
+        Decision decision = new Decision(action, List.of(new Reason(new RuleId(rule), new Source("arastirma/x.md#1", SourceTag.LITERATURE))),
                 Confidence.MEDIUM, TODAY.plusDays(7), new CopyKey("decision.continue"));
         CallStore.Call call = new CallStore.Call(UUID.randomUUID(), UUID.randomUUID(), weekOf, TODAY, at, parameters.versionHash(),
                 StoredSnapshot.of(new Snapshot(TODAY, Sex.MALE, Phase.CUT, PLAN_START, new WeightSeries(List.of()))

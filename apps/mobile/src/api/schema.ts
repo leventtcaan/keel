@@ -1416,7 +1416,8 @@ export interface paths {
         /**
          * Put the targets back as they were before the call was applied (kept in the audit trail)
          * @description Only the latest call, and only once APPLIED; undone twice, nothing more changes. An undone call is not applied
-         *     again (CONFLICT). The call keeps appliedAt and undoneAt.
+         *     again (CONFLICT). The call keeps appliedAt and undoneAt. A call resting on the safety net, and the hard stop, are
+         *     never taken back (CONFLICT, U13): as with decline, applied by default and kept.
          */
         post: operations["undoDecision"];
         delete?: never;
@@ -2983,6 +2984,39 @@ export interface components {
              *     call that changes nothing, an older one, one undone or already declined. POST /v1/decisions/{id}/decline.
              */
             declinable: boolean;
+            /**
+             * @description What the call changes in the plan, old to new (K-1000, ADR-077 #3 "the targets that change"): each target it
+             *     moves, as the plan held it before the call and as the call set it: read from the call as kept, the plan before and
+             *     after it, set once it was applied (by default, ADR-077 #3). Empty for a call never applied, and for one that
+             *     changes no target (advice, "not yet", a program call: the program's own change is its words). Declined or undone,
+             *     each change also says `inForce`: the value the plan follows now (last week's, the plan before the call).
+             */
+            changes: components["schemas"]["DecisionChange"][];
+            /**
+             * @description On the call that closes the first week only (ADR-077 #4, K-1000): the days the scale is watched before the first
+             *     calorie call (the engine's maintenance_observation_days for the user's sex), for "Food and weight wait until day
+             *     N". Absent on every other call.
+             */
+            observationDays?: number;
+        };
+        /**
+         * @description One target a call moves (K-1000). `what` names it; `before`, `after` and `inForce` carry its value in the field of
+         *     that kind (`targetKcal` for CALORIES, `stepsPerDay` for STEPS, `phase` for PHASE). A plan number, one figure (U5).
+         *     The step target before any was set is the starting one. An empty `before` (and `inForce`) means none was in force: a
+         *     plan begun before the first weigh-in has no calorie target until a call starts one.
+         */
+        DecisionChange: {
+            /** @enum {string} */
+            what: "CALORIES" | "STEPS" | "PHASE";
+            before: components["schemas"]["ChangeValue"];
+            after: components["schemas"]["ChangeValue"];
+            inForce?: components["schemas"]["ChangeValue"];
+        };
+        /** @description A target's value, in the field of its kind (DecisionChange.what). */
+        ChangeValue: {
+            targetKcal?: number;
+            stepsPerDay?: number;
+            phase?: components["schemas"]["Phase"];
         };
         /**
          * @description The rows a call read (K-519). Weights in kilograms, unrounded (the phone rounds once, ADR-029). A row the call did
@@ -3116,6 +3150,10 @@ export interface components {
          *     applied; declinedAt while it is, and appliedAt with it when it had been applied before. Used after all, it is
          *     APPLIED again. The first week's training-day calls (ADD_TRAINING_DAY, MOVE_MISSED_SESSIONS) are NOT_NEEDED and
          *     not declinable: the days are the user's to pick, with the training days, not through apply (ADR-077 Ek 1).
+         *     Applied by default (ADR-077 #3, B11; K-1000): a call made by the check-in's answers that changes the plan comes
+         *     back APPLIED, through the same apply as POST /v1/decisions/{id}/apply (a safety call too; it is never declinable).
+         *     PENDING is left only when that apply cannot move the plan at that moment (another call moved it meanwhile, a
+         *     program call without a program); the app then offers "Use this call".
          */
         Application: {
             /** @enum {string} */
@@ -3156,6 +3194,24 @@ export interface components {
         Reason: {
             rule: string;
             source: components["schemas"]["Source"];
+            facts?: components["schemas"]["ReasonFacts"];
+        };
+        /**
+         * @description The numbers a call's reason read (K-1000, ADR-077 #3 "the data and the rule"), from the call's own kept data, for
+         *     the app's short line (decision.ruleShort.<rule>): the server says the numbers, the app the words (U1). Only on the
+         *     calls the server sends (/v1/decisions…); each rule has the ones it read: the decision window's change a week
+         *     (`kgPerWeek`, a tenth of a kilogram, negative is down) and its `weeks`; what of the plan was `done` of `planned`
+         *     (or the first week's sessions); how many `sessions` the lift stalled; `weeks` the load was held or the plan missed;
+         *     a calorie step's size (`kcal`, the call's own step). None for a rule with nothing of its own to count, or a call
+         *     kept before the number was.
+         */
+        ReasonFacts: {
+            kgPerWeek?: number;
+            weeks?: number;
+            done?: number;
+            planned?: number;
+            sessions?: number;
+            kcal?: number;
         };
         /** @description What kind of source a rule rests on (U14): coaching experience, the literature, or a product decision. Where it is written down stays on the server with the kept call, for audit (K-523, ADR-041 #72). */
         Source: {
@@ -3281,7 +3337,9 @@ export interface components {
         /**
          * @description The first week's call (ADR-077 #4): every planned session done and "I could do more", so one more training day a
          *     week. `toDays` is the new count, one more than the user's and never below training_days_min; `idealDays` is
-         *     training_days_ideal_min, the count it moves toward, for the words. Which day is the user's to pick.
+         *     training_days_ideal_min, the count it moves toward, for the words. Which day is the user's to pick; `suggested`
+         *     (K-1000, ADR-077 Ek 1) is the days the server proposes to add, none a training day already: each the free day with
+         *     the most rest on both sides of it, the earliest on a tie. Empty when no day is free.
          */
         AddTrainingDay: {
             /**
@@ -3291,11 +3349,14 @@ export interface components {
             type: "ADD_TRAINING_DAY";
             toDays: number;
             idealDays: number;
+            suggested: components["schemas"]["Weekday"][];
         };
         /**
          * @description The first week's call (ADR-077 #4): most of the week's sessions didn't happen, so the days that were missed move
          *     to days that fit; the number of training days stays. `missed` are the planned weekdays without a session, in the
-         *     week's order; the user picks where they go.
+         *     week's order; the user picks where they go. `suggested` (K-1000, ADR-077 Ek 1 "the suggestion comes filled"): a day
+         *     for each missed one, in the same order, none a training day already: the first free day after it in the week, else
+         *     the week's first free day. The user may pick others; the save is the training days' own (K-995 B).
          */
         MoveMissedSessions: {
             /**
@@ -3304,6 +3365,7 @@ export interface components {
              */
             type: "MOVE_MISSED_SESSIONS";
             missed: components["schemas"]["Weekday"][];
+            suggested: components["schemas"]["Weekday"][];
         };
         /**
          * @description What the user follows today; each a plan number set by calls (ADR-020 L-13). Protein does not depend on calories
