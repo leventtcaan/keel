@@ -12,6 +12,8 @@ export const workoutParams = {
   restSecondsMin: param<number>('rest_seconds_min'),
   restSecondsMax: param<number>('rest_seconds_max'),
   rirChoices: param<number[]>('rir_choices'),
+  /** Reps left from which a first-session set says its weight is light (ADR-075 #3, Ek 1; the picker's last choice, "2+"). */
+  calibrationRirMin: param<number>('calibration_rir_min'),
   maxLoadKg: param<number>('set_max_load_kg'),
   maxReps: param<number>('set_max_reps'),
   /** How long the server keeps a session open before it closes it (K-961); the session shows no time past it. */

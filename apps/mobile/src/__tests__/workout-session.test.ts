@@ -72,6 +72,14 @@ test("what the user typed, in kg as the server keeps it; a bodyweight move's loa
   expect(parseEntry('1001', '6', bench, 'METRIC')).toBeNull();
 });
 
+test('an added load left empty is 0, the body alone; any other move needs its weight', () => {
+  expect(parseEntry('', '8', dip, 'METRIC')).toEqual({ loadKg: 0, reps: 8 });
+  expect(parseEntry('  ', '8', dip, 'METRIC')).toEqual({ loadKg: 0, reps: 8 });
+  expect(parseEntry('10', '8', dip, 'METRIC')).toEqual({ loadKg: 10, reps: 8 });
+  expect(parseEntry('x', '8', dip, 'METRIC')).toBeNull();
+  expect(parseEntry('', '8', row, 'METRIC')).toBeNull();
+});
+
 test("an untouched suggestion is logged as the server's kg, not as its rounded lb read back", () => {
   // 62.5 kg shows as 137.8 lb; 137.8 lb read back is 62.51 kg. Logged unchanged, the set is the 62.5 the server set.
   expect(parseEntry('137.8', '6', bench, 'IMPERIAL', 62.5)).toEqual({ loadKg: 62.5, reps: 6 });

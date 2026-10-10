@@ -36,6 +36,8 @@ type Props = {
   plates: string | null;
   entry: Entry;
   onChange: (change: Partial<Entry>) => void;
+  /** "Too heavy?" (ADR-075 #3): asked of the weight, beside it; null where the server has no lighter load to offer. */
+  onTooHeavy: (() => void) | null;
   problem: string | null;
   /** Which showing of the problem this is: the same failure again is said again (K-815). */
   problemOccurrence?: unknown;
@@ -46,11 +48,14 @@ type Props = {
  * be typed too, filled with the suggestion; reps left picked from 0, 1 and 2+. A bodyweight move has no weight; a weighted
  * one steps what is added. The button that logs it is the screen's, in its dock, so it never moves.
  */
-export function ActiveSet({ move, heading, range, aim, gym, plates, entry, onChange, problem, problemOccurrence }: Props) {
+export function ActiveSet({ move, heading, range, aim, gym, plates, entry, onChange, onTooHeavy, problem, problemOccurrence }: Props) {
   const { color } = useTheme();
   const units = useUnits();
   const unit = t(units === 'METRIC' ? 'units.kgUnit' : 'units.lbUnit');
   const kg = parseLoad(entry.load, units, entry.loadKg);
+  // No weight yet (a move never done, ADR-075 #3, Ek 8): "Pick a weight", and the button that logs waits for one. An added
+  // load (BODYWEIGHT_PLUS_EXTERNAL) is never picked: empty is 0, the body alone.
+  const picking = move.load === 'EXTERNAL' && entry.load.trim() === '';
   const loadStep = (direction: 1 | -1) => {
     const next = stepLoad(kg, direction, move, gym, units);
     return next === null ? null : () => onChange({ load: loadText(next, units), loadKg: next });
@@ -63,7 +68,8 @@ export function ActiveSet({ move, heading, range, aim, gym, plates, entry, onCha
     move.load === 'BODYWEIGHT' ? null : (
       <Stepper
         label={t(move.load === 'BODYWEIGHT_PLUS_EXTERNAL' ? 'workout.addedLabel' : 'workout.loadLabel', { unit })}
-        caption={unit}
+        caption={picking ? t('workout.pick.caption') : unit}
+        placeholder={t('workout.pick.placeholder')}
         value={entry.load}
         onChangeText={(text) => onChange({ load: text, loadKg: null })}
         keyboardType="decimal-pad"
@@ -99,6 +105,21 @@ export function ActiveSet({ move, heading, range, aim, gym, plates, entry, onCha
         multiline
       />
     );
+  // Under the weight it is about, far from both skips (Skip set is the dock's, Skip move the head's): why the button waits,
+  // or the plates a side, and "Too heavy?" where the server has a lighter load.
+  const tooHeavy =
+    onTooHeavy === null ? null : (
+      <Pressable accessibilityRole="button" accessibilityLabel={t('workout.tooHeavy.label')} onPress={onTooHeavy} style={styles.link}>
+        <Text style={[styles.small, { color: color.accent }]}>{t('workout.tooHeavy.link')}</Text>
+      </Pressable>
+    );
+  const weightLine =
+    !picking && plates === null && tooHeavy === null ? null : (
+      <View style={styles.weightLine}>
+        <Text style={[styles.small, styles.grow, { color: color.muted }]}>{picking ? t('workout.pick.why') : plates}</Text>
+        {tooHeavy}
+      </View>
+    );
   return (
     <View style={[styles.entry, { borderColor: color.text }]}>
       <View style={styles.head}>
@@ -121,7 +142,7 @@ export function ActiveSet({ move, heading, range, aim, gym, plates, entry, onCha
           moreLabel={t('workout.stepper.moreReps')}
         />
       </View>
-      {plates !== null && <Text style={[styles.small, { color: color.muted }]}>{plates}</Text>}
+      {weightLine}
       <View style={styles.rir}>
         <View style={styles.rirLabel}>
           <Text style={[styles.small, { color: color.textSecondary }]}>{t('workout.rir.short')}</Text>
@@ -142,6 +163,8 @@ export type StepperProps = {
   label: string;
   /** The unit under the number. */
   caption: string;
+  /** What the empty number says ("Pick"); with the caption it reads "Pick a weight". */
+  placeholder?: string;
   value: string;
   onChangeText: (text: string) => void;
   keyboardType: KeyboardTypeOptions;
@@ -154,7 +177,7 @@ export type StepperProps = {
 };
 
 /** Less, the number (typed in place: a weight no step reaches), more (prototype `.stepper`). */
-export function Stepper({ label, caption, value, onChangeText, keyboardType, maxLength, less, more, lessLabel, moreLabel }: StepperProps) {
+export function Stepper({ label, caption, placeholder, value, onChangeText, keyboardType, maxLength, less, more, lessLabel, moreLabel }: StepperProps) {
   const { color } = useTheme();
   // Drawn, not a typed hyphen (prototype: the minus and plus icons); VoiceOver says the label.
   const button = (onPress: (() => void) | null, name: string, symbol: 'minus' | 'plus') => (
@@ -174,6 +197,8 @@ export function Stepper({ label, caption, value, onChangeText, keyboardType, max
       <View style={styles.value}>
         <TextInput
           accessibilityLabel={label}
+          placeholder={placeholder}
+          placeholderTextColor={color.muted}
           value={value}
           onChangeText={onChangeText}
           keyboardType={keyboardType}
@@ -204,6 +229,7 @@ const styles = StyleSheet.create({
   caption: { fontSize: tokens.type.label, fontWeight: tokens.weight.bold },
   rir: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: tokens.space.sm },
   rirLabel: { flex: 1, minWidth: tokens.size.primaryButton * 2 },
+  weightLine: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },
   dim: { opacity: tokens.opacity.dim },

@@ -75,6 +75,76 @@ describe("the session's moves with the swaps applied", () => {
   });
 });
 
+// K-973 (ADR-075 Ek 7, Ek 8): the server's table for each option (swapTables, the order of swapOptions) goes to the move that
+// stands in: its own best set, the lighter and heavier loads, the calibration step. It still has no target to beat.
+describe("the new move carries the server's table for it", () => {
+  const TABLES = [
+    { exerciseId: 'dumbbell_bench_press', lastBestSet: { loadKg: 30, reps: 10, rir: 1 }, lighterLoadKg: 27.5, heavierLoadKg: 32.5, calibrationStepKg: 2.5 },
+    { exerciseId: 'incline_bench_press', calibrationStepKg: 2.5 },
+    { exerciseId: 'push_up' },
+  ];
+  const WITH_TABLES = { ...BENCH, swapTables: TABLES } as Planned;
+
+  test('the option\'s row: its best set and the loads around it, with the sets, range and aim of the planned move', () => {
+    const [swapped] = applySwaps([WITH_TABLES, ROW], { bench_press: 'dumbbell_bench_press' }, () => true);
+    expect(swapped).toEqual({
+      exerciseId: 'dumbbell_bench_press',
+      baseSets: 3,
+      sets: 2,
+      reps: { min: 6, max: 10 },
+      targetRir: 1,
+      lastBestSet: { loadKg: 30, reps: 10, rir: 1 },
+      lighterLoadKg: 27.5,
+      heavierLoadKg: 32.5,
+      calibrationStepKg: 2.5,
+    });
+    expect(swapped).not.toHaveProperty('nextLoadKg');
+    expect(swapped).not.toHaveProperty('nextReps');
+  });
+
+  test('each option its own row, by position', () => {
+    const [swapped] = applySwaps([WITH_TABLES, ROW], { bench_press: 'incline_bench_press' }, () => true);
+    expect(swapped).toEqual({ exerciseId: 'incline_bench_press', baseSets: 3, sets: 2, reps: { min: 6, max: 10 }, targetRir: 1, calibrationStepKg: 2.5 });
+  });
+
+  test("a row that is not the option's (out of step with swapOptions) is not used: the move starts bare", () => {
+    const crossed = { ...BENCH, swapTables: [...TABLES].reverse() } as Planned;
+    const [swapped] = applySwaps([crossed, ROW], { bench_press: 'dumbbell_bench_press' }, () => true);
+    expect(swapped).toEqual({ exerciseId: 'dumbbell_bench_press', baseSets: 3, sets: 2, reps: { min: 6, max: 10 }, targetRir: 1 });
+    const short = { ...BENCH, swapTables: [TABLES[0]] } as Planned;
+    expect(applySwaps([short, ROW], { bench_press: 'push_up' }, () => true)[0]).toEqual({
+      exerciseId: 'push_up',
+      baseSets: 3,
+      sets: 2,
+      reps: { min: 6, max: 10 },
+      targetRir: 1,
+    });
+  });
+});
+
+// K-973 (ADR-075 Ek 7 "Bilinen sınır", Ek 8): the moves swapped away from are kept with the swaps, under the same key, so a
+// session opened again does not take them back into the superset.
+describe('the moves swapped away from, kept with the swaps', () => {
+  test('read back for the workout; none for another, nothing kept or what cannot be read; forgotten with the swaps', async () => {
+    const kv = memory();
+    const swaps = createSessionSwaps(kv);
+    await swaps.keep('w1', { bench_press: 'dumbbell_bench_press' }, ['bench_press']);
+    expect(await swaps.readLeft('w1')).toEqual(['bench_press']);
+    expect(await swaps.read('w1')).toEqual({ bench_press: 'dumbbell_bench_press' });
+    expect(await swaps.readLeft('w2')).toEqual([]);
+    expect([...kv.items.keys()]).toEqual(['train.swaps']); // the same key: the data inventory does not change
+    kv.items.set('train.swaps', JSON.stringify({ workout: 'w1', swaps: {}, left: ['bench_press', 3, ''] }));
+    expect(await swaps.readLeft('w1')).toEqual(['bench_press']);
+    kv.items.set('train.swaps', JSON.stringify({ workout: 'w1', swaps: {} }));
+    expect(await swaps.readLeft('w1')).toEqual([]); // kept before this change: none left
+    kv.items.set('train.swaps', '{oops');
+    expect(await swaps.readLeft('w1')).toEqual([]);
+    await swaps.keep('w1', {}, ['bench_press']);
+    await swaps.forget();
+    expect(await swaps.readLeft('w1')).toEqual([]);
+  });
+});
+
 describe('a swap kept is checked against the plan again before it is applied', () => {
   const known = () => true;
 

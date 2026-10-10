@@ -22,6 +22,9 @@ import { EditSet } from '@/train/EditSet';
 import { EndSheet } from '@/train/EndSheet';
 import { FinishForm } from '@/train/FinishForm';
 import { GoalLine } from '@/train/GoalLine';
+import { InsightLine } from '@/train/InsightLine';
+import { LoadNote } from '@/train/LoadNote';
+import { calibrationRead, lighterOffer } from '@/train/calibration';
 import { MoveDots } from '@/train/MoveDots';
 import { MoveThumb } from '@/train/MoveThumb';
 import { OwnMoveForm, type SaveOutcome } from '@/train/OwnMoveForm';
@@ -43,9 +46,10 @@ import { repsText } from '@/train/reps';
 import { buildSet, exerciseStatus, loadText, parseEntry, parseLoad, platesLine } from '@/train/session';
 import { type Move, type TrainData, movesOf, ownMove } from '@/train/trainData';
 import { localDay } from '@/today/today';
+import { formatLoad } from '@/units/units';
 import { todayFor } from '@/train/week';
 import { warmupSets, warmups, warmupsDone } from '@/train/warmup';
-import { type ExercisePlan, NONE_SKIPPED, activeWorkout, extraPlan, finishRecord, lastTime, openTooLong, planExercise, sessionMoves } from '@/train/workout';
+import { type ExercisePlan, NONE_SKIPPED, activeWorkout, extraPlan, finishRecord, hasHistory, lastTime, openTooLong, planExercise, sessionMoves } from '@/train/workout';
 
 /**
  * The session (K-405, prototype 2.4, B §6.5): the day's moves; the move under way with its rows — the server's next
@@ -111,9 +115,9 @@ function Session() {
   // while `swapping`.
   const [swaps, setSwaps] = useState<Swaps>({});
   const [swapping, setSwapping] = useState(false);
-  // The moves swapped away from on this screen: they stay in the session with what was done on them, but are no longer
-  // the superset's members (its place is the planned move's, whoever stands in it). Not kept: opened again, a superset
-  // read back from sets lists the moves its sets were done on.
+  // The moves swapped away from in this session: they stay in it with what was done on them, but are no longer the
+  // superset's members (its place is the planned move's, whoever stands in it) and have nothing left to do. Kept with the
+  // swaps (K-973, ADR-075 Ek 8): opened again, a superset read back from sets would list the moves its sets were done on.
   const [left, setLeft] = useState<string[]>([]);
   // The last skip, swap or delete, said, and how to take it back (K-972).
   const [undo, setUndo] = useState<{ said: string; run: () => void } | null>(null);
@@ -131,6 +135,7 @@ function Session() {
     pause: Pause;
     skips: Skips;
     swaps: Swaps;
+    left: string[];
     /** The ids it comes back under, made once: an Undo that failed half way and is tried again adds nothing twice. */
     back: { workout: string; sets: string[] };
   } | null>(null);
@@ -163,6 +168,7 @@ function Session() {
         const skipped = open === null ? {} : await sessionSkips.read(open.clientId);
         setSkips(skipped);
         setSwaps(open === null ? {} : await sessionSwaps.read(open.clientId));
+        setLeft(open === null ? [] : await sessionSwaps.readLeft(open.clientId));
         setData(read);
         setOwn(mine);
         pauseRef.current = paused;
@@ -203,8 +209,6 @@ function Session() {
   const known = (id: string) => moves.has(id);
   const live = validSwaps(today, swaps, known);
   const shown = applySwaps(today, swaps, known);
-  // The moves standing in a planned one's place: they start with nothing of their own (planExercise `fresh`).
-  const swappedIn = new Set(Object.values(live));
   const planIds = shown.map((p) => p.exerciseId);
   const extraIds = [...new Set([...done.map((s) => s.exerciseId).filter((id) => !added.includes(id)), ...added])].filter(
     (id) => !planIds.includes(id) && moves.has(id),
@@ -220,8 +224,9 @@ function Session() {
           return move === undefined
             ? null
             : planned === undefined
-              ? extraPlan(move, last, done)
-              : planExercise(planned, move, last, done, skips[exerciseId] ?? NONE_SKIPPED, swappedIn.has(exerciseId));
+              ? // A move swapped away from keeps its sets but has none left to do; added again (addMove) it is not one left.
+                extraPlan(move, last, done, left.includes(exerciseId))
+              : planExercise(planned, move, last, done, skips[exerciseId] ?? NONE_SKIPPED);
         });
   const firstOpen = plans.findIndex((plan) => plan !== null && plan.current !== null);
   // The move picked, by its id: the list can grow or change order under it.
@@ -282,6 +287,13 @@ function Session() {
   const setEntry = (change: Partial<typeof entry>) => setTyped({ ...entry, ...change });
   const said = problem !== null && problem.row === rowKey ? problem.text : null;
 
+  // A weight offered for the row (K-973, ADR-075 #3): "Too heavy?" asked on it, and a weight offered and taken or kept,
+  // put away for it. Both are about one row; the next row starts without them. A weight kept ("Keep") is the person's
+  // answer for the move on that side, so it is not offered again on its later rows (`kept`, by move and side).
+  const [asked, setAsked] = useState<string | null>(null);
+  const [putAway, setPutAway] = useState<string | null>(null);
+  const [kept, setKept] = useState<string[]>([]);
+
   /** Keeps the workout on the phone with its first set, started when the session was opened (its time runs on). */
   const start = async (programDayId: string): Promise<string> => {
     const clientId = newClientId();
@@ -291,8 +303,8 @@ function Session() {
     if (before.pausedAt !== null || before.pausedMs > 0) await sessionPause.keep(clientId, before);
     // So are the skips before it.
     if (Object.keys(skips).length > 0) await sessionSkips.keep(clientId, skips);
-    // And the swaps before it.
-    if (Object.keys(swaps).length > 0) await sessionSwaps.keep(clientId, swaps);
+    // And the swaps before it, with the moves swapped away from.
+    if (Object.keys(swaps).length > 0 || left.length > 0) await sessionSwaps.keep(clientId, swaps, left);
     return clientId;
   };
 
@@ -482,6 +494,7 @@ function Session() {
       pause: pauseRef.current,
       skips,
       swaps,
+      left,
       back: { workout: newClientId(), sets: active.sets.map(() => newClientId()) },
     };
     try {
@@ -525,7 +538,7 @@ function Session() {
       }
       if (discarded.pause.pausedAt !== null || discarded.pause.pausedMs > 0) await sessionPause.keep(back.workout, discarded.pause);
       if (Object.keys(discarded.skips).length > 0) await sessionSkips.keep(back.workout, discarded.skips);
-      if (Object.keys(discarded.swaps).length > 0) await sessionSwaps.keep(back.workout, discarded.swaps);
+      if (Object.keys(discarded.swaps).length > 0 || discarded.left.length > 0) await sessionSwaps.keep(back.workout, discarded.swaps, discarded.left);
       setDiscarded(null);
       setProblem(null);
     } catch (error) {
@@ -537,8 +550,16 @@ function Session() {
   };
 
   // Adding a move outside the plan (K-416): found in the catalog by name or alias, on the phone (offline too).
+  // The swaps and the moves swapped away from, kept with the workout once there is one (K-972, K-973); see Swap below.
+  const keepSwaps = (next: Swaps, nextLeft: string[]) => {
+    setSwaps(next);
+    setLeft(nextLeft);
+    if (active !== null) void sessionSwaps.keep(active.clientId, next, nextLeft).catch(named);
+  };
   const addMove = (id: string) => {
     setAdded((before) => (before.includes(id) ? before : [...before, id]));
+    // A move swapped away from and added again is a move to do again, kept so (K-973): not closed when opened again.
+    if (left.includes(id)) keepSwaps(swaps, left.filter((other) => other !== id));
     setPicked(id);
     setAdding(null);
     setCreating(null);
@@ -657,10 +678,6 @@ function Session() {
    * with its sets, range and aim and no target of its own (applySwaps); the planned move again undoes it. What was done of
    * the old move stays on it. Kept with the workout once there is one; the last swap can be undone, until a set is logged.
    */
-  const keepSwaps = (next: Swaps) => {
-    setSwaps(next);
-    if (active !== null) void sessionSwaps.keep(active.clientId, next).catch(named);
-  };
   const swapOptions =
     base === undefined || moveId === undefined || plan === null || plan.current === null
       ? []
@@ -681,14 +698,12 @@ function Session() {
     setUndo({
       said,
       run: () => {
-        keepSwaps(before);
-        setLeft(leftBefore);
+        keepSwaps(before, leftBefore);
         setPicked(moveId);
       },
     });
-    keepSwaps(back ? next : { ...next, [base.exerciseId]: to });
     // The move swapped away from is out of its superset (the new one takes its place), and the new one is in it.
-    setLeft((was) => [...new Set([...was.filter((id) => id !== to), moveId])]);
+    keepSwaps(back ? next : { ...next, [base.exerciseId]: to }, [...new Set([...left.filter((id) => id !== to), moveId])]);
     // The rest running was for the move before: a swap changes what comes next, so the timer and its alert go, as for a skip.
     endRest();
     setPicked(to);
@@ -770,7 +785,55 @@ function Session() {
       : plan.open === true
         ? t('workout.setNumber', { number: Math.floor(plan.current / sides) + 1 })
         : t('workout.setOf', { number: Math.floor(plan.current / sides) + 1, count: plan.rows.length / sides });
-  const typedKg = row === null ? null : parseLoad(entry.load, units, entry.loadKg);
+  // An added load left empty is none added: 0, the body alone (parseEntry logs it so).
+  const noAddedLoad = move?.load === 'BODYWEIGHT_PLUS_EXTERNAL' && entry.load.trim() === '';
+  const typedKg = row === null ? null : (parseLoad(entry.load, units, entry.loadKg) ?? (noAddedLoad ? 0 : null));
+  // The weight to pick (K-973, Ek 8): a move of a weight with nothing in the field. Log set waits for it.
+  const needsWeight = move !== undefined && row !== null && move.load === 'EXTERNAL' && entry.load.trim() === '';
+  // What the server offered for this weight (ADR-075 #3), the phone choosing among it: the lighter load ("Too heavy?"), and
+  // for a move at its first session (no target, no history) what the last set done on this side says: the weight found, or a
+  // heavier one offered (calibrationRead). A side reads its own sets: the right side's first set is not the left's weight.
+  const lighter = planned === undefined ? null : lighterOffer(planned, typedKg);
+  const lastDone = plan === null || row === null ? null : (plan.rows.filter((r) => r.side === row.side && r.done !== null).at(-1)?.done ?? null);
+  const sideKey = `${moveId ?? ''}-${row?.side ?? ''}`;
+  const calibration =
+    planned === undefined || move === undefined || records === null
+      ? null
+      : calibrationRead(planned, move, data?.gym ?? null, lastDone, hasHistory(planned, lastTime(records, move.id, active?.clientId ?? '')));
+  const offer = ((): { text: string; toKg: number; calibrating: boolean } | null => {
+    if (row === null || typedKg === null) return null;
+    if (asked === rowKey && lighter !== null) return { text: t('workout.tooHeavy.ask'), toKg: lighter, calibrating: false };
+    if (calibration?.kind === 'light' && putAway !== rowKey && !kept.includes(sideKey) && typedKg < calibration.nextKg)
+      return { text: t('workout.calibrate.light', { load: formatLoad(calibration.nextKg, units) }), toKg: calibration.nextKg, calibrating: true };
+    return null;
+  })();
+  const askTooHeavy = () => {
+    setAsked(rowKey);
+    // Said, not only shown (K-815).
+    announce(t('workout.tooHeavy.ask'));
+  };
+  const takeOffer = (toKg: number) => {
+    setEntry({ load: loadText(toKg, units), loadKg: toKg });
+    setAsked(null);
+    setPutAway(rowKey);
+    announce(t('workout.tooHeavy.used', { load: formatLoad(toKg, units) }));
+  };
+  const keepOffer = (calibrating: boolean) => {
+    setAsked(null);
+    setPutAway(rowKey);
+    // "Keep" to the heavier weight is the answer for this move on this side: its later rows do not ask again.
+    if (calibrating) setKept((before) => [...before, sideKey]);
+  };
+  const weightFound =
+    calibration === null || calibration.kind !== 'found' ? null : <InsightLine text={t('workout.calibrate.found', { load: formatLoad(calibration.kg, units) })} />;
+  const offerNote =
+    offer === null || typedKg === null ? null : (
+      <LoadNote
+        text={offer.text}
+        use={{ label: t('workout.tooHeavy.use', { load: formatLoad(offer.toKg, units) }), onPress: () => takeOffer(offer.toKg) }}
+        keep={{ label: t('workout.tooHeavy.keep', { load: formatLoad(typedKg, units) }), onPress: () => keepOffer(offer.calibrating) }}
+      />
+    );
   // The one set under way (ADR-075 #1): the button that logs it is the dock's, so it never moves.
   const entryBlock =
     move === undefined || row === null ? null : (
@@ -784,6 +847,7 @@ function Session() {
         plates={typedKg === null ? null : platesLine(move, typedKg, data?.gym)}
         entry={entry}
         onChange={setEntry}
+        onTooHeavy={lighter === null ? null : askTooHeavy}
         problem={said}
         problemOccurrence={problem}
       />
@@ -897,6 +961,8 @@ function Session() {
         {planned !== undefined && <GoalLine planned={planned} move={move} />}
         <DoneSets plan={plan} move={move} onEdit={(set, number) => setEditing({ set, number })} />
         {plan.skippedMove === true ? skippedMove : null}
+        {weightFound}
+        {offerNote}
         {/* Only on its own move, with its own move's load (a dot tapped meanwhile closes it). */}
         {editing === null || editing.set.exerciseId !== move.id ? null : (
           <EditSet
@@ -946,7 +1012,7 @@ function Session() {
   const dockButton =
     finishing ? null : move !== undefined && row !== null ? (
       <>
-        <Button label={logLabel} onPress={() => void log()} disabled={busy} />
+        <Button label={logLabel} onPress={() => void log()} disabled={busy || needsWeight} />
         {skipSetLink}
       </>
     ) : nextId !== undefined ? (

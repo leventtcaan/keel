@@ -158,24 +158,59 @@ birinci taraf paketi, SDK sürümüyle uyumlu, başka iş yapmaz.
 - **Seans içi swap telefonda yapılır, sunucuya sorulmaz:** seans başlamış günün swap'ını sunucu reddeder (ADR-073 Ek 3, CONFLICT); telefon swap'ı
   seansa bağlı tutar (`sessionSwaps`), yalnız bu antrenman için, Undo'lu, bitişte unutulur. Setler yeni hareketin kimliğiyle gider; motor her seti kendi
   hareketine yazar.
-- **Seçenek başına tablo yok (bilinen eksik):** `swapOptions` sözleşmede yalnız kimliktir. Sunucunun TodaySwap satırı yeni hareket için kendi
-  `lastBestSet`, `lighterLoadKg`/`heavierLoadKg` ve `calibrationStepKg` değerlerini taşır (`ProgramController.asShown`, Ek 3); telefonda swap'lı
-  harekette bunlar yoktur ve telefon hesaplayamaz (U1). **K-1011** sunucu `swapOptions`'ı TodaySwap satırının alanlarıyla (aynı koddan) zenginleştirecek.
-  O gelene kadar swap'lı harekette "Too heavy?" ve kalibrasyon önerisi çıkmaz; hareket hedefsiz başlar. K-973'ün "değiştirilen hareket de
-  kalibrasyonla başlar" kabulü K-1011'e bağlıdır.
-- **Kilo ön-doldurma kapalı:** swap'lı hareketin kilosu telefonun geçmişinden doldurulmaz (`planExercise` `fresh`): kilo boş başlar, tekrar aralığın
-  altından; bu seansta az önce kaldırılan kilo sonraki satıra taşınır (kullanıcının kendi değeri). **Neden:** (1) K-973'ün kuralı "kalibrasyon boş kiloyla
-  başlar, Pick a weight" ve swap'lı hareket de aynı yoldan gider; geçici bir ön-doldurma o kuralla çelişir ve K-1011 gelince söküleceği için ikinci kez
-  değişirdi; (2) `swap.why` metni ("pick its weight") davranışla artık aynıdır; (3) başka hareketin geçmişi değil, bu hareketin geçmişi de olsa sunucunun
-  kalibrasyon adımı olmadan "geçen seferki kilo" hedef gibi okunur, U1'e yakın bir ima. **Reddedilen:** metni "kendi son kilosu varsa o" diye yumuşatıp
-  ön-doldurmayı korumak (K-973'te geri alınırdı; kullanıcıya hedef gibi görünürdü).
+- **Seçenek başına tablo (K-1011 #535 geldi, K-973 taşıdı):** `swapOptions` sözleşmede yalnız kimliktir; sunucunun TodaySwap satırı yeni hareket için
+  kendi `lastBestSet`, `lighterLoadKg`/`heavierLoadKg` ve `calibrationStepKg` değerlerini taşır (`ProgramController.asShown`, Ek 3) ve telefon
+  bunları hesaplayamaz (U1). K-1011 aynı değerleri `PlannedExercise.swapTables[i]` olarak (`swapOptions` ile aynı sıra, aynı koddan) gönderir
+  (ADR-073 Ek 8). K-973'te `applySwaps` yeni hareketin satırına bu tabloyu, **hedefsiz** (`nextLoadKg`/`nextReps` yok), taşır; tablonun
+  `exerciseId`'si seçeneğinki değilse (sıra kaymış) kullanılmaz. `swapTables` yoksa (eski sunucu) hareket çıplak başlar: "Too heavy?" ve
+  kalibrasyon önerisi çıkmaz.
+- **Kilo ön-doldurma yalnız geçmişsiz harekette kapalı (K-973 inceleme düzeltmesi, Ek 8):** swap'lı hareket kendi geçmişine bakar: telefonun o hareketin
+  kaydı ya da sunucunun swap tablosundaki `lastBestSet`'i varsa kilo o hareketin son kilosuyla dolar (planlı harekette olduğu gibi); ikisi de yoksa kilo
+  boş başlar ("Pick a weight"), tekrar aralığın altından; bu seansta az önce kaldırılan kilo sonraki satıra taşınır (kullanıcının kendi değeri).
+  **Neden:** boş kilo "bu hareketi hiç yapmadın" demektir; geçmişi olan harekette de boş bırakmak her seans aynı seçmeyi yeniden isterdi (Ek 8).
+  Planlı hareketin hedefi swap'ta taşınmaz (hedefsiz kalır); dolan kilo hedef değil, hareketin kendi geçen seferidir ve hedef satırı "Last time" der.
+  **Reddedilen (önceki karar, geri alındı):** swap'lı her hareketi geçmişine bakmadan boş başlatmak (`fresh`); geçmişli harekette ilk seans
+  davranışını her seansa yaymış oluyordu.
 - **Süperset yeri devralınır:** süpersetin üyesi planlı hareketin yeridir; yerine kim geçtiyse sıra onundur. Swap'ta eski hareket turdan çıkar, yeni
   hareket girer (kurulmuş ya da setlerden okunmuş, ilk setten önce ya da sonra); Undo ve "Back to the planned move" aynı eşlemeyle süpersetin yerini geri
   verir. Bu seansta swap'tan çıkan hareket (üzerinde set kalmış) süpersetin üyesi sayılmaz. **Neden:** kullanıcının kurduğu süperset korunur; grubu
-  çözmek, kurulu süpersetin sessizce kaybolması demekti. **Bilinen sınır:** ekran kapatılıp açılınca, swap'tan çıkmış ara hareketin süperset kimlikli
-  setleri varsa o hareket yeniden üye görünür (swap'tan çıkış kalıcı tutulmaz); nokta çubuğundan hareket seçilerek ya da "Not a superset" ile düzelir (yeniden açılıştan sonra Undo yok); kalıcı `left` K-973 kapsamında.
+  çözmek, kurulu süpersetin sessizce kaybolması demekti. **Bilinen sınır, K-973'te kapandı:** ekran kapatılıp açılınca swap'tan çıkmış ara
+  hareketin süperset kimlikli setleri varsa o hareket yeniden üye görünüyordu. Swap'tan çıkılan hareketlerin listesi (`left`) artık swap'larla
+  **aynı kayıtta** (`train.swaps`, `{workout, swaps, left}`; yeni anahtar yok, veri envanteri değişmez) tutulur; Undo ve "Back to the planned move"
+  onu da geri alır. Eski kayıtta (`left` yok) liste boştur.
+- **Swap'tan çıkan hareket açık sayılmaz (K-973):** üzerinde set kalan eski hareket planın dışında kalan ekstra olarak satır olarak kalır ama
+  `extraPlan` onu kapalı kurar (açık satırı yok, yapılacak seti yok): planlı hareketler bitince dock "Next: <eski hareket>" demez, "Finish" ya da
+  "Next: cardio" der. Hareketin noktası ve yaptığı setler görünür kalır. Kullanıcı onu "Add a move" ile kendi eklerse yine açıktır: eklenen hareket
+  `left`'ten çıkarılır ve kayda yazılır, ekran kapanıp açılınca kapalı dönmez (yalnız oturum içi `added`'a bağlı olsaydı dönerdi).
 - **Kayıtlı swap yeniden doğrulanır:** `applySwaps`, kayıtlı `to`'yu planlı hareketin `swapOptions`'ına, telefonun kataloğuna ve günün başka planlı
   hareketi olmamasına karşı denetler; geçersizse yok sayar (onarmaz). **Neden:** hafta yeniden okunmuş ya da katalog değişmiş olabilir; geçersiz hareketin
   seti sunucuda reddedilir.
 - **"N of M" sayacı:** planlı hareketin yeri, üzerinde ya da yerine geçen harekette set varsa sayılır (sayaç set başlamış hareketleri sayar,
   bitmiş değil); swap sayacı düşürmez.
+
+## Ek 8 · Hedefsiz hareket: kilo seçilir, "Too heavy?" ve ilk set okuması telefonda yalnız seçer (K-973, #436, 2026-10-10, düzenleyici kararı, teknik)
+- **Hedefsiz ve geçmişsiz hareket = ilk seans kalibrasyonu:** `nextLoadKg` yok ve hareketin hiç geçmişi yok (`hasHistory`: telefonda o hareketin başka
+  bir antrenmandan kaydı yok **ve** sunucunun `lastBestSet`'i yok). Böyle harekette kilo **boş** başlar ("Pick a weight"); "Log set" kilo seçilene kadar
+  kapalıdır ve nedeni yazar ("Pick a weight to log this set."). **Neden:** kullanıcı testi (8 Eki): ilk seansta hazır 100 kg; boş kilo "benim kilom"
+  demektir. **Düzeltme (inceleme):** ilk sürüm "hedefsiz + `calibrationStepKg` var" ölçütünü kullandı; sunucu adımı izolasyon gibi hedef almayan her
+  harekete **her seans** gönderdiği için o hareketler hiç geçmişi olsa da her seans boş başlıyordu. Ölçüt geçmiştir, adımın varlığı değil. Geçmişi olan
+  harekette kilo (ve tekrar) eskisi gibi son seferin değeriyle dolar (telefonun kaydı, yoksa sunucunun `lastBestSet.loadKg`'i, K-960'ın
+  `lighterLoadKg` kaynağıyla aynı başlangıç yükü). İlk dokunuş boş bar / en hafif dambıl / `set_load_step` (K-971 `stepLoad`, değişmedi).
+  **Eklenen beden ağırlığı** (`BODYWEIGHT_PLUS_EXTERNAL`): 0 meşrudur (yalnız beden); kilo boş başlamaz, **0** ile başlar, alan boş bırakılırsa 0
+  kaydedilir, "Pick a weight" ve "Log set" bekletmesi yalnız `EXTERNAL` harekette; "Starting weight found: 0 kg" hiç çıkmaz (0 bulunan kilo
+  değildir; daha ağır bir ilk yük önerisi yine çıkabilir).
+- **İlk setlerden sonra tek söz** (`calibrationRead`; yalnız **geçmişsiz** hareket, o **tarafın** son yapılan setine bakar, düzeltme/silme/atlama
+  kendiliğinden yeniler): aralıkta ve cepte `calibration_rir_min` (2+) kadar tekrar kaldıysa ve salonun adım içinde bir üst yükü varsa "That weight is
+  light. Next set {kg}?" (kullanıcı "Use {kg}" ya da "Keep {kg}" der; G6 K-40, ADR-075 #3, Ek 1); aksi halde "Starting weight found: {kg}." Aralığın
+  altındaki set bir şey demez. Hedefli hareket, geçmişli hareket ve çıplak beden ağırlığı için söz yok. Tek taraflı harekette sağ satır, sol setin
+  kilosundan öneri almaz: her taraf kendi setini okur. **"Keep"** hareket ve taraf başınadır: bir kez "Keep" denince o hareketin o tarafındaki
+  sonraki satırlar aynı öneriyi yeniden sormaz ("Use" ve "Too heavy?" satır başınadır). Telefon eşik uydurmaz: tekrar aralığı, adım ve kalan tekrar
+  sunucu/parametre. "Found" kolunun kaynağı: G6 K-40 [tecrübe] (RIR 1-2 geçerli çalışma seti, 2'den fazla kalan değil); seçicinin "2+"ı 2 ile 3'ü
+  ayıramadığı için "light" okunur. Okuma bir hedef değildir, sonraki seansın yükü sunucunundur.
+- **"Too heavy?"** (G1 karar #61): sunucunun `lighterLoadKg`'si, yalnız gösterilen kilodan hafifse. Yeri **kilonun hemen altı, kendi satırında**
+  (set kartının içinde); "Skip set" dock'ta, "Skip move" hareket başlığında kalır. **Neden:** kilo hakkında bir soru, kiloya yakın durmalı; yanlışlıkla
+  seti atlamak geri dönüşü olan ama can sıkıcı bir kaza, prototipteki yan yana yerleşim onu doğuruyordu. Cevap "Use {lighter} / Keep {current}" ikilisi
+  (kalibrasyon önerisiyle aynı bileşen, `LoadNote`); seçim yalnız o satırın kilosunu değiştirir, sonraki satır "az önce kaldırılan"ı taşır. İki düğme
+  de tam dokunma hedefidir (`Button size="touch"`, en az `size.touch`): set arasında elle, çoğu kez terli parmakla basılan bir seçim.
+- **Hedef satırı:** hedef (`nextLoadKg × nextReps`) geçen seferin en iyi setine eşitse ("Beat last time 62.5 × 6 · Last 62.5 × 6" çelişkisi)
+  tek ifade yazılır: "Match last time". Hedefsiz harekette geçen seferin seti varsa (swap tablosu) "Last time" ve kilo seçme ipucu; yoksa "First time".
