@@ -9,16 +9,23 @@ import { Button } from '@/components/Button';
 import { DecisionBlock } from '@/components/DecisionBlock';
 import { ProblemText, announce } from '@/components/ProblemText';
 import { t } from '@/copy';
-import { useAppServices } from '@/services/ServicesProvider';
+import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { useReduceMotion } from '@/theme/useReduceMotion';
 import { applyCall, callFace, declineCall } from '@/today/call';
-import { type Loaded, labelKey, load, reasonLines, weekdayDate } from '@/today/today';
+import { ChangeRows } from '@/today/ChangeRows';
+import { changeRows } from '@/today/callChanges';
+import { callReasons } from '@/today/callReasons';
+import { SourceMark } from '@/today/SourceMark';
+import { type Loaded, labelKey, load, weekdayDate } from '@/today/today';
 
 type Decision = components['schemas']['Decision'];
 
-/** Two reasons on the call (ADR-077 #3: the data and the rule); the rest stay on record. */
+/**
+ * Two reasons on the call (ADR-077 #3: the data and the rule); the rest stay on record. The call that closes the first
+ * week says when food and weight start in the second one's place (prototype #week1).
+ */
 const REASONS_SHOWN = 2;
 
 const nameOf = (error: unknown) => (error instanceof Error ? error.name : 'Unknown');
@@ -44,6 +51,7 @@ export default function CallScreen() {
   const readOnly = id !== undefined;
   const backKey = from === 'progress' ? 'callScreen.backProgress' : 'callScreen.back';
   const { api, report } = useAppServices();
+  const units = useUnits();
   const { color } = useTheme();
   const reduce = useReduceMotion();
   const [call, setCall] = useState<Loaded<Decision> | null>(null);
@@ -145,14 +153,23 @@ export default function CallScreen() {
           <Text style={[styles.small, { color: color.decisionTextSecondary }]}>{t(`callScreen.${face.foot}`)}</Text>
         </View>
       );
-    const reasons = reasonLines(decision)
-      .slice(0, REASONS_SHOWN)
+    const waitsDays = decision.observationDays;
+    const reasons = callReasons(decision, units)
+      .slice(0, waitsDays === undefined ? REASONS_SHOWN : REASONS_SHOWN - 1)
       .map((line, i) => (
         <View key={i} style={[styles.reason, { borderTopColor: color.line }]}>
-          {line.sentenceKey !== null && <Text style={[styles.text, { color: color.text }]}>{t(line.sentenceKey)}</Text>}
-          <Text style={[styles.small, { color: color.muted }]}>{t(`today.call.source.${line.tag}`)}</Text>
+          <SourceMark tag={line.tag} />
+          {/* A reason with no sentence (the safety net) says its kind of source in words: there is nothing else to read. */}
+          <Text style={[styles.text, styles.sentence, { color: color.text }]}>{line.text ?? t(`today.call.source.${line.tag}`)}</Text>
         </View>
       ));
+    const observation =
+      waitsDays === undefined ? null : (
+        <View style={[styles.waits, { borderTopColor: color.line }]}>
+          <SymbolView name="clock" size={tokens.type.body} tintColor={color.muted} />
+          <Text style={[styles.text, { color: color.text }]}>{t('callScreen.observation', { days: waitsDays })}</Text>
+        </View>
+      );
     body = (
       <>
         <Text style={[styles.small, { color: color.muted }]}>{weekdayDate(decision.madeOn)}</Text>
@@ -163,7 +180,11 @@ export default function CallScreen() {
             {foot}
           </DecisionBlock>
         </Animated.View>
-        <View>{reasons}</View>
+        <ChangeRows rows={changeRows(decision)} />
+        <View>
+          {reasons}
+          {observation}
+        </View>
         <View style={styles.meta}>
           {waits ? null : (
             <Text style={[styles.small, { color: color.textSecondary }]}>{t('callScreen.confidence', { level: t(`callScreen.level.${decision.confidence}`) })}</Text>
@@ -205,8 +226,10 @@ const styles = StyleSheet.create({
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },
   line: { fontSize: tokens.type.body },
+  sentence: { flex: 1 },
   foot: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, borderTopWidth: tokens.border.hairline, paddingTop: tokens.space.sm },
-  reason: { gap: tokens.space.xs, borderTopWidth: tokens.border.hairline, paddingVertical: tokens.space.sm },
+  reason: { flexDirection: 'row', alignItems: 'flex-start', gap: tokens.space.sm, borderTopWidth: tokens.border.hairline, paddingVertical: tokens.space.sm },
+  waits: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, borderTopWidth: tokens.border.hairline, paddingVertical: tokens.space.sm },
   meta: { flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap', gap: tokens.space.sm },
   dock: { paddingHorizontal: tokens.space.lg, paddingBottom: tokens.space.lg, gap: tokens.space.sm },
 });

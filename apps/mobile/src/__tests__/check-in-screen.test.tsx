@@ -247,3 +247,31 @@ test('the week moved and its call is already made: the screen says only that the
   expect(screen.getByText(t('checkIn.screen.answered'))).toBeOnTheScreen();
   expect(screen.queryByText(t('checkIn.screen.moved'))).toBeNull();
 });
+
+describe('the first week (K-978, ADR-077 #2)', () => {
+  const WEEK1: Schemas['Question'] = {
+    kind: 'WEEK1_FEEL',
+    format: 'CHOICE',
+    choices: ['TOO_MUCH', 'ABOUT_RIGHT', 'COULD_DO_MORE'],
+    copyKey: 'checkIn.question.week1_feel',
+    reasonCopyKey: 'checkIn.reason.week1_feel',
+  };
+
+  test('"How did week 1 feel?" with its three answers and its reason; the answer goes as the week-1 feel', async () => {
+    mockCheckIn = async () => ok({ weekOf: '2026-10-05', answered: false, questions: [WEEK1] });
+    await show();
+    expect(screen.getByText('How did week 1 feel?')).toBeOnTheScreen();
+    expect(screen.getByText(t('checkIn.reason.week1_feel'))).toBeOnTheScreen();
+    for (const choice of ['too_much', 'about_right', 'could_do_more']) {
+      expect(screen.getByRole('button', { name: t(`checkIn.choice.week1_feel.${choice}`) })).toBeOnTheScreen();
+    }
+    await press(t('checkIn.choice.week1_feel.could_do_more'));
+    await press(t('checkIn.screen.send'));
+    expect(sent()).toEqual([expect.objectContaining({ answers: [{ kind: 'WEEK1_FEEL', choice: 'COULD_DO_MORE' }] })]);
+  });
+
+  test('no paragraph beside the questions: each says why it is asked, under itself', async () => {
+    await show();
+    expect(screen.queryByText(/Only what your logs/)).toBeNull();
+  });
+});

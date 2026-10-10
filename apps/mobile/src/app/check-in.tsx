@@ -151,9 +151,9 @@ function Body({ checkIn, picks, onPick, onRetry }: BodyProps) {
     case 'ready':
       if (checkIn.value.answered) return line('checkIn.screen.answered');
       if (checkIn.value.questions.length === 0) return line('checkIn.screen.none');
+      // No paragraph above the questions: each one says why it is asked, under itself (ADR-077 #2, 30 words).
       return (
         <>
-          {line('checkIn.screen.intro')}
           {checkIn.value.questions.map((question) => (
             <QuestionBlock key={question.kind} question={question} pick={picks[question.kind]} onPick={(pick) => onPick(question.kind, pick)} />
           ))}

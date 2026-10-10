@@ -621,6 +621,39 @@ export interface paths {
         patch: operations["editProgram"];
         trace?: never;
     };
+    "/v1/program/days": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a training day on a weekday; the server fills it from the program's own generator (K-1012)
+         * @description One more training day on the weekday (ADR-073 Ek 9), for the first week's "add a day" call (ADR-077 Ek 1): the user picks
+         *     the day, the server has the content (the app never makes it up). Only a generated program of two days gets its day
+         *     here, to three (`add_day_from_days`): the day is what the generator gives that weekday for the program's weekdays plus
+         *     this one, picked by its place in the week and not by what the program already trains, and only that step was checked to
+         *     come out balanced. The day is the program template for one more day at this weekday's place in the week, with its name
+         *     (`nameKey`), moves, sets, rep ranges and RIR target; a move the program has a starting weight for has it as its first
+         *     target in the day too, and one without has none. Every day the program has, and each of its moves' rows, targets and
+         *     starting weights, stay as they are (ids too); the program keeps its id and source. It is a change of the change log
+         *     (`Program.review.edits`), undone with POST /v1/program/review/undo by its id, which takes the day out again; the review
+         *     runs again on the program with the day. The call it came from stays as it was (NOT_NEEDED): the day is the user's touch.
+         *     CONFLICT (409), nothing changed: the program does not have two days (add the day with PATCH /v1/program, Edit), the
+         *     weekday is already a day of the program, the program has a day on no weekday, or it is the user's own program
+         *     (`Program.source` OWN: the generator has no split of theirs to fill from; add the day with PATCH /v1/program).
+         *     VALIDATION_FAILED: no weekday. NOT_FOUND: no program.
+         */
+        post: operations["addProgramDay"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/program/generate": {
         parameters: {
             query?: never;
@@ -2479,6 +2512,10 @@ export interface components {
                     reps: components["schemas"]["RepRange"];
                 }[];
             }[];
+        };
+        /** @description The weekday of the training day to add (POST /v1/program/days). */
+        NewProgramDay: {
+            weekday: components["schemas"]["Weekday"];
         };
         /** @description The program as the user edited it (PATCH /v1/program), every day in order. */
         ProgramEdit: {
@@ -4449,6 +4486,31 @@ export interface operations {
         };
         responses: {
             /** @description The program edited, reviewed again */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Program"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    addProgramDay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewProgramDay"];
+            };
+        };
+        responses: {
+            /** @description The program with the new day, reviewed again */
             200: {
                 headers: {
                     [name: string]: unknown;

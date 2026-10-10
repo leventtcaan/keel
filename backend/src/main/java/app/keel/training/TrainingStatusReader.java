@@ -6,6 +6,7 @@ import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -15,6 +16,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.springframework.stereotype.Service;
 
 /**
@@ -87,9 +89,14 @@ public class TrainingStatusReader {
         return programs.history(account);
     }
 
-    /** The day the account's program was made (or last replaced), on the user's calendar. */
+    /**
+     * The day the account's program began asking for the days it asks for now, on the user's calendar: when it was made (or
+     * last replaced), or when it last gained or lost a day (K-535: another number of days is asked from then; a day added
+     * today was not asked for on the days before, ADR-073 Ek 9).
+     */
     public Optional<LocalDate> programSince(AccountId account, ZoneId zone) {
-        return programs.createdAt(account).map(made -> made.atZone(zone).toLocalDate());
+        return programs.createdAt(account).map(made -> Stream.concat(Stream.of(made), programs.history(account).stream().map(ProgramPeriod::from))
+                .max(Comparator.naturalOrder()).orElseThrow().atZone(zone).toLocalDate());
     }
 
     /** {@code checkInDay} counts the weeks the load has been held in check-in weeks. */
