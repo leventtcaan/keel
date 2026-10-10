@@ -6,7 +6,6 @@ import app.keel.engine.CardioOrigin;
 import app.keel.engine.CardioPlacement;
 import app.keel.engine.CardioPrescription;
 import app.keel.engine.CardioSession;
-import app.keel.engine.LiftKind;
 import app.keel.engine.ParameterKey;
 import app.keel.engine.ParameterSet;
 import app.keel.engine.Parameters;
@@ -96,7 +95,15 @@ class ProgramController {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record PlannedExercise(UUID id, String exerciseId, int baseSets, int sets, Reps reps, int targetRir, BigDecimal nextLoadKg, Integer nextReps,
             Boolean rackEnds, BigDecimal lighterLoadKg, BigDecimal heavierLoadKg, BigDecimal calibrationStepKg, BestSet lastBestSet,
-            BigDecimal nextLoadAtTopKg, List<String> swapOptions) {
+            BigDecimal nextLoadAtTopKg, List<String> swapOptions, List<SwapOptionTable> swapTables) {
+    }
+
+    /**
+     * Contract SwapOptionTable (K-1011, ADR-073 Ek 8): the in-session table of one of a move's swap options, the fields a move
+     * swapped in for today has (no target), each absent where there is none.
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    record SwapOptionTable(String exerciseId, BestSet lastBestSet, BigDecimal lighterLoadKg, BigDecimal heavierLoadKg, BigDecimal calibrationStepKg) {
     }
 
     /** Contract PlannedExercise.lastBestSet: the best working set of the move's last session before today (K-960). */
@@ -106,12 +113,6 @@ class ProgramController {
         static BestSet of(TrainingLog.WorkSet set) {
             return new BestSet(set.loadKg(), set.reps(), set.rir());
         }
-    }
-
-    /** A move's in-session options (K-960); null where there is none. */
-    private record Table(BigDecimal lighterKg, BigDecimal heavierKg, BigDecimal calibrationStepKg, BigDecimal nextAtTopKg) {
-
-        static final Table NONE = new Table(null, null, null, null);
     }
 
     /** Contract ProgramDay: {@code nameKey} for a generated day, {@code name} for the user's own. */
@@ -471,12 +472,14 @@ class ProgramController {
             Optional<NextTargets.Target> next = next(planned, held, back);
             int thisWeeksSets = TrainingChanges.sets(planned.sets(), lighter);
             Optional<TrainingLog.WorkSet> best = SessionTable.best(lastSessions.getOrDefault(planned.exerciseId(), List.of()));
-            Table table = table(planned, next, best, held, thisWeeksSets, back);
+            SessionTable.Table table = SessionTable.table(catalog, planned, next, best, held, thisWeeksSets, back.parameters(), back.gym());
+            List<String> swapOptions = SwapOptions.of(planned.exerciseId(), onTheDay, catalog, back.gym());
+            List<SwapOptionTable> swapTables = SwapOptionTables.of(swapOptions, planned, catalog, lastSessions, back.parameters(), back.gym());
             return new PlannedExercise(planned.id(), planned.exerciseId(), planned.sets(), thisWeeksSets,
                     new Reps(planned.repMin(), planned.repMax()), planned.targetRir(), next.map(NextTargets.Target::loadKg).orElse(null),
                     next.map(NextTargets.Target::reps).orElse(null), next.filter(NextTargets.Target::rackEnds).map(target -> Boolean.TRUE).orElse(null),
                     table.lighterKg(), table.heavierKg(), table.calibrationStepKg(), best.map(BestSet::of).orElse(null),
-                    table.nextAtTopKg(), SwapOptions.of(planned.exerciseId(), onTheDay, catalog, back.gym()));
+                    table.nextAtTopKg(), swapOptions, swapTables);
         };
         List<ProgramDay> days = program.days().stream().map(day -> {
             List<String> onTheDay = day.exercises().stream().map(ProgramStore.PlannedExercise::exerciseId).toList();
@@ -566,32 +569,6 @@ class ProgramController {
         }
         return Optional.of(NextTargets.shown(new NextTargets.Target(planned.nextLoadKg(), planned.nextReps(), planned.nextRackEnds()), planned.lastLoadKg(),
                 new RepRange(planned.repMin(), planned.repMax()), held));
-    }
-
-    /**
-     * The in-session table of a planned move (K-960, ADR-075 #3), worked out here so the phone only picks in the gym:
-     * a step either way from the load the session starts at — the target shown, else the last session's best set — as the
-     * gym in use makes it, the calibration step where there is no target (ADR-075 Ek 1), and the load once every set is
-     * at the top (only from a target). None on a bodyweight move.
-     */
-    private Table table(ProgramStore.PlannedExercise planned, Optional<NextTargets.Target> next, Optional<TrainingLog.WorkSet> best, boolean held,
-            int thisWeeksSets, Back back) {
-        return catalog.find(planned.exerciseId()).filter(exercise -> exercise.load() != ExerciseCatalog.Load.BODYWEIGHT).map(exercise -> {
-            Parameters p = back.parameters();
-            LiftKind kind = LiftKind.valueOf(exercise.kind().name());
-            BodyRegion region = BodyRegion.valueOf(catalog.region(exercise.muscles().getFirst()).name());
-            BigDecimal step = SessionTable.stepKg(region, p);
-            Optional<BigDecimal> from = next.map(NextTargets.Target::loadKg).or(() -> best.map(TrainingLog.WorkSet::loadKg)).filter(kg -> kg.signum() > 0);
-            // A jump limit only where the set's load is all the load moved (K-430), as a finished session's target has.
-            BigDecimal maxJump = LoadSteps.wholeLoad(exercise.equipment()) ? BigDecimal.valueOf(p.number(ParameterKey.LOAD_JUMP_MAX_STEPS)) : null;
-            Optional<BigDecimal> atTop = next.flatMap(target -> SessionTable.nextAtTop(kind, region, new RepRange(planned.repMin(), planned.repMax()),
-                    target, thisWeeksSets, planned.targetRir(), held, load -> back.gym()
-                            .map(gym -> LoadSteps.round(exercise.equipment(), exercise.id(), gym, target.loadKg(), load, maxJump))
-                            .orElse(new LoadSteps.Rounding.Unknown()), p));
-            return new Table(from.flatMap(kg -> SessionTable.lighter(exercise.equipment(), exercise.id(), back.gym(), kg, step)).orElse(null),
-                    from.flatMap(kg -> SessionTable.heavier(exercise.equipment(), exercise.id(), back.gym(), kg, step)).orElse(null),
-                    SessionTable.calibrationStep(next, region, p).orElse(null), atTop.orElse(null));
-        }).orElse(Table.NONE);
     }
 
     private static void require(boolean valid) {

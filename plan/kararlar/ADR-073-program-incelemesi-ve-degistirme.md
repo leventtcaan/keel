@@ -287,3 +287,24 @@ testi: seçenekler salon ekipmanıyla süzülür.
   kırılgan) · düzenlemeyi inceleme kaydını silerek yapmak (Ek 3'teki gibi; kartın "geri alınır" maddesini karşılamaz) · ayrı düzenleme
   kaydı tablosu (iki kayıt arasında sıra kurmak gerekirdi; geri alma tek yoldan) · düzenlemeyi fark olarak saklayıp yeniden uygulamak
   (birleşen ve taşınan hareketlerde kırılgan, Ek 1'in ters diff reddiyle aynı neden).
+
+## Ek 8 · Seans içi değiştirmede seçenek başına tablo: `PlannedExercise.swapTables` (K-1011, 2026-10-10, agent, teknik)
+- **Sorun:** `swapOptions` yalnız kimlik taşıyordu (Ek 3). Bugünlük değişimde sunucu yeni harekete kendi `lastBestSet`, `lighterLoadKg`,
+  `heavierLoadKg` ve `calibrationStepKg` verir (`WeekSession.swaps`); seans içinde, telefonda (çevrimdışı) değiştirilen hareket bunların
+  hiçbirini alamıyordu ve telefon hesaplayamaz (U1). K-973 "değiştirilen hareket de kalibrasyonla başlar" bu olmadan karşılanamaz.
+- **Karar:** `PlannedExercise` yanına **`swapTables: SwapOptionTable[]`** gelir; `swapOptions` aynen kalır. `SwapOptionTable`: `exerciseId`
+  (`swapOptions`'tan biri) + `lastBestSet`, `lighterLoadKg`, `heavierLoadKg`, `calibrationStepKg` (hepsi isteğe bağlı; hedef alanı
+  yoktur). Aynı sırada, aynı hareketler: `swapTables[i].exerciseId == swapOptions[i]`. Alanların ad, tür ve anlamı `PlannedExercise`'ın
+  alanlarıdır (şema `$ref`'le onlara bağlanır, ikinci bir tanım yok).
+- **Neden ayrı alan (`swapOptions` string[] kalır):** (1) sözleşmeyi okuyan mevcut istemciler `string[]` bekler; öğeyi nesneye çevirmek
+  onları kırar (geriye uyum). (2) `swapOptions` ile `POST /v1/program/swap {to}` doğrulaması aynı kimlik listesini kullanır; kimlik listesi
+  sade kalır. Bedel: aynı kimlik iki yerde; birliği `SwapOptionTablesTests` (kimlik listesi = tablo kimlikleri) ve API testi korur. Yeni
+  istemci tabloyu okur, eski sunucu `swapTables` göndermez (alan isteğe bağlı: eski sunucuyla yeni telefon `swapOptions`'a düşer).
+  **Reddedilen:** `swapOptions`'ı nesne listesine çevirmek (kırıcı) · her seçenek için ayrı uç (çevrimdışı salon: tablo, program okunurken
+  telefonda olmalı, ADR-075 #3) · alanları `PlannedExercise`'a tek tek `swapLighterLoadKg…` diye eklemek (hareket başına dört alan, seçenek sayısıyla çarpılır).
+- **Tek kod:** değerler bugünlük değişim satırının hesabıyla aynı yoldan çıkar: `SessionTable.table(...)` (eski `ProgramController.table`,
+  denetleyiciden `SessionTable`'a taşındı, davranış aynı). Bugünlük değişim satırı (`asShown`, hedefsiz `PlannedExercise`) ve seçenek tabloları
+  (`SwapOptionTables`, hedefsiz) onu çağırır; ikinci bir hesap yok. Kayıt (`lastSessions`) program okunurken zaten tek taramada
+  okunur (hesabın tüm hareketleri); seçenek tabloları o haritadan okur, **yeni sorgu yok** (hareket × seçenek N+1 değil, bellekte hesap).
+- **Etki:** yük (yaklaşık hareket başına 3-6 küçük nesne) program yanıtını büyütür; kabul edilir (program zaten çevrimdışı tutulur, telefon
+  hesap yapmaz). Veri tabanı, göç, parametre dosyası değişmez.

@@ -2431,6 +2431,30 @@ export interface components {
              *     already on the day. Empty for the user's own move. This server always sends it.
              */
             swapOptions?: string[];
+            /**
+             * @description The in-session table of each of `swapOptions` (K-1011, ADR-073 Ek 8): one entry per option, the same moves in the
+             *     same order, so a move swapped in the session (on the phone, offline) starts with its own history and table instead
+             *     of the planned move's. Each entry carries what the server shows for that move when it is swapped in for today
+             *     (`WeekSession.swaps`, TodaySwap) and for the same fields, from the same code: no target (so `calibrationStepKg`
+             *     is always there where the move is loaded by weight), its own `lastBestSet`, and `lighterLoadKg` / `heavierLoadKg`
+             *     from that. The phone picks among these values and works none out (U1). Empty for the user's own move. This
+             *     server always sends it; an older server does not (read `swapOptions` alone then).
+             */
+            swapTables?: components["schemas"]["SwapOptionTable"][];
+        };
+        /**
+         * @description The in-session table of one swap option of a planned move (K-1011, ADR-073 Ek 8): the fields of PlannedExercise
+         *     a move swapped in for today has, under the same names with the same meaning (K-960, ADR-075 #3, Ek 1), for the move
+         *     with no target. Absent where there is none (a bodyweight move has no table; a move not done before has no
+         *     `lastBestSet`, so neither lighter nor heavier).
+         */
+        SwapOptionTable: {
+            /** @description One of the planned move's swapOptions. */
+            exerciseId: string;
+            lastBestSet?: components["schemas"]["PlannedExercise"]["lastBestSet"];
+            lighterLoadKg?: components["schemas"]["PlannedExercise"]["lighterLoadKg"];
+            heavierLoadKg?: components["schemas"]["PlannedExercise"]["heavierLoadKg"];
+            calibrationStepKg?: components["schemas"]["PlannedExercise"]["calibrationStepKg"];
         };
         /**
          * @description min < max, a range to climb in (double progression); or min = max, a fixed rep target (5 x 5, K-991): the engine
