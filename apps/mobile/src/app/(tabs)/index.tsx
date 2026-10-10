@@ -71,7 +71,7 @@ export default function TodayScreen() {
             reload();
           }}
         />
-        <FoodLine budget={data.budget} starting={data.todayParts?.starting ?? null} />
+        <FoodLine budget={data.budget} firstWeek={data.decision.state === 'none'} />
       </>
     );
   }

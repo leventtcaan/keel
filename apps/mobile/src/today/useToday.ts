@@ -50,7 +50,7 @@ export function useToday(): { day: string; data: TodayData | null; reload: () =>
         // What the card will show decides what it needs: a done workout's summary (the server's id), a skipped day's line.
         const card = todayCardOf({ program: planned, day, active, doneToday });
         const done = card.kind === 'done' ? { workoutId: card.workoutId, programDayId: card.day?.id ?? null } : null;
-        const todayParts = await loadTodayParts(api, { done, withMoves: planned !== null, budget: today.budget, skipped: card.kind === 'skipped' });
+        const todayParts = await loadTodayParts(api, { done, withMoves: planned !== null, skipped: card.kind === 'skipped' });
         // The program's week off, for the reminders (ADR-037 › 51b); an unread program says nothing new.
         const { program } = today;
         if (program.state === 'ready' || program.state === 'none') void remind.keepRestUntil(program.state === 'ready' ? (program.value.restUntil ?? null) : null, era);

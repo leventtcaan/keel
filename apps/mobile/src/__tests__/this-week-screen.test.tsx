@@ -633,6 +633,13 @@ describe('the food line', () => {
     expect(screen.getByText(range(610, 720))).toBeOnTheScreen();
   });
 
+  test('after the first call, nothing eaten: still "Food left", the existing path (only the first week says "today")', async () => {
+    mockAnswers['/v1/days/{day}/budget'] = ok(BUDGET(2300, 2300));
+    await show();
+    expect(screen.getByText(t('thisWeek.food.left'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('thisWeek.food.today'))).toBeNull();
+  });
+
   test('without the health data consent: the lock line in its place, Allow leads to the consent', async () => {
     mockAnswers['/v1/days/{day}/budget'] = refused(403, 'CONSENT_REQUIRED');
     await show();
@@ -642,16 +649,65 @@ describe('the food line', () => {
     expect(mockPush).toHaveBeenCalledWith('/settings');
   });
 
-  test('the first week, no budget yet: the starting target as "Food today", one number, and Log (prototype foodLine)', async () => {
-    mockAnswers['/v1/targets/starting'] = ok({ targetKcal: 2100, maintenanceKcal: { low: 2000, high: 2200 }, observationDays: 14 });
-    await show();
-    expect(screen.getByText(t('thisWeek.food.today'))).toBeOnTheScreen();
-    expect(screen.getByText(t('food.budget.single', { value: '2,100', unit: t('food.budget.kcalUnit') }))).toBeOnTheScreen();
-    await press(t('thisWeek.food.lineLabel', { lead: t('thisWeek.food.today'), amount: '2,100 kcal' }));
-    expect(mockPush).toHaveBeenCalledWith('/meal');
+  describe('the first week (no call yet): the budget the server works out from the starting target (K-997)', () => {
+    const FIRST_WEEK_BUDGET = (left: { low: number; high: number }, eaten: { low: number; high: number } = { low: 0, high: 0 }): Schemas['DayBudget'] => ({
+      day: '2026-10-12',
+      targetKcal: 2100,
+      eaten: { kcal: eaten, proteinG: { low: 0, high: 0 }, carbsG: { low: 0, high: 0 }, fatG: { low: 0, high: 0 } },
+      left: { kcal: left, proteinG: { low: 150, high: 150 } },
+    });
+    beforeEach(() => firstWeek());
+
+    test('nothing eaten yet: "Food today" with the one number, from the budget route, and Log (prototype foodLine)', async () => {
+      mockAnswers['/v1/days/{day}/budget'] = ok(FIRST_WEEK_BUDGET({ low: 2100, high: 2100 }));
+      await show();
+      expect(screen.getByText(t('thisWeek.food.today'))).toBeOnTheScreen();
+      expect(screen.getByText(t('food.budget.single', { value: '2,100', unit: t('food.budget.kcalUnit') }))).toBeOnTheScreen();
+      expect(mockGET).toHaveBeenCalledWith('/v1/days/{day}/budget', { params: { path: { day: '2026-10-12' } } });
+      await press(t('thisWeek.food.lineLabel', { lead: t('thisWeek.food.today'), amount: '2,100 kcal' }));
+      expect(mockPush).toHaveBeenCalledWith('/meal');
+    });
+
+    test('a meal logged: "Food left" as the server\'s range, nothing taken off on the phone', async () => {
+      mockAnswers['/v1/days/{day}/budget'] = ok(FIRST_WEEK_BUDGET({ low: 1480, high: 1620 }, { low: 480, high: 620 }));
+      await show();
+      expect(screen.getByText(t('thisWeek.food.left'))).toBeOnTheScreen();
+      expect(screen.getByText(range('1,480', '1,620'))).toBeOnTheScreen();
+      expect(screen.queryByText(t('thisWeek.food.today'))).toBeNull();
+    });
+
+    test('the temporary starting route is not read for this line any more', async () => {
+      mockAnswers['/v1/days/{day}/budget'] = ok(FIRST_WEEK_BUDGET({ low: 2100, high: 2100 }));
+      await show();
+      expect(mockGET.mock.calls.map((c) => c[0])).not.toContain('/v1/targets/starting');
+    });
+
+    test('no starting target (404: no profile, or no weigh-in): no line, and no complaint', async () => {
+      await show();
+      expect(screen.queryByTestId('food-line')).toBeNull();
+      expect(screen.queryByTestId('food-locked')).toBeNull();
+      expect(screen.queryByText(t('today.failed'))).toBeNull();
+    });
+
+    test('without the health data consent: the lock line, as in any week', async () => {
+      mockAnswers['/v1/days/{day}/budget'] = refused(403, 'CONSENT_REQUIRED');
+      await show();
+      expect(screen.getByText(t('thisWeek.food.locked'))).toBeOnTheScreen();
+      expect(screen.queryByText(t('thisWeek.food.today'))).toBeNull();
+    });
+
+    test('offline: no line, the screen says it could not read and offers to try again', async () => {
+      mockAnswers['/v1/days/{day}/budget'] = 'offline';
+      await show();
+      expect(screen.queryByTestId('food-line')).toBeNull();
+      expect(screen.getByText(t('today.failed'))).toBeOnTheScreen();
+      mockAnswers['/v1/days/{day}/budget'] = ok(FIRST_WEEK_BUDGET({ low: 2100, high: 2100 }));
+      await press(t('today.retry'));
+      expect(screen.getByText(t('thisWeek.food.today'))).toBeOnTheScreen();
+    });
   });
 
-  test('no budget and no starting target either: no line', async () => {
+  test('no budget at all: no line', async () => {
     await show();
     expect(screen.queryByTestId('food-line')).toBeNull();
     expect(screen.queryByTestId('food-locked')).toBeNull();
