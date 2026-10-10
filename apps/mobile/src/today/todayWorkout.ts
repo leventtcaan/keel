@@ -88,31 +88,25 @@ export type TodayParts = {
   summary: Loaded<Schemas['WorkoutSummary']> | null;
   /** The moves by id, the catalog's and the user's own, for the session's first moves. */
   moves: Map<string, Move>;
-  /**
-   * The first week's food line (prototype foodLine): no day budget yet, the calorie target the plan starts with (K-989),
-   * as it is; none when there is a budget, or no starting target either. K-997 brings the first week's budget.
-   */
-  starting: Loaded<Schemas['StartingTarget']> | null;
   /** The user's check-in day, for a skipped session's line ("Sunday reads what happened"); read only then. */
   checkInDay: Schemas['Weekday'] | null;
 };
 
-type Needs = { done: Done | null; withMoves: boolean; budget: Loaded<Schemas['DayBudget']>; skipped: boolean };
+type Needs = { done: Done | null; withMoves: boolean; skipped: boolean };
 
-/** What today's card and the food line need beyond the week, each read only when it shows. */
-export async function loadTodayParts(api: ApiClient, { done, withMoves, budget, skipped }: Needs): Promise<TodayParts> {
+/** What today's card needs beyond the week, each read only when it shows. */
+export async function loadTodayParts(api: ApiClient, { done, withMoves, skipped }: Needs): Promise<TodayParts> {
   const id = done?.workoutId ?? null;
-  const [summary, exercises, own, starting, profile] = await Promise.all([
+  const [summary, exercises, own, profile] = await Promise.all([
     id === null ? null : load(() => api.GET('/v1/workouts/{id}/summary', { params: { path: { id } } })),
     withMoves ? load(() => api.GET('/v1/exercises')) : null,
     withMoves ? load(() => api.GET('/v1/custom-exercises')) : null,
-    budget.state === 'none' ? load(() => api.GET('/v1/targets/starting')) : null,
     skipped ? load(() => api.GET('/v1/profile')) : null,
   ]);
   const catalog: Move[] = exercises?.state === 'ready' ? exercises.value : [];
   const mine: Move[] = own?.state === 'ready' ? own.value.map(ownMove) : [];
   const checkInDay = profile?.state === 'ready' ? profile.value.schedule.checkInDay : null;
-  return { summary, moves: new Map([...catalog, ...mine].map((m) => [m.id, m])), starting, checkInDay };
+  return { summary, moves: new Map([...catalog, ...mine].map((m) => [m.id, m])), checkInDay };
 }
 
 /** Today's cardio minutes, when the program plans a session today (ADR-074); none when turned off or not today. */
