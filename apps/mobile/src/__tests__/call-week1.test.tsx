@@ -289,6 +289,44 @@ describe('edge cases', () => {
     expect(mockBack).toHaveBeenCalled();
   });
 
+  test('two missed days, a pick for the second; the first moved elsewhere after a 409: the pick stays with its own day', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(
+      moveCall({ action: { type: 'MOVE_MISSED_SESSIONS', missed: ['WEDNESDAY', 'FRIDAY'], suggested: ['THURSDAY', 'SATURDAY'] } as Schemas['Decision']['action'] }),
+    );
+    mockPatch = refused(409, 'CONFLICT');
+    await show();
+    await press(w('changeIt'));
+    // Friday's group is the second one.
+    await fireEvent.press(screen.getAllByRole('button', { name: t('programEditor.weekdayName.SUNDAY') })[1]);
+    await press(w('done'));
+    const moved = program();
+    moved.days[1].weekday = 'THURSDAY'; // Wednesday's session went to Thursday meanwhile
+    mockAnswers['/v1/program'] = ok(moved);
+    await press(w('done'));
+    expect(screen.getByText(w('stale'))).toBeOnTheScreen();
+    expect(screen.getByLabelText(`${w('session').replace('{day}', 'Fri')}: was Fri, now Sun`)).toBeOnTheScreen();
+    expect(screen.queryByText('Sat')).toBeNull();
+  });
+
+  test('two missed days, a pick for the first; it moved elsewhere after a 409: the second keeps the server\'s suggestion, not that pick', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(
+      moveCall({ action: { type: 'MOVE_MISSED_SESSIONS', missed: ['WEDNESDAY', 'FRIDAY'], suggested: ['THURSDAY', 'SATURDAY'] } as Schemas['Decision']['action'] }),
+    );
+    mockPatch = refused(409, 'CONFLICT');
+    await show();
+    await press(w('changeIt'));
+    await fireEvent.press(screen.getAllByRole('button', { name: t('programEditor.weekdayName.TUESDAY') })[0]);
+    await press(w('done'));
+    const moved = program();
+    moved.days[1].weekday = 'THURSDAY';
+    mockAnswers['/v1/program'] = ok(moved);
+    await press(w('done'));
+    expect(screen.getByText(w('stale'))).toBeOnTheScreen();
+    expect(screen.getByLabelText(`${w('session').replace('{day}', 'Fri')}: was Fri, now Sat`)).toBeOnTheScreen();
+    expect(screen.queryByText('Tue')).toBeNull();
+    expect(screen.getByRole('button', { name: w('soundsRight') })).toBeOnTheScreen();
+  });
+
   test('a past call of this kind, read only: its days are not offered again', async () => {
     mockParams = { id: 'd0' };
     mockAnswers['/v1/decisions/{id}'] = ok(moveCall({ id: 'd0' }));

@@ -15,12 +15,14 @@ const SYMBOL: Record<components['schemas']['SourceTag'], SFSymbol> = {
 
 /**
  * A reason's kind of source as a symbol instead of a line of words (the call's word budget, ADR-077 #3); VoiceOver
- * hears the full words ("From research"), so the kind of source stays said for everyone (U14).
+ * hears the full words ("From research"), so the kind of source stays said for everyone (U14). `spoken={false}` where
+ * the line beside it already says those words: VoiceOver reads them once.
  */
-export function SourceMark({ tag }: { tag: components['schemas']['SourceTag'] }) {
+export function SourceMark({ tag, spoken = true }: { tag: components['schemas']['SourceTag']; spoken?: boolean }) {
   const { color } = useTheme();
+  const voice = spoken ? { accessible: true, accessibilityRole: 'image' as const, accessibilityLabel: t(`today.call.source.${tag}`) } : { accessible: false };
   return (
-    <View accessible accessibilityRole="image" accessibilityLabel={t(`today.call.source.${tag}`)}>
+    <View {...voice}>
       <SymbolView name={SYMBOL[tag]} size={tokens.type.body} tintColor={color.muted} />
     </View>
   );

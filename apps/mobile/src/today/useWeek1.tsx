@@ -63,8 +63,9 @@ export function useWeek1(decision: Schemas['Decision'] | null): Week1 | null {
   const call: DayCall | null = decision === null ? null : dayCall(decision);
   const moving = call?.kind === 'move';
   const [program, setProgram] = useState<Loaded<Schemas['Program']> | null>(null);
-  // The days the user picked, by the place of the missed day they stand for; none: the server's suggestion.
-  const [picks, setPicks] = useState<Record<number, Weekday>>({});
+  // The days the user picked, by the missed day each stands for (not by its place in the list: a missed day can drop out
+  // when the program is read again, the others keep their picks); none: the server's suggestion.
+  const [picks, setPicks] = useState<Partial<Record<Weekday, Weekday>>>({});
   const [changing, setChanging] = useState(false);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem, occurrence] = useProblem();
@@ -115,8 +116,8 @@ export function useWeek1(decision: Schemas['Decision'] | null): Week1 | null {
   if (training !== null && left.length === 0) return problem === null ? null : { rows: [], dock: null, note, changing: null };
   const missed = left.map(({ from }) => from);
   const suggested: (Weekday | undefined)[] = left.map(({ to }) => to);
-  const chosen: (Weekday | undefined)[] = missed.map((_, i) => picks[i] ?? suggested[i]);
-  const picked = Object.keys(picks).length > 0;
+  const chosen: (Weekday | undefined)[] = missed.map((from, i) => picks[from] ?? suggested[i]);
+  const picked = missed.some((from) => picks[from] !== undefined);
   const complete = chosen.every((day) => day !== undefined);
 
   const rows = missed.map((from, i) => {
@@ -191,7 +192,7 @@ export function useWeek1(decision: Schemas['Decision'] | null): Week1 | null {
             {free
               .filter((day) => !chosen.some((other, j) => j !== i && other === day))
               .map((day) => (
-                <Chip key={day} label={full(day)} selected={chosen[i] === day} touch onPress={() => setPicks((now) => ({ ...now, [i]: day }))} />
+                <Chip key={day} label={full(day)} selected={chosen[i] === day} touch onPress={() => setPicks((now) => ({ ...now, [from]: day }))} />
               ))}
           </View>
         </View>

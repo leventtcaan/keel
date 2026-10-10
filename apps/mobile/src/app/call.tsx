@@ -161,7 +161,7 @@ export default function CallScreen() {
       .slice(0, waitsDays === undefined ? REASONS_SHOWN : REASONS_SHOWN - 1)
       .map((line, i) => (
         <View key={i} style={[styles.reason, { borderTopColor: color.line }]}>
-          <SourceMark tag={line.tag} />
+          <SourceMark tag={line.tag} spoken={line.text !== null} />
           {/* A reason with no sentence (the safety net) says its kind of source in words: there is nothing else to read. */}
           <Text style={[styles.text, styles.sentence, { color: color.text }]}>{line.text ?? t(`today.call.source.${line.tag}`)}</Text>
         </View>

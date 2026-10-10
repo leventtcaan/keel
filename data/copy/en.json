@@ -236,7 +236,6 @@
       "changeTitle": "Your call too",
       "changeHint": "We suggested {suggestion}. You know your week.",
       "suggestion": "{to} instead of {from}",
-      "suggestionAdd": "adding {day}",
       "keepSuggestion": "Keep the suggestion",
       "moveHead": "Move {day}",
       "join": ", ",
