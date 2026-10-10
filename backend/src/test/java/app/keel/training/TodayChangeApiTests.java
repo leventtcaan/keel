@@ -227,6 +227,39 @@ class TodayChangeApiTests {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void eachSwapOptionCarriesItsTableAndItIsWhatTheTodaySwapRowOfThatMoveCarries() throws Exception {
+        // K-1011 (ADR-073 Ek 8): swapOptions stays the ids; swapTables is each option's in-session table, from the same code as the swap row.
+        AccountId account = TestSessions.newAccount();
+        Map<String, Object> program = map(send(account, "PUT", "/v1/program", week("WEDNESDAY", "THURSDAY", "SATURDAY")));
+        logged(account, "2026-10-01T15:00:00Z", null, "dumbbell_bench_press", 30);
+
+        Map<String, Object> swapped = map(send(account, "POST", "/v1/program/swap", swap(dayId(program, 0), "bench_press", "dumbbell_bench_press", "TODAY")));
+
+        for (int day = 0; day < 3; day++) {
+            for (Map<String, Object> planned : moves(swapped, day)) {
+                List<Map<String, Object>> tables = (List<Map<String, Object>>) planned.get("swapTables");
+                assertThat(tables.stream().map(table -> table.get("exerciseId")).toList()).as(planned.get("exerciseId") + " tables, the options in order")
+                        .isEqualTo(planned.get("swapOptions"));
+                assertThat(tables).allSatisfy(table -> assertThat(table).doesNotContainKeys("nextLoadKg", "nextReps", "nextLoadAtTopKg"));
+            }
+        }
+        Map<String, Object> swapRow = (Map<String, Object>) ((Map<String, Object>) ((List<Map<String, Object>>) sessions(swapped).getFirst().get("swaps"))
+                .getFirst()).get("exercise");
+        Map<String, Object> dumbbell = ((List<Map<String, Object>>) move(swapped, 0, "bench_press").get("swapTables")).stream()
+                .filter(table -> "dumbbell_bench_press".equals(table.get("exerciseId"))).findFirst().orElseThrow();
+        for (String field : List.of("lastBestSet", "lighterLoadKg", "heavierLoadKg", "calibrationStepKg")) {
+            assertThat(dumbbell).as(field).containsEntry(field, swapRow.get(field));
+        }
+        assertThat(dumbbell).containsKey("lastBestSet").containsKey("lighterLoadKg").containsKey("calibrationStepKg");
+        // An option never done: its calibration step (a lower-body move, 5 kg) and nothing from a history it has not got.
+        Map<String, Object> hack = ((List<Map<String, Object>>) move(swapped, 1, "squat").get("swapTables")).getFirst();
+        assertThat(hack.get("exerciseId")).isEqualTo("hack_squat");
+        assertThat(new BigDecimal(String.valueOf(hack.get("calibrationStepKg")))).isEqualByComparingTo("5");
+        assertThat(hack).doesNotContainKeys("lastBestSet", "lighterLoadKg", "heavierLoadKg");
+    }
+
+    @Test
     void aSessionStartedTodayIsNotMovedSkippedOrSwappedForToday() throws Exception {
         AccountId account = TestSessions.newAccount();
         Map<String, Object> program = map(send(account, "PUT", "/v1/program", week("WEDNESDAY", "THURSDAY", "SATURDAY")));

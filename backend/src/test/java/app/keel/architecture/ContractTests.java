@@ -97,6 +97,28 @@ class ContractTests {
     }
 
     @Test
+    void theSwapOptionsTableTheServerSendsIsTheContractsAndThePlannedExercisesFields() throws Exception {
+        // K-1011 (ADR-073 Ek 8): swapOptions stays the ids (older phones); swapTables carries each option's in-session table, the
+        // fields of a move swapped in for today, under the same names and by reference to PlannedExercise's own definitions.
+        Map<String, Object> schemas = schemas();
+        Map<String, Object> planned = map(schemas.get("PlannedExercise"));
+        Map<String, Object> table = map(schemas.get("SwapOptionTable"));
+        Class<?> sent = Class.forName("app.keel.training.ProgramController$SwapOptionTable");
+
+        assertThat(map(properties(planned).get("swapOptions")).get("type")).isEqualTo("array");
+        assertThat(map(map(properties(planned).get("swapOptions")).get("items")).get("type")).isEqualTo("string");
+        assertThat(map(map(properties(planned).get("swapTables")).get("items")).get("$ref")).isEqualTo("#/components/schemas/SwapOptionTable");
+        assertThat(list(planned.get("required"))).doesNotContain("swapTables", "swapOptions");
+        assertThat(properties(table).keySet()).containsExactlyInAnyOrderElementsOf(componentNames(sent));
+        assertThat(list(table.get("required"))).containsExactly("exerciseId");
+        for (String field : List.of("lastBestSet", "lighterLoadKg", "heavierLoadKg", "calibrationStepKg")) {
+            assertThat(map(properties(table).get(field)).get("$ref")).as(field).isEqualTo("#/components/schemas/PlannedExercise/properties/" + field);
+            assertThat(properties(planned)).containsKey(field);
+        }
+        assertThat(properties(table)).doesNotContainKeys("nextLoadKg", "nextReps", "nextLoadAtTopKg");
+    }
+
+    @Test
     void theProgramAndItsWeekTheServerSendsAreTheContractsFieldForField() throws Exception {
         // K-995: the phone reads today, a session's state and what a today change may be from the server, never works them out.
         Map<String, Object> schemas = schemas();

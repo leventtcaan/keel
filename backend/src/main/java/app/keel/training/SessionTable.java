@@ -31,6 +31,39 @@ final class SessionTable {
     private SessionTable() {
     }
 
+    /** A move's in-session options (K-960); null where there is none. */
+    record Table(BigDecimal lighterKg, BigDecimal heavierKg, BigDecimal calibrationStepKg, BigDecimal nextAtTopKg) {
+
+        static final Table NONE = new Table(null, null, null, null);
+    }
+
+    /**
+     * The in-session table of a planned move (K-960, ADR-075 #3), worked out here so the phone only picks in the gym:
+     * a step either way from the load the session starts at — the target shown, else the last session's best set — as the
+     * gym in use makes it, the calibration step where there is no target (ADR-075 Ek 1), and the load once every set is
+     * at the top (only from a target). None on a bodyweight move. The one place the table is worked out: the program's
+     * moves, a move swapped in for today (WeekSession.swaps) and each swap option's table (K-1011, ADR-073 Ek 8) all come
+     * through it.
+     */
+    static Table table(ExerciseCatalog catalog, ProgramStore.PlannedExercise planned, Optional<NextTargets.Target> next,
+            Optional<TrainingLog.WorkSet> best, boolean held, int thisWeeksSets, Parameters p, Optional<GymStore.Gym> gym) {
+        return catalog.find(planned.exerciseId()).filter(exercise -> exercise.load() != ExerciseCatalog.Load.BODYWEIGHT).map(exercise -> {
+            LiftKind kind = LiftKind.valueOf(exercise.kind().name());
+            BodyRegion region = BodyRegion.valueOf(catalog.region(exercise.muscles().getFirst()).name());
+            BigDecimal step = stepKg(region, p);
+            Optional<BigDecimal> from = next.map(NextTargets.Target::loadKg).or(() -> best.map(TrainingLog.WorkSet::loadKg)).filter(kg -> kg.signum() > 0);
+            // A jump limit only where the set's load is all the load moved (K-430), as a finished session's target has.
+            BigDecimal maxJump = LoadSteps.wholeLoad(exercise.equipment()) ? BigDecimal.valueOf(p.number(ParameterKey.LOAD_JUMP_MAX_STEPS)) : null;
+            Optional<BigDecimal> atTop = next.flatMap(target -> nextAtTop(kind, region, new RepRange(planned.repMin(), planned.repMax()),
+                    target, thisWeeksSets, planned.targetRir(), held, load -> gym
+                            .map(inUse -> LoadSteps.round(exercise.equipment(), exercise.id(), inUse, target.loadKg(), load, maxJump))
+                            .orElse(new LoadSteps.Rounding.Unknown()), p));
+            return new Table(from.flatMap(kg -> lighter(exercise.equipment(), exercise.id(), gym, kg, step)).orElse(null),
+                    from.flatMap(kg -> heavier(exercise.equipment(), exercise.id(), gym, kg, step)).orElse(null),
+                    calibrationStep(next, region, p).orElse(null), atTop.orElse(null));
+        }).orElse(Table.NONE);
+    }
+
     /** The region's smallest load step (H3 B4: load_increment_upper_kg / load_increment_lower_kg). */
     static BigDecimal stepKg(BodyRegion region, Parameters parameters) {
         return BigDecimal.valueOf(parameters.number(region == BodyRegion.UPPER ? ParameterKey.LOAD_INCREMENT_UPPER_KG
