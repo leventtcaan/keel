@@ -222,7 +222,19 @@
     "keepRefused": "This call can't be changed any more.",
     "keepError": "Not changed: something went wrong on our side. Try again in a moment.",
     "failed": "Couldn't load this call. Check your connection.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "observation": "Food and weight wait until day {days}.",
+    "changes": {
+      "label": { "CALORIES": "Calories", "STEPS": "Steps", "PHASE": "Phase" },
+      "new": "{what}, new",
+      "inForce": "{what}, in force",
+      "noneInForce": "No target yet",
+      "kcal": "{kcal} kcal",
+      "steps": "{steps} steps",
+      "phase": { "CUT": "Cutting", "BULK": "Building" },
+      "spoken": "{what}: was {from}, now {to}",
+      "spokenValue": "{what}: {to}"
+    }
   },
   "today": {
     "prompt": {
@@ -1872,7 +1884,6 @@
   "checkIn": {
     "screen": {
       "title": "This week's check-in",
-      "intro": "Only what your logs don't already say. Each question says why it's asked.",
       "none": "Nothing to ask this week: your logs say enough.",
       "answered": "This week's call is in. It's on Today.",
       "send": "Get this week's call",
@@ -1895,12 +1906,12 @@
       "week1_feel": "How did week 1 feel?"
     },
     "reason": {
-      "training": "How training goes decides what changes next: food, or how you train.",
-      "recovery": "How you recover decides whether the next change is food or rest.",
+      "training": "It decides what changes: food or training.",
+      "recovery": "It decides whether food or rest changes next.",
       "cycle_stopped": "Your plan is low on fuel right now, and a missed period is the clearest sign it's too low. Your answer itself isn't saved; if it changes your plan, that change is.",
       "appetite": "After a long bulk, forcing food down is a sign the bulk has stopped paying off.",
       "state_still": "Your weeks have been paused for a while. If it's over, your weekly calls start again; if not, they stay paused. Either is fine.",
-      "week1_feel": "Every session happened. If it felt easy, there may be room for one more day."
+      "week1_feel": "Every session happened. Your answer shapes next week."
     },
     "choice": {
       "training": {
