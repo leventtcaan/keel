@@ -79,6 +79,10 @@ class ProgramController {
     record ProgramEdit(List<EditedProgramDay> days) {
     }
 
+    /** Contract NewProgramDay (POST /v1/program/days). */
+    record NewProgramDay(DayOfWeek weekday) {
+    }
+
     /** Contract StartingWeights: a move's load the user knows, in kg. */
     record StartingWeight(String exerciseId, BigDecimal kg) {
     }
@@ -336,6 +340,19 @@ class ProgramController {
         }).toList();
         return view(account, reviews.edit(account, days, parametersFor(account).wholeNumber(ParameterKey.TARGET_RIR_MAX), today(account),
                 zone(account)));
+    }
+
+    /**
+     * One more training day on the weekday (K-1012, ADR-073 Ek 9), for the first week's "add a day" call: the day is what the
+     * generator gives that weekday for the program's weekdays and this one (no rule of its own), the days the program has
+     * stay as they are, and the add is a change of the log an undo takes out. CONFLICT: the user's own program, a weekday
+     * the program trains, a day on no weekday, six days already.
+     */
+    @PostMapping("/v1/program/days")
+    Program addDay(AccountId account, @RequestBody NewProgramDay request) {
+        require(request.weekday() != null);
+        Parameters p = parametersFor(account);
+        return view(account, reviews.addDay(account, program -> ProgramDayAdds.added(program, request.weekday(), templates, catalog, p)));
     }
 
     /**

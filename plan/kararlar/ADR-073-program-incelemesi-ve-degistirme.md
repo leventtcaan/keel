@@ -323,12 +323,18 @@ testi: seçenekler salon ekipmanıyla süzülür.
   sırasındaki o konumundaki günü; adı (`nameKey`), hareketleri, setleri, tekrar aralığı (G1 K-21) ve RIR hedefi (G1 K-5) oradan gelir. Şablon
   dosyaları ve üreteç kuralı (K-211, H3 B8, G1 K-22: şablon gün sayısına göre, günler hafta sırasıyla) zaten kaynaklıdır ve onaylıdır; bu ek yeni
   bir eşik, parametre ya da seçim kuralı eklemez. İkinci bir yol kurmak yerine üreteç çağrılır, aynı şablon mantığı bir daha yazılmaz.
-- **Denge ve sınırı:** N+1 günlük şablon bütün olarak set sınırlarına, haftalık kas bandına ve sıklığa uyar (`ProgramTemplateTests`); eklenen gün o
-  şablonun günüdür. Test, 1-5 günlük üretilmiş her program için ve her boş hafta günü seçimi için, ekleme sonrası programın **incelemesinde
-  (Ek 1) bulgu kalmadığını** sabitler (6. gün: yalnız `TOO_MANY_DAYS`, G6 K-36; kullanıcı 6'yı seçebilir, generate de verir). **Bilinen sınır:**
-  mevcut günler başka bir bölünmeden (ör. 3 günlük üst/alt/tüm vücut) geldiği için yeni günün adı şablonlar arası karışır (ör. "Upper" +
-  "Lower A"): içerik dengelidir (inceleme temiz), adlandırma bütünsel bir bölünme göstermez. Düzenlenmiş (şablondan sapmış) üretilmiş
-  programda eklenen gün yine şablonun günüdür; sapma yeni bir inceleme bulgusu doğurursa `Program.review` onu önerir (kullanıcı seçer, ADR-073 #3).
+- **Denge, ölçüldü ve sınırı:** N+1 günlük şablon bütün olarak set sınırlarına, haftalık kas bandına ve sıklığa uyar (`ProgramTemplateTests`); eklenen
+  gün o şablonun günüdür, ama programın mevcut günleri başka bir bölünmeden gelir. `ProgramDayAddsTests` 1-5 günlük her üretilmiş program ve her boş
+  hafta günü için ekleme sonrası incelemenin (Ek 1) ne önerdiğini sabitler: **2 günden → 3: hiçbir şey** (1. hafta kararının ana yolu);
+  3 günden → 4: `TOO_FEW_SETS:rear_delts` (arka omuz 2 set, mevcut 3 günlükte hiç yok); 4 günden → 5: `TOO_FEW_SETS:forearms`; 1 günden → 2:
+  biceps, calves, rear_delts (1 günlük şablon yalnız bileşik; 1. hafta kararı 1 günden gün eklemez, taban `training_days_min`); 5 günden → 6:
+  yalnız `TOO_MANY_DAYS` (G6 K-36; kullanıcı 6'yı seçebilir, generate de verir). Hiçbir durumda fazla set, tekrar aralığı ya da haftada bir kez
+  çalışan kas çıkmaz; çıkanlar, günün getirdiği bir kasın haftalık alt sınırın (G1 K-11) altında kalmasıdır, yani ekleme sonrası kullanıcıya
+  `Program.review` bunu önerir ve kullanıcı seçer (ADR-073 #3; öneri yoksa bulgu gösterilmez, ör. kalça için izolasyon hareketi katalogda
+  yok). **Bilinen sınır:** programı ek sonrası bütünsel bir N+1 şablonu yapmak ya mevcut günleri değiştirmeyi (hedef korunması
+  ile çelişir) ya da günü kas açığına göre seçen yeni bir kural yazmayı ister (U14, Levent kararı); ikisi de bu ekin dışında. Adlandırma da
+  bölünmeler arası karışır (ör. "Upper" + "Lower A"). Düzenlenmiş (şablondan sapmış) üretilmiş programda eklenen gün yine şablonun
+  günüdür; test değişirse (şablon değişikliği) tablo bir koçluk değişikliğidir ve ürün sahibine gider.
 - **Kendi programı (`OWN`): 409.** Üretecin kendi bölünmesi yoktur; kullanıcının günlerinden yeni günü çıkaran kaynaklı bir kural da yok
   (U14), uydurmak telefonun uydurmasından farklı olmaz (U1). Kullanıcı kendi programına günü `PATCH /v1/program` ile (Edit › Days) ekler: içeriği
   kendisi koyar. Telefon 409'da Edit'e götürür (bugünkü #537 yolu). **Reddedilen:** kendi programında en yakın şablon gününü eklemek (kullanıcının
