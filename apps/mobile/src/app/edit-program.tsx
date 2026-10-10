@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -33,6 +33,13 @@ const plural = (key: string, count: number, vars: Record<string, string | number
   t(`${key}.${count === 1 ? 'one' : 'other'}`, { count, ...vars });
 const weekdayOf = (day: Schemas['ProgramDay']) =>
   day.weekday === undefined ? t('editProgram.anyDay') : t(`programEditor.weekdayShort.${day.weekday}`);
+/** Why a 409 came: the workout's day (edits kept), the program changed under the edit (cleared), or not known. */
+type Fit = 'kept' | 'cleared' | 'unknown';
+const CONFLICT: Record<Fit, string> = {
+  kept: 'editProgram.editConflictKept',
+  cleared: 'editProgram.editConflictCleared',
+  unknown: 'editProgram.editConflictUnknown',
+};
 const SAID = { conflict: 'editProgram.stale', offline: 'editProgram.offline', failed: 'editProgram.failed' } as const;
 
 /**
@@ -94,6 +101,8 @@ export default function EditProgramScreen() {
   const [draft, setDraft] = useState<EditedDay[] | null>(null);
   const [warned, setWarned] = useState<string[] | null>(null);
   const [savedEdit, setSavedEdit] = useState<string | null>(null);
+  // Back with edits not saved asks first (they would be gone).
+  const [leaving, setLeaving] = useState(false);
   const base = useMemo(() => (program === null ? [] : editedDays(program)), [program]);
   const days = draft ?? base;
   const edit = program === null ? null : programEditOf(days, program);
@@ -101,13 +110,13 @@ export default function EditProgramScreen() {
   // after a name, are no edit (the server saves nothing then, and the page must not say it did).
   const baseEdit = useMemo(() => (program === null ? null : programEditOf(base, program)), [base, program]);
   const dirty = draft !== null && (edit === null || JSON.stringify(edit) !== JSON.stringify(baseEdit));
-  // Back with edits not saved asks first (they would be gone).
-  const [leaving, setLeaving] = useState(false);
   const onEdit = useCallback(
     (next: (all: EditedDay[]) => EditedDay[]) => {
       setDraft((before) => next(before ?? base));
       setWarned(null);
       setSavedEdit(null);
+      // The warning was about the edit as it was; this is another.
+      setLeaving(false);
     },
     [base],
   );
@@ -148,6 +157,8 @@ export default function EditProgramScreen() {
   // edit's own id (the last of the log) is what Undo takes back.
   const save = (confirmed: boolean) => {
     if (program === null || edit === null || !dirty) return;
+    // Saving is the answer to "Back with edits not saved"; if it fails, the edits stay and the warning would be stale.
+    setLeaving(false);
     const lost = targetsLost(days, program);
     if (lost.length > 0 && !confirmed) {
       setWarned(lost);
@@ -156,9 +167,9 @@ export default function EditProgramScreen() {
     }
     setWarned(null);
     // A 409 is the program changing under the edit, or today's workout on a day the edit moves or removes (the program is
-    // the same then): the program as it is now says which, by the ids the draft kept. Not read (offline), it is not guessed:
-    // the edits stay.
-    let fits = true;
+    // the same then): the program as it is now says which, by the ids the draft kept. Not read (offline, or only the phone's
+    // copy), the cause is not guessed: the edits stay and the page says only that it did not save.
+    let fits: Fit = 'unknown';
     const request = async () => {
       const answer = await editProgram(api, edit);
       if (answer.kind === 'conflict') fits = await stillFits(days, program);
@@ -174,17 +185,19 @@ export default function EditProgramScreen() {
         setSavedEdit(edits.filter((e) => !known.has(e.id)).at(-1)?.id ?? null);
         setDone(t('editProgram.saved'));
       },
-      { ...words(SAID), conflict: () => t(fits ? 'editProgram.editConflictKept' : 'editProgram.editConflictCleared'), refused: t('editProgram.editRefused') },
+      { ...words(SAID), conflict: () => t(CONFLICT[fits]), refused: t('editProgram.editRefused') },
       // The rows the draft names are gone: the program as the server has it now is what to edit again.
-      (kind) => kind === 'conflict' && !fits && setDraft(null),
+      (kind) => kind === 'conflict' && fits === 'cleared' && setDraft(null),
     );
   };
-  const stillFits = async (edited: EditedDay[], before: Schemas['Program']): Promise<boolean> => {
+  const stillFits = async (edited: EditedDay[], before: Schemas['Program']): Promise<Fit> => {
     try {
       const now = await training.read(api);
-      return now.kept || now.program.state !== 'ready' || draftFits(edited, before, now.program.value);
+      // The phone's copy (or no program) is not the server's word on what changed.
+      if (now.kept || now.program.state !== 'ready') return 'unknown';
+      return draftFits(edited, before, now.program.value) ? 'kept' : 'cleared';
     } catch {
-      return true;
+      return 'unknown';
     }
   };
   // An own move made at once (POST /v1/custom-exercises, as in a workout): kept on the phone from the answer, then a move
@@ -362,6 +375,8 @@ export default function EditProgramScreen() {
     );
   return (
     <SafeAreaView edges={['top', 'bottom']} style={[styles.safe, { backgroundColor: color.background }]}>
+      {/* The iOS edge swipe back would drop unsaved edits without the question Back asks. */}
+      <Stack.Screen options={{ gestureEnabled: !dirty }} />
       <ScrollView contentContainerStyle={styles.body}>
         <ScreenTitle>{title}</ScreenTitle>
         {body}

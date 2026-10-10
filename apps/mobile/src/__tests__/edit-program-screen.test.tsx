@@ -97,7 +97,15 @@ jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServ
 const mockPush = jest.fn();
 const mockDismissTo = jest.fn();
 let mockParams: Record<string, string> = {};
+/** The options the screen gave its Stack.Screen last (the iOS edge swipe back is one of them). */
+let mockScreenOptions: { gestureEnabled?: boolean } | undefined;
 jest.mock('expo-router', () => ({
+  Stack: {
+    Screen: ({ options }: { options?: { gestureEnabled?: boolean } }) => {
+      mockScreenOptions = options;
+      return null;
+    },
+  },
   router: { push: (...args: unknown[]) => mockPush(...args), back: jest.fn(), dismissTo: (...args: unknown[]) => mockDismissTo(...args) },
   useLocalSearchParams: () => mockParams,
   useFocusEffect: (effect: () => void) => {
@@ -111,6 +119,7 @@ beforeEach(() => {
   mockGet.mockImplementation(profileAnswer);
   mockData = { program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: [] }, kept: false };
   mockParams = {};
+  mockScreenOptions = undefined;
   mockRecords = [];
   mockAnswers = {
     '/v1/program/review/apply': () => ({ data: PROGRAM, response: { status: 200 } }),
@@ -506,7 +515,7 @@ describe('training days and moves: edited here (ADR-073 #4)', () => {
       expect(screen.getByLabelText(t('programEditor.dayName'))).toHaveProp('value', 'Upper');
     });
 
-    test('409 and the program cannot be read again: the edits are not thrown away on a guess', async () => {
+    test('409 and the program cannot be read again: the edits stay, and the cause is not guessed', async () => {
       mockPatch.mockImplementationOnce(async () => {
         mockServices.training.read.mockImplementationOnce(async () => {
           throw new TypeError('Network request failed');
@@ -514,7 +523,20 @@ describe('training days and moves: edited here (ADR-073 #4)', () => {
         return conflict();
       });
       await attempt();
-      expect(await screen.findByText(t('editProgram.editConflictKept'))).toBeTruthy();
+      expect(await screen.findByText(t('editProgram.editConflictUnknown'))).toBeTruthy();
+      expect(screen.queryByText(t('editProgram.editConflictKept'))).toBeNull();
+      expect(screen.queryByText(t('editProgram.editConflictCleared'))).toBeNull();
+      expect(screen.getByLabelText(t('programEditor.dayName'))).toHaveProp('value', 'Chest day');
+    });
+
+    test('409 and the read is the phone\'s own copy: the cause is not guessed either, the edits stay', async () => {
+      mockPatch.mockImplementationOnce(async () => {
+        mockData = { ...mockData, kept: true };
+        return conflict();
+      });
+      await attempt();
+      expect(await screen.findByText(t('editProgram.editConflictUnknown'))).toBeTruthy();
+      expect(screen.queryByText(t('editProgram.editConflictKept'))).toBeNull();
       expect(screen.getByLabelText(t('programEditor.dayName'))).toHaveProp('value', 'Chest day');
     });
 
@@ -559,6 +581,47 @@ describe('training days and moves: edited here (ADR-073 #4)', () => {
       await fireEvent.press(screen.getByText(t('editProgram.back')));
       await fireEvent.press(screen.getByText(t('editProgram.leave')));
       expect(router.back).toHaveBeenCalledTimes(1);
+    });
+
+    test('Back warned, then Save: the warning goes (a failed save keeps the edits, and the warning is stale)', async () => {
+      mockParams = { part: 'days' };
+      editable();
+      mockPatch.mockImplementationOnce(async () => {
+        throw new TypeError('Network request failed');
+      });
+      await show();
+      await rename('Chest day');
+      await fireEvent.press(screen.getByText(t('editProgram.back')));
+      expect(screen.getByText(t('editProgram.leaveWarn'))).toBeTruthy();
+      await save();
+      expect(await screen.findByText(t('editProgram.offline'))).toBeTruthy();
+      expect(screen.queryByText(t('editProgram.leaveWarn'))).toBeNull();
+      expect(screen.getByLabelText(t('programEditor.dayName'))).toHaveProp('value', 'Chest day');
+    });
+
+    test('Back warned, then another edit: the warning goes', async () => {
+      mockParams = { part: 'days' };
+      editable();
+      await show();
+      await rename('Chest day');
+      await fireEvent.press(screen.getByText(t('editProgram.back')));
+      expect(screen.getByText(t('editProgram.leaveWarn'))).toBeTruthy();
+      await rename('Chest day 2');
+      expect(screen.queryByText(t('editProgram.leaveWarn'))).toBeNull();
+    });
+
+    test('the iOS edge swipe back is off while edits are not saved, on when there is nothing to lose or once saved', async () => {
+      mockParams = { part: 'days' };
+      editable();
+      mockPatch.mockImplementationOnce(async () => ({ data: AFTER, response: { status: 200 } }));
+      await show();
+      await screen.findByText('Upper');
+      expect(mockScreenOptions?.gestureEnabled).toBe(true);
+      await rename('Chest day');
+      expect(mockScreenOptions?.gestureEnabled).toBe(false);
+      await save();
+      expect(await screen.findByText(t('editProgram.saved'))).toBeTruthy();
+      expect(mockScreenOptions?.gestureEnabled).toBe(true);
     });
 
     test('nothing to lose: Back goes at once', async () => {

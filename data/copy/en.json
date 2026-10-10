@@ -423,6 +423,7 @@
     "keepEditing": "Keep editing",
     "editConflictKept": "Today's workout is on a day you moved or removed, so this can't be saved yet. Your edits are still here.",
     "editConflictCleared": "Your program changed since you opened it. Your edits were cleared. Here it is again.",
+    "editConflictUnknown": "That didn't save. Your edits are still here; try again.",
     "leaveWarn": "Your edits aren't saved yet. If you leave, they're gone.",
     "leave": "Leave without saving",
     "editRefused": "This program can't be saved as it is. Check the days and moves, then try again.",
