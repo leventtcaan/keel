@@ -695,13 +695,19 @@
         "workoutEnd.share",
         "workoutEnd.done",
         "workoutEnd.record",
-        "workoutEnd.set"
+        "workoutEnd.set",
+        "workoutEnd.moved",
+        ["workoutEnd.move.loadUp", "workoutEnd.move.loadDown", "workoutEnd.move.repsUp.other", "workoutEnd.move.repsDown.other", "workoutEnd.move.same", "workoutEnd.move.held", "workoutEnd.move.first"],
+        "workoutEnd.move.more"
       ],
       "dynamic": [
         { "what": "the session's day (Full body A)", "words": 3 },
         { "what": "the record's move and set (Squat 100 kg × 8)", "words": 2 },
-        { "what": "the record's next set's unit (100 kg × 9)", "words": 1 }
+        { "what": "the record's next set's unit (100 kg × 9)", "words": 1 },
+        { "what": "What moved, the three moves' names (Romanian deadlift)", "words": 6 },
+        { "what": "What moved, the other two rows' changes (+1 rep, held)", "words": 2 }
       ],
+      "parts": ["src/train/MovedCard.tsx", "src/train/whatMoved.ts"],
       "notFirstView": [
         "workoutEnd.minutes.one",
         "workoutEnd.sets.one",
@@ -711,7 +717,12 @@
         "workoutEnd.pending",
         "workoutEnd.failed",
         "workoutEnd.retry",
-        "workoutEnd.ready"
+        "workoutEnd.ready",
+        "workoutEnd.move.repsUp.one",
+        "workoutEnd.move.repsDown.one",
+        "workoutEnd.move.label",
+        "workoutEnd.move.labelPlain",
+        "workoutEnd.move.moreLabel"
       ]
     },
     {
