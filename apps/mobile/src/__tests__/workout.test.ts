@@ -402,3 +402,28 @@ describe("today's session is the server's (K-971, K-964, ADR-073 Ek 3): its move
     expect(sessionMoves(day, week({ short: true, exerciseIds: ['squat'] }), '2026-10-14')).toEqual(day.exercises);
   });
 });
+
+describe("a move swapped in starts with nothing of its own (K-972, ADR-075 Ek 7): last time's weight and reps are not the aim", () => {
+  const dumbbell = { exerciseId: 'dumbbell_bench_press', baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 1 };
+  const dumbbellMove = { id: 'dumbbell_bench_press', unilateral: false, load: 'EXTERNAL' } as Schemas['Exercise'];
+  const last = [
+    { clientId: 'x1', exerciseId: 'dumbbell_bench_press', setType: 'WORKING', loadKg: 32.5, reps: 12 },
+    { clientId: 'x2', exerciseId: 'dumbbell_bench_press', setType: 'WORKING', loadKg: 32.5, reps: 11 },
+  ] as Schemas['NewSet'][];
+
+  test("fresh: no weight, the range's bottom for reps; not fresh: last time's, as for any planned move", () => {
+    expect(planExercise(dumbbell, dumbbellMove, last, []).rows[0].suggested).toEqual({ loadKg: 32.5, reps: 12 });
+    expect(planExercise(dumbbell, dumbbellMove, last, [], undefined, true).rows[0].suggested).toEqual({ loadKg: null, reps: 6 });
+  });
+
+  test('fresh, what was just lifted in this session still carries to the next row', () => {
+    const lifted = { clientId: 'y1', exerciseId: 'dumbbell_bench_press', setType: 'WORKING', loadKg: 30, reps: 10 } as Schemas['NewSet'];
+    const plan = planExercise(dumbbell, dumbbellMove, last, [lifted], undefined, true);
+    expect(plan.rows[1].suggested).toEqual({ loadKg: 30, reps: 6 });
+  });
+
+  test('a bodyweight move is 0 either way', () => {
+    const planned = { ...dumbbell, exerciseId: 'push_up' };
+    expect(planExercise(planned, pushUp, [], [], undefined, true).rows[0].suggested.loadKg).toBe(0);
+  });
+});

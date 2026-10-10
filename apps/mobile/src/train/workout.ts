@@ -97,7 +97,10 @@ export function lastTime(records: LocalRecord[], exerciseId: string, except: str
  * A planned move as rows: this week's sets (the server's count — fewer in a deload week, K-217), per side for a
  * one-sided move (left, then right). A row suggests the load just lifted in this session, else the server's next load,
  * else last time's; the server's next reps, else last time's, else the bottom of the range. A bodyweight move's load is
- * always 0 (an added load belongs to BODYWEIGHT_PLUS_EXTERNAL). Working sets beyond the plan show as more rows. The move
+ * always 0 (an added load belongs to BODYWEIGHT_PLUS_EXTERNAL). Working sets beyond the plan show as more rows. A move
+ * swapped in during the session (`fresh`, ADR-075 Ek 7) has no weight and no reps of its own to start from: last time's are
+ * not the aim of a move that was not the plan's (the weight is picked, as at a first session); the range's bottom for reps,
+ * and what was just lifted in this session still carries to the next row. The move
  * is required: without the catalog the sides and the load model are unknown, and a guess is a set the server refuses.
  * A skipped set (K-972) is a row of its own, the sets done fill the others in order; a skipped move skips every row
  * not done.
@@ -108,6 +111,7 @@ export function planExercise(
   last: NewSet[],
   done: NewSet[],
   skipped: Skipped = NONE_SKIPPED,
+  fresh = false,
 ): ExercisePlan {
   const sides: Schemas['Side'][] = move.unilateral ? ['LEFT', 'RIGHT'] : ['BOTH'];
   const working = done.filter((s) => s.exerciseId === planned.exerciseId && s.setType === 'WORKING');
@@ -135,8 +139,8 @@ export function planExercise(
       rows.push({
         side,
         suggested: {
-          loadKg: move.load === 'BODYWEIGHT' ? 0 : (lifted ?? planned.nextLoadKg ?? lastLoad),
-          reps: planned.nextReps ?? lastRows[i]?.reps ?? planned.reps.min,
+          loadKg: move.load === 'BODYWEIGHT' ? 0 : (lifted ?? planned.nextLoadKg ?? (fresh ? null : lastLoad)),
+          reps: planned.nextReps ?? (fresh ? undefined : lastRows[i]?.reps) ?? planned.reps.min,
         },
         last: lastRows[i] ?? null,
         done: doneSet,

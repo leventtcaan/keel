@@ -153,3 +153,29 @@ birinci taraf paketi, SDK sürümüyle uyumlu, başka iş yapmaz.
   yalnız kaydedilip gönderilmemiş kayıt (uygulama arada kapandı) için vardır; metin "may already be on the server" der, "already sent" değil.
 - **Undo yeniden denemesi:** geri getirilen seansın ve setlerin kimlikleri atma anında bir kez üretilir; yarıda kalan Undo tekrar denenince
   kuyruk aynı kimliği ikinci kez kaydetmez (ikinci seans oluşmaz). Başarısızlık söylenir.
+
+## Ek 7 · Seans içi swap telefonda; yeni hareket hedefsiz ve kilosuz başlar; süperset yeri devralır (K-972 P4 inceleme, #533, 2026-10-10, düzenleyici kararı, teknik)
+- **Seans içi swap telefonda yapılır, sunucuya sorulmaz:** seans başlamış günün swap'ını sunucu reddeder (ADR-073 Ek 3, CONFLICT); telefon swap'ı
+  seansa bağlı tutar (`sessionSwaps`), yalnız bu antrenman için, Undo'lu, bitişte unutulur. Setler yeni hareketin kimliğiyle gider; motor her seti kendi
+  hareketine yazar.
+- **Seçenek başına tablo yok (bilinen eksik):** `swapOptions` sözleşmede yalnız kimliktir. Sunucunun TodaySwap satırı yeni hareket için kendi
+  `lastBestSet`, `lighterLoadKg`/`heavierLoadKg` ve `calibrationStepKg` değerlerini taşır (`ProgramController.asShown`, Ek 3); telefonda swap'lı
+  harekette bunlar yoktur ve telefon hesaplayamaz (U1). **K-1011** sunucu `swapOptions`'ı TodaySwap satırının alanlarıyla (aynı koddan) zenginleştirecek.
+  O gelene kadar swap'lı harekette "Too heavy?" ve kalibrasyon önerisi çıkmaz; hareket hedefsiz başlar. K-973'ün "değiştirilen hareket de
+  kalibrasyonla başlar" kabulü K-1011'e bağlıdır.
+- **Kilo ön-doldurma kapalı:** swap'lı hareketin kilosu telefonun geçmişinden doldurulmaz (`planExercise` `fresh`): kilo boş başlar, tekrar aralığın
+  altından; bu seansta az önce kaldırılan kilo sonraki satıra taşınır (kullanıcının kendi değeri). **Neden:** (1) K-973'ün kuralı "kalibrasyon boş kiloyla
+  başlar, Pick a weight" ve swap'lı hareket de aynı yoldan gider; geçici bir ön-doldurma o kuralla çelişir ve K-1011 gelince söküleceği için ikinci kez
+  değişirdi; (2) `swap.why` metni ("pick its weight") davranışla artık aynıdır; (3) başka hareketin geçmişi değil, bu hareketin geçmişi de olsa sunucunun
+  kalibrasyon adımı olmadan "geçen seferki kilo" hedef gibi okunur, U1'e yakın bir ima. **Reddedilen:** metni "kendi son kilosu varsa o" diye yumuşatıp
+  ön-doldurmayı korumak (K-973'te geri alınırdı; kullanıcıya hedef gibi görünürdü).
+- **Süperset yeri devralınır:** süpersetin üyesi planlı hareketin yeridir; yerine kim geçtiyse sıra onundur. Swap'ta eski hareket turdan çıkar, yeni
+  hareket girer (kurulmuş ya da setlerden okunmuş, ilk setten önce ya da sonra); Undo ve "Back to the planned move" aynı eşlemeyle süpersetin yerini geri
+  verir. Bu seansta swap'tan çıkan hareket (üzerinde set kalmış) süpersetin üyesi sayılmaz. **Neden:** kullanıcının kurduğu süperset korunur; grubu
+  çözmek, kurulu süpersetin sessizce kaybolması demekti. **Bilinen sınır:** ekran kapatılıp açılınca, swap'tan çıkmış ara hareketin süperset kimlikli
+  setleri varsa o hareket yeniden üye görünür (swap'tan çıkış kalıcı tutulmaz); nokta çubuğundan hareket seçilerek ya da "Not a superset" ile düzelir (yeniden açılıştan sonra Undo yok); kalıcı `left` K-973 kapsamında.
+- **Kayıtlı swap yeniden doğrulanır:** `applySwaps`, kayıtlı `to`'yu planlı hareketin `swapOptions`'ına, telefonun kataloğuna ve günün başka planlı
+  hareketi olmamasına karşı denetler; geçersizse yok sayar (onarmaz). **Neden:** hafta yeniden okunmuş ya da katalog değişmiş olabilir; geçersiz hareketin
+  seti sunucuda reddedilir.
+- **"N of M" sayacı:** planlı hareketin yeri, üzerinde ya da yerine geçen harekette set varsa sayılır (sayaç set başlamış hareketleri sayar,
+  bitmiş değil); swap sayacı düşürmez.

@@ -36,6 +36,8 @@ import { dayName, exerciseName } from '@/train/program';
 import { findMoves } from '@/train/moves';
 import { NOT_PAUSED, type Pause, pausedFor, toggle } from '@/train/pause';
 import type { Skips } from '@/train/skips';
+import { type Swaps, applySwaps, swapChoices, validSwaps } from '@/train/sessionSwaps';
+import { SwapSheet } from '@/train/SwapSheet';
 import { workoutParams } from '@/train/params';
 import { repsText } from '@/train/reps';
 import { buildSet, exerciseStatus, loadText, parseEntry, parseLoad, platesLine } from '@/train/session';
@@ -79,7 +81,7 @@ export default function WorkoutScreen() {
 }
 
 function Session() {
-  const { api, training, workoutRecords, workoutEdits, queue, report, restAlert, healthWriting, sessionPause, sessionSkips } = useAppServices();
+  const { api, training, workoutRecords, workoutEdits, queue, report, restAlert, healthWriting, sessionPause, sessionSkips, sessionSwaps } = useAppServices();
   const { day: opened } = useLocalSearchParams<{ day?: string }>();
   const units = useUnits();
   const { color } = useTheme();
@@ -105,7 +107,15 @@ function Session() {
   const pauseRef = useRef<Pause>(NOT_PAUSED);
   // What was skipped (K-972), by move: never sent, kept with the workout. `undo` puts back the last skip.
   const [skips, setSkips] = useState<Skips>({});
-  // The last skip or delete, said, and how to take it back (K-972).
+  // The moves swapped in this session (K-972, ADR-073 #6): for this workout only, never sent, kept with it. The sheet is open
+  // while `swapping`.
+  const [swaps, setSwaps] = useState<Swaps>({});
+  const [swapping, setSwapping] = useState(false);
+  // The moves swapped away from on this screen: they stay in the session with what was done on them, but are no longer
+  // the superset's members (its place is the planned move's, whoever stands in it). Not kept: opened again, a superset
+  // read back from sets lists the moves its sets were done on.
+  const [left, setLeft] = useState<string[]>([]);
+  // The last skip, swap or delete, said, and how to take it back (K-972).
   const [undo, setUndo] = useState<{ said: string; run: () => void } | null>(null);
   // A set done being corrected (K-972): the set and its number as shown.
   const [editing, setEditing] = useState<{ set: components['schemas']['NewSet']; number: string } | null>(null);
@@ -120,6 +130,7 @@ function Session() {
     sets: components['schemas']['NewSet'][];
     pause: Pause;
     skips: Skips;
+    swaps: Swaps;
     /** The ids it comes back under, made once: an Undo that failed half way and is tried again adds nothing twice. */
     back: { workout: string; sets: string[] };
   } | null>(null);
@@ -151,6 +162,7 @@ function Session() {
         const paused = open === null ? NOT_PAUSED : await sessionPause.read(open.clientId);
         const skipped = open === null ? {} : await sessionSkips.read(open.clientId);
         setSkips(skipped);
+        setSwaps(open === null ? {} : await sessionSwaps.read(open.clientId));
         setData(read);
         setOwn(mine);
         pauseRef.current = paused;
@@ -161,7 +173,7 @@ function Session() {
         named(error);
         setFailed(true);
       });
-  }, [api, training, workoutRecords, named, sessionPause, sessionSkips, underWay]);
+  }, [api, training, workoutRecords, named, sessionPause, sessionSkips, sessionSwaps, underWay]);
 
   const active = records === null ? null : underWay(records);
   const startedAt = active === null ? null : Date.parse(active.startedAt);
@@ -186,12 +198,19 @@ function Session() {
   const startDay = startedAt === null ? null : localDay(new Date(startedAt));
   const sessionDay = startDay !== null && startDay !== localDay(new Date(openedAt)) ? startDay : todayFor(program, data?.kept === true, new Date(openedAt));
   const today = day === null ? [] : sessionMoves(day, program?.week, sessionDay);
-  const planIds = today.map((p) => p.exerciseId);
+  // The moves swapped in this session in place (K-972); `today` stays the plan they were swapped from.
+  // Checked against the plan again (K-972): a swap kept that the week no longer offers, or the catalog lacks, is no swap.
+  const known = (id: string) => moves.has(id);
+  const live = validSwaps(today, swaps, known);
+  const shown = applySwaps(today, swaps, known);
+  // The moves standing in a planned one's place: they start with nothing of their own (planExercise `fresh`).
+  const swappedIn = new Set(Object.values(live));
+  const planIds = shown.map((p) => p.exerciseId);
   const extraIds = [...new Set([...done.map((s) => s.exerciseId).filter((id) => !added.includes(id)), ...added])].filter(
     (id) => !planIds.includes(id) && moves.has(id),
   );
-  const entries: { exerciseId: string; planned?: components['schemas']['PlannedExercise'] }[] =
-    day === null ? [] : [...today.map((p) => ({ exerciseId: p.exerciseId, planned: p })), ...extraIds.map((exerciseId) => ({ exerciseId }))];
+  const entries: { exerciseId: string; planned?: components['schemas']['PlannedExercise']; base?: components['schemas']['PlannedExercise'] }[] =
+    day === null ? [] : [...shown.map((p, i) => ({ exerciseId: p.exerciseId, planned: p, base: today[i] })), ...extraIds.map((exerciseId) => ({ exerciseId }))];
   const plans: (ExercisePlan | null)[] =
     records === null
       ? []
@@ -202,7 +221,7 @@ function Session() {
             ? null
             : planned === undefined
               ? extraPlan(move, last, done)
-              : planExercise(planned, move, last, done, skips[exerciseId] ?? NONE_SKIPPED);
+              : planExercise(planned, move, last, done, skips[exerciseId] ?? NONE_SKIPPED, swappedIn.has(exerciseId));
         });
   const firstOpen = plans.findIndex((plan) => plan !== null && plan.current !== null);
   // The move picked, by its id: the list can grow or change order under it.
@@ -211,16 +230,23 @@ function Session() {
   const plan = plans[selected] ?? null;
   const entry_ = entries[selected];
   const planned = entry_?.planned;
+  const base = entry_?.base;
   const moveId = entry_?.exerciseId;
   const move = moveId === undefined ? undefined : moves.get(moveId);
   const row = plan === null || plan.current === null ? null : plan.rows[plan.current];
   // A superset is two moves or more, in the order its round was started: those whose last work set carries its id, then
   // the ones linked here with no set in it yet. Unlinked, the next set has no id and the move is out, opened again too.
   const inForce = supersetsInForce(done.filter((s) => s.setType === 'WORKING'));
+  // A swap passes the superset on (K-972): a member is the place of a planned move, and whoever stands in it now takes the
+  // member's turn — the move swapped away from is out of the round, as the one swapped in is in it. Linked here, a member
+  // is kept as the planned move's place (`slotOf`), so Undo and Back find the superset where they left it.
+  const stand = (id: string) => live[id] ?? id;
+  const inRound = (id: string) => planIds.includes(id) || !left.includes(id);
   const groups = [...new Set([...inForce.keys(), ...formed.keys()])]
     .map((id): [string, string[]] => {
       const started = inForce.get(id) ?? [];
-      return [id, [...started, ...(formed.get(id) ?? []).filter((m) => !started.includes(m))]];
+      const members = [...started, ...(formed.get(id) ?? []).filter((m) => !started.includes(m))].map(stand).filter(inRound);
+      return [id, [...new Set(members)]];
     })
     .filter(([id, members]) => members.length > 1 && !unlinked.includes(id));
   const groupOf = (id: string | undefined) => groups.find(([, members]) => id !== undefined && members.includes(id));
@@ -265,6 +291,8 @@ function Session() {
     if (before.pausedAt !== null || before.pausedMs > 0) await sessionPause.keep(clientId, before);
     // So are the skips before it.
     if (Object.keys(skips).length > 0) await sessionSkips.keep(clientId, skips);
+    // And the swaps before it.
+    if (Object.keys(swaps).length > 0) await sessionSwaps.keep(clientId, swaps);
     return clientId;
   };
 
@@ -385,9 +413,10 @@ function Session() {
       const lengthMs = Math.max(0, end.getTime() - Date.parse(active.startedAt));
       const pausedMs = Math.min(lengthMs, pausedFor(pauseRef.current, end.getTime()));
       await queue.record(finishRecord(active.clientId, newClientId(), end, [...unclean], sessionNote, Math.floor(pausedMs / 1000)));
-      // Finished, its pause is done with (the time paused goes with the finish once the contract takes it, K-998).
+      // Finished, its pause, skips and swaps are done with (the time paused went with the finish, K-998).
       void sessionPause.forget().catch(named);
       void sessionSkips.forget().catch(named);
+      void sessionSwaps.forget().catch(named);
       // What was done, against last time (K-406); a workout without a work set has nothing to show.
       if (worked.length > 0) {
         // To Apple Health too, if that switch is on (K-412); not waited for — it reports its own failure.
@@ -408,8 +437,11 @@ function Session() {
   };
   const finishProblem = problem !== null && problem.row === FINISH ? <ProblemText style={[styles.text, { color: color.text }]} occurrence={problem}>{problem.text}</ProblemText> : null;
 
-  // Progress is the plan's: a move outside it is not one of the day's count.
-  const movesDone = plans.filter((p, i) => entries[i]?.planned !== undefined && p !== null && p.rows.some((r) => r.done !== null)).length;
+  // Progress is the plan's: a move outside it is not one of the day's count. A planned move's place counts once it has a set,
+  // on the move now standing in it or on the one it was swapped from (K-972): a swap does not take a move back out of the count.
+  const movesDone = entries.filter(
+    (e, i) => e.planned !== undefined && plans[i] !== null && (worked.includes(e.exerciseId) || (e.base !== undefined && worked.includes(e.base.exerciseId))),
+  ).length;
   // Nothing kept yet: close and send nothing. A workout kept without a working set: finish it, there is nothing to ask.
   const onFinish = () => {
     setEnding(false);
@@ -419,6 +451,7 @@ function Session() {
   };
   // End (K-972): with nothing kept there is nothing to choose; else the three ways out.
   const onEnd = () => {
+    setSwapping(false);
     if (active === null) router.back();
     else setEnding(true);
   };
@@ -435,7 +468,7 @@ function Session() {
   };
   /**
    * Discarded (ADR-075 #5, K-998): nothing is saved. Once the server has it, it is deleted there first (offline then,
-   * it says a connection is needed and keeps it); then the phone's records of it go, with its pause and skips. What it
+   * it says a connection is needed and keeps it); then the phone's records of it go, with its pause, skips and swaps. What it
    * held stays on the screen to bring back with Undo, as a new workout from the same start.
    */
   const discard = async () => {
@@ -448,6 +481,7 @@ function Session() {
       sets: active.sets,
       pause: pauseRef.current,
       skips,
+      swaps,
       back: { workout: newClientId(), sets: active.sets.map(() => newClientId()) },
     };
     try {
@@ -455,6 +489,7 @@ function Session() {
       await workoutEdits.discard(active.clientId);
       void sessionPause.forget().catch(named);
       void sessionSkips.forget().catch(named);
+      void sessionSwaps.forget().catch(named);
       endRest();
       setHeld([]);
       setEnding(false);
@@ -472,7 +507,7 @@ function Session() {
     setBusy(false);
   };
   /**
-   * The discarded workout back, as a new one from the same start: its sets, its pause and its skips. Under the ids made
+   * The discarded workout back, as a new one from the same start: its sets, its pause, its skips and its swaps. Under the ids made
    * when it was discarded, so a try that failed half way and is tried again keeps what it had and adds the rest: the
    * queue saves a clientId once. A failure is said, and Undo stays to try again.
    */
@@ -490,6 +525,7 @@ function Session() {
       }
       if (discarded.pause.pausedAt !== null || discarded.pause.pausedMs > 0) await sessionPause.keep(back.workout, discarded.pause);
       if (Object.keys(discarded.skips).length > 0) await sessionSkips.keep(back.workout, discarded.skips);
+      if (Object.keys(discarded.swaps).length > 0) await sessionSwaps.keep(back.workout, discarded.swaps);
       setDiscarded(null);
       setProblem(null);
     } catch (error) {
@@ -616,6 +652,52 @@ function Session() {
   };
 
   /**
+   * Swap (K-972, ADR-073 #6, ADR-075 #5): inside the workout it is the workout's own, for today only, and never asked of the
+   * server (it refuses a swap for a day whose workout has started, ADR-073 Ek 3). The new move takes the planned one's place
+   * with its sets, range and aim and no target of its own (applySwaps); the planned move again undoes it. What was done of
+   * the old move stays on it. Kept with the workout once there is one; the last swap can be undone, until a set is logged.
+   */
+  const keepSwaps = (next: Swaps) => {
+    setSwaps(next);
+    if (active !== null) void sessionSwaps.keep(active.clientId, next).catch(named);
+  };
+  const swapOptions =
+    base === undefined || moveId === undefined || plan === null || plan.current === null
+      ? []
+      : swapChoices(base, moveId, inSession, (id) => moves.has(id)).map((id) => ({
+          id,
+          name: name(id),
+          equipment: moves.get(id)?.equipment,
+          back: id === base.exerciseId,
+        }));
+  const swapTo = (to: string) => {
+    if (base === undefined || moveId === undefined) return;
+    const before = swaps;
+    // Swapped by the move the session started with: the planned move again is no swap.
+    const next = Object.fromEntries(Object.entries(swaps).filter(([id]) => id !== base.exerciseId));
+    const back = to === base.exerciseId;
+    const said = t(back ? 'workout.swappedBack' : 'workout.swapped', { name: name(to) });
+    const leftBefore = left;
+    setUndo({
+      said,
+      run: () => {
+        keepSwaps(before);
+        setLeft(leftBefore);
+        setPicked(moveId);
+      },
+    });
+    keepSwaps(back ? next : { ...next, [base.exerciseId]: to });
+    // The move swapped away from is out of its superset (the new one takes its place), and the new one is in it.
+    setLeft((was) => [...new Set([...was.filter((id) => id !== to), moveId])]);
+    // The rest running was for the move before: a swap changes what comes next, so the timer and its alert go, as for a skip.
+    endRest();
+    setPicked(to);
+    setSwapping(false);
+    // Said, not only shown (K-815).
+    announce(said);
+  };
+
+  /**
    * A set done corrected (`next`) or deleted (null), K-972: never sent, in its place; else on the server first and
    * then here, in its old place (setEdits.ts). Offline then, it says a connection is needed and nothing changes. A
    * delete is said, and can be undone.
@@ -706,8 +788,10 @@ function Session() {
         problemOccurrence={problem}
       />
     );
+  // The planned move whose place a move holds (itself when it is not swapped in or is outside the plan).
+  const slotOf = (id: string) => entries.find((e) => e.exerciseId === id)?.base?.exerciseId ?? id;
   const linkWith = (partner: string) => {
-    if (moveId !== undefined) setFormed((before) => new Map([...before, [newClientId(), [moveId, partner]]]));
+    if (moveId !== undefined) setFormed((before) => new Map([...before, [newClientId(), [slotOf(moveId), slotOf(partner)]]]));
   };
   const unlink = () => {
     if (group !== undefined) setUnlinked((before) => [...before, group[0]]);
@@ -747,6 +831,18 @@ function Session() {
         <Text style={[styles.small, { color: color.muted }]}>{t('workout.skipMove')}</Text>
       </Pressable>
     );
+  // Swap (K-972): with the move's links; only a move of the plan with sets left, and where the server's list has another to offer.
+  const swapLink =
+    swapOptions.length === 0 || moveId === undefined ? null : (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t('swap.label', { move: name(moveId) })}
+        onPress={() => setSwapping(true)}
+        disabled={busy}
+        style={styles.link}>
+        <Text style={[styles.small, { color: color.accent }]}>{t('workout.swap')}</Text>
+      </Pressable>
+    );
   // A move skipped, opened again: it says so, and it can be brought back.
   const skippedMove = (
     <View style={[styles.undo, { backgroundColor: color.surface }]}>
@@ -784,6 +880,7 @@ function Session() {
             </Pressable>
             {/* With the move's other links, not between the target and the set (K-971). */}
             {supersetBlock}
+            {swapLink}
             {skipMoveLink}
           </View>
         </View>
@@ -912,8 +1009,10 @@ function Session() {
       </View>
     </View>
   );
+  const swapSheet =
+    moveId === undefined ? null : <SwapSheet move={name(moveId)} options={swapOptions} onPick={swapTo} onClose={() => setSwapping(false)} />;
   const dock =
-    dockButton === null || ending || discarded !== null ? null : (
+    dockButton === null || ending || swapping || discarded !== null ? null : (
       <View testID="dock" style={[styles.dock, { borderTopColor: color.line }]}>
         {dockButton}
       </View>
@@ -974,7 +1073,7 @@ function Session() {
         <ScrollView testID="session-scroll" contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
           {data?.kept === true && <Text style={[styles.small, { color: color.muted }]}>{t('workout.kept')}</Text>}
           {loadFailed}
-          {discarded !== null ? discardedPanel : ending ? endSheet : finishing ? form : session}
+          {discarded !== null ? discardedPanel : ending ? endSheet : swapping ? swapSheet : finishing ? form : session}
         </ScrollView>
         {dock}
       </KeyboardAvoidingView>
