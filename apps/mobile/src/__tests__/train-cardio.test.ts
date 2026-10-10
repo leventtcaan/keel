@@ -5,7 +5,7 @@
  * before the weights, G2 K-35); a day kept keeps its place. No dose is worked out here: the coach's is the server's.
  */
 import type { components } from '@/api/schema';
-import { canStepMinutes, cardioDraft, liftDays, steppedMinutes, toggledDay } from '@/train/cardio';
+import { canStepMinutes, cardioAfterLift, cardioDraft, liftDays, steppedMinutes, toggledDay } from '@/train/cardio';
 import { workoutParams as P } from '@/train/params';
 
 type Schemas = components['schemas'];
@@ -80,5 +80,29 @@ describe('the days the program lifts on, for where a day goes', () => {
     const loose = { ...PROGRAM, days: [{ id: 'a', exercises: [] }] };
     expect(liftDays(loose, null)).toBeNull();
     expect(toggledDay({ minutes: 30, sessions: [] }, 'SUNDAY', null).sessions).toEqual([{ weekday: 'SUNDAY', place: 'AFTER_LIFT' }]);
+  });
+});
+
+// K-973 (ADR-074 #3, ADR-075 #6): the session's last step is the cardio the program plans after the weights that day.
+describe('the cardio after the weights today', () => {
+  // 2026-10-12 is a Monday, 2026-10-13 a Tuesday, 2026-10-17 a Saturday.
+  test('the minutes of the program\'s session after the weights on that weekday', () => {
+    expect(cardioAfterLift(PROGRAM, '2026-10-12')).toBe(30);
+  });
+
+  test('none on a weekday it has no session; none on a day without weights (easy, no weights); none when turned off', () => {
+    expect(cardioAfterLift(PROGRAM, '2026-10-13')).toBeNull();
+    expect(cardioAfterLift(PROGRAM, '2026-10-17')).toBeNull();
+    const off = { ...PROGRAM, cardio: { ...PROGRAM.cardio!, sessionsPerWeek: 0, sessions: [] } };
+    expect(cardioAfterLift(off, '2026-10-12')).toBeNull();
+  });
+
+  test('none without cardio in the program, or without a program', () => {
+    expect(cardioAfterLift({ ...PROGRAM, cardio: undefined }, '2026-10-12')).toBeNull();
+    expect(cardioAfterLift(null, '2026-10-12')).toBeNull();
+  });
+
+  test("the user's own minutes are the server's: shown as sent", () => {
+    expect(cardioAfterLift({ ...PROGRAM, cardio: { ...PROGRAM.cardio!, source: 'USER', minutes: 20 } }, '2026-10-12')).toBe(20);
   });
 });

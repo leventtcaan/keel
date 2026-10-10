@@ -129,6 +129,13 @@ const mockServices = {
       mockRecords = next === null ? mockRecords.filter((r) => r.clientId !== clientId) : mockRecords.map((r) => (r.clientId === clientId ? { ...r, body: next } : r));
       return old;
     }),
+    // A record taken back while it was never sent (K-973: the cardio), as setEdits does it.
+    forgetUnsent: jest.fn(async (clientId: string) => {
+      const found = mockRecords.find((r) => r.clientId === clientId);
+      if (found === undefined || found.state !== 'PENDING' || found.attempted === true) return false;
+      mockRecords = mockRecords.filter((r) => r.clientId !== clientId);
+      return true;
+    }),
     discard: jest.fn(async (workoutClientId: string) => {
       if (mockEditFails !== null) throw mockEditFails;
       mockRecords = mockRecords.filter((r) => r.clientId !== workoutClientId && r.parentClientId !== workoutClientId);
@@ -3495,5 +3502,440 @@ describe('the moves swapped away from (K-973, ADR-075 Ek 7, Ek 8)', () => {
     await pickMove('Bench press');
     expect(screen.getByLabelText(t('workout.doneSet', { number: '1', set: '62.5 kg × 6', left: '1' }))).toBeOnTheScreen();
     expect(screen.queryByText(t('workout.log', { number: 2 }))).toBeNull(); // no open row to log
+  });
+});
+
+// K-973 (ADR-075 #4): the analysis line after the sets of a move, the server's numbers in en.json templates; read from the
+// sets as they are, so a set corrected, deleted or skipped changes it by itself.
+describe('the analysis line after the sets (K-973, ADR-075 #4)', () => {
+  const BENCH: Schemas['PlannedExercise'] = {
+    ...DAY.exercises[0],
+    nextLoadKg: 62.5,
+    nextReps: 7,
+    lastBestSet: { loadKg: 62.5, reps: 6, rir: 1 },
+    nextLoadAtTopKg: 65,
+  };
+  const serve = (bench: Schemas['PlannedExercise'], extra: Partial<Schemas['Program']> = {}) => {
+    mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, ...extra, days: [{ ...DAY, exercises: [bench, DAY.exercises[1]] }] } } };
+  };
+  const reps = () => screen.getByLabelText(t('workout.repsLabel'));
+  const logWith = async (n: number, count?: string) => {
+    if (count !== undefined) await fireEvent.changeText(reps(), count);
+    await fireEvent.press(await screen.findByRole('button', { name: t('workout.log', { number: n }) }));
+  };
+  beforeEach(() => serve(BENCH));
+
+  test("after a set: reps against last time, and what the server says comes at the top", async () => {
+    await show();
+    await logWith(1);
+    expect(await screen.findByText("+1 rep vs last time.")).toBeOnTheScreen();
+  });
+
+  test('it sits in the page between the sets done and the set under way, not in the dock', async () => {
+    await show();
+    await logWith(1);
+    const line = await screen.findByTestId('insight');
+    expect(within(screen.getByTestId('dock')).queryByTestId('insight')).toBeNull();
+    expect(line.props.accessibilityLabel).toBe("+1 rep vs last time.");
+  });
+
+  test('the best set of the move today, not the last one: 9 then 6 still reads the 9', async () => {
+    await show();
+    await logWith(1, '9');
+    await screen.findByText("+3 reps vs last time.");
+    await logWith(2, '6');
+    await screen.findByText(t('workout.log', { number: 3 }));
+    expect(screen.getByText("+3 reps vs last time.")).toBeOnTheScreen();
+  });
+
+  test('a set deleted takes the line with it; a set corrected changes it', async () => {
+    await show();
+    await logWith(1, '9');
+    await screen.findByText("+3 reps vs last time.");
+    const doneRow = () => screen.getByRole('button', { name: t('workout.doneSet', { number: '1', set: '62.5 kg × 9', left: '1' }) });
+    await fireEvent.press(doneRow());
+    const editor = within(screen.getByTestId('edit-set'));
+    await fireEvent.press(editor.getByRole('button', { name: t('workout.stepper.lessReps') }));
+    await fireEvent.press(editor.getByRole('button', { name: t('workout.edit.done') }));
+    expect(await screen.findByText("+2 reps vs last time.")).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.doneSet', { number: '1', set: '62.5 kg × 8', left: '1' }) }));
+    await fireEvent.press(within(screen.getByTestId('edit-set')).getByRole('button', { name: t('workout.edit.delete') }));
+    await waitFor(() => expect(screen.queryByTestId('insight')).toBeNull());
+  });
+
+  test('a set skipped is no set: no line', async () => {
+    await show();
+    await fireEvent.press(await screen.findByRole('button', { name: t('workout.skipSetLabel') }));
+    expect(screen.queryByTestId('insight')).toBeNull();
+  });
+
+  test('the same as last time, fewer reps, no earlier session, below the range', async () => {
+    await show();
+    await logWith(1, '6');
+    expect(await screen.findByText(t('workout.insight.same'))).toBeOnTheScreen();
+    await screen.unmount();
+    mockRecords = [...lastWeek(), record('workout', 'w1', { clientId: 'w1', startedAt: '2026-09-28T17:00:00Z', programDayId: 'day-a' })];
+    serve({ ...BENCH, lastBestSet: { loadKg: 62.5, reps: 8, rir: 1 } });
+    await show();
+    await logWith(1, '7');
+    expect(await screen.findByText(t('workout.insight.logged'))).toBeOnTheScreen();
+    await screen.unmount();
+    mockRecords = [...lastWeek(), record('workout', 'w1', { clientId: 'w1', startedAt: '2026-09-28T17:00:00Z', programDayId: 'day-a' })];
+    const { lastBestSet: _none, ...first } = BENCH;
+    serve(first);
+    await show();
+    await logWith(1, '7');
+    expect(await screen.findByText(t('workout.insight.logged'))).toBeOnTheScreen();
+    await screen.unmount();
+    mockRecords = [...lastWeek(), record('workout', 'w1', { clientId: 'w1', startedAt: '2026-09-28T17:00:00Z', programDayId: 'day-a' })];
+    serve(BENCH);
+    await show();
+    await logWith(1, '5');
+    expect(await screen.findByText(t('workout.insight.below'))).toBeOnTheScreen();
+  });
+
+  test('a move whose load the weekly call holds: said again, as called', async () => {
+    serve(BENCH, { loadHeldSince: '2026-10-05' });
+    await show();
+    await logWith(1, '8');
+    expect(await screen.findByText(t('workout.insight.held', { reps: 8 }))).toBeOnTheScreen();
+  });
+
+  test('the weight of the next session only once every planned set is at the top: one set there promises nothing', async () => {
+    await show();
+    await logWith(1, '10');
+    expect(await screen.findByText('+4 reps vs last time.')).toBeOnTheScreen();
+    expect(screen.queryByText(/next time/)).toBeNull();
+    await logWith(2, '10');
+    await screen.findByText(t('workout.log', { number: 3 }));
+    expect(screen.queryByText(/next time/)).toBeNull();
+    await logWith(3, '10');
+    expect(await screen.findByText('+4 reps vs last time. Top of the range: 65 kg next time.')).toBeOnTheScreen();
+  });
+
+  test('every set done but the last short of the top: still no weight', async () => {
+    await show();
+    await logWith(1, '10');
+    await logWith(2, '10');
+    await logWith(3, '9');
+    expect(await screen.findByText('+4 reps vs last time.')).toBeOnTheScreen();
+    expect(screen.queryByText(/next time/)).toBeNull();
+  });
+
+  test('a lb user reads the weight in lb', async () => {
+    mockUnits = 'IMPERIAL';
+    await show();
+    await logWith(1, '10');
+    await logWith(2, '10');
+    await logWith(3, '10');
+    expect(await screen.findByText(`+4 reps vs last time. Top of the range: ${formatLoad(65, 'IMPERIAL')} next time.`)).toBeOnTheScreen();
+  });
+
+  test('"again, as called" only for the weight of last time at the weight called; a lighter weight is logged', async () => {
+    serve(BENCH, { loadHeldSince: '2026-10-05' });
+    await show();
+    await fireEvent.changeText(screen.getByLabelText(t('workout.loadLabel', { unit: t('units.kgUnit') })), '60');
+    await logWith(1, '8');
+    expect(await screen.findByText(t('workout.insight.logged'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('workout.insight.held', { reps: 8 }))).toBeNull();
+  });
+
+  test('a move with no target gets the calibration\'s words, not this line', async () => {
+    serve({ ...BENCH, nextLoadKg: undefined, nextReps: undefined, nextLoadAtTopKg: undefined, lastBestSet: undefined, calibrationStepKg: 2.5 });
+    // Its first session: the phone has nothing of it.
+    mockRecords = mockRecords.filter((r) => r.clientId === 'w1');
+    await show();
+    await fireEvent.changeText(screen.getByLabelText(t('workout.loadLabel', { unit: t('units.kgUnit') })), '40');
+    await logWith(1, '8');
+    expect(await screen.findByText(t('workout.calibrate.found', { load: '40 kg' }))).toBeOnTheScreen();
+    expect(screen.queryByText(t('workout.insight.logged'))).toBeNull();
+  });
+});
+
+// K-973 (ADR-074 #3, ADR-075 #6): after the last move, the cardio the program plans after the weights today is the session's
+// last step: Done, Later today or Skip today, then Finish. Time, not calories; the done is kept on the phone first.
+describe('the last step: cardio (K-973, ADR-074 #3, ADR-075 #6)', () => {
+  const CARDIO: Schemas['ProgramCardio'] = {
+    source: 'GENERATED',
+    minutes: 30,
+    sessionsPerWeek: 3,
+    sessions: [{ weekday: 'MONDAY', place: 'AFTER_LIFT' }],
+    doneThisWeek: 0,
+    afterLiftOverLine: false,
+  };
+  // One move of one set: the first set done is the last move done. The session's own day is its start's (a Monday).
+  const ONE_SET = { ...DAY.exercises[0], baseSets: 1, sets: 1 };
+  const serve = (cardio: Schemas['ProgramCardio'] | undefined, extra: Partial<Schemas['Program']> = {}) => {
+    mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, ...extra, cardio, days: [{ ...DAY, exercises: [ONE_SET] }] } } };
+  };
+  const dock = () => within(screen.getByTestId('dock'));
+  const cardioRecords = () => mockRecord.mock.calls.map(([o]) => o).filter((o) => o.kind === 'cardio');
+  const lastSet = async () => fireEvent.press(await screen.findByRole('button', { name: t('workout.log', { number: 1 }) }));
+  const toCardio = async () => {
+    await lastSet();
+    await fireEvent.press(await dock().findByRole('button', { name: t('workout.cardio.next') }));
+  };
+  beforeEach(() => serve(CARDIO));
+
+  test('after the last move the dock says Next: cardio instead of Finish workout', async () => {
+    await show();
+    await lastSet();
+    expect(await dock().findByRole('button', { name: t('workout.cardio.next') })).toBeOnTheScreen();
+    expect(dock().queryByRole('button', { name: t('workout.finish') })).toBeNull();
+  });
+
+  test('the step: cardio, easy, its minutes, the pace; Done, Later today, Skip today, Finish; no calorie number', async () => {
+    await show();
+    await toCardio();
+    expect(screen.getByText(t('workout.cardio.title'))).toBeOnTheScreen();
+    expect(screen.getByText(t('workout.cardio.length', { minutes: 30 }))).toBeOnTheScreen();
+    expect(screen.getByText(t('workout.cardio.talk'))).toBeOnTheScreen();
+    expect(dock().getByRole('button', { name: t('workout.cardio.done', { minutes: 30 }) })).toBeOnTheScreen();
+    expect(dock().getByRole('button', { name: t('workout.cardio.later') })).toBeOnTheScreen();
+    expect(dock().getByRole('button', { name: t('workout.cardio.skip') })).toBeOnTheScreen();
+    expect(dock().getByRole('button', { name: t('workout.finish') })).toBeOnTheScreen();
+    expect(screen.queryByText(/kcal|calorie/i)).toBeNull();
+  });
+
+  test('Done is kept on the phone first: the day, the minutes, typed; offline too; and said', async () => {
+    mockData = { ...mockData, kept: true };
+    const said = jest.spyOn(AccessibilityInfo, 'announceForAccessibility');
+    try {
+      await show();
+      await toCardio();
+      await fireEvent.press(dock().getByRole('button', { name: t('workout.cardio.done', { minutes: 30 }) }));
+      expect(cardioRecords()).toEqual([{ kind: 'cardio', body: { clientId: expect.any(String), day: '2026-09-28', minutes: 30, source: 'MANUAL' } }]);
+      expect(await screen.findByText(t('workout.cardio.loggedSaid', { minutes: 30 }))).toBeOnTheScreen();
+      expect(said).toHaveBeenCalledWith(t('workout.cardio.loggedSaid', { minutes: 30 }));
+      expect(mockPOST).not.toHaveBeenCalled();
+      // Done once: it is not offered again, and the way on is Finish.
+      expect(dock().queryByRole('button', { name: t('workout.cardio.done', { minutes: 30 }) })).toBeNull();
+      expect(dock().getByRole('button', { name: t('workout.finish') })).toBeOnTheScreen();
+    } finally {
+      said.mockRestore();
+    }
+  });
+
+  test('two taps in one frame log it once', async () => {
+    await show();
+    await toCardio();
+    const done = dock().getByRole('button', { name: t('workout.cardio.done', { minutes: 30 }) });
+    await fireEvent.press(done);
+    await fireEvent.press(done);
+    expect(cardioRecords()).toHaveLength(1);
+  });
+
+  test('Later today and Skip today send nothing and need no catch-up; Finish is the way on', async () => {
+    await show();
+    await toCardio();
+    await fireEvent.press(dock().getByRole('button', { name: t('workout.cardio.later') }));
+    expect(screen.getByText(t('workout.cardio.laterSaid'))).toBeOnTheScreen();
+    await fireEvent.press(dock().getByRole('button', { name: t('workout.cardio.skip') }));
+    expect(screen.getByText(t('workout.cardio.skipSaid'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('workout.cardio.laterSaid'))).toBeNull();
+    expect(cardioRecords()).toEqual([]);
+    expect(dock().getByRole('button', { name: t('workout.finish') })).toBeOnTheScreen();
+  });
+
+  test('a choice made, Next: cardio does not come back; the moves are one tap away on their dots', async () => {
+    await show();
+    await toCardio();
+    await fireEvent.press(dock().getByRole('button', { name: t('workout.cardio.skip') }));
+    await fireEvent.press(screen.getByRole('button', { name: new RegExp('^Bench press, ') }));
+    expect(screen.getByTestId('move-head')).toBeOnTheScreen();
+    expect(dock().queryByRole('button', { name: t('workout.cardio.next') })).toBeNull();
+    expect(dock().getByRole('button', { name: t('workout.finish') })).toBeOnTheScreen();
+  });
+
+  test('Finish from the step finishes the workout (the form question first, as always)', async () => {
+    await show();
+    await toCardio();
+    await fireEvent.press(dock().getByRole('button', { name: t('workout.finish') }));
+    expect(await screen.findByText(t('workout.form.title'))).toBeOnTheScreen();
+  });
+
+  test('a cardio that cannot be kept is said, and the step stays', async () => {
+    await show();
+    await toCardio();
+    mockRecord.mockImplementationOnce(async () => {
+      throw new Error('disk');
+    });
+    await fireEvent.press(dock().getByRole('button', { name: t('workout.cardio.done', { minutes: 30 }) }));
+    expect(await screen.findByText(t('workout.cardio.failed'))).toBeOnTheScreen();
+    expect(dock().getByRole('button', { name: t('workout.cardio.done', { minutes: 30 }) })).toBeEnabled();
+  });
+
+  describe('Done taken back, and Done kept once (review)', () => {
+    const done = () => dock().getByRole('button', { name: t('workout.cardio.done', { minutes: 30 }) });
+    const undo = () => screen.queryByRole('button', { name: t('workout.cardio.undoLabel') });
+    const cardioStored = () => mockRecords.filter((r) => r.kind === 'cardio');
+
+    test('Done not sent yet has an Undo: the record is forgotten, the step is as before, and it is said', async () => {
+      const said = jest.spyOn(AccessibilityInfo, 'announceForAccessibility');
+      try {
+        mockData = { ...mockData, kept: true };
+        await show();
+        await toCardio();
+        await fireEvent.press(done());
+        await screen.findByText(t('workout.cardio.loggedSaid', { minutes: 30 }));
+        const button = undo();
+        expect(button).toBeOnTheScreen();
+        expect(button).toHaveStyle({ minHeight: tokens.size.touch });
+        await fireEvent.press(button as NonNullable<typeof button>);
+        expect(mockServices.workoutEdits.forgetUnsent).toHaveBeenCalledWith(cardioRecords()[0].body.clientId);
+        expect(cardioStored()).toEqual([]);
+        expect(said).toHaveBeenCalledWith(t('workout.cardio.undoneSaid'));
+        expect(await dock().findByRole('button', { name: t('workout.cardio.done', { minutes: 30 }) })).toBeEnabled();
+        expect(screen.queryByText(t('workout.cardio.loggedSaid', { minutes: 30 }))).toBeNull();
+        expect(undo()).toBeNull();
+        // Done again after taking it back: one record on the phone.
+        await fireEvent.press(done());
+        await waitFor(() => expect(cardioStored()).toHaveLength(1));
+      } finally {
+        said.mockRestore();
+      }
+    });
+
+    test('Done already sent has no Undo: the contract has no delete for it', async () => {
+      await show();
+      await toCardio();
+      mockRecord.mockImplementationOnce(async (o) => {
+        await keep(o);
+        mockRecords = mockRecords.map((r) => (r.kind === 'cardio' ? { ...r, state: 'SYNCED' } : r));
+        return true;
+      });
+      await fireEvent.press(done());
+      await screen.findByText(t('workout.cardio.loggedSaid', { minutes: 30 }));
+      await waitFor(() => expect(undo()).toBeNull()); // once the record is read back as sent
+      expect(dock().getByRole('button', { name: t('workout.finish') })).toBeOnTheScreen();
+    });
+
+    test('sent while the Undo was on the screen: it says so and the cardio stays logged', async () => {
+      await show();
+      await toCardio();
+      await fireEvent.press(done());
+      await screen.findByText(t('workout.cardio.loggedSaid', { minutes: 30 }));
+      mockServices.workoutEdits.forgetUnsent.mockImplementationOnce(async () => false);
+      await fireEvent.press(undo() as NonNullable<ReturnType<typeof undo>>);
+      expect(await screen.findByText(t('workout.cardio.undoLate'))).toBeOnTheScreen();
+      expect(cardioStored()).toHaveLength(1);
+      expect(dock().queryByRole('button', { name: t('workout.cardio.done', { minutes: 30 }) })).toBeNull();
+    });
+
+    test('the record kept but the records not read back: Done is not offered again, and a second tap is not a second cardio', async () => {
+      await show();
+      await toCardio();
+      mockWorkoutRecords.mockImplementationOnce(async () => {
+        throw new Error('read');
+      });
+      await fireEvent.press(done());
+      await screen.findByText(t('workout.cardio.loggedSaid', { minutes: 30 }));
+      expect(dock().queryByRole('button', { name: t('workout.cardio.done', { minutes: 30 }) })).toBeNull();
+      expect(cardioStored()).toHaveLength(1);
+    });
+
+    test('a save that failed and is tried again is the same cardio: one clientId, however many taps', async () => {
+      await show();
+      await toCardio();
+      mockRecord.mockImplementationOnce(async () => {
+        throw new Error('disk'); // it may have reached the store before it failed: the id must not change
+      });
+      await fireEvent.press(done());
+      expect(await screen.findByText(t('workout.cardio.failed'))).toBeOnTheScreen();
+      await fireEvent.press(done());
+      await screen.findByText(t('workout.cardio.loggedSaid', { minutes: 30 }));
+      const ids = cardioRecords().map((o) => o.body.clientId);
+      expect(ids).toHaveLength(2);
+      expect(ids[1]).toBe(ids[0]);
+      expect(cardioStored()).toHaveLength(1);
+    });
+
+    test('taken back and logged again, it is a new cardio (a new clientId)', async () => {
+      await show();
+      await toCardio();
+      await fireEvent.press(done());
+      await screen.findByText(t('workout.cardio.loggedSaid', { minutes: 30 }));
+      await fireEvent.press(undo() as NonNullable<ReturnType<typeof undo>>);
+      await fireEvent.press(await dock().findByRole('button', { name: t('workout.cardio.done', { minutes: 30 }) }));
+      await waitFor(() => expect(cardioStored()).toHaveLength(1));
+      const ids = cardioRecords().map((o) => o.body.clientId);
+      expect(ids).toHaveLength(2);
+      expect(ids[1]).not.toBe(ids[0]);
+    });
+  });
+
+  describe('a workout discarded with cardio logged in it (ADR-075 Ek 9): the cardio is its own record and stays, and it says so', () => {
+    const end = async () => fireEvent.press(await screen.findByRole('button', { name: t('workout.endLabel') }));
+    const choose = (key: string) => fireEvent.press(screen.getByRole('button', { name: new RegExp(`^${t(key)}`) }));
+
+    test('the discard says the cardio stays, and so does the page after it; nothing is deleted of the cardio', async () => {
+      mockRecords = [
+        ...mockRecords,
+        record('set', 'b1', { clientId: 'b1', exerciseId: 'bench_press', setType: 'WORKING', loadKg: 60, reps: 8, rir: 1, side: 'BOTH' }, 'w1'),
+        record('cardio', 'c1', { clientId: 'c1', day: '2026-09-28', minutes: 30, source: 'MANUAL' }),
+      ];
+      await show();
+      await end();
+      expect(screen.getByText(t('workout.ending.discardNoteCardio'))).toBeOnTheScreen();
+      expect(screen.queryByText(t('workout.ending.discardNote'))).toBeNull();
+      await choose('workout.ending.discard');
+      await fireEvent.press(screen.getByRole('button', { name: t('workout.ending.confirm') }));
+      expect(await screen.findByText(t('workout.ending.discardedCardio'))).toBeOnTheScreen();
+      expect(mockRecords.filter((r) => r.kind === 'cardio')).toHaveLength(1);
+    });
+
+    test('without a cardio logged, the words are as they were: nothing is saved', async () => {
+      mockRecords = [
+        ...mockRecords,
+        record('set', 'b1', { clientId: 'b1', exerciseId: 'bench_press', setType: 'WORKING', loadKg: 60, reps: 8, rir: 1, side: 'BOTH' }, 'w1'),
+      ];
+      await show();
+      await end();
+      expect(screen.getByText(t('workout.ending.discardNote'))).toBeOnTheScreen();
+      expect(screen.queryByText(t('workout.ending.discardNoteCardio'))).toBeNull();
+    });
+  });
+
+  test('already logged today (the step was done and the screen opened again): straight to Finish', async () => {
+    mockRecords = [
+      ...mockRecords,
+      record('cardio', 'c1', { clientId: 'c1', day: '2026-09-28', minutes: 30, source: 'MANUAL' }),
+    ];
+    await show();
+    await lastSet();
+    expect(await dock().findByRole('button', { name: t('workout.finish') })).toBeOnTheScreen();
+    expect(dock().queryByRole('button', { name: t('workout.cardio.next') })).toBeNull();
+  });
+
+  test('the short version says the cardio is optional today', async () => {
+    serve(CARDIO, { week: [{ programDayId: 'day-a', date: '2026-09-28', exerciseIds: ['bench_press'], short: true }] });
+    await show();
+    await toCardio();
+    expect(screen.getByText(t('workout.cardio.optional'))).toBeOnTheScreen();
+  });
+
+  test('no step where the program has none that day: no cardio, turned off, another weekday, an easy day with no weights', async () => {
+    for (const cardio of [
+      undefined,
+      { ...CARDIO, sessionsPerWeek: 0, sessions: [] },
+      { ...CARDIO, sessions: [{ weekday: 'TUESDAY' as const, place: 'AFTER_LIFT' as const }] },
+      { ...CARDIO, sessions: [{ weekday: 'MONDAY' as const, place: 'OFF_DAY_LOW_INTENSITY' as const }] },
+    ]) {
+      serve(cardio);
+      await show();
+      await lastSet();
+      expect(await dock().findByRole('button', { name: t('workout.finish') })).toBeOnTheScreen();
+      expect(dock().queryByRole('button', { name: t('workout.cardio.next') })).toBeNull();
+      await screen.unmount();
+      mockRecords = [...lastWeek(), record('workout', 'w1', { clientId: 'w1', startedAt: '2026-09-28T17:00:00Z', programDayId: 'day-a' })];
+    }
+  });
+
+  test('no step before the last move is done', async () => {
+    serve(CARDIO);
+    mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, cardio: CARDIO, days: [DAY] } } };
+    await show();
+    await fireEvent.press(await screen.findByRole('button', { name: t('workout.log', { number: 1 }) }));
+    expect(screen.queryByText(t('workout.cardio.next'))).toBeNull();
   });
 });

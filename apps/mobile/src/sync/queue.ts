@@ -21,6 +21,8 @@ export type Outbound =
   | { kind: 'photoCheck'; body: Schemas['NewPhotoCheck'] }
   | { kind: 'meal'; body: Schemas['NewMeal'] }
   | { kind: 'workout'; body: Schemas['NewWorkout'] }
+  // The cardio done at the end of a session (K-973, ADR-074 #6): minutes only, no active energy; training, not health data.
+  | { kind: 'cardio'; body: Schemas['NewCardioSession'] }
   | { kind: 'set'; workoutClientId: string; body: Schemas['NewSet'] }
   | { kind: 'finish'; clientId: string; workoutClientId: string; body: Schemas['WorkoutFinish'] };
 

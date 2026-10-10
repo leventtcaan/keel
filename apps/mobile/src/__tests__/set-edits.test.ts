@@ -374,3 +374,55 @@ describe('a workout discarded (K-972, K-998): on the server once it may be there
     expect((await store.all()).map((r) => r.clientId)).toEqual(['w']);
   });
 });
+
+// K-973 (ADR-075 Ek 9): the cardio done at the end of a session is its own record (a day and minutes), not the workout's.
+// The contract has no delete for it, so it is taken back only while it was never sent; a workout discarded leaves it.
+describe('the cardio of a session: taken back only while unsent, and not part of the workout', () => {
+  const cardio = (clientId: string) => ({ clientId, day: '2026-10-09', minutes: 30, source: 'MANUAL' as const });
+  const cardioIds = async (store: Awaited<ReturnType<typeof openRecordStore>>) => (await store.all()).filter((r) => r.kind === 'cardio').map((r) => r.clientId);
+
+  test('never tried: forgotten, and nothing of it is ever sent', async () => {
+    const { store, api, queue, edits } = await setup();
+    await store.insert({ clientId: 'c', kind: 'cardio', parentClientId: null, body: cardio('c') });
+    expect(await edits.forgetUnsent('c')).toBe(true);
+    await queue.drain();
+    expect(await cardioIds(store)).toEqual([]);
+    expect([...api.stored.keys()]).not.toContain('srv-c');
+  });
+
+  test('already on the server: it stays, and the caller is told so', async () => {
+    const { store, queue, edits } = await setup();
+    await queue.record({ kind: 'cardio', body: cardio('c') });
+    await queue.drain();
+    expect(await edits.forgetUnsent('c')).toBe(false);
+    expect((await store.find('c'))?.state).toBe('SYNCED');
+  });
+
+  test('tried while offline: the server may have it, so it stays', async () => {
+    const { store, api, queue, edits } = await setup();
+    api.offline(true);
+    await queue.record({ kind: 'cardio', body: cardio('c') });
+    await queue.drain();
+    expect(await edits.forgetUnsent('c')).toBe(false);
+    expect(await cardioIds(store)).toEqual(['c']);
+  });
+
+  test('only that record goes; a record that is not there is false', async () => {
+    const { store, edits } = await setup();
+    await store.insert({ clientId: 'c', kind: 'cardio', parentClientId: null, body: cardio('c') });
+    await store.insert({ clientId: 'd', kind: 'cardio', parentClientId: null, body: { ...cardio('d'), day: '2026-10-08' } });
+    expect(await edits.forgetUnsent('c')).toBe(true);
+    expect(await edits.forgetUnsent('c')).toBe(false);
+    expect(await cardioIds(store)).toEqual(['d']);
+    expect((await store.find('w'))?.kind).toBe('workout');
+  });
+
+  test('a workout discarded leaves the cardio logged with it', async () => {
+    const { store, queue, edits } = await setup();
+    await queue.record({ kind: 'cardio', body: cardio('c') });
+    await queue.drain();
+    await edits.discard('w');
+    expect(await cardioIds(store)).toEqual(['c']);
+    expect(await store.find('w')).toBeNull();
+  });
+});

@@ -13,6 +13,8 @@ type Props = {
   onLater: (() => void) | null;
   onDiscard: () => void;
   onBack: () => void;
+  /** A cardio was logged in this session: it is its own record and stays when the workout is discarded (ADR-075 Ek 9). */
+  cardioKept?: boolean;
   problem: string | null;
   problemOccurrence?: unknown;
   busy: boolean;
@@ -23,8 +25,10 @@ type Props = {
  * session stays open and counts for its week, K-961, closed by the server after unfinished_session_close_hours); or
  * discard it, asked once more (nothing is saved; the page offers Undo after).
  */
-export function EndSheet({ onFinish, onLater, onDiscard, onBack, problem, problemOccurrence, busy }: Props) {
+export function EndSheet({ onFinish, onLater, onDiscard, onBack, cardioKept = false, problem, problemOccurrence, busy }: Props) {
   const { color } = useTheme();
+  // What discarding leaves: nothing, but the cardio logged in the session (its own record).
+  const discardNote = t(cardioKept ? 'workout.ending.discardNoteCardio' : 'workout.ending.discardNote');
   const [confirming, setConfirming] = useState(false);
   const choice = (title: string, note: string, onPress: () => void) => (
     <Pressable
@@ -46,14 +50,14 @@ export function EndSheet({ onFinish, onLater, onDiscard, onBack, problem, proble
   const discard = confirming ? (
     <View style={[styles.choice, { backgroundColor: color.surface }]}>
       <Text style={[styles.title, { color: color.text }]}>{t('workout.ending.discardAsk')}</Text>
-      <Text style={[styles.note, { color: color.textSecondary }]}>{t('workout.ending.discardNote')}</Text>
+      <Text style={[styles.note, { color: color.textSecondary }]}>{discardNote}</Text>
       <View style={styles.row}>
         <Button label={t('workout.ending.confirm')} variant="warn" onPress={onDiscard} disabled={busy} />
         <Button label={t('workout.ending.keep')} variant="ghost" onPress={() => setConfirming(false)} disabled={busy} />
       </View>
     </View>
   ) : (
-    choice(t('workout.ending.discard'), t('workout.ending.discardNote'), ask)
+    choice(t('workout.ending.discard'), discardNote, ask)
   );
   return (
     <View testID="end-sheet" style={styles.sheet}>

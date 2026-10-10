@@ -82,5 +82,13 @@ export function createSetEdits({ store, queue, deleteOnServer, deleteWorkoutOnSe
       await store.forgetWithChildren(workoutClientId);
     });
 
-  return { change, restore, discard };
+  /**
+   * A record taken back while it was never sent (K-973, ADR-075 Ek 9: the cardio done at a session's end): the queue held, so no
+   * send starts between the look and the delete. True when it went; false when it is not there, or a send was tried (the
+   * server may have it) or it is stored already. The contract has no delete for cardio sessions, so there is nothing more to
+   * try: the caller says so.
+   */
+  const forgetUnsent = (clientId: string): Promise<boolean> => queue.exclusive(() => store.forgetPending(clientId));
+
+  return { change, restore, discard, forgetUnsent };
 }

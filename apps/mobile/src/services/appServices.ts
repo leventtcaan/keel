@@ -39,7 +39,8 @@ import { type LocalRecord, type SqlDatabase, openRecordStore } from '@/sync/stor
 import { type AppearancePreference, createAppearance } from '@/theme/appearance';
 import { type KeyValue, type UnitsPreference, createUnitsPreference } from '@/units/preference';
 
-const WORKOUT_KINDS = ['workout', 'set', 'finish'];
+// The cardio done with a workout (K-973) is read with it: the session finds it again, and does not offer the step twice.
+const WORKOUT_KINDS = ['workout', 'set', 'finish', 'cardio'];
 /** The profile's sex, kept for the muscle map's figure (ADR-037 › 49): it belongs to the account. */
 const FIGURE = 'profile.figure';
 
