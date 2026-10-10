@@ -14,7 +14,7 @@ type Schemas = components['schemas'];
  * follows now, for a call kept off the plan or undone.
  */
 export type ChangeRow = {
-  id: Schemas['DecisionChange']['what'];
+  id: string;
   kind: 'change' | 'new' | 'inForce';
   label: string;
   from: string | null;

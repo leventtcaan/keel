@@ -140,6 +140,8 @@ describe("this week's call", () => {
     expect(screen.queryByRole('button', { name: t('callScreen.keep') })).toBeNull();
     expect(screen.queryByText(t('decision.rule.low_energy_safety'))).toBeNull();
     expect(screen.getByText(t('today.call.source.LITERATURE'))).toBeOnTheScreen(); // no sentence: the kind of source in words
+    // The mark beside it would say the same words again: VoiceOver reads them once, from the line.
+    expect(screen.queryByLabelText(t('today.call.source.LITERATURE'))).toBeNull();
     expect(JSON.stringify(screen.toJSON())).not.toMatch(/hard.?stop|cycle|period|menstrua|amenorr/i);
   });
 
