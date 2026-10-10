@@ -4731,6 +4731,24 @@ tasks:
     refs: ["plan/kararlar/ADR-075-antrenman-oturumu.md", "plan/kararlar/ADR-073-program-incelemesi-ve-degistirme.md"]
     learn: ["Bir kuralın iki yüzeye tek koddan beslenmesi"]
 
+  - id: K-1012
+    title: "1. hafta 'gün ekle' kararı kaydedilebilir: sunucu yeni günü programın kendi şablonundan doldurur"
+    milestone: M9a
+    module: training
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-1000, K-995]
+    why: "K-978 PR2 (#537, 10 Eki): ADD_TRAINING_DAY kararında kullanıcı günü seçer ama PATCH /v1/program yeni günü ancak adı ve hareketleriyle alır; telefon gün içeriği uyduramaz (U1), generate bütün hedefleri siler. ADR-077 Ek 1 'gün ekle' dokunuşla uygulanmalı"
+    acceptance:
+      - "Bir uç (ör. `POST /v1/program/days {weekday}`) seçilen haftanın gününe yeni bir antrenman günü ekler; günün adı ve hareketleri programın kendi üretecinden (split ve deneyime göre, mevcut günlerle denge), mevcut günlerin hedefleri korunur"
+      - "Kendi programında (own program) uç 409 ya da açık bir kural (karar PR'da); dolu gün, haftada 7 gün → 409"
+      - "Yanıt Program + review.edits (Undo K-970 yoluyla çalışır)"
+      - "Telefon #537'deki 'Pick the day' bu uca bağlanır (Edit'e götürmek yerine)"
+    tests: ["Tablo testi (üreteç + denge), API testi (CI), sözleşme testi, mobil ekran testi"]
+    refs: ["plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md", "plan/kararlar/ADR-073-program-incelemesi-ve-degistirme.md"]
+    learn: ["Bir kararın dokunuşla uygulanması"]
+
   - id: K-1010
     title: "Sunucudaki ek siteler: Caddy /opt/sites altındaki *.caddy dosyalarını içeri alır"
     milestone: M9
