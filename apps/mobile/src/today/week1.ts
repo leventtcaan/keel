@@ -14,6 +14,13 @@ type Schemas = components['schemas'];
 export type Weekday = Schemas['Weekday'];
 
 export type DayCall = { kind: 'move'; missed: Weekday[]; suggested: Weekday[] } | { kind: 'add'; toDays: number; suggested: Weekday[] };
+/**
+ * The days a program has when the server adds the one more day itself (POST /v1/program/days, K-1012: the generator's
+ * step from two days to three, `add_day_from_days`); any other count gets its day in the program editor. The server
+ * checks it too (409): this only saves the phone a request it knows is refused.
+ */
+export const SERVER_ADDS_FROM_DAYS = 2;
+
 /** A session that goes from one weekday to another. */
 export type DayMove = { from: Weekday; to: Weekday };
 /**

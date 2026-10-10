@@ -11,9 +11,10 @@ import { t } from '@/copy';
 import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
+import { addProgramDay } from '@/train/changes';
 
 import type { ChangeRow } from './callChanges';
-import { type DayCall, type Saved, type Weekday, dayCall, freeDays, moveDays, trainingWeekdays } from './week1';
+import { type DayCall, type Saved, SERVER_ADDS_FROM_DAYS, type Weekday, dayCall, freeDays, moveDays, trainingWeekdays } from './week1';
 import { type Loaded, load } from './today';
 
 type Schemas = components['schemas'];
@@ -54,14 +55,16 @@ export type Week1 = {
  * (any day the program does not train on), then "Done". The save is the program's days by their ids (PATCH /v1/program,
  * K-995 B; the program edit of K-970). Null for every other call; for one whose missed days are no training days any
  * more (already moved) there is nothing to pick, only what could not be saved, said. A missed day the program no longer
- * trains on (moved elsewhere already) is left out, the others stay. One more day has no day to add by itself on the
- * server: it is picked in the training days.
+ * trains on (moved elsewhere already) is left out, the others stay. One more day: for a program of two days the server
+ * adds the suggested weekday with its content (POST /v1/program/days, K-1012); for any other count, or when the server
+ * says no (409), the day is added in the training days.
  */
 export function useWeek1(decision: Schemas['Decision'] | null): Week1 | null {
   const { api, report } = useAppServices();
   const { color } = useTheme();
   const call: DayCall | null = decision === null ? null : dayCall(decision);
-  const moving = call?.kind === 'move';
+  // Both day calls read the program: the move call to offer its free days, the add call to know how many days it has.
+  const reads = call !== null;
   const [program, setProgram] = useState<Loaded<Schemas['Program']> | null>(null);
   // The days the user picked, by the missed day each stands for (not by its place in the list: a missed day can drop out
   // when the program is read again, the others keep their picks); none: the server's suggestion.
@@ -74,7 +77,7 @@ export function useWeek1(decision: Schemas['Decision'] | null): Week1 | null {
   const id = decision?.id;
 
   useEffect(() => {
-    if (!moving) return;
+    if (!reads) return;
     let live = true;
     void load(() => api.GET('/v1/program')).then((found) => {
       if (live) setProgram(found);
@@ -82,24 +85,9 @@ export function useWeek1(decision: Schemas['Decision'] | null): Week1 | null {
     return () => {
       live = false;
     };
-  }, [api, moving, id]);
+  }, [api, reads, id]);
 
   if (call === null) return null;
-
-  if (call.kind === 'add') {
-    const day = call.suggested[0];
-    return {
-      rows: [row('days', t('callScreen.week1.daysLabel'), null, String(call.toDays)), ...(day === undefined ? [] : [row('suggested', t('callScreen.week1.suggestedDay'), null, short(day))])],
-      dock: (
-        <View style={styles.dock}>
-          <Button label={t('callScreen.week1.pickDay')} onPress={() => router.push('/edit-program?part=days')} />
-          <Button label={t('callScreen.gotIt')} variant="ghost" onPress={() => router.back()} />
-        </View>
-      ),
-      note: null,
-      changing: null,
-    };
-  }
 
   // Built outside the JSX children (the raw-text guard reads them).
   const note =
@@ -108,6 +96,63 @@ export function useWeek1(decision: Schemas['Decision'] | null): Week1 | null {
         {problem}
       </ProblemText>
     );
+
+  // The program as it is now, read again when it was not (or could not be) read for the choice; null: said why not.
+  async function readProgram(): Promise<Schemas['Program'] | null> {
+    let current = program;
+    if (current?.state !== 'ready') {
+      current = await load(() => api.GET('/v1/program'));
+      setProgram(current);
+    }
+    if (current.state === 'ready') return current.value;
+    const kind = current.state === 'failed' && current.problem === 'NoConnection' ? 'offline' : 'failed';
+    report({ name: REPORTED[kind] });
+    setProblem(t(SAID[kind]));
+    return null;
+  }
+
+  if (call.kind === 'add') {
+    const day = call.suggested[0];
+    // The server fills the new day from the program's own generator, but only for a program of two days (K-1012); any
+    // other count, no day to suggest, or its 409 (a user's own program, a taken day): the day is added in the editor.
+    const edit = () => router.push('/edit-program?part=days');
+    const add = async () => {
+      if (sending.current) return;
+      sending.current = true;
+      setBusy(true);
+      setProblem(null);
+      try {
+        const current = await readProgram();
+        if (current === null) return;
+        if (day === undefined || current.days.length !== SERVER_ADDS_FROM_DAYS) return edit();
+        const result = await addProgramDay(api, day);
+        if (result.kind === 'done') {
+          setProgram({ state: 'ready', value: result.program });
+          announce(t('callScreen.week1.saved'));
+          router.back();
+        } else if (result.kind === 'conflict') {
+          edit();
+        } else {
+          report({ name: REPORTED[result.kind] });
+          setProblem(t(SAID[result.kind]));
+        }
+      } finally {
+        sending.current = false;
+        setBusy(false);
+      }
+    };
+    return {
+      rows: [row('days', t('callScreen.week1.daysLabel'), null, String(call.toDays)), ...(day === undefined ? [] : [row('suggested', t('callScreen.week1.suggestedDay'), null, short(day))])],
+      dock: (
+        <View style={styles.dock}>
+          <Button label={t('callScreen.week1.pickDay')} disabled={busy} onPress={() => void add()} />
+          <Button label={t('callScreen.gotIt')} variant="ghost" disabled={busy} onPress={() => router.back()} />
+        </View>
+      ),
+      note,
+      changing: null,
+    };
+  }
   // A missed day the program no longer trains on has been moved elsewhere already: nothing to move, its suggestion goes
   // with it (each suggestion stays with its own missed day).
   const training = program?.state === 'ready' ? new Set(trainingWeekdays(program.value)) : null;
@@ -131,24 +176,15 @@ export function useWeek1(decision: Schemas['Decision'] | null): Week1 | null {
     setBusy(true);
     setProblem(null);
     try {
-      let current = program;
-      if (current?.state !== 'ready') {
-        current = await load(() => api.GET('/v1/program'));
-        setProgram(current);
-      }
-      if (current.state !== 'ready') {
-        const kind = current.state === 'failed' && current.problem === 'NoConnection' ? 'offline' : 'failed';
-        report({ name: REPORTED[kind] });
-        setProblem(t(SAID[kind]));
-        return;
-      }
+      const current = await readProgram();
+      if (current === null) return;
       // The program as it is now: a missed day it no longer trains on has nothing to move.
-      const trained = new Set(trainingWeekdays(current.value));
+      const trained = new Set(trainingWeekdays(current));
       const moves = missed.flatMap((from, i) => {
         const to = chosen[i];
         return to === undefined || !trained.has(from) ? [] : [{ from, to }];
       });
-      const result: Saved = moves.length === 0 ? { kind: 'conflict' } : await moveDays(api, current.value, moves);
+      const result: Saved = moves.length === 0 ? { kind: 'conflict' } : await moveDays(api, current, moves);
       if (result.kind === 'done') {
         announce(t('callScreen.week1.saved'));
         router.back();

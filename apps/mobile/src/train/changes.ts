@@ -79,6 +79,22 @@ export async function rebuild(api: ApiClient, trainingDays: Schemas['Weekday'][]
 }
 
 /**
+ * One more training day on a weekday, its content from the program's own generator (POST /v1/program/days, K-1012,
+ * ADR-073 Ek 9): the first week's "add a day" call. Only a generated program of two days takes it; `conflict` (409) is
+ * the server's "not this way" (another count of days, the weekday taken, the user's own program), nothing changed, the
+ * program editor is the way then. `refused` (400): no weekday it can take.
+ */
+export async function addProgramDay(api: ApiClient, weekday: Schemas['Weekday']): Promise<Changed | { kind: 'refused' }> {
+  let status = 0;
+  const answer = await sent(async () => {
+    const result = await api.POST('/v1/program/days', { body: { weekday } });
+    status = result.response.status;
+    return result;
+  });
+  return answer.kind === 'failed' && status === 400 ? { kind: 'refused' } : answer;
+}
+
+/**
  * The program edited in place by its day and move ids (ADR-073 #4, Ek 7; PATCH /v1/program): the days and moves as the
  * user left them. `conflict` (409): a day or move the program no longer has, or a workout started today on a day the edit
  * moves; nothing changed. `refused` (400): the edit is outside what a program is (VALIDATION_FAILED); trying it again
