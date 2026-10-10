@@ -17,8 +17,8 @@ export function LoadNote({ text, use, keep }: { text: string; use: Choice; keep:
     <View testID="load-note" accessibilityRole="alert" style={[styles.note, { backgroundColor: color.surface }]}>
       <Text style={[styles.text, { color: color.text }]}>{text}</Text>
       <View style={styles.choices}>
-        <Button label={use.label} size="sm" onPress={use.onPress} />
-        <Button label={keep.label} size="sm" variant="ghost" onPress={keep.onPress} />
+        <Button label={use.label} size="touch" onPress={use.onPress} />
+        <Button label={keep.label} size="touch" variant="ghost" onPress={keep.onPress} />
       </View>
     </View>
   );

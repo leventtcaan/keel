@@ -83,6 +83,15 @@ export function workoutOf(records: LocalRecord[], clientId: string): Schemas['Ne
   return found === undefined ? null : (found.body as Schemas['NewWorkout']);
 }
 
+/**
+ * Whether a move was done before (ADR-075 Ek 8): the phone has sets of it from another workout (`last`), or the server has
+ * its best set (`lastBestSet`, which a swapped-in move carries from its own table). A move with no history at all is at its
+ * first session, where its weight is picked and found; one with a history starts from it.
+ */
+export function hasHistory(planned: Schemas['PlannedExercise'], last: NewSet[]): boolean {
+  return last.length > 0 || planned.lastBestSet !== undefined;
+}
+
 /** The working sets of a move in the newest other workout that has it. */
 export function lastTime(records: LocalRecord[], exerciseId: string, except: string): NewSet[] {
   const workouts = records.filter((r) => r.kind === 'workout' && r.clientId !== except && kept(r)).sort((a, b) => b.seq - a.seq);
@@ -96,12 +105,14 @@ export function lastTime(records: LocalRecord[], exerciseId: string, except: str
 /**
  * A planned move as rows: this week's sets (the server's count — fewer in a deload week, K-217), per side for a
  * one-sided move (left, then right). A row suggests the load just lifted in this session, else the server's next load,
- * else last time's; the server's next reps, else last time's, else the bottom of the range. A bodyweight move's load is
- * always 0 (an added load belongs to BODYWEIGHT_PLUS_EXTERNAL). Working sets beyond the plan show as more rows. A move
- * swapped in during the session (`swappedIn`, ADR-075 Ek 7), or one the server calibrates (no target, a calibration step: Ek 8), has no weight and no reps of its own to start from: last time's are
- * not the aim of a move that was not the plan's (the weight is picked, as at a first session); the range's bottom for reps,
- * and what was just lifted in this session still carries to the next row. The move
- * is required: without the catalog the sides and the load model are unknown, and a guess is a set the server refuses.
+ * else last time's (the phone's own sets of the move, else the server's best set of it, `lastBestSet`); the server's next
+ * reps, else last time's, else the bottom of the range. A bodyweight move's load is always 0; an added load
+ * (BODYWEIGHT_PLUS_EXTERNAL) starts at 0, the body alone, where nothing else says. Working sets beyond the plan show as
+ * more rows. A move with no history at all (never done: no phone sets of it, no `lastBestSet`; a move swapped in counts by
+ * its own history, ADR-075 Ek 7, Ek 8) has no weight and no reps of its own to start from: the weight is picked, the range's
+ * bottom for reps, and what was just lifted in this session still carries to the next row. A calibration step alone does not
+ * make a move new: the server sends it with every move that has no target, an isolation move at each session.
+ * The move is required: without the catalog the sides and the load model are unknown, and a guess is a set the server refuses.
  * A skipped set (K-972) is a row of its own, the sets done fill the others in order; a skipped move skips every row
  * not done.
  */
@@ -111,11 +122,7 @@ export function planExercise(
   last: NewSet[],
   done: NewSet[],
   skipped: Skipped = NONE_SKIPPED,
-  swappedIn = false,
 ): ExercisePlan {
-  // A swapped-in move, or one the server calibrates (no target, a calibration step: ADR-075 #3, Ek 8), has nothing of its own
-  // to start from: the weight is picked, not guessed from the phone's history.
-  const fresh = swappedIn || (planned.nextLoadKg === undefined && planned.calibrationStepKg !== undefined);
   const sides: Schemas['Side'][] = move.unilateral ? ['LEFT', 'RIGHT'] : ['BOTH'];
   const working = done.filter((s) => s.exerciseId === planned.exerciseId && s.setType === 'WORKING');
   const ofSide = (list: NewSet[], side: Schemas['Side']) => list.filter((s) => (s.side ?? 'BOTH') === side);
@@ -136,14 +143,16 @@ export function planExercise(
       const own = filled.get(side) ?? [];
       const lastRows = ofSide(last, side);
       const lifted = own.slice(0, i).filter((r): r is NewSet => r !== null && r !== 'skipped').at(-1)?.loadKg;
-      const lastLoad = lastRows[i]?.loadKg ?? lastRows.reduce<number | null>((top, s) => (top === null || s.loadKg > top ? s.loadKg : top), null);
+      // The phone's own sets of it; with none (a phone with nothing kept, a move swapped in), the server's best set of it.
+      const lastLoad =
+        lastRows[i]?.loadKg ?? lastRows.reduce<number | null>((top, s) => (top === null || s.loadKg > top ? s.loadKg : top), null) ?? planned.lastBestSet?.loadKg ?? null;
       const cell = own[i] ?? null;
       const doneSet = cell === 'skipped' ? null : cell;
       rows.push({
         side,
         suggested: {
-          loadKg: move.load === 'BODYWEIGHT' ? 0 : (lifted ?? planned.nextLoadKg ?? (fresh ? null : lastLoad)),
-          reps: planned.nextReps ?? (fresh ? undefined : lastRows[i]?.reps) ?? planned.reps.min,
+          loadKg: move.load === 'BODYWEIGHT' ? 0 : (lifted ?? planned.nextLoadKg ?? lastLoad ?? (move.load === 'BODYWEIGHT_PLUS_EXTERNAL' ? 0 : null)),
+          reps: planned.nextReps ?? lastRows[i]?.reps ?? planned.reps.min,
         },
         last: lastRows[i] ?? null,
         done: doneSet,

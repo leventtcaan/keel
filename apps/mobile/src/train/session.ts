@@ -130,6 +130,8 @@ export function parseEntry(
   const count = Number(reps.trim());
   if (reps.trim() === '' || !Number.isInteger(count) || count < 1 || count > workoutParams.maxReps) return null;
   if (move.load === 'BODYWEIGHT') return { loadKg: 0, reps: count };
+  // An added load left empty is none added: the body alone (loadKg 0, as the contract takes it).
+  if (move.load === 'BODYWEIGHT_PLUS_EXTERNAL' && load.trim() === '') return { loadKg: 0, reps: count };
   const kg = parseLoad(load, units, suggestedKg);
   return kg === null ? null : { loadKg: kg, reps: count };
 }

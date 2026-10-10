@@ -71,36 +71,50 @@ describe('the first session of a move: the weight found, or a heavier one offere
   });
 
   test('2+ reps left: the next set offered one step heavier, as the gym makes it', () => {
-    expect(calibrationRead(NO_TARGET, BENCH, null, done(40, 8, 2))).toEqual({ kind: 'light', nextKg: 42.5 });
+    expect(calibrationRead(NO_TARGET, BENCH, null, done(40, 8, 2), false)).toEqual({ kind: 'light', nextKg: 42.5 });
     const rack = gym({ barKg: 20, platesKg: [20, 10, 5, 2.5, 1.25] });
-    expect(calibrationRead(NO_TARGET, BENCH, rack, done(40, 8, 2))).toEqual({ kind: 'light', nextKg: 42.5 });
+    expect(calibrationRead(NO_TARGET, BENCH, rack, done(40, 8, 2), false)).toEqual({ kind: 'light', nextKg: 42.5 });
   });
 
   test('0 or 1 reps left: the weight is found', () => {
-    expect(calibrationRead(NO_TARGET, BENCH, null, done(40, 8, 1))).toEqual({ kind: 'found', kg: 40 });
-    expect(calibrationRead(NO_TARGET, BENCH, null, done(40, 6, 0))).toEqual({ kind: 'found', kg: 40 });
+    expect(calibrationRead(NO_TARGET, BENCH, null, done(40, 8, 1), false)).toEqual({ kind: 'found', kg: 40 });
+    expect(calibrationRead(NO_TARGET, BENCH, null, done(40, 6, 0), false)).toEqual({ kind: 'found', kg: 40 });
   });
 
   test('2+ left but the gym makes nothing heavier inside the step: found, no offer', () => {
-    expect(calibrationRead(NO_TARGET, BENCH, gym({ barKg: 20, platesKg: [20, 10, 5] }), done(40, 8, 2))).toEqual({ kind: 'found', kg: 40 });
+    expect(calibrationRead(NO_TARGET, BENCH, gym({ barKg: 20, platesKg: [20, 10, 5] }), done(40, 8, 2), false)).toEqual({ kind: 'found', kg: 40 });
   });
 
   test('no calibration step from the server: nothing to offer, found', () => {
     const { calibrationStepKg: _step, ...noStep } = NO_TARGET;
-    expect(calibrationRead(noStep, BENCH, null, done(40, 8, 2))).toEqual({ kind: 'found', kg: 40 });
+    expect(calibrationRead(noStep, BENCH, null, done(40, 8, 2), false)).toEqual({ kind: 'found', kg: 40 });
   });
 
   test('a move with a target is not calibrated: no word, whatever the reps left', () => {
-    expect(calibrationRead({ ...NO_TARGET, nextLoadKg: 62.5 }, BENCH, null, done(62.5, 8, 2))).toBeNull();
+    expect(calibrationRead({ ...NO_TARGET, nextLoadKg: 62.5 }, BENCH, null, done(62.5, 8, 2), false)).toBeNull();
   });
 
   test("reps under the range's bottom find nothing yet; no set, nothing", () => {
-    expect(calibrationRead(NO_TARGET, BENCH, null, done(40, 5, 1))).toBeNull();
-    expect(calibrationRead(NO_TARGET, BENCH, null, null)).toBeNull();
+    expect(calibrationRead(NO_TARGET, BENCH, null, done(40, 5, 1), false)).toBeNull();
+    expect(calibrationRead(NO_TARGET, BENCH, null, null, false)).toBeNull();
   });
 
   test('the bodyweight alone has no weight to find', () => {
-    expect(calibrationRead(NO_TARGET, { ...BENCH, load: 'BODYWEIGHT' }, null, done(0, 8, 1))).toBeNull();
+    expect(calibrationRead(NO_TARGET, { ...BENCH, load: 'BODYWEIGHT' }, null, done(0, 8, 1), false)).toBeNull();
+  });
+
+  // The server sends a calibration step with every move that has no target, an isolation move at each session; the first
+  // session is the calibration (ADR-075 Ek 8), a move done before already has its weight.
+  test('a move with a history is past its calibration: no word, whatever the reps left', () => {
+    expect(calibrationRead(NO_TARGET, BENCH, null, done(40, 8, 1), true)).toBeNull();
+    expect(calibrationRead(NO_TARGET, BENCH, null, done(40, 8, 2), true)).toBeNull();
+  });
+
+  test('an added load of 0 is the body alone, not a weight found; heavier is still offered', () => {
+    const vest = { ...BENCH, load: 'BODYWEIGHT_PLUS_EXTERNAL' } as components['schemas']['Exercise'];
+    expect(calibrationRead(NO_TARGET, vest, null, done(0, 8, 1), false)).toBeNull();
+    expect(calibrationRead(NO_TARGET, vest, null, done(0, 8, 2), false)).toEqual({ kind: 'light', nextKg: 2.5 });
+    expect(calibrationRead(NO_TARGET, vest, null, done(10, 8, 1), false)).toEqual({ kind: 'found', kg: 10 });
   });
 
   test('"Too heavy?": the server\'s lighter load, only when it is lighter than the one shown', () => {

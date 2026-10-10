@@ -53,8 +53,9 @@ export function ActiveSet({ move, heading, range, aim, gym, plates, entry, onCha
   const units = useUnits();
   const unit = t(units === 'METRIC' ? 'units.kgUnit' : 'units.lbUnit');
   const kg = parseLoad(entry.load, units, entry.loadKg);
-  // No weight yet (a move with no target, ADR-075 #3): "Pick a weight", and the button that logs waits for one.
-  const picking = move.load !== 'BODYWEIGHT' && entry.load.trim() === '';
+  // No weight yet (a move never done, ADR-075 #3, Ek 8): "Pick a weight", and the button that logs waits for one. An added
+  // load (BODYWEIGHT_PLUS_EXTERNAL) is never picked: empty is 0, the body alone.
+  const picking = move.load === 'EXTERNAL' && entry.load.trim() === '';
   const loadStep = (direction: 1 | -1) => {
     const next = stepLoad(kg, direction, move, gym, units);
     return next === null ? null : () => onChange({ load: loadText(next, units), loadKg: next });

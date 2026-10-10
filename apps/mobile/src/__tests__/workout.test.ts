@@ -417,7 +417,7 @@ describe("today's session is the server's (K-971, K-964, ADR-073 Ek 3): its move
   });
 });
 
-describe("a move swapped in starts with nothing of its own (K-972, ADR-075 Ek 7): last time's weight and reps are not the aim", () => {
+describe("a move with no history of its own starts with no weight (K-972, K-973, ADR-075 Ek 7, Ek 8): last time's weight is only what exists", () => {
   const dumbbell = { exerciseId: 'dumbbell_bench_press', baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 1 };
   const dumbbellMove = { id: 'dumbbell_bench_press', unilateral: false, load: 'EXTERNAL' } as Schemas['Exercise'];
   const last = [
@@ -425,27 +425,43 @@ describe("a move swapped in starts with nothing of its own (K-972, ADR-075 Ek 7)
     { clientId: 'x2', exerciseId: 'dumbbell_bench_press', setType: 'WORKING', loadKg: 32.5, reps: 11 },
   ] as Schemas['NewSet'][];
 
-  test("fresh: no weight, the range's bottom for reps; not fresh: last time's, as for any planned move", () => {
+  test("no history: no weight, the range's bottom for reps; the phone's own last time: last time's", () => {
+    expect(planExercise(dumbbell, dumbbellMove, [], []).rows[0].suggested).toEqual({ loadKg: null, reps: 6 });
     expect(planExercise(dumbbell, dumbbellMove, last, []).rows[0].suggested).toEqual({ loadKg: 32.5, reps: 12 });
-    expect(planExercise(dumbbell, dumbbellMove, last, [], undefined, true).rows[0].suggested).toEqual({ loadKg: null, reps: 6 });
   });
 
-  test('fresh, what was just lifted in this session still carries to the next row', () => {
+  test("the server's last best set is a history too (a phone with nothing kept): its weight, the range's bottom for reps", () => {
+    const served = { ...dumbbell, lastBestSet: { loadKg: 30, reps: 10, rir: 1 } };
+    expect(planExercise(served, dumbbellMove, [], []).rows[0].suggested).toEqual({ loadKg: 30, reps: 6 });
+    // The phone's own rows come first where it has them.
+    expect(planExercise(served, dumbbellMove, last, []).rows[0].suggested.loadKg).toBe(32.5);
+  });
+
+  test('no history, what was just lifted in this session still carries to the next row', () => {
     const lifted = { clientId: 'y1', exerciseId: 'dumbbell_bench_press', setType: 'WORKING', loadKg: 30, reps: 10 } as Schemas['NewSet'];
-    const plan = planExercise(dumbbell, dumbbellMove, last, [lifted], undefined, true);
+    const plan = planExercise(dumbbell, dumbbellMove, [], [lifted]);
     expect(plan.rows[1].suggested).toEqual({ loadKg: 30, reps: 6 });
   });
 
   test('a bodyweight move is 0 either way', () => {
     const planned = { ...dumbbell, exerciseId: 'push_up' };
-    expect(planExercise(planned, pushUp, [], [], undefined, true).rows[0].suggested.loadKg).toBe(0);
+    expect(planExercise(planned, pushUp, [], []).rows[0].suggested.loadKg).toBe(0);
   });
 
-  // K-973 (ADR-075 #3, Ek 8): the server says a move is at calibration (no target, a calibration step): the weight is picked,
-  // not the phone's guess from its own history; a server that says nothing of it leaves the move as it was.
-  test('a move the server calibrates starts with no weight whatever the phone remembers; with no step it is as before', () => {
+  test('a bodyweight move with an added load starts at 0, the body alone: nothing to pick; with a history, the load it had', () => {
+    const vest = { id: 'weighted_pull_up', unilateral: false, load: 'BODYWEIGHT_PLUS_EXTERNAL' } as Schemas['Exercise'];
+    const planned = { ...dumbbell, exerciseId: 'weighted_pull_up' };
+    expect(planExercise(planned, vest, [], []).rows[0].suggested.loadKg).toBe(0);
+    const before = [{ clientId: 'z1', exerciseId: 'weighted_pull_up', setType: 'WORKING', loadKg: 10, reps: 6 }] as Schemas['NewSet'][];
+    expect(planExercise(planned, vest, before, []).rows[0].suggested.loadKg).toBe(10);
+  });
+
+  // K-973 (ADR-075 #3, Ek 8): the server sends a calibration step with every move that has no target, an isolation move at
+  // every session: its first session picks the weight, the next ones start from the weight of last time.
+  test('a move the server calibrates: no weight at its first session; at the next, the weight it was done with', () => {
     const calibrating = { ...dumbbell, calibrationStepKg: 2.5 };
-    expect(planExercise(calibrating, dumbbellMove, last, []).rows[0].suggested).toEqual({ loadKg: null, reps: 6 });
+    expect(planExercise(calibrating, dumbbellMove, [], []).rows[0].suggested).toEqual({ loadKg: null, reps: 6 });
+    expect(planExercise(calibrating, dumbbellMove, last, []).rows[0].suggested).toEqual({ loadKg: 32.5, reps: 12 });
     expect(planExercise({ ...calibrating, nextLoadKg: 30 }, dumbbellMove, last, []).rows[0].suggested.loadKg).toBe(30);
     expect(planExercise(dumbbell, dumbbellMove, last, []).rows[0].suggested.loadKg).toBe(32.5);
   });
