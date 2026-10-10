@@ -328,6 +328,20 @@ describe('a move added to the session, outside the plan (K-416)', () => {
     expect(extraPlan(benchMove, [], [done('squat', 100, 5)]).rows).toHaveLength(1);
   });
 
+  // K-973 (ADR-075 Ek 7, Ek 8): a move swapped away from keeps its sets but is no move to come back to; its one open row is not
+  // a set to do, so it is never "next" and never holds the finish.
+  test('closed (a move swapped away from): the sets done stay, no open row, nothing left to do', () => {
+    const plan = extraPlan(benchMove, [], [done('bench_press', 60, 8), done('bench_press', 60, 7)], true);
+    expect(plan.rows.map((r) => r.done?.reps ?? null)).toEqual([8, 7]);
+    expect(plan.current).toBeNull();
+    expect(exerciseStatus(plan)).toBe(t('workout.allDone'));
+  });
+
+  test('closed, a one-sided move with one side done is closed too', () => {
+    const plan = extraPlan(rowMove, [], [done('one_arm_dumbbell_row', 20, 10, 'LEFT')], true);
+    expect(plan.current).toBeNull();
+  });
+
   test("this session's set comes before last time's at the same row; last time's row is shown beside it", () => {
     const last = [done('bench_press', 50, 10), done('bench_press', 50, 10), done('bench_press', 50, 10)];
     const plan = extraPlan(benchMove, last, [done('bench_press', 60, 8)]);
@@ -403,7 +417,7 @@ describe("today's session is the server's (K-971, K-964, ADR-073 Ek 3): its move
   });
 });
 
-describe("a move swapped in starts with nothing of its own (K-972, ADR-075 Ek 7): last time's weight and reps are not the aim", () => {
+describe("a move with no history of its own starts with no weight (K-972, K-973, ADR-075 Ek 7, Ek 8): last time's weight is only what exists", () => {
   const dumbbell = { exerciseId: 'dumbbell_bench_press', baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 1 };
   const dumbbellMove = { id: 'dumbbell_bench_press', unilateral: false, load: 'EXTERNAL' } as Schemas['Exercise'];
   const last = [
@@ -411,19 +425,44 @@ describe("a move swapped in starts with nothing of its own (K-972, ADR-075 Ek 7)
     { clientId: 'x2', exerciseId: 'dumbbell_bench_press', setType: 'WORKING', loadKg: 32.5, reps: 11 },
   ] as Schemas['NewSet'][];
 
-  test("fresh: no weight, the range's bottom for reps; not fresh: last time's, as for any planned move", () => {
+  test("no history: no weight, the range's bottom for reps; the phone's own last time: last time's", () => {
+    expect(planExercise(dumbbell, dumbbellMove, [], []).rows[0].suggested).toEqual({ loadKg: null, reps: 6 });
     expect(planExercise(dumbbell, dumbbellMove, last, []).rows[0].suggested).toEqual({ loadKg: 32.5, reps: 12 });
-    expect(planExercise(dumbbell, dumbbellMove, last, [], undefined, true).rows[0].suggested).toEqual({ loadKg: null, reps: 6 });
   });
 
-  test('fresh, what was just lifted in this session still carries to the next row', () => {
+  test("the server's last best set is a history too (a phone with nothing kept): its weight, the range's bottom for reps", () => {
+    const served = { ...dumbbell, lastBestSet: { loadKg: 30, reps: 10, rir: 1 } };
+    expect(planExercise(served, dumbbellMove, [], []).rows[0].suggested).toEqual({ loadKg: 30, reps: 6 });
+    // The phone's own rows come first where it has them.
+    expect(planExercise(served, dumbbellMove, last, []).rows[0].suggested.loadKg).toBe(32.5);
+  });
+
+  test('no history, what was just lifted in this session still carries to the next row', () => {
     const lifted = { clientId: 'y1', exerciseId: 'dumbbell_bench_press', setType: 'WORKING', loadKg: 30, reps: 10 } as Schemas['NewSet'];
-    const plan = planExercise(dumbbell, dumbbellMove, last, [lifted], undefined, true);
+    const plan = planExercise(dumbbell, dumbbellMove, [], [lifted]);
     expect(plan.rows[1].suggested).toEqual({ loadKg: 30, reps: 6 });
   });
 
   test('a bodyweight move is 0 either way', () => {
     const planned = { ...dumbbell, exerciseId: 'push_up' };
-    expect(planExercise(planned, pushUp, [], [], undefined, true).rows[0].suggested.loadKg).toBe(0);
+    expect(planExercise(planned, pushUp, [], []).rows[0].suggested.loadKg).toBe(0);
+  });
+
+  test('a bodyweight move with an added load starts at 0, the body alone: nothing to pick; with a history, the load it had', () => {
+    const vest = { id: 'weighted_pull_up', unilateral: false, load: 'BODYWEIGHT_PLUS_EXTERNAL' } as Schemas['Exercise'];
+    const planned = { ...dumbbell, exerciseId: 'weighted_pull_up' };
+    expect(planExercise(planned, vest, [], []).rows[0].suggested.loadKg).toBe(0);
+    const before = [{ clientId: 'z1', exerciseId: 'weighted_pull_up', setType: 'WORKING', loadKg: 10, reps: 6 }] as Schemas['NewSet'][];
+    expect(planExercise(planned, vest, before, []).rows[0].suggested.loadKg).toBe(10);
+  });
+
+  // K-973 (ADR-075 #3, Ek 8): the server sends a calibration step with every move that has no target, an isolation move at
+  // every session: its first session picks the weight, the next ones start from the weight of last time.
+  test('a move the server calibrates: no weight at its first session; at the next, the weight it was done with', () => {
+    const calibrating = { ...dumbbell, calibrationStepKg: 2.5 };
+    expect(planExercise(calibrating, dumbbellMove, [], []).rows[0].suggested).toEqual({ loadKg: null, reps: 6 });
+    expect(planExercise(calibrating, dumbbellMove, last, []).rows[0].suggested).toEqual({ loadKg: 32.5, reps: 12 });
+    expect(planExercise({ ...calibrating, nextLoadKg: 30 }, dumbbellMove, last, []).rows[0].suggested.loadKg).toBe(30);
+    expect(planExercise(dumbbell, dumbbellMove, last, []).rows[0].suggested.loadKg).toBe(32.5);
   });
 });

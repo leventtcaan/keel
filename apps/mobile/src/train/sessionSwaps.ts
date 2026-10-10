@@ -30,8 +30,21 @@ export function createSessionSwaps(kv: KeyValue) {
         return {};
       }
     },
-    async keep(workout: string, swaps: Swaps): Promise<void> {
-      await kv.setItemAsync(KEY, JSON.stringify({ workout, swaps }));
+    /**
+     * The moves swapped away from in this workout (K-973, ADR-075 Ek 8): kept beside the swaps, in the same record, so a session
+     * opened again does not take them back into its superset. None for another workout, nothing kept, or what cannot be read.
+     */
+    async readLeft(workout: string): Promise<string[]> {
+      try {
+        const kept = JSON.parse((await kv.getItemAsync(KEY)) ?? 'null') as { workout?: unknown; left?: unknown } | null;
+        if (kept === null || kept.workout !== workout || !Array.isArray(kept.left)) return [];
+        return kept.left.filter((id): id is string => typeof id === 'string' && id !== '');
+      } catch {
+        return [];
+      }
+    },
+    async keep(workout: string, swaps: Swaps, left: string[] = []): Promise<void> {
+      await kv.setItemAsync(KEY, JSON.stringify({ workout, swaps, left }));
     },
     async forget(): Promise<void> {
       await kv.removeItemAsync(KEY);
@@ -61,7 +74,22 @@ export function applySwaps(today: Planned[], swaps: Swaps, known: (id: string) =
   const held = validSwaps(today, swaps, known);
   return today.map((planned) => {
     const to = held[planned.exerciseId];
-    return to === undefined ? planned : { exerciseId: to, baseSets: planned.baseSets, sets: planned.sets, reps: planned.reps, targetRir: planned.targetRir };
+    if (to === undefined) return planned;
+    // The server's row for this option (swapTables, in the order of swapOptions), if it is the option's: its own best set and
+    // the loads around it, never a target (ADR-075 Ek 8). A row out of step with the options is not used.
+    const table = planned.swapTables?.[(planned.swapOptions ?? []).indexOf(to)];
+    const own = table?.exerciseId === to ? table : undefined;
+    return {
+      exerciseId: to,
+      baseSets: planned.baseSets,
+      sets: planned.sets,
+      reps: planned.reps,
+      targetRir: planned.targetRir,
+      ...(own?.lastBestSet === undefined ? {} : { lastBestSet: own.lastBestSet }),
+      ...(own?.lighterLoadKg === undefined ? {} : { lighterLoadKg: own.lighterLoadKg }),
+      ...(own?.heavierLoadKg === undefined ? {} : { heavierLoadKg: own.heavierLoadKg }),
+      ...(own?.calibrationStepKg === undefined ? {} : { calibrationStepKg: own.calibrationStepKg }),
+    };
   });
 }
 

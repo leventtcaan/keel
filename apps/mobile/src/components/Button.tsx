@@ -11,7 +11,8 @@ type Props = {
   onPress: () => void;
   /** 'warn' only for the confirming step of a destructive action (ADR-016). */
   variant?: ButtonVariant;
-  size?: 'md' | 'sm';
+  /** 'touch': as small as 'sm' but at least size.touch tall, for a choice made mid-set. */
+  size?: 'md' | 'sm' | 'touch';
   disabled?: boolean;
   /** What a screen reader says when the label is short for it ("Withdraw" → "Withdraw Health data"). */
   accessibilityLabel?: string;
@@ -38,8 +39,8 @@ export function Button({ label, onPress, variant = 'primary', size = 'md', disab
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [styles.base, size === 'sm' && styles.small, fill, (pressed || disabled) && styles.dim]}>
-      <Text style={[styles.label, size === 'sm' && styles.labelSmall, { color: ink }]}>{label}</Text>
+      style={({ pressed }) => [styles.base, size !== 'md' && styles.small, size === 'touch' && styles.touch, fill, (pressed || disabled) && styles.dim]}>
+      <Text style={[styles.label, size !== 'md' && styles.labelSmall, { color: ink }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -52,6 +53,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   small: { paddingVertical: tokens.space.sm, paddingHorizontal: tokens.space.md, alignSelf: 'flex-start' },
+  touch: { minHeight: tokens.size.touch, justifyContent: 'center' },
   dim: { opacity: tokens.opacity.dim },
   label: { fontSize: tokens.type.button, fontWeight: tokens.weight.semibold },
   labelSmall: { fontSize: tokens.type.buttonSmall },
