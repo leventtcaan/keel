@@ -1,0 +1,285 @@
+/**
+ * The call that closes the first week, on the call screen (K-978, ADR-077 #4 and Ek 1, prototype #week1 and #w1change):
+ * "Sounds right" takes the days the server suggested, "Change it" lets the user pick others, "Done" once they have; the
+ * save is the program's days edited by their ids. One more day is picked in the training days (the server has no day to
+ * add by itself). Nothing here works out a day: the suggestion and the training weekdays are the server's.
+ */
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { AccessibilityInfo } from 'react-native';
+
+import CallScreen from '@/app/call';
+import type { components } from '@/api/schema';
+import { t } from '@/copy';
+import { ThemeProvider } from '@/theme/theme';
+
+type Schemas = components['schemas'];
+type Answer = { data?: unknown; error?: { code: string; message: string }; response: Response };
+const ok = (data: unknown): Answer => ({ data, response: new Response(null, { status: 200 }) });
+const refused = (status: number, code: string): Answer => ({ error: { code, message: 'x' }, response: new Response(null, { status }) });
+
+const exercise = (id: string): Schemas['PlannedExercise'] => ({ id, exerciseId: 'squat', baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 2 });
+const program = (): Schemas['Program'] => ({
+  id: 'p1',
+  source: 'GENERATED',
+  days: [
+    { id: 'a', nameKey: 'full_body_a', weekday: 'MONDAY', exercises: [exercise('a1')] },
+    { id: 'b', nameKey: 'full_body_b', weekday: 'WEDNESDAY', exercises: [exercise('b1')] },
+    { id: 'c', nameKey: 'full_body_c', weekday: 'FRIDAY', exercises: [exercise('c1')] },
+  ],
+});
+const moveCall = (extra: Partial<Schemas['Decision']> = {}, suggested: string[] = ['THURSDAY']): Schemas['Decision'] =>
+  ({
+    id: 'd1',
+    madeOn: '2026-10-12',
+    action: { type: 'MOVE_MISSED_SESSIONS', missed: ['WEDNESDAY'], suggested },
+    reasons: [{ rule: 'first_week_move_missed', source: { tag: 'EXPERIENCE' }, facts: { done: 1, planned: 3 } }],
+    confidence: 'MEDIUM',
+    nextReview: '2026-10-19',
+    copyKey: 'decision.move_missed_sessions.first_week_move_missed',
+    application: { state: 'NOT_NEEDED' },
+    declinable: false,
+    changes: [],
+    observationDays: 14,
+    ...extra,
+  }) as Schemas['Decision'];
+const addCall = (suggested: string[] = ['SATURDAY']): Schemas['Decision'] =>
+  moveCall({
+    action: { type: 'ADD_TRAINING_DAY', toDays: 4, idealDays: 4, suggested } as Schemas['Decision']['action'],
+    copyKey: 'decision.add_training_day.first_week_add_day',
+    reasons: [{ rule: 'first_week_add_day', source: { tag: 'EXPERIENCE' }, facts: { done: 3, planned: 3 } }],
+  });
+
+let mockAnswers: Record<string, Answer | 'offline'> = {};
+const mockGET = jest.fn(async (path: string, _init?: unknown) => {
+  const answer = mockAnswers[path] ?? refused(404, 'NOT_FOUND');
+  if (answer === 'offline') throw new TypeError('Network request failed');
+  return answer;
+});
+let mockPatch: Answer | 'offline' = ok(program());
+const mockPATCH = jest.fn(async (_path: string, _init?: unknown) => {
+  if (mockPatch === 'offline') throw new TypeError('Network request failed');
+  return mockPatch;
+});
+const mockBack = jest.fn();
+const mockPush = jest.fn();
+jest.mock('expo-router', () => ({
+  router: { back: () => mockBack(), push: (to: string) => mockPush(to) },
+  useLocalSearchParams: () => mockParams,
+}));
+let mockParams: { id?: string } = {};
+const said = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
+const mockServices = { api: { GET: mockGET, POST: jest.fn(), PATCH: mockPATCH }, report: jest.fn() };
+jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => 'METRIC' }));
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockParams = {};
+  mockPatch = ok(program());
+  mockAnswers = { '/v1/decisions/current': ok(moveCall()), '/v1/program': ok(program()) };
+});
+
+async function show() {
+  await render(
+    <ThemeProvider scheme="light">
+      <CallScreen />
+    </ThemeProvider>,
+  );
+  await act(async () => {});
+}
+const press = async (name: string) => {
+  await fireEvent.press(screen.getByRole('button', { name }));
+  await act(async () => {});
+};
+const w = (key: string) => t(`callScreen.week1.${key}`);
+const patched = () => mockPATCH.mock.calls.map(([, init]) => (init as { body: Schemas['ProgramEdit'] }).body);
+const weekdaysSent = () => patched()[0].days.map((d) => d.weekday);
+
+describe('missed sessions: the suggestion comes filled', () => {
+  test('the session and the day it goes to, from the server; "Sounds right" and "Change it", not "Got it"', async () => {
+    await show();
+    expect(screen.getByText(w('session').replace('{day}', 'Wed'))).toBeOnTheScreen();
+    expect(screen.getByText('Thu')).toBeOnTheScreen();
+    expect(screen.getByLabelText(`${t('callScreen.week1.session', { day: 'Wed' })}: was Wed, now Thu`)).toBeOnTheScreen();
+    expect(screen.getByText('1 of 3 sessions happened. A day that fits helps.')).toBeOnTheScreen();
+    expect(screen.getByText(t('callScreen.observation', { days: 14 }))).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: w('soundsRight') })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: w('changeIt') })).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: t('callScreen.gotIt') })).toBeNull();
+    expect(screen.queryByRole('button', { name: t('callScreen.keep') })).toBeNull();
+  });
+
+  test('"Sounds right": the suggested day saved on the program by its ids, then back to the week', async () => {
+    await show();
+    await press(w('soundsRight'));
+    expect(mockPATCH).toHaveBeenCalledTimes(1);
+    expect(mockPATCH.mock.calls[0][0]).toBe('/v1/program');
+    expect(weekdaysSent()).toEqual(['MONDAY', 'THURSDAY', 'FRIDAY']);
+    expect(patched()[0].days[1]).toMatchObject({ id: 'b', exercises: [{ id: 'b1', exerciseId: 'squat', sets: 3, reps: { min: 6, max: 10 } }] });
+    expect(mockBack).toHaveBeenCalled();
+    expect(said).toHaveBeenCalledWith(w('saved'));
+  });
+
+  test('two taps at once send once', async () => {
+    let answer: (value: Answer) => void = () => {};
+    mockPATCH.mockImplementationOnce(() => new Promise<Answer>((resolve) => (answer = resolve)));
+    await show();
+    const button = screen.getByRole('button', { name: w('soundsRight') });
+    await act(async () => {
+      fireEvent.press(button);
+      fireEvent.press(button);
+    });
+    await act(async () => answer(ok(program())));
+    expect(mockPATCH).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('"Change it" (prototype #w1change)', () => {
+  const free = ['TUESDAY', 'THURSDAY', 'SATURDAY', 'SUNDAY'];
+
+  test("the suggestion said, the free days to pick from (the days the program trains on are not offered), the plan as it was", async () => {
+    await show();
+    await press(w('changeIt'));
+    expect(screen.getByText(w('changeTitle'))).toBeOnTheScreen();
+    expect(screen.getByText(t('callScreen.week1.changeHint', { suggestion: t('callScreen.week1.suggestion', { to: 'Thursday', from: 'Wednesday' }) }))).toBeOnTheScreen();
+    expect(screen.getByText(t('callScreen.week1.moveHead', { day: 'Wednesday' }))).toBeOnTheScreen();
+    for (const day of free) expect(screen.getByRole('button', { name: t(`programEditor.weekdayName.${day}`) })).toBeOnTheScreen();
+    for (const day of ['MONDAY', 'WEDNESDAY', 'FRIDAY']) expect(screen.queryByRole('button', { name: t(`programEditor.weekdayName.${day}`) })).toBeNull();
+    expect(screen.getByRole('button', { name: w('keepSuggestion') })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: t('callScreen.keep') })).toBeOnTheScreen();
+  });
+
+  test('a day picked: the call shows it, its button reads "Done", and that day is the one saved', async () => {
+    await show();
+    await press(w('changeIt'));
+    await press(t('programEditor.weekdayName.SATURDAY'));
+    await press(w('done'));
+    expect(screen.getByText('Sat')).toBeOnTheScreen();
+    expect(screen.queryByText('Thu')).toBeNull();
+    expect(screen.queryByRole('button', { name: w('soundsRight') })).toBeNull();
+    await press(w('done'));
+    expect(weekdaysSent()).toEqual(['MONDAY', 'SATURDAY', 'FRIDAY']);
+    expect(mockBack).toHaveBeenCalled();
+  });
+
+  test('"Keep the suggestion" after a pick: the suggestion again, "Sounds right" again', async () => {
+    await show();
+    await press(w('changeIt'));
+    await press(t('programEditor.weekdayName.SATURDAY'));
+    await press(w('keepSuggestion'));
+    expect(screen.getByText('Thu')).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: w('soundsRight') })).toBeOnTheScreen();
+  });
+
+  test("\"Keep last week's plan\": nothing saved, back to the week", async () => {
+    await show();
+    await press(w('changeIt'));
+    await press(t('callScreen.keep'));
+    expect(mockPATCH).not.toHaveBeenCalled();
+    expect(mockBack).toHaveBeenCalled();
+  });
+
+  test('two missed days: each its own day, and no day twice', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(
+      moveCall({ action: { type: 'MOVE_MISSED_SESSIONS', missed: ['WEDNESDAY', 'FRIDAY'], suggested: ['THURSDAY', 'SATURDAY'] } as Schemas['Decision']['action'] }),
+    );
+    await show();
+    await press(w('changeIt'));
+    expect(screen.getByText(t('callScreen.week1.moveHead', { day: 'Friday' }))).toBeOnTheScreen();
+    // Thursday is Wednesday's: Friday's session is not offered it.
+    expect(screen.getAllByRole('button', { name: t('programEditor.weekdayName.THURSDAY') })).toHaveLength(1);
+  });
+});
+
+describe('when it does not save', () => {
+  test('the program changed (409): said, nothing closed', async () => {
+    mockPatch = refused(409, 'CONFLICT');
+    await show();
+    await press(w('soundsRight'));
+    expect(screen.getByText(w('stale'))).toBeOnTheScreen();
+    expect(mockBack).not.toHaveBeenCalled();
+  });
+
+  test('no connection: said, and the button still there to try again', async () => {
+    mockPatch = 'offline';
+    await show();
+    await press(w('soundsRight'));
+    expect(screen.getByText(w('offline'))).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: w('soundsRight') })).toBeEnabled();
+    expect(said).toHaveBeenCalledWith(w('offline'));
+  });
+
+  test('any other refusal: ours, worth another try', async () => {
+    mockPatch = refused(500, 'INTERNAL');
+    await show();
+    await press(w('soundsRight'));
+    expect(screen.getByText(w('failed'))).toBeOnTheScreen();
+  });
+
+  test('the program could not be read when asked to save: it is read again, and if still not, said', async () => {
+    mockAnswers['/v1/program'] = 'offline';
+    await show();
+    await press(w('soundsRight'));
+    expect(mockPATCH).not.toHaveBeenCalled();
+    expect(screen.getByText(w('offline'))).toBeOnTheScreen();
+    mockAnswers['/v1/program'] = ok(program());
+    await press(w('soundsRight'));
+    expect(mockPATCH).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('edge cases', () => {
+  test('no free day for a missed one (the server suggested fewer): "Pick a day", and "Sounds right" waits for it', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(moveCall({}, []));
+    await show();
+    expect(screen.getByText(w('noDay'))).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: w('soundsRight') })).toBeDisabled();
+  });
+
+  test('the days were moved already (the missed day is no training day any more): nothing left to pick, only "Got it"', async () => {
+    const moved = program();
+    moved.days[1].weekday = 'THURSDAY';
+    mockAnswers['/v1/program'] = ok(moved);
+    await show();
+    expect(screen.queryByRole('button', { name: w('soundsRight') })).toBeNull();
+    expect(screen.queryByText(w('noDay'))).toBeNull();
+    expect(screen.getByRole('button', { name: t('callScreen.gotIt') })).toBeOnTheScreen();
+  });
+
+  test('a past call of this kind, read only: its days are not offered again', async () => {
+    mockParams = { id: 'd0' };
+    mockAnswers['/v1/decisions/{id}'] = ok(moveCall({ id: 'd0' }));
+    await show();
+    expect(screen.queryByRole('button', { name: w('soundsRight') })).toBeNull();
+    expect(screen.queryByRole('button', { name: w('changeIt') })).toBeNull();
+    expect(mockGET).not.toHaveBeenCalledWith('/v1/program');
+  });
+});
+
+describe('one more day', () => {
+  test('the count and the day suggested; the day is picked in the training days', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(addCall());
+    await show();
+    expect(screen.getByText(w('daysLabel'))).toBeOnTheScreen();
+    expect(screen.getByText('4')).toBeOnTheScreen();
+    expect(screen.getByText(w('suggestedDay'))).toBeOnTheScreen();
+    expect(screen.getByText('Sat')).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: w('soundsRight') })).toBeNull();
+    await press(w('pickDay'));
+    expect(mockPush).toHaveBeenCalledWith('/edit-program?part=days');
+    expect(mockPATCH).not.toHaveBeenCalled();
+  });
+
+  test('no free day to suggest: the count only', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(addCall([]));
+    await show();
+    expect(screen.queryByText(w('suggestedDay'))).toBeNull();
+    expect(screen.getByRole('button', { name: w('pickDay') })).toBeOnTheScreen();
+  });
+
+  test('"Got it" is still there', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(addCall());
+    await show();
+    await press(t('callScreen.gotIt'));
+    expect(mockBack).toHaveBeenCalled();
+  });
+});

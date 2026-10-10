@@ -950,9 +950,71 @@
       "budget": 45,
       "source": "prototip/yeni-yuz.html",
       "task": "K-978",
-      "file": null,
-      "keys": [],
-      "notFirstView": []
+      "file": "src/today/useWeek1.tsx",
+      "keys": [
+        "decision.move_missed_sessions.label",
+        "decision.move_missed_sessions.first_week_move_missed.title",
+        "callScreen.week1.session",
+        "decision.ruleShort.first_week_move_missed",
+        "callScreen.observation",
+        "callScreen.confidence",
+        ["callScreen.level.LOW", "callScreen.level.MEDIUM", "callScreen.level.HIGH"],
+        "callScreen.nextCall",
+        "callScreen.week1.soundsRight",
+        "callScreen.week1.changeIt"
+      ],
+      "dynamic": [{"what": "the day the call was made (Mon, Oct 12)", "words": 2}, {"what": "the next call's date (Mon, Oct 19)", "words": 2}, {"what": "the missed day, struck, and the day it goes to (Wed, Thu)", "words": 2}, {"what": "the missed day in the row's name (Wed session)", "words": 1}],
+      "uncounted": [],
+      "notFirstView": [
+        "callScreen.changes.spoken",
+        "callScreen.changes.spokenValue",
+        "callScreen.keep",
+        "callScreen.gotIt",
+        "callScreen.week1.noDay",
+        "callScreen.week1.saved",
+        "callScreen.week1.join",
+        "callScreen.week1.changeTitle",
+        "callScreen.week1.changeHint",
+        "callScreen.week1.suggestion",
+        "callScreen.week1.keepSuggestion",
+        "callScreen.week1.moveHead",
+        "callScreen.week1.done",
+        "callScreen.week1.daysLabel",
+        "callScreen.week1.suggestedDay",
+        "callScreen.week1.pickDay"
+      ],
+      "faces": [
+        {
+          "face": "one more day",
+          "keys": [
+            "decision.add_training_day.label",
+            "decision.add_training_day.first_week_add_day.title",
+            "callScreen.week1.daysLabel",
+            "callScreen.week1.suggestedDay",
+            "decision.ruleShort.first_week_add_day",
+            "callScreen.observation",
+            "callScreen.confidence",
+            ["callScreen.level.LOW", "callScreen.level.MEDIUM", "callScreen.level.HIGH"],
+            "callScreen.nextCall",
+            "callScreen.week1.pickDay",
+            "callScreen.gotIt"
+          ],
+          "dynamic": [{"what": "the day the call was made (Mon, Oct 12)", "words": 2}, {"what": "the next call's date (Mon, Oct 19)", "words": 2}, {"what": "the suggested day (Sat)", "words": 1}]
+        },
+        {
+          "face": "change it",
+          "keys": [
+            "callScreen.week1.changeTitle",
+            "callScreen.week1.changeHint",
+            "callScreen.week1.suggestion",
+            "callScreen.week1.keepSuggestion",
+            "callScreen.week1.moveHead",
+            "callScreen.week1.done",
+            "callScreen.keep"
+          ],
+          "dynamic": [{"what": "the day in the hint, twice (Thursday instead of Wednesday)", "words": 2}, {"what": "the day to move (Wednesday)", "words": 1}, {"what": "the free days to pick from (Tuesday, Thursday, Saturday, Sunday)", "words": 4}]
+        }
+      ]
     },
     {
       "screen": "share",

@@ -18,6 +18,7 @@ import { ChangeRows } from '@/today/ChangeRows';
 import { changeRows } from '@/today/callChanges';
 import { callReasons } from '@/today/callReasons';
 import { SourceMark } from '@/today/SourceMark';
+import { useWeek1 } from '@/today/useWeek1';
 import { type Loaded, labelKey, load, weekdayDate } from '@/today/today';
 
 type Decision = components['schemas']['Decision'];
@@ -62,6 +63,8 @@ export default function CallScreen() {
   if (failed?.read === 'next' && call !== failed.from && call?.state === 'ready') setFailed({ ...failed, read: call.value });
   // A ref, not state: two taps in the same moment both see state from before either ran, a ref they share.
   const sending = useRef(false);
+  // The call that closes the first week picks days (K-978, ADR-077 #4); every other call, none.
+  const week1 = useWeek1(call?.state === 'ready' && !readOnly ? call.value : null);
   // Changed: the read that follows says the call's new standing aloud (VoiceOver, K-815).
   const toSay = useRef<Loaded<Decision> | null | undefined>(undefined);
 
@@ -180,7 +183,7 @@ export default function CallScreen() {
             {foot}
           </DecisionBlock>
         </Animated.View>
-        <ChangeRows rows={changeRows(decision)} />
+        <ChangeRows rows={week1?.rows ?? changeRows(decision)} />
         <View>
           {reasons}
           {observation}
@@ -192,6 +195,7 @@ export default function CallScreen() {
           <Text style={[styles.small, { color: color.textSecondary }]}>{t('callScreen.nextCall', { date: weekdayDate(decision.nextReview) })}</Text>
         </View>
         {failed?.read === decision ? <ProblemText style={[styles.small, { color: color.text }]}>{t(failed.key)}</ProblemText> : null}
+        {week1?.note}
       </>
     );
     const second = face.second;
@@ -199,14 +203,23 @@ export default function CallScreen() {
       second === null ? null : (
         <Button label={t(second === 'keep' ? 'callScreen.keep' : 'callScreen.use')} variant="ghost" disabled={busy} onPress={() => void change(decision, second)} />
       );
-    dock = readOnly ? null : (
-      <View style={styles.dock}>
-        <Button label={t('callScreen.gotIt')} onPress={() => router.back()} />
-        {secondWay}
-      </View>
-    );
+    dock =
+      week1?.dock ??
+      (readOnly ? null : (
+        <View style={styles.dock}>
+          <Button label={t('callScreen.gotIt')} onPress={() => router.back()} />
+          {secondWay}
+        </View>
+      ));
   }
 
+  if (week1?.changing) {
+    return (
+      <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
+        {week1.changing}
+      </SafeAreaView>
+    );
+  }
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.body}>
