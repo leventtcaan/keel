@@ -56,11 +56,13 @@ jest.mock('expo-router', () => ({
 }));
 const said = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
 const mockServices = { api: { GET: mockGET, POST: mockPOST }, report: jest.fn() };
-jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => 'METRIC' }));
+let mockUnits: 'METRIC' | 'IMPERIAL' = 'METRIC';
+jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => mockUnits }));
 
 beforeEach(() => {
   jest.clearAllMocks();
   mockParams = {};
+  mockUnits = 'METRIC';
   mockPost = ok({});
   mockAnswers = { '/v1/decisions/current': ok(decision()) };
 });
@@ -92,8 +94,11 @@ describe("this week's call", () => {
     expect(screen.getByText(t('decision.rule.plateau'))).toBeOnTheScreen();
     expect(screen.getByText(t('decision.rule.toward_goal'))).toBeOnTheScreen();
     expect(screen.queryByText(t('decision.rule.energy_floor'))).toBeNull(); // two, no more
-    expect(screen.getByText(t('today.call.source.EXPERIENCE'))).toBeOnTheScreen();
-    expect(screen.getByText(t('today.call.source.LITERATURE'))).toBeOnTheScreen();
+    expect(screen.getByLabelText(t('today.call.source.EXPERIENCE'))).toBeOnTheScreen();
+    expect(screen.getByLabelText(t('today.call.source.LITERATURE'))).toBeOnTheScreen();
+    // The kind of source is a symbol with its full words for VoiceOver, not a line of text (U14, the word budget)
+    expect(screen.queryByText(t('today.call.source.EXPERIENCE'))).toBeNull();
+    expect(screen.queryByText(t('today.call.source.LITERATURE'))).toBeNull();
     expect(screen.getByText(t('callScreen.confidence', { level: t('callScreen.level.MEDIUM') }))).toBeOnTheScreen();
     expect(screen.getByText(t('callScreen.nextCall', { date: 'Mon, Jan 4' }))).toBeOnTheScreen();
     expect(screen.getByText('Mon, Dec 28')).toBeOnTheScreen(); // the day it was made
@@ -134,7 +139,7 @@ describe("this week's call", () => {
     await show();
     expect(screen.queryByRole('button', { name: t('callScreen.keep') })).toBeNull();
     expect(screen.queryByText(t('decision.rule.low_energy_safety'))).toBeNull();
-    expect(screen.getByText(t('today.call.source.LITERATURE'))).toBeOnTheScreen();
+    expect(screen.getByText(t('today.call.source.LITERATURE'))).toBeOnTheScreen(); // no sentence: the kind of source in words
     expect(JSON.stringify(screen.toJSON())).not.toMatch(/hard.?stop|cycle|period|menstrua|amenorr/i);
   });
 
@@ -221,6 +226,138 @@ describe("this week's call", () => {
     mockAnswers['/v1/decisions/current'] = ok(decision());
     await press(t('callScreen.retry'));
     expect(screen.getByText(t('decision.stop_load_increase.label'))).toBeOnTheScreen();
+  });
+});
+
+describe('what the call changes, and why in a line (K-978 part 2)', () => {
+  const calories = (extra: Partial<Schemas['Decision']> = {}) =>
+    decision({
+      copyKey: 'decision.adjust_calories.not_toward_goal',
+      action: { type: 'ADJUST_CALORIES', kcalPerDay: -250 } as Schemas['Decision']['action'],
+      reasons: [
+        { rule: 'not_toward_goal', source: { tag: 'EXPERIENCE' }, facts: { kgPerWeek: -0.1, weeks: 3 } },
+        { rule: 'cut_step', source: { tag: 'LITERATURE' }, facts: { kcal: 250 } },
+        { rule: 'energy_floor', source: { tag: 'PRODUCT' } },
+      ],
+      changes: [{ what: 'CALORIES', before: { targetKcal: 2100 }, after: { targetKcal: 1850 } }],
+      ...extra,
+    });
+
+  test('the changes, old to new, one line each; VoiceOver hears them as one sentence', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(calories());
+    await show();
+    expect(screen.getByText('Calories')).toBeOnTheScreen();
+    expect(screen.getByText('2,100')).toBeOnTheScreen();
+    expect(screen.getByText('1,850 kcal')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Calories: was 2,100 kcal, now 1,850 kcal')).toBeOnTheScreen();
+  });
+
+  test('no target was in force: a new target, no number before it', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(calories({ changes: [{ what: 'CALORIES', before: {}, after: { targetKcal: 1850 } }] }));
+    await show();
+    expect(screen.getByText('Calories, new')).toBeOnTheScreen();
+    expect(screen.getByText('1,850 kcal')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Calories, new: 1,850 kcal')).toBeOnTheScreen();
+  });
+
+  test("kept off the plan: the target in force is what shows; the call's own number is not", async () => {
+    mockAnswers['/v1/decisions/current'] = ok(
+      calories({
+        application: { state: 'DECLINED' },
+        declinable: false,
+        changes: [{ what: 'CALORIES', before: { targetKcal: 2100 }, after: { targetKcal: 1850 }, inForce: { targetKcal: 2100 } }],
+      }),
+    );
+    await show();
+    expect(screen.getByText('Calories, in force')).toBeOnTheScreen();
+    expect(screen.getByText('2,100 kcal')).toBeOnTheScreen();
+    expect(screen.queryByText('1,850 kcal')).toBeNull();
+  });
+
+  test('not applied yet (pending) or a call that moves no target: no changes section', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(calories({ application: { state: 'PENDING' }, changes: [] }));
+    await show();
+    expect(screen.queryByText('Calories')).toBeNull();
+    expect(screen.getByRole('button', { name: t('callScreen.use') })).toBeOnTheScreen();
+  });
+
+  test("the two reasons in a line each, with the server's numbers, and their kind of source", async () => {
+    mockAnswers['/v1/decisions/current'] = ok(calories());
+    await show();
+    expect(screen.getByText('-0.1 kg a week over 3 weeks, not toward your goal.')).toBeOnTheScreen();
+    expect(screen.getByText('One step: 250 kcal a day less.')).toBeOnTheScreen();
+    expect(screen.queryByText(t('decision.ruleShort.energy_floor'))).toBeNull(); // two, no more
+    expect(screen.getByLabelText(t('today.call.source.EXPERIENCE'))).toBeOnTheScreen();
+    expect(screen.getByLabelText(t('today.call.source.LITERATURE'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('today.call.source.EXPERIENCE'))).toBeNull();
+  });
+
+  test("the pace in the user's units: pounds on a pound screen, never a kilogram", async () => {
+    mockUnits = 'IMPERIAL';
+    mockAnswers['/v1/decisions/current'] = ok(calories());
+    await show();
+    expect(screen.getByText('-0.2 lb a week over 3 weeks, not toward your goal.')).toBeOnTheScreen();
+    expect(JSON.stringify(screen.toJSON())).not.toMatch(/ kg a week/);
+  });
+
+  test('a call kept before its numbers were: the longer sentence, no number made up', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(calories({ reasons: [{ rule: 'not_toward_goal', source: { tag: 'EXPERIENCE' } }] }));
+    await show();
+    expect(screen.getByText(t('decision.rule.not_toward_goal'))).toBeOnTheScreen();
+  });
+
+  test("the call that closes the first week: when food and weight start, in the second reason's place", async () => {
+    mockAnswers['/v1/decisions/current'] = ok(
+      decision({
+        copyKey: 'decision.continue.first_week_on_track',
+        action: { type: 'CONTINUE' } as Schemas['Decision']['action'],
+        reasons: [
+          { rule: 'first_week_on_track', source: { tag: 'EXPERIENCE' }, facts: { done: 2, planned: 3 } },
+          { rule: 'energy_floor', source: { tag: 'PRODUCT' } },
+        ],
+        application: { state: 'NOT_NEEDED' },
+        declinable: false,
+        observationDays: 14,
+      }),
+    );
+    await show();
+    expect(screen.getByText('2 of 3 sessions happened. The plan stays.')).toBeOnTheScreen();
+    expect(screen.getByText('Food and weight wait until day 14.')).toBeOnTheScreen();
+    expect(screen.queryByText(t('decision.ruleShort.energy_floor'))).toBeNull();
+  });
+
+  test('a call without observationDays says nothing of waiting', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(calories());
+    await show();
+    expect(screen.queryByText(/Food and weight wait/)).toBeNull();
+  });
+
+  test("the safety call: its phase change shown, and no way to keep last week's plan", async () => {
+    mockAnswers['/v1/decisions/current'] = ok(
+      decision({
+        copyKey: 'decision.change_phase.low_energy_safety',
+        action: { type: 'CHANGE_PHASE', to: 'BULK' } as Schemas['Decision']['action'],
+        safety: true,
+        declinable: false,
+        reasons: [{ rule: 'low_energy_safety', source: { tag: 'LITERATURE' }, facts: { kcal: 250 } }],
+        changes: [{ what: 'PHASE', before: { phase: 'CUT' }, after: { phase: 'BULK' } }],
+      }),
+    );
+    await show();
+    expect(screen.getByText('Phase')).toBeOnTheScreen();
+    expect(screen.getByText('Cutting')).toBeOnTheScreen();
+    expect(screen.getByText('Building')).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: t('callScreen.keep') })).toBeNull();
+    expect(screen.queryByText(/250/)).toBeNull(); // no reason said, so none of its numbers
+    expect(screen.getByRole('button', { name: t('callScreen.gotIt') })).toBeOnTheScreen();
+  });
+
+  test('a past call shows the same changes, read only', async () => {
+    mockParams = { id: 'd0' };
+    mockAnswers['/v1/decisions/{id}'] = ok(calories({ id: 'd0' }));
+    await show();
+    expect(screen.getByText('1,850 kcal')).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: t('callScreen.keep') })).toBeNull();
   });
 });
 

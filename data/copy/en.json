@@ -222,7 +222,19 @@
     "keepRefused": "This call can't be changed any more.",
     "keepError": "Not changed: something went wrong on our side. Try again in a moment.",
     "failed": "Couldn't load this call. Check your connection.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "observation": "Food and weight wait until day {days}.",
+    "changes": {
+      "label": { "CALORIES": "Calories", "STEPS": "Steps", "PHASE": "Phase" },
+      "new": "{what}, new",
+      "inForce": "{what}, in force",
+      "noneInForce": "No target yet",
+      "kcal": "{kcal} kcal",
+      "steps": "{steps} steps",
+      "phase": { "CUT": "Cutting", "BULK": "Building" },
+      "spoken": "{what}: was {from}, now {to}",
+      "spokenValue": "{what}: {to}"
+    }
   },
   "today": {
     "prompt": {
@@ -1265,12 +1277,12 @@
       "first_week_add_day": "{done} of {planned} sessions done: room for one more day.",
       "first_week_move_missed": "{done} of {planned} sessions happened. A day that fits helps.",
       "weight_steady_waist_down": "Weight held steady while your waist went down.",
-      "adherence_low": "{done} of {planned} planned actions happened: doing comes first.",
+      "adherence_low": "{done} of {planned} actions happened: doing comes first.",
       "adherence_partial": "{done} of {planned} planned actions happened, too few to judge.",
       "appetite_gone": "A long stretch of eating more can dull appetite.",
       "bmr_floor": "Calories stay above what your body needs at rest.",
       "bulk_ceiling": "Past this point, extra food mostly adds fat.",
-      "bulk_stall": "{kgPerWeek} kg a week over {weeks} weeks: food goes up.",
+      "bulk_stall": "{kgPerWeek} a week over {weeks} weeks: food goes up.",
       "bulk_step": "A small step: {kcal} kcal a day more.",
       "busy_minimum_dose": "In a busy week, less training keeps what you've built.",
       "calorie_change_too_soon": "A new target needs a couple of weeks before judging.",
@@ -1284,7 +1296,7 @@
       "check_in_needed_recovery": "First, how you're sleeping and recovering.",
       "check_in_needed_training": "First, whether your lifts are holding up.",
       "closer_to_failure": "Work sets count most near failure.",
-      "cut_step": "One clear step: {kcal} kcal a day less.",
+      "cut_step": "One step: {kcal} kcal a day less.",
       "cycle_check_needed": "One question comes before eating under your needs again.",
       "data_insufficient": "A few regular weigh-ins show the trend.",
       "declared_context": "A week you called disrupted isn't judged.",
@@ -1312,7 +1324,7 @@
       "mini_cut_over": "The short cut has run its weeks.",
       "mini_cut_running": "The short cut runs its planned weeks first.",
       "no_session_last_week": "No session last week, early on, is worth a word.",
-      "not_toward_goal": "{kgPerWeek} kg a week over {weeks} weeks, not toward your goal.",
+      "not_toward_goal": "{kgPerWeek} a week over {weeks} weeks, not toward your goal.",
       "observing": "Starting calories are an estimate until real maintenance shows.",
       "performance_red_flag": "Sessions stalled: {sessions}. Food doesn't drop until lifts hold.",
       "program_arm_weekly_sets_min": "Arms need their own weekly sets, split over two sessions.",
@@ -1329,11 +1341,11 @@
       "return_after_break": "After weeks away, the first session starts a step lighter.",
       "recovery_poor": "Training holds but sleep and energy don't: fix recovery.",
       "sessions_missed": "Planned sessions didn't happen, so the coach asks why.",
-      "stall_window": "{kgPerWeek} kg a week over {weeks} weeks: too slow for a cut.",
+      "stall_window": "{kgPerWeek} a week over {weeks} weeks: too slow for a cut.",
       "steps_dropped": "Your daily steps dropped.",
       "surplus_zone": "Lean enough that cutting further costs more than it gives.",
       "technique_gate": "Weight and reps hold until form is clean.",
-      "toward_goal": "{kgPerWeek} kg a week over {weeks} weeks, toward your goal.",
+      "toward_goal": "{kgPerWeek} a week over {weeks} weeks, toward your goal.",
       "training_first": "Training comes before food decisions.",
       "wait_one_more_week": "One flat week is usually water.",
       "window_not_full": "Your plan is judged over its full window."
@@ -1886,7 +1898,6 @@
   "checkIn": {
     "screen": {
       "title": "This week's check-in",
-      "intro": "Only what your logs don't already say. Each question says why it's asked.",
       "none": "Nothing to ask this week: your logs say enough.",
       "answered": "This week's call is in. It's on Today.",
       "send": "Get this week's call",
@@ -1909,12 +1920,12 @@
       "week1_feel": "How did week 1 feel?"
     },
     "reason": {
-      "training": "How training goes decides what changes next: food, or how you train.",
-      "recovery": "How you recover decides whether the next change is food or rest.",
+      "training": "It decides what changes: food or training.",
+      "recovery": "It decides whether food or rest changes next.",
       "cycle_stopped": "Your plan is low on fuel right now, and a missed period is the clearest sign it's too low. Your answer itself isn't saved; if it changes your plan, that change is.",
       "appetite": "After a long bulk, forcing food down is a sign the bulk has stopped paying off.",
       "state_still": "Your weeks have been paused for a while. If it's over, your weekly calls start again; if not, they stay paused. Either is fine.",
-      "week1_feel": "Every session happened. If it felt easy, there may be room for one more day."
+      "week1_feel": "Every session happened. Your answer shapes next week."
     },
     "choice": {
       "training": {
