@@ -82,6 +82,8 @@ jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServ
 const went: unknown[] = [];
 let mockParams: Record<string, string> = {};
 jest.mock('expo-router', () => ({
+  // The edit-program screen sets its Stack.Screen options (no edge swipe back with edits unsaved); nothing here reads them.
+  Stack: { Screen: () => null },
   router: {
     push: (to: unknown) => went.push(to),
     replace: (to: unknown) => went.push(to),

@@ -5,7 +5,7 @@
  */
 import type { ApiClient } from '@/api/client';
 import type { components } from '@/api/schema';
-import { applySuggestion, changeToday, coachCardio, putCardio, rebuild, swapMove, undoChange } from '@/train/changes';
+import { applySuggestion, changeToday, coachCardio, editProgram, putCardio, rebuild, swapMove, undoChange } from '@/train/changes';
 
 type Schemas = components['schemas'];
 
@@ -72,6 +72,37 @@ describe('the program edited on the Edit page', () => {
     const { api, POST } = apiAnswering(() => answer(200, PROGRAM));
     expect(await rebuild(api, ['MONDAY', 'THURSDAY'])).toEqual({ kind: 'done', program: PROGRAM });
     expect(POST).toHaveBeenCalledWith('/v1/program/generate', { body: { trainingDays: ['MONDAY', 'THURSDAY'] } });
+  });
+});
+
+describe('the program edited in place (PATCH /v1/program, K-995)', () => {
+  const EDIT: Schemas['ProgramEdit'] = { days: [{ id: 'd1', exercises: [{ id: 'r1', exerciseId: 'bench_press', sets: 3, reps: { min: 6, max: 10 } }] }] };
+  const patching = (reply: () => unknown) => {
+    const PATCH = jest.fn(async () => reply());
+    return { api: { PATCH } as unknown as ApiClient, PATCH };
+  };
+
+  test('the edit goes whole, and the program the server answers comes back', async () => {
+    const { api, PATCH } = patching(() => answer(200, PROGRAM));
+    expect(await editProgram(api, EDIT)).toEqual({ kind: 'done', program: PROGRAM });
+    expect(PATCH).toHaveBeenCalledWith('/v1/program', { body: EDIT });
+  });
+
+  test.each([
+    [409, { kind: 'conflict' }],
+    [400, { kind: 'refused' }],
+    [404, { kind: 'failed' }],
+    [500, { kind: 'failed' }],
+  ])('the server answering %i is %j: the program is as it was', async (status, said) => {
+    const { api } = patching(() => answer(status));
+    expect(await editProgram(api, EDIT)).toEqual(said);
+  });
+
+  test('no answer at all is no connection', async () => {
+    const { api } = patching(() => {
+      throw new TypeError('Network request failed');
+    });
+    expect(await editProgram(api, EDIT)).toEqual({ kind: 'offline' });
   });
 });
 

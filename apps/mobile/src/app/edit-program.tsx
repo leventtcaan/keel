@@ -1,11 +1,11 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
-import { ProblemText, useProblem } from '@/components/ProblemText';
+import { ProblemText, announce, useProblem } from '@/components/ProblemText';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
 import { useAppServices } from '@/services/ServicesProvider';
@@ -15,11 +15,13 @@ import { load } from '@/today/today';
 import { useReadOnFocus } from '@/today/useReadOnFocus';
 import { liftDays } from '@/train/cardio';
 import { CardioEditor } from '@/train/CardioEditor';
-import { type Changed, type Undone, applySuggestion, coachCardio, putCardio, rebuild, undoChange } from '@/train/changes';
+import { type Changed, type Undone, applySuggestion, coachCardio, editProgram, putCardio, rebuild, undoChange } from '@/train/changes';
+import type { SaveOutcome } from '@/train/OwnMoveForm';
 import { dayName, exerciseName } from '@/train/program';
-import { repCount } from '@/train/reps';
+import { type EditedDay, draftFits, editedDays, programEditOf, targetsLost } from '@/train/programEdit';
+import { ProgramEditor } from '@/train/ProgramEditor';
 import { suggestionWords } from '@/train/review';
-import { movesOf } from '@/train/trainData';
+import { type Move, movesOf, ownMove } from '@/train/trainData';
 import { splitName } from '@/train/week';
 import { activeWorkout } from '@/train/workout';
 
@@ -31,6 +33,13 @@ const plural = (key: string, count: number, vars: Record<string, string | number
   t(`${key}.${count === 1 ? 'one' : 'other'}`, { count, ...vars });
 const weekdayOf = (day: Schemas['ProgramDay']) =>
   day.weekday === undefined ? t('editProgram.anyDay') : t(`programEditor.weekdayShort.${day.weekday}`);
+/** Why a 409 came: the workout's day (edits kept), the program changed under the edit (cleared), or not known. */
+type Fit = 'kept' | 'cleared' | 'unknown';
+const CONFLICT: Record<Fit, string> = {
+  kept: 'editProgram.editConflictKept',
+  cleared: 'editProgram.editConflictCleared',
+  unknown: 'editProgram.editConflictUnknown',
+};
 const SAID = { conflict: 'editProgram.stale', offline: 'editProgram.offline', failed: 'editProgram.failed' } as const;
 
 /**
@@ -38,11 +47,12 @@ const SAID = { conflict: 'editProgram.stale', offline: 'editProgram.offline', fa
  * (`?part=`): the training days; the moves with the review's flags, each suggestion applied from here (ADR-073 #3); the
  * changes from the review in force, each undone with the later ones that needed it said ("N changes applied · Undo");
  * the split as it really is; "Rebuild for me", a new program from the user's training days after a confirmation. Days
- * and moves are only read here: the one way the server takes an edited program (PUT /v1/program) replaces it whole and
- * wipes its targets, so no such edit is offered until the server keeps them (K-995). Every number is the server's.
+ * and moves are edited in the program editor (ADR-073 #4, shared with "Type it in"): sent by their ids (PATCH
+ * /v1/program, K-995) so a move kept keeps its target; the moves whose target the edit takes are said before saving;
+ * what the server answers is shown, with "Saved" and Undo (the edit is a change of the log). Every number is the server's.
  */
 export default function EditProgramScreen() {
-  const { api, training, workoutRecords } = useAppServices();
+  const { api, training, workoutRecords, report } = useAppServices();
   const { color } = useTheme();
   const params = useLocalSearchParams<{ part?: string }>();
   const part = PARTS.find((p) => p === params.part) ?? null;
@@ -80,12 +90,45 @@ export default function EditProgramScreen() {
   const read = data?.program.state === 'ready' ? data.program.value : null;
   // Once the page has read again (another `data`), the read is the newer word.
   const program = answered !== null && answered.over === data ? answered.program : read;
-  const moves = movesOf(data, data?.own ?? []);
+  // The user's own moves made from the editor: in the catalog the editor finds among, before the page reads them again.
+  const [madeOwn, setMadeOwn] = useState<Move[]>([]);
+  const moves = useMemo(() => movesOf(data, [...(data?.own ?? []), ...madeOwn]), [data, madeOwn]);
+  const catalog = useMemo(() => [...moves.values()], [moves]);
   const review = program?.review;
+
+  // The edit under way: the days as the user left them, null while untouched (the program's own). It outlives a failed
+  // save (the user's work) and goes with a saved one, an apply, an undo, or a program that changed under it.
+  const [draft, setDraft] = useState<EditedDay[] | null>(null);
+  const [warned, setWarned] = useState<string[] | null>(null);
+  const [savedEdit, setSavedEdit] = useState<string | null>(null);
+  // Back with edits not saved asks first (they would be gone).
+  const [leaving, setLeaving] = useState(false);
+  const base = useMemo(() => (program === null ? [] : editedDays(program)), [program]);
+  const days = draft ?? base;
+  const edit = program === null ? null : programEditOf(days, program);
+  // Dirty is the edit that would be sent against the one the program is: a day moved to Tuesday and back to Monday, a space
+  // after a name, are no edit (the server saves nothing then, and the page must not say it did).
+  const baseEdit = useMemo(() => (program === null ? null : programEditOf(base, program)), [base, program]);
+  const dirty = draft !== null && (edit === null || JSON.stringify(edit) !== JSON.stringify(baseEdit));
+  const onEdit = useCallback(
+    (next: (all: EditedDay[]) => EditedDay[]) => {
+      setDraft((before) => next(before ?? base));
+      setWarned(null);
+      setSavedEdit(null);
+      // The warning was about the edit as it was; this is another.
+      setLeaving(false);
+    },
+    [base],
+  );
 
   type Answer = Changed | Undone | { kind: 'refused' };
   /** One request at a time; its answer shown and said here, and the program read again. */
-  const send = async (request: () => Promise<Answer>, then: (answer: Answer) => void, said: Record<string, string> = SAID) => {
+  const send = async (
+    request: () => Promise<Answer>,
+    then: (answer: Answer) => void,
+    said: Record<string, string | (() => string)> = SAID,
+    otherwise?: (kind: string) => void,
+  ) => {
     if (sending.current) return;
     sending.current = true;
     setBusy(true);
@@ -98,23 +141,98 @@ export default function EditProgramScreen() {
       setProblem(null);
       setAnswered({ program: answer.program, over: data });
       then(answer);
-    } else setProblem(said[answer.kind] ?? t(SAID.failed));
+    } else {
+      const word = said[answer.kind];
+      setProblem(typeof word === 'function' ? word() : (word ?? t(SAID.failed)));
+      otherwise?.(answer.kind);
+    }
     reload();
   };
   const words = (keys: Record<string, string>) => Object.fromEntries(Object.entries(keys).map(([k, key]) => [k, t(key)]));
   const apply = (s: Schemas['ReviewSuggestion']) => {
-    if (review !== undefined) void send(() => applySuggestion(api, review.id, s.id), () => undefined, words(SAID));
+    if (review !== undefined) void send(() => applySuggestion(api, review.id, s.id), () => setDraft(null), words(SAID));
+  };
+  const names = (ids: string[]) => ids.map((id) => exerciseName(id, moves)).join(t('editProgram.listJoin'));
+  // Saving the edit: the moves whose target it takes are said first, once; saved, the program answered is shown and the
+  // edit's own id (the last of the log) is what Undo takes back.
+  const save = (confirmed: boolean) => {
+    if (program === null || edit === null || !dirty) return;
+    // Saving is the answer to "Back with edits not saved"; if it fails, the edits stay and the warning would be stale.
+    setLeaving(false);
+    const lost = targetsLost(days, program);
+    if (lost.length > 0 && !confirmed) {
+      setWarned(lost);
+      announce(t('editProgram.targetsLost', { moves: names(lost) }));
+      return;
+    }
+    setWarned(null);
+    // A 409 is the program changing under the edit, or today's workout on a day the edit moves or removes (the program is
+    // the same then): the program as it is now says which, by the ids the draft kept. Not read (offline, or only the phone's
+    // copy), the cause is not guessed: the edits stay and the page says only that it did not save.
+    let fits: Fit = 'unknown';
+    const request = async () => {
+      const answer = await editProgram(api, edit);
+      if (answer.kind === 'conflict') fits = await stillFits(days, program);
+      return answer;
+    };
+    // The edit's own id is the one the answer has and the program saved from did not: none when the server saved nothing.
+    const known = new Set((program.review?.edits ?? []).map((e) => e.id));
+    void send(
+      request,
+      (answer) => {
+        const edits = 'program' in answer ? answer.program.review?.edits ?? [] : [];
+        setDraft(null);
+        setSavedEdit(edits.filter((e) => !known.has(e.id)).at(-1)?.id ?? null);
+        setDone(t('editProgram.saved'));
+      },
+      { ...words(SAID), conflict: () => t(CONFLICT[fits]), refused: t('editProgram.editRefused') },
+      // The rows the draft names are gone: the program as the server has it now is what to edit again.
+      (kind) => kind === 'conflict' && fits === 'cleared' && setDraft(null),
+    );
+  };
+  const stillFits = async (edited: EditedDay[], before: Schemas['Program']): Promise<Fit> => {
+    try {
+      const now = await training.read(api);
+      // The phone's copy (or no program) is not the server's word on what changed.
+      if (now.kept || now.program.state !== 'ready') return 'unknown';
+      return draftFits(edited, before, now.program.value) ? 'kept' : 'cleared';
+    } catch {
+      return 'unknown';
+    }
+  };
+  // An own move made at once (POST /v1/custom-exercises, as in a workout): kept on the phone from the answer, then a move
+  // of the editor. The code only is reported, never the name typed.
+  const makeOwn = async (body: Schemas['NewCustomExercise']): Promise<Move | Exclude<SaveOutcome, 'saved'>> => {
+    try {
+      const { data: kept, error } = await api.POST('/v1/custom-exercises', { body });
+      if (kept === undefined) {
+        report({ name: error?.code ?? 'Unknown' });
+        return 'refused';
+      }
+      await training.saved(kept);
+      const made = ownMove(kept);
+      setMadeOwn((before) => [...before, made]);
+      return made;
+    } catch (error) {
+      report({ name: error instanceof Error ? error.name : 'Unknown' });
+      return 'offline';
+    }
   };
   // An undo refused is not a stale review: the program changed another way since its last change.
-  const undo = (change: Schemas['AppliedReviewChange']) =>
+  const undoOf = (changeId: string) =>
     void send(
-      () => undoChange(api, change.id),
+      () => undoChange(api, changeId),
       (answer) => {
         const also = 'alsoUndone' in answer ? answer.alsoUndone.length : 0;
         setDone(also === 0 ? t('editProgram.undone') : plural('editProgram.undoneWith', also));
+        setDraft(null);
+        setSavedEdit(null);
       },
       words({ ...SAID, conflict: 'editProgram.undoConflict' }),
+      // Not allowed any more: the button would say the same again.
+      (kind) => kind === 'conflict' && setSavedEdit(null),
     );
+  const undo = (applied: Schemas['AppliedReviewChange']) => undoOf(applied.id);
   // A tap waits for the training days too: a second one before they come must not rebuild twice.
   const rebuilding = useRef(false);
   const rebuildNow = async () => {
@@ -158,48 +276,44 @@ export default function EditProgramScreen() {
         <Row title={t('editProgram.rebuild')} detail={t('editProgram.rebuildRow')} onPress={() => open('rebuild')} />
       </View>
     );
-  } else if (program !== null && part === 'days') {
-    title = t('editProgram.days');
-    body = (
+  } else if (program !== null && (part === 'days' || part === 'moves')) {
+    title = t(part === 'days' ? 'editProgram.days' : 'editProgram.moves');
+    const warning =
+      warned === null ? null : (
+        <View style={[styles.flag, { backgroundColor: color.accentSoft }]}>
+          <Text style={[styles.text, { color: color.text }]}>{t('editProgram.targetsLost', { moves: names(warned) })}</Text>
+          <Button label={t('editProgram.saveAnyway')} variant="warn" disabled={busy} onPress={() => save(true)} />
+          <Button label={t('editProgram.keepEditing')} variant="ghost" onPress={() => setWarned(null)} />
+        </View>
+      );
+    const notReady = dirty && edit === null ? <Text style={[styles.small, { color: color.textSecondary }]}>{t('editProgram.notReady')}</Text> : null;
+    const editor = (
       <View style={styles.rows}>
-        {program.days.map((day) => (
-          <Text key={day.id} style={[styles.text, { color: color.text }]}>
-            {t('train.weekRow', { weekday: weekdayOf(day), day: dayName(day) })}
+        <ProgramEditor days={days} onChange={onEdit} moves={catalog} makeOwn={makeOwn} />
+        {warning}
+        {notReady}
+        <Button label={t('editProgram.save')} disabled={busy || !dirty || edit === null} onPress={() => save(false)} />
+      </View>
+    );
+    body =
+      part === 'days' ? (
+        editor
+      ) : (
+        <View style={styles.rows}>
+          {editor}
+          <Text accessibilityRole="header" style={[styles.heading, { color: color.text }]}>
+            {t('editProgram.reviewTitle')}
           </Text>
-        ))}
-        <Text style={[styles.small, { color: color.textSecondary }]}>{t('editProgram.readOnly')}</Text>
-      </View>
-    );
-  } else if (program !== null && part === 'moves') {
-    title = t('editProgram.moves');
-    body = (
-      <View style={styles.rows}>
-        {program.days.map((day) => (
-          <View key={day.id} style={styles.day}>
-            <Text accessibilityRole="header" style={[styles.heading, { color: color.text }]}>
-              {dayName(day)}
-            </Text>
-            {day.exercises.map((m) => (
-              <View key={m.exerciseId} style={styles.move}>
-                <Text style={[styles.text, styles.grow, { color: color.text }]}>{exerciseName(m.exerciseId, moves)}</Text>
-                <Text style={[styles.small, { color: color.textSecondary }]}>{t('train.setsReps', { sets: m.baseSets, reps: repCount(m.reps) })}</Text>
-              </View>
-            ))}
-          </View>
-        ))}
-        <Text style={[styles.small, { color: color.textSecondary }]}>{t('editProgram.readOnly')}</Text>
-        <Text accessibilityRole="header" style={[styles.heading, { color: color.text }]}>
-          {t('editProgram.reviewTitle')}
-        </Text>
-        {review?.suggestions.length === 0 && <Text style={[styles.text, { color: color.text }]}>{t('editProgram.reviewNone')}</Text>}
-        {review?.suggestions.map((s) => (
-          <Flag key={s.id} suggestion={s} action={t('editProgram.apply')} busy={busy} onPress={() => apply(s)} />
-        ))}
-        {(review?.notReviewedMoves ?? 0) > 0 && (
-          <Text style={[styles.small, { color: color.textSecondary }]}>{t('editProgram.notReviewed', { count: review?.notReviewedMoves ?? 0 })}</Text>
-        )}
-      </View>
-    );
+          {review?.suggestions.length === 0 && <Text style={[styles.text, { color: color.text }]}>{t('editProgram.reviewNone')}</Text>}
+          {dirty && (review?.suggestions.length ?? 0) > 0 && <Text style={[styles.small, { color: color.textSecondary }]}>{t('editProgram.applyAfterSave')}</Text>}
+          {review?.suggestions.map((s) => (
+            <Flag key={s.id} suggestion={s} action={t('editProgram.apply')} busy={busy || dirty} onPress={() => apply(s)} />
+          ))}
+          {(review?.notReviewedMoves ?? 0) > 0 && (
+            <Text style={[styles.small, { color: color.textSecondary }]}>{t('editProgram.notReviewed', { count: review?.notReviewedMoves ?? 0 })}</Text>
+          )}
+        </View>
+      );
   } else if (program !== null && part === 'changes') {
     title = t('editProgram.changesTitle');
     body = (
@@ -243,18 +357,38 @@ export default function EditProgramScreen() {
       </View>
     );
   }
+  const announceLeaving = () => {
+    setLeaving(true);
+    announce(t('editProgram.leaveWarn'));
+  };
+  const leave =
+    leaving && dirty ? (
+      <View style={[styles.flag, { backgroundColor: color.accentSoft }]}>
+        <Text style={[styles.text, { color: color.text }]}>{t('editProgram.leaveWarn')}</Text>
+        <Button label={t('editProgram.leave')} variant="warn" onPress={() => router.back()} />
+        <Button label={t('editProgram.keepEditing')} variant="ghost" onPress={() => setLeaving(false)} />
+      </View>
+    ) : null;
+  const undoEdit =
+    savedEdit === null ? null : (
+      <Button label={t('editProgram.undo')} accessibilityLabel={t('editProgram.undoEditLabel')} variant="ghost" disabled={busy} onPress={() => undoOf(savedEdit)} />
+    );
   return (
     <SafeAreaView edges={['top', 'bottom']} style={[styles.safe, { backgroundColor: color.background }]}>
+      {/* The iOS edge swipe back would drop unsaved edits without the question Back asks. */}
+      <Stack.Screen options={{ gestureEnabled: !dirty }} />
       <ScrollView contentContainerStyle={styles.body}>
         <ScreenTitle>{title}</ScreenTitle>
         {body}
         {done !== null && <ProblemText style={[styles.text, { color: color.text }]}>{done}</ProblemText>}
+        {undoEdit}
         {problem !== null && (
           <ProblemText occurrence={occurrence} style={[styles.text, { color: color.text }]}>
             {problem}
           </ProblemText>
         )}
-        <Button label={t('editProgram.back')} variant="ghost" onPress={() => router.back()} />
+        {leave}
+        <Button label={t('editProgram.back')} variant="ghost" onPress={() => (dirty ? announceLeaving() : router.back())} />
       </ScrollView>
     </SafeAreaView>
   );

@@ -10,6 +10,7 @@ import type { components } from '@/api/schema';
 import { t } from '@/copy';
 
 import { workoutParams as P } from './params';
+import { dayName } from './program';
 import { type Move, ownMove } from './trainData';
 
 type Schemas = components['schemas'];
@@ -18,7 +19,8 @@ type Weekday = Schemas['Weekday'];
 /** The weekdays a day can be on, Monday first. */
 export const WEEKDAYS: readonly Weekday[] = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
 
-export type EditedMove = { exerciseId: string; sets: number; reps: Schemas['RepRange'] };
+/** `rowId`: the program's row of the move (PlannedExercise.id), kept by an edit (PATCH /v1/program); absent for a move added. */
+export type EditedMove = { rowId?: string; exerciseId: string; sets: number; reps: Schemas['RepRange'] };
 /** `id`: the day's own, for the screen (never sent); `weekday`: absent when the day is on none. */
 export type EditedDay = { id: string; name: string; weekday?: Weekday; moves: EditedMove[] };
 
@@ -159,4 +161,76 @@ export function ownProgramOf(all: EditedDay[], made: ReadonlyMap<string, string>
 /** The pending own moves the program names, each once, in the order first named. */
 export function pendingIn(all: EditedDay[]): string[] {
   return [...new Set(all.flatMap((day) => day.moves.map((m) => m.exerciseId).filter(isPending)))];
+}
+
+/**
+ * The program as the server sent it, as the editor's days (K-970 Edit, PATCH /v1/program): each day by its id and the
+ * name it shows, each move by its row (`rowId`) with the program's sets (`baseSets`, not a lighter week's) and range.
+ */
+export function editedDays(program: Schemas['Program']): EditedDay[] {
+  return program.days.map((day) => {
+    const moves = day.exercises.map((e) => ({ ...(e.id === undefined ? {} : { rowId: e.id }), exerciseId: e.exerciseId, sets: e.baseSets, reps: { ...e.reps } }));
+    return day.weekday === undefined ? { id: day.id, name: dayName(day), moves } : { id: day.id, name: dayName(day), weekday: day.weekday, moves };
+  });
+}
+
+/**
+ * The edit to send (contract ProgramEdit): every day in order, a day of the program by its id (its name only when the
+ * user renamed it: a generated day keeps its own otherwise), a new day with its name; every move by its row, a new one
+ * without. None while a day has no move or no name, or a weekday is two days': the server would refuse it.
+ */
+export function programEditOf(days: EditedDay[], program: Schemas['Program']): Schemas['ProgramEdit'] | null {
+  if (days.length === 0) return null;
+  const weekdays = days.flatMap((day) => (day.weekday === undefined ? [] : [day.weekday]));
+  if (new Set(weekdays).size !== weekdays.length) return null;
+  const was = new Map(program.days.map((day) => [day.id, day]));
+  const edit: Schemas['ProgramEdit'] = { days: [] };
+  for (const day of days) {
+    const name = day.name.trim();
+    if (name === '' || name.length > P.programDayNameMaxChars || day.moves.length === 0) return null;
+    const before = was.get(day.id);
+    const exercises = day.moves.map(({ rowId, exerciseId, sets, reps }) => ({ ...(rowId === undefined ? {} : { id: rowId }), exerciseId, sets, reps }));
+    edit.days.push({
+      ...(before === undefined ? {} : { id: day.id }),
+      ...(before === undefined || dayName(before) !== name ? { name } : {}),
+      ...(day.weekday === undefined ? {} : { weekday: day.weekday }),
+      exercises,
+    });
+  }
+  return edit;
+}
+
+/**
+ * The moves whose next target the edit will take away, as the server does (ADR-073 Ek 7), each named once: a row kept with
+ * another rep range (its target was for the old one), when it had one; or a move taken out and added again, which is a new
+ * row without the target the old one had (a row of the program with a target whose move comes back without a row, while
+ * the row itself is no longer in the edit). Other sets, another day, keep it. Said before saving.
+ */
+export function targetsLost(days: EditedDay[], program: Schemas['Program']): string[] {
+  const rows = new Map(program.days.flatMap((day) => day.exercises.flatMap((e) => (e.id === undefined ? [] : [[e.id, e] as const]))));
+  const kept = new Set(days.flatMap((day) => day.moves.flatMap((m) => (m.rowId === undefined ? [] : [m.rowId]))));
+  // The moves that had a target on a row the edit no longer has.
+  const droppedWithTarget = new Set([...rows.values()].filter((e) => e.nextLoadKg !== undefined && !kept.has(e.id as string)).map((e) => e.exerciseId));
+  const lost = days.flatMap((day) =>
+    day.moves.flatMap((m) => {
+      if (m.rowId === undefined) return droppedWithTarget.has(m.exerciseId) ? [m.exerciseId] : [];
+      const row = rows.get(m.rowId);
+      if (row === undefined || row.nextLoadKg === undefined || row.exerciseId !== m.exerciseId) return [];
+      return row.reps.min !== m.reps.min || row.reps.max !== m.reps.max ? [m.exerciseId] : [];
+    }),
+  );
+  return [...new Set(lost)];
+}
+
+/**
+ * Whether the edit under way still fits the program as the server has it now (after a 409): every day and row it kept from
+ * `before` (the program it was made on) is in `now`. A day or move the user added has no id in the program and needs none;
+ * one the user took out need not be there. When it fits, the 409 was not the program changing under the edit (it was
+ * today's workout on a day the edit moves or removes), and the edit is not lost.
+ */
+export function draftFits(days: EditedDay[], before: Schemas['Program'], now: Schemas['Program']): boolean {
+  const wasDays = new Set(before.days.map((day) => day.id));
+  const nowDays = new Set(now.days.map((day) => day.id));
+  const nowRows = new Set(now.days.flatMap((day) => day.exercises.flatMap((e) => (e.id === undefined ? [] : [e.id]))));
+  return days.every((day) => (!wasDays.has(day.id) || nowDays.has(day.id)) && day.moves.every((m) => m.rowId === undefined || nowRows.has(m.rowId)));
 }
