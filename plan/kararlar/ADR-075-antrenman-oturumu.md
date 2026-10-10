@@ -202,7 +202,10 @@ birinci taraf paketi, SDK sürümüyle uyumlu, başka iş yapmaz.
 - **İlk setlerden sonra tek söz** (`calibrationRead`; yalnız **geçmişsiz** hareket, o **tarafın** son yapılan setine bakar, düzeltme/silme/atlama
   kendiliğinden yeniler): aralıkta ve cepte `calibration_rir_min` (2+) kadar tekrar kaldıysa ve salonun adım içinde bir üst yükü varsa "That weight is
   light. Next set {kg}?" (kullanıcı "Use {kg}" ya da "Keep {kg}" der; G6 K-40, ADR-075 #3, Ek 1); aksi halde "Starting weight found: {kg}." Aralığın
-  altındaki set bir şey demez. Hedefli hareket, geçmişli hareket ve çıplak beden ağırlığı için söz yok. Tek taraflı harekette sağ satır, sol setin
+  altındaki set bu okumada ne "light" ne "found" dedirtir (kilo bulunmuş sayılmaz, daha ağır öneri yok); satır yine de boş kalmaz, analiz satırı
+  #3'ün dediği gibi yalnız gözlemi söyler: "Below the range." (Ek 9). **Neden:** #3 kaynaksız "lighter" önerisini yasaklar ama gözlemi değil;
+  sessizlik, hedefli harekette "Below the range." diyen ekranla çelişirdi ve kullanıcıya setin hiç okunmadığını düşündürürdü. (Önceki cümle "bir
+  şey demez" idi; kod hep bunu yapıyordu, belge koda uydu.) Hedefli hareket, geçmişli hareket ve çıplak beden ağırlığı için söz yok. Tek taraflı harekette sağ satır, sol setin
   kilosundan öneri almaz: her taraf kendi setini okur. **"Keep"** hareket ve taraf başınadır: bir kez "Keep" denince o hareketin o tarafındaki
   sonraki satırlar aynı öneriyi yeniden sormaz ("Use" ve "Too heavy?" satır başınadır). Telefon eşik uydurmaz: tekrar aralığı, adım ve kalan tekrar
   sunucu/parametre. "Found" kolunun kaynağı: G6 K-40 [tecrübe] (RIR 1-2 geçerli çalışma seti, 2'den fazla kalan değil); seçicinin "2+"ı 2 ile 3'ü
@@ -219,12 +222,20 @@ birinci taraf paketi, SDK sürümüyle uyumlu, başka iş yapmaz.
 - **Analiz satırı (#4) bugünün en iyi setinden okunur** (en ağır, sonra en çok tekrar, sonra en az kalan; `PlannedExercise.lastBestSet`in sıralamasıyla
   aynı), son yapılan setten değil: sunucu düzeltilmiş SYNCED seti sona ekler, telefonda düzeltme yerinde kalır; sıra bakan bir satır iki yerde farklı
   söylerdi, en iyi set sıradan bağımsızdır. Düzeltme, silme ve atlama satırı kendiliğinden yeniler (satır satırlardan türer, ayrı durum tutmaz).
-  Kıyas yalnız **aynı kiloda** tekrar farkıdır ("+1 rep vs last time. 3 more and it's 65 kg." / zirvede "Top of the range: 65 kg next time." /
-  "Same as last time. One more rep is the next step." / sabit tekrar hedefinde yalnız "Same as last time."); daha ağır kilo "Heavier than last time."
-  der, kilo farklıyken tekrar kıyaslanmaz; geçen sefer yoksa ya da tekrar düştüyse "Logged. Next time starts from here." (suçlama yok, U7). Aralığın
-  altı yalnız "Below the range." der (#3: kaynaksız "lighter" önerisi yok). Sayılar sunucunun: `lastBestSet`, aralığın tepesi, `nextLoadAtTopKg`
-  (yoksa kilo söylenmez). **Tutulan hareket** ("as called"): `Program.loadHeldSince` varken hedefi olan hareket; telefon hareketin bileşik olup
-  olmadığına bakmaz (izolasyon hareketin hedefi yoktur, sunucu zaten vermez). Hedefsiz harekette satır kalibrasyonun sözüdür (Ek 8), bu değil.
+  Kıyas yalnız **aynı kiloda** tekrar farkıdır ("+1 rep vs last time." / "Same as last time. One more rep is the next step." / sabit tekrar
+  hedefinde yalnız "Same as last time."); daha ağır kilo "Heavier than last time." der, kilo farklıyken tekrar kıyaslanmaz; geçen sefer yoksa ya da
+  tekrar düştüyse "Logged. Next time starts from here." (suçlama yok, U7). Aralığın altı yalnız "Below the range." der (#3: kaynaksız "lighter"
+  önerisi yok; Ek 8'in "bir şey demez" cümlesi yalnız "light/found" okumasıydı, düzeltildi). Sayılar sunucunun: `lastBestSet`, aralığın tepesi.
+  **Gelecek seansın kilosu bir vaattir, gözlem değil (U1, U2; inceleme düzeltmesi):** "Top of the range: 65 kg next time." yalnız sunucunun koşulu
+  sağlandığında söylenir: `nextLoadAtTopKg` sözleşmede "**her set** aralığın tepesine ulaşınca" gelen yüktür. Telefon bunu bugünün setlerinden
+  yalnız şu halde okur: planlı bütün setler yapılmış (bu haftanın sayısı; tek taraflı harekette taraf başına), hepsi aralığın tepesinde ve hiçbiri
+  çağrılan kilonun altında değil (`everySetAtTop`). Aksi halde, ilk set tepede olsa bile, yalnız gözlem söylenir: "+4 reps vs last time."; önceki
+  "3 more and it's 65 kg" biçimi tek setten türüyordu ve kalan setlerin tepeye ulaşacağını vaat ediyordu, kaldırıldı (`workout.insight.upToTop`
+  metni silindi). Sunucu `nextLoadAtTopKg` göndermiyorsa (tutulan yük, erişimde ağır yok) kilo hiç söylenmez.
+  **Tutulan hareket** ("as called"): `Program.loadHeldSince` varken hedefi olan hareket; telefon hareketin bileşik olup olmadığına bakmaz (izolasyon
+  hareketin hedefi yoktur, sunucu zaten vermez). "**Again**" bir karşılaştırmadır: "8 again, as called." yalnız en iyi set geçen seferin en iyi setiyle
+  **aynı kiloda** ve çağrılan kiloda ise söylenir (`lastBestSet.loadKg = en iyi set = nextLoadKg`); değilse set tutulmamış gibi okunur (daha ağır,
+  kaydedildi). Hedefsiz harekette satır kalibrasyonun sözüdür (Ek 8), bu değil.
 - **Kardiyo son adımı (#6, ADR-074 #3):** son hareketten sonra dock "Finish workout" yerine "Next: cardio" der, yalnız programın o gün ağırlıktan
   sonraki bir kardiyosu varsa (`Program.cardio.sessions`, yer `AFTER_LIFT`, günün haftagünü Train kartının okuduğu gibi; kapalı kardiyo,
   başka gün ve "easy, no weights" günü adım açmaz). Adım: süre ("30 min, easy"), tempo (konuşma testi), Done / Later today / Skip today, Finish;
@@ -235,5 +246,23 @@ birinci taraf paketi, SDK sürümüyle uyumlu, başka iş yapmaz.
   adım bir daha önerilmez). Eğitim kaydıdır, sağlık verisi değil (`HEALTH_KINDS` dışında). **Neden:** seans salonda, çoğu kez bağlantısız biter;
   doğrudan istek "Done"ı kaybettirirdi. **Reddedilen:** çevrimiçi anlık POST (seansın çevrimdışı çalışma ilkesini bozar); kardiyoyu bitirme isteğine
   eklemek (sözleşme değişir, kardiyo antrenman bitişinden bağımsız da kaydedilir, "+ › Cardio" K-980 aynı kuyruğu kullanır).
+- **Done geri alınır, ama yalnız gönderilmemişken (inceleme düzeltmesi):** "Cardio logged" satırının yanında "Undo" çıkar. Kayıt telefonda
+  hâlâ gönderilmemişse (`PENDING` ve `attempted` değil) kuyruktan silinir (`setEdits.forgetUnsent`, kuyruk tutulurken: bakış ile silme arasında
+  gönderim başlamaz); adım eski haline döner ("Done" yeniden önerilir, yeni `clientId`). Gönderilmişse ya da gönderimi denenmişse (sunucuda olabilir)
+  Undo çıkmaz, basış anında gönderilmiş çıkarsa "That cardio is already saved, so it can't be taken back here." der. **Neden:** sözleşmede kardiyo
+  seansını silen uç **yok** (`/v1/cardio-sessions` yalnız POST; `deleteProgramCardio` programın kardiyosudur, seans değil); sunucuda silinemeyeni
+  silmiş gibi göstermek veri bütünlüğünü bozar. Çevrimiçi kuyruk saniyeler içinde gönderdiği için Undo pratikte çevrimdışı/yavaş bağlantıda
+  görünür; bunu kabul ediyoruz. **Reddedilen:** sözleşmeye `DELETE /v1/cardio-sessions/{id}` eklemek (ayrı iş, backend + sözleşme; gerekirse
+  backlog'a), "Undo"yu hiç sunmamak (Done tek dokunuşla, yanlış basış geri alınamazdı).
+- **Done iki kez yazılmaz (inceleme düzeltmesi):** ekran kaydı yaptıktan sonra kayıtları geri okuyamasa bile (`refresh` hatası) Done'ı yerelde
+  yapılmış sayar ve yeniden önermez; Done'ın `clientId`'si ekranda tutulur, başarısız bir denemeden sonra ikinci dokunuş **aynı** kardiyoyu
+  gönderir (kuyruk bir `clientId`'yi bir kez kaydeder), Undo'dan sonra yeni bir kayıt başka `clientId` alır.
+- **Antrenman Discard edilince kardiyo kalır, ve söylenir (inceleme kararı):** kardiyo kaydı antrenmanın çocuğu değil, günün kaydıdır
+  (`NewCardioSession`: gün, dakika; üst kaydı yok) ve kişi onu gerçekten yaptı; Discard "bu antrenman kaydedilmesin" demektir, yapılmış kardiyoyu
+  yok saymak değil. Sunucuda silinemediği için (yukarıda) bir kısmını silip bir kısmını bırakmak da tutarsız olurdu. Bu yüzden Discard'ın "Nothing is
+  saved." sözü doğru değildir: kardiyo kaydı varken End sayfası "The workout is not saved. The cardio you logged stays." ve Discard sonrası sayfa
+  "Workout discarded. The cardio you logged stays." der (`cardioKept`); kayıt yokken sözler eskisi gibi. Discard'ın Undo'su antrenmanı ve setleri
+  geri getirir, kardiyoya dokunmaz. **Reddedilen:** Discard'ın kardiyoyu da silmesi (yalnız gönderilmemişse mümkün, davranış bağlantıya göre
+  değişirdi).
 - **Later today / Skip today hiçbir şey göndermez** ve telafi doğurmaz (U7): "Later today" kullanıcının sonra "+ › Cardio"dan (K-980) girmesidir,
   "Skip today" sadece geçer. Seçim ekranda kalır, yeniden açılışta tutulmaz (kaydı olmayan bir niyet).

@@ -28,25 +28,37 @@ export function bestSet(sets: NewSet[]): NewSet | null {
 const plural = (key: string, count: number, vars: Record<string, string | number>) => t(`${key}.${count === 1 ? 'one' : 'other'}`, { count, ...vars });
 
 /**
- * What to say of the move after its sets, from the best set of today and the planned move the server sent: below the
- * range; a load the weekly call holds ("as called"); then against the best set of last time at the same weight (reps up,
- * the same, or fewer), a heavier weight said so, anything else logged. A move with no target is the calibration's to
- * say (calibrationRead), not this line's. Null with no set.
+ * The server's condition for the next weight (PlannedExercise.nextLoadAtTopKg, double progression K-109): every set of the
+ * plan has reached the top of the range, at the load called. Met by the sets done so far only when the whole plan is done
+ * (this week's count, per side for a one-sided move) and each of them is at the top at no less than the load called. Until
+ * then the weight of the next session is not promised: one set at the top is an observation, not the call (U1, U2).
  */
-export function moveInsight({ planned, best, held, units }: { planned: Planned; best: NewSet | null; held: boolean; units: UnitSystem }): string | null {
+function everySetAtTop(planned: Planned, sets: NewSet[], sides: 1 | 2): boolean {
+  return sets.length >= planned.sets * sides && sets.every((s) => s.reps >= planned.reps.max && s.loadKg >= (planned.nextLoadKg ?? 0));
+}
+
+/**
+ * What to say of the move after its sets, from the sets of today and the planned move the server sent: below the range;
+ * a load the weekly call holds ("again, as called": the weight called and the weight of last time); then against the best
+ * set of last time at the same weight (reps up, the same, or fewer), a heavier weight said so, anything else logged. The
+ * weight of the next session ("Top of the range: 105 kg next time") only when every set of the plan reached the top
+ * (`everySetAtTop`); before that, the reps alone. A move with no target is the calibration's to say (calibrationRead),
+ * not this line's. Null with no set.
+ */
+export function moveInsight({ planned, sets, sides, held, units }: { planned: Planned; sets: NewSet[]; sides: 1 | 2; held: boolean; units: UnitSystem }): string | null {
+  const best = bestSet(sets);
   if (best === null) return null;
   if (best.reps < planned.reps.min) return t('workout.insight.below');
   if (planned.nextLoadKg === undefined) return null;
-  if (held) return t('workout.insight.held', { reps: best.reps });
   const last = planned.lastBestSet;
+  // "Again" compares: it is said only of the weight of last time, at the weight called.
+  if (held && last !== undefined && best.loadKg === last.loadKg && best.loadKg === planned.nextLoadKg) return t('workout.insight.held', { reps: best.reps });
   if (last === undefined || best.loadKg < last.loadKg) return t('workout.insight.logged');
   if (best.loadKg > last.loadKg) return t('workout.insight.heavier');
   const up = best.reps - last.reps;
   if (up < 0) return t('workout.insight.logged');
   if (up === 0) return t(planned.reps.min === planned.reps.max ? 'workout.insight.sameFixed' : 'workout.insight.same');
-  const toTop = planned.reps.max - best.reps;
   const top = planned.nextLoadAtTopKg;
-  if (top === undefined) return plural('workout.insight.up', up, {});
-  const load = formatLoad(top, units);
-  return toTop > 0 ? plural('workout.insight.upToTop', up, { toTop, load }) : plural('workout.insight.upAtTop', up, { load });
+  if (top === undefined || !everySetAtTop(planned, sets, sides)) return plural('workout.insight.up', up, {});
+  return plural('workout.insight.upAtTop', up, { load: formatLoad(top, units) });
 }

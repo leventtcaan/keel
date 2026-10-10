@@ -27,7 +27,7 @@ import { InsightLine } from '@/train/InsightLine';
 import { LoadNote } from '@/train/LoadNote';
 import { calibrationRead, lighterOffer } from '@/train/calibration';
 import { cardioAfterLift } from '@/train/cardio';
-import { bestSet, moveInsight } from '@/train/insight';
+import { moveInsight } from '@/train/insight';
 import { MoveDots } from '@/train/MoveDots';
 import { MoveThumb } from '@/train/MoveThumb';
 import { OwnMoveForm, type SaveOutcome } from '@/train/OwnMoveForm';
@@ -121,6 +121,10 @@ function Session() {
   // The last step (K-973, ADR-075 #6): the cardio after the weights, open while shown; what was chosen there but Done.
   const [cardioOpen, setCardioOpen] = useState(false);
   const [cardioChoice, setCardioChoice] = useState<'later' | 'skipped' | null>(null);
+  // Done is kept under one clientId for as long as it stands (a second tap after a save that said it failed sends the same
+  // cardio, never another), and counts as logged the moment the phone has it, whether or not the records read back (review).
+  const [cardioId, setCardioId] = useState<string | null>(null);
+  const [cardioDone, setCardioDone] = useState(false);
   // The moves swapped away from in this session: they stay in it with what was done on them, but are no longer the
   // superset's members (its place is the planned move's, whoever stands in it) and have nothing left to do. Kept with the
   // swaps (K-973, ADR-075 Ek 8): opened again, a superset read back from sets would list the moves its sets were done on.
@@ -142,6 +146,8 @@ function Session() {
     skips: Skips;
     swaps: Swaps;
     left: string[];
+    /** A cardio was logged in it: that record is its own and stays (ADR-075 Ek 9), and the page says so. */
+    cardio: boolean;
     /** The ids it comes back under, made once: an Undo that failed half way and is tried again adds nothing twice. */
     back: { workout: string; sets: string[] };
   } | null>(null);
@@ -458,7 +464,11 @@ function Session() {
   // The cardio the program plans after today's weights (ADR-074 #3), as the Train card reads it: on the session's own day. Only
   // for a workout with a work set in it (an empty one is no session). Done is kept on the phone like a set, and found again.
   const cardioMinutes = active === null || worked.length === 0 ? null : cardioAfterLift(program, sessionDay);
-  const cardioLogged = (records ?? []).some((r) => r.kind === 'cardio' && r.state !== 'REJECTED' && (r.body as components['schemas']['NewCardioSession']).day === sessionDay);
+  const cardioRecord = (records ?? []).find((r) => r.kind === 'cardio' && r.state !== 'REJECTED' && (r.body as components['schemas']['NewCardioSession']).day === sessionDay);
+  const cardioLogged = cardioRecord !== undefined || cardioDone;
+  // Taken back only while it was never sent: the contract has no delete for a cardio session (ADR-075 Ek 9). Not read back
+  // yet (the records failed to load), it is tried: setEdits.forgetUnsent says whether it could.
+  const cardioUndoable = cardioLogged && (cardioRecord === undefined ? cardioId !== null : cardioRecord.state === 'PENDING' && cardioRecord.attempted !== true);
   const cardioStatus = cardioLogged ? 'done' : cardioChoice;
   const cardioPending = cardioStatus !== 'done';
   const cardioDue = cardioMinutes !== null && cardioStatus === null;
@@ -468,10 +478,41 @@ function Session() {
     saving.current = true;
     setBusy(true);
     try {
-      await queue.record({ kind: 'cardio', body: { clientId: newClientId(), day: sessionDay, minutes: cardioMinutes, source: 'MANUAL' } });
+      const clientId = cardioId ?? newClientId();
+      setCardioId(clientId);
+      // Saved once: a clientId already on the phone (a try that said it failed) is not saved twice (queue.record).
+      await queue.record({ kind: 'cardio', body: { clientId, day: sessionDay, minutes: cardioMinutes, source: 'MANUAL' } });
+      setCardioDone(true);
       setProblem((said) => (said?.row === CARDIO ? null : said));
       // Said, not only shown (K-815).
       announce(t('workout.cardio.loggedSaid', { minutes: cardioMinutes }));
+    } catch (error) {
+      named(error);
+      setProblem({ row: CARDIO, text: t('workout.cardio.failed') });
+    }
+    await refresh();
+    saving.current = false;
+    setBusy(false);
+  };
+  /**
+   * The cardio logged, taken back (review of K-973, ADR-075 Ek 9): only while it was never sent. Sent, the contract has no way
+   * to take it off the server, and it says so; the workout's discard does not touch it either (it is the day's, not the workout's).
+   */
+  const undoCardio = async () => {
+    const target = cardioRecord?.clientId ?? cardioId;
+    if (saving.current || target === null) return;
+    saving.current = true;
+    setBusy(true);
+    try {
+      if (await workoutEdits.forgetUnsent(target)) {
+        setCardioId(null);
+        setCardioDone(false);
+        setProblem((said) => (said?.row === CARDIO ? null : said));
+        // Said, not only shown (K-815).
+        announce(t('workout.cardio.undoneSaid'));
+      } else {
+        setProblem({ row: CARDIO, text: t('workout.cardio.undoLate') });
+      }
     } catch (error) {
       named(error);
       setProblem({ row: CARDIO, text: t('workout.cardio.failed') });
@@ -491,6 +532,11 @@ function Session() {
       : cardioStatus === 'done'
         ? t('workout.cardio.loggedSaid', { minutes: cardioMinutes ?? 0 })
         : t(cardioStatus === 'later' ? 'workout.cardio.laterSaid' : 'workout.cardio.skipSaid');
+  const cardioUndo = !cardioUndoable ? null : (
+    <Pressable accessibilityRole="button" accessibilityLabel={t('workout.cardio.undoLabel')} onPress={() => void undoCardio()} disabled={busy} style={styles.link}>
+      <Text style={[styles.text, { color: color.accent }]}>{t('workout.undo')}</Text>
+    </Pressable>
+  );
   const cardioProblem = problem !== null && problem.row === CARDIO ? <ProblemText style={[styles.text, { color: color.text }]} occurrence={problem}>{problem.text}</ProblemText> : null;
   const todaySession = program?.week?.find((s) => s.programDayId === dayId && s.date === sessionDay);
 
@@ -540,6 +586,7 @@ function Session() {
       skips,
       swaps,
       left,
+      cardio: cardioLogged,
       back: { workout: newClientId(), sets: active.sets.map(() => newClientId()) },
     };
     try {
@@ -554,7 +601,7 @@ function Session() {
       setDiscarded(gone);
       setProblem(null);
       // Said, not only shown (K-815): the screen changes under VoiceOver's finger.
-      announce(t('workout.ending.discarded'));
+      announce(t(gone.cardio ? 'workout.ending.discardedCardio' : 'workout.ending.discarded'));
     } catch (error) {
       named(error);
       const offline = error instanceof TypeError || error instanceof NoAnswer;
@@ -877,7 +924,13 @@ function Session() {
   const analysis =
     planned === undefined || plan === null
       ? null
-      : moveInsight({ planned, best: bestSet(plan.rows.flatMap((r) => (r.done === null ? [] : [r.done]))), held: program?.loadHeldSince !== undefined, units });
+      : moveInsight({
+          planned,
+          sets: plan.rows.flatMap((r) => (r.done === null ? [] : [r.done])),
+          sides: move?.unilateral === true ? 2 : 1,
+          held: program?.loadHeldSince !== undefined,
+          units,
+        });
   const insightLine = weightFound ?? (analysis === null ? null : <InsightLine text={analysis} />);
   const offerNote =
     offer === null || typedKg === null ? null : (
@@ -1132,6 +1185,7 @@ function Session() {
       onLater={stale ? null : later}
       onDiscard={() => void discard()}
       onBack={() => setEnding(false)}
+      cardioKept={cardioLogged}
       problem={problem !== null && problem.row === DISCARD ? problem.text : null}
       problemOccurrence={problem}
       busy={busy}
@@ -1139,7 +1193,7 @@ function Session() {
   );
   const discardedPanel = (
     <View style={[styles.discarded, { backgroundColor: color.surface }]}>
-      <Text style={[styles.text, { color: color.text }]}>{t('workout.ending.discarded')}</Text>
+      <Text style={[styles.text, { color: color.text }]}>{t(discarded?.cardio === true ? 'workout.ending.discardedCardio' : 'workout.ending.discarded')}</Text>
       {problem !== null && problem.row === UNDO && (
         <ProblemText style={[styles.text, { color: color.text }]} occurrence={problem}>
           {problem.text}
@@ -1197,6 +1251,7 @@ function Session() {
         {entries.length > 0 && dots}
         {undoBar}
         <CardioStep minutes={cardioMinutes} optional={todaySession?.short === true} said={cardioSaid} />
+        {cardioUndo}
         {cardioProblem}
       </>
     );

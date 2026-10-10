@@ -536,11 +536,13 @@
       "laterSaid": "Saved. Continue it within {hours} hours; it counts.",
       "discard": "Discard this workout",
       "discardNote": "Nothing is saved.",
+      "discardNoteCardio": "The workout is not saved. The cardio you logged stays.",
       "discardAsk": "Discard this workout?",
       "confirm": "Discard",
       "keep": "Keep it",
       "back": "Back to the workout",
       "discarded": "Workout discarded. Nothing is saved.",
+      "discardedCardio": "Workout discarded. The cardio you logged stays.",
       "close": "Close",
       "offline": "This workout may already be on the server. Discarding it needs a connection.",
       "failed": "This workout couldn't be discarded. Try again."
@@ -628,14 +630,13 @@
       "loggedSaid": "Cardio logged: {minutes} min.",
       "laterSaid": "Later today, then. It counts when you log it.",
       "skipSaid": "Skipped today. No catch-up needed.",
-      "failed": "That cardio couldn't be saved on the phone. Try again."
+      "failed": "That cardio couldn't be saved on the phone. Try again.",
+      "undoLabel": "Undo the logged cardio",
+      "undoneSaid": "Cardio taken back.",
+      "undoLate": "That cardio is already saved, so it can't be taken back here."
     },
     "insight": {
       "up": { "one": "+1 rep vs last time.", "other": "+{count} reps vs last time." },
-      "upToTop": {
-        "one": "+1 rep vs last time. {toTop} more and it's {load}.",
-        "other": "+{count} reps vs last time. {toTop} more and it's {load}."
-      },
       "upAtTop": {
         "one": "+1 rep vs last time. Top of the range: {load} next time.",
         "other": "+{count} reps vs last time. Top of the range: {load} next time."
