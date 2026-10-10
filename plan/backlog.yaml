@@ -3836,7 +3836,7 @@ tasks:
     type: feature
     size: M
     status: todo
-    depends_on: [K-971, K-960, K-959]
+    depends_on: [K-971, K-960, K-959, K-1011]
     why: "ADR-075 #3-#4, #6: 'kilo çıkmazsa ne olacak' sorusunun kaynaklı cevabı; telefon yalnız sunucunun değerini seçer"
     acceptance:
       - "Too heavy? → 'Use {lighter} kg / Keep {current} kg'; '2+' kalibrasyon önerisi yalnız hedefsiz harekette"
@@ -4713,6 +4713,23 @@ tasks:
     tests: ["Tablo testi, API testi (CI), sözleşme testi"]
     refs: ["plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md"]
     learn: ["Modül sınırında okuma modeli"]
+
+  - id: K-1011
+    title: "Seans içi swap seçeneği başına tablo: yeni hareketin kendi geçmişi, hafif/ağır ve kalibrasyon adımı"
+    milestone: M9a
+    module: training
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-964]
+    why: "K-972 P4 incelemesi (#533, 10 Eki): swapOptions sözleşmede yalnız kimlik; sunucunun TODAY swap satırı yeni hareket için lastBestSet, lighter/heavier, calibrationStepKg taşırken telefondaki seans içi swap hiçbirini alamıyor (telefon hesaplayamaz, U1). K-973 'değiştirilen hareket de kalibrasyonla başlar' bu olmadan karşılanamaz"
+    acceptance:
+      - "`PlannedExercise.swapOptions` her seçenek için TodaySwap satırının aynı alanlarını taşır (kendi lastBestSet, lighterLoadKg/heavierLoadKg, calibrationStepKg; hedef yok); eski istemci için geriye uyum kararı PR'da"
+      - "Değerler sunucunun TODAY swap kuralının (ProgramController asShown) aynı kodundan; ikinci bir hesap yok"
+      - "Telefon seans içi swap'ta bu değerleri kullanır (K-973 kalibrasyon ve Too heavy? swap'lı harekette de çalışır)"
+    tests: ["Tablo testi, API testi (CI), sözleşme testi, mobil ekran testi"]
+    refs: ["plan/kararlar/ADR-075-antrenman-oturumu.md", "plan/kararlar/ADR-073-program-incelemesi-ve-degistirme.md"]
+    learn: ["Bir kuralın iki yüzeye tek koddan beslenmesi"]
 
   - id: K-1010
     title: "Sunucudaki ek siteler: Caddy /opt/sites altındaki *.caddy dosyalarını içeri alır"
