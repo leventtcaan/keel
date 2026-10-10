@@ -3296,6 +3296,38 @@ components:
             already on the day. Empty for the user's own move. This server always sends it.
           items:
             type: string
+        swapTables:
+          type: array
+          description: |
+            The in-session table of each of `swapOptions` (K-1011, ADR-073 Ek 8): one entry per option, the same moves in the
+            same order, so a move swapped in the session (on the phone, offline) starts with its own history and table instead
+            of the planned move's. Each entry carries what the server shows for that move when it is swapped in for today
+            (`WeekSession.swaps`, TodaySwap) and for the same fields, from the same code: no target (so `calibrationStepKg`
+            is always there where the move is loaded by weight), its own `lastBestSet`, and `lighterLoadKg` / `heavierLoadKg`
+            from that. The phone picks among these values and works none out (U1). Empty for the user's own move. This
+            server always sends it; an older server does not (read `swapOptions` alone then).
+          items:
+            $ref: "#/components/schemas/SwapOptionTable"
+    SwapOptionTable:
+      type: object
+      description: |
+        The in-session table of one swap option of a planned move (K-1011, ADR-073 Ek 8): the fields of PlannedExercise
+        a move swapped in for today has, under the same names with the same meaning (K-960, ADR-075 #3, Ek 1), for the move
+        with no target. Absent where there is none (a bodyweight move has no table; a move not done before has no
+        `lastBestSet`, so neither lighter nor heavier).
+      required: [exerciseId]
+      properties:
+        exerciseId:
+          type: string
+          description: One of the planned move's swapOptions.
+        lastBestSet:
+          $ref: "#/components/schemas/PlannedExercise/properties/lastBestSet"
+        lighterLoadKg:
+          $ref: "#/components/schemas/PlannedExercise/properties/lighterLoadKg"
+        heavierLoadKg:
+          $ref: "#/components/schemas/PlannedExercise/properties/heavierLoadKg"
+        calibrationStepKg:
+          $ref: "#/components/schemas/PlannedExercise/properties/calibrationStepKg"
     RepRange:
       type: object
       description: |
