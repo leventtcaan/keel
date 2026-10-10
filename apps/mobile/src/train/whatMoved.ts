@@ -12,6 +12,7 @@ import { type UnitSystem, formatLoad, loadValue } from '@/units/units';
 
 import { exerciseName } from './program';
 import { workoutParams } from './params';
+import type { Move as Known } from './trainData';
 
 type Move = components['schemas']['MoveChange'];
 
@@ -28,17 +29,18 @@ export type MovedRow = {
   label: string;
 };
 
-export function whatMoved(moves: Move[], units: UnitSystem): { rows: MovedRow[]; more: number } {
+/** `known`: the catalog's moves and the user's own by id; an own move is named by the user, not by the catalog. */
+export function whatMoved(moves: Move[], units: UnitSystem, known?: ReadonlyMap<string, Known>): { rows: MovedRow[]; more: number } {
   if (moves.every((m) => m.change === 'FIRST')) return { rows: [], more: 0 };
   const shown = moves.slice(0, workoutParams.summaryMovesShown);
   return {
-    rows: shown.map((m, i) => row(m, i, units)),
+    rows: shown.map((m, i) => row(m, i, units, known)),
     more: moves.length - shown.length,
   };
 }
 
-function row(move: Move, index: number, units: UnitSystem): MovedRow {
-  const name = exerciseName(move.exerciseId);
+function row(move: Move, index: number, units: UnitSystem, known?: ReadonlyMap<string, Known>): MovedRow {
+  const name = exerciseName(move.exerciseId, known);
   const change = changeText(move, units);
   const spoken = t('workoutEnd.set', {
     load: formatLoad(move.best.loadKg, units),

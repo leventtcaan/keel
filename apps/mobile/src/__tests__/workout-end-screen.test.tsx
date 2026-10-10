@@ -12,6 +12,7 @@ import WorkoutEndScreen from '@/app/workout-end';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { ThemeProvider } from '@/theme/theme';
+import type { Move } from '@/train/trainData';
 import type { WorkoutEnd } from '@/train/workoutEnd';
 
 type Schemas = components['schemas'];
@@ -40,7 +41,9 @@ const SUMMARY: Schemas['WorkoutSummary'] = {
   weekOf: '2026-09-28',
   muscles: MUSCLES,
 };
-const READY: WorkoutEnd = { kind: 'ready', summary: SUMMARY, program: PROGRAM, programDayId: 'a', week: { done: 2, planned: 3 }, kcal: 340 };
+const READY: WorkoutEnd = { kind: 'ready', summary: SUMMARY, program: PROGRAM, programDayId: 'a', week: { done: 2, planned: 3 }, kcal: 340, moves: new Map() };
+// The user's own move: not in the catalog, so its name is only in what the end read.
+const OWN = new Map([['custom-1', { id: 'custom-1', name: 'Zercher squat' } as Move]]);
 
 let mockEnd: WorkoutEnd = READY;
 const mockLoad = jest.fn(async () => mockEnd);
@@ -239,6 +242,23 @@ test('what moved: a row per move from the catalog, the set and what changed, cal
   const spoken = t('workoutEnd.move.label', { move: 'Seated row', set: '55 kg × 9', change: t('workoutEnd.move.loadDown', { amount: '5 kg' }) });
   expect(screen.getByLabelText(spoken)).toBeTruthy();
   expect(screen.queryByText(/e1RM|estimated/i)).toBeNull();
+});
+
+test("what moved: the user's own move (not in the catalog) is named in the row and to VoiceOver, never by its id", async () => {
+  const own: Schemas['MoveChange'] = { exerciseId: 'custom-1', best: { loadKg: 80, reps: 6 }, change: 'LOAD', by: 5 };
+  mockEnd = { ...READY, summary: { ...SUMMARY, moves: [own] }, moves: OWN };
+  await show();
+  expect(await screen.findByText('Zercher squat')).toBeTruthy();
+  expect(screen.queryByText('custom-1')).toBeNull();
+  const spoken = t('workoutEnd.move.label', { move: 'Zercher squat', set: '80 kg × 6', change: t('workoutEnd.move.loadUp', { amount: '5 kg' }) });
+  expect(screen.getByLabelText(spoken)).toBeTruthy();
+});
+
+test("a record on the user's own move names it as they called it", async () => {
+  mockEnd = { ...READY, summary: { ...SUMMARY, marks: [{ exerciseId: 'custom-1', kind: 'RECORD', loadKg: 80, reps: 6 }] }, moves: OWN };
+  await show();
+  expect(await screen.findByText(t('workoutEnd.record', { move: 'Zercher squat', set: '80 kg × 6' }))).toBeTruthy();
+  expect(screen.queryByText(/custom-1/)).toBeNull();
 });
 
 test('what moved: a long list shows the first few and how many more', async () => {

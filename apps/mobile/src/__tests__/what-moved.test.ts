@@ -7,6 +7,7 @@
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { workoutParams } from '@/train/params';
+import type { Move as Known } from '@/train/trainData';
 import { whatMoved } from '@/train/whatMoved';
 
 type Move = components['schemas']['MoveChange'];
@@ -88,6 +89,29 @@ test("the server's order is kept, and only the first few show with how many more
 test('every move first time (the first session): nothing moved, no list; the baseline card says it', () => {
   expect(whatMoved([move('squat', 60, 8, 'FIRST'), move('bench_press', 40, 8, 'FIRST')], 'METRIC')).toEqual({ rows: [], more: 0 });
   expect(whatMoved([], 'METRIC')).toEqual({ rows: [], more: 0 });
+});
+
+test('imperial, reps up: the set is in lb, the reps difference is a count and does not change with the unit', () => {
+  const [row] = whatMoved([move('squat', 100, 8, 'REPS', 2)], 'IMPERIAL').rows;
+  expect(row.set).toBe('220.5 × 8');
+  expect(row.change).toBe(t('workoutEnd.move.repsUp.other', { count: 2 }));
+  expect(row.tone).toBe('up');
+});
+
+test('imperial, a lighter day: calm words, the amount in lb, flat', () => {
+  const [row] = whatMoved([move('bench_press', 70, 8, 'LOAD', -2.5)], 'IMPERIAL').rows;
+  expect(row.set).toBe('154.3 × 8');
+  expect(row.change).toBe(t('workoutEnd.move.loadDown', { amount: '5.5 lb' }));
+  expect(row.tone).toBe('flat');
+});
+
+test("the user's own move (not in the catalog) is named by what they called it, in the row and to VoiceOver", () => {
+  const own = new Map<string, Known>([['custom-1', { id: 'custom-1', name: 'Zercher squat' } as Known]]);
+  const [row] = whatMoved([move('custom-1', 80, 6, 'LOAD', 5)], 'METRIC', own).rows;
+  expect(row.name).toBe('Zercher squat');
+  expect(row.label).toBe(
+    t('workoutEnd.move.label', { move: 'Zercher squat', set: '80 kg × 6', change: t('workoutEnd.move.loadUp', { amount: '5 kg' }) }),
+  );
 });
 
 test('a spoken line per row: the move, the set with its unit, and the change', () => {

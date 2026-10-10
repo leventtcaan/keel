@@ -18,6 +18,7 @@ import type { Figure } from '@/train/demo';
 import { haptics } from '@/train/haptics';
 import { dayName, exerciseName } from '@/train/program';
 import { MovedCard } from '@/train/MovedCard';
+import type { Move } from '@/train/trainData';
 import { type WorkoutEnd, loadWorkoutEnd } from '@/train/workoutEnd';
 import { type UnitSystem, formatLoad, loadValue } from '@/units/units';
 
@@ -175,8 +176,8 @@ function Facts({ end, day, units, figure }: { end: Ready; day: Schemas['ProgramD
           </View>
         ))}
       </View>
-      <Mark marks={summary.marks} day={day} units={units} />
-      <MovedCard moves={summary.moves} units={units} />
+      <Mark marks={summary.marks} day={day} units={units} known={end.moves} />
+      <MovedCard moves={summary.moves} units={units} known={end.moves} />
       {map}
       {end.week !== null && end.week.planned > 0 && <Week done={end.week.done} planned={end.week.planned} />}
     </View>
@@ -187,7 +188,7 @@ function Facts({ end, day, units, figure }: { end: Ready; day: Schemas['ProgramD
  * The session's record (the first the server lists, in the order done: kilos across moves are not compared here; the
  * real set and its next target), or the baseline of a first session.
  */
-function Mark({ marks, day, units }: { marks: Schemas['SetMark'][]; day: Schemas['ProgramDay'] | null; units: UnitSystem }) {
+function Mark({ marks, day, units, known }: { marks: Schemas['SetMark'][]; day: Schemas['ProgramDay'] | null; units: UnitSystem; known: ReadonlyMap<string, Move> }) {
   const { color } = useTheme();
   const set = (loadKg: number, reps: number) => t('workoutEnd.set', { load: formatLoad(loadKg, units), reps });
   const best = marks.find((m) => m.kind === 'RECORD');
@@ -198,7 +199,7 @@ function Mark({ marks, day, units }: { marks: Schemas['SetMark'][]; day: Schemas
     return (
       <View style={[styles.card, { backgroundColor: color.accentSoft }]}>
         <Text style={[styles.small, styles.bold, { color: color.text }]}>{t('workoutEnd.recordKicker')}</Text>
-        <Text style={[styles.heading, { color: color.text }]}>{t('workoutEnd.record', { move: exerciseName(best.exerciseId), set: set(best.loadKg, best.reps) })}</Text>
+        <Text style={[styles.heading, { color: color.text }]}>{t('workoutEnd.record', { move: exerciseName(best.exerciseId, known), set: set(best.loadKg, best.reps) })}</Text>
         <Text style={[styles.text, { color: color.text }]}>{nextLine}</Text>
       </View>
     );

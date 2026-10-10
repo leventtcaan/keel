@@ -6,6 +6,7 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import type { UnitSystem } from '@/units/units';
 
+import type { Move } from './trainData';
 import { whatMoved } from './whatMoved';
 
 /**
@@ -13,9 +14,9 @@ import { whatMoved } from './whatMoved';
  * against last time, as the server says it (`WorkoutSummary.moves`). Up is the accent, the rest plain: a lighter day is
  * not coloured or flagged (U7). Nothing to show, no card.
  */
-export function MovedCard({ moves, units }: { moves: components['schemas']['MoveChange'][]; units: UnitSystem }) {
+export function MovedCard({ moves, units, known }: { moves: components['schemas']['MoveChange'][]; units: UnitSystem; known?: ReadonlyMap<string, Move> }) {
   const { color } = useTheme();
-  const { rows, more } = whatMoved(moves, units);
+  const { rows, more } = whatMoved(moves, units, known);
   if (rows.length === 0) return null;
   return (
     <View style={[styles.card, { backgroundColor: color.surface }]}>

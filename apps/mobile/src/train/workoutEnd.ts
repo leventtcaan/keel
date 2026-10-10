@@ -14,7 +14,7 @@ import { bothHealthConsents } from '@/health/consent';
 import type { LocalRecord } from '@/sync/store';
 import { load } from '@/today/today';
 
-import type { TrainData } from './trainData';
+import { type Move, type TrainData, movesOf } from './trainData';
 
 type Schemas = components['schemas'];
 
@@ -28,13 +28,15 @@ export type WorkoutEnd =
       programDayId: string | null;
       week: { done: number; planned: number } | null;
       kcal: number | undefined;
+      /** The catalog's moves and the user's own, by id: what the summary's exerciseId names. */
+      moves: ReadonlyMap<string, Move>;
     };
 
 export type EndDeps = {
   api: Pick<ApiClient, 'GET'>;
   queue: { drain(): Promise<void> };
   workoutRecords(): Promise<LocalRecord[]>;
-  training: { read(api: ApiClient): Promise<TrainData> };
+  training: { read(api: ApiClient): Promise<TrainData>; own(api: ApiClient): Promise<Move[]> };
   health: { readWatchActiveEnergy(from: Date, to: Date): Promise<number | undefined> };
   consents: { granted(kind: 'HEALTH_DATA' | 'APPLE_HEALTH'): Promise<boolean> };
 };
@@ -52,9 +54,11 @@ export async function loadWorkoutEnd(deps: EndDeps, clientId: string): Promise<W
   const body = workout.body as Schemas['NewWorkout'];
   const ended = (finish.body as Schemas['WorkoutFinish']).endedAt;
 
-  const [summary, read, consistency, kcal] = await Promise.all([
+  const [summary, read, own, consistency, kcal] = await Promise.all([
     load(() => deps.api.GET('/v1/workouts/{id}/summary', { params: { path: { id } } })),
     deps.training.read(deps.api as ApiClient).catch(() => null),
+    // The user's own moves are named by them; unread, the end is still shown (a catalog name, else the id as before).
+    deps.training.own(deps.api as ApiClient).catch((): Move[] => []),
     load(() => deps.api.GET('/v1/consistency')),
     energy(deps, body.startedAt, ended),
   ]);
@@ -68,6 +72,7 @@ export async function loadWorkoutEnd(deps: EndDeps, clientId: string): Promise<W
     // The week's sessions (training), not every action's; without the consistency (no consent: 403), no week.
     week: consistency.state === 'ready' ? { done: consistency.value.training.done, planned: consistency.value.training.planned } : null,
     kcal,
+    moves: movesOf(read, own),
   };
 }
 
