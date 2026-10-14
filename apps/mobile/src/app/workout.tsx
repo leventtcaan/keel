@@ -275,9 +275,8 @@ function Session() {
       : (plans[entries.findIndex((e) => e.exerciseId === id)]?.current ?? null) !== null;
   // Warm-ups come before the move's first work set; the day's first move is the one picked before any work set at all.
   const worked = [...new Set(done.filter((s) => s.setType === 'WORKING').map((s) => s.exerciseId))];
-  // A move whose load is the body (a pull-up, a push-up) has none: no ramp to climb, and the body alone is not warmed up with (K-1013).
   const warming =
-    move === undefined || plan === null || worked.includes(move.id) || move.load !== 'EXTERNAL'
+    move === undefined || plan === null || worked.includes(move.id)
       ? []
       : warmups(plan.rows[0]?.suggested.loadKg ?? null, move, worked.length === 0, data?.gym ?? null, units);
 
@@ -700,6 +699,8 @@ function Session() {
     ) : (
       <View style={styles.list}>
         <TextField label={t('workout.add.search')} value={adding} onChangeText={setAdding} onSearch={() => undefined} /* live search: the key only closes the keyboard */ />
+        {/* Above the list: listed whole, its foot is a long way down (K-1013). */}
+        <Button label={t('workout.add.close')} variant="ghost" size="touch" onPress={() => setAdding(null)} />
         {found.map((m) => (
           <Pressable
             key={m.id}
@@ -712,7 +713,6 @@ function Session() {
         ))}
         {addNote}
         {createButton}
-        <Button label={t('workout.add.close')} variant="ghost" size="sm" onPress={() => setAdding(null)} />
       </View>
     );
 

@@ -68,7 +68,7 @@ export function OwnMoveForm({ name: typed, catalog, onPick, onSave, onBack }: Pr
       <Text style={[styles.text, { color: color.text }]}>{t(key)}</Text>
       <View style={styles.chips}>
         {choices.map((c) => (
-          <Chip key={c.label} label={c.label} accessibilityLabel={`${t(key)} ${c.label}`} selected={c.on} onPress={c.pick} />
+          <Chip key={c.label} label={c.label} accessibilityLabel={`${t(key)} ${c.label}`} selected={c.on} touch onPress={c.pick} />
         ))}
       </View>
     </View>
@@ -117,7 +117,7 @@ export function OwnMoveForm({ name: typed, catalog, onPick, onSave, onBack }: Pr
         </ProblemText>
       )}
       <Button label={t('ownMove.save')} onPress={() => void save()} disabled={body === null || busy} />
-      <Button label={t('ownMove.back')} variant="ghost" size="sm" onPress={onBack} disabled={busy} />
+      <Button label={t('ownMove.back')} variant="ghost" size="touch" onPress={onBack} disabled={busy} />
     </View>
   );
 }

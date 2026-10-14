@@ -3961,8 +3961,10 @@ describe('walkthrough round 3: the session (K-1013)', () => {
       const skip = head.getByRole('button', { name: t('workout.skipMoveLabel', { name: 'Bench press' }) });
       expect(unlink).toHaveStyle({ minHeight: tokens.size.touch });
       expect(skip).toHaveStyle({ minHeight: tokens.size.touch });
-      // Unlink and Skip move are in the same row of links, not one inside a box that holds the partner's text.
+      // The line, Not a superset and Skip move are all children of the one row of links, not one inside a box of its own.
       expect(unlink.parent).toBe(skip.parent);
+      expect(line.parent).toBe(skip.parent);
+      expect(skip.parent).toHaveStyle({ flexWrap: 'wrap' });
     });
 
     test('Not a superset still takes the link away, and Skip move is still there', async () => {
@@ -4005,6 +4007,27 @@ describe('walkthrough round 3: the session (K-1013)', () => {
       expect(screen.queryByText(t('workout.warmup.title'))).toBeNull();
     });
 
+    const withPlanned = (extra: Partial<Schemas['PlannedExercise']>) => {
+      serve('pull_up');
+      const day = (mockData.program as { value: Schemas['Program'] }).value.days[0];
+      mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, days: [{ ...day, exercises: [{ ...day.exercises[0], ...extra }, day.exercises[1]] }] } } };
+    };
+
+    test('a pull-up with a weight added (the server has +20 kg for it) keeps its warm-up: one easy set, the body alone', async () => {
+      withPlanned({ nextLoadKg: 20, nextReps: 6 });
+      await show();
+      await screen.findByText(t('workout.log', { number: 1 }));
+      expect(screen.getByText(t('workout.warmup.title'))).toBeOnTheScreen();
+      expect(screen.getByText(t('workout.warmup.log', { number: 1 }))).toBeOnTheScreen();
+    });
+
+    test("last time's best set with a weight added is a known added load too", async () => {
+      withPlanned({ lastBestSet: { loadKg: 10, reps: 6, rir: 1 } });
+      await show();
+      await screen.findByText(t('workout.log', { number: 1 }));
+      expect(screen.getByText(t('workout.warmup.title'))).toBeOnTheScreen();
+    });
+
     test('a weighted move (the bench) keeps its warm-ups and its weight to pick', async () => {
       mockData = {
         ...mockData,
@@ -4040,6 +4063,11 @@ describe('walkthrough round 3: the session (K-1013)', () => {
       expect(screen.getByText(t('workout.cardio.title'))).toBeOnTheScreen();
       expect(screen.queryByText(t('workout.moveSkipped'))).toBeNull();
       expect(screen.queryByRole('button', { name: t('workout.undoLabel') })).toBeNull();
+      // Back to the weights by a dot: the skip is said by its move, the old Undo band does not come back.
+      await pickMove(rowName);
+      expect(await screen.findByText(t('workout.moveIsSkipped'))).toBeOnTheScreen();
+      expect(screen.queryByText(t('workout.moveSkipped'))).toBeNull();
+      expect(screen.queryByRole('button', { name: t('workout.undoLabel') })).toBeNull();
     });
 
     test('discarded while paused: no "Paused" band over the Undo screen', async () => {
@@ -4052,11 +4080,15 @@ describe('walkthrough round 3: the session (K-1013)', () => {
       mockPause = { workout: 'w2', pause: { pausedAt: Date.now() - 60_000, pausedMs: 0 } };
       await show();
       expect(await screen.findByText(t('workout.paused'))).toBeOnTheScreen(); // paused to begin with
+      expect(screen.getByTestId('session-clock').props.accessibilityLabel).toMatch(/paused/);
       await fireEvent.press(screen.getByRole('button', { name: t('workout.endLabel') }));
       await fireEvent.press(screen.getByRole('button', { name: new RegExp(`^${t('workout.ending.discard')}`) }));
       await fireEvent.press(screen.getByRole('button', { name: t('workout.ending.confirm') }));
       expect(await screen.findByText(t('workout.ending.discarded'))).toBeOnTheScreen();
       expect(screen.queryByText(t('workout.paused'))).toBeNull();
+      // The clock in the header is not "paused" either, nor is Resume offered.
+      expect(screen.getByTestId('session-clock').props.accessibilityLabel).not.toMatch(/paused/);
+      expect(screen.queryByRole('button', { name: t('workout.resumeLabel') })).toBeNull();
     });
   });
 
@@ -4079,6 +4111,16 @@ describe('walkthrough round 3: the session (K-1013)', () => {
       expect(pick(t('exercises.dumbbell_curl.name'))).toBeNull();
       await fireEvent.changeText(screen.getByLabelText(t('workout.add.search')), '');
       expect(pick(t('exercises.dumbbell_curl.name'))).toBeOnTheScreen();
+    });
+
+    test('Close is above the list, not at the foot of it', async () => {
+      await show();
+      await fireEvent.press(await screen.findByRole('button', { name: t('workout.add.open') }));
+      const order = (node: unknown): string[] =>
+        typeof node === 'string' ? [node] : Array.isArray(node) ? node.flatMap(order) : order((node as { children?: unknown } | null)?.children ?? []);
+      const texts = order(screen.toJSON());
+      expect(texts.indexOf(t('workout.add.close'))).toBeGreaterThan(-1);
+      expect(texts.indexOf(t('workout.add.close'))).toBeLessThan(texts.indexOf(t('exercises.lat_pulldown.name')));
     });
 
     test('a move picked from the list is added like a found one', async () => {

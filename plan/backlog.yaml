@@ -4615,18 +4615,18 @@ tasks:
     learn: ["Fikstürün sözleşmeden sapması"]
 
   - id: K-997
-    title: "İlk haftada günün bütçesi başlangıç hedefinden (Food today / Food left)"
+    title: "İlk haftada günün bütçesi başlangıç hedefinden (Food left)"
     milestone: M9a
     module: nutrition
     type: feature
     size: S
     status: done
     depends_on: [K-989]
-    why: "#501 incelemesi (9 Eki): `/v1/days/{day}/budget` hedef yokken 404; ilk karardan önce hedef yok, yeni kullanıcı 7 güne kadar yemek satırı ve Log görmüyor. Prototip ilk haftada 'Food today N kcal', öğünden sonra 'Food left' aralığı (ADR-072 Ek 1, K-989)"
+    why: "#501 incelemesi (9 Eki): `/v1/days/{day}/budget` hedef yokken 404; ilk karardan önce hedef yok, yeni kullanıcı 7 güne kadar yemek satırı ve Log görmüyor. Prototip ilk haftada da 'Food left N kcal' (tek ad; 10 Eki K-1013: 'Food today' kalktı), öğünden sonra aralık (ADR-072 Ek 1, K-989)"
     acceptance:
       - "İlk karardan önce (hedef yok, başlangıç hedefi var) günün bütçesi başlangıç hedefinden hesaplanır; kalan aralık (U5) sunucuda, telefon çıkarma yapmaz"
       - "Rıza yoksa 403 CONSENT_REQUIRED aynen; başlangıç hedefi de yoksa 404 aynen"
-      - "Bu hafta yemek satırı ilk haftada da görünür (Food today / Food left + Log)"
+      - "Bu hafta yemek satırı ilk haftada da görünür (Food left + Log)"
     tests: ["Bütçe tablo testi (hedef var / yalnız başlangıç / hiçbiri), API testi (CI), telefon ekran testi"]
     refs: ["plan/kararlar/ADR-072-teklif-ve-onboarding.md", "plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md"]
     learn: ["Başlangıç değerinin sürekli değerle aynı yoldan geçmesi"]

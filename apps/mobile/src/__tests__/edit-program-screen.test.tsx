@@ -8,7 +8,7 @@
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { router } from 'expo-router';
-import { AccessibilityInfo, ScrollView } from 'react-native';
+import { AccessibilityInfo, ScrollView, StyleSheet } from 'react-native';
 
 import EditProgramScreen from '@/app/edit-program';
 import type { components } from '@/api/schema';
@@ -1067,6 +1067,19 @@ describe('walkthrough round 3: Edit program (K-1013)', () => {
       expect(screen.getByText(t('editProgram.unsavedNote'))).toBeOnTheScreen();
     });
 
+    test('an edit after Saved: "Saved." goes, so it is never on the screen with "not saved yet"', async () => {
+      mockParams = { part: 'days' };
+      editable();
+      mockPatch.mockImplementationOnce(async () => ({ data: AFTER, response: { status: 200 } }));
+      await show();
+      await rename('Chest day');
+      await save();
+      expect(await screen.findByText(t('editProgram.saved'))).toBeTruthy();
+      await rename('Chest day 2');
+      expect(screen.getByText(t('editProgram.unsavedNote'))).toBeOnTheScreen();
+      expect(screen.queryByText(t('editProgram.saved'))).toBeNull();
+    });
+
     test('Back with edits: the question is at the top too (not under the fold), instead of the note, and the page goes up to it', async () => {
       mockParams = { part: 'days' };
       editable();
@@ -1106,6 +1119,22 @@ describe('walkthrough round 3: Edit program (K-1013)', () => {
       const apply = await screen.findAllByRole('button', { name: new RegExp(`^${t('editProgram.apply')}: `) });
       expect(apply[0]).toHaveStyle({ minHeight: tokens.size.touch });
     });
+  });
+
+  test('the own-move form opened from Add a move: its choices and Back are full touch targets', async () => {
+    mockParams = { part: 'moves' };
+    editable();
+    await show();
+    await fireEvent.press(await screen.findByRole('button', { name: t('programEditor.addMove') }));
+    await fireEvent.press(screen.getByText(t('programEditor.addOwn')));
+    const chip = screen.getByRole('button', { name: `${t('ownMove.kind')} ${t('ownMove.kinds.COMPOUND')}` });
+    expect(chip).toHaveStyle({ minHeight: tokens.size.touch, minWidth: tokens.size.touch });
+    await fireEvent.press(screen.getByRole('button', { name: `${t('ownMove.equipment')} ${t('ownMove.equipments.BODYWEIGHT')}` }));
+    expect(screen.getByRole('button', { name: `${t('ownMove.added')} ${t('ownMove.no')}` })).toHaveStyle({ minHeight: tokens.size.touch });
+    expect(screen.getByRole('button', { name: `${t('ownMove.unilateral')} ${t('ownMove.yes')}` })).toHaveStyle({ minHeight: tokens.size.touch });
+    // The page has a Back of its own (a medium button, no minimum height): the form's is the one that has it.
+    const backs = screen.getAllByRole('button', { name: t('ownMove.back') });
+    expect(backs.filter((b) => (StyleSheet.flatten(b.props.style) as { minHeight?: number } | undefined)?.minHeight === tokens.size.touch)).toHaveLength(1);
   });
 
   describe('"Add a move" lists the catalog before anything is typed', () => {

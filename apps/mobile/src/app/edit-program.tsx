@@ -115,6 +115,8 @@ export default function EditProgramScreen() {
       setDraft((before) => next(before ?? base));
       setWarned(null);
       setSavedEdit(null);
+      // "Saved." was about the edit before this one: it must not stand beside "not saved yet".
+      setDone(null);
       // The warning was about the edit as it was; this is another.
       setLeaving(false);
     },
