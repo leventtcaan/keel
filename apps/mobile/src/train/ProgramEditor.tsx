@@ -13,7 +13,7 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { useReduceMotion } from '@/theme/useReduceMotion';
 
-import { findMoves } from './moves';
+import { browseMoves, findMoves } from './moves';
 import { OwnMoveForm, type SaveOutcome } from './OwnMoveForm';
 import { workoutParams as P } from './params';
 import { exerciseName } from './program';
@@ -202,7 +202,7 @@ function DayCard({ day, at, open, onOpen, alone, taken, byId, onChange, onRemove
 
   const toggle = (w: Schemas['Weekday']) => onChange((all) => withWeekday(all, at, all[at].weekday === w ? undefined : w));
   const remove = alone ? null : (
-    <Button label={t('programEditor.removeDay')} accessibilityLabel={t('programEditor.removeDayLabel', { day: day.name })} variant="ghost" size="sm" onPress={onRemoveDay} />
+    <Button label={t('programEditor.removeDay')} accessibilityLabel={t('programEditor.removeDayLabel', { day: day.name })} variant="ghost" size="touch" onPress={onRemoveDay} />
   );
   // One row of captions over the moves' steppers (each stepper also says its own name to VoiceOver).
   const captions =
@@ -231,6 +231,7 @@ function DayCard({ day, at, open, onOpen, alone, taken, byId, onChange, onRemove
             accessibilityLabel={t(`programEditor.weekdayName.${w}`)}
             selected={day.weekday === w}
             disabled={taken(w)}
+            touch
             onPress={() => toggle(w)}
           />
         ))}
@@ -247,7 +248,7 @@ function DayCard({ day, at, open, onOpen, alone, taken, byId, onChange, onRemove
         />,
       ])}
       {undoAt(day.moves.length)}
-      <Button label={t('programEditor.addMove')} variant="ghost" size="sm" disabled={day.moves.length >= P.programDayMovesMax} onPress={onAddMove} />
+      <Button label={t('programEditor.addMove')} variant="ghost" size="touch" disabled={day.moves.length >= P.programDayMovesMax} onPress={onAddMove} />
     </View>
   );
 }
@@ -258,7 +259,7 @@ function UndoBar({ name, onUndo }: { name: string; onUndo: () => void }) {
   return (
     <View testID="undo" style={[styles.snackbar, { backgroundColor: color.surface }]}>
       <Text style={[styles.text, { color: color.text }]}>{t('programEditor.removed', { name })}</Text>
-      <Button label={t('programEditor.undo')} accessibilityLabel={t('programEditor.undoLabel', { name })} variant="ghost" size="sm" onPress={onUndo} />
+      <Button label={t('programEditor.undo')} accessibilityLabel={t('programEditor.undoLabel', { name })} variant="ghost" size="touch" onPress={onUndo} />
     </View>
   );
 }
@@ -281,7 +282,7 @@ function MoveRow({ move, name, onStep, onRemove }: MoveProps) {
     <View style={styles.move}>
       <View style={styles.moveHead}>
         <Text style={[styles.name, { color: color.text }]}>{name}</Text>
-        <Button label={t('programEditor.removeMove')} accessibilityLabel={t('programEditor.removeMoveLabel', { move: name })} variant="ghost" size="sm" onPress={onRemove} />
+        <Button label={t('programEditor.removeMove')} accessibilityLabel={t('programEditor.removeMoveLabel', { move: name })} variant="ghost" size="touch" onPress={onRemove} />
       </View>
       <View style={styles.steppers}>
         {stepper('sets', 'programEditor.setsLabel', move.sets)}
@@ -356,7 +357,8 @@ function AddMoveSheet({ day, moves, byId, makeOwn, onAdd, onClose }: SheetProps)
     onAdd(made);
     return 'saved';
   };
-  const found = findMoves(query, offered);
+  // Nothing typed lists what the day can take, by name (K-1013).
+  const found = query.trim() === '' ? browseMoves(offered) : findMoves(query, offered);
   const none = query.trim() !== '' && found.length === 0 ? <Text style={[styles.small, { color: color.muted }]}>{t('programEditor.none')}</Text> : null;
   const body = own ? (
     <OwnMoveForm

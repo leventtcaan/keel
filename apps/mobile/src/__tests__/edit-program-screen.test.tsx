@@ -8,7 +8,7 @@
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { router } from 'expo-router';
-import { AccessibilityInfo } from 'react-native';
+import { AccessibilityInfo, ScrollView, StyleSheet } from 'react-native';
 
 import EditProgramScreen from '@/app/edit-program';
 import type { components } from '@/api/schema';
@@ -1023,5 +1023,140 @@ describe('the page shows what the server answered at once', () => {
     await show();
     await fireEvent.press(await screen.findByLabelText(`${t('editProgram.undo')}: Hamstrings: 4 sets a week, not 3`));
     expect(mockServices.training.read).toHaveBeenCalledTimes(2);
+  });
+});
+
+// K-1013 PR B (10 Oct walkthrough, round 3): Edit's findings.
+describe('walkthrough round 3: Edit program (K-1013)', () => {
+  /** The texts on the screen in the order they are drawn. */
+  const texts = (node: unknown): string[] => {
+    if (typeof node === 'string') return [node];
+    if (Array.isArray(node)) return node.flatMap(texts);
+    const children = (node as { children?: unknown } | null)?.children;
+    return children === undefined || children === null ? [] : texts(children);
+  };
+  const order = () => texts(screen.toJSON());
+
+  describe('edits not saved are said where they can be seen, above the editor', () => {
+    test('nothing edited: no note; an edit: the note, above the days; saved: gone', async () => {
+      mockParams = { part: 'days' };
+      editable();
+      mockPatch.mockImplementationOnce(async () => ({ data: AFTER, response: { status: 200 } }));
+      await show();
+      await screen.findByText('Upper');
+      expect(screen.queryByText(t('editProgram.unsavedNote'))).toBeNull();
+      await rename('Chest day');
+      const note = screen.getByText(t('editProgram.unsavedNote'));
+      expect(note).toBeOnTheScreen();
+      expect(order().indexOf(t('editProgram.unsavedNote'))).toBeLessThan(order().indexOf(t('editProgram.save')));
+      expect(order().indexOf(t('editProgram.unsavedNote'))).toBeLessThan(order().indexOf('Lower'));
+      await save();
+      expect(await screen.findByText(t('editProgram.saved'))).toBeTruthy();
+      expect(screen.queryByText(t('editProgram.unsavedNote'))).toBeNull();
+    });
+
+    test('the swipe back is off while the note says why (they come and go together)', async () => {
+      mockParams = { part: 'days' };
+      editable();
+      await show();
+      await screen.findByText('Upper');
+      expect(mockScreenOptions?.gestureEnabled).toBe(true);
+      expect(screen.queryByText(t('editProgram.unsavedNote'))).toBeNull();
+      await rename('Chest day');
+      expect(mockScreenOptions?.gestureEnabled).toBe(false);
+      expect(screen.getByText(t('editProgram.unsavedNote'))).toBeOnTheScreen();
+    });
+
+    test('an edit after Saved: "Saved." goes, so it is never on the screen with "not saved yet"', async () => {
+      mockParams = { part: 'days' };
+      editable();
+      mockPatch.mockImplementationOnce(async () => ({ data: AFTER, response: { status: 200 } }));
+      await show();
+      await rename('Chest day');
+      await save();
+      expect(await screen.findByText(t('editProgram.saved'))).toBeTruthy();
+      await rename('Chest day 2');
+      expect(screen.getByText(t('editProgram.unsavedNote'))).toBeOnTheScreen();
+      expect(screen.queryByText(t('editProgram.saved'))).toBeNull();
+    });
+
+    test('Back with edits: the question is at the top too (not under the fold), instead of the note, and the page goes up to it', async () => {
+      mockParams = { part: 'days' };
+      editable();
+      await show();
+      await rename('Chest day');
+      // The mocked ScrollView's scrollTo is a jest.fn shared by its instances.
+      const scrolled = ScrollView.prototype.scrollTo as unknown as jest.Mock;
+      scrolled.mockClear();
+      await fireEvent.press(screen.getByText(t('editProgram.back')));
+      expect(order().indexOf(t('editProgram.leaveWarn'))).toBeLessThan(order().indexOf(t('editProgram.save')));
+      expect(order().indexOf(t('editProgram.leaveWarn'))).toBeLessThan(order().indexOf('Lower'));
+      expect(screen.queryByText(t('editProgram.unsavedNote'))).toBeNull(); // not said twice
+      expect(scrolled).toHaveBeenCalledWith({ y: 0, animated: false });
+      await fireEvent.press(screen.getByText(t('editProgram.keepEditing')));
+      expect(screen.getByText(t('editProgram.unsavedNote'))).toBeOnTheScreen();
+    });
+  });
+
+  describe('every control of the editor is a full touch target (44 pt)', () => {
+    test('weekday chips, Remove this day, Remove, Add a move, and the Undo that puts one back', async () => {
+      mockParams = { part: 'days' };
+      editable();
+      await show();
+      await screen.findByText('Upper');
+      expect(screen.getByLabelText('Tuesday')).toHaveStyle({ minHeight: tokens.size.touch, minWidth: tokens.size.touch });
+      expect(screen.getByRole('button', { name: t('programEditor.removeDayLabel', { day: 'Upper' }) })).toHaveStyle({ minHeight: tokens.size.touch });
+      expect(screen.getByRole('button', { name: t('programEditor.removeMoveLabel', { move: 'Bench press' }) })).toHaveStyle({ minHeight: tokens.size.touch });
+      expect(screen.getByRole('button', { name: t('programEditor.addMove') })).toHaveStyle({ minHeight: tokens.size.touch });
+      await fireEvent.press(screen.getByRole('button', { name: t('programEditor.removeMoveLabel', { move: 'Bench press' }) }));
+      expect(screen.getByRole('button', { name: t('programEditor.undoLabel', { name: 'Bench press' }) })).toHaveStyle({ minHeight: tokens.size.touch });
+    });
+
+    test("a review flag's Apply and the changes' Undo", async () => {
+      mockParams = { part: 'moves' };
+      await show();
+      await screen.findByText('Upper');
+      const apply = await screen.findAllByRole('button', { name: new RegExp(`^${t('editProgram.apply')}: `) });
+      expect(apply[0]).toHaveStyle({ minHeight: tokens.size.touch });
+    });
+  });
+
+  test('the own-move form opened from Add a move: its choices and Back are full touch targets', async () => {
+    mockParams = { part: 'moves' };
+    editable();
+    await show();
+    await fireEvent.press(await screen.findByRole('button', { name: t('programEditor.addMove') }));
+    await fireEvent.press(screen.getByText(t('programEditor.addOwn')));
+    const chip = screen.getByRole('button', { name: `${t('ownMove.kind')} ${t('ownMove.kinds.COMPOUND')}` });
+    expect(chip).toHaveStyle({ minHeight: tokens.size.touch, minWidth: tokens.size.touch });
+    await fireEvent.press(screen.getByRole('button', { name: `${t('ownMove.equipment')} ${t('ownMove.equipments.BODYWEIGHT')}` }));
+    expect(screen.getByRole('button', { name: `${t('ownMove.added')} ${t('ownMove.no')}` })).toHaveStyle({ minHeight: tokens.size.touch });
+    expect(screen.getByRole('button', { name: `${t('ownMove.unilateral')} ${t('ownMove.yes')}` })).toHaveStyle({ minHeight: tokens.size.touch });
+    // The page has a Back of its own (a medium button, no minimum height): the form's is the one that has it.
+    const backs = screen.getAllByRole('button', { name: t('ownMove.back') });
+    expect(backs.filter((b) => (StyleSheet.flatten(b.props.style) as { minHeight?: number } | undefined)?.minHeight === tokens.size.touch)).toHaveLength(1);
+  });
+
+  describe('"Add a move" lists the catalog before anything is typed', () => {
+    const exercise = (id: string) => ({ id, nameKey: `exercises.${id}.name`, load: 'EXTERNAL', unilateral: false, kind: 'COMPOUND' }) as unknown as Schemas['Exercise'];
+    beforeEach(() => {
+      mockData = { ...mockData, exercises: { state: 'ready', value: ['bench_press', 'lat_pulldown', 'barbell_row', 'dumbbell_curl'].map(exercise) } };
+    });
+    const offered = (name: string) => screen.queryByRole('button', { name: new RegExp(`^${t('programEditor.pickLabel', { name, range: '' }).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`) });
+
+    test('opened, every move the day does not have is listed by name; typing narrows it; clearing brings it back', async () => {
+      mockParams = { part: 'moves' };
+      editable();
+      await show();
+      await fireEvent.press(await screen.findByRole('button', { name: t('programEditor.addMove') }));
+      expect(offered('Barbell row')).toBeOnTheScreen();
+      expect(offered('Dumbbell curl')).toBeOnTheScreen();
+      expect(offered('Bench press')).toBeNull(); // the day has it
+      expect(screen.queryByText(t('programEditor.none'))).toBeNull();
+      await fireEvent.changeText(screen.getByLabelText(t('programEditor.search')), 'curl');
+      expect(offered('Barbell row')).toBeNull();
+      await fireEvent.changeText(screen.getByLabelText(t('programEditor.search')), '');
+      expect(offered('Barbell row')).toBeOnTheScreen();
+    });
   });
 });

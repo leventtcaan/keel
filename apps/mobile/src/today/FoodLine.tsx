@@ -16,11 +16,12 @@ type Schemas = components['schemas'];
  * The food line on This week (ADR-077 #1, prototype `#home`): what is left of today's food as a range (U5), the server's
  * (K-409), and "Log"; the whole line opens the meal. Without the health data consent, the lock line in its place:
  * "Needs your OK for health data · Allow" (ADR-072 Ek 1, user test 8 Oct), Allow leading to the consent in Settings,
- * where its text is read before it is given. The first week (no call yet, `firstWeek`): the server works the budget out
- * from the target the plan will start with (K-997, ADR-072 Ek 2), so the same range comes back; with nothing eaten it
- * reads "Food today 2,100 kcal" (prototype foodLine), after a meal "Food left" like any week. No budget (404): no line.
+ * where its text is read before it is given. The first week (no call yet): the server works the budget out from the target
+ * the plan will start with (K-997, ADR-072 Ek 2), so the same range comes back. One name for the number whether or not a
+ * meal is logged, "Food left" (K-1013: it flipped from "Food today" to "Food left" at the first meal, as if the number
+ * were two things; the Food page says "Food left today" too). No budget (404): no line.
  */
-export function FoodLine({ budget, firstWeek }: { budget: Loaded<Schemas['DayBudget']>; firstWeek: boolean }) {
+export function FoodLine({ budget }: { budget: Loaded<Schemas['DayBudget']> }) {
   const { color } = useTheme();
   if (budget.state === 'consent') {
     return (
@@ -45,10 +46,9 @@ export function FoodLine({ budget, firstWeek }: { budget: Loaded<Schemas['DayBud
   let amount: string | null;
   if (budget.state === 'ready') {
     const { kcal } = budgetLine(budget.value.left);
-    const nothingEaten = budget.value.eaten.kcal.high === 0;
     [lead, amount] =
       kcal.kind === 'left'
-        ? [firstWeek && nothingEaten ? t('thisWeek.food.today') : t('thisWeek.food.left'), range(kcal.low, kcal.high)]
+        ? [t('thisWeek.food.left'), range(kcal.low, kcal.high)]
         : kcal.kind === 'over'
           ? [t('thisWeek.food.over'), range(kcal.low, kcal.high)]
           : [t('thisWeek.food.around'), null];

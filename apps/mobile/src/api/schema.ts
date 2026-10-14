@@ -260,6 +260,35 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/weigh-ins/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The last weigh-in, how many days have one, and whether the trend is ready to show
+         * @description For the weigh screen's "Last" value and the progress screen's weight section ("3 of 7"). `last` is the newest
+         *     weigh-in whatever its source, absent until there is one. `weighInCount` is the days with at least one weigh-in,
+         *     over all time, counted the way the weight trend takes its days (`/v1/weight-trend`: the user's local days, imported
+         *     history included, ADR-053), so two weigh-ins in one day are one. `trendMinWeighIns` is the engine's
+         *     `trend_min_weighins` and `trendReady` is `weighInCount >= trendMinWeighIns`: the phone shows the trend when it is
+         *     true and counts nothing itself (ADR-078 Ek 2). `trendReady` is the gate only, not "the chart has a point": the chart
+         *     is drawn from the `/v1/weight-trend` points, and with none in the window the phone draws no chart (ADR-078 Ek 2: no
+         *     empty chart). Needs the health-data consent (CONSENT_REQUIRED without it). No profile is needed: without one the
+         *     days are the UTC days and this answers 200, while `/v1/weight-trend` answers NOT_FOUND. `/v1/weight-trend` itself is
+         *     unchanged.
+         */
+        get: operations["getWeighInSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/weigh-ins/{id}": {
         parameters: {
             query?: never;
@@ -1856,6 +1885,15 @@ export interface components {
             /** Format: uuid */
             id: string;
         };
+        WeighInSummary: {
+            last?: components["schemas"]["WeighIn"];
+            /** @description Days with at least one weigh-in, all time, imported history included. */
+            weighInCount: number;
+            /** @description The weigh-in days the trend needs before it is shown (the engine's `trend_min_weighins`). */
+            trendMinWeighIns: number;
+            /** @description True when `weighInCount` has reached `trendMinWeighIns`. */
+            trendReady: boolean;
+        };
         TrendPoint: {
             /** Format: date */
             day: string;
@@ -2735,10 +2773,16 @@ export interface components {
             /** @description Load × reps over the working sets, the load as logged (a bodyweight move's added load). */
             liftedKg: number;
             /**
-             * @description liftedKg against the last earlier session of the same program day (programDayId) that has a working set done
-             *     (at least one rep: a session of skipped sets only is none), in
-             *     whole percent (rounded half up; negative when less). Absent without one, or when it lifted 0 kg: a program
-             *     saved anew has new days, a new basis (ADR-075 Ek 2); the review's changes keep the days.
+             * @description The weight lifted against the last earlier session of the same program day (programDayId) that has a working set
+             *     done (at least one rep: a session of skipped sets only is none), in whole percent (rounded half up; negative when
+             *     less), over the moves both sessions did (a move done in one only is left out). Absent without one, when it lifted
+             *     0 kg: a program saved anew has new days, a new basis (ADR-075 Ek 2); the review's changes keep the days. Also
+             *     absent when the two sessions cannot be compared (K-1014, ADR-075 Ek 10): a half session is not set against a whole
+             *     one, and the phone shows no percent then. Comparable when, over the moves both did, the session with fewer working
+             *     sets did at least summary_compare_min_set_share of the other's, and there are at least short_session_moves of
+             *     those moves (the short version of a day) or their sets are at least summary_compare_min_shared_share of each
+             *     session's working sets. 'Short on time' and a skipped move stay comparable; the earlier session is not looked past
+             *     for a comparable one.
              */
             liftedChangePercent?: number;
             /** @description A one-sided move's sets count once per set, as the side that did fewer (the program's sets are per side). */
@@ -4015,6 +4059,27 @@ export interface operations {
         responses: {
             200: components["responses"]["WeighInCreated"];
             201: components["responses"]["WeighInCreated"];
+            default: components["responses"]["Error"];
+        };
+    };
+    getWeighInSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeighInSummary"];
+                };
+            };
             default: components["responses"]["Error"];
         };
     };

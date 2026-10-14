@@ -64,13 +64,18 @@ test('no lighter load than the work load in the gym: no warm-up (soru 43 — G1 
   expect(warmups(4, CURL, false, GYM, 'METRIC')).toEqual([]);
 });
 
-test('a weighted bodyweight move warms up with the body alone even before its added load is known', () => {
-  expect(warmups(null, move('dip', 'BODYWEIGHT', 'BODYWEIGHT_PLUS_EXTERNAL'), false, GYM, 'METRIC')).toEqual([{ loadKg: 0, reps: 5 }]);
+// K-1013 (10 Oct walkthrough): the body alone is no warm-up; a move with a weight added to the body still gets the one easy set.
+test('a move with an added load warms up with the body alone once its added load is known; with none added, no warm-up', () => {
+  const dip = move('dip', 'BODYWEIGHT', 'BODYWEIGHT_PLUS_EXTERNAL');
+  expect(warmups(20, dip, false, GYM, 'METRIC')).toEqual([{ loadKg: 0, reps: 5 }]);
+  expect(warmups(20, dip, true, GYM, 'METRIC')).toEqual([{ loadKg: 0, reps: 8 }]);
+  expect(warmups(0, dip, true, GYM, 'METRIC')).toEqual([]); // the body alone is the work
+  expect(warmups(null, dip, true, GYM, 'METRIC')).toEqual([]);
 });
 
-test('a bodyweight move warms up with the body alone; no work load known, no warm-up', () => {
-  expect(warmups(0, PUSH_UP, false, GYM, 'METRIC')).toEqual([{ loadKg: 0, reps: 5 }]);
-  expect(warmups(0, PUSH_UP, true, GYM, 'METRIC')).toEqual([{ loadKg: 0, reps: 8 }]);
+test('a bodyweight move has no warm-up, and no work load known is none for a weighted one', () => {
+  expect(warmups(0, PUSH_UP, false, GYM, 'METRIC')).toEqual([]);
+  expect(warmups(0, PUSH_UP, true, GYM, 'METRIC')).toEqual([]);
   expect(warmups(null, BENCH, true, GYM, 'METRIC')).toEqual([]);
 });
 
