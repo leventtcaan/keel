@@ -175,6 +175,65 @@ class ProgressSummaryTests {
                 .isEqualTo(Optional.ofNullable(percent));
     }
 
+    private static final String FULL_DAY = "bench:3x100x8;squat:3x100x8;row:3x60x10;press:3x40x10;curl:3x20x12";
+
+    /**
+     * K-1014: the change is said only between sessions that can be compared, and then over the moves both did. The full day is
+     * 8520 kg over 15 sets (bench 2400, squat 2400, row 1800, press 1200, curl 720).
+     */
+    @ParameterizedTest(name = "{0}")
+    @CsvSource(delimiter = '|', value = {
+        // Full against full: all five moves, the squat heavier (+240 of 8520).
+        "full day, heavier squat | bench:3x100x8;squat:3x110x8;row:3x60x10;press:3x40x10;curl:3x20x12 | 3",
+        // Half a session (the walkthrough's -81%): two sets of one move are a fragment of the day, not a session.
+        "half a session | bench:2x100x8 | ",
+        "two moves of five | bench:3x100x8;squat:2x100x8 | ",
+        // Short on time keeps the first moves with their sets: compared over the moves both did (6720 against 6600).
+        "short on time | bench:3x100x8;squat:3x105x8;row:3x60x10 | 2",
+        // A skipped move leaves a session comparable over the others (7920 against 7800).
+        "a move skipped | bench:3x105x8;squat:3x100x8;row:3x60x10;press:3x40x10 | 2",
+        // A move done today and not last time is no gain (the 900 kg is left out).
+        "a move added | bench:3x100x8;squat:3x100x8;row:3x60x10;press:3x40x10;curl:3x20x12;face_pull:3x20x15 | 0",
+        // Nothing in common: every move swapped.
+        "every move swapped | hack_squat:3x100x8;chest_press:3x60x10 | ",
+        // The moves in common are a small part of the session today.
+        "mostly other moves | bench:3x100x8;ohp:3x40x8;dip:3x0x10;fly:3x20x12;lat_raise:3x10x15;pushdown:3x30x12 | ",
+    })
+    void theChangeIsSaidOnlyBetweenSessionsThatCanBeComparedAndOverTheMovesBothDid(String name, String now, Integer percent) {
+        assertThat(ProgressSummary.changePercent(session(now), Optional.of(session(FULL_DAY)), P)).isEqualTo(Optional.ofNullable(percent));
+    }
+
+    @ParameterizedTest(name = "{1} after {0}")
+    @CsvSource(delimiter = '|', value = {
+        "bench:4x100x8 | bench:3x100x8 | -25", // 3 of 4 sets is still the session
+        "bench:4x100x8 | bench:2x100x8 | ", // half the sets
+        "bench:2x100x8 | bench:3x100x8 | 50", // more sets than last time compares too
+        "bench:2x100x8 | bench:4x100x8 | ",
+    })
+    void theSetsOfTheMovesBothDidAreComparedEitherWay(String before, String now, Integer percent) {
+        assertThat(ProgressSummary.changePercent(session(now), Optional.of(session(before)), P)).isEqualTo(Optional.ofNullable(percent));
+    }
+
+    @Test
+    void withoutAnEarlierSessionOrOneThatLiftedNothingThereIsNoChange() {
+        assertThat(ProgressSummary.changePercent(session("bench:3x100x8"), Optional.empty(), P)).isEmpty();
+        assertThat(ProgressSummary.changePercent(session("pullup:3x0x8"), Optional.of(session("pullup:3x0x8")), P)).isEmpty();
+    }
+
+    /** "move:SETSxKGxREPS;..." as a session's working sets. */
+    private static List<TrainingLog.WorkSet> session(String spec) {
+        Instant at = MONDAY.atStartOfDay(UTC).toInstant();
+        List<TrainingLog.WorkSet> sets = new ArrayList<>();
+        for (String move : spec.split(";")) {
+            String[] id = move.split(":");
+            String[] by = id[1].split("x");
+            for (int i = 0; i < Integer.parseInt(by[0]); i++) {
+                sets.add(move(id[0], at, by[1], Integer.parseInt(by[2]), ExerciseCatalog.Load.EXTERNAL, null));
+            }
+        }
+        return sets;
+    }
+
     @Test
     void theWeightLiftedIsLoadTimesRepsOverTheWorkingSets() {
         Instant at = MONDAY.atStartOfDay(UTC).toInstant();
