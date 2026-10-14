@@ -119,7 +119,7 @@ parameters:
     unit: ratio
     tag: urun
     source: "arastirma/01-urun-ilkeleri.md#26"
-    note: "SEÇİM, ürün kararı (agent), K-1014, ADR-075 Ek 10; sayının araştırma kaynağı yok. Antrenman özetinde 'son seansa göre %' yalnız iki seansta da yapılan hareketlerin setleri, her iki seansın çalışma setlerinin en az bu kadarıysa söylenir: iki setlik yarım seans (kendi setlerinin tamamı ortak) tam seansın beşte birini kapsar, karşılaştırılmaz; 'Short on time' (ilk hareketler, setler tam) ve atlanan bir hareket bu eşiğin üstünde kalır, yüzde ortak hareketler üzerinden hesaplanır. Dahil olmayan (yalnız bugün ya da yalnız geçen sefer yapılan) hareket yüzdeye girmez. Değer değişirse ProgressSummaryTests tablosu güncellenir."
+    note: "SEÇİM, ürün kararı (agent), K-1014, ADR-075 Ek 10; sayının araştırma kaynağı yok. Antrenman özetinde 'son seansa göre %' yalnız iki seansta da yapılan hareketlerin setleri, her iki seansın çalışma setlerinin en az bu kadarıysa söylenir; ortak hareket sayısı short_session_moves'a ulaşıyorsa bu pay aranmaz. İki setlik yarım seans (tek ortak hareket, günün beşte biri) karşılaştırılmaz. 'Short on time' (ilk short_session_moves hareket, setler tam) gerçek program günlerinde günün yalnız 0.33-0.44'ünü kapsar (3 günlük programın 10 hareketli günü: 9 set / 25), bu pay eşiğin altındadır; kısa sürümü karşılaştırılabilir yapan ortak hareket sayısıdır. Atlanan bir hareket seansı eşiğin üstünde bırakır, yüzde ortak hareketler üzerinden hesaplanır. Dahil olmayan (yalnız bugün ya da yalnız geçen sefer yapılan) hareket yüzdeye girmez. Değer değişirse ProgressSummaryTests tablosu güncellenir."
   - key: add_day_from_days
     value: 2
     unit: days_per_week

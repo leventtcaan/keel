@@ -273,12 +273,16 @@ koşulsuz kıyaslıyordu. Yarım seans ile tam seans aynı şey değildir; sayı
 - **Karşılaştırılabilirlik (iki eşik, `data/parameters/training.yaml`, ürün kararı, kaynak yok, U14):** yüzde, iki seansta da yapılan hareketler
   üzerinden hesaplanır (yalnız bir tarafta olan hareket kazanç ya da kayıp sayılmaz) ve şu iki koşul birlikte sağlanırsa söylenir: (1)
   `summary_compare_min_set_share` = 0.6: ortak hareketlerde çalışma seti sayısı az olanın çok olana oranı en az bu (3 setlik hareketin 2 setle
-  yapılması 0.67 karşılaştırılır, 4 setin 2'si 0.5 karşılaştırılmaz); (2) `summary_compare_min_shared_share` = 0.5: ortak hareketlerin setleri
-  **her iki** seansın çalışma setlerinin en az bu kadarı (2 setlik yarım seans 15 setlik günün beşte biridir, karşılaştırılmaz; bugünün 18 setlik
-  seansı geçen seferin 3 setlik parçasıyla da karşılaştırılmaz).
+  yapılması 0.67 karşılaştırılır, 4 setin 2'si 0.5 karşılaştırılmaz; tek taraflı harekette set, az yapılan tarafın sayısıdır); (2) ortak hareket
+  sayısı `short_session_moves` (3, mevcut parametre, Today'in kısa sürümü) kadar ya da daha çok, **ya da** `summary_compare_min_shared_share` =
+  0.5: ortak hareketlerin setleri **her iki** seansın çalışma setlerinin en az bu kadarı (2 setlik yarım seans günün beşte biri ve tek ortak
+  harekettir, karşılaştırılmaz; bugünün 18 setlik seansı geçen seferin 3 setlik parçasıyla da karşılaştırılmaz). *(İlk yazılışta (2) yalnız set
+  payıydı; düzenleyici incelemesi 14 Eki: gerçek program günlerinde kısa sürüm günün 0.33-0.44'üdür (3 günlük 10 hareketli gün 9/25, 2 günlük 11
+  hareketli gün 9/26), pay eşiği onu düşürüyordu; hareket sayısı koşulu eklendi, yeni sayı yok.)*
 - **Short on time ve atlanan hareket:** seans kaydına "kısa sürüm" bayrağı yazılmaz (bayrak haftanın, program gününün tarihli değişikliğidir,
-  Today; seans onu hesaplayamaz, program da sonradan değişmiş olabilir), ve gerekmez: etkisi kayıtta görünür. Kısa sürüm ilk hareketleri tam setle
-  yapar, atlanan hareket eksik kalır: ikisi de (2)'nin üstünde kalır ve yüzde ortak hareketlerde hesaplanır (karşılaştırılamaz saymak yerine). İki
+  Today; seans onu hesaplayamaz, program da sonradan değişmiş olabilir), ve gerekmez: etkisi kayıtta görünür. Kısa sürüm ilk `short_session_moves`
+  hareketi tam setle yapar: ortak 3 hareket (2)'yi hareket sayısından geçer (kısa ↔ tam, iki yönde), set payı tek başına geçmezdi. Atlanan hareket
+  seansı (2)'nin üstünde bırakır. İkisinde de yüzde ortak hareketlerde hesaplanır (karşılaştırılamaz saymak yerine). İki
   yoldan **dürüst olan seçildi:** ortak hareket üzerinden hesap, eklenen/atlanan hareketin toplam kiloyu oynatmasını (örn. +127%) engeller ve sayıyı
   hâlâ söyler; "farklı hareket kümesi = karşılaştırılamaz" çok sayı atardı (her swap bir yüzdeyi götürürdü).
 - **Karşılaştırılamazsa alan yoktur** (`liftedChangePercent` yanıtta yok; sözleşmede zaten isteğe bağlı, şema değişmedi, açıklama güncellendi);

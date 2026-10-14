@@ -3782,9 +3782,10 @@ components:
             0 kg: a program saved anew has new days, a new basis (ADR-075 Ek 2); the review's changes keep the days. Also
             absent when the two sessions cannot be compared (K-1014, ADR-075 Ek 10): a half session is not set against a whole
             one, and the phone shows no percent then. Comparable when, over the moves both did, the session with fewer working
-            sets did at least summary_compare_min_set_share of the other's, and those sets are at least
-            summary_compare_min_shared_share of each session's working sets. 'Short on time' and a skipped move stay
-            comparable; the earlier session is not looked past for a comparable one.
+            sets did at least summary_compare_min_set_share of the other's, and there are at least short_session_moves of
+            those moves (the short version of a day) or their sets are at least summary_compare_min_shared_share of each
+            session's working sets. 'Short on time' and a skipped move stay comparable; the earlier session is not looked past
+            for a comparable one.
         workingSets:
           type: integer
           minimum: 0
