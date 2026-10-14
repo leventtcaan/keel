@@ -60,15 +60,17 @@ export function SupersetLink({
     </Pressable>
   );
   if (partners.length > 0) {
+    // The partners across a line of their own, then the way out as one more link among the move's: never one row holding
+    // both, which squeezed the links after it (Skip move) into letters stacked on end (K-1013, 10 Oct walkthrough).
     return (
-      <View style={styles.row}>
-        <Text style={[styles.small, styles.grow, { color: color.accent }]}>
+      <>
+        <Text style={[styles.small, styles.line, { color: color.accent }]}>
           {t("superset.with", {
             names: partners.join(t("superset.separator")),
           })}
         </Text>
         {link(t("superset.unlink"), onUnlink)}
-      </View>
+      </>
     );
   }
   if (candidates.length === 0) return null;
@@ -97,10 +99,9 @@ export function SupersetLink({
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "center", gap: tokens.space.sm },
   link: { minHeight: tokens.size.touch, justifyContent: "center" },
-  grow: { flex: 1 },
   // Under the links it sits beside, across the whole line.
+  line: { flexBasis: "100%" },
   picking: { gap: tokens.space.sm, flexBasis: "100%" },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: tokens.space.sm },
   small: { fontSize: tokens.type.bodySmall },

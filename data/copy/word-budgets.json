@@ -380,7 +380,7 @@
         ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
         ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
         ["thisWeek.today.cardio", "thisWeek.today.cardioOptional"],
-        ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around", "thisWeek.food.today"],
+        ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around"],
         "food.budget.kcalUnit",
         "thisWeek.food.log"
       ],
@@ -412,7 +412,7 @@
             ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
             ["thisWeek.today.cardio", "thisWeek.today.cardioOptional"],
             "thisWeek.today.full",
-            ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around", "thisWeek.food.today"],
+            ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around"],
             "food.budget.kcalUnit",
             "thisWeek.food.log"
           ],
@@ -434,7 +434,7 @@
             "programDays.full_body_a.name",
             "thisWeek.today.continue",
             ["thisWeek.today.openSets.none", "thisWeek.today.openSets.one", "thisWeek.today.openSets.other", "thisWeek.today.openElsewhere"],
-            ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around", "thisWeek.food.today"],
+            ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around"],
             "food.budget.kcalUnit",
             "thisWeek.food.log"
           ],
@@ -455,7 +455,7 @@
             "thisWeek.today.done",
             "programDays.full_body_a.name",
             ["thisWeek.today.doneStats.one", "thisWeek.today.doneStats.other"],
-            ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around", "thisWeek.food.today"],
+            ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around"],
             "food.budget.kcalUnit",
             "thisWeek.food.log"
           ],
@@ -478,7 +478,7 @@
             ["thisWeek.today.rest", "programDays.full_body_a.name"],
             "thisWeek.today.undo",
             ["thisWeek.today.movedTo", "thisWeek.today.skipped", "thisWeek.today.skippedNoDay"],
-            ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around", "thisWeek.food.today"],
+            ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around"],
             "food.budget.kcalUnit",
             "thisWeek.food.log"
           ],
@@ -508,7 +508,7 @@
             ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
             ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
             ["thisWeek.today.cardio", "thisWeek.today.cardioOptional"],
-            ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around", "thisWeek.food.today"],
+            ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around"],
             "food.budget.kcalUnit",
             "thisWeek.food.log"
           ],
@@ -536,7 +536,7 @@
             ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
             ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
             ["thisWeek.today.cardio", "thisWeek.today.cardioOptional"],
-            ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around", "thisWeek.food.today"],
+            ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around"],
             "food.budget.kcalUnit",
             "thisWeek.food.log"
           ]
@@ -581,7 +581,7 @@
             ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
             ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
             ["thisWeek.today.cardio", "thisWeek.today.cardioOptional"],
-            ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around", "thisWeek.food.today"],
+            ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around"],
             "food.budget.kcalUnit",
             "thisWeek.food.log"
           ],
@@ -617,7 +617,7 @@
         ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
         ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
         ["thisWeek.today.cardio", "thisWeek.today.cardioOptional"],
-        ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around", "thisWeek.food.today"],
+        ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around"],
         "food.budget.kcalUnit",
         "thisWeek.food.log"
       ],

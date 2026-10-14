@@ -5,7 +5,7 @@
  */
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
-import { findMoves } from '@/train/moves';
+import { browseMoves, findMoves } from '@/train/moves';
 import { workoutParams } from '@/train/params';
 
 type Schemas = components['schemas'];
@@ -46,4 +46,18 @@ test('the moves left out (already in the session) are not offered', () => {
 test("the user's own moves are found by the name they gave", () => {
   const own = { ...move('custom:1'), nameKey: '', name: 'Landmine press' };
   expect(ids(findMoves('landmine', [...CATALOG, own]))).toEqual(['custom:1']);
+});
+
+// K-1013 (walkthrough round 3): "Add a move" with nothing typed lists the catalog, by name, so a move can be picked
+// without knowing what to type. The search itself stays empty for nothing typed (the own-move form's "Is it one of these?"
+// must not list the catalog).
+test('browsing: the whole catalog by name, whatever the order it came in; the ones left out stay out', () => {
+  const found = browseMoves([move('squat'), move('bench_press'), move('barbell_row')], new Set(['squat']));
+  expect(ids(found)).toEqual(['barbell_row', 'bench_press']);
+  expect(ids(browseMoves(CATALOG))).toHaveLength(CATALOG.length); // not cut at move_search_results: it is a list, not a best guess
+});
+
+test("browsing names a user's own move by the name they gave, and a move the copy does not name by its id", () => {
+  const own = { ...move('custom:1'), nameKey: '', name: 'Landmine press' };
+  expect(ids(browseMoves([move('zz_unnamed'), own, move('bench_press')]))).toEqual(['bench_press', 'custom:1', 'zz_unnamed']);
 });
