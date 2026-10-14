@@ -127,6 +127,7 @@ public enum ParameterKey {
     DELOAD_LOAD_REDUCTION_MAX(ParameterDomain.TRAINING, Unit.RATIO),
 
     TREND_DISPLAY_DAYS(ParameterDomain.WINDOWS, Unit.DAYS),
+    TREND_MIN_WEIGHINS(ParameterDomain.WINDOWS, Unit.WEIGHINS),
     DECISION_WINDOW_DAYS(ParameterDomain.WINDOWS, Unit.DAYS),
     NO_INTERPRETATION_DAYS(ParameterDomain.WINDOWS, Unit.DAYS),
     EVALUATION_WINDOW_DAYS(ParameterDomain.WINDOWS, Unit.DAYS),
