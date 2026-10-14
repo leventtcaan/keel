@@ -3039,6 +3039,33 @@ export interface components {
                  */
                 forgivenWeeks: number;
             };
+            /**
+             * @description The weeks over, one cell each, for the 12 weeks grid (K-1016, ADR-078 #2): the last progress_grid_weeks of the
+             *     weeks the record counted from, OLDEST FIRST, so the newest cell is the last. This week is not in it (it is not
+             *     over: the fields above are this week, and the record leaves it out too). A week before the first call is not
+             *     listed, so a short history is a short list (never padded; the phone draws the empty cells). The states come from
+             *     the same walk as `record`, not a second count: the SPARE cells over the whole record are `record.forgivenWeeks`,
+             *     the ON_TRACK cells `record.onTrackWeeks` (each of them in the last progress_grid_weeks only when the record is
+             *     longer than the grid).
+             */
+            weeks: components["schemas"]["ConsistencyWeek"][];
+        };
+        /** @description One week of the consistency grid (K-1016); U7, no state is named for blame. */
+        ConsistencyWeek: {
+            /**
+             * Format: date
+             * @description The Monday the week began.
+             */
+            weekOf: string;
+            /**
+             * @description ON_TRACK: at on_track_min_ratio of the plan or above. SPARE: a lone missed week after a week on track, which the
+             *     run forgave (shown as "spare week", ADR-078 #2); it is still counted in the record, never taken back. MISSED: a
+             *     miss that was not forgiven (the second in a row, or one with no run before it). PAUSED: neither a success nor a
+             *     miss, the record leaves it out: a day of it under a state the user declared (K-516), or a week with nothing
+             *     planned.
+             * @enum {string}
+             */
+            state: "ON_TRACK" | "SPARE" | "MISSED" | "PAUSED";
         };
         /**
          * @description The period's weight change (K-988, ADR-078 #2, Ek 1, U8): today's trend weight (the trend_display_days average
