@@ -205,6 +205,46 @@ final class ProgressSummary {
                 .map(kg -> now.subtract(kg).multiply(PERCENT).divide(kg, 0, RoundingMode.HALF_UP).intValueExact());
     }
 
+    /**
+     * The weight lifted against the last session of the same day, in whole percent, only when the two sessions can be compared
+     * (K-1014, ADR-075 Ek 10), and then over the moves both did: a move done in one only is no gain or loss, so it is left out.
+     * Comparable when, over those shared moves, (1) the session with fewer working sets did at least
+     * summary_compare_min_set_share of the other's, and (2) there are at least short_session_moves of them (the short
+     * version of a day: its first moves, whole), or their sets are at least summary_compare_min_shared_share of each
+     * session's working sets: a half session (a fragment of the day) is not set against a whole one. A skipped move leaves a
+     * session above (2) too. None without an earlier session, nothing in common, or a shared load of 0 kg.
+     */
+    static Optional<Integer> changePercent(List<TrainingLog.WorkSet> now, Optional<List<TrainingLog.WorkSet>> before, Parameters parameters) {
+        if (before.isEmpty()) {
+            return Optional.empty();
+        }
+        Map<String, Integer> nowSets = counted(now);
+        Map<String, Integer> beforeSets = counted(before.get());
+        Set<String> shared = new TreeSet<>(nowSets.keySet());
+        shared.retainAll(beforeSets.keySet());
+        int nowShared = shared.stream().mapToInt(nowSets::get).sum();
+        int beforeShared = shared.stream().mapToInt(beforeSets::get).sum();
+        int nowAll = nowSets.values().stream().mapToInt(Integer::intValue).sum();
+        int beforeAll = beforeSets.values().stream().mapToInt(Integer::intValue).sum();
+        double sharedShare = parameters.number(ParameterKey.SUMMARY_COMPARE_MIN_SHARED_SHARE);
+        boolean enoughOfEach = shared.size() >= parameters.wholeNumber(ParameterKey.SHORT_SESSION_MOVES)
+                || atLeast(nowShared, nowAll, sharedShare) && atLeast(beforeShared, beforeAll, sharedShare);
+        if (shared.isEmpty() || !enoughOfEach
+                || !atLeast(Math.min(nowShared, beforeShared), Math.max(nowShared, beforeShared), parameters.number(ParameterKey.SUMMARY_COMPARE_MIN_SET_SHARE))) {
+            return Optional.empty();
+        }
+        return changePercent(lifted(ofMoves(now, shared)), Optional.of(lifted(ofMoves(before.get(), shared))));
+    }
+
+    private static List<TrainingLog.WorkSet> ofMoves(List<TrainingLog.WorkSet> sets, Set<String> moves) {
+        return sets.stream().filter(set -> moves.contains(set.exerciseId())).toList();
+    }
+
+    /** {@code part} is at least {@code share} of {@code whole}, exactly (no float division). */
+    private static boolean atLeast(int part, int whole, double share) {
+        return BigDecimal.valueOf(part).compareTo(BigDecimal.valueOf(whole).multiply(BigDecimal.valueOf(share))) >= 0;
+    }
+
     /** A session's active time (K-998): its length less the time paused, in whole minutes rounded half up. */
     static int activeMinutes(Instant startedAt, Instant endedAt, int pausedSeconds) {
         long active = Math.max(0, java.time.Duration.between(startedAt, endedAt).toSeconds() - pausedSeconds);

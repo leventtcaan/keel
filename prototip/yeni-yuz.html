@@ -1063,7 +1063,7 @@ function week1Call() {
 function foodLine() {
   if (noConsent()) return null;
   const [lo, hi] = S.eaten;
-  if (d1()) { const t = startKcal(); return lo ? ['Food left', `${fmtNum(t - hi)}-${fmtNum(t - lo)} kcal`] : ['Food today', `${fmtNum(t)} kcal`]; }
+  if (d1()) { const t = startKcal(); return lo ? ['Food left', `${fmtNum(t - hi)}-${fmtNum(t - lo)} kcal`] : ['Food left', `${fmtNum(t)} kcal`]; }
   return ['Food left', `${fmtNum(1240 - hi)}-${fmtNum(1480 - lo)} kcal`];
 }
 const w1Label = c => c.kind === 'move' ? `Move ${FULL[c.missed]}` : c.kind === 'add' ? 'Add a day' : 'Keep going';

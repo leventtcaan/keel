@@ -99,6 +99,8 @@ public enum ParameterKey {
     WEEKLY_SETS_MIN(ParameterDomain.TRAINING, Unit.SETS_PER_WEEK),
     REVIEW_MAX_SUGGESTIONS(ParameterDomain.TRAINING, Unit.SUGGESTIONS),
     SHORT_SESSION_MOVES(ParameterDomain.TRAINING, Unit.MOVES),
+    SUMMARY_COMPARE_MIN_SET_SHARE(ParameterDomain.TRAINING, Unit.RATIO),
+    SUMMARY_COMPARE_MIN_SHARED_SHARE(ParameterDomain.TRAINING, Unit.RATIO),
     ADD_DAY_FROM_DAYS(ParameterDomain.TRAINING, Unit.DAYS_PER_WEEK),
     LOAD_INCREMENT_UPPER_KG(ParameterDomain.TRAINING, Unit.KG),
     LOAD_INCREMENT_LOWER_KG(ParameterDomain.TRAINING, Unit.KG),
@@ -127,6 +129,7 @@ public enum ParameterKey {
     DELOAD_LOAD_REDUCTION_MAX(ParameterDomain.TRAINING, Unit.RATIO),
 
     TREND_DISPLAY_DAYS(ParameterDomain.WINDOWS, Unit.DAYS),
+    TREND_MIN_WEIGHINS(ParameterDomain.WINDOWS, Unit.WEIGHINS),
     DECISION_WINDOW_DAYS(ParameterDomain.WINDOWS, Unit.DAYS),
     NO_INTERPRETATION_DAYS(ParameterDomain.WINDOWS, Unit.DAYS),
     EVALUATION_WINDOW_DAYS(ParameterDomain.WINDOWS, Unit.DAYS),

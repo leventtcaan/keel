@@ -264,6 +264,41 @@ class ProgramDayAddsTests {
     }
 
     @Test
+    void canAddIsTrueOnlyForAGeneratedProgramOfTheStartingNumberOfDaysEachOnItsOwnWeekday() {
+        // Program.canAddDay (K-1013): the phone offers the add only where the server will do it, by this one rule.
+        for (int size = 1; size <= 6; size++) {
+            for (Set<DayOfWeek> weekdays : weekdaySets(size)) {
+                assertThat(ProgramDayAdds.canAdd(stored(weekdays), P)).as(size + " days " + weekdays).isEqualTo(size == FROM);
+            }
+        }
+        ProgramStore.Program generated = stored(EnumSet.of(DayOfWeek.MONDAY, DayOfWeek.FRIDAY));
+        assertThat(ProgramDayAdds.canAdd(new ProgramStore.Program(generated.id(), ProgramStore.Source.OWN, generated.days()), P)).as("own program").isFalse();
+
+        List<ProgramStore.Day> unplaced = new ArrayList<>(generated.days());
+        ProgramStore.Day last = unplaced.removeLast();
+        unplaced.add(new ProgramStore.Day(last.id(), last.nameKey(), last.name(), null, last.exercises()));
+        assertThat(ProgramDayAdds.canAdd(new ProgramStore.Program(generated.id(), generated.source(), unplaced), P)).as("a day on no weekday").isFalse();
+
+        ProgramStore.Day first = generated.days().getFirst();
+        List<ProgramStore.Day> twice = List.of(first, new ProgramStore.Day(UUID.randomUUID(), first.nameKey(), first.name(), first.weekday(), first.exercises()));
+        assertThat(ProgramDayAdds.canAdd(new ProgramStore.Program(generated.id(), generated.source(), twice), P)).as("two days on one weekday").isFalse();
+    }
+
+    @Test
+    void anAddIsDoneForAFreeWeekdayExactlyWhenTheProgramCanTakeADay() {
+        // One rule for both: wherever canAdd, every free weekday adds (a taken one is the endpoint's own refusal); wherever not, none does.
+        for (int size = 1; size <= 6; size++) {
+            for (Set<DayOfWeek> weekdays : weekdaySets(size)) {
+                ProgramStore.Program program = stored(weekdays);
+                for (DayOfWeek day : DayOfWeek.values()) {
+                    boolean expected = ProgramDayAdds.canAdd(program, P) && !weekdays.contains(day);
+                    assertThat(add(program, day).isPresent()).as(size + " days " + weekdays + " + " + day).isEqualTo(expected);
+                }
+            }
+        }
+    }
+
+    @Test
     void theNumberOfDaysTheAddStartsFromHasATemplateForOneMoreDay() {
         assertThat(FROM).as("add_day_from_days (Levent, ADR-073 Ek 9)").isEqualTo(2);
         assertThat(templates.forDays(FROM + 1)).as("the template the new day comes from").isPresent();

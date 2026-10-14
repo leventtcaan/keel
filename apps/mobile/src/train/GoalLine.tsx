@@ -23,9 +23,10 @@ export function GoalLine({ planned, move }: { planned: Schemas['PlannedExercise'
   const best = planned.lastBestSet;
   const [kicker, value, last] = ((): [string, string, string | null] => {
     // No target (a first session, or a move swapped in): last time's best set when the server has one, else the range alone;
-    // either way the weight is the person's to pick (ADR-075 #3, Ek 8).
+    // either way the weight is the person's to pick (ADR-075 #3, Ek 8), unless the body is the load: a bodyweight move, and one
+    // with an added load that starts at the body alone (K-1013, the pull-up), have no weight to pick.
     if (planned.nextLoadKg === undefined) {
-      const pick = move.load === 'BODYWEIGHT' ? null : t('workout.goal.pick');
+      const pick = move.load === 'EXTERNAL' ? t('workout.goal.pick') : null;
       return best === undefined
         ? [t('workout.goal.first'), t('workout.goal.reps', { reps: range }), pick]
         : [t('workout.goal.lastTime'), setText(best, move, units), pick];

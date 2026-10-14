@@ -5,6 +5,9 @@
  * Each load is one the gym in use makes (ADR-032, the same rounding as the server's); without a gym on the phone, the
  * parameter's step in the user's unit. Lighter than the work load, no two the same; with the gym known, never below its
  * bar (without one the bar is unknown). A work load with nothing lighter in the gym has no warm-up (soru 43).
+ * The body is no load to climb to (K-1013): a bodyweight move has no warm-up; a move with a weight added to the body (a
+ * +20 kg pull-up) has one easy set with the body alone, once the added load is known; with none added, the work is the
+ * body alone and there is nothing to warm up for.
  */
 import type { components } from '@/api/schema';
 import type { UnitSystem } from '@/units/units';
@@ -31,9 +34,8 @@ function nearest(targetKg: number, move: Schemas['Exercise'], gym: GymWeights | 
 
 export function warmups(workKg: number | null, move: Schemas['Exercise'], first: boolean, gym: GymWeights | null, units: UnitSystem): Warmup[] {
   const ramp = first ? workoutParams.warmup.first : workoutParams.warmup.other;
-  // A bodyweight move warms up with the body alone: one easy set, nothing added (no lighter load to climb from), whether
-  // or not its added load is known yet.
-  if (move.load !== 'EXTERNAL') return [{ loadKg: 0, reps: ramp.reps[0] }];
+  if (move.load === 'BODYWEIGHT') return [];
+  if (move.load === 'BODYWEIGHT_PLUS_EXTERNAL') return workKg !== null && workKg > 0 ? [{ loadKg: 0, reps: ramp.reps[0] }] : [];
   if (workKg === null) return [];
   const found: Warmup[] = [];
   ramp.fractions.forEach((fraction, i) => {

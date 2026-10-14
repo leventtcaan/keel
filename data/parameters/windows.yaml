@@ -4,6 +4,12 @@ parameters:
     unit: days
     tag: literatur
     source: "arastirma/ham/H1-olcum.md#3.4"
+  - key: trend_min_weighins
+    value: 7
+    unit: weighins
+    tag: urun
+    source: "arastirma/ham/H1-olcum.md#3.4"
+    note: "SEÇİM, ürün kararı (Levent, ADR-078 Ek 2, KABUL 2026-10-14, K-1018); sayının araştırmada doğrudan karşılığı yok. Kilo trendi bu kadar tartılı GÜN birikince gösterilir, öncesinde ekran 'Shows after 7 weigh-ins' der (U8). Dayanak: H1 §3.4 7 günlük pencere haftalık ritmi bir tam döngüde kapatır; en az bu kadar nokta yoksa çizgi bir hafta bile göstermez. Sayım trendin günleriyle aynı kuralla yapılır (kullanıcının yerel günü, günün ilk tartısı, içe aktarılanlar dahil; ADR-053) ve bütün zamandır. trend_display_days (trendin pencere uzunluğu) ve min_weighins_per_week (karar pencerelerinin her haftası, ADR-020) ile karıştırılmaz: bu ikisi hesabı, bu eşik yalnız trendin ne zaman gösterileceğini belirler; hiçbir karar kuralına girmez. /v1/weight-trend davranışı değişmez. trendReady yalnız kapıdır, 'grafik penceresinde nokta var' demek değildir: grafik /v1/weight-trend noktalarından çizilir, pencerede nokta yoksa telefon grafiği çizmez (ADR-078 Ek 2, boş grafik yok); profil yoksa özet 200 verir (günler UTC), weight-trend NOT_FOUND. H1 §3.4 'ilk ~2 haftada kilo yorumu yok' kuralıyla çelişmez: trend çizgisi yorum değildir, yorum (karar) ayrı pencerelerle yapılır (U8)."
   - key: decision_window_days
     by_sex: {male: 21, female: 28}
     unit: days

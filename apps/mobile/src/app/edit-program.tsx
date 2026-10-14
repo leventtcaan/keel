@@ -115,6 +115,8 @@ export default function EditProgramScreen() {
       setDraft((before) => next(before ?? base));
       setWarned(null);
       setSavedEdit(null);
+      // "Saved." was about the edit before this one: it must not stand beside "not saved yet".
+      setDone(null);
       // The warning was about the edit as it was; this is another.
       setLeaving(false);
     },
@@ -357,9 +359,13 @@ export default function EditProgramScreen() {
       </View>
     );
   }
+  // The page is long and Back is at its foot: the question is asked at the top, so the page goes up to it, without
+  // motion (Reduce Motion, accessibility.test.ts).
+  const scroller = useRef<ScrollView>(null);
   const announceLeaving = () => {
     setLeaving(true);
     announce(t('editProgram.leaveWarn'));
+    scroller.current?.scrollTo({ y: 0, animated: false });
   };
   const leave =
     leaving && dirty ? (
@@ -369,6 +375,14 @@ export default function EditProgramScreen() {
         <Button label={t('editProgram.keepEditing')} variant="ghost" onPress={() => setLeaving(false)} />
       </View>
     ) : null;
+  // Edits not saved are said at the top, where they are seen: the iOS edge swipe back is off meanwhile (it would drop them
+  // without a question), and a swipe that does nothing, with the reason below the fold, looked broken (K-1013).
+  const unsaved =
+    !dirty || leave !== null ? null : (
+      <View testID="unsaved-note" style={[styles.flag, { backgroundColor: color.accentSoft }]}>
+        <Text style={[styles.small, { color: color.text }]}>{t('editProgram.unsavedNote')}</Text>
+      </View>
+    );
   const undoEdit =
     savedEdit === null ? null : (
       <Button label={t('editProgram.undo')} accessibilityLabel={t('editProgram.undoEditLabel')} variant="ghost" disabled={busy} onPress={() => undoOf(savedEdit)} />
@@ -377,8 +391,10 @@ export default function EditProgramScreen() {
     <SafeAreaView edges={['top', 'bottom']} style={[styles.safe, { backgroundColor: color.background }]}>
       {/* The iOS edge swipe back would drop unsaved edits without the question Back asks. */}
       <Stack.Screen options={{ gestureEnabled: !dirty }} />
-      <ScrollView contentContainerStyle={styles.body}>
+      <ScrollView ref={scroller} contentContainerStyle={styles.body}>
         <ScreenTitle>{title}</ScreenTitle>
+        {leave}
+        {unsaved}
         {body}
         {done !== null && <ProblemText style={[styles.text, { color: color.text }]}>{done}</ProblemText>}
         {undoEdit}
@@ -387,7 +403,6 @@ export default function EditProgramScreen() {
             {problem}
           </ProblemText>
         )}
-        {leave}
         <Button label={t('editProgram.back')} variant="ghost" onPress={() => (dirty ? announceLeaving() : router.back())} />
       </ScrollView>
     </SafeAreaView>
@@ -426,7 +441,7 @@ function Flag({ suggestion, action, busy, onPress }: { suggestion: Schemas['Revi
     <View style={[styles.flag, { backgroundColor: color.accentSoft }]}>
       <Text style={[styles.text, styles.bold, { color: color.text }]}>{title}</Text>
       <Text style={[styles.small, { color: color.text }]}>{suggestionWords(suggestion, 'body')}</Text>
-      <Button label={action} accessibilityLabel={`${action}: ${title}`} variant="ghost" size="sm" disabled={busy} onPress={onPress} />
+      <Button label={action} accessibilityLabel={`${action}: ${title}`} variant="ghost" size="touch" disabled={busy} onPress={onPress} />
     </View>
   );
 }
