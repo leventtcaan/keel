@@ -141,6 +141,14 @@ test("the first session: Baseline set, and what it's for", async () => {
   expect(screen.queryByText(t('workoutEnd.change', { percent: '+6' }))).toBeNull();
 });
 
+test('a session the server could not compare with the last one (K-1014) shows the weight lifted and no percent', async () => {
+  // The server leaves liftedChangePercent out for a half session against a whole one; the phone does not make one up, not even 0.
+  mockEnd = { ...READY, summary: { ...SUMMARY, liftedChangePercent: undefined } };
+  await show();
+  expect(await screen.findByText(t('workoutEnd.week', { done: 2, planned: 3 }))).toBeTruthy();
+  expect(screen.queryByText(/vs last time/)).toBeNull();
+});
+
 test("the muscle map from the server's muscles, in the user's figure; this week as segments", async () => {
   await show();
   expect(await screen.findByText(t('workoutEnd.week', { done: 2, planned: 3 }))).toBeTruthy();

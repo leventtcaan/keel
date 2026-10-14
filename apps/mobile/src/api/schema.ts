@@ -2727,10 +2727,16 @@ export interface components {
             /** @description Load × reps over the working sets, the load as logged (a bodyweight move's added load). */
             liftedKg: number;
             /**
-             * @description liftedKg against the last earlier session of the same program day (programDayId) that has a working set done
-             *     (at least one rep: a session of skipped sets only is none), in
-             *     whole percent (rounded half up; negative when less). Absent without one, or when it lifted 0 kg: a program
-             *     saved anew has new days, a new basis (ADR-075 Ek 2); the review's changes keep the days.
+             * @description The weight lifted against the last earlier session of the same program day (programDayId) that has a working set
+             *     done (at least one rep: a session of skipped sets only is none), in whole percent (rounded half up; negative when
+             *     less), over the moves both sessions did (a move done in one only is left out). Absent without one, when it lifted
+             *     0 kg: a program saved anew has new days, a new basis (ADR-075 Ek 2); the review's changes keep the days. Also
+             *     absent when the two sessions cannot be compared (K-1014, ADR-075 Ek 10): a half session is not set against a whole
+             *     one, and the phone shows no percent then. Comparable when, over the moves both did, the session with fewer working
+             *     sets did at least summary_compare_min_set_share of the other's, and there are at least short_session_moves of
+             *     those moves (the short version of a day) or their sets are at least summary_compare_min_shared_share of each
+             *     session's working sets. 'Short on time' and a skipped move stay comparable; the earlier session is not looked past
+             *     for a comparable one.
              */
             liftedChangePercent?: number;
             /** @description A one-sided move's sets count once per set, as the side that did fewer (the program's sets are per side). */
