@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import app.keel.consent.ConsentTextVersions;
 import app.keel.engine.InitialTarget;
+import app.keel.engine.MacroTargets;
 import app.keel.engine.ParameterKey;
 import app.keel.engine.ParameterSet;
 import app.keel.engine.Profile;
@@ -73,7 +74,10 @@ class StartingTargetApiTests {
                 new Profile(LocalDate.now(ZoneOffset.UTC).getYear() - BIRTH_YEAR, HEIGHT_CM), Optional.empty(), parameters.forSex(Sex.MALE));
         assertThat(map(result)).isEqualTo(Map.of("targetKcal", engine.maintenanceKcal(),
                 "maintenanceKcal", Map.of("low", engine.lowKcal(), "high", engine.highKcal()),
-                "observationDays", parameters.forSex(Sex.MALE).wholeNumber(ParameterKey.MAINTENANCE_OBSERVATION_DAYS)));
+                "observationDays", parameters.forSex(Sex.MALE).wholeNumber(ParameterKey.MAINTENANCE_OBSERVATION_DAYS),
+                "proteinG", MacroTargets.proteinG(BigDecimal.valueOf(KG), Sex.MALE, LocalDate.now(ZoneOffset.UTC).getYear() - BIRTH_YEAR,
+                        parameters.forSex(Sex.MALE)),
+                "stepsPerDay", parameters.forSex(Sex.MALE).wholeNumber(ParameterKey.STEPS_TARGET_START)));
         assertThat(jdbc.sql("select count(*) from decision.plan where account_id = :a").param("a", account.value()).query(Integer.class).single())
                 .as("not a call: no plan is started").isZero();
         assertThat(jdbc.sql("select count(*) from decision.weekly_call where account_id = :a").param("a", account.value()).query(Integer.class)
@@ -122,6 +126,26 @@ class StartingTargetApiTests {
         assertThat(((Map<?, ?>) after.get("left")).get("proteinG")).as("the same protein, before the first call and after").isEqualTo(protein);
         assertThat(protein).isEqualTo(Map.of("low", map(send(account, "GET", "/v1/targets", null)).get("proteinG"), "high",
                 map(send(account, "GET", "/v1/targets", null)).get("proteinG")));
+    }
+
+    @Test
+    void theStartingProteinAndStepsAreTheNumbersTheFirstCallPlansAndTheBudgetShows() throws Exception {
+        // K-1017 (U1, one source): the first day's "Protein / 114 g" and "Steps / 7,000" come from the server; the phone computes none.
+        AccountId account = onboarded("MALE");
+        Map<String, Object> starting = map(send(account, "GET", "/v1/targets/starting", null));
+        String today = LocalDate.now(ZoneOffset.UTC).toString();
+
+        Map<String, Object> before = map(send(account, "GET", "/v1/days/" + today + "/budget", null));
+        assertThat(before).as("before the first call the budget carries the starting protein").containsEntry("targetProteinG", starting.get("proteinG"));
+
+        assertThat(send(account, "POST", "/v1/check-ins/current/answers", Map.of("clientId", UUID.randomUUID(), "weekOf",
+                CheckInWeek.weekOf(LocalDate.now(ZoneOffset.UTC), DayOfWeek.MONDAY).toString(), "answers", List.of()))).hasStatusOk();
+
+        Map<String, Object> targets = map(send(account, "GET", "/v1/targets", null));
+        assertThat(targets).containsEntry("proteinG", starting.get("proteinG")).containsEntry("stepsPerDay", starting.get("stepsPerDay"));
+        Map<String, Object> after = map(send(account, "GET", "/v1/days/" + today + "/budget", null));
+        assertThat(after).as("from the first call on, the plan's: the same grams").containsEntry("targetProteinG", targets.get("proteinG"));
+        assertThat(((Map<?, ?>) after.get("left")).get("proteinG")).isEqualTo(Map.of("low", targets.get("proteinG"), "high", targets.get("proteinG")));
     }
 
     @Test

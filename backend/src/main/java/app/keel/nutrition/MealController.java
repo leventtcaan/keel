@@ -44,7 +44,7 @@ class MealController {
     }
 
     /** Contract DayBudget. */
-    record Budget(LocalDate day, int targetKcal, FoodRanges.Nutrients eaten, DayBudget.Left left) {
+    record Budget(LocalDate day, int targetKcal, int targetProteinG, FoodRanges.Nutrients eaten, DayBudget.Left left) {
     }
 
     /** Contract Suggestion: a food the user eats, in their usual amount, as the database estimates it now (U1, U5). */
@@ -174,7 +174,7 @@ class MealController {
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
         FoodRanges.Nutrients eaten = FoodRanges.total(store.day(account, day).stream().flatMap(meal -> meal.items().stream())
                 .map(FoodEstimator.EstimatedItem::nutrients).toList());
-        return new Budget(day, target.kcal(), eaten, DayBudget.left(target, eaten));
+        return new Budget(day, target.kcal(), target.proteinG(), eaten, DayBudget.left(target, eaten));
     }
 
     private ZoneId zoneOf(AccountId account) {
