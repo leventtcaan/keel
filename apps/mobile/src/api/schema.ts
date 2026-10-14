@@ -845,6 +845,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/cardio-sessions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Take back a cardio session the user typed (K-1019)
+         * @description The undo of a typed "Done" (`source` MANUAL); the id is `Program.cardio.loggedToday.id`. A session read from Apple
+         *     Health is the watch's record and stays: CONFLICT (409), and the app offers no undo for it (`loggedToday.source`
+         *     says which it is). A session that is gone, or is not this account's, is NOT_FOUND (404). The week's `loggedDays` and
+         *     `doneThisWeek` read the log again, so a day the watch also logged stays logged.
+         */
+        delete: operations["deleteCardioSession"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/program/today": {
         parameters: {
             query?: never;
@@ -2239,8 +2264,9 @@ export interface components {
          *     when there is neither: very active work, a gaining phase without training days, no profile yet. Each session is
          *     after the weights on a training day or at a very low pace on an off day, never before the weights (G2 K-35).
          *     `doneThisWeek` is the days of this week (Monday to Sunday, the user's calendar) with a cardio session logged: the
-         *     "1 of 3 this week". Cardio is not in the food budget and not in the weekly consistency, which counts weight
-         *     sessions (ADR-074 #5, #6).
+         *     "1 of 3 this week"; `loggedDays` are those days themselves, so `doneThisWeek` is always their count (K-1019). Two
+         *     sessions on one day, a typed one and the watch's, are that day. Cardio is not in the food budget and not in the
+         *     weekly consistency, which counts weight sessions (ADR-074 #5, #6).
          */
         ProgramCardio: {
             /**
@@ -2256,6 +2282,19 @@ export interface components {
             sessionsPerWeek: number;
             sessions: components["schemas"]["PlannedCardio"][];
             doneThisWeek: number;
+            /**
+             * @description The days of this week with a cardio session logged, oldest first (K-1019); the server always sends it. Not
+             *     `required` only so that a phone built before it still type-checks. When today is among them the app does not
+             *     ask for cardio again ("+ > Cardio"), it shows `loggedToday`.
+             */
+            loggedDays?: string[];
+            /**
+             * @description Today's cardio record (K-1019); absent when today has none. The typed session if there is one, since that is the one
+             *     that can be taken back (DELETE /v1/cardio-sessions/{id}); a session read from Apple Health only when that is all
+             *     there is (`source` APPLE_HEALTH: show it, offer no undo). Of several typed ones the same one every time, so taking
+             *     them back goes one by one.
+             */
+            loggedToday?: components["schemas"]["CardioSession"];
         };
         /**
          * @description GENERATED is the engine's default; USER the user's own, never overwritten by the engine (ADR-074
@@ -4769,6 +4808,27 @@ export interface operations {
         responses: {
             200: components["responses"]["CardioSessionCreated"];
             201: components["responses"]["CardioSessionCreated"];
+            default: components["responses"]["Error"];
+        };
+    };
+    deleteCardioSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Taken back */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             default: components["responses"]["Error"];
         };
     };

@@ -226,6 +226,15 @@ class ContractTests {
         assertThat(map(map(map(contract().get("paths")).get("/v1/program/cardio")).get("put")).get("operationId")).isEqualTo("putProgramCardio");
         // Back to the coach's default (ADR-074 Ek 1).
         assertThat(map(map(map(contract().get("paths")).get("/v1/program/cardio")).get("delete")).get("operationId")).isEqualTo("deleteProgramCardio");
+        // K-1019: this week's logged days (optional for the phones built before it; the server always sends them), today's record is the
+        // logged session itself, and a typed one is taken back (409 for a session read from Apple Health).
+        Map<String, Object> week = properties(map(schemas.get("ProgramCardio")));
+        assertThat(list(map(schemas.get("ProgramCardio")).get("required"))).doesNotContain("loggedDays", "loggedToday");
+        assertThat(map(map(week.get("loggedDays")).get("items")).get("format")).isEqualTo("date");
+        assertThat(map(week.get("loggedToday")).get("$ref")).isEqualTo("#/components/schemas/CardioSession");
+        Map<String, Object> taken = map(map(map(contract().get("paths")).get("/v1/cardio-sessions/{id}")).get("delete"));
+        assertThat(taken.get("operationId")).isEqualTo("deleteCardioSession");
+        assertThat(map(taken.get("responses"))).containsKey("204");
     }
 
     private static List<String> componentNames(Class<?> record) {

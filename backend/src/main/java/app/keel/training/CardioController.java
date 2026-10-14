@@ -12,8 +12,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -63,6 +66,21 @@ class CardioController {
         }
         CardioStore.Stored stored = store.log(account, session.clientId(), session.day(), session.minutes(), session.source(), energy);
         return ResponseEntity.status(stored.created() ? HttpStatus.CREATED : HttpStatus.OK).body(stored.session());
+    }
+
+    /**
+     * A typed session taken back (K-1019): the app's undo of a "Done" typed by mistake. Only a MANUAL session goes; one read
+     * from Apple Health is the watch's record and stays (CONFLICT); one that is not this account's, or is gone, is NOT_FOUND.
+     */
+    @DeleteMapping("/v1/cardio-sessions/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void takeBack(AccountId account, @PathVariable UUID id) {
+        switch (store.remove(account, id)) {
+            case REMOVED -> {
+            }
+            case NOT_TYPED -> throw new ApiException(ErrorCode.CONFLICT);
+            case NOT_FOUND -> throw new ApiException(ErrorCode.NOT_FOUND);
+        }
     }
 
     private static void require(boolean valid) {
