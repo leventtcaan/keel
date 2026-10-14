@@ -1,6 +1,5 @@
 package app.keel.decision;
 
-import app.keel.engine.Action;
 import app.keel.engine.ParameterKey;
 import app.keel.engine.ParameterSet;
 import app.keel.engine.Parameters;
@@ -17,7 +16,7 @@ import java.util.stream.Stream;
 /**
  * What a call changes in the plan, old to new (K-1000, ADR-077 #3 "the targets that change"; contract DecisionChange),
  * read from the call as kept: the plan before and after it, set once it was applied. A call never applied, or one that
- * left every target where it was (advice, a program call), changes none. Declined or undone, each change also says the
+ * left every target where it was (advice, a program call), changes none; a hold of the load says its move (below). Declined or undone, each change also says the
  * value the plan follows now, last week's (K-963): the plan was put back as it was before the call.
  *
  * <p>A target is read as the plan holds it in force: the step target before any was set is the starting one, so the first
@@ -61,6 +60,10 @@ final class CallChanges {
             }
             changes.add(change);
         }
+        // A hold of the load: the move whose target it changed, as kept when the call was applied (K-1009).
+        if (call.heldMove() != null) {
+            changes.add(move(call.heldMove(), call));
+        }
         return List.copyOf(changes);
     }
 
@@ -94,16 +97,6 @@ final class CallChanges {
 
     private static Map<String, Object> target(HeldMove.Target target) {
         return Map.of("target", Map.of("loadKg", target.loadKg(), "reps", target.reps()));
-    }
-
-    /**
-     * Whether the call's change to a move's target is read from the program now: a hold of the load that was applied (also
-     * one since declined or undone), and the latest call. The program keeps today's target only, so an older call's hold
-     * would be read against a target it did not set; a call never applied changed nothing. A lighter week changes the sets
-     * and a week off the days, not a target.
-     */
-    static boolean readsMove(CallStore.Call call, boolean latest) {
-        return latest && call.planBefore() != null && call.planAfter() != null && DecisionJson.action(call.decision()) instanceof Action.StopLoadIncrease;
     }
 
     // A target's value in its field; none in force is the empty value.

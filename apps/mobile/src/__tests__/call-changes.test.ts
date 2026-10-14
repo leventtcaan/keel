@@ -13,7 +13,7 @@ import en from '../../../../data/copy/en.json';
 type Schemas = components['schemas'];
 // The plan's targets carry no load: the units matter only to a move's target (K-1009).
 const rowsOf = (decision: Schemas['Decision'], units: UnitSystem = 'METRIC') => changeRows(decision, units);
-const call =(extra: Partial<Schemas['Decision']> = {}): Schemas['Decision'] => ({
+const call = (extra: Partial<Schemas['Decision']> = {}): Schemas['Decision'] => ({
   id: 'd1',
   madeOn: '2026-12-28',
   action: { type: 'ADJUST_CALORIES', kcalPerDay: -250 } as Schemas['Decision']['action'],

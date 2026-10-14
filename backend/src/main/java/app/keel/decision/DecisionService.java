@@ -42,6 +42,7 @@ import app.keel.shared.ApiException;
 import app.keel.shared.ErrorCode;
 import app.keel.training.TrainingCalls;
 import app.keel.training.TrainingMoveTargets;
+import app.keel.training.HeldMove;
 import app.keel.training.PlannedDays;
 import app.keel.training.TrainingStatusReader;
 import java.math.BigDecimal;
@@ -60,7 +61,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -546,12 +546,15 @@ class DecisionService {
         }
         Action action = DecisionJson.action(call.decision());
         Optional<Integer> maintenance = maintenance(account, week);
+        // A hold of the load keeps the move whose target it changes, read from the program before the hold is in force and kept
+        // with the call as the plan before and after it are (K-1009, ADR-077 Ek 7). Applied again ("Use this call") it is read again.
+        HeldMove held = action instanceof Action.StopLoadIncrease ? moves.heldMove(account).orElse(null) : null;
         CallStore.Plan after = (onTheProgram(account, id, action, week.today(), LocalDate.parse((String) call.decision().get("nextReview")))
                 ? Optional.of(before)
                 : PlanChange.after(before, action, week.today(), week.parameters(), maintenance, miniCutTarget(action, week, before, maintenance)))
                 .orElseThrow(() -> new ApiException(ErrorCode.CONFLICT));
         // Only the request that moved the call from PENDING (or DECLINED) changes the plan; another one at the same moment reads it.
-        if (calls.markApplied(account, id, clock.instant(), before, after)) {
+        if (calls.markApplied(account, id, clock.instant(), before, after, held)) {
             calls.replace(account, after);
         }
         return targetsAfter(account);
@@ -665,18 +668,13 @@ class DecisionService {
 
     /**
      * What the call changed in the plan, old to new (K-1000), the step target read as the plan holds it (the starting one before
-     * any is set). A hold of the load adds the move whose target it changes (K-1009), read from the program through training:
-     * only on the account's latest call ({@code latest}), the program keeping today's target.
+     * any is set), and for a hold of the load the move whose target it changed (K-1009), as kept when the call was applied.
      */
-    List<Map<String, Object>> changes(AccountId account, CallStore.Call call, boolean latest) {
+    List<Map<String, Object>> changes(CallStore.Call call) {
         if (call.snapshot() == null) {
             return List.of();
         }
-        List<Map<String, Object>> changes = CallChanges.of(call, parameters.forSex(call.snapshot().sex()));
-        if (!CallChanges.readsMove(call, latest)) {
-            return changes;
-        }
-        return moves.heldMove(account).map(held -> Stream.concat(changes.stream(), Stream.of(CallChanges.move(held, call))).toList()).orElse(changes);
+        return CallChanges.of(call, parameters.forSex(call.snapshot().sex()));
     }
 
     /** The first week's watch days, on the call that closes it (K-1000, ADR-077 #4): the user's sex's, as the call read it. */
