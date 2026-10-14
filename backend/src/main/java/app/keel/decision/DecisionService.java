@@ -464,7 +464,8 @@ class DecisionService {
         }
         Week week = week(account);
         Starting starting = starting(week).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
-        return StartingTarget.of(starting.plan(), starting.estimate(), week.parameters());
+        PlanTargets targets = startingPlanTargets(account, week, starting).orElseThrow(() -> new ApiException(ErrorCode.CONFLICT));
+        return StartingTarget.of(starting.plan(), starting.estimate(), targets, week.parameters());
     }
 
     /** The first plan as the first call would start it, and the estimate its target comes from (K-989). */
@@ -822,8 +823,16 @@ class DecisionService {
         } catch (ApiException unreadable) {
             return Optional.empty();
         }
-        return starting(week).flatMap(first -> bodyweight(account, week).flatMap(kg -> PlanTargets.of(first.plan(), kg, week.sex(),
-                week.body().ageYears(), planned.perWeek(account, week.profile()), week.parameters())));
+        return starting(week).flatMap(first -> startingPlanTargets(account, week, first));
+    }
+
+    /**
+     * The targets the first plan has at today's bodyweight (K-1017): the budget's and GET /v1/targets/starting's one
+     * computation — the protein and the steps the first call plans are these, not a second formula (U1).
+     */
+    private Optional<PlanTargets> startingPlanTargets(AccountId account, Week week, Starting first) {
+        return bodyweight(account, week).flatMap(kg -> PlanTargets.of(first.plan(), kg, week.sex(), week.body().ageYears(),
+                planned.perWeek(account, week.profile()), week.parameters()));
     }
 
     /**

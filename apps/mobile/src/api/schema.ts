@@ -2046,6 +2046,12 @@ export interface components {
             day: string;
             /** @description The day's target (a plan number, one figure); before the first call, the starting target (K-997). */
             targetKcal: number;
+            /**
+             * @description The day's protein target in grams (a plan number, one figure), chosen like targetKcal: the plan's; before the first
+             *     call, the starting plan's, from the same computation as GET /v1/targets/starting (K-1017). The app shows it, it
+             *     multiplies nothing (U1).
+             */
+            targetProteinG: number;
             eaten: components["schemas"]["Nutrients"];
             left: components["schemas"]["Left"];
         };
@@ -3446,11 +3452,17 @@ export interface components {
          * @description Where the plan's calories start (K-114, ADR-072 #6): the target is one number (U5: a target may be), the maintenance
          *     estimate it comes from is a range (U5), and the scale corrects it over observationDays (the engine's
          *     maintenance_observation_days for the user's sex) before the first calorie call.
+         *     The first plan's protein and daily steps are here too (K-1017): the first day's "Protein / 114 g" and "Steps / 7,000", the
+         *     numbers the first call plans and GET /v1/targets then answers (one source, U1).
          */
         StartingTarget: {
             targetKcal: number;
             maintenanceKcal: components["schemas"]["KcalRange"];
             observationDays: number;
+            /** @description The protein target in grams at today's bodyweight (a plan number, one figure; steps_target_start's sibling for the day). */
+            proteinG: number;
+            /** @description The daily step target the plan starts with (steps_target_start in data/parameters/nutrition.yaml). */
+            stepsPerDay: number;
         };
         CoachQuestion: {
             text: string;

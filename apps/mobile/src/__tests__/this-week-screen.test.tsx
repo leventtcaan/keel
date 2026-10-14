@@ -391,6 +391,7 @@ describe('a week paused (K-518): the state is the hero', () => {
 const BUDGET = (low: number, high: number): Schemas['DayBudget'] => ({
   day: '2026-12-25',
   targetKcal: 2300,
+  targetProteinG: 140,
   eaten: { kcal: { low: 0, high: 0 }, proteinG: { low: 0, high: 0 }, carbsG: { low: 0, high: 0 }, fatG: { low: 0, high: 0 } },
   left: { kcal: { low, high }, proteinG: { low: 60, high: 80 } },
 });
@@ -727,6 +728,7 @@ describe('the food line', () => {
     const FIRST_WEEK_BUDGET = (left: { low: number; high: number }, eaten: { low: number; high: number } = { low: 0, high: 0 }): Schemas['DayBudget'] => ({
       day: '2026-10-12',
       targetKcal: 2100,
+      targetProteinG: 114,
       eaten: { kcal: eaten, proteinG: { low: 0, high: 0 }, carbsG: { low: 0, high: 0 }, fatG: { low: 0, high: 0 } },
       left: { kcal: left, proteinG: { low: 150, high: 150 } },
     });

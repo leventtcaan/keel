@@ -46,7 +46,7 @@ const CATALOG: Schemas['Exercise'][] = ['bench_press', 'lat_pulldown', 'squat', 
 const LANDMINE: Schemas['CustomExercise'] = {
   id: 'custom:8a1d', name: 'Landmine Press', kind: 'COMPOUND', load: 'EXTERNAL', equipment: 'BARBELL', unilateral: false,
 } as Schemas['CustomExercise'];
-const STARTING: Schemas['StartingTarget'] = { targetKcal: 2450, maintenanceKcal: { low: 2600, high: 3000 }, observationDays: 14 };
+const STARTING: Schemas['StartingTarget'] = { targetKcal: 2450, maintenanceKcal: { low: 2600, high: 3000 }, observationDays: 14, proteinG: 114, stepsPerDay: 7000 };
 /** The first call's day, the server's (K-990): not the Monday after "today" (the 19th), so a day the phone worked out would show. */
 const FIRST_CALL = '2026-10-26';
 const FIRST_WEEKS: Schemas['FirstWeeks'] = { week: 1, risk: [], readsRisk: false, training: true, firstCallOn: FIRST_CALL };

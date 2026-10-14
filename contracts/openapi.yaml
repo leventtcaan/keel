@@ -2676,7 +2676,7 @@ components:
             type: string
     DayBudget:
       type: object
-      required: [day, targetKcal, eaten, left]
+      required: [day, targetKcal, targetProteinG, eaten, left]
       properties:
         day:
           type: string
@@ -2684,6 +2684,13 @@ components:
         targetKcal:
           type: integer
           description: The day's target (a plan number, one figure); before the first call, the starting target (K-997).
+        targetProteinG:
+          type: integer
+          minimum: 0
+          description: |
+            The day's protein target in grams (a plan number, one figure), chosen like targetKcal: the plan's; before the first
+            call, the starting plan's, from the same computation as GET /v1/targets/starting (K-1017). The app shows it, it
+            multiplies nothing (U1).
         eaten:
           $ref: "#/components/schemas/Nutrients"
         left:
@@ -4866,7 +4873,9 @@ components:
         Where the plan's calories start (K-114, ADR-072 #6): the target is one number (U5: a target may be), the maintenance
         estimate it comes from is a range (U5), and the scale corrects it over observationDays (the engine's
         maintenance_observation_days for the user's sex) before the first calorie call.
-      required: [targetKcal, maintenanceKcal, observationDays]
+        The first plan's protein and daily steps are here too (K-1017): the first day's "Protein / 114 g" and "Steps / 7,000", the
+        numbers the first call plans and GET /v1/targets then answers (one source, U1).
+      required: [targetKcal, maintenanceKcal, observationDays, proteinG, stepsPerDay]
       properties:
         targetKcal:
           type: integer
@@ -4876,6 +4885,14 @@ components:
         observationDays:
           type: integer
           minimum: 1
+        proteinG:
+          type: integer
+          minimum: 0
+          description: The protein target in grams at today's bodyweight (a plan number, one figure; steps_target_start's sibling for the day).
+        stepsPerDay:
+          type: integer
+          minimum: 1
+          description: The daily step target the plan starts with (steps_target_start in data/parameters/nutrition.yaml).
 
     # ── coach ────────────────────────────────────────────────────────────────────────────────────────────────
     CoachQuestion:
