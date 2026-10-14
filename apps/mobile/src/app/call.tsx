@@ -183,7 +183,7 @@ export default function CallScreen() {
             {foot}
           </DecisionBlock>
         </Animated.View>
-        <ChangeRows rows={week1?.rows ?? changeRows(decision)} />
+        <ChangeRows rows={week1?.rows ?? changeRows(decision, units)} />
         <View>
           {reasons}
           {observation}
