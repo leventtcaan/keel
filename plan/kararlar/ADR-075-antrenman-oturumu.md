@@ -266,3 +266,25 @@ birinci taraf paketi, SDK sürümüyle uyumlu, başka iş yapmaz.
   değişirdi).
 - **Later today / Skip today hiçbir şey göndermez** ve telafi doğurmaz (U7): "Later today" kullanıcının sonra "+ › Cardio"dan (K-980) girmesidir,
   "Skip today" sadece geçer. Seçim ekranda kalır, yeniden açılışta tutulmaz (kaydı olmayan bir niyet).
+
+## Ek 10 · "Son seansa göre %" yalnız karşılaştırılabilir seanslar arasında (K-1014, #544, 2026-10-14, agent kararı, ürün eşiği; düzenleyici onayına bildirildi)
+10 Eki yürüyüşünde 2 setlik yarım seans özette "-81% vs last time" gösterdi: `liftedChangePercent` (Ek 2) aynı program gününün önceki seansıyla
+koşulsuz kıyaslıyordu. Yarım seans ile tam seans aynı şey değildir; sayı yanıltıcıydı (U7 tonu sınırda).
+- **Karşılaştırılabilirlik (iki eşik, `data/parameters/training.yaml`, ürün kararı, kaynak yok, U14):** yüzde, iki seansta da yapılan hareketler
+  üzerinden hesaplanır (yalnız bir tarafta olan hareket kazanç ya da kayıp sayılmaz) ve şu iki koşul birlikte sağlanırsa söylenir: (1)
+  `summary_compare_min_set_share` = 0.6: ortak hareketlerde çalışma seti sayısı az olanın çok olana oranı en az bu (3 setlik hareketin 2 setle
+  yapılması 0.67 karşılaştırılır, 4 setin 2'si 0.5 karşılaştırılmaz); (2) `summary_compare_min_shared_share` = 0.5: ortak hareketlerin setleri
+  **her iki** seansın çalışma setlerinin en az bu kadarı (2 setlik yarım seans 15 setlik günün beşte biridir, karşılaştırılmaz; bugünün 18 setlik
+  seansı geçen seferin 3 setlik parçasıyla da karşılaştırılmaz).
+- **Short on time ve atlanan hareket:** seans kaydına "kısa sürüm" bayrağı yazılmaz (bayrak haftanın, program gününün tarihli değişikliğidir,
+  Today; seans onu hesaplayamaz, program da sonradan değişmiş olabilir), ve gerekmez: etkisi kayıtta görünür. Kısa sürüm ilk hareketleri tam setle
+  yapar, atlanan hareket eksik kalır: ikisi de (2)'nin üstünde kalır ve yüzde ortak hareketlerde hesaplanır (karşılaştırılamaz saymak yerine). İki
+  yoldan **dürüst olan seçildi:** ortak hareket üzerinden hesap, eklenen/atlanan hareketin toplam kiloyu oynatmasını (örn. +127%) engeller ve sayıyı
+  hâlâ söyler; "farklı hareket kümesi = karşılaştırılamaz" çok sayı atardı (her swap bir yüzdeyi götürürdü).
+- **Karşılaştırılamazsa alan yoktur** (`liftedChangePercent` yanıtta yok; sözleşmede zaten isteğe bağlı, şema değişmedi, açıklama güncellendi);
+  telefon `undefined`da yüzdeyi göstermez (`workout-end.tsx`, mevcut). Bir önceki seans karşılaştırılamazsa daha eskisine **bakılmaz**: "vs last time"
+  son seanstır, ve `moves` (K-1008) ile aynı seansa dayanır.
+- **Etki:** özetin `liftedKg`ı toplam kalır (seansın yaptığı); yüzde ortak hareketlerin kilosundandır, bu yüzden bugünün yeni hareketi toplamı
+  artırsa da yüzdeyi artırmaz. Mevcut iki API testinin beklentisi (+16 → 0, +127 → 13) bu yüzden değişti (K-1014 kararından doğan düzeltme).
+- **Reddedilen:** yüzdeyi toplam kiloda tutup yalnız kapı koymak (swap/eklenen hareket yüzdeyi şişirir); planlanan sete oranı (seansa planlı set sayısı
+  yazılmaz, program sonradan değişir, kısa sürüm bayrağı yok); eşiği telefonda uygulamak (telefon kural işletmez, ADR-075 #3).
