@@ -906,6 +906,8 @@ Simülatör düzeneği (repoya girmez): `../keel-sim` worktree + scratchpad `sim
 
 
 -----
+**Levent (14 Eki, boşluk taraması):** İlerleme bölüm bölüm açılır · Life: rıza yalnız Sick/In pain · Cardio kutusu kardiyo kaydına · dönüş metni dürüst ('Nothing lost' yok) → ADR-078 Ek 2, ADR-077 Ek 6.
+**K1 listesi (part sonunda toplu):** #548 iki API beklentisi (+16→0, +127→13) · #549 Food today→Food left (3 beklenti), bodyweight ısınma yok · #550 callFace PENDING foot, Keep/Got it testleri, yer tutuculu metinler.
 **Part 4 başı (14 Eki):** senkron — ana checkout ayrık HEAD = `origin/main` `26df54a0`, temiz (yalnız `.claude/launch.json`); açık PR yalnız Dependabot
 (#546 shell-quote güvenlik düzeltmesi, kilit dosyası, CI yeşil → auto-merge; #547 actions/setup-node 7.0 → 7.1 ara sürüm, yama değil → beklemede, ADR-019 #6);
 Part 3 ÇIKIŞ git ile tutarlı; disk 7 GB; Dependabot 4 açık uyarı (shell-quote #546 ile kapanır; braces, node-forge, decode-uri-component aynı).
@@ -915,10 +917,10 @@ K-1014 · K-1013 iki PR'a bölündü (A karar/Bu hafta, B oturum/Edit).
 
 | Görev | Durum | PR | Not |
 |---|---|---|---|
-| K-1013 A karar/Bu hafta | 🛠 | | |
-| K-1013 B oturum/Edit | 🛠 | | |
-| K-1014 karşılaştırılabilir seans | 🛠 | | |
-| K-1009 hareket hedefi satırı | ⏳ | | K-978'i kapatır |
+| K-1013 A karar/Bu hafta | 🔍 son düzeltme | #550 · #557 | `Program.canAddDay` (#557, tek kural `ProgramDayAdds.canAdd`); DECLINED'da 'Use this call' ikincil (U2); biten gün program günü kimliğiyle |
+| K-1013 B oturum/Edit | ✅ | #549 | ısınma: BODYWEIGHT yok, +ek yük biliniyorsa var; 'Food left' tek ad; Add a move yazmadan katalog |
+| K-1014 karşılaştırılabilir seans | ✅ | #548 | ADR-075 Ek 10: ortak hareketler; set payı ≥0.6 VE (ortak hareket ≥ short_session_moves YA DA ortak set payı ≥0.5) |
+| K-1009 hareket hedefi satırı | 🔍 | #559 | ADR-077 Ek 7; `what: MOVE`; okuma anında türetiliyor (incelemede) |
 | K-999 başka cihazda açık seans | ⏳ | | |
 | K-979 İlerleme | ⏳ | | boşluk taraması |
 | K-980 Kayıt ekranları | ⏳ | | boşluk taraması |
@@ -927,6 +929,12 @@ K-1014 · K-1013 iki PR'a bölündü (A karar/Bu hafta, B oturum/Edit).
 | K-975 Paylaşım A | ⏳ | | |
 | K-976 Paylaşım B | ⏳ | | App ID yok → sistem sayfası |
 | K-977 Paylaşım C | ↪ M11 | | Levent 14 Eki |
+| K-1016 tutarlılık hafta hafta | ⏳ | | boşluk taraması → K-979 |
+| K-1017 ilk gün protein + adım | 🛠 | | → K-979 |
+| K-1018 kilo özeti | ✅ | #558 | `GET /v1/weigh-ins/summary`; `trend_min_weighins` 7; trendReady yalnız kapı |
+| K-1019 kardiyo kayıtlı günler | 🛠 | | → K-980 |
+| K-1020 dönüş özeti | ⏳ | | K-1021 sonrası; göç |
+| K-1021 durum bildirimi | 🛠 | | rıza yalnız Sick/In pain (Levent) |
 | K-910 Kalın Metin | ⏳ | | |
 | K-984 TestFlight + cihaz turu | ⏳ | | K-983 (Levent) bekler |
 
