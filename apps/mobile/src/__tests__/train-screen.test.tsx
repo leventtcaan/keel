@@ -366,11 +366,36 @@ describe("this week's list marks the sessions that are done (user test 10 Oct)",
     expect(screen.queryByLabelText(t('train.startDay', { day: 'Full body A' }))).toBeNull();
   });
 
-  test('a copy kept offline: the server\'s old DONE is not believed (as every session state of a copy), the phone\'s records still are', async () => {
-    mockData = { ...withProgram({ days, week: [{ ...MONDAY, workout: { id: 'w1', state: 'DONE' } }, PROGRAM.week![0], THURSDAY] }), kept: true };
+  test("the session is matched by its program day, not by its date: Monday's session done on Tuesday still ticks Monday's row (the contract's SessionWorkout is the day's latest of the week)", async () => {
+    mockRecords = [
+      record(1, 'workout', 'wo', null, { clientId: 'wo', startedAt: new Date(2026, 8, 29, 8, 0).toISOString(), programDayId: 'c' }),
+      record(2, 'finish', 'f1', 'wo', { endedAt: new Date(2026, 8, 29, 9, 0).toISOString(), uncleanExerciseIds: [] }),
+    ];
+    mockData = withProgram({ days, week: [MONDAY, THURSDAY] });
+    await show();
+    expect(await screen.findAllByLabelText(t('train.doneTag'))).toHaveLength(1);
+    expect(screen.queryByLabelText(t('train.startDay', { day: 'Full body A' }))).toBeNull();
+    expect(screen.getByLabelText(t('train.startDay', { day: 'Lower A' }))).toBeTruthy(); // Thursday's was not done
+  });
+
+  test("a workout of the same program day from an earlier week is not this week's: the row stays open", async () => {
+    mockRecords = [
+      record(1, 'workout', 'wo', null, { clientId: 'wo', startedAt: new Date(2026, 8, 21, 18, 0).toISOString(), programDayId: 'c' }),
+      record(2, 'finish', 'f1', 'wo', { endedAt: new Date(2026, 8, 21, 19, 0).toISOString(), uncleanExerciseIds: [] }),
+    ];
+    mockData = withProgram({ days, week: [MONDAY, THURSDAY] });
     await show();
     await screen.findByText(t('train.thisWeek'));
     expect(screen.queryByLabelText(t('train.doneTag'))).toBeNull();
+    expect(screen.getByLabelText(t('train.startDay', { day: 'Full body A' }))).toBeTruthy();
+  });
+
+  test("a copy kept offline: a session the server said DONE stays done (a finished session does not come undone), tick and no Start agree", async () => {
+    mockData = { ...withProgram({ days, week: [{ ...MONDAY, workout: { id: 'w1', state: 'DONE' } }, THURSDAY] }), kept: true };
+    await show();
+    expect(await screen.findAllByLabelText(t('train.doneTag'))).toHaveLength(1);
+    expect(screen.queryByLabelText(t('train.startDay', { day: 'Full body A' }))).toBeNull();
+    expect(screen.getByLabelText(t('train.startDay', { day: 'Lower A' }))).toBeTruthy();
   });
 
   test('nothing done, nothing marked: an empty past day says nothing (U7)', async () => {

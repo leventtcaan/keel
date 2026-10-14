@@ -127,15 +127,20 @@ describe("this week's call", () => {
     expect(screen.getByText(t('callScreen.inPlan'))).toBeOnTheScreen();
   });
 
-  test('a call not in the plan (pending, or kept off it): "Use this call" is the one primary action, "Got it" only leaves (user test 10 Oct)', async () => {
+  test('a call not applied yet (pending): "Use this call" is the one primary action, "Got it" only leaves (user test 10 Oct)', async () => {
     const p = palettes.light;
-    for (const state of ['PENDING', 'DECLINED'] as const) {
-      mockAnswers['/v1/decisions/current'] = ok(decision({ application: { state }, declinable: false }));
-      await show();
-      expect(screen.getByRole('button', { name: t('callScreen.use') })).toHaveStyle({ backgroundColor: p.accent });
-      expect(screen.getByRole('button', { name: t('callScreen.gotIt') })).not.toHaveStyle({ backgroundColor: p.accent });
-      await screen.unmount();
-    }
+    mockAnswers['/v1/decisions/current'] = ok(decision({ application: { state: 'PENDING' }, declinable: false }));
+    await show();
+    expect(screen.getByRole('button', { name: t('callScreen.use') })).toHaveStyle({ backgroundColor: p.accent });
+    expect(screen.getByRole('button', { name: t('callScreen.gotIt') })).not.toHaveStyle({ backgroundColor: p.accent });
+  });
+
+  test('a call the user kept off the plan (declined) is not pressed on them (U2): "Use this call" stays the second way, "Got it" the primary', async () => {
+    const p = palettes.light;
+    mockAnswers['/v1/decisions/current'] = ok(decision({ application: { state: 'DECLINED' }, declinable: false }));
+    await show();
+    expect(screen.getByRole('button', { name: t('callScreen.use') })).not.toHaveStyle({ backgroundColor: p.accent });
+    expect(screen.getByRole('button', { name: t('callScreen.gotIt') })).toHaveStyle({ backgroundColor: p.accent });
   });
 
   test('a call in the plan keeps "Got it" as its primary action', async () => {

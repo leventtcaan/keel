@@ -9,6 +9,7 @@ import { has, t } from '@/copy';
 import type { LocalRecord } from '@/sync/store';
 
 import { localDay } from '@/today/today';
+import { addDays } from '@/today/week';
 
 import { type ActiveWorkout, activeWorkout } from './workout';
 
@@ -186,13 +187,16 @@ export function moveShifts(
 }
 
 /**
- * Whether a session of the week is done: a workout of its program day finished on its date on this phone (the finish may
- * still wait to be sent), or the server's DONE (`WeekSession.workout`; not believed from a copy kept offline, as every
- * session state of one). The same words as the week strip's tick, from the Train tab's own sources (sessionState).
+ * Whether a session of the week is done: a workout of its program day finished on this phone this week (its finish may
+ * still wait to be sent; the day it was done on does not matter: SessionWorkout is the program day's latest workout of the
+ * week, so a session done a day late or early still counts), or the server's DONE (`WeekSession.workout`). A finished
+ * session does not come undone, so the server's DONE is believed from a copy kept offline too (unlike OPEN, which is not).
+ * The week is the server's (`Program.weekOf`); without it the session's own date. The one rule for a row's tick and its Start.
  */
-export function sessionDone(row: Found, records: LocalRecord[], stale: boolean): boolean {
-  if (finishedOnPhone(records, row.session.date, row.day.id) !== null) return true;
-  return !stale && row.session.workout?.state === 'DONE';
+export function sessionDone(program: Schemas['Program'], row: Found, records: LocalRecord[]): boolean {
+  if (row.session.workout?.state === 'DONE') return true;
+  const week = program.weekOf === undefined ? [row.session.date] : Array.from({ length: 7 }, (_, i) => addDays(program.weekOf as string, i));
+  return finishedOnPhone(records, week, row.day.id) !== null;
 }
 
 /** The week's sessions but today's (the server's today), in date order, each on the weekday of its date. */

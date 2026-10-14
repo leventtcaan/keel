@@ -175,7 +175,7 @@ export default function TrainScreen() {
         moves={moves}
         units={units}
         underWay={active !== null}
-        canPick={pick && rows.some((row) => startable(row, data?.records ?? [], session.stale))}
+        canPick={pick && rows.some((row) => startable(program, row, data?.records ?? []))}
         checkInDay={data?.checkInDay ?? null}
         onStart={start}
         onChange={changing ? null : (id, change) => void changeToday_(id, change)}
@@ -192,11 +192,11 @@ export default function TrainScreen() {
           {t('train.thisWeek')}
         </Text>
         {rows.map((row) => {
-          const done = sessionDone(row, data?.records ?? [], session.stale);
+          const done = sessionDone(program, row, data?.records ?? []);
           const tag = row.session.skipped === true ? t('train.skippedTag') : row.session.moved === true ? t('train.moved') : null;
           const label = t('train.startDay', { day: dayName(row.day) });
           const startRow =
-            pick && startable(row, data?.records ?? [], session.stale) ? (
+            pick && startable(program, row, data?.records ?? []) ? (
               <Button label={t('train.startThis')} accessibilityLabel={label} variant="ghost" onPress={() => start(row.day.id)} />
             ) : null;
           // A session done carries its tick, as the week strip's day does (the same words: it is done).
@@ -235,8 +235,8 @@ function undone(before: Schemas['Program'], after: Schemas['Program'], programDa
   return now.date !== was.date || now.moved !== true;
 }
 
-/** A session of the week that can be started from its row: not skipped, not done already (this phone's records, the server's word). */
-const startable = (row: WeekRow, records: LocalRecord[], stale: boolean) => row.session.skipped !== true && row.session.workout?.state !== 'DONE' && !sessionDone(row, records, stale);
+/** A session of the week that can be started from its row: not skipped, not done already (the one rule of its tick, sessionDone). */
+const startable = (program: Schemas['Program'], row: WeekRow, records: LocalRecord[]) => row.session.skipped !== true && !sessionDone(program, row, records);
 
 const SAID = { conflict: 'todayChange.conflict', offline: 'todayChange.offline', failed: 'todayChange.failed' } as const;
 

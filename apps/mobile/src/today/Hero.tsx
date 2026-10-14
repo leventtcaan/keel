@@ -112,10 +112,13 @@ export function Hero({ hero, today, onChanged }: Props) {
         </View>
       );
       const [next, inDays] = when('thisWeek.hero.nextCall', decision.nextReview, today);
-      const use = <Button label={t('thisWeek.hero.useCall')} size="sm" disabled={busy} onPress={() => void takeCall(decision)} />;
+      // Only a call not applied yet is pressed for (primary); one the user kept off the plan is offered back quietly (U2).
+      const use = <Button label={t('thisWeek.hero.useCall')} size="sm" variant={pending ? 'primary' : 'ghost'} disabled={busy} onPress={() => void takeCall(decision)} />;
       // A call not in the plan (kept off it, or not applied yet): the foot has the one thing to do, using it; the block
       // opens the call. A call in the plan: when the next one is.
       const off = declined || pending;
+      // The line under the label, which a screen reader reads with it (the block is one control).
+      const said = declined ? t('thisWeek.hero.notApplied') : t(`${decision.copyKey}.title`);
       const problem = failed?.read === decision ? <ProblemText style={[styles.meta, { color: color.decisionMuted }]}>{t(failed.key)}</ProblemText> : null;
       return (
         <DecisionBlock
@@ -124,7 +127,8 @@ export function Hero({ hero, today, onChanged }: Props) {
           title={t(labelKey(decision.copyKey))}
           // navigate, not push: a second tap before the screen is up goes to the same one, it stacks no second call.
           onPress={() => router.navigate('/call')}
-          pressLabel={t('thisWeek.hero.openCall')}
+          pressLabel={`${t(labelKey(decision.copyKey))}. ${said}`}
+          pressHint={t('thisWeek.hero.openCall')}
           footer={
             off ? (
               <>
@@ -133,7 +137,7 @@ export function Hero({ hero, today, onChanged }: Props) {
               </>
             ) : undefined
           }>
-          {line(declined ? t('thisWeek.hero.notApplied') : t(`${decision.copyKey}.title`))}
+          {line(said)}
           {off ? null : foot(next, count(inDays))}
         </DecisionBlock>
       );

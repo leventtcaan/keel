@@ -178,12 +178,18 @@ describe('"Change it" (prototype #w1change)', () => {
     expect(screen.getByRole('button', { name: w('soundsRight') })).toBeOnTheScreen();
   });
 
-  test('the way out is the back link: nothing saved, "Keep last week\'s plan" is nowhere on the first week\'s call', async () => {
+  test('the way out of the call is its back link: nothing is saved; "Keep last week\'s plan" is nowhere on the first week\'s call', async () => {
     await show();
     expect(screen.queryByRole('button', { name: t('callScreen.keep') })).toBeNull();
+    await press(t('callScreen.back'));
+    expect(mockBack).toHaveBeenCalledTimes(1);
+    expect(mockPATCH).not.toHaveBeenCalled();
+    // "Change it" and back to the suggestion: still no way to keep the old plan, and still nothing saved.
     await press(w('changeIt'));
     expect(screen.queryByRole('button', { name: t('callScreen.keep') })).toBeNull();
+    await press(w('keepSuggestion'));
     expect(mockPATCH).not.toHaveBeenCalled();
+    expect(mockBack).toHaveBeenCalledTimes(1);
   });
 
   test('two missed days: each its own day, and no day twice', async () => {
@@ -348,9 +354,10 @@ describe('edge cases', () => {
 const twoDays = (): Schemas['Program'] => {
   const two = program();
   two.days = two.days.slice(0, 2);
+  two.canAddDay = true; // the server's word (Program.canAddDay): a generated program of two days
   return two;
 };
-const threeDays = (): Schemas['Program'] => ({ ...twoDays(), days: [...twoDays().days, { id: 'c', nameKey: 'full_body_c', weekday: 'SATURDAY', exercises: [exercise('c1')] }] });
+const threeDays = (): Schemas['Program'] => ({ ...twoDays(), canAddDay: false, days: [...twoDays().days, { id: 'c', nameKey: 'full_body_c', weekday: 'SATURDAY', exercises: [exercise('c1')] }] });
 
 describe('one more day (K-1012): the suggestion comes filled, like the move', () => {
   beforeEach(() => {
@@ -440,6 +447,26 @@ describe('one more day (K-1012): the suggestion comes filled, like the move', ()
     expect(mockPush).toHaveBeenCalledWith({ pathname: '/edit-program', params: { part: 'days', adding: 'SATURDAY' } });
   });
 
+  test("the server says it cannot add (canAddDay false: the user's own program of two days): no \"New day\", the reason, Edit; the phone counts no days", async () => {
+    mockAnswers['/v1/program'] = ok({ ...twoDays(), source: 'OWN', canAddDay: false });
+    await show();
+    expect(screen.queryByText(w('newDay'))).toBeNull();
+    expect(screen.getByText(w('addInEdit').replace('{day}', 'Saturday'))).toBeOnTheScreen();
+    await press(w('openEdit'));
+    expect(mockPOST).not.toHaveBeenCalled();
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/edit-program', params: { part: 'days', adding: 'SATURDAY' } });
+  });
+
+  test('canAddDay not sent (an older server): not known, so the day is added in Edit, never a request that may be refused', async () => {
+    const { canAddDay: _unknown, ...older } = twoDays();
+    mockAnswers['/v1/program'] = ok(older);
+    await show();
+    expect(screen.queryByText(w('newDay'))).toBeNull();
+    await press(w('openEdit'));
+    expect(mockPOST).not.toHaveBeenCalled();
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/edit-program', params: { part: 'days', adding: 'SATURDAY' } });
+  });
+
   test('not two days, a day picked in "Change it": Edit opens with that day marked', async () => {
     mockAnswers['/v1/program'] = ok(threeDays());
     await show();
@@ -447,7 +474,9 @@ describe('one more day (K-1012): the suggestion comes filled, like the move', ()
     await press(t('programEditor.weekdayName.SUNDAY'));
     await press(w('done'));
     expect(screen.getByText(w('addInEdit').replace('{day}', 'Sunday'))).toBeOnTheScreen();
-    await press(w('done'));
+    // The button still says where it goes ("Open Edit"), a pick or not: "Done" would promise a save.
+    expect(screen.queryByRole('button', { name: w('done') })).toBeNull();
+    await press(w('openEdit'));
     expect(mockPOST).not.toHaveBeenCalled();
     expect(mockPush).toHaveBeenCalledWith({ pathname: '/edit-program', params: { part: 'days', adding: 'SUNDAY' } });
   });

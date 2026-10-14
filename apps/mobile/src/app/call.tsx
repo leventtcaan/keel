@@ -199,8 +199,9 @@ export default function CallScreen() {
       </>
     );
     const second = face.second;
-    // One primary action (K-1013): "Use this call" while the call is not in the plan, "Got it" while it is.
-    const using = second === 'use';
+    // One primary action (K-1013): "Use this call" while the call is not applied yet (pending), "Got it" otherwise. A call the
+    // user kept off the plan is offered back quietly: no pressure on a choice they made (U2).
+    const using = second === 'use' && decision.application.state === 'PENDING';
     const secondWay =
       second === null ? null : (
         <Button

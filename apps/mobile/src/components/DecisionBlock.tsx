@@ -15,15 +15,17 @@ type Props = {
   children?: ReactNode;
   /** The block opens something: the eyebrow, title and children are one control (This week's hero, K-1013). */
   onPress?: () => void;
-  /** What a screen reader says of the control `onPress` makes, in place of reading the block's words. */
+  /** What a screen reader reads of the control `onPress` makes: the block's own words (its title and line), not only what a tap does. */
   pressLabel?: string;
+  /** What the tap does, said after the label ("Open the call"). */
+  pressHint?: string;
   /** Under the control, outside it: buttons of their own, which a control around them would hide from a screen reader. */
   footer?: ReactNode;
   testID?: string;
 };
 
 /** The weekly call: black block on white, and inverted in dark mode (ADR-016). */
-export function DecisionBlock({ eyebrow, aside, title, children, onPress, pressLabel, footer, testID }: Props) {
+export function DecisionBlock({ eyebrow, aside, title, children, onPress, pressLabel, pressHint, footer, testID }: Props) {
   const { color } = useTheme();
   const body = (
     <>
@@ -46,7 +48,7 @@ export function DecisionBlock({ eyebrow, aside, title, children, onPress, pressL
     onPress === undefined ? (
       body
     ) : (
-      <Pressable accessibilityRole="button" accessibilityLabel={pressLabel} onPress={onPress} style={({ pressed }) => [styles.press, pressed && styles.dim]}>
+      <Pressable accessibilityRole="button" accessibilityLabel={pressLabel} accessibilityHint={pressHint} onPress={onPress} style={({ pressed }) => [styles.press, pressed && styles.dim]}>
         {body}
       </Pressable>
     );

@@ -9,6 +9,7 @@ import TodayScreen from '@/app/(tabs)/index';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { ThemeProvider } from '@/theme/theme';
+import { palettes } from '@/theme/tokens';
 import { workoutParams } from '@/train/params';
 
 type Schemas = components['schemas'];
@@ -191,6 +192,9 @@ const press = async (name: string) => {
   await act(async () => {});
 };
 const day = (date: string) => screen.getByTestId(`day-${date}`).props.accessibilityLabel as string;
+// The hero as a screen reader meets it: the call's label and its line are what it reads, "Open the call" is its hint (user test 10 Oct review).
+const heroSpoken = `${t('decision.stop_load_increase.label')}. ${t('decision.stop_load_increase.plateau.title')}`;
+const hero = () => screen.getByRole('button', { name: heroSpoken });
 
 describe('an ordinary week', () => {
   test("the strip: the server's week, Monday to Sunday; trained ✓, logged, planned; an empty day says nothing", async () => {
@@ -208,7 +212,7 @@ describe('an ordinary week', () => {
 
   test("the hero: the call's label and one line, the next call's day and the days to it, from the server's date", async () => {
     await show();
-    expect(screen.getByRole('button', { name: t('thisWeek.hero.openCall') })).toBeOnTheScreen(); // the label is the block's head, no eyebrow (word budget)
+    expect(hero()).toBeOnTheScreen(); // the label is the block's head, no eyebrow (word budget)
     expect(screen.getByText(t('decision.stop_load_increase.label'))).toBeOnTheScreen();
     expect(screen.getByText(t('decision.stop_load_increase.plateau.title'))).toBeOnTheScreen();
     expect(screen.getByText(t('thisWeek.hero.nextCall', { day: 'Monday' }))).toBeOnTheScreen();
@@ -229,7 +233,7 @@ describe('an ordinary week', () => {
 
   test('the call opens on its own screen (K-978), by navigating: a second tap goes to the same screen, not a second one', async () => {
     await show();
-    const chevron = screen.getByRole('button', { name: t('thisWeek.hero.openCall') });
+    const chevron = hero();
     await act(async () => {
       fireEvent.press(chevron);
       fireEvent.press(chevron);
@@ -323,9 +327,23 @@ describe('the hero is one tap (user test 10 Oct)', () => {
     expect(mockPush).not.toHaveBeenCalled();
   });
 
+  test('a screen reader reads the call, not only "Open the call": its label and its line are the name, the hint says what the tap does', async () => {
+    await show();
+    expect(screen.getByHintText(t('thisWeek.hero.openCall'))).toBe(hero());
+    expect(screen.queryByRole('button', { name: t('thisWeek.hero.openCall') })).toBeNull();
+  });
+
+  test('a call not applied yet is read with its line too, and its action stays a button of its own', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(decision({ application: { state: 'PENDING' } }));
+    await show();
+    expect(hero()).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: t('thisWeek.hero.useCall') })).toBeOnTheScreen();
+  });
+
   test('the block is one control to a screen reader (the arrow is its mark, not a second button)', async () => {
     await show();
-    expect(screen.getAllByRole('button', { name: t('thisWeek.hero.openCall') })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: heroSpoken })).toHaveLength(1);
+    expect(screen.getAllByHintText(t('thisWeek.hero.openCall'))).toHaveLength(1);
   });
 
   test('a call not applied yet (pending): it says so, with the one action that applies it; the whole block still opens the call', async () => {
@@ -358,6 +376,16 @@ describe('the hero is one tap (user test 10 Oct)', () => {
 describe("a call declined: last week's plan kept (K-963, user test 8 Oct)", () => {
   beforeEach(() => {
     mockAnswers['/v1/decisions/current'] = ok(decision({ application: { state: 'DECLINED' } }));
+  });
+
+  test('"Use this call" on a call the user kept off the plan is the quiet kind of button (U2), on a pending one the primary', async () => {
+    const p = palettes.light;
+    await show();
+    expect(screen.getByRole('button', { name: t('thisWeek.hero.useCall') })).not.toHaveStyle({ backgroundColor: p.accentInk });
+    await screen.unmount();
+    mockAnswers['/v1/decisions/current'] = ok(decision({ application: { state: 'PENDING' } }));
+    await show();
+    expect(screen.getByRole('button', { name: t('thisWeek.hero.useCall') })).toHaveStyle({ backgroundColor: p.accentInk });
   });
 
   test('"Not applied · Use this call": one tap uses the call after all, and the week reads again', async () => {

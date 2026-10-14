@@ -27,6 +27,8 @@ const PROGRAM: Schemas['Program'] = {
 
 let mockData: TrainData;
 let mockParams: Record<string, string> = {};
+// The page coming into view again, as expo-router does each time.
+let mockRefocus: () => void = () => {};
 const mockServices = {
   api: { GET: async () => ({ response: { status: 404 } }), POST: jest.fn(), PATCH: jest.fn() },
   report: jest.fn(),
@@ -40,7 +42,10 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: () => mockParams,
   useFocusEffect: (effect: () => void) => {
     const React = jest.requireActual<typeof import('react')>('react');
-    React.useEffect(() => effect(), [effect]);
+    React.useEffect(() => {
+      mockRefocus = effect;
+      return effect();
+    }, [effect]);
   },
 }));
 
@@ -92,9 +97,11 @@ describe('opened from the first week call with a day chosen', () => {
     expect(screen.queryByTestId('day-card-3')).toBeNull();
   });
 
-  test('the page read again (focus) does not add the day a second time', async () => {
+  test('the page read again on focus does not add the day a second time, and keeps the day already marked', async () => {
     await show();
-    await act(async () => {});
+    const reads = mockServices.training.read.mock.calls.length;
+    await act(async () => mockRefocus());
+    expect(mockServices.training.read.mock.calls.length).toBeGreaterThan(reads); // it did read again
     expect(screen.getAllByRole('button', { name: header(t('programEditor.defaultName', { number: 4 }), 'Saturday') })).toHaveLength(1);
     expect(screen.queryByTestId('day-card-4')).toBeNull();
   });
