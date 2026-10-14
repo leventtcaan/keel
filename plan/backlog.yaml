@@ -3907,7 +3907,7 @@ tasks:
 
   - id: K-977
     title: "Paylaşım C: hareketli çıkartma ve videoya gömme (yerel Swift modülü)"
-    milestone: M9a
+    milestone: M11
     module: mobile
     type: feature
     size: L
@@ -3915,7 +3915,7 @@ tasks:
     depends_on: [K-976]
     why: "ADR-076 #7: Levent 'hareketli sayılar, video'; Story dışı hedeflerde video arka plan çıkartmayla birleşmeli"
     acceptance:
-      - "Başlamadan bölünür (L); v1'e yetişmezse v1.x'e kaydırma Levent'e sorulur"
+      - "Başlamadan bölünür (L). Levent (14 Eki): v1.x'e (M11); v1'de statik çıkartma + Story (K-975, K-976) yeter"
       - "AVFoundation ile çıkartma katmanı videoya gömülür; hareketli sayılar kısa video olarak dışa aktarılır"
     tests:
       - "Yerel modül testi + cihaz kaydı"
