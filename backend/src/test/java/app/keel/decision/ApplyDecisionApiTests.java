@@ -380,6 +380,61 @@ class ApplyDecisionApiTests {
     }
 
     @Test
+    void aHoldOfTheLoadSaysTheMoveItChangesAndKeepingLastWeeksPlanSaysTheTargetInForce() throws Exception {
+        // K-1009: a rep past the top of the range stood in for a load; the hold shows the last load at the top of the range.
+        AccountId account = onACut();
+        send(account, "POST", "/v1/program/generate", Map.of("trainingDays", List.of("MONDAY")));
+        String move = storeFirstTarget(account, "rep_max + 1");
+        UUID hold = pending(account, new Action.StopLoadIncrease());
+        assertThat(((List<?>) map(send(account, "GET", "/v1/decisions/" + hold)).get("changes"))).as("not applied yet").isEmpty();
+
+        assertThat(send(account, "POST", "/v1/decisions/" + hold + "/apply")).hasStatusOk();
+
+        Map<String, Object> applied = map(send(account, "GET", "/v1/decisions/" + hold));
+        int top = repMax(account, move);
+        assertThat((List<Map<String, Object>>) applied.get("changes")).singleElement().satisfies(change -> {
+            assertThat(change).containsEntry("what", "MOVE").containsEntry("exerciseId", move).containsEntry("held", true).doesNotContainKey("inForce");
+            assertThat(change.get("before")).isEqualTo(Map.of("target", Map.of("loadKg", 72.5, "reps", top + 1)));
+            assertThat(change.get("after")).isEqualTo(Map.of("target", Map.of("loadKg", 72.5, "reps", top)));
+        });
+
+        assertThat(send(account, "POST", "/v1/decisions/" + hold + "/decline")).hasStatusOk();
+
+        Map<String, Object> kept = map(send(account, "GET", "/v1/decisions/" + hold));
+        assertThat((List<Map<String, Object>>) kept.get("changes")).singleElement().satisfies(change ->
+                assertThat(change).containsEntry("inForce", Map.of("target", Map.of("loadKg", 72.5, "reps", top + 1))));
+    }
+
+    @Test
+    void aHoldThatChangesNoMovesTargetSaysNoMove() throws Exception {
+        AccountId account = onACut();
+        send(account, "POST", "/v1/program/generate", Map.of("trainingDays", List.of("MONDAY")));
+        storeFirstTarget(account, "rep_max");
+        UUID hold = pending(account, new Action.StopLoadIncrease());
+
+        assertThat(send(account, "POST", "/v1/decisions/" + hold + "/apply")).hasStatusOk();
+
+        assertThat((List<?>) map(send(account, "GET", "/v1/decisions/" + hold)).get("changes")).isEmpty();
+    }
+
+    /** The program's first move now has 72.5 kg for {@code reps} as its next target, 72.5 kg its last load; returns the move. */
+    private String storeFirstTarget(AccountId account, String reps) {
+        String sql = """
+                update training.planned_exercise set next_load_kg = 72.5, next_reps = %s, last_load_kg = 72.5, next_from = now()
+                where id = (select e.id from training.planned_exercise e join training.program_day d on d.id = e.day_id
+                            join training.program p on p.id = d.program_id where p.account_id = :a order by d.seq, e.seq limit 1)
+                returning exercise_id""".formatted(reps);
+        return jdbc.sql(sql).param("a", account.value()).query(String.class).single();
+    }
+
+    private int repMax(AccountId account, String move) {
+        return jdbc.sql("""
+                select max(e.rep_max) from training.planned_exercise e join training.program_day d on d.id = e.day_id
+                join training.program p on p.id = d.program_id where p.account_id = :a and e.exercise_id = :move""")
+                .param("a", account.value()).param("move", move).query(Integer.class).single();
+    }
+
+    @Test
     void eachCallOfTheLadderNeedsAProgramAndLeavesNothingBehindWithoutOne() throws Exception {
         // No program: CONFLICT, the call still PENDING, no change kept — then with a program the same call applies.
         for (Action action : List.of(new Action.StopLoadIncrease(), new Action.Deload(new BigDecimal("0.5")), new Action.FullRestWeek())) {

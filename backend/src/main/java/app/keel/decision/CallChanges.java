@@ -1,8 +1,10 @@
 package app.keel.decision;
 
+import app.keel.engine.Action;
 import app.keel.engine.ParameterKey;
 import app.keel.engine.ParameterSet;
 import app.keel.engine.Parameters;
+import app.keel.training.HeldMove;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -10,6 +12,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.stream.Stream;
 
 /**
  * What a call changes in the plan, old to new (K-1000, ADR-077 #3 "the targets that change"; contract DecisionChange),
@@ -59,6 +62,48 @@ final class CallChanges {
             changes.add(change);
         }
         return List.copyOf(changes);
+    }
+
+    /** The kind of change a hold of the load reports on a move's target (contract DecisionChange.what). */
+    static final String MOVE = "MOVE";
+
+    /** Every kind of change a call reports, in the contract's words (DecisionChange.what). */
+    static List<String> kinds() {
+        return Stream.concat(TARGETS.stream().map(Target::what), Stream.of(MOVE)).toList();
+    }
+
+    /**
+     * The target of a move a hold of the load changes (K-1009, ADR-077 Ek 4): the program's target before the hold and the one
+     * it shows with it, the load and reps in the program's units. {@code held} says the load is kept (the new target is the
+     * last load at the top of the range), so the phone does not write it as a target cut. Declined or undone, the hold is gone
+     * and {@code inForce} is the target before it, as for the plan's targets.
+     */
+    static Map<String, Object> move(HeldMove held, CallStore.Call call) {
+        boolean planPutBack = call.application() == CallStore.Application.DECLINED || call.application() == CallStore.Application.UNDONE;
+        Map<String, Object> change = new LinkedHashMap<>();
+        change.put("what", MOVE);
+        change.put("exerciseId", held.exerciseId());
+        change.put("held", true);
+        change.put("before", target(held.before()));
+        change.put("after", target(held.after()));
+        if (planPutBack) {
+            change.put("inForce", target(held.before()));
+        }
+        return change;
+    }
+
+    private static Map<String, Object> target(HeldMove.Target target) {
+        return Map.of("target", Map.of("loadKg", target.loadKg(), "reps", target.reps()));
+    }
+
+    /**
+     * Whether the call's change to a move's target is read from the program now: a hold of the load that was applied (also
+     * one since declined or undone), and the latest call. The program keeps today's target only, so an older call's hold
+     * would be read against a target it did not set; a call never applied changed nothing. A lighter week changes the sets
+     * and a week off the days, not a target.
+     */
+    static boolean readsMove(CallStore.Call call, boolean latest) {
+        return latest && call.planBefore() != null && call.planAfter() != null && DecisionJson.action(call.decision()) instanceof Action.StopLoadIncrease;
     }
 
     // A target's value in its field; none in force is the empty value.

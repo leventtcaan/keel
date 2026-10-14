@@ -91,6 +91,24 @@ class DecisionContractTests {
                         java.util.stream.Stream.of("facts")).toList());
     }
 
+    @Test
+    void aCallsChangeIsOneOfTheKindsTheServerSaysWithTheFieldsItWrites() throws Exception {
+        // K-1000, K-1009: a plan target (calories, steps, phase) or a move's target held; each value in the field of its kind.
+        Map<String, Object> schemas = map(map(contract().get("components")).get("schemas"));
+        Map<String, Object> change = map(schemas.get("DecisionChange"));
+        Map<String, Object> value = map(schemas.get("ChangeValue"));
+        Map<String, Object> target = map(schemas.get("MoveTarget"));
+
+        assertThat((List<String>) map(map(change.get("properties")).get("what")).get("enum")).containsExactlyElementsOf(CallChanges.kinds());
+        assertThat(map(change.get("properties")).keySet()).containsExactlyInAnyOrder("what", "before", "after", "inForce", "exerciseId", "held");
+        assertThat((List<String>) change.get("required")).as("a move's id and held are only on its kind").containsExactlyInAnyOrder("what", "before", "after");
+        assertThat(map(value.get("properties")).keySet()).containsExactlyInAnyOrder("targetKcal", "stepsPerDay", "phase", "target");
+        assertThat(map(map(value.get("properties")).get("target"))).containsEntry("$ref", "#/components/schemas/MoveTarget");
+        List<String> fields = Arrays.stream(app.keel.training.HeldMove.Target.class.getRecordComponents()).map(RecordComponent::getName).toList();
+        assertThat(map(target.get("properties")).keySet()).containsExactlyInAnyOrderElementsOf(fields);
+        assertThat((List<String>) target.get("required")).containsExactlyInAnyOrderElementsOf(fields);
+    }
+
     private static Map<String, Object> contract() throws Exception {
         try (Reader in = new FileReader("../contracts/openapi.yaml")) {
             return new Yaml().load(in);

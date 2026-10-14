@@ -41,6 +41,7 @@ import app.keel.shared.AccountId;
 import app.keel.shared.ApiException;
 import app.keel.shared.ErrorCode;
 import app.keel.training.TrainingCalls;
+import app.keel.training.TrainingMoveTargets;
 import app.keel.training.PlannedDays;
 import app.keel.training.TrainingStatusReader;
 import java.math.BigDecimal;
@@ -59,6 +60,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -88,6 +90,7 @@ class DecisionService {
     private final Clock clock;
     private final WeekLogs logs;
     private final TrainingCalls training;
+    private final TrainingMoveTargets moves;
     private final TrainingStatusReader statuses;
     private final PlannedSessions planned;
     private final StateStore states;
@@ -97,7 +100,8 @@ class DecisionService {
 
     DecisionService(CallStore calls, Profiles profiles, Measurements measurements, ConsentGate consent, ParameterSet parameters,
             QuestionBudget budget, Clock clock, WeekLogs logs, TrainingCalls training, TrainingStatusReader statuses, StateStore states,
-            AccountDates accounts, PlannedSessions planned) {
+            AccountDates accounts, PlannedSessions planned, TrainingMoveTargets moves) {
+        this.moves = moves;
         this.planned = planned;
         this.accounts = accounts;
         this.states = states;
@@ -659,12 +663,20 @@ class DecisionService {
         }).toList();
     }
 
-    /** What the call changed in the plan, old to new (K-1000), the step target read as the plan holds it (the starting one before any is set). */
-    List<Map<String, Object>> changes(CallStore.Call call) {
+    /**
+     * What the call changed in the plan, old to new (K-1000), the step target read as the plan holds it (the starting one before
+     * any is set). A hold of the load adds the move whose target it changes (K-1009), read from the program through training:
+     * only on the account's latest call ({@code latest}), the program keeping today's target.
+     */
+    List<Map<String, Object>> changes(AccountId account, CallStore.Call call, boolean latest) {
         if (call.snapshot() == null) {
             return List.of();
         }
-        return CallChanges.of(call, parameters.forSex(call.snapshot().sex()));
+        List<Map<String, Object>> changes = CallChanges.of(call, parameters.forSex(call.snapshot().sex()));
+        if (!CallChanges.readsMove(call, latest)) {
+            return changes;
+        }
+        return moves.heldMove(account).map(held -> Stream.concat(changes.stream(), Stream.of(CallChanges.move(held, call))).toList()).orElse(changes);
     }
 
     /** The first week's watch days, on the call that closes it (K-1000, ADR-077 #4): the user's sex's, as the call read it. */

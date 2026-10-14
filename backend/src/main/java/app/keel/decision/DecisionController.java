@@ -61,7 +61,7 @@ class DecisionController {
         Optional<UUID> latest = decisions.latestId(account);
         // Each call with the trend weight it read (K-611): the ledger says what came after it, never why.
         return new DecisionPage(shown.stream().map(call -> {
-                    Map<String, Object> view = sent(call, latest, decisions);
+                    Map<String, Object> view = sent(account, call, latest, decisions);
                     decisions.trendRead(call).ifPresent(kg -> view.put("readTrendKg", kg));
                     return view;
                 }).toList(),
@@ -71,7 +71,7 @@ class DecisionController {
     @GetMapping("/v1/decisions/current")
     Map<String, Object> current(AccountId account) {
         CallStore.Call call = decisions.current(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
-        return sent(call, Optional.of(call.id()), decisions);
+        return sent(account, call, Optional.of(call.id()), decisions);
     }
 
     @GetMapping("/v1/decisions/{id}")
@@ -163,7 +163,7 @@ class DecisionController {
 
     /** Contract Decision as the app reads it: the kept call, and whether "Keep last week's plan" may be offered (K-963). */
     private Map<String, Object> sent(AccountId account, CallStore.Call call) {
-        return sent(call, decisions.latestId(account), decisions);
+        return sent(account, call, decisions.latestId(account), decisions);
     }
 
     private static Map<String, Object> sent(CallStore.Call call, Optional<UUID> latest) {
@@ -173,11 +173,11 @@ class DecisionController {
     }
 
     /** As sent, with the first week's watch days on the call that closes it (K-1000, ADR-077 #4). */
-    private Map<String, Object> sent(CallStore.Call call, Optional<UUID> latest, DecisionService decisions) {
+    private Map<String, Object> sent(AccountId account, CallStore.Call call, Optional<UUID> latest, DecisionService decisions) {
         Map<String, Object> view = sent(call, latest);
         decisions.observationDays(call).ifPresent(days -> view.put("observationDays", days));
-        // What it changed, old to new, from the plan before and after it (K-1000).
-        view.put("changes", decisions.changes(call));
+        // What it changed, old to new, from the plan before and after it (K-1000); a hold of the load, the move it changes (K-1009).
+        view.put("changes", decisions.changes(account, call, latest.filter(call.id()::equals).isPresent()));
         view.put("reasons", decisions.withFacts(call, castReasons(view.get("reasons"))));
         return view;
     }
