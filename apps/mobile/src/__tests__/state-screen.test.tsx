@@ -9,7 +9,7 @@ import { t } from '@/copy';
 import { stateParams } from '@/state/params';
 import { ThemeProvider } from '@/theme/theme';
 
-const mockDeclare = jest.fn(async (_kind: string, _until?: string) => ({ kind: 'SICK', since: '2026-10-07' }));
+const mockDeclare = jest.fn(async (_kind: string, _days?: number) => ({ kind: 'SICK', since: '2026-10-07' }));
 const mockBack = jest.fn();
 const mockReport = jest.fn();
 jest.mock('expo-router', () => ({ router: { back: () => mockBack() } }));
@@ -58,15 +58,21 @@ test('until the user is back by default: no last day is sent; then back to Today
   expect(mockBack).toHaveBeenCalledTimes(1);
 });
 
-test('for a few days: the last day counts today in', async () => {
+test('for a few days: the count of days is sent, no date (the server counts today in)', async () => {
   await show();
   await choose('traveling');
   const days = stateParams.untilChoicesDays[0];
   await press(t('state.screen.forDays', { days }));
   await press(t('state.screen.pause'));
-  const last = new Date(2026, 9, 7 + days - 1);
-  const day = `${last.getFullYear()}-${String(last.getMonth() + 1).padStart(2, '0')}-${String(last.getDate()).padStart(2, '0')}`;
-  expect(mockDeclare).toHaveBeenCalledWith('TRAVELING', day);
+  expect(mockDeclare).toHaveBeenCalledWith('TRAVELING', days);
+});
+
+test('the lengths offered are 3 and 7 days, besides until the user is back (ADR-077 #6)', async () => {
+  await show();
+  expect(stateParams.untilChoicesDays).toEqual([3, 7]);
+  expect(screen.getByRole('button', { name: t('state.screen.forDays', { days: 3 }) })).toBeOnTheScreen();
+  expect(screen.getByRole('button', { name: t('state.screen.forDays', { days: 7 }) })).toBeOnTheScreen();
+  expect(screen.queryByRole('button', { name: t('state.screen.forDays', { days: 14 }) })).toBeNull();
 });
 
 test('not recorded: it says so, by connection or not, and stays', async () => {

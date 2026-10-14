@@ -79,9 +79,12 @@ export function createStateService({ api, kv, now, onChange }: Options) {
       if (loaded.state === 'none') await remember(null);
     },
 
-    /** From today on the user's calendar; `until` its last day, if given. Throws by name when not recorded. */
-    declare: async (kind: StateKind, until?: string): Promise<DeclaredState> => {
-      const answer = await reach(() => api.PUT('/v1/state', { body: until === undefined ? { kind } : { kind, until } }));
+    /**
+     * From today on the user's calendar, for `days` days counted with today if given (K-1021): the server writes the last
+     * day, the phone adds no dates. Throws by name when not recorded.
+     */
+    declare: async (kind: StateKind, days?: number): Promise<DeclaredState> => {
+      const answer = await reach(() => api.PUT('/v1/state', { body: days === undefined ? { kind } : { kind, days } }));
       if (answer.data === undefined) throw named('StateRefused', `state not declared: HTTP ${answer.response.status}`);
       await remember(answer.data);
       return answer.data;
