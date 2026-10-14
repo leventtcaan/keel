@@ -4,6 +4,7 @@ import static app.keel.measurement.MeasurementTestSupport.list;
 import static app.keel.measurement.MeasurementTestSupport.map;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import app.keel.consent.ConsentTextVersions;
 import app.keel.identity.TestSessions;
 import app.keel.persistence.PostgresTestConfiguration;
 import app.keel.shared.AccountId;
@@ -133,6 +134,23 @@ class WeightSummaryApiTests {
                     assertThat(point).containsEntry("day", "2026-09-01");
                     assertThat(((Number) point.get("kg")).doubleValue()).isEqualTo(83.4);
                 });
+    }
+
+    @Test
+    void withoutAProfileItAnswersInUtcDaysWhileTheTrendHasNoProfileToRead() throws Exception {
+        AccountId account = TestSessions.newAccount();
+        assertThat(support.send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA))).hasStatusOk();
+        // 22:30 UTC on the 1st and 05:00 UTC on the 2nd are two UTC days (one day in Istanbul, which this user does not have).
+        for (String at : new String[] {"2026-09-01T22:30:00Z", "2026-09-02T05:00:00Z"}) {
+            assertThat(support.send(account, "POST", "/v1/weigh-ins", Map.of("clientId", UUID.randomUUID(), "measuredAt", at, "kg", 80.4,
+                    "source", "MANUAL")).getResponse().getStatus()).isLessThan(300);
+        }
+
+        Map<String, Object> summary = map(support.get(account, SUMMARY));
+
+        assertThat(summary).containsEntry("weighInCount", 2).containsEntry("trendMinWeighIns", 7).containsEntry("trendReady", false);
+        assertThat(node(summary.get("last"))).containsEntry("measuredAt", "2026-09-02T05:00:00Z");
+        assertThat(support.get(account, "/v1/weight-trend?from=2026-09-01&to=2026-09-02")).hasStatus(404);
     }
 
     @SuppressWarnings("unchecked")

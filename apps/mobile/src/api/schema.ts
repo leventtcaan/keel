@@ -274,8 +274,11 @@ export interface paths {
          *     over all time, counted the way the weight trend takes its days (`/v1/weight-trend`: the user's local days, imported
          *     history included, ADR-053), so two weigh-ins in one day are one. `trendMinWeighIns` is the engine's
          *     `trend_min_weighins` and `trendReady` is `weighInCount >= trendMinWeighIns`: the phone shows the trend when it is
-         *     true and counts nothing itself (ADR-078 Ek 2). Needs the health-data consent (CONSENT_REQUIRED without it); no
-         *     profile is needed. `/v1/weight-trend` itself is unchanged.
+         *     true and counts nothing itself (ADR-078 Ek 2). `trendReady` is the gate only, not "the chart has a point": the chart
+         *     is drawn from the `/v1/weight-trend` points, and with none in the window the phone draws no chart (ADR-078 Ek 2: no
+         *     empty chart). Needs the health-data consent (CONSENT_REQUIRED without it). No profile is needed: without one the
+         *     days are the UTC days and this answers 200, while `/v1/weight-trend` answers NOT_FOUND. `/v1/weight-trend` itself is
+         *     unchanged.
          */
         get: operations["getWeighInSummary"];
         put?: never;
