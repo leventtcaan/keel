@@ -154,6 +154,17 @@ class ContractTests {
     }
 
     @Test
+    void aStateIsDeclaredWithItsKindAndEitherAnEndDayOrAFewDaysCountedFromToday() throws Exception {
+        // K-1021 (ADR-077 Ek 6): the phone sends the length as a count of days; the server writes the last day on the user's
+        // calendar. The field is the record's, and it is optional: neither is "until I'm back".
+        Map<String, Object> declared = map(schemas().get("NewDeclaredState"));
+        assertThat(properties(declared).keySet()).containsExactlyInAnyOrderElementsOf(componentNames(Class.forName("app.keel.decision.StateController$NewState")));
+        assertThat(properties(declared).keySet()).containsExactlyInAnyOrder("kind", "until", "days");
+        assertThat(list(declared.get("required"))).containsExactly("kind");
+        assertThat(map(properties(declared).get("days"))).containsEntry("type", "integer").containsEntry("minimum", 1);
+    }
+
+    @Test
     void theAddedDayIsAWeekdayTheServerFillsAndAnswersWithTheProgram() throws Exception {
         // K-1012 (ADR-073 Ek 9): the phone sends the weekday only; the day's content is the server's (U1).
         Map<String, Object> schemas = schemas();
