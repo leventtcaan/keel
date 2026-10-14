@@ -398,6 +398,20 @@ describe("this week's list marks the sessions that are done (user test 10 Oct)",
     expect(screen.getByLabelText(t('train.startDay', { day: 'Lower A' }))).toBeTruthy();
   });
 
+  test("a copy kept offline: today's session the server said DONE is done on the card too (no Start), as its week row is ticked: one word for both", async () => {
+    mockData = { ...withProgram({ days, week: [{ ...MONDAY, workout: { id: 'w1', state: 'DONE' } }, { ...PROGRAM.week![0], workout: { id: 'w2', state: 'DONE' } }, THURSDAY] }), kept: true };
+    await show();
+    expect(await screen.findByText(t('train.doneToday'))).toBeTruthy();
+    expect(screen.queryByText('Start workout')).toBeNull();
+    expect(screen.getAllByLabelText(t('train.doneTag'))).toHaveLength(1); // Monday's row
+  });
+
+  test('a copy kept offline: an OPEN session of the copy is still not believed (it may be closed since)', async () => {
+    mockData = { ...withProgram({ week: [{ ...PROGRAM.week![0], workout: { id: 'w2', state: 'OPEN' } }, THURSDAY] }), kept: true };
+    await show();
+    expect(await screen.findByText('Start workout')).toBeTruthy();
+  });
+
   test('nothing done, nothing marked: an empty past day says nothing (U7)', async () => {
     mockData = withProgram({ days, week: [MONDAY, PROGRAM.week![0], THURSDAY] });
     await show();

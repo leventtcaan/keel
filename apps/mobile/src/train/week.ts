@@ -65,8 +65,8 @@ export function movedOffToday(program: Schemas['Program']): Found | null {
  *   queue) or the server's DONE for today's session; `finished`: that workout, today's session's own first.
  * - `openElsewhere`: the server's OPEN with nothing of it on this phone: it goes on there, this phone starts none.
  * The phone's records come first; the server's word only after them. `stale`: the program is the copy kept offline;
- * then today is the phone's day and the copy's session states (workout, undoable, the move's preview) are not believed:
- * they were the server's when it was kept.
+ * then today is the phone's day and the copy's session states (OPEN, undoable, the move's preview) are not believed: they
+ * were the server's when it was kept. Its DONE is: a finished session does not come undone.
  */
 export type SessionStatus = 'onPhone' | 'done' | 'openElsewhere' | 'none';
 export type SessionState = {
@@ -125,10 +125,13 @@ export function sessionState({ program, kept, records, now }: { program: Schemas
   // A workout started on the server's day or on the phone's is today's: the two differ in the hours around midnight
   // (past it on the phone, not yet on the user's calendar), and a workout started before it is still today's.
   const days = [...new Set([today, localDay(now)])];
-  const server = found === null || stale ? undefined : found.session.workout;
+  const reported = found?.session.workout;
+  // OPEN is not believed from a copy kept offline (it may be closed since); DONE is, from either (a finished session does not
+  // come undone: the card and the week's rows, sessionDone, say the same).
+  const server = stale ? undefined : reported;
   // The workout that makes today done: today's session's own (the phone's, else the server's); else any finished here.
   const own = found === null ? null : finishedOnPhone(records, days, found.day.id);
-  const serverDone = found !== null && server?.state === 'DONE' ? { workoutId: server.id, programDayId: found.day.id } : null;
+  const serverDone = found !== null && reported?.state === 'DONE' ? { workoutId: reported.id, programDayId: found.day.id } : null;
   const finished = own !== null ? { ...own, workoutId: serverDone?.workoutId ?? own.workoutId } : (serverDone ?? finishedOnPhone(records, days));
   let status: SessionStatus = 'none';
   if (found !== null && onPhone !== null && onPhone.programDayId === found.day.id && days.includes(localDay(new Date(onPhone.startedAt)))) status = 'onPhone';
@@ -195,6 +198,8 @@ export function moveShifts(
  */
 export function sessionDone(program: Schemas['Program'], row: Found, records: LocalRecord[]): boolean {
   if (row.session.workout?.state === 'DONE') return true;
+  // The week is the server's (`weekOf`); the phone only matches its not yet sent records to it, seven days on from that Monday
+  // by the phone's calendar (a workout near midnight in another time zone can fall on the edge: a known limit).
   const week = program.weekOf === undefined ? [row.session.date] : Array.from({ length: 7 }, (_, i) => addDays(program.weekOf as string, i));
   return finishedOnPhone(records, week, row.day.id) !== null;
 }
