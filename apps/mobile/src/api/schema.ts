@@ -260,6 +260,35 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/weigh-ins/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The last weigh-in, how many days have one, and whether the trend is ready to show
+         * @description For the weigh screen's "Last" value and the progress screen's weight section ("3 of 7"). `last` is the newest
+         *     weigh-in whatever its source, absent until there is one. `weighInCount` is the days with at least one weigh-in,
+         *     over all time, counted the way the weight trend takes its days (`/v1/weight-trend`: the user's local days, imported
+         *     history included, ADR-053), so two weigh-ins in one day are one. `trendMinWeighIns` is the engine's
+         *     `trend_min_weighins` and `trendReady` is `weighInCount >= trendMinWeighIns`: the phone shows the trend when it is
+         *     true and counts nothing itself (ADR-078 Ek 2). `trendReady` is the gate only, not "the chart has a point": the chart
+         *     is drawn from the `/v1/weight-trend` points, and with none in the window the phone draws no chart (ADR-078 Ek 2: no
+         *     empty chart). Needs the health-data consent (CONSENT_REQUIRED without it). No profile is needed: without one the
+         *     days are the UTC days and this answers 200, while `/v1/weight-trend` answers NOT_FOUND. `/v1/weight-trend` itself is
+         *     unchanged.
+         */
+        get: operations["getWeighInSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/weigh-ins/{id}": {
         parameters: {
             query?: never;
@@ -1855,6 +1884,15 @@ export interface components {
         WeighIn: components["schemas"]["NewWeighIn"] & {
             /** Format: uuid */
             id: string;
+        };
+        WeighInSummary: {
+            last?: components["schemas"]["WeighIn"];
+            /** @description Days with at least one weigh-in, all time, imported history included. */
+            weighInCount: number;
+            /** @description The weigh-in days the trend needs before it is shown (the engine's `trend_min_weighins`). */
+            trendMinWeighIns: number;
+            /** @description True when `weighInCount` has reached `trendMinWeighIns`. */
+            trendReady: boolean;
         };
         TrendPoint: {
             /** Format: date */
@@ -4013,6 +4051,27 @@ export interface operations {
         responses: {
             200: components["responses"]["WeighInCreated"];
             201: components["responses"]["WeighInCreated"];
+            default: components["responses"]["Error"];
+        };
+    };
+    getWeighInSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeighInSummary"];
+                };
+            };
             default: components["responses"]["Error"];
         };
     };

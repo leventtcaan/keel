@@ -105,6 +105,18 @@ class MeasurementController {
         return store.weighIns(account, from.atStartOfDay(zone).toInstant(), to.plusDays(1).atStartOfDay(zone).toInstant(), true);
     }
 
+    /**
+     * The newest weigh-in, the days that have one and whether the trend may be shown (K-1018, ADR-078 Ek 2). Health data;
+     * no profile needed (a user without one is read in UTC, as the other weigh-in reads do). The gate is the engine's
+     * trend_min_weighins, the same for both sexes.
+     */
+    @GetMapping("/v1/weigh-ins/summary")
+    WeightSummary weighInSummary(AccountId account) {
+        consent.require(account, ConsentKind.HEALTH_DATA);
+        return WeightSummary.of(store.weighIns(account), measurements.zoneOf(account),
+                parameters.forSex(Sex.MALE).wholeNumber(ParameterKey.TREND_MIN_WEIGHINS));
+    }
+
     @DeleteMapping("/v1/weigh-ins/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void deleteWeighIn(AccountId account, @PathVariable UUID id) {

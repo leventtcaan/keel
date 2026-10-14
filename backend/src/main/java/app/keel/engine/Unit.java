@@ -45,6 +45,8 @@ public enum Unit {
     YEARS("years", Kind.WHOLE, Bound.POSITIVE),
     SETS("sets", Kind.WHOLE, Bound.POSITIVE),
     SESSIONS("sessions", Kind.WHOLE, Bound.POSITIVE),
+    // How many days with a weigh-in the weight trend needs before it is shown (K-1018, ADR-078 Ek 2).
+    WEIGHINS("weighins", Kind.WHOLE, Bound.POSITIVE),
     WEIGHINS_PER_WEEK("weighins_per_week", Kind.WHOLE, Bound.POSITIVE),
     SETS_PER_WEEK("sets_per_week", Kind.WHOLE, Bound.POSITIVE),
     SESSIONS_PER_WEEK("sessions_per_week", Kind.WHOLE, Bound.POSITIVE),
