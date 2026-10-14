@@ -3951,13 +3951,15 @@ tasks:
     type: feature
     size: M
     status: todo
-    depends_on: [K-953, K-965, K-974]
+    depends_on: [K-953, K-965, K-974, K-1016, K-1017, K-1018]
     why: "ADR-078: Levent 'en kötü ekran'; ilk gün eyleme dönük, sonra tek cümle sonuç"
     acceptance:
       - "K-988 telefon tarafı: dönemin kilo değişimi cümlesi `Consistency.weightChange`'ten ('Down 3.8 kg.'; yön sunucudan, birim kullanıcının tercihi; sakin, U7)"
       - "#progress ilk gün: dört tıklanabilir hedef (Calories, Protein → öğün; Steps → Apple Health; Cardio → Antrenman), planlanan kas haritası, kilitli güç, 7 tartı noktası"
       - "Sonra: sonuç cümlesi, hareket çipli güç grafiği + efor satırı, kas başına set / hedef, kilo 7 günlük ortalama, 12 hafta ızgarası (spare week), Calls, Photos"
       - "Yenen kalori hedefe karşı aralık (U5); ilk görünüm ≤50 kelime"
+      - "Levent 14 Eki (ADR-078 Ek 2): bölümler kendi verisi gelince açılır (ilk seans → güç, 7 tartı → kilo trendi, ilk karar → sonuç cümlesi); boş grafik yok"
+      - "Cardio kutusu '+ › Cardio' kaydını açar (ADR-078 Ek 2); efor satırı yalnız `EffortLine` türleri (prototipteki ek cümleler yok); kardiyo sayısı sunucudan"
     tests:
       - "Ekran testleri (ilk gün, 12. hafta), akış testleri A3, D"
     refs: ["plan/kararlar/ADR-078-ilerleme.md", "prototip/yeni-yuz.html"]
@@ -3970,13 +3972,15 @@ tasks:
     type: feature
     size: M
     status: todo
-    depends_on: [K-953, K-959]
+    depends_on: [K-953, K-959, K-1018, K-1019]
     why: "ADR-069 #4, ADR-018 Ek 1: tartı ≤4 dokunuş, öğün 2-3 dokunuş; Health izni ilk kullanımda"
     acceptance:
       - "#weigh: son kilo dolu, ±0,1 adım, Save; 7 tartıdan önce trend yok"
       - "#health-jit: ilk tartıda ya da ilk antrenmanda bir kez; 'Not now' serbest"
       - "#meal: 'Same as yesterday', son yiyecekler tek dokunuş, arama, #barcode; kaloriler aralık, tarafsız renk"
       - "'+' › Cardio: dakika girişi; Apple Health'ten gelen kardiyo tekrar sorulmaz"
+      - "'+ › Cardio' yalnız dakika (pace yok, ADR-074 #6); bugün kayıtlıysa sorulmaz (K-1019)"
+      - "Son yiyecekler mevcut `repeatOffers` + öneri uçlarıyla; kabul kriterine yetmiyorsa dur ve raporla (sözleşme işi ayrı)"
     tests:
       - "Ekran testleri, dokunuş sayısı testi (tartı ≤4), akış testi A2"
     refs: ["plan/kararlar/ADR-069-urun-yonu-yeni-yuz.md", "plan/kararlar/ADR-018-health-yazma-ve-ice-aktarma.md"]
@@ -3989,11 +3993,13 @@ tasks:
     type: feature
     size: S
     status: todo
-    depends_on: [K-953]
+    depends_on: [K-953, K-1020, K-1021]
     why: "ADR-077 #5-#6: suçlamasız karşılama, öner ama dayatma"
     acceptance:
       - "#return: return_prompt_days kayıtsız açılışta; üç seçenek, boşluğa göre biri önerili (ReturnLoad); sonraki karar tarihi"
       - "#life: beş durum döşemesi + süre; 'Nothing counts against you. Safety checks still run.'"
+      - "Metin dürüst (ADR-077 Ek 6): 'Nothing lost' yok; kaybolmayan söylenir (plan, kayıtlar, hedefler); seri kuralı değişmez"
+      - "Rızasız kullanıcı Traveling/Busy/New gym seçebilir; Sick/In pain rıza ekranına götürür (K-1021)"
     tests:
       - "Ekran testleri (boşluk 1 ve 3 hafta), akış testi D"
     refs: ["plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md"]
@@ -4011,6 +4017,8 @@ tasks:
     acceptance:
       - "#settings grupları: Appearance (Light/Dark/System), Training (günler, kardiyo, salonlar, içe aktarma), Food (kısıt), Reminders, Health and data, Subscription, Account"
       - "Hesap silme ve dışa aktarma bugünkü yollarla (K-812, K-309)"
+      - "Reminders ADR-036'ya sadık: mevcut üç tür aç/kapa + rutin cümlesi; saat seçici ve Weigh-in hatırlatması yok (prototip ADR'nin gerisinde)"
+      - "Units (kg/lb) Appearance grubunda; abonelikte plan türü yazılmaz (sözleşmede yok); Training days tek kaynak `Program.days[].weekday`; kardiyo sayısı sunucudan"
     tests:
       - "Ekran testi, tema değişimi testi"
     refs: ["plan/kararlar/ADR-070-gorsel-dil-turkuaz.md", "plan/kararlar/ADR-074-kardiyo-recetesi.md"]
@@ -4805,6 +4813,107 @@ tasks:
     tests: ["Şablon tablo testi, API testi (CI), ekran testi"]
     refs: ["plan/kararlar/ADR-073-program-incelemesi-ve-degistirme.md"]
     learn: ["Koçluk içeriğinin şablona dökülmesi"]
+
+  - id: K-1016
+    title: "Tutarlılık hafta hafta: 12 hafta ızgarası için Consistency.weeks[]"
+    milestone: M9a
+    module: decision
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-965]
+    why: "Part 4 boşluk taraması (14 Eki): K-979 12 hafta ızgarası ve 'spare week' hücresi; sözleşmede yalnız toplamlar (record.onTrackWeeks, forgivenWeeks) var, telefon hafta hesaplamaz"
+    acceptance:
+      - "`Consistency.weeks[] {weekOf, state: ON_TRACK | SPARE | MISSED | PAUSED}` son N hafta; N `data/parameters/windows.yaml › progress_grid_weeks` (12, urun, ADR-078 #2)"
+      - "Haftaların durumu `record` toplamlarıyla aynı yürüyüşten (forgivenWeeks sayısı SPARE hücre sayısına eşit); duraklatılan hafta PAUSED"
+      - "Hesap bir kez, `ConsistencyRecord` içinde; U7: hiçbir durum suçlayıcı ad taşımaz"
+    tests: ["Tablo testi (af haftası, duraklatma, kayıt başlangıcından kısa geçmiş), API testi (CI), sözleşme testi"]
+    refs: ["plan/kararlar/ADR-078-ilerleme.md", "plan/kararlar/ADR-040-ilk-sekiz-hafta.md"]
+    learn: ["Okuma modelinde hafta listesi"]
+
+  - id: K-1017
+    title: "İlk gün protein ve adım hedefi sunucudan (DayBudget.targetProteinG, StartingTarget)"
+    milestone: M9a
+    module: nutrition
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-989]
+    why: "Part 4 boşluk taraması (14 Eki): K-979 ilk gün 'Protein / 114 g' ve 'Steps / 7,000'; bütçede protein hedefi yok, gün-1 adım hedefi (`steps_target_start`) telefona gelmiyor; prototip 2 × kiloyu telefonda hesaplıyordu (U1)"
+    acceptance:
+      - "`DayBudget.targetProteinG` ve `StartingTarget.proteinG` + `StartingTarget.stepsPerDay`; aynı girdiyle ilk kararın planladığı sayı (ADR-072 Ek 2 sağlayıcısı)"
+      - "İlk karardan sonra `/v1/targets` değerleri; `/v1/targets` sözleşmesi değişmez"
+    tests: ["Tablo testi, API testi (CI), sözleşme testi"]
+    refs: ["plan/kararlar/ADR-078-ilerleme.md", "plan/kararlar/ADR-072-onboarding.md"]
+    learn: ["Başlangıç hedefi ile karar hedefinin tek kaynağı"]
+
+  - id: K-1018
+    title: "Kilo özeti: son tartı, tartı sayısı, trend hazır mı (7 tartı kapısı)"
+    milestone: M9a
+    module: measurement
+    type: feature
+    size: S
+    status: todo
+    depends_on: []
+    why: "Part 4 boşluk taraması (14 Eki): K-980 #weigh 'Last: 80.4' için son tartı ucu yok (weigh-ins tarih aralığı ister); K-979/K-980 'Trend starts after 7 weigh-ins' için parametre ve sayaç yok (telefonda 7 sabiti K2)"
+    acceptance:
+      - "Küçük okuma ucu: son tartı (`WeighIn`), `weighInCount`, `trendReady`; parametre `trend_min_weighins` (7, `windows.yaml`, urun, U8)"
+      - "6 tartıda `trendReady` false, 7'de true; IMPORT kaynaklı tartılar trendle aynı kuralı izler; rızasız 403 CONSENT_REQUIRED"
+      - "`/v1/weight-trend` davranışı değişmez"
+    tests: ["Tablo testi, API testi (CI), sözleşme testi"]
+    refs: ["plan/kararlar/ADR-078-ilerleme.md", "plan/kararlar/ADR-069-urun-yonu-yeni-yuz.md"]
+    learn: ["Okuma ucu tasarımı"]
+
+  - id: K-1019
+    title: "Bu haftanın kardiyo kayıtlı günleri (ProgramCardio.loggedDays)"
+    milestone: M9a
+    module: training
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-959]
+    why: "Part 4 boşluk taraması (14 Eki): K-980 'Apple Health'ten gelen kardiyo tekrar sorulmaz'; yalnız `doneThisWeek` sayısı var, hangi gün olduğu ve kaydın geri alınması yok"
+    acceptance:
+      - "`ProgramCardio.loggedDays: date[]` (bu hafta, sunucunun haftası); elle ve saatten gelen aynı günün iki kaydı tek gün"
+      - "Bugün kayıtlıysa telefon '+ › Cardio'da sormaz, kaydı gösterir; `DELETE /v1/cardio-sessions/{id}` ile yalnız elle girilen kayıt silinir (Health kaynaklı silinmez)"
+    tests: ["Tablo testi, API testi (CI), sözleşme testi"]
+    refs: ["plan/kararlar/ADR-074-kardiyo-recetesi.md"]
+    learn: ["Kaynak birleştirme"]
+
+  - id: K-1020
+    title: "Dönüş özeti ve cevabı: GET/POST /v1/return (kayıt boşluğu, öneri, sonraki karar)"
+    milestone: M9a
+    module: decision
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-1021]
+    why: "Part 4 boşluk taraması (14 Eki): K-981 #return için boşluk süresi, tetik parametresi (`return_prompt_days` yalnız R5'te), 'Pick up where I left off' karşılığı, sonraki karar tarihi ve cevabın izi sunucuda yok"
+    acceptance:
+      - "`return_prompt_days` (7, `windows.yaml`, urun, ADR-077 #5) `kural-ekle` ile; boşluk = son kayıttan (tartı, öğün, antrenman, kardiyo) bugüne gün (ADR-077 Ek 6: kayıt boşluğu)"
+      - "GET /v1/return → `{awayDays, shouldPrompt, suggested: EASE_BACK | PICK_UP, nextCallOn}`; öneri `return_step_back_after_weeks` ile `ReturnLoad`'la aynı"
+      - "POST /v1/return `{choice: EASE_BACK | PICK_UP | REBUILD}` cevabı yazar, aynı boşlukta tekrar sorulmaz; PICK_UP `ReturnLoad` basamağını bastırır (`backAfterBreak` false, `nextLoadKg` hafifletilmemiş); REBUILD programı değiştirmez (telefon /v1/program/generate çağırır)"
+      - "6/7 gün sınır testi; `nextCallOn` bir sonraki check-in günü"
+    tests: ["Tablo testi, API testi (CI), sözleşme testi, göç testi"]
+    refs: ["plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md", "plan/yeni-yuz-kurallar.md"]
+    learn: ["Bir kez sorulan sorunun sunucuda izi"]
+
+  - id: K-1021
+    title: "Durum bildirimi: gün sayısıyla süre, rıza yalnız Sick/In pain, seçenekler 3 ve 7"
+    milestone: M9a
+    module: decision
+    type: feature
+    size: S
+    status: todo
+    depends_on: []
+    why: "Part 4 boşluk taraması (14 Eki): telefon bugün + N günü kendisi topluyor (tarih hesabı); PUT /v1/state her tür için HEALTH_DATA rızası istiyor; `state.json` seçenekleri [3, 7, 14], ADR-077 #6 3 ve 7 diyor. Levent 14 Eki: rıza yalnız Sick/In pain"
+    acceptance:
+      - "`NewDeclaredState.days` (`until` ile birlikte verilemez, 400); sunucu profil saat dilimiyle `until`'i yazar"
+      - "PUT /v1/state: SICK ve PAIN HEALTH_DATA rızası ister (403 CONSENT_REQUIRED); TRAVELING, BUSY, NEW_GYM rızasız kaydedilir (ADR-077 Ek 6); gizlilik metni etkileniyorsa PR'da söylenir"
+      - "`state.json › state_until_choices_days` [3, 7] (ADR-077 #6)"
+    tests: ["Tablo testi, API testi (CI; rızasız Traveling 2xx, rızasız Sick 403), sözleşme testi"]
+    refs: ["plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md"]
+    learn: ["Rızanın veri türüne göre kapsamı"]
 
   - id: K-1010
     title: "Sunucudaki ek siteler: Caddy /opt/sites altındaki *.caddy dosyalarını içeri alır"

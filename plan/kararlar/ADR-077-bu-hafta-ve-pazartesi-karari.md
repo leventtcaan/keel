@@ -179,3 +179,11 @@ Karar ekranı (#3) ve 1. hafta gün seçimi (#4, Ek 1) telefonda hesap istemez (
 - **Kod:** silinmez; rota/bileşen girişsiz kalır (ADR-069 #3 kalıbı). Sunucu uçları yerinde.
 - **Reddedilen:** İlerleme sekmesinde kart (K-979'u şişirir) · check-in akışında satır (30 kelime bütçesi).
 
+
+## Ek 6 · Dönüş ve durum bildirimi (K-981 boşluk taraması, 2026-10-14; rıza ve metin ürün kararı: **Levent KABUL**; tetik tanımı agent, teknik)
+- **Tetik kayıt boşluğu:** "≥ `return_prompt_days` kayıtsız açılış" = son kayıttan (tartı, öğün, antrenman, kardiyo) bugüne gün sayısı. Uygulama
+  açılışları sunucuya gitmez (ADR-041 #66), kayıt gider; sayım sunucuda (K-1020). Cevap sunucuya yazılır, aynı boşlukta yeniden sorulmaz.
+- **Metin dürüst:** "Welcome back. Nothing lost." yerine kaybolmayanı söyleyen metin (plan, kayıtlar, hedefler). Tutarlılık serisinin kuralı
+  değişmez; uzun boşluk seriyi bitirebilir, ekran bunu iddia etmez ve suçlamaz (U7).
+- **Rıza veri türüne göre:** Sick ve In pain sağlık verisidir, HEALTH_DATA rızası ister; Traveling, Busy, New gym takvim bilgisidir, rızasız
+  kaydedilir (K-1021). Süre telefonda tarih toplanmadan gün sayısıyla gönderilir; seçenekler 3 ve 7 gün (#6).
