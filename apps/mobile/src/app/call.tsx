@@ -199,16 +199,25 @@ export default function CallScreen() {
       </>
     );
     const second = face.second;
+    // One primary action (K-1013): "Use this call" while the call is not applied yet (pending), "Got it" otherwise. A call the
+    // user kept off the plan is offered back quietly: no pressure on a choice they made (U2).
+    const using = second === 'use' && decision.application.state === 'PENDING';
     const secondWay =
       second === null ? null : (
-        <Button label={t(second === 'keep' ? 'callScreen.keep' : 'callScreen.use')} variant="ghost" disabled={busy} onPress={() => void change(decision, second)} />
+        <Button
+          label={t(second === 'keep' ? 'callScreen.keep' : 'callScreen.use')}
+          variant={using ? 'primary' : 'ghost'}
+          disabled={busy}
+          onPress={() => void change(decision, second)}
+        />
       );
+    const gotIt = <Button label={t('callScreen.gotIt')} variant={using ? 'ghost' : 'primary'} onPress={() => router.back()} />;
     dock =
       week1?.dock ??
       (readOnly ? null : (
         <View style={styles.dock}>
-          <Button label={t('callScreen.gotIt')} onPress={() => router.back()} />
-          {secondWay}
+          {using ? secondWay : gotIt}
+          {using ? gotIt : secondWay}
         </View>
       ));
   }
