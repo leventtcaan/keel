@@ -63,7 +63,7 @@ Health data is a special category under the GDPR (Art. 9). The app keeps it only
   why it was made and undo it. Each call also keeps an internal estimate the rules computed from your waist and the look you
   picked — an input of the rules, not a measurement. The app never shows it as a number; your data export includes it, as
   each call kept it;
-- what you told the app about your life (travelling, sick, pain, busy, new gym), with dates;
+- when you told the app you were sick or in pain, with dates;
 - your answers to the coach's questions (for example about hunger or missed sessions).
 
 When energy intake looks too low, the app may ask whether your period has stopped. The answer is used for that week's
@@ -78,7 +78,8 @@ catches anything that was being saved at that moment); the weekly calls stop unt
 Your workouts and sets (move, set type, load, reps, reps in reserve, side, supersets, your notes), your program and its
 history, lighter weeks and weeks off applied by a call, your gyms and their equipment, moves you added yourself, your own
 cardio if you changed the default (days, minutes, after the weights or on a day off), and the cardio sessions you did
-(the day, how long, typed or from Apple Health).
+(the day, how long, typed or from Apple Health). It also holds what you told the app about your life that isn't about
+your health (travelling, a busy week, a new gym), with dates.
 
 *Why:* to coach your training (contract). The training log doesn't count as health data and doesn't need the health data
 consent, so withdrawing that consent leaves it in place. Importing past sessions from another app does need it, because
