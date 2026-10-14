@@ -5,7 +5,10 @@ guncelleme: 2026-10-10
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (10 Eki gece — M9a Part 3 BİTTİ)
+## ▶ DEVAM NOKTASI (14 Eki — M9a Part 4 SÜRÜYOR)
+Tablo: DURUM › M9a ilerleme › Part 4 başı. Prompt: `plan/oturum-promptlari/YENI-YUZ-kod.md` › Part 4.
+
+## (önceki) DEVAM NOKTASI (10 Eki gece — M9a Part 3 BİTTİ)
 **Sıradaki session: M9a Part 4 · Kalan + kapanış** → `plan/oturum-promptlari/YENI-YUZ-kod.md` › "Part 4 prompt'u"; ayrıntı DURUM › M9a ilerleme › Part 3 ÇIKIŞ.
 İlk iş K-1013 (yürüyüş düzeltmeleri) + K-1014. Levent'i bekleyen: K-983 (ASC deneme), K-976 Facebook App ID, K-977 kapsamı.
 
@@ -901,6 +904,31 @@ Simülatör düzeneği (repoya girmez): `../keel-sim` worktree + scratchpad `sim
 - **Ders:** ekran işine başlamadan prototip ↔ sözleşme boşluk taraması (bu part'ta 9 arka uç kartı ortada çıktı); her PR'a inceleme + doğrulama
   turu gerçek hatalar yakaladı (U13 arka kapı, kayıp STEPS, sıra-bağımlı seçim, kendi hareketi adı, süperset).
 
+
+-----
+**Part 4 başı (14 Eki):** senkron — ana checkout ayrık HEAD = `origin/main` `26df54a0`, temiz (yalnız `.claude/launch.json`); açık PR yalnız Dependabot
+(#546 shell-quote güvenlik düzeltmesi, kilit dosyası, CI yeşil → auto-merge; #547 actions/setup-node 7.0 → 7.1 ara sürüm, yama değil → beklemede, ADR-019 #6);
+Part 3 ÇIKIŞ git ile tutarlı; disk 7 GB; Dependabot 4 açık uyarı (shell-quote #546 ile kapanır; braces, node-forge, decode-uri-component aynı).
+**Levent cevapları:** K-976 App ID henüz yok (kod yazılır, düğme sistem sayfasına düşer) · **K-977 v1.x'e (M11)** · K-983 henüz kurulmadı (K-984 bekler).
+Çalışma şekli: Opus düzenleyici; Sonnet uygulayıcı + inceleme ajanları, aynı anda en çok 3 uygulayıcı. İlk dalga: boşluk taraması (K-979..K-982, salt okuma) ·
+K-1014 · K-1013 iki PR'a bölündü (A karar/Bu hafta, B oturum/Edit).
+
+| Görev | Durum | PR | Not |
+|---|---|---|---|
+| K-1013 A karar/Bu hafta | 🛠 | | |
+| K-1013 B oturum/Edit | 🛠 | | |
+| K-1014 karşılaştırılabilir seans | 🛠 | | |
+| K-1009 hareket hedefi satırı | ⏳ | | K-978'i kapatır |
+| K-999 başka cihazda açık seans | ⏳ | | |
+| K-979 İlerleme | ⏳ | | boşluk taraması |
+| K-980 Kayıt ekranları | ⏳ | | boşluk taraması |
+| K-981 Dönüş + Life | ⏳ | | boşluk taraması |
+| K-982 Ayarlar | ⏳ | | boşluk taraması |
+| K-975 Paylaşım A | ⏳ | | |
+| K-976 Paylaşım B | ⏳ | | App ID yok → sistem sayfası |
+| K-977 Paylaşım C | ↪ M11 | | Levent 14 Eki |
+| K-910 Kalın Metin | ⏳ | | |
+| K-984 TestFlight + cihaz turu | ⏳ | | K-983 (Levent) bekler |
 
 ## M9 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M9.md`. Part prompt'ları `M9-part1.md`, `M9-part2.md`, `M9-part3.md`.
