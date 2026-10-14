@@ -12,6 +12,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import app.keel.engine.ConsistencyWeek.State;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
 import net.jqwik.api.ForAll;
@@ -430,7 +431,120 @@ class ConsistencyTests {
         assertThat(Consistency.lastWeekForgiven(dated(List.of(week(10, 9), week(0, 0))), P)).isFalse();
     }
 
+    // ── the weeks, cell by cell (K-1016, ADR-078 #2) ────────────────────────────────────────────────────────
+
+    @Test
+    void aForgivenWeekIsASpareWeekAndTheOthersAreAsTheyWere() {
+        assertThat(states(week(10, 9), week(10, 9), week(10, 2), week(10, 9)))
+                .containsExactly(State.ON_TRACK, State.ON_TRACK, State.SPARE, State.ON_TRACK);
+    }
+
+    @Test
+    void ofTwoMissedWeeksInARowOnlyTheFirstIsSpareAndItStaysSo() {
+        // The first was forgiven when it was missed (K-608: never taken back); the second is the miss that ends the run.
+        assertThat(states(week(10, 9), week(10, 9), week(10, 2), week(10, 1), week(10, 9)))
+                .containsExactly(State.ON_TRACK, State.ON_TRACK, State.SPARE, State.MISSED, State.ON_TRACK);
+    }
+
+    @Test
+    void aMissWithNoRunBeforeItIsMissedNotSpare() {
+        assertThat(states(week(10, 2), week(10, 9))).containsExactly(State.MISSED, State.ON_TRACK);
+        // Nor after a run that two misses ended.
+        assertThat(states(week(10, 9), week(10, 2), week(10, 1), week(10, 2), week(10, 9)))
+                .containsExactly(State.ON_TRACK, State.SPARE, State.MISSED, State.MISSED, State.ON_TRACK);
+    }
+
+    @Test
+    void aPausedWeekIsPausedAndDoesNotSplitTwoMisses() {
+        List<WeekTally> weeks = List.of(training(MONDAY, 10, 9), training(MONDAY.plusWeeks(1), 10, 2),
+                training(MONDAY.plusWeeks(2), 10, 0).asPaused(), training(MONDAY.plusWeeks(3), 10, 1));
+
+        assertThat(Consistency.walked(weeks, P).weeks().stream().map(ConsistencyWeek::state))
+                .containsExactly(State.ON_TRACK, State.SPARE, State.PAUSED, State.MISSED);
+    }
+
+    @Test
+    void aPausedWeekThatWentWellIsPausedAndNotOnTrack() {
+        assertThat(Consistency.walked(List.of(training(MONDAY, 10, 9), training(MONDAY.plusWeeks(1), 10, 10).asPaused()), P).weeks()
+                .stream().map(ConsistencyWeek::state)).containsExactly(State.ON_TRACK, State.PAUSED);
+    }
+
+    @Test
+    void aWeekWithNothingPlannedIsPausedForItIsNeitherASuccessNorAMiss() {
+        assertThat(states(week(10, 9), week(0, 0), week(10, 9))).containsExactly(State.ON_TRACK, State.PAUSED, State.ON_TRACK);
+    }
+
+    @Test
+    void theCellsCarryTheMondaysOldestFirst() {
+        List<ConsistencyWeek> weeks = Consistency.walked(dated(List.of(week(10, 9), week(10, 2), week(10, 9))), P).weeks();
+
+        assertThat(weeks).extracting(ConsistencyWeek::weekOf).containsExactly(MONDAY, MONDAY.plusWeeks(1), MONDAY.plusWeeks(2));
+    }
+
+    @Test
+    void aShortHistoryIsAShortListAndNoHistoryIsNone() {
+        assertThat(states(week(10, 9), week(10, 9), week(10, 9))).hasSize(3);
+        assertThat(Consistency.walked(List.of(), P).weeks()).isEmpty();
+    }
+
+    @Test
+    void theGridIsTheLastProgressGridWeeksAndTheirWalkIsTheWholeRecordsWalk() {
+        int grid = P.wholeNumber(ParameterKey.PROGRESS_GRID_WEEKS);
+        assertThat(grid).as("ADR-078 #2: twelve weeks").isEqualTo(12);
+        // A miss in the first week (no run: missed), a lone one in the 13th (in a run: spare). The first falls off the grid.
+        List<int[]> history = new ArrayList<>();
+        for (int i = 0; i < 13; i++) {
+            history.add(week(10, i == 0 || i == 12 ? 2 : 9));
+        }
+        List<WeekTally> weeks = dated(history);
+
+        Consistency.Walked walked = Consistency.walked(weeks, P);
+
+        assertThat(walked.weeks()).hasSize(grid);
+        assertThat(walked.weeks().getFirst().weekOf()).as("the oldest week fell off").isEqualTo(MONDAY.plusWeeks(1));
+        assertThat(walked.weeks().getLast()).isEqualTo(new ConsistencyWeek(MONDAY.plusWeeks(12), State.SPARE));
+        assertThat(walked.record().countedWeeks()).as("the record is not cut by the grid").isEqualTo(13);
+        assertThat(walked.record().forgivenWeeks()).as("the miss with no run forgave nothing").isOne();
+    }
+
+    @Test
+    void exactlyTheGridsWeeksAreAllOfThem() {
+        int grid = P.wholeNumber(ParameterKey.PROGRESS_GRID_WEEKS);
+
+        assertThat(Consistency.walked(dated(java.util.Collections.nCopies(grid, week(10, 9))), P).weeks()).hasSize(grid);
+        assertThat(Consistency.walked(dated(java.util.Collections.nCopies(grid - 1, week(10, 9))), P).weeks()).hasSize(grid - 1);
+    }
+
+    @Test
+    void theRecordOfWalkedIsTheRecord() {
+        List<WeekTally> weeks = dated(List.of(week(10, 9), week(10, 2), week(10, 1), week(10, 9)));
+
+        assertThat(Consistency.walked(weeks, P).record()).isEqualTo(Consistency.record(weeks, P));
+    }
+
+    @Property
+    boolean theCellsAndTheTotalsAreOneWalk(@ForAll("tallies") List<int[]> history) {
+        List<WeekTally> weeks = dated(history);
+        Consistency.Walked walked = Consistency.walked(weeks, P);
+        int grid = P.wholeNumber(ParameterKey.PROGRESS_GRID_WEEKS);
+        List<ConsistencyWeek> cells = walked.weeks();
+        long onTrack = cells.stream().filter(cell -> cell.state() == State.ON_TRACK).count();
+        long spare = cells.stream().filter(cell -> cell.state() == State.SPARE).count();
+        long counted = cells.stream().filter(cell -> cell.state() != State.PAUSED).count();
+        boolean cut = cells.size() == Math.min(weeks.size(), grid);
+        boolean newest = cells.isEmpty() || cells.getLast().weekOf().equals(weeks.getLast().weekStart());
+        // With the whole record on the grid, the cells ARE the totals; with more, they are a part of them.
+        boolean totals = weeks.size() > grid || (onTrack == walked.record().onTrackWeeks() && spare == walked.record().forgivenWeeks()
+                && counted == walked.record().countedWeeks());
+        boolean within = onTrack <= walked.record().onTrackWeeks() && spare <= walked.record().forgivenWeeks();
+        return cut && newest && totals && within;
+    }
+
     // ── helpers ─────────────────────────────────────────────────────────────────────────────────────────────
+
+    private static List<ConsistencyWeek.State> states(int[]... weeks) {
+        return Consistency.walked(dated(List.of(weeks)), P).weeks().stream().map(ConsistencyWeek::state).toList();
+    }
 
     /** A week where only training was planned: enough to exercise the counter. */
     private static WeekTally training(LocalDate weekStart, int planned, int done) {

@@ -212,6 +212,84 @@ class ConsistencyApiTests {
     }
 
     @Test
+    void theWeeksOverAreOneCellEachFromTheSameWalkAsTheRecord() throws Exception {
+        // K-1016 (ADR-078 #2): on track, a lone miss (spare), on track, a week under a declared state (paused), on track.
+        // Two sessions (the profile's days) and three weigh-ins of four are 5 of 6, on track (on_track_min_ratio).
+        AccountId account = consenting();
+        LocalDate today = LocalDate.now(ISTANBUL);
+        LocalDate began = today.minusDays(45);
+        jdbc.sql("""
+                insert into decision.plan (account_id, phase, phase_start, plan_start, target_kcal, observing_maintenance)
+                values (:a, 'CUT', :began, :began, 2600, false)""").param("a", account.value()).param("began", began).update();
+        List<String> mondays = new java.util.ArrayList<>();
+        for (LocalDate week = began.with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY)); week.plusDays(6).isBefore(today); week = week.plusWeeks(1)) {
+            int index = mondays.size();
+            mondays.add(week.toString());
+            if (index == 3) {
+                declared(account, week.plusDays(2)); // a state on a day of the week pauses it, whatever was done
+            }
+            if (index == 1 || index == 3) {
+                continue; // nothing done
+            }
+            for (int day : new int[] {0, 3}) {
+                workout(account, "WORKING", week.plusDays(day).atTime(12, 0).atZone(ISTANBUL).toInstant());
+            }
+            for (int day : new int[] {0, 1, 2}) {
+                send(account, "POST", "/v1/weigh-ins", Map.of("clientId", UUID.randomUUID(), "measuredAt",
+                        week.plusDays(day).atTime(8, 0).atZone(ISTANBUL).toInstant().toString(), "kg", 82.0, "source", "MANUAL"));
+            }
+        }
+        assertThat(mondays).as("weeks over since the plan began").hasSizeGreaterThanOrEqualTo(5);
+
+        Map<String, Object> consistency = read(get(account));
+
+        List<Map<String, Object>> cells = (List<Map<String, Object>>) consistency.get("weeks");
+        assertThat(cells).extracting(cell -> cell.get("weekOf")).as("oldest first, the weeks over and not this one").isEqualTo(mondays);
+        assertThat(cells).extracting(cell -> cell.get("state")).startsWith("ON_TRACK", "SPARE", "ON_TRACK", "PAUSED", "ON_TRACK")
+                .containsOnly("ON_TRACK", "SPARE", "PAUSED");
+        Map<String, Object> record = (Map<String, Object>) consistency.get("record");
+        assertThat(cells.stream().filter(cell -> cell.get("state").equals("SPARE")).count()).isEqualTo(((Number) record.get("forgivenWeeks")).longValue());
+        assertThat(cells.stream().filter(cell -> cell.get("state").equals("ON_TRACK")).count()).isEqualTo(((Number) record.get("onTrackWeeks")).longValue());
+        assertThat(cells.stream().filter(cell -> !cell.get("state").equals("PAUSED")).count()).isEqualTo(((Number) record.get("countedWeeks")).longValue());
+    }
+
+    @Test
+    void noWeekIsOverOnTheFirstWeekSoTheListIsEmpty() throws Exception {
+        // K-1016: a record shorter than the grid is a shorter list, never padded; none at all is an empty one.
+        Map<String, Object> consistency = read(get(afterTheFirstCall()));
+
+        assertThat(consistency).containsEntry("weeks", List.of());
+    }
+
+    @Test
+    void theGridIsTheLastTwelveWeeksAndTheRecordIsTheWholeHistory() throws Exception {
+        // K-1016, ADR-078 #2 (progress_grid_weeks 12): twenty weeks nothing was done in, so the first is a miss with no run
+        // to forgive and so is each after it. The grid shows the last twelve of the weeks over; the record counts them all.
+        AccountId account = consenting();
+        LocalDate thisMonday = LocalDate.now(ISTANBUL).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate began = thisMonday.minusWeeks(20);
+        jdbc.sql("""
+                insert into decision.plan (account_id, phase, phase_start, plan_start, target_kcal, observing_maintenance)
+                values (:a, 'CUT', :began, :began, 2600, false)""").param("a", account.value()).param("began", began).update();
+
+        Map<String, Object> consistency = read(get(account));
+
+        List<Map<String, Object>> cells = (List<Map<String, Object>>) consistency.get("weeks");
+        assertThat(cells).hasSize(12);
+        assertThat(cells.getLast()).isEqualTo(Map.of("weekOf", thisMonday.minusWeeks(1).toString(), "state", "MISSED"));
+        assertThat(cells.getFirst().get("weekOf")).isEqualTo(thisMonday.minusWeeks(12).toString());
+        assertThat(cells).extracting(cell -> cell.get("state")).containsOnly("MISSED");
+        assertThat((Map<String, Object>) consistency.get("record")).containsEntry("countedWeeks", 20).containsEntry("forgivenWeeks", 0);
+    }
+
+    /** A state declared on that one day (K-516): the week it falls in is paused. */
+    private void declared(AccountId account, LocalDate day) {
+        jdbc.sql("""
+                insert into decision.declared_state (id, account_id, kind, starts_on, ends_on, created_at)
+                values (:id, :a, 'SICK', :day, :day, now())""").param("id", UUID.randomUUID()).param("a", account.value()).param("day", day).update();
+    }
+
+    @Test
     void aSessionBackDatedOrFilledInLaterCountsInTheWeekItStarted() throws Exception {
         // ADR-071 #3, ADR-075 #5: every week here is logged after it ended. Monday's session is back-dated and finished;
         // Sunday evening's is "filled in later" — its set comes now and it is never finished. Both are the week they

@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.TemporalAdjusters;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -74,8 +75,24 @@ public final class Consistency {
      * 70 % of the plan is success).
      */
     public static ConsistencyRecord record(List<WeekTally> weeks, Parameters parameters) {
+        return walk(weeks, parameters).record();
+    }
+
+    /**
+     * The record and its weeks, cell by cell, from one walk (K-1016, ADR-078 #2): the last progress_grid_weeks of the weeks given.
+     */
+    public static Walked walked(List<WeekTally> weeks, Parameters parameters) {
         Walk walk = walk(weeks, parameters);
-        return new ConsistencyRecord(walk.onTrack(), walk.counted(), walk.run(), walk.forgivenWeeks());
+        int shown = Math.min(weeks.size(), parameters.wholeNumber(ParameterKey.PROGRESS_GRID_WEEKS));
+        List<ConsistencyWeek> cells = new ArrayList<>(shown);
+        for (int i = weeks.size() - shown; i < weeks.size(); i++) {
+            cells.add(new ConsistencyWeek(weeks.get(i).weekStart(), walk.states().get(i)));
+        }
+        return new Walked(walk.record(), List.copyOf(cells));
+    }
+
+    /** The record, and how it read each of the last weeks, oldest first. */
+    public record Walked(ConsistencyRecord record, List<ConsistencyWeek> weeks) {
     }
 
     /**
@@ -87,8 +104,12 @@ public final class Consistency {
         return walk(weeks, parameters).lastForgiven();
     }
 
-    /** The run walked once, for both readers. */
-    private record Walk(int onTrack, int counted, int run, boolean lastForgiven, int forgivenWeeks) {
+    /** The run walked once, for every reader: the totals, the last week's forgiveness and each week's state (K-1016). */
+    private record Walk(int onTrack, int counted, int run, boolean lastForgiven, int forgivenWeeks, List<ConsistencyWeek.State> states) {
+
+        ConsistencyRecord record() {
+            return new ConsistencyRecord(onTrack, counted, run, forgivenWeeks);
+        }
     }
 
     private static Walk walk(List<WeekTally> weeks, Parameters parameters) {
@@ -108,9 +129,11 @@ public final class Consistency {
         int missesInARow = 0;
         boolean forgiven = false;
         int forgivenWeeks = 0;
+        List<ConsistencyWeek.State> states = new ArrayList<>(weeks.size());
         for (WeekTally week : weeks) {
             forgiven = false;
             if (week.planned() == 0 || week.paused()) {
+                states.add(ConsistencyWeek.State.PAUSED);
                 continue; // nothing planned, or paused by a declared state (K-516): neither a success nor a miss
             }
             counted++;
@@ -118,16 +141,19 @@ public final class Consistency {
                 onTrack++;
                 run++;
                 missesInARow = 0;
+                states.add(ConsistencyWeek.State.ON_TRACK);
             } else if (++missesInARow >= 2) {
                 run = 0; // a second missed week in a row ends the run; the cumulative count stays
+                states.add(ConsistencyWeek.State.MISSED);
             } else {
                 forgiven = run > 0; // a lone miss keeps a run going; with no run there is nothing to forgive
                 // Used when it is forgiven, as the user is told then: a second miss ends the run, it does not take this
                 // back (K-608 review, U7: the count never goes down).
                 forgivenWeeks += forgiven ? 1 : 0;
+                states.add(forgiven ? ConsistencyWeek.State.SPARE : ConsistencyWeek.State.MISSED);
             }
         }
-        return new Walk(onTrack, counted, run, forgiven, forgivenWeeks);
+        return new Walk(onTrack, counted, run, forgiven, forgivenWeeks, List.copyOf(states));
     }
 
     /**

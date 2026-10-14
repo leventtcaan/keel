@@ -2,6 +2,7 @@ package app.keel.decision;
 
 import app.keel.engine.Consistency;
 import app.keel.engine.ConsistencyRecord;
+import app.keel.engine.ConsistencyWeek;
 import app.keel.engine.FirstWeeks;
 import app.keel.engine.MacroTargets;
 import app.keel.engine.ParameterKey;
@@ -72,9 +73,11 @@ class WeekLogs {
 
     /**
      * This week so far and the record since the first call (K-420), from the same logs and plan as the adherence; the
-     * weeks over it was counted from, oldest first (K-513 reads the forgiven week from them).
+     * weeks over it was counted from, oldest first (K-513 reads the forgiven week from them), and the last of them cell by
+     * cell for the grid (K-1016): the states of the walk that made the record, not a second count. This week, not yet
+     * over, is in neither.
      */
-    record Now(WeekTally week, ConsistencyRecord record, List<WeekTally> weeksOver) {
+    record Now(WeekTally week, ConsistencyRecord record, List<ConsistencyWeek> weeks, List<WeekTally> weeksOver) {
     }
 
     Now consistency(AccountId account, ProfileFacts profile, LocalDate today, CallStore.Plan plan, LocalDate firstCall,
@@ -84,8 +87,9 @@ class WeekLogs {
         WeekTallies.Logs logs = logs(account, profile, over.isEmpty() ? monday : over.getFirst(), today, bodyweight);
         WeekTallies.Plan asked = asked(account, profile, plan, bodyweight, ageYears, parameters);
         List<WeekTally> weeksOver = paused(account, WeekTallies.of(over, logs, asked), today);
-        return new Now(paused(account, List.of(WeekTallies.thisWeek(today, logs, asked)), today).getFirst(),
-                Consistency.record(weeksOver, parameters), weeksOver);
+        Consistency.Walked walked = Consistency.walked(weeksOver, parameters);
+        return new Now(paused(account, List.of(WeekTallies.thisWeek(today, logs, asked)), today).getFirst(), walked.record(), walked.weeks(),
+                weeksOver);
     }
 
     /**

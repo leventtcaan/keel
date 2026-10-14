@@ -124,6 +124,7 @@ public enum ParameterKey {
     HUNGER_QUESTION_DAYS(ParameterDomain.WINDOWS, Unit.DAYS),
     FIRST_WEEKS(ParameterDomain.WINDOWS, Unit.WEEKS),
     FIRST_WEEKS_RISK_FROM(ParameterDomain.WINDOWS, Unit.WEEKS),
+    PROGRESS_GRID_WEEKS(ParameterDomain.WINDOWS, Unit.WEEKS),
     DELOAD_VOLUME_FACTOR(ParameterDomain.TRAINING, Unit.RATIO),
     DELOAD_LOAD_REDUCTION_MIN(ParameterDomain.TRAINING, Unit.RATIO),
     DELOAD_LOAD_REDUCTION_MAX(ParameterDomain.TRAINING, Unit.RATIO),
