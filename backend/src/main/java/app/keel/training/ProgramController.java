@@ -132,12 +132,13 @@ class ProgramController {
      * Contract Program, with the deload ladder's calls in force today (K-217): a lighter week, a week off
      * ({@code restUntil}), the load held ({@code loadHeldSince}); back after a long break (K-531), a target a step lighter
      * ({@code backAfterBreak}, absent otherwise); the program reviewed as it is now (K-956); this week's
-     * cardio (K-959), absent where there is none; today on the user's calendar and its week's Monday (K-995), and this week's sessions on it (K-964).
+     * cardio (K-959), absent where there is none; today on the user's calendar and its week's Monday (K-995), and this week's sessions on it (K-964);
+     * {@code canAddDay}: whether {@code POST /v1/program/days} can add a day to this program (K-1013, the rule that add itself uses).
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record Program(UUID id, ProgramStore.Source source, List<ProgramDay> days, DeloadWeek deload, LocalDate restUntil,
             LocalDate loadHeldSince, Boolean backAfterBreak, ProgramReviews.Review review, ProgramCardio cardio, LocalDate today,
-            LocalDate weekOf, List<WeekSession> week) {
+            LocalDate weekOf, List<WeekSession> week, boolean canAddDay) {
     }
 
     /**
@@ -524,7 +525,8 @@ class ProgramController {
                 TrainingChanges.inForce(changes, TrainingChanges.Kind.REST_WEEK, today).map(TrainingChanges.Change::endsOn).orElse(null),
                 TrainingChanges.inForce(changes, TrainingChanges.Kind.HOLD_LOAD, today).map(TrainingChanges.Change::startsOn).orElse(null),
                 backAfterBreak ? Boolean.TRUE : null, reviews.review(account, program, back.parameters()),
-                cardioThisWeek(account, program, facts, today, back.parameters()).orElse(null), today, TodayChanges.monday(today), week);
+                cardioThisWeek(account, program, facts, today, back.parameters()).orElse(null), today, TodayChanges.monday(today), week,
+                ProgramDayAdds.canAdd(program, back.parameters()));
     }
 
     /**

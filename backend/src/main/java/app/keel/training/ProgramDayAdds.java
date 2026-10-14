@@ -29,6 +29,19 @@ final class ProgramDayAdds {
     }
 
     /**
+     * Whether the program can take an added day at all: a generated program of add_day_from_days days, each on its own
+     * weekday. The one rule {@link #added} and the contract's {@code Program.canAddDay} share, so the phone never offers an
+     * add the server refuses for the program (it can still refuse a weekday the program trains: the phone offers only free ones).
+     */
+    static boolean canAdd(ProgramStore.Program program, Parameters parameters) {
+        if (program.source() != ProgramStore.Source.GENERATED || program.days().size() != parameters.wholeNumber(ParameterKey.ADD_DAY_FROM_DAYS)
+                || program.days().stream().anyMatch(day -> day.weekday() == null)) {
+            return false;
+        }
+        return program.days().stream().map(ProgramStore.Day::weekday).distinct().count() == program.days().size();
+    }
+
+    /**
      * The program's days with the new day in week order (a day without an id: the store gives it one, and its moves). Empty
      * when the day can't be added: the user's own program (the generator has no split of theirs), a program of another number
      * of days than add_day_from_days, a weekday the program already trains, or a day on no weekday (its place in the week is
@@ -40,13 +53,12 @@ final class ProgramDayAdds {
      */
     static Optional<List<ProgramStore.Day>> added(ProgramStore.Program program, DayOfWeek weekday, ProgramTemplates templates, ExerciseCatalog catalog,
             Parameters parameters, int askedReps, Optional<GymStore.Gym> gym) {
-        if (program.source() != ProgramStore.Source.GENERATED || program.days().size() != parameters.wholeNumber(ParameterKey.ADD_DAY_FROM_DAYS)
-                || program.days().stream().anyMatch(day -> day.weekday() == null)) {
+        if (!canAdd(program, parameters)) {
             return Optional.empty();
         }
         Set<DayOfWeek> weekdays = EnumSet.noneOf(DayOfWeek.class);
         program.days().forEach(day -> weekdays.add(day.weekday()));
-        if (weekdays.size() != program.days().size() || !weekdays.add(weekday)) {
+        if (!weekdays.add(weekday)) {
             return Optional.empty();
         }
         Map<String, BigDecimal> known = startingWeights(program);

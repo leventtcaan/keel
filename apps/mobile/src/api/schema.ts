@@ -2163,6 +2163,14 @@ export interface components {
              *     or moved to a day; a day on no weekday is not on the calendar. This server always sends it.
              */
             week?: components["schemas"]["WeekSession"][];
+            /**
+             * @description Whether POST /v1/program/days can add a day to this program (K-1013, ADR-073 Ek 9): a generated program of
+             *     `add_day_from_days` days, each on its own weekday. The same rule that endpoint answers with, so the app offers
+             *     "add a day" only where it works and sends the user to Edit otherwise (the app holds no rule of its own). The
+             *     endpoint can still answer CONFLICT for a weekday the program trains already. This server always sends it; absent
+             *     (an older server) means not known: the app adds the day in Edit.
+             */
+            canAddDay?: boolean;
         };
         /**
          * @description The program reviewed (K-956, ADR-073 #2): at most review_max_suggestions suggestions, in priority order (training
