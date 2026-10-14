@@ -63,3 +63,12 @@ efor şablonu girdi tablosuyla · U5 testi: yenen kalori aralık.
 - **Sunucu cümle yazmaz:** telefon `data/copy/en.json` şablonuyla yazar ("Down 3.8 kg.").
 - **Reddedilen:** ilk tartıdan bugüne (tek gün değeri, U8) · `/v1/weight-trend`'den telefonda fark almak (telefon kural işletmez; yeterlilik
   kuralı sunucuda) · ilerleme özetine (training) koymak (modül sınırı).
+
+## Ek 2 · İlk günden sonraya geçiş ve Cardio kutusu (K-979 boşluk taraması, 2026-10-14; ürün kararı: **Levent KABUL**)
+- **Geçiş bölüm bölüm:** İlerleme tek bir anda "ilk gün" düzeninden çıkmaz; her bölüm kendi verisi gelince açılır: ilk biten seans → güç
+  grafiği ve efor satırı, `trend_min_weighins` (7) tartı → kilo trendi (K-1018 `trendReady`), ilk karar → sonuç cümlesi ve Calls. Verisi
+  olmayan bölüm ilk gün biçiminde kalır (hedef ya da kilit); boş grafik çizilmez. Açılma koşulları sunucu alanlarından okunur, telefon sayaç tutmaz.
+- **Cardio kutusu kardiyo kaydını açar** ('+ › Cardio' dakika girişi), Antrenman sekmesini değil: diğer üç kutu da kendi kayıt yerine gidiyor
+  (öğün, Apple Health); kullanıcı yürüyüşünde beklenen buydu (`prototip/kullanici-testi.md`).
+- **Prototipten bilerek ayrılan:** efor satırında `EffortLine` türleri dışındaki cümleler yok; kardiyo sayısı `Program.cardio`'dan (ADR-074: 3 × 30).
+- Yeni arka uç kartları: K-1016 (hafta hafta tutarlılık), K-1017 (ilk gün protein ve adım hedefi), K-1018 (kilo özeti).
