@@ -145,13 +145,15 @@ describe('"Change it" (prototype #w1change)', () => {
   test("the suggestion said, the free days to pick from (the days the program trains on are not offered), the plan as it was", async () => {
     await show();
     await press(w('changeIt'));
+    expect(screen.getByText('Change it')).toBeOnTheScreen(); // its title is the button it came from (user test 10 Oct)
     expect(screen.getByText(w('changeTitle'))).toBeOnTheScreen();
     expect(screen.getByText(t('callScreen.week1.changeHint', { suggestion: t('callScreen.week1.suggestion', { to: 'Thursday', from: 'Wednesday' }) }))).toBeOnTheScreen();
     expect(screen.getByText(t('callScreen.week1.moveHead', { day: 'Wednesday' }))).toBeOnTheScreen();
     for (const day of free) expect(screen.getByRole('button', { name: t(`programEditor.weekdayName.${day}`) })).toBeOnTheScreen();
     for (const day of ['MONDAY', 'WEDNESDAY', 'FRIDAY']) expect(screen.queryByRole('button', { name: t(`programEditor.weekdayName.${day}`) })).toBeNull();
     expect(screen.getByRole('button', { name: w('keepSuggestion') })).toBeOnTheScreen();
-    expect(screen.getByRole('button', { name: t('callScreen.keep') })).toBeOnTheScreen();
+    // The first week's call has no "Keep last week's plan" (ADR-077 Ek 1: the days are the user's to pick, nothing to keep).
+    expect(screen.queryByRole('button', { name: t('callScreen.keep') })).toBeNull();
   });
 
   test('a day picked: the call shows it, its button reads "Done", and that day is the one saved', async () => {
@@ -176,12 +178,12 @@ describe('"Change it" (prototype #w1change)', () => {
     expect(screen.getByRole('button', { name: w('soundsRight') })).toBeOnTheScreen();
   });
 
-  test("\"Keep last week's plan\": nothing saved, back to the week", async () => {
+  test('the way out is the back link: nothing saved, "Keep last week\'s plan" is nowhere on the first week\'s call', async () => {
     await show();
+    expect(screen.queryByRole('button', { name: t('callScreen.keep') })).toBeNull();
     await press(w('changeIt'));
-    await press(t('callScreen.keep'));
+    expect(screen.queryByRole('button', { name: t('callScreen.keep') })).toBeNull();
     expect(mockPATCH).not.toHaveBeenCalled();
-    expect(mockBack).toHaveBeenCalled();
   });
 
   test('two missed days: each its own day, and no day twice', async () => {
@@ -366,6 +368,9 @@ describe('one more day (K-1012): the suggestion comes filled, like the move', ()
     expect(screen.getByRole('button', { name: w('soundsRight') })).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: w('changeIt') })).toBeOnTheScreen();
     expect(JSON.stringify(screen.toJSON())).not.toContain('Pick the day');
+    // Two buttons, not three: "Got it" only left the call (the back link does), and said nothing of the day (user test 10 Oct).
+    expect(screen.queryByRole('button', { name: t('callScreen.gotIt') })).toBeNull();
+    expect(screen.queryByText(w('addInEdit').replace('{day}', 'Saturday'))).toBeNull();
   });
 
   test('"Sounds right", two days: the suggested weekday to POST /v1/program/days, then "saved" and back to the week; the editor is not opened', async () => {
@@ -424,31 +429,35 @@ describe('one more day (K-1012): the suggestion comes filled, like the move', ()
     expect(screen.getByRole('button', { name: w('soundsRight') })).toBeOnTheScreen();
   });
 
-  test('not two days (three): the program editor, as before; nothing sent to the server for it', async () => {
+  test('not two days (three): the call says why before the tap, lists no "New day" it cannot add, and Edit opens with the day marked', async () => {
     mockAnswers['/v1/program'] = ok(threeDays());
     await show();
-    await press(w('soundsRight'));
+    expect(screen.getByText(w('addInEdit').replace('{day}', 'Saturday'))).toBeOnTheScreen();
+    expect(screen.queryByText(w('newDay'))).toBeNull(); // this call does not add the day, so it does not list it as added
+    expect(screen.getByText(w('daysLabel'))).toBeOnTheScreen();
+    await press(w('openEdit'));
     expect(mockPOST).not.toHaveBeenCalled();
-    expect(mockPush).toHaveBeenCalledWith('/edit-program?part=days');
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/edit-program', params: { part: 'days', adding: 'SATURDAY' } });
   });
 
-  test('not two days, a day picked in "Change it": the program editor too', async () => {
+  test('not two days, a day picked in "Change it": Edit opens with that day marked', async () => {
     mockAnswers['/v1/program'] = ok(threeDays());
     await show();
     await press(w('changeIt'));
     await press(t('programEditor.weekdayName.SUNDAY'));
     await press(w('done'));
+    expect(screen.getByText(w('addInEdit').replace('{day}', 'Sunday'))).toBeOnTheScreen();
     await press(w('done'));
     expect(mockPOST).not.toHaveBeenCalled();
-    expect(mockPush).toHaveBeenCalledWith('/edit-program?part=days');
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/edit-program', params: { part: 'days', adding: 'SUNDAY' } });
   });
 
-  test('the server says no (409: a user\'s own program, a taken day, the days changed): the program editor, no note', async () => {
+  test('the server says no (409: a user\'s own program, a taken day, the days changed): Edit with the day marked, no note on the call', async () => {
     mockPost = refused(409, 'CONFLICT');
     await show();
     await press(w('soundsRight'));
     expect(mockPOST).toHaveBeenCalledTimes(1);
-    expect(mockPush).toHaveBeenCalledWith('/edit-program?part=days');
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/edit-program', params: { part: 'days', adding: 'SATURDAY' } });
     expect(mockBack).not.toHaveBeenCalled();
     expect(screen.queryByText(w('stale'))).toBeNull();
   });
@@ -492,9 +501,10 @@ describe('one more day (K-1012): the suggestion comes filled, like the move', ()
     expect(mockPOST).toHaveBeenCalledWith('/v1/program/days', { body: { weekday: 'FRIDAY' } });
   });
 
-  test('"Got it" is still there', async () => {
+  test('no "Got it" under the day: the call is left by the back link, nothing is added', async () => {
     await show();
-    await press(t('callScreen.gotIt'));
+    expect(screen.queryByRole('button', { name: t('callScreen.gotIt') })).toBeNull();
+    await press(t('callScreen.back'));
     expect(mockBack).toHaveBeenCalled();
     expect(mockPOST).not.toHaveBeenCalled();
   });

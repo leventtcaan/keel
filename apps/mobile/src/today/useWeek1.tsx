@@ -122,18 +122,26 @@ export function useWeek1(decision: Schemas['Decision'] | null): Week1 | null {
   let suggestion: string;
   let rows: ChangeRow[];
   let submit: () => Promise<void>;
-  let leave: ReactNode = null;
+  // The add call, for a program the server cannot add a day to: the day is added in Edit; why, said under the rows.
+  let inEdit = false;
+  let why: string | null = null;
 
   if (call.kind === 'add') {
     const suggestedDay = call.suggested[0];
     const day = picks[NEW_DAY] ?? suggestedDay;
     slots = [{ key: NEW_DAY, head: t('callScreen.week1.addHead'), chosen: day }];
     suggestion = suggestedDay === undefined ? '' : t('callScreen.week1.suggestionAdd', { day: full(suggestedDay) });
-    rows = [row('days', t('callScreen.week1.daysLabel'), null, String(call.toDays)), row('new', t('callScreen.week1.newDay'), null, day === undefined ? t('callScreen.week1.noDay') : short(day))];
-    leave = <Button label={t('callScreen.gotIt')} variant="ghost" disabled={busy} onPress={() => router.back()} />;
     // The server fills the new day from the program's own generator, but only for a program of two days (K-1012); any
-    // other count, or its 409 (a user's own program, a taken day): the day is added in the program editor.
-    const edit = () => router.push('/edit-program?part=days');
+    // other count, or its 409 (a user's own program, a taken day): the day is added in the program editor, with the day
+    // marked there. The call lists "New day" only when this call adds it, and says before the tap when Edit does.
+    inEdit = program?.state === 'ready' && program.value.days.length !== SERVER_ADDS_FROM_DAYS;
+    const added = program?.state === 'ready' && !inEdit;
+    rows = [
+      row('days', t('callScreen.week1.daysLabel'), null, String(call.toDays)),
+      ...(added ? [row('new', t('callScreen.week1.newDay'), null, day === undefined ? t('callScreen.week1.noDay') : short(day))] : []),
+    ];
+    if (inEdit && day !== undefined) why = t('callScreen.week1.addInEdit', { day: full(day) });
+    const edit = () => router.push({ pathname: '/edit-program', params: { part: 'days', ...(day === undefined ? {} : { adding: day }) } });
     submit = async () => {
       if (sending.current || day === undefined) return;
       sending.current = true;
@@ -236,7 +244,6 @@ export function useWeek1(decision: Schemas['Decision'] | null): Week1 | null {
         </View>
       ))}
       <Button label={t('callScreen.week1.done')} onPress={() => setChanging(false)} />
-      <Button label={t('callScreen.keep')} variant="ghost" onPress={() => router.back()} />
     </ScrollView>
   ) : null;
 
@@ -244,12 +251,16 @@ export function useWeek1(decision: Schemas['Decision'] | null): Week1 | null {
     rows,
     dock: (
       <View style={styles.dock}>
-        <Button label={t(picked ? 'callScreen.week1.done' : 'callScreen.week1.soundsRight')} disabled={busy || !complete} onPress={() => void submit()} />
+        <Button label={t(picked ? 'callScreen.week1.done' : inEdit ? 'callScreen.week1.openEdit' : 'callScreen.week1.soundsRight')} disabled={busy || !complete} onPress={() => void submit()} />
         <Button label={t('callScreen.week1.changeIt')} variant="ghost" disabled={busy} onPress={() => setChanging(true)} />
-        {leave}
       </View>
     ),
-    note,
+    note: (
+      <>
+        {why === null ? null : <Text style={[styles.text, { color: color.textSecondary }]}>{why}</Text>}
+        {note}
+      </>
+    ),
     changing: picker,
   };
 }

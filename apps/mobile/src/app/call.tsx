@@ -199,16 +199,24 @@ export default function CallScreen() {
       </>
     );
     const second = face.second;
+    // One primary action (K-1013): "Use this call" while the call is not in the plan, "Got it" while it is.
+    const using = second === 'use';
     const secondWay =
       second === null ? null : (
-        <Button label={t(second === 'keep' ? 'callScreen.keep' : 'callScreen.use')} variant="ghost" disabled={busy} onPress={() => void change(decision, second)} />
+        <Button
+          label={t(second === 'keep' ? 'callScreen.keep' : 'callScreen.use')}
+          variant={using ? 'primary' : 'ghost'}
+          disabled={busy}
+          onPress={() => void change(decision, second)}
+        />
       );
+    const gotIt = <Button label={t('callScreen.gotIt')} variant={using ? 'ghost' : 'primary'} onPress={() => router.back()} />;
     dock =
       week1?.dock ??
       (readOnly ? null : (
         <View style={styles.dock}>
-          <Button label={t('callScreen.gotIt')} onPress={() => router.back()} />
-          {secondWay}
+          {using ? secondWay : gotIt}
+          {using ? gotIt : secondWay}
         </View>
       ));
   }

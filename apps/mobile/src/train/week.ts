@@ -185,6 +185,16 @@ export function moveShifts(
   return { shifts, conflict: preview.conflict ?? null };
 }
 
+/**
+ * Whether a session of the week is done: a workout of its program day finished on its date on this phone (the finish may
+ * still wait to be sent), or the server's DONE (`WeekSession.workout`; not believed from a copy kept offline, as every
+ * session state of one). The same words as the week strip's tick, from the Train tab's own sources (sessionState).
+ */
+export function sessionDone(row: Found, records: LocalRecord[], stale: boolean): boolean {
+  if (finishedOnPhone(records, row.session.date, row.day.id) !== null) return true;
+  return !stale && row.session.workout?.state === 'DONE';
+}
+
 /** The week's sessions but today's (the server's today), in date order, each on the weekday of its date. */
 export function weekRows(program: Schemas['Program'], today: string | undefined = program.today): WeekRow[] {
   return sessions(program)

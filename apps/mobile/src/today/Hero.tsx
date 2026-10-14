@@ -104,24 +104,37 @@ export function Hero({ hero, today, onChanged }: Props) {
     }
     case 'call': {
       const { decision, declined } = hero;
+      const pending = decision.application.state === 'PENDING';
+      // The arrow is the block's mark: the whole block opens the call (K-1013), the arrow is not a control of its own.
       const chevron = (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('thisWeek.hero.openCall')}
-          // navigate, not push: a second tap before the screen is up goes to the same one, it stacks no second call.
-          onPress={() => router.navigate('/call')}
-          hitSlop={tokens.space.md}
-          style={styles.chevron}>
+        <View style={styles.chevron}>
           <SymbolView name="chevron.right" size={tokens.type.body} tintColor={color.decisionText} weight="bold" />
-        </Pressable>
+        </View>
       );
       const [next, inDays] = when('thisWeek.hero.nextCall', decision.nextReview, today);
       const use = <Button label={t('thisWeek.hero.useCall')} size="sm" disabled={busy} onPress={() => void takeCall(decision)} />;
+      // A call not in the plan (kept off it, or not applied yet): the foot has the one thing to do, using it; the block
+      // opens the call. A call in the plan: when the next one is.
+      const off = declined || pending;
+      const problem = failed?.read === decision ? <ProblemText style={[styles.meta, { color: color.decisionMuted }]}>{t(failed.key)}</ProblemText> : null;
       return (
-        <DecisionBlock testID="hero" aside={chevron} title={t(labelKey(decision.copyKey))}>
+        <DecisionBlock
+          testID="hero"
+          aside={chevron}
+          title={t(labelKey(decision.copyKey))}
+          // navigate, not push: a second tap before the screen is up goes to the same one, it stacks no second call.
+          onPress={() => router.navigate('/call')}
+          pressLabel={t('thisWeek.hero.openCall')}
+          footer={
+            off ? (
+              <>
+                {foot(t(pending ? 'thisWeek.hero.pending' : 'thisWeek.hero.notAppliedShort'), use)}
+                {problem}
+              </>
+            ) : undefined
+          }>
           {line(declined ? t('thisWeek.hero.notApplied') : t(`${decision.copyKey}.title`))}
-          {declined ? foot(t('thisWeek.hero.notAppliedShort'), use) : foot(next, count(inDays))}
-          {failed?.read === decision ? <ProblemText style={[styles.meta, { color: color.decisionMuted }]}>{t(failed.key)}</ProblemText> : null}
+          {off ? null : foot(next, count(inDays))}
         </DecisionBlock>
       );
     }

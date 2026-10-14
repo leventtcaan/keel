@@ -12,6 +12,7 @@ import CallScreen from '@/app/call';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { ThemeProvider } from '@/theme/theme';
+import { palettes } from '@/theme/tokens';
 
 type Schemas = components['schemas'];
 type Answer = { data?: unknown; error?: { code: string; message: string }; response: Response };
@@ -124,6 +125,29 @@ describe("this week's call", () => {
     await press(t('callScreen.use'));
     expect(mockPOST).toHaveBeenCalledWith('/v1/decisions/{id}/apply', { params: { path: { id: 'd1' } } });
     expect(screen.getByText(t('callScreen.inPlan'))).toBeOnTheScreen();
+  });
+
+  test('a call not in the plan (pending, or kept off it): "Use this call" is the one primary action, "Got it" only leaves (user test 10 Oct)', async () => {
+    const p = palettes.light;
+    for (const state of ['PENDING', 'DECLINED'] as const) {
+      mockAnswers['/v1/decisions/current'] = ok(decision({ application: { state }, declinable: false }));
+      await show();
+      expect(screen.getByRole('button', { name: t('callScreen.use') })).toHaveStyle({ backgroundColor: p.accent });
+      expect(screen.getByRole('button', { name: t('callScreen.gotIt') })).not.toHaveStyle({ backgroundColor: p.accent });
+      await screen.unmount();
+    }
+  });
+
+  test('a call in the plan keeps "Got it" as its primary action', async () => {
+    await show();
+    expect(screen.getByRole('button', { name: t('callScreen.gotIt') })).toHaveStyle({ backgroundColor: palettes.light.accent });
+  });
+
+  test('pending says it is not applied yet, in the foot where "In this week\'s plan" would be; it is not read as in the plan', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(decision({ application: { state: 'PENDING' }, declinable: true }));
+    await show();
+    expect(screen.getByText(t('callScreen.notAppliedYet'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('callScreen.inPlan'))).toBeNull();
   });
 
   test('a call resting on the safety net: no second way, and none of its reasons said (ADR-028 #24)', async () => {

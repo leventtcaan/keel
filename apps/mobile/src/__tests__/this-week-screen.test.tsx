@@ -9,6 +9,7 @@ import TodayScreen from '@/app/(tabs)/index';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { ThemeProvider } from '@/theme/theme';
+import { workoutParams } from '@/train/params';
 
 type Schemas = components['schemas'];
 type Answer = { data?: unknown; error?: { code: string; message: string }; response: Response };
@@ -309,6 +310,51 @@ describe('Monday, the check-in open (#home-mon)', () => {
   });
 });
 
+describe('the hero is one tap (user test 10 Oct)', () => {
+  test("the whole block opens the call: its label, its line and the next call's day, not only the arrow", async () => {
+    await show();
+    for (const text of [t('decision.stop_load_increase.label'), t('decision.stop_load_increase.plateau.title'), t('thisWeek.hero.nextCall', { day: 'Monday' })]) {
+      mockNavigate.mockClear();
+      await act(async () => {
+        fireEvent.press(screen.getByText(text));
+      });
+      expect(mockNavigate).toHaveBeenCalledWith('/call');
+    }
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  test('the block is one control to a screen reader (the arrow is its mark, not a second button)', async () => {
+    await show();
+    expect(screen.getAllByRole('button', { name: t('thisWeek.hero.openCall') })).toHaveLength(1);
+  });
+
+  test('a call not applied yet (pending): it says so, with the one action that applies it; the whole block still opens the call', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(decision({ application: { state: 'PENDING' } }));
+    await show();
+    expect(screen.getByText(t('thisWeek.hero.pending'))).toBeOnTheScreen();
+    expect(screen.getByText(t('decision.stop_load_increase.plateau.title'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('thisWeek.hero.nextCall', { day: 'Monday' }))).toBeNull(); // one action in the foot, not two things to read
+    mockAnswers['/v1/decisions/current'] = ok(decision());
+    await press(t('thisWeek.hero.useCall'));
+    expect(mockPOST).toHaveBeenCalledWith('/v1/decisions/{id}/apply', { params: { path: { id: 'd1' } } });
+    expect(screen.queryByText(t('thisWeek.hero.pending'))).toBeNull();
+    expect(screen.getByText(t('thisWeek.hero.nextCall', { day: 'Monday' }))).toBeOnTheScreen();
+  });
+
+  test('the action on a call not applied is its own control: pressing it does not open the call', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(decision({ application: { state: 'PENDING' } }));
+    await show();
+    await press(t('thisWeek.hero.useCall'));
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  test('a call in the plan has no "Use this call"', async () => {
+    await show();
+    expect(screen.queryByRole('button', { name: t('thisWeek.hero.useCall') })).toBeNull();
+    expect(screen.queryByText(t('thisWeek.hero.pending'))).toBeNull();
+  });
+});
+
 describe("a call declined: last week's plan kept (K-963, user test 8 Oct)", () => {
   beforeEach(() => {
     mockAnswers['/v1/decisions/current'] = ok(decision({ application: { state: 'DECLINED' } }));
@@ -422,6 +468,25 @@ describe("today's workout (#home)", () => {
     expect(screen.getByText(t('thisWeek.today.cardio', { minutes: 30 }))).toBeOnTheScreen();
     await press(startFullBodyA());
     expect(mockPush).toHaveBeenCalledWith({ pathname: '/workout', params: { day: 'c' } });
+  });
+
+  test('the moves beyond the first three are counted ("and 1 more"), so the card and the Train tab tell the same session (user test 10 Oct)', async () => {
+    await show();
+    expect(screen.getByText('and 1 more')).toBeOnTheScreen();
+    mockAnswers['/v1/program'] = fridayAs({ exerciseIds: ['squat', 'bench_press', 'lat_pulldown'] });
+    await act(async () => mockRefocus());
+    expect(screen.queryByText(/and \d+ more/)).toBeNull();
+  });
+
+  test('ten moves: three shown and "and 7 more"', async () => {
+    const ten = ['squat', 'bench_press', 'lat_pulldown', 'plank', 'row', 'curl', 'dip', 'lunge', 'fly', 'raise'];
+    mockAnswers['/v1/program'] = ok({
+      ...PROGRAM,
+      days: [...PROGRAM.days.slice(0, 2), { ...PROGRAM.days[2], exercises: ten.map((id) => ({ exerciseId: id, baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 1 })) }],
+      week: [...(PROGRAM.week ?? []).slice(0, 2), { programDayId: 'c', date: '2026-12-25', exerciseIds: ten }],
+    });
+    await show();
+    expect(screen.getByText('and 7 more')).toBeOnTheScreen();
   });
 
   test('"Change" opens the page that changes today (K-970), for today\'s session', async () => {
@@ -674,9 +739,29 @@ describe("today's workout (#home)", () => {
     ]);
     await show();
     expect(screen.getByText(t('thisWeek.today.open'))).toBeOnTheScreen();
-    expect(screen.getByText(t('thisWeek.today.openSets.other', { count: 2 }))).toBeOnTheScreen();
+    expect(screen.getByText(t('thisWeek.today.openSets.other', { count: 2, hours: workoutParams.unfinishedSessionCloseHours }))).toBeOnTheScreen();
     await press(t('thisWeek.today.continue'));
     expect(mockPush).toHaveBeenCalledWith('/workout');
+  });
+
+  test('the open card says when the server closes the workout (unfinished_session_close_hours), not "anytime this week" (user test 10 Oct)', async () => {
+    const open = (...sets: number[]) => [
+      record(1, 'workout', 'wo', null, { clientId: 'wo', startedAt: '2026-12-25T08:00:00Z', programDayId: 'c' }),
+      ...sets.map((n) => record(n + 1, 'set', `s${n}`, 'wo', { exerciseId: 'squat', setType: 'WORKING', loadKg: 80, reps: 8 })),
+    ];
+    const replaced = jest.replaceProperty(workoutParams, 'unfinishedSessionCloseHours', 36);
+    try {
+      mockServices.workoutRecords.mockResolvedValueOnce(open());
+      await show();
+      expect(screen.getByText('Finish within 36 hours of starting.')).toBeOnTheScreen();
+      await screen.unmount();
+      mockServices.workoutRecords.mockResolvedValueOnce(open(1));
+      await show();
+      expect(screen.getByText('1 set logged. Finish within 36 hours of starting.')).toBeOnTheScreen();
+      expect(JSON.stringify(screen.toJSON())).not.toMatch(/anytime this week/i);
+    } finally {
+      replaced.restore();
+    }
   });
 
   test("a workout left open past the server's close (days ago) is not continued: the server closed it", async () => {

@@ -70,14 +70,19 @@ const mockRecord = jest.fn(async (_outbound: Outbound) => true);
 let mockDeclared: Schemas['DeclaredState'] | null = null;
 let mockOwn: Move[] = [];
 let mockDecision: Schemas['Decision'] | null = null;
+let mockCheckInDay: Schemas['Weekday'] | null = 'MONDAY';
 const mockApplied = jest.fn();
 const mockChanged = jest.fn();
 let mockChangeAnswer: () => unknown = () => ({ data: PROGRAM, response: { status: 200 } });
 let mockApplyStatus = 200;
 const mockServices = {
   api: {
-    GET: async (path: string) =>
-      path === '/v1/decisions/current' && mockDecision !== null ? { data: mockDecision, response: { status: 200 } } : { response: { status: 404 } },
+    GET: async (path: string) => {
+      if (path === '/v1/decisions/current' && mockDecision !== null) return { data: mockDecision, response: { status: 200 } };
+      // The user's check-in day: the day "reads what happened" after a skip (user test 10 Oct).
+      if (path === '/v1/profile' && mockCheckInDay !== null) return { data: { schedule: { checkInDay: mockCheckInDay } }, response: { status: 200 } };
+      return { response: { status: 404 } };
+    },
     POST: async (path: string, init?: unknown) => {
       if (path === '/v1/program/today') {
         mockChanged(path, init);
@@ -123,6 +128,7 @@ beforeEach(() => {
   mockRecords = [];
   mockOwn = [];
   mockDecision = null;
+  mockCheckInDay = 'MONDAY';
   mockChangeAnswer = () => ({ data: PROGRAM, response: { status: 200 } });
   mockApplyStatus = 200;
 });
@@ -316,6 +322,70 @@ test('skipped: no catch-up, nothing to start or change', async () => {
   expect(await screen.findByText('Skipped. Monday reads what happened.')).toBeTruthy();
   expect(screen.queryByText('Start workout')).toBeNull();
   expect(screen.queryByText('Change')).toBeNull();
+});
+
+test("skipped: the day that reads what happened is the user's check-in day, not always Monday (user test 10 Oct)", async () => {
+  mockCheckInDay = 'SUNDAY';
+  mockData = withProgram({ week: [{ programDayId: 'a', date: '2026-09-29', skipped: true, exerciseIds: ['bench_press', 'dip'] }, THURSDAY] });
+  await show();
+  expect(await screen.findByText('Skipped. Sunday reads what happened.')).toBeTruthy();
+  expect(screen.queryByText(/Monday/)).toBeNull();
+});
+
+test("skipped, the check-in day not known (profile not read): no day is made up", async () => {
+  mockCheckInDay = null;
+  mockData = withProgram({ week: [{ programDayId: 'a', date: '2026-09-29', skipped: true, exerciseIds: ['bench_press', 'dip'] }, THURSDAY] });
+  await show();
+  expect(await screen.findByText(t('train.skippedNoDay'))).toBeTruthy();
+});
+
+describe("this week's list marks the sessions that are done (user test 10 Oct)", () => {
+  // Monday 28 Sep, a day before today: a session of the week gone by.
+  const MONDAY = { programDayId: 'c', date: '2026-09-28', exerciseIds: ['squat'] };
+  const days = [...PROGRAM.days, { id: 'c', nameKey: 'programDays.full_body_a.name', weekday: 'MONDAY' as const, exercises: [PROGRAM.days[1].exercises[0]] }];
+  const record = (seq: number, kind: string, clientId: string, parentClientId: string | null, body: unknown): LocalRecord =>
+    ({ seq, clientId, kind, parentClientId, body, state: 'PENDING', serverId: null, serverBody: null, errorCode: null }) as LocalRecord;
+
+  test("the server's DONE: a tick and \"Done\" on that row, no \"Start this\"; the other rows are as before", async () => {
+    // No session today, so the rows of the week can be started: the done one cannot.
+    mockData = withProgram({ days, week: [{ ...MONDAY, workout: { id: 'w1', state: 'DONE' } }, THURSDAY] });
+    await show();
+    expect(await screen.findAllByLabelText(t('train.doneTag'))).toHaveLength(1);
+    expect(screen.queryByLabelText(t('train.startDay', { day: 'Full body A' }))).toBeNull();
+    expect(screen.getByLabelText(t('train.startDay', { day: 'Lower A' }))).toBeTruthy();
+  });
+
+  test("finished on this phone (its finish may still wait to be sent): done on the row before the server knows", async () => {
+    mockRecords = [
+      record(1, 'workout', 'wo', null, { clientId: 'wo', startedAt: new Date(2026, 8, 28, 18, 0).toISOString(), programDayId: 'c' }),
+      record(2, 'finish', 'f1', 'wo', { endedAt: new Date(2026, 8, 28, 19, 0).toISOString(), uncleanExerciseIds: [] }),
+    ];
+    mockData = withProgram({ days, week: [MONDAY, THURSDAY] });
+    await show();
+    expect(await screen.findAllByLabelText(t('train.doneTag'))).toHaveLength(1);
+    expect(screen.queryByLabelText(t('train.startDay', { day: 'Full body A' }))).toBeNull();
+  });
+
+  test('a copy kept offline: the server\'s old DONE is not believed (as every session state of a copy), the phone\'s records still are', async () => {
+    mockData = { ...withProgram({ days, week: [{ ...MONDAY, workout: { id: 'w1', state: 'DONE' } }, PROGRAM.week![0], THURSDAY] }), kept: true };
+    await show();
+    await screen.findByText(t('train.thisWeek'));
+    expect(screen.queryByLabelText(t('train.doneTag'))).toBeNull();
+  });
+
+  test('nothing done, nothing marked: an empty past day says nothing (U7)', async () => {
+    mockData = withProgram({ days, week: [MONDAY, PROGRAM.week![0], THURSDAY] });
+    await show();
+    await screen.findByText(t('train.thisWeek'));
+    expect(screen.queryByLabelText(t('train.doneTag'))).toBeNull();
+  });
+
+  test('a skipped session keeps its own tag, not a tick', async () => {
+    mockData = withProgram({ days, week: [{ ...MONDAY, skipped: true }, PROGRAM.week![0], THURSDAY] });
+    await show();
+    expect(await screen.findByText(t('train.skippedTag'))).toBeTruthy();
+    expect(screen.queryByLabelText(t('train.doneTag'))).toBeNull();
+  });
 });
 
 test('a day without a session: rest, and any session of the week can be started from its row', async () => {

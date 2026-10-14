@@ -39,6 +39,8 @@ type Props = {
   underWay: boolean;
   /** With no session today, a session of the week below can be started: the rest line says so. */
   canPick: boolean;
+  /** The user's check-in day, the server's (profile): the day that "reads what happened" after a skip; null when not known. */
+  checkInDay: Schemas['Weekday'] | null;
   onStart: (programDayId: string) => void;
   /** Today's change of a session undone (UNDO), or the short version made full again (FULL); null while one is sent. */
   onChange: ((programDayId: string, change: 'UNDO' | 'FULL') => void) | null;
@@ -66,7 +68,7 @@ export function TodayCard(props: Props) {
   );
 }
 
-function Body({ program, today, date, kind, stale, finishedDay, movedAway, moves, units, underWay, canPick, onStart, onChange, notice }: Props) {
+function Body({ program, today, date, kind, stale, finishedDay, movedAway, moves, units, underWay, canPick, checkInDay, onStart, onChange, notice }: Props) {
   const { color } = useTheme();
   // One sheet per tap: a second tap before the sheet is up must not open a second one (as Start, K-405 review).
   const opening = useRef(false);
@@ -94,7 +96,7 @@ function Body({ program, today, date, kind, stale, finishedDay, movedAway, moves
   if (restWeek) line = t('train.status.restWeekNote');
   else if (done) line = t('train.doneToday');
   else if (elsewhere) line = t('train.openElsewhere');
-  else if (today?.session.skipped === true) line = t('train.skipped');
+  else if (today?.session.skipped === true) line = checkInDay === null ? t('train.skippedNoDay') : t('train.skipped', { day: t(`onboarding.schedule.dayName.${checkInDay}`) });
   else if (today === null && movedAway !== null) line = t('train.movedTo', { weekday: weekdayShort(movedAway.session.date) });
   else if (today === null) line = t(canPick ? 'train.restDayPick' : 'train.restDay');
   // Undo where the server says today's move or skip can be undone; the full workout back from the short version.
