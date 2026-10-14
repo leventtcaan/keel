@@ -3939,3 +3939,153 @@ describe('the last step: cardio (K-973, ADR-074 #3, ADR-075 #6)', () => {
     expect(screen.queryByText(t('workout.cardio.next'))).toBeNull();
   });
 });
+
+// K-1013 PR B (10 Oct walkthrough, round 3): the session's small findings.
+describe('walkthrough round 3: the session (K-1013)', () => {
+  const rowName = t('exercises.one_arm_dumbbell_row.name');
+
+  describe("a superset partner picked keeps the move's links in one piece", () => {
+    const linked = async () => {
+      await show();
+      await fireEvent.press(await screen.findByRole('button', { name: t('superset.link') }));
+      await fireEvent.press(screen.getByRole('button', { name: t('superset.pick', { name: rowName }) }));
+    };
+
+    test('the partner line has a line of its own, and Not a superset and Skip move stay links beside each other', async () => {
+      await linked();
+      const head = within(screen.getByTestId('move-head'));
+      const line = head.getByText(t('superset.with', { names: rowName }));
+      // Across the whole line (never squeezed beside the links, where it broke the other labels into letters).
+      expect(line).toHaveStyle({ flexBasis: '100%' });
+      const unlink = head.getByRole('button', { name: t('superset.unlink') });
+      const skip = head.getByRole('button', { name: t('workout.skipMoveLabel', { name: 'Bench press' }) });
+      expect(unlink).toHaveStyle({ minHeight: tokens.size.touch });
+      expect(skip).toHaveStyle({ minHeight: tokens.size.touch });
+      // Unlink and Skip move are in the same row of links, not one inside a box that holds the partner's text.
+      expect(unlink.parent).toBe(skip.parent);
+    });
+
+    test('Not a superset still takes the link away, and Skip move is still there', async () => {
+      await linked();
+      await fireEvent.press(within(screen.getByTestId('move-head')).getByRole('button', { name: t('superset.unlink') }));
+      expect(screen.queryByText(t('superset.with', { names: rowName }))).toBeNull();
+      expect(screen.getByRole('button', { name: t('superset.link') })).toBeOnTheScreen();
+      expect(within(screen.getByTestId('move-head')).getByRole('button', { name: t('workout.skipMoveLabel', { name: 'Bench press' }) })).toBeOnTheScreen();
+    });
+  });
+
+  describe('a bodyweight move (pull-up): no weight to pick, no warm-up to log', () => {
+    const PULL = { id: 'pull_up', nameKey: 'exercises.pull_up.name', load: 'BODYWEIGHT_PLUS_EXTERNAL', unilateral: false } as Schemas['Exercise'];
+    const PUSH = { id: 'push_up', nameKey: 'exercises.push_up.name', load: 'BODYWEIGHT', unilateral: false } as Schemas['Exercise'];
+    const serve = (exerciseId: string) => {
+      mockData = {
+        ...mockData,
+        exercises: { state: 'ready', value: [...EXERCISES, PULL, PUSH] },
+        program: {
+          state: 'ready',
+          // No target of its own (its first session): where "Pick a weight" used to be said.
+          value: { ...PROGRAM, days: [{ ...DAY, exercises: [{ exerciseId, baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 1, calibrationStepKg: 2.5 }, DAY.exercises[1]] }] },
+        },
+      };
+    };
+
+    test.each(['pull_up', 'push_up'])('%s: the target line does not tell the person to pick a weight', async (id) => {
+      serve(id);
+      await show();
+      const goal = within(await screen.findByTestId('goal'));
+      expect(goal.getByText(t('workout.goal.first'))).toBeOnTheScreen();
+      expect(goal.queryByText(t('workout.goal.pick'))).toBeNull();
+      expect(screen.queryByText(t('workout.pick.why'))).toBeNull();
+    });
+
+    test.each(['pull_up', 'push_up'])('%s: no warm-up line, though it is the first move of the day', async (id) => {
+      serve(id);
+      await show();
+      await screen.findByText(t('workout.log', { number: 1 }));
+      expect(screen.queryByText(t('workout.warmup.title'))).toBeNull();
+    });
+
+    test('a weighted move (the bench) keeps its warm-ups and its weight to pick', async () => {
+      mockData = {
+        ...mockData,
+        program: { state: 'ready', value: { ...PROGRAM, days: [{ ...DAY, exercises: [{ exerciseId: 'bench_press', baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 1, calibrationStepKg: 2.5 }, DAY.exercises[1]] }] } },
+      };
+      await show();
+      const goal = within(await screen.findByTestId('goal'));
+      expect(goal.getByText(t('workout.goal.pick'))).toBeOnTheScreen();
+      expect(screen.getByText(t('workout.warmup.title'))).toBeOnTheScreen();
+    });
+  });
+
+  describe('a skip is said on the weights, not on the cardio step; a discarded session is not paused', () => {
+    const ONE_SET = { ...DAY.exercises[0], baseSets: 1, sets: 1 };
+    const CARDIO: Schemas['ProgramCardio'] = {
+      source: 'GENERATED',
+      minutes: 30,
+      sessionsPerWeek: 3,
+      sessions: [{ weekday: 'MONDAY', place: 'AFTER_LIFT' }],
+      doneThisWeek: 0,
+      afterLiftOverLine: false,
+    };
+
+    test('Skip move, then on to the cardio: the skipped band was there, and is gone on the cardio step', async () => {
+      // The cardio comes after a session with a work set: the bench done, the row skipped.
+      mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, cardio: CARDIO, days: [{ ...DAY, exercises: [ONE_SET, { ...DAY.exercises[1], baseSets: 1, sets: 1 }] }] } } };
+      await show();
+      await fireEvent.press(await screen.findByRole('button', { name: t('workout.log', { number: 1 }) }));
+      await fireEvent.press(await screen.findByRole('button', { name: t('workout.next', { name: rowName }) }));
+      await fireEvent.press(await screen.findByRole('button', { name: t('workout.skipMoveLabel', { name: rowName }) }));
+      expect(await screen.findByText(t('workout.moveSkipped'))).toBeOnTheScreen();
+      await fireEvent.press(await within(screen.getByTestId('dock')).findByRole('button', { name: t('workout.cardio.next') }));
+      expect(screen.getByText(t('workout.cardio.title'))).toBeOnTheScreen();
+      expect(screen.queryByText(t('workout.moveSkipped'))).toBeNull();
+      expect(screen.queryByRole('button', { name: t('workout.undoLabel') })).toBeNull();
+    });
+
+    test('discarded while paused: no "Paused" band over the Undo screen', async () => {
+      const startedAt = new Date(Date.now() - 20 * 60_000).toISOString();
+      mockRecords = [
+        ...lastWeek(),
+        record('workout', 'w2', { clientId: 'w2', startedAt, programDayId: 'day-a' }),
+        record('set', 'b1', { clientId: 'b1', exerciseId: 'bench_press', setType: 'WORKING', loadKg: 60, reps: 8, rir: 1, side: 'BOTH' }, 'w2'),
+      ];
+      mockPause = { workout: 'w2', pause: { pausedAt: Date.now() - 60_000, pausedMs: 0 } };
+      await show();
+      expect(await screen.findByText(t('workout.paused'))).toBeOnTheScreen(); // paused to begin with
+      await fireEvent.press(screen.getByRole('button', { name: t('workout.endLabel') }));
+      await fireEvent.press(screen.getByRole('button', { name: new RegExp(`^${t('workout.ending.discard')}`) }));
+      await fireEvent.press(screen.getByRole('button', { name: t('workout.ending.confirm') }));
+      expect(await screen.findByText(t('workout.ending.discarded'))).toBeOnTheScreen();
+      expect(screen.queryByText(t('workout.paused'))).toBeNull();
+    });
+  });
+
+  describe('"Add a move" lists the catalog before anything is typed', () => {
+    const LAT = { id: 'lat_pulldown', nameKey: 'exercises.lat_pulldown.name', load: 'EXTERNAL', unilateral: false } as Schemas['Exercise'];
+    const CURL = { id: 'dumbbell_curl', nameKey: 'exercises.dumbbell_curl.name', load: 'EXTERNAL', unilateral: false } as Schemas['Exercise'];
+    beforeEach(() => {
+      mockData = { ...mockData, exercises: { state: 'ready', value: [...EXERCISES, LAT, CURL] } };
+    });
+    const pick = (name: string) => screen.queryByRole('button', { name: t('workout.add.pick', { name }) });
+
+    test('opened, the moves not in the session are there by name; typing narrows them; clearing brings them back', async () => {
+      await show();
+      await fireEvent.press(await screen.findByRole('button', { name: t('workout.add.open') }));
+      expect(pick(t('exercises.lat_pulldown.name'))).toBeOnTheScreen();
+      expect(pick(t('exercises.dumbbell_curl.name'))).toBeOnTheScreen();
+      expect(pick('Bench press')).toBeNull(); // already in the session
+      expect(screen.queryByText(t('workout.add.none'))).toBeNull();
+      await fireEvent.changeText(screen.getByLabelText(t('workout.add.search')), 'lat');
+      expect(pick(t('exercises.dumbbell_curl.name'))).toBeNull();
+      await fireEvent.changeText(screen.getByLabelText(t('workout.add.search')), '');
+      expect(pick(t('exercises.dumbbell_curl.name'))).toBeOnTheScreen();
+    });
+
+    test('a move picked from the list is added like a found one', async () => {
+      await show();
+      await fireEvent.press(await screen.findByRole('button', { name: t('workout.add.open') }));
+      await fireEvent.press(screen.getByRole('button', { name: t('workout.add.pick', { name: t('exercises.lat_pulldown.name') }) }));
+      expect(await screen.findByRole('button', { name: new RegExp(`^${t('exercises.lat_pulldown.name')}, `) })).toBeOnTheScreen();
+    });
+  });
+});

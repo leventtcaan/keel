@@ -39,7 +39,7 @@ import { ActiveSet, type Entry } from '@/train/ActiveSet';
 import { UpNext } from '@/train/UpNext';
 import { Warmups } from '@/train/Warmups';
 import { dayName, exerciseName } from '@/train/program';
-import { findMoves } from '@/train/moves';
+import { browseMoves, findMoves } from '@/train/moves';
 import { NOT_PAUSED, type Pause, pausedFor, toggle } from '@/train/pause';
 import type { Skips } from '@/train/skips';
 import { type Swaps, applySwaps, swapChoices, validSwaps } from '@/train/sessionSwaps';
@@ -275,8 +275,9 @@ function Session() {
       : (plans[entries.findIndex((e) => e.exerciseId === id)]?.current ?? null) !== null;
   // Warm-ups come before the move's first work set; the day's first move is the one picked before any work set at all.
   const worked = [...new Set(done.filter((s) => s.setType === 'WORKING').map((s) => s.exerciseId))];
+  // A move whose load is the body (a pull-up, a push-up) has none: no ramp to climb, and the body alone is not warmed up with (K-1013).
   const warming =
-    move === undefined || plan === null || worked.includes(move.id)
+    move === undefined || plan === null || worked.includes(move.id) || move.load !== 'EXTERNAL'
       ? []
       : warmups(plan.rows[0]?.suggested.loadKg ?? null, move, worked.length === 0, data?.gym ?? null, units);
 
@@ -675,12 +676,13 @@ function Session() {
       return 'offline';
     }
   };
-  const found = adding === null ? [] : findMoves(adding, [...moves.values()], new Set(entries.map((e) => e.exerciseId)));
+  // Nothing typed lists the catalog (by name), so a move can be picked without knowing what to type (K-1013).
+  const inSession = new Set(entries.map((e) => e.exerciseId));
+  const found = adding === null ? [] : adding.trim() === '' ? browseMoves([...moves.values()], inSession) : findMoves(adding, [...moves.values()], inSession);
   const addNote =
     adding !== null && adding.trim() !== '' && found.length === 0 ? (
       <Text style={[styles.small, { color: color.muted }]}>{t('workout.add.none')}</Text>
     ) : null;
-  const inSession = new Set(entries.map((e) => e.exerciseId));
   const typedName = adding?.trim() ?? '';
   const createButton =
     typedName === '' ? null : <Button label={t('workout.add.create', { name: typedName })} variant="ghost" size="sm" onPress={() => setCreating(typedName)} />;
@@ -1116,6 +1118,11 @@ function Session() {
       </Pressable>
     );
   // The last step's dock (K-973): Done, Later today, Skip today; then Finish (the way on once something was chosen).
+  // The last step: what was said of a skip belongs to the weights, so it does not follow the person here.
+  const openCardio = () => {
+    setUndo(null);
+    setCardioOpen(true);
+  };
   const cardioChoices =
     cardioMinutes === null || !cardioPending ? null : (
       <>
@@ -1147,7 +1154,7 @@ function Session() {
     ) : nextId !== undefined ? (
       <Button label={t('workout.next', { name: name(nextId) })} onPress={() => setPicked(nextId)} />
     ) : day === null && active === null ? null : cardioDue ? (
-      <Button label={t('workout.cardio.next')} onPress={() => setCardioOpen(true)} />
+      <Button label={t('workout.cardio.next')} onPress={openCardio} />
     ) : (
       <Button label={t('workout.finish')} onPress={onFinish} />
     );
@@ -1249,7 +1256,6 @@ function Session() {
     cardioMinutes === null ? null : (
       <>
         {entries.length > 0 && dots}
-        {undoBar}
         <CardioStep minutes={cardioMinutes} optional={todaySession?.short === true} said={cardioSaid} />
         {cardioUndo}
         {cardioProblem}
@@ -1273,10 +1279,10 @@ function Session() {
       {/* The page and the dock rise above the keyboard (a number pad has no return key): Log set stays in reach. */}
       <KeyboardAvoidingView testID="keyboard-avoiding" style={styles.safe} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.top}>
-          <SessionHeader since={stale ? null : (startedAt ?? openedAt)} onEnd={onEnd} pause={pause} onPause={discarded === null ? togglePause : null} subtitle={dayLine} />
+          <SessionHeader since={stale ? null : (startedAt ?? openedAt)} onEnd={onEnd} pause={discarded === null ? pause : NOT_PAUSED} onPause={discarded === null ? togglePause : null} subtitle={dayLine} />
           {/* Its place is kept with no rest in it, so the page under it does not move when one starts. */}
           <View testID="rest-slot" style={styles.restSlot}>
-            {pause.pausedAt !== null ? pausedBar : rest !== null && <RestTimer since={rest} onEnd={endRest} />}
+            {pause.pausedAt !== null && discarded === null ? pausedBar : rest !== null && <RestTimer since={rest} onEnd={endRest} />}
           </View>
         </View>
         <ScrollView testID="session-scroll" contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
