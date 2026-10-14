@@ -187,3 +187,20 @@ Karar ekranı (#3) ve 1. hafta gün seçimi (#4, Ek 1) telefonda hesap istemez (
   değişmez; uzun boşluk seriyi bitirebilir, ekran bunu iddia etmez ve suçlamaz (U7).
 - **Rıza veri türüne göre:** Sick ve In pain sağlık verisidir, HEALTH_DATA rızası ister; Traveling, Busy, New gym takvim bilgisidir, rızasız
   kaydedilir (K-1021). Süre telefonda tarih toplanmadan gün sayısıyla gönderilir; seçenekler 3 ve 7 gün (#6).
+
+## Ek 7 · Yük tutma kararında hareket hedefi satırı (K-1009, 2026-10-14, agent, teknik; KABUL)
+Ek 4'ün "hareket hedefi satırı antrenman modülünden gelir" sözü şöyle yerine gelir (`Decision.changes[]`, sözleşme `DecisionChange.what = MOVE`):
+- **Satır:** `{what: MOVE, exerciseId, held: true, before: {target: {loadKg, reps}}, after: {target: {loadKg, reps}}, inForce?}`. `before`: programın o
+  hareket için sakladığı sonraki hedef; `after`: yük tutulurken programın gösterdiği hedef (`NextTargets.shown`: son yük, tekrar aralığının üstü, K-217).
+  Sayılar kg ve tekrar, programın birimiyle; telefon yalnız yazar (U1). `held: true`: yük korunuyor, telefon bunu "hedef düştü" diye yazmaz (kullanıcı testi,
+  8 Eki). DECLINED/UNDONE'da `inForce` = `before` (tutma kalkar, program karardan önceki hedefte).
+- **Hareket seçimi (kural değil, okuma):** hold'un hedefini gerçekten değiştirdiği hareketler arasından en çok takılan (`TrainingStatuses.stalledSessions`, İlerleme
+  ekranındaki "stuck" K-965 ile aynı sayım; motorun haftalık kararı da aynı sayımı okur); eşitlikte programdaki ilk. Tek satır. Yeni eşik, yeni parametre yok;
+  hold'un hedefi değiştirmediği hareket (hedef zaten son yükte ve aralık içinde) ya da uzun aradan sonra bir basamak hafif gösterilen hedef (K-531) satır olmaz.
+- **Modül sınırı:** decision zaten training'e bağlı (`allowedDependencies`); training yeni bir okuma servisi sunar (`TrainingMoveTargets.heldMove`), tersi
+  bağımlılık yok. Göç yok: hedef programın bugünkü satırından okunur.
+- **Bilinen sınır:** program yalnız bugünkü hedefi saklar; bu yüzden satır **yalnız son kararda** (ve karar uygulanmış/geri alınmış/eski plan seçilmişse)
+  hesaplanır. Yük tutulurken ilk seans hedefi yeniden yazar (`before` = `after` olur) ve satır kaybolur; eski bir kararın geçmiş ekranında hareket satırı olmaz,
+  uydurulmaz. Karar anında saklamak karar şemasına sütun/göç ister, ayrı iş (K-1009 notu).
+- **Reddedilen:** (a) birden çok hareket satırı (ekran ≤45 kelime, başlık "en çok takılan hareket"); (b) telefonun hedefi `Program`'dan hesaplaması (kural işletir, U1);
+  (c) hold'un hedefi değiştirmediği hareket için eşit `before`/`after` satırı (değişiklik yok).
