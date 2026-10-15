@@ -192,20 +192,18 @@ class WeeklyReportTests {
 
     @Test
     void theReportWritesNothing() throws Exception {
-        // A read-only session refuses any write (SQLSTATE 25006, read_only_sql_transaction); the report, one select, still runs.
-        try (Connection connection = dataSource.getConnection()) {
-            connection.setReadOnly(true);
-            try (Statement statement = connection.createStatement()) {
+        // The session weekly-report.sh opens (PGOPTIONS default_transaction_read_only=on) refuses any write (SQLSTATE 25006,
+        // read_only_sql_transaction); the report, one select, still runs in it. (JDBC's setReadOnly does nothing in autocommit.)
+        try (Connection connection = dataSource.getConnection(); Statement statement = connection.createStatement()) {
+            try {
+                statement.execute("set default_transaction_read_only = on");
                 statement.execute("set keel.report_as_of = '" + AS_OF + "'");
                 assertThat(statement.execute(Files.readString(REPORT))).isTrue();
                 assertThatThrownBy(() -> statement.execute("insert into identity.account (id, apple_subject, created_at) "
                         + "values (gen_random_uuid(), 'synthetic-write', now())"))
                         .isInstanceOfSatisfying(SQLException.class, refused -> assertThat(refused.getSQLState()).isEqualTo("25006"));
             } finally {
-                try (Statement reset = connection.createStatement()) {
-                    reset.execute("reset all");
-                }
-                connection.setReadOnly(false);
+                statement.execute("reset all");
             }
         }
     }
