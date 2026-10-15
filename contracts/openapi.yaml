@@ -1586,10 +1586,11 @@ paths:
         the gap has reached `return_prompt_days` and this gap was not answered yet (POST /v1/return). A user with no log
         is new, not returning: never prompted. `suggested` is the one reading the program shows (`ReturnLoad`,
         `return_step_back_after_weeks`): EASE_BACK when the last session is that many weeks back (the first targets are a step
-        lighter), else PICK_UP. `nextCallOn` is the day the next call can be made: today while this check-in week's call is
-        not made, else the next check-in day (the first call's day before the first call, as `GET /v1/first-weeks`). The phone
-        shows all of it and works none out. Meals and weigh-ins are read only with the HEALTH_DATA consent (without it they
-        are not counted); CONFLICT without a profile.
+        lighter), else PICK_UP. `nextCallOn` is the day of the next call, the one the Hero names: the first call's day before
+        the first call (as `GET /v1/first-weeks`); today while this check-in week's call is open; else the latest call's own
+        `nextReview` while that is ahead (a call made late reviews on its own day); else the next check-in day. Absent without
+        the HEALTH_DATA consent (no call without it). The phone shows all of it and works none out. Meals and weigh-ins are
+        read only with the HEALTH_DATA consent (without it they are not counted); CONFLICT without a profile.
       responses:
         "200":
           description: The gap and the offer
@@ -1605,9 +1606,11 @@ paths:
       summary: Answer the return question once for this gap
       description: |
         Kept with the last log the gap began from: the question is not asked again for this gap (`shouldPrompt` false),
-        and asked again only when a new log is followed by a new gap of `return_prompt_days`. Sent again for the same gap, the
+        and asked again only when a new log is followed by a new gap of `return_prompt_days`, and not within `return_prompt_days`
+        days of the answer (a log dated back after it leaves the question answered). Sent again for the same gap, the
         newer answer replaces the older. PICK_UP keeps the program's targets as they were (`Program.backAfterBreak` absent,
-        `nextLoadKg` not eased) until the next session is done; EASE_BACK leaves the usual step back as it is; REBUILD changes
+        `nextLoadKg` not eased) for the first session back, within `return_step_back_after_weeks` of the answer: without a
+        session in that time it falls and the usual step back applies; EASE_BACK leaves the usual step back as it is; REBUILD changes
         nothing here (the phone calls POST /v1/program/generate). CONFLICT when there is no gap to answer (no log, or fewer
         days than `return_prompt_days`) or no profile. Answers the summary as it is after the answer.
       requestBody:
@@ -4831,7 +4834,7 @@ components:
           $ref: "#/components/schemas/ReturnChoice"
     ReturnSummary:
       type: object
-      required: [awayDays, shouldPrompt, suggested, nextCallOn]
+      required: [awayDays, shouldPrompt, suggested]
       properties:
         awayDays:
           type: integer
@@ -4845,7 +4848,9 @@ components:
         nextCallOn:
           type: string
           format: date
-          description: The day the next call can be made, on the user's calendar.
+          description: |
+            The day of the next call on the user's calendar, as the Hero names it (the latest call's `nextReview`). Absent
+            without the HEALTH_DATA consent: there is no call.
     Reason:
       type: object
       required: [rule, source]

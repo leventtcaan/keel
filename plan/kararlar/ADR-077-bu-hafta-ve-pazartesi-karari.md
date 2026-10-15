@@ -226,15 +226,20 @@ Ek 6'nın "tetik kayıt boşluğu, cevap sunucuda, aynı boşlukta yeniden sorul
 - **Cevabın izi:** `training.return_answer` (hesap başına bir satır: seçim, `gap_from` = cevap anındaki son kayıt günü, zaman). Tablo training'dedir, çünkü
   PICK_UP bastırmasını programın okuyan taraf training'dir ve training → decision bağımlılığı yok (decision zaten training'e bağlı: uç decision'da,
   kayıt training'de, `ReturnAnswers`). Aynı boşluk = son kayıt günü cevaptaki `gap_from`'dan sonra değil. Yeni bir kayıt son kayıt gününü ilerletir: bir
-  sonraki ≥7 günlük boşluk yeniden sorulur. Aynı boşluğa ikinci POST cevabı değiştirir (çift dokunuş, vazgeçme); boşluk yokken POST CONFLICT (boşluğa
+  sonraki ≥7 günlük boşluk yeniden sorulur; ama cevaptan sonra `return_prompt_days` gün boyunca (cevap gününden) yeniden sorulmaz: geriye tarihli bir kayıt
+  (unutulan öğün, geç girilen tartı) cevaplanan soruyu hemen geri getirmez. Aynı boşluğa ikinci POST cevabı değiştirir (çift dokunuş, vazgeçme); boşluk yokken POST CONFLICT (boşluğa
   bağlanmamış cevap, sonradan gelen boşluğu sessizce susturamaz).
 - **PICK_UP bastırması:** `BackAfterBreak` PICK_UP cevabı varken ve molanın ölçüldüğü son seans günü `gap_from`'u geçmemişken uzun mola saymaz
-  (`Program.backAfterBreak` yok, `nextLoadKg` hafifletilmemiş; çağrının hareket satırı da aynı okumadan). Yeni bir seans bastırmayı kendiliğinden bitirir
-  (son seans günü `gap_from`'dan sonra); sonraki uzun mola yeniden hafifletilir. EASE_BACK varsayılanı (basamak) olduğu gibi bırakır; REBUILD programa
+  (`Program.backAfterBreak` yok, `nextLoadKg` hafifletilmemiş; çağrının hareket satırı da aynı okumadan). Yalnız dönüşteki ilk seans içindir: cevaptan sonra
+  `return_step_back_after_weeks` (`ReturnLoad`'un kendi haftaları, yeni sayı yok) seanssız geçerse bastırma düşer ve `ReturnLoad` normal işler (süresiz geçerli
+  bir PICK_UP kullanıcının aylar sonraki molasını da sessizce susturan bir kalıcı bastırma olurdu). Yeni bir seans da bastırmayı bitirir (son seans günü `gap_from`'dan sonra); sonraki
+  uzun mola yeniden hafifletilir. EASE_BACK varsayılanı (basamak) olduğu gibi bırakır; REBUILD programa
   dokunmaz (telefon `POST /v1/program/generate` çağırır).
-- **nextCallOn:** çağrının yapılabileceği gün: bu check-in haftasının çağrısı yapılmamışsa bugün (haftanın check-in günü geçmiş ve çağrı açıksa
-  `FirstWeeks.firstCallOn` ile aynı dil: "bugün"), yapılmışsa sonraki check-in günü; ilk çağrıdan önce ilk çağrının günü (`FirstWeekFacts.firstCallOn`).
-  Telefon hesaplamaz.
+- **nextCallOn (Hero ile aynı gün):** Today'deki Hero en son kararın `nextReview`'unu gösterir; iki ekran farklı gün demesin diye tek fonksiyon
+  (`ReturnGap.nextCallOn`): HEALTH_DATA rızası yoksa alan yok (nullable; "rıza yokken çağrı yok", uç 403 vermez); ilk çağrıdan önce ilk çağrının günü
+  (`FirstWeekFacts.firstCallOn`); bu check-in haftasının çağrısı açıksa bugün; değilse en son kararın `nextReview`'u gelecekteyse o (geç yapılmış bir çağrı
+  kendi gününde gözden geçirilir); o da yoksa sonraki check-in günü. `nextReview` ile check-in günü arasındaki genel tutarsızlık bu kararın konusu değildir
+  (ayrı kart).
 - **Reddedilen:** (a) cevabı decision'da tutup training'e `ObjectProvider` ile okutmak (CurrentPhase kalıbı): iki tablo ya da ters bağımlılık, tek satırlık
   bir iz için fazla; (b) öneriyi `awayDays`'e bağlamak: ekran EASE_BACK deyip program hafifletmezdi (ya da tersi); (c) cevabı zaman damgasına bağlamak
   (son kayıt gününe değil): yeni kayıtla yeniden sorma kuralı tarihten çıkarılamazdı.

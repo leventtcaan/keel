@@ -4891,9 +4891,9 @@ tasks:
     why: "Part 4 boşluk taraması (14 Eki): K-981 #return için boşluk süresi, tetik parametresi (`return_prompt_days` yalnız R5'te), 'Pick up where I left off' karşılığı, sonraki karar tarihi ve cevabın izi sunucuda yok"
     acceptance:
       - "`return_prompt_days` (7, `windows.yaml`, urun, ADR-077 #5) `kural-ekle` ile; boşluk = son kayıttan (tartı, öğün, antrenman, kardiyo) bugüne gün (ADR-077 Ek 6: kayıt boşluğu)"
-      - "GET /v1/return → `{awayDays, shouldPrompt, suggested: EASE_BACK | PICK_UP, nextCallOn}`; öneri `return_step_back_after_weeks` ile `ReturnLoad`'la aynı"
-      - "POST /v1/return `{choice: EASE_BACK | PICK_UP | REBUILD}` cevabı yazar, aynı boşlukta tekrar sorulmaz; PICK_UP `ReturnLoad` basamağını bastırır (`backAfterBreak` false, `nextLoadKg` hafifletilmemiş); REBUILD programı değiştirmez (telefon /v1/program/generate çağırır)"
-      - "6/7 gün sınır testi; `nextCallOn` bir sonraki check-in günü"
+      - "GET /v1/return → `{awayDays, shouldPrompt, suggested: EASE_BACK | PICK_UP, nextCallOn?}`; `nextCallOn` Hero'nun günüdür (ilk çağrıdan önce `firstCallOn`; bu haftanın çağrısı açıksa bugün; değilse en son kararın `nextReview`'u gelecekteyse o, yoksa sonraki check-in günü; HEALTH_DATA rızası yoksa alan yok); öneri `return_step_back_after_weeks` ile `ReturnLoad`'la aynı"
+      - "POST /v1/return `{choice: EASE_BACK | PICK_UP | REBUILD}` cevabı yazar, aynı boşlukta tekrar sorulmaz (cevaptan sonra `return_prompt_days` gün geriye tarihli kayıt da geri getirmez); PICK_UP `ReturnLoad` basamağını yalnız dönüşteki ilk seans için bastırır (`backAfterBreak` false, `nextLoadKg` hafifletilmemiş; cevaptan sonra `return_step_back_after_weeks` seanssız geçerse bastırma düşer); REBUILD programı değiştirmez (telefon /v1/program/generate çağırır)"
+      - "6/7 gün sınır testi; `nextCallOn` Hero ile aynı gün (geç yapılmış çağrı, rızasız)"
     tests: ["Tablo testi, API testi (CI), sözleşme testi, göç testi"]
     refs: ["plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md", "plan/yeni-yuz-kurallar.md"]
     learn: ["Bir kez sorulan sorunun sunucuda izi"]
