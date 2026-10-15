@@ -235,6 +235,24 @@ class CardioLogTests {
     }
 
     @Test
+    void takingASessionBackDeletesItForGoodAndTheSameClientIdWritesItAgain() throws Exception {
+        // The undo is a delete, not a mark: a POST of the same clientId arriving afterwards is a new session (the app drops it from its queue).
+        AccountId account = withAProgram("LOSE_FAT", "INACTIVE", MON_WED_FRI);
+        UUID clientId = UUID.randomUUID();
+        MvcTestResult first = log(account, clientId, TODAY, "MANUAL", null);
+        assertThat(first).hasStatus(201);
+        assertThat(send("DELETE", account, "/v1/cardio-sessions/" + map(first).get("id"), null)).hasStatus(204);
+        assertThat(send("DELETE", account, "/v1/cardio-sessions/" + map(first).get("id"), null)).as("a second delete: already gone").hasStatus(404);
+
+        MvcTestResult again = log(account, clientId, TODAY, "MANUAL", null);
+
+        assertThat(again).hasStatus(201);
+        assertThat(map(again).get("id")).isNotEqualTo(map(first).get("id"));
+        assertThat(map(again)).containsEntry("clientId", clientId.toString());
+        assertThat(cardio(account)).containsEntry("doneThisWeek", 1).containsEntry("loggedToday", map(again));
+    }
+
+    @Test
     void takingTheTypedSessionBackLeavesTheDayLoggedWhenTheWatchHasOneToo() throws Exception {
         AccountId account = withAProgram("LOSE_FAT", "INACTIVE", MON_WED_FRI);
         MvcTestResult typed = log(account, UUID.randomUUID(), TODAY, "MANUAL", null);
