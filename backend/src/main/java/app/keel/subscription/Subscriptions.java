@@ -12,7 +12,6 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.BiFunction;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
@@ -81,22 +80,47 @@ class Subscriptions {
     }
 
     /**
-     * RevenueCat's REST answer for an account that still exists (K-704): it counts only when it was made at least {@code settle}
-     * after the state's own moment (SubscriptionState.afterAnswer). Not an event: no id is recorded, and asking twice is the same as once.
+     * RevenueCat's REST answer for an account that still exists (K-704, ADR-056 Ek 3): it counts only when it was made at least
+     * {@code settle} after the last webhook event and is not older than an answer already applied (SubscriptionState.afterAnswer).
+     * It never moves {@code last_event_at}, which stays the last webhook's moment, so webhooks are weighed against webhooks only: a
+     * delayed or retried webhook older than an answer still applies. The answer's own moment is {@code answered_at}. Not an event:
+     * no id is recorded, and asking twice is the same as once.
      */
     @Transactional
     void answered(AccountId account, SubscriptionState answer, Duration settle) {
         // The account may have been deleted since the ask began (the second deletion pass would remove a state written now, but
         // not writing it is simpler): only an account that is still ours is written.
-        if (accounts.of(account.value().toString()).isPresent()) {
-            keep(account, answer, (kept, weighed) -> {
-                SubscriptionState after = SubscriptionState.afterAnswer(kept, weighed, settle);
-                if (after != weighed) {
-                    SafeLog.ignored(ANSWERED); // inside the settle window, or older than the state: the webhook's state stands
-                }
-                return after;
-            });
+        if (accounts.of(account.value().toString()).isEmpty()) {
+            return;
         }
+        Optional<SubscriptionState> current = locked(account);
+        if (current.isEmpty()) {
+            SubscriptionState first = SubscriptionState.afterAnswer(current, Optional.empty(), answer, settle);
+            int made = jdbc.sql("""
+                            insert into subscription.subscription (account_id, status, access_until, last_event_at, answered_at)
+                            values (:account, :status, :until, :at, :answered) on conflict do nothing""")
+                    .param("account", account.value()).param("status", first.status().name()).param("until", utc(first.accessUntil()))
+                    .param("at", utc(first.lastEventAt())).param("answered", utc(answer.lastEventAt())).update();
+            if (made == 1) {
+                return;
+            }
+            current = locked(account); // a webhook made it first: the answer is weighed against it
+        }
+        SubscriptionState after = SubscriptionState.afterAnswer(current, answeredAt(account), answer, settle);
+        if (after == current.orElseThrow()) {
+            SafeLog.ignored(ANSWERED); // inside the settle window, or older than an answer already applied: the state stands
+            return;
+        }
+        jdbc.sql("update subscription.subscription set status = :status, access_until = :until, answered_at = :answered where account_id = :account")
+                .param("account", account.value()).param("status", after.status().name()).param("until", utc(after.accessUntil()))
+                .param("answered", utc(answer.lastEventAt())).update();
+    }
+
+    /** The moment of the last REST answer applied to the account; none if only webhooks have. Read inside answered's transaction. */
+    private Optional<Instant> answeredAt(AccountId account) {
+        return jdbc.sql("select answered_at from subscription.subscription where account_id = :account").param("account", account.value())
+                .query((row, n) -> Optional.ofNullable(row.getObject("answered_at", OffsetDateTime.class)).map(OffsetDateTime::toInstant))
+                .optional().flatMap(moment -> moment);
     }
 
     private void apply(AccountId account, SubscriptionEvent event, SubscriptionState implied) {
@@ -107,11 +131,11 @@ class Subscriptions {
         if (first == 0) {
             return; // sent again: applied the first time
         }
-        keep(account, implied, SubscriptionState::next);
+        keep(account, implied);
     }
 
-    /** The account's state after {@code implied}: the first state, or what {@code order} makes of it and the state kept. */
-    private void keep(AccountId account, SubscriptionState implied, BiFunction<Optional<SubscriptionState>, SubscriptionState, SubscriptionState> order) {
+    /** The account's state after an event's {@code implied}: the first state, or the later of the two (SubscriptionState.next). */
+    private void keep(AccountId account, SubscriptionState implied) {
         Optional<SubscriptionState> current = locked(account);
         if (current.isEmpty()) {
             // The account's first state; an event for it at the same moment may have made it first — then it is weighed below.
@@ -125,7 +149,7 @@ class Subscriptions {
             }
             current = locked(account);
         }
-        SubscriptionState next = order.apply(current, implied);
+        SubscriptionState next = SubscriptionState.next(current, implied);
         jdbc.sql("""
                         update subscription.subscription set status = :status, access_until = :until, last_event_at = :at
                         where account_id = :account""")

@@ -63,18 +63,27 @@ record SubscriptionState(Status status, Instant accessUntil, Instant lastEventAt
     }
 
     /**
-     * The state after a REST answer (K-704, ADR-056 Ek 3): the answer's only when its moment is at least {@code settle} after the
-     * state's own (the last webhook event, or the last answer applied). A REST answer can lag the webhook it was asked after
-     * (RevenueCat promises no consistency): inside the window a lagging "ended" would lock out a user who has just paid, and a lagging
-     * "active" would give access back after a refund or expiration, so the webhook's state stands both ways. Outside the window the
-     * answer is authoritative both ways: it fixes a missed webhook, and it gives a TRANSFER's receiver its access. No state yet:
-     * the answer is the first.
+     * The state after a REST answer (K-704, ADR-056 Ek 3). The answer counts only when its moment is at least {@code settle} after
+     * the last webhook event ({@code lastEventAt}) and not older than the last answer applied ({@code answeredAt}). A REST answer can
+     * lag the webhook it was asked after (RevenueCat promises no consistency): inside the window a lagging "ended" would lock out a
+     * user who has just paid, and a lagging "active" would give access back after a refund or expiration, so the webhook's state
+     * stands both ways. Outside it the answer is authoritative both ways: it fixes a missed webhook and gives a TRANSFER's receiver
+     * its access.
+     *
+     * <p>An applied answer takes the kind and end but <b>not</b> {@code lastEventAt}: that stays the last webhook's moment, so a
+     * webhook delayed or sent again, stamped before the answer, still applies (next orders webhooks against webhooks only). For an
+     * account with no state, whose first state is the answer, {@code lastEventAt} is the answer's moment minus {@code settle}: a
+     * webhook stamped within the settle window before it (which the answer may not yet show) applies, and the next answer,
+     * made at or after the moment of this one, is outside the window. Returns {@code current} itself when the answer is set aside.
      */
-    static SubscriptionState afterAnswer(Optional<SubscriptionState> current, SubscriptionState answer, Duration settle) {
-        if (current.isPresent() && answer.lastEventAt().isBefore(current.get().lastEventAt().plus(settle))) {
-            return current.get();
+    static SubscriptionState afterAnswer(Optional<SubscriptionState> current, Optional<Instant> answeredAt, SubscriptionState answer, Duration settle) {
+        if (current.isEmpty()) {
+            return new SubscriptionState(answer.status(), answer.accessUntil(), answer.lastEventAt().minus(settle));
         }
-        return answer;
+        SubscriptionState kept = current.get();
+        boolean insideWindow = answer.lastEventAt().isBefore(kept.lastEventAt().plus(settle));
+        boolean olderThanAnAnswer = answeredAt.filter(at -> answer.lastEventAt().isBefore(at)).isPresent();
+        return insideWindow || olderThanAnAnswer ? kept : new SubscriptionState(answer.status(), answer.accessUntil(), kept.lastEventAt());
     }
 
     /** The state after an event's: the event's, unless it is older than the current state's (it never takes it back). */

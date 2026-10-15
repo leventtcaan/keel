@@ -122,7 +122,7 @@ class RevenueCatRefreshTests {
         assertThat(sent.getResponse().getStatus()).isEqualTo(200);
         await().atMost(PATIENCE).untilAsserted(() -> assertThat(kept(account)).hasValueSatisfying(state -> {
             assertThat(state.accessUntil()).isEqualTo(renewedTo);
-            assertThat(state.lastEventAt()).isEqualTo(afterWindow);
+            assertThat(state.lastEventAt()).as("still the webhook's moment: an answer never moves it").isEqualTo(now);
         }));
         assertThat(revenueCat.asked).containsExactly(account);
         assertThat(entitlements.active(account, monthLater.plus(Duration.ofDays(3)))).isTrue();
@@ -241,9 +241,10 @@ class RevenueCatRefreshTests {
     void anEventThatComesAfterTheAnswerWasMadeStillWins() throws Exception {
         AccountId account = account();
         // The answer (made after the window) is applied; then an event from after it, as a slow webhook would arrive.
-        revenueCat.answers.put(account, RevenueCatAnswers.entitled(afterWindow, monthLater));
+        Instant answeredTo = monthLater.plus(Duration.ofDays(1));
+        revenueCat.answers.put(account, RevenueCatAnswers.entitled(afterWindow, answeredTo));
         send(TestWebhooks.event(id(), "RENEWAL", account, now, monthLater));
-        await().atMost(PATIENCE).untilAsserted(() -> assertThat(kept(account)).hasValueSatisfying(state -> assertThat(state.lastEventAt()).isEqualTo(afterWindow)));
+        await().atMost(PATIENCE).untilAsserted(() -> assertThat(kept(account)).hasValueSatisfying(state -> assertThat(state.accessUntil()).isEqualTo(answeredTo)));
         Map<String, Object> refund = TestWebhooks.event(id(), "CANCELLATION", account, afterWindow.plusSeconds(20), monthLater);
         refund.put("cancel_reason", "CUSTOMER_SUPPORT");
         // Made well after the refund happened, but inside the window it opens: the refund stands.
@@ -254,6 +255,59 @@ class RevenueCatRefreshTests {
         quiet();
         assertThat(entitlements.active(account, afterWindow.plusSeconds(90))).isFalse();
         assertThat(kept(account)).hasValueSatisfying(state -> assertThat(state.status()).isEqualTo(SubscriptionState.Status.REFUNDED));
+    }
+
+    @Test
+    void aRefundStampedBeforeAnAppliedAnswerThatArrivesLateStillEndsAccess() throws Exception {
+        AccountId account = account();
+        Instant answeredTo = monthLater.plus(Duration.ofDays(1));
+        revenueCat.answers.put(account, RevenueCatAnswers.entitled(afterWindow, answeredTo));
+        send(TestWebhooks.event(id(), "RENEWAL", account, now, monthLater));
+        await().atMost(PATIENCE).untilAsserted(() -> assertThat(kept(account)).hasValueSatisfying(state -> assertThat(state.accessUntil()).isEqualTo(answeredTo)));
+        Map<String, Object> refund = TestWebhooks.event(id(), "CANCELLATION", account, afterWindow.minusSeconds(120), monthLater);
+        refund.put("cancel_reason", "CUSTOMER_SUPPORT");
+
+        send(refund); // RevenueCat sent it again, or late: stamped two minutes before the answer was made
+
+        quiet();
+        assertThat(entitlements.active(account, afterWindow)).as("the webhook is not lost behind the answer").isFalse();
+        assertThat(kept(account)).hasValueSatisfying(state -> assertThat(state.status()).isEqualTo(SubscriptionState.Status.REFUNDED));
+    }
+
+    @Test
+    void aRenewalStampedBeforeAnAnswerThatCreatedTheStateStillApplies() throws Exception {
+        AccountId from = account();
+        AccountId to = account();
+        revenueCat.answers.put(to, RevenueCatAnswers.entitled(afterWindow, monthLater));
+        Map<String, Object> transfer = TestWebhooks.event(id(), "TRANSFER", from, now, null);
+        transfer.remove("app_user_id");
+        transfer.remove("entitlement_ids");
+        transfer.put("transferred_from", List.of(from.value().toString()));
+        transfer.put("transferred_to", List.of(to.value().toString()));
+        send(transfer);
+        await().atMost(PATIENCE).untilAsserted(() -> assertThat(entitlements.active(to, afterWindow)).isTrue());
+        Instant renewedTo = monthLater.plus(Duration.ofDays(30));
+
+        // The receiver's own renewal, stamped two minutes before the answer that gave it access: not lost.
+        send(TestWebhooks.event(id(), "RENEWAL", to, afterWindow.minusSeconds(120), renewedTo));
+
+        quiet();
+        assertThat(kept(to)).hasValueSatisfying(state -> assertThat(state.accessUntil()).isEqualTo(renewedTo));
+    }
+
+    @Test
+    void anOlderAnswerNeverTakesTheNewerOnesPlaceEvenAfterTheWindow() {
+        AccountId account = account();
+        Instant newerTo = monthLater.plus(Duration.ofDays(2));
+        revenueCat.answers.put(account, RevenueCatAnswers.entitled(afterWindow.plusSeconds(60), newerTo));
+        send(TestWebhooks.event(id(), "RENEWAL", account, now, monthLater));
+        await().atMost(PATIENCE).untilAsserted(() -> assertThat(kept(account)).hasValueSatisfying(state -> assertThat(state.accessUntil()).isEqualTo(newerTo)));
+
+        // Two refreshes crossed: the answer made earlier (still after the window) is applied last.
+        revenueCat.answers.put(account, RevenueCatAnswers.entitled(afterWindow, monthLater.plus(Duration.ofDays(1))));
+        refresh.refresh(account);
+
+        assertThat(kept(account)).hasValueSatisfying(state -> assertThat(state.accessUntil()).isEqualTo(newerTo));
     }
 
     @Test

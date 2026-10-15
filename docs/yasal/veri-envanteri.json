@@ -1124,12 +1124,13 @@
    "table": "subscription.subscription",
    "module": "subscription",
    "class": "subscription",
-   "purpose": "Your subscription state from RevenueCat: status, until when you have access, when it last changed. No price, country or payment data.",
+   "purpose": "Your subscription state from RevenueCat: status, until when you have access, when it last changed (by a subscription event, and by RevenueCat's answer to our server). No price, country or payment data.",
    "columns": [
     "account_id",
     "status",
     "access_until",
-    "last_event_at"
+    "last_event_at",
+    "answered_at"
    ],
    "basis": "contract (Art. 6(1)(b))",
    "gated_by": null,

@@ -138,12 +138,16 @@ Webhook sayfası her webhook'tan sonra `GET /subscribers` öneriyor (`.../integr
    ilk soru başladıktan `deadline: 30s` sonra yeni soru başlamaz (her soru ayrıca egress zaman aşımıyla kesilir); dışarıda kalan hesap sonraki olayında yetişir.
    Tazeleme yalnız **ekler**: her hata (anahtar yok, RevenueCat cevap vermiyor, cevap kullanılamaz) webhook sonucunu bozmaz; hata `SafeLog.backgroundFailure` ile (tür + yer, mesaj yok).
 5. **Sıra kuralı: yerleşme penceresi (settle).** REST cevabının anı = `request_date_ms` (RevenueCat'in saati; webhook'un `event_timestamp_ms`'i ile aynı saat — bizim saatimiz değil).
-   Cevap, kayıtlı durumun kendi anından (`lastEventAt`: son webhook olayı ya da uygulanmış son cevap) **en az `keel.subscription.revenuecat.refresh.settle` (300 sn, K2) sonra** yapılmışsa
+   Cevap, **son webhook olayının** anından (`lastEventAt`) **en az `keel.subscription.revenuecat.refresh.settle` (300 sn, K2) sonra** yapılmışsa
    geçerlidir ve **iki yönde de** otoriterdir (`SubscriptionState.afterAnswer`); pencerenin **içinde** kalırsa yok sayılır, webhook'un durumu durur. Neden: REST bir webhook'tan sonra sorulsa da
    onu henüz yansıtmamış olabilir (tutarlılık garantisi yazmıyor); damgası olaydan yeni ama içeriği geride kalan bir cevap ya "bitti" diyerek az önce RENEWAL ile ödeyen kullanıcıyı dışarıda
    bırakır, ya da "aktif" diyerek REFUND/EXPIRATION'dan sonra erişimi geri verirdi (önceki "yalnız uzatır" kuralı ikincisini kapatmıyordu). Pencerenin dışında REST kaçan webhook'u düzeltir
-   (iki yönde) ve TRANSFER alıcısına erişimini verir. Durumu hiç olmayan hesap (TRANSFER alıcısı) için cevap ilk durumdur, pencere yok. Kayıtlı durum bir cevaptan geliyorsa pencere o cevabın anından
-   sayılır: art arda iki cevap 5 dk içindeyse ikincisi beklenir (zararsız gecikme; ayrı bir "son webhook anı" sütunu için göç gerekirdi, değmez). Cevap anı kayıtlı durumdan eskiyse yine yok sayılır.
+   (iki yönde) ve TRANSFER alıcısına erişimini verir. **Uygulanan cevap `lastEventAt`'i taşımaz:** `last_event_at` her zaman **son webhook olayının** anıdır; cevap yalnız `status`/`access_until`'i yazar ve kendi anını yeni
+   `answered_at` sütununa koyar (**göç V50**, null'a izinli; hesapla silinir, dışa aktarılır, envanterde). Neden: cevabın anı `last_event_at`'e yazılsaydı `next()` ondan eski damgalı her webhook'u
+   (geç gelen ya da yeniden gönderilen REFUND/RENEWAL, 300 sn'ye kadar) atardı. Sütunsuz çözüm yok: iki cevabın birbirine göre sırası (iki yenileme çaprazlaşır, eski cevap sonra yazılır)
+   için cevap anının ayrıca saklanması gerekir. Yani webhook'lar yalnız webhook'larla (`next`), cevaplar yalnız cevaplarla (`answered_at`; kayıtlı cevaptan eski olan yok sayılır) sıralanır, pencere
+   son webhook'tan ölçülür. **Durumu hiç olmayan hesap** (TRANSFER alıcısı): ilk durum cevaptır, pencere yok; `last_event_at` = cevap anı − `settle` yazılır (epoch değil): cevabın gösteremediği,
+   cevaptan önceki `settle` içinde damgalı bir webhook hâlâ uygulanır, bundan eskisi cevaba gömülü sayılır (eski bir olayın yeniden gönderilmesi cevabı geri alamaz); sonraki cevap (cevap anı ya da sonrası) pencere dışındadır.
    Cevap anı yoksa/bozuksa hata (sıra bilinmeyen tahmin edilmez). Olay kimliği yazılmaz (cevap olay değil; iki kez sormak bir kez sormaktır). Yok sayılan cevap `SafeLog.ignored` ile DEBUG'da yalnız görev adıyla yazılır (değer yok).
 6. **Cevap → durum:** yapılandırılmış yetki yoksa, `expires_date` null ise, ya da yetkinin ürünü `subscriptions`'ta yoksa/`is_sandbox` yoksa/ortamı `environments`'ta değilse
    **hiçbir şey değişmez** (yetki yokluğu erişimi **almaz**: yanlış yetki adı herkesin erişimini bitirirdi; webhook'taki "ortam yoksa izinsiz" ile aynı). Varsa `accessUntil` =
@@ -164,7 +168,7 @@ Webhook sayfası her webhook'tan sonra `GET /subscribers` öneriyor (`.../integr
    gerekirse yapılandırmadan büyütülür.
 
 **Doğrulama:** `RevenueCatRestTests` (sahte HTTP: yol, Bearer, 200/201/404/401/429/5xx, zaman aşımı, yönlendirme, anahtar yok = istek yok + tek uyarı, anahtar logda yok),
-`RevenueCatSubscriberTests` (cevap → durum; yerleşme penceresi: içinde iki yönde yok sayılır, dışında iki yönde geçerli, sınır dahil), `RevenueCatRefreshBudgetTests` (hesap sınırı, süre sınırı), `RevenueCatRefreshTests` (DB: webhook yavaş REST'i beklemeden cevaplanır,
-tazeleme sonradan iner, pencere içindeki gecikmiş "bitti" ya da "aktif" cevap webhook'un durumunu değiştirmez, pencere dışında iki yönde düzeltir, TRANSFER alıcısı, hata/anahtar yok = webhook sonucu + 200, silinmiş hesaba yazılmaz),
+`RevenueCatSubscriberTests` (cevap → durum; yerleşme penceresi: içinde iki yönde yok sayılır, dışında iki yönde geçerli, sınır dahil; uygulanan cevap `lastEventAt`i taşımaz, cevaptan önce damgalı webhook yine uygulanır), `RevenueCatRefreshBudgetTests` (hesap sınırı, süre sınırı), `RevenueCatRefreshTests` (DB: webhook yavaş REST'i beklemeden cevaplanır,
+tazeleme sonradan iner, pencere içindeki gecikmiş "bitti" ya da "aktif" cevap webhook'un durumunu değiştirmez, pencere dışında iki yönde düzeltir, TRANSFER alıcısı, hata/anahtar yok = webhook sonucu + 200, silinmiş hesaba yazılmaz; cevaptan önce damgalı, geç gelen REFUND/RENEWAL uygulanır; eski cevap yeniyi geri almaz),
 `RevenueCatCustomerDeletionTests` (DB: müşteri silinir; RevenueCat çökükken kendi verimiz silinir, yayın kalır, yeniden denemeyle silinir; silmeden sonra tazelemenin yarattığı müşteriyi ikinci geçiş siler),
 `RevenueCatRestTests` (anahtar yok: üretimde silme bekler, değilse tamamlanır; anahtar kırpılır, satır sonlu anahtar mesajda/logda yok; https şartı), `SafeLogTests`, `tools/test_deploy.py`.

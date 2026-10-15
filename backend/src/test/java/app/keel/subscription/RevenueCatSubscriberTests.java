@@ -133,69 +133,99 @@ class RevenueCatSubscriberTests {
                 .isInstanceOf(ApiException.class);
     }
 
-    // ---- The settle window: an answer counts only when made SETTLE or more after the state's own moment (ADR-056 Ek 3). ----
+    // ---- The settle window: an answer counts only when made SETTLE or more after the last WEBHOOK event (ADR-056 Ek 3). ----
 
     private static final Duration SETTLE = Duration.ofMinutes(5);
     private static final Instant LATER = NOW.plus(SETTLE);
+    private static final Optional<Instant> NO_ANSWER_YET = Optional.empty();
 
-    private static SubscriptionState answer(Status status, Instant until, Instant madeAt) {
-        return new SubscriptionState(status, until, madeAt);
+    private static SubscriptionState state(Status status, Instant until, Instant at) {
+        return new SubscriptionState(status, until, at);
+    }
+
+    private static SubscriptionState after(SubscriptionState current, SubscriptionState answer) {
+        return SubscriptionState.afterAnswer(Optional.of(current), NO_ANSWER_YET, answer, SETTLE);
     }
 
     @Test
-    void anAnswerWithNoStateBeforeItIsTheFirstStateWhateverItsMoment() {
-        SubscriptionState answer = answer(Status.ACTIVE, MONTH, NOW);
+    void anAnswerWithNoStateBeforeItIsTheFirstStateAndLeavesRoomForAWebhookStampedWithinTheLag() {
+        SubscriptionState first = SubscriptionState.afterAnswer(Optional.empty(), NO_ANSWER_YET, state(Status.ACTIVE, MONTH, NOW), SETTLE);
 
-        assertThat(SubscriptionState.afterAnswer(Optional.empty(), answer, SETTLE)).isEqualTo(answer);
+        assertThat(first).isEqualTo(state(Status.ACTIVE, MONTH, NOW.minus(SETTLE)));
+        // A renewal stamped two minutes before the answer is not older than the state: it still applies (SubscriptionState.next).
+        SubscriptionState renewal = state(Status.ACTIVE, MONTH.plusSeconds(60), NOW.minusSeconds(120));
+        assertThat(SubscriptionState.next(Optional.of(first), renewal)).isEqualTo(renewal);
+        // And the next answer, made at or after this one, is outside the window.
+        assertThat(SubscriptionState.afterAnswer(Optional.of(first), Optional.of(NOW), state(Status.EXPIRED, NOW, NOW), SETTLE).status()).isEqualTo(Status.EXPIRED);
     }
 
     @Test
     void aLaggingAnswerThatSaysEndedInsideTheWindowNeverLocksOutAJustReceivedRenewal() {
-        SubscriptionState renewed = answer(Status.ACTIVE, MONTH, NOW); // the webhook's
-        SubscriptionState laggingEnded = answer(Status.EXPIRED, NOW.minus(Duration.ofDays(1)), NOW.plusSeconds(1));
-        SubscriptionState laggingRefund = answer(Status.REFUNDED, NOW.minusSeconds(60), NOW.plusSeconds(30));
-        SubscriptionState laggingShorter = answer(Status.ACTIVE, MONTH.minusSeconds(1), LATER.minusMillis(1));
+        SubscriptionState renewed = state(Status.ACTIVE, MONTH, NOW); // the webhook's
+        SubscriptionState laggingEnded = state(Status.EXPIRED, NOW.minus(Duration.ofDays(1)), NOW.plusSeconds(1));
+        SubscriptionState laggingRefund = state(Status.REFUNDED, NOW.minusSeconds(60), NOW.plusSeconds(30));
+        SubscriptionState laggingShorter = state(Status.ACTIVE, MONTH.minusSeconds(1), LATER.minusMillis(1));
 
         for (SubscriptionState lagging : new SubscriptionState[] {laggingEnded, laggingRefund, laggingShorter}) {
-            assertThat(SubscriptionState.afterAnswer(Optional.of(renewed), lagging, SETTLE)).as(lagging.status().name()).isEqualTo(renewed);
+            assertThat(after(renewed, lagging)).as(lagging.status().name()).isSameAs(renewed);
         }
     }
 
     @Test
     void aLaggingAnswerThatSaysActiveInsideTheWindowNeverGivesAccessBackAfterARefundOrExpiration() {
-        SubscriptionState refunded = answer(Status.REFUNDED, NOW, NOW);
-        SubscriptionState expired = answer(Status.EXPIRED, NOW, NOW);
-        SubscriptionState laggingActive = answer(Status.ACTIVE, MONTH, NOW.plusSeconds(5));
+        SubscriptionState refunded = state(Status.REFUNDED, NOW, NOW);
+        SubscriptionState expired = state(Status.EXPIRED, NOW, NOW);
+        SubscriptionState laggingActive = state(Status.ACTIVE, MONTH, NOW.plusSeconds(5));
 
-        assertThat(SubscriptionState.afterAnswer(Optional.of(refunded), laggingActive, SETTLE)).isEqualTo(refunded);
-        assertThat(SubscriptionState.afterAnswer(Optional.of(expired), laggingActive, SETTLE)).isEqualTo(expired);
-        assertThat(SubscriptionState.afterAnswer(Optional.of(refunded), laggingActive, SETTLE).active(NOW.plusSeconds(6))).isFalse();
+        assertThat(after(refunded, laggingActive)).isSameAs(refunded);
+        assertThat(after(expired, laggingActive)).isSameAs(expired);
+        assertThat(after(refunded, laggingActive).active(NOW.plusSeconds(6))).isFalse();
     }
 
     @Test
-    void afterTheWindowTheAnswerIsAuthoritativeBothWaysAndTheWindowsEdgeCounts() {
-        SubscriptionState renewed = answer(Status.ACTIVE, MONTH, NOW);
-        SubscriptionState expired = answer(Status.EXPIRED, NOW, NOW);
-        SubscriptionState nowEnded = answer(Status.EXPIRED, NOW.plus(Duration.ofMinutes(1)), LATER);
-        SubscriptionState nowActive = answer(Status.ACTIVE, MONTH, LATER.plusSeconds(1));
+    void afterTheWindowTheAnswerIsAuthoritativeBothWaysAndTheWindowsEdgeCountsButTheWebhooksMomentStays() {
+        SubscriptionState renewed = state(Status.ACTIVE, MONTH, NOW);
+        SubscriptionState expired = state(Status.EXPIRED, NOW, NOW);
+        SubscriptionState nowEnded = state(Status.EXPIRED, NOW.plus(Duration.ofMinutes(1)), LATER);
+        SubscriptionState nowActive = state(Status.ACTIVE, MONTH, LATER.plusSeconds(1));
 
-        assertThat(SubscriptionState.afterAnswer(Optional.of(renewed), nowEnded, SETTLE)).as("a missed expiration").isEqualTo(nowEnded);
-        assertThat(SubscriptionState.afterAnswer(Optional.of(expired), nowActive, SETTLE)).as("a missed renewal").isEqualTo(nowActive);
+        // A missed expiration, and a missed renewal: the answer's kind and end, the last WEBHOOK's moment.
+        assertThat(after(renewed, nowEnded)).isEqualTo(state(Status.EXPIRED, NOW.plus(Duration.ofMinutes(1)), NOW));
+        assertThat(after(expired, nowActive)).isEqualTo(state(Status.ACTIVE, MONTH, NOW));
     }
 
     @Test
-    void anAnswerFromBeforeTheStateNeverTakesItBack() {
-        SubscriptionState later = answer(Status.REFUNDED, NOW.plusSeconds(5), NOW.plusSeconds(5));
+    void anAnswerOlderThanAnAnswerAlreadyAppliedNeverTakesItsPlaceEvenOutsideTheWindow() {
+        SubscriptionState current = state(Status.ACTIVE, MONTH, NOW);
+        Instant appliedAt = LATER.plus(Duration.ofMinutes(10));
 
-        assertThat(SubscriptionState.afterAnswer(Optional.of(later), answer(Status.ACTIVE, MONTH, NOW.minus(Duration.ofHours(1))), SETTLE)).isEqualTo(later);
+        SubscriptionState older = state(Status.EXPIRED, NOW, LATER.plusSeconds(30));
+        SubscriptionState newer = state(Status.EXPIRED, NOW, appliedAt);
+
+        assertThat(SubscriptionState.afterAnswer(Optional.of(current), Optional.of(appliedAt), older, SETTLE)).isSameAs(current);
+        assertThat(SubscriptionState.afterAnswer(Optional.of(current), Optional.of(appliedAt), newer, SETTLE).status()).isEqualTo(Status.EXPIRED);
     }
 
     @Test
-    void noWindowAtAllMeansAnAnswerNotOlderThanTheStateCounts() {
-        SubscriptionState current = answer(Status.ACTIVE, MONTH, NOW);
-        SubscriptionState same = answer(Status.CANCELLED, MONTH, NOW);
+    void anAnswerAppliedLeavesAWebhookStampedBeforeItAbleToApplyAndEndAccess() {
+        // REST applied at LATER+60 s (active); a refund stamped two minutes before it arrives late: it applies.
+        SubscriptionState webhooks = state(Status.ACTIVE, MONTH, NOW);
+        SubscriptionState applied = after(webhooks, state(Status.ACTIVE, MONTH.plus(Duration.ofDays(1)), LATER.plusSeconds(60)));
+        SubscriptionState lateRefund = state(Status.REFUNDED, LATER.minusSeconds(60), LATER.minusSeconds(60));
 
-        assertThat(SubscriptionState.afterAnswer(Optional.of(current), same, Duration.ZERO)).isEqualTo(same);
-        assertThat(SubscriptionState.afterAnswer(Optional.of(current), answer(Status.ACTIVE, MONTH, NOW.minusMillis(1)), Duration.ZERO)).isEqualTo(current);
+        SubscriptionState result = SubscriptionState.next(Optional.of(applied), lateRefund);
+
+        assertThat(result).isEqualTo(lateRefund);
+        assertThat(result.active(LATER)).isFalse();
+    }
+
+    @Test
+    void noWindowAtAllMeansAnAnswerNotOlderThanTheWebhookCounts() {
+        SubscriptionState current = state(Status.ACTIVE, MONTH, NOW);
+
+        assertThat(SubscriptionState.afterAnswer(Optional.of(current), NO_ANSWER_YET, state(Status.CANCELLED, MONTH, NOW), Duration.ZERO).status())
+                .isEqualTo(Status.CANCELLED);
+        assertThat(SubscriptionState.afterAnswer(Optional.of(current), NO_ANSWER_YET, state(Status.ACTIVE, MONTH, NOW.minusMillis(1)), Duration.ZERO))
+                .isSameAs(current);
     }
 }
