@@ -12,6 +12,7 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import type { Figure } from '@/train/demo';
 import { exerciseName } from '@/train/program';
+import { isBodyOnly, setText } from '@/train/session';
 import type { Move } from '@/train/trainData';
 import { type UnitSystem, formatLoad } from '@/units/units';
 
@@ -102,6 +103,15 @@ export function MuscleBars({ muscles }: { muscles: Schemas['MuscleSets'][] }) {
   );
 }
 
+/**
+ * A best set as the user reads it (K-1028): "100 kg × 8", "+10 kg × 6" for a weighted move, "Bodyweight × 6" when the body is
+ * the load (0 kg is not a weight to beat). The workout's own wording, from the move's load model; a move the catalog did not
+ * give is written as an outside load, the only thing the phone can say of it.
+ */
+export function liftSet(set: { loadKg: number; reps: number }, move: Move | undefined, units: UnitSystem): string {
+  return move === undefined ? t('progress.strength.set', { load: formatLoad(set.loadKg, units), reps: set.reps }) : setText(set, move, units);
+}
+
 /** Strength before the first workout (a lock, no chart) and after it (each lift's best set, the baseline to beat). */
 export function StrengthCard({ part, lifts, moves, units }: { part: 'locked' | 'baseline'; lifts: Schemas['LiftProgress'][]; moves: ReadonlyMap<string, Move>; units: UnitSystem }) {
   const { color } = useTheme();
@@ -118,11 +128,15 @@ export function StrengthCard({ part, lifts, moves, units }: { part: 'locked' | '
       <>
         {lifts.map((lift) => {
           const name = exerciseName(lift.exerciseId, moves);
-          const load = formatLoad(lift.best.loadKg, units);
+          const move = moves.get(lift.exerciseId);
+          const bodyOnly = move !== undefined && isBodyOnly(lift.best, move);
+          const said = bodyOnly
+            ? t('progress.strength.rowLabelBodyweight', { move: name, reps: lift.best.reps })
+            : t('progress.strength.rowLabel', { move: name, load: formatLoad(lift.best.loadKg, units), reps: lift.best.reps });
           return (
-            <View key={lift.exerciseId} testID={`strength-row-${lift.exerciseId}`} accessible accessibilityLabel={t('progress.strength.rowLabel', { move: name, load, reps: lift.best.reps })} style={styles.row}>
+            <View key={lift.exerciseId} testID={`strength-row-${lift.exerciseId}`} accessible accessibilityLabel={said} style={styles.row}>
               <Text style={[styles.grow, styles.body, { color: color.text }]}>{name}</Text>
-              <Text style={[styles.strong, styles.nums, { color: color.text }]}>{t('progress.strength.set', { load, reps: lift.best.reps })}</Text>
+              <Text style={[styles.strong, styles.nums, { color: color.text }]}>{liftSet(lift.best, move, units)}</Text>
             </View>
           );
         })}

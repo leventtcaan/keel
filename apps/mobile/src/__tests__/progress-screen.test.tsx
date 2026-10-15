@@ -5,7 +5,7 @@
  * empty. Every number is the server's; the screen counts nothing.
  */
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
-import { Linking } from 'react-native';
+import { Linking, ScrollView } from 'react-native';
 
 import ProgressScreen from '@/app/(tabs)/progress';
 import { t } from '@/copy';
@@ -53,11 +53,13 @@ const mockApi = new Proxy(
 );
 const mockSyncHealth = jest.fn(async () => ({ weighIns: 0, stepsToday: 3240 as number | null }));
 let mockPhotoChecks: { takenOn: string; photos: { front?: string } }[] = [];
+/** The catalog the training service reads: empty unless a test needs a move's load model. */
+let mockExercises: unknown[] = [];
 const mockServices = {
   api: mockApi,
   photos: { checks: jest.fn(async () => mockPhotoChecks), forget: jest.fn(async () => {}) },
   training: {
-    read: async () => ({ program: { state: 'none' }, exercises: { state: 'ready', value: [] }, kept: false }),
+    read: async () => ({ program: { state: 'none' }, exercises: { state: 'ready', value: mockExercises }, kept: false }),
     own: async () => [],
   },
   syncHealth: () => mockSyncHealth(),
@@ -105,6 +107,7 @@ beforeEach(() => {
   mockUnits = 'METRIC';
   mockApiCalls.length = 0;
   mockPhotoChecks = [];
+  mockExercises = [];
   mockSyncHealth.mockResolvedValue({ weighIns: 0, stepsToday: 3240 });
   answers = firstDay();
 });
@@ -128,6 +131,11 @@ describe('the first days (ADR-078 #1)', () => {
     expect(screen.getByRole('header', { name: t('screens.progress.title') })).toBeOnTheScreen();
     expect(screen.getByText("Today's targets.")).toBeOnTheScreen();
     expect(screen.getByText('Tap one to log it.')).toBeOnTheScreen();
+  });
+
+  test('with all four boxes the line stays "Tap one to log it" (K-1028 changes only the no-consent face)', async () => {
+    await show();
+    expect(within(screen.getByTestId('progress-hero')).getByText(t('progress.hero.tap'))).toBeOnTheScreen();
   });
 
   test('four boxes, each a button with the number from the server: calories, protein, steps, cardio', async () => {
@@ -268,6 +276,46 @@ describe('after the first workout (ADR-078 Ek 2: strength opens by itself)', () 
     mockUnits = 'IMPERIAL';
     await show();
     expect(within(screen.getByTestId('strength-row-squat')).getByText('220.5 lb × 8')).toBeOnTheScreen();
+  });
+
+  describe('a bodyweight move (K-1028, B4)', () => {
+    const pullUp = { id: 'pull_up', nameKey: 'exercises.pull_up.name', kind: 'COMPOUND', muscles: [], alternatives: [], load: 'BODYWEIGHT', equipment: 'BODYWEIGHT', unilateral: false, setupFields: [] };
+    const weighted = { ...pullUp, id: 'dip', nameKey: 'exercises.dip.name', load: 'BODYWEIGHT_PLUS_EXTERNAL' };
+    const set = { loadKg: 0, reps: 6, day: '2026-10-05' };
+
+    test('the baseline says "Bodyweight x 6", not "0 kg x 6"', async () => {
+      mockExercises = [pullUp];
+      answers['/v1/training-progress'] = ok({ ...training(0, 2), lifts: [lift('pull_up', false, { baseline: set, best: set }), lift('squat', false)] });
+      await show();
+      const row = screen.getByTestId('strength-row-pull_up');
+      expect(within(row).getByText(t('workout.bodyweight', { reps: 6 }))).toBeOnTheScreen();
+      expect(within(row).queryByText(/0 kg/)).toBeNull();
+      expect(row.props.accessibilityLabel).toBe(t('progress.strength.rowLabelBodyweight', { move: t('exercises.pull_up.name'), reps: 6 }));
+      expect(row.props.accessibilityLabel).not.toMatch(/0 kg/);
+      // An outside-load lift beside it keeps its load.
+      expect(within(screen.getByTestId('strength-row-squat')).getByText('100 kg × 8')).toBeOnTheScreen();
+    });
+
+    test('a weighted move with nothing added reads as bodyweight, with a load as "+ load"', async () => {
+      mockExercises = [weighted];
+      const added = { loadKg: 10, reps: 6, day: '2026-10-05' };
+      answers['/v1/training-progress'] = ok({ ...training(0, 1), lifts: [lift('dip', false, { baseline: set, best: set })] });
+      await show();
+      expect(within(screen.getByTestId('strength-row-dip')).getByText(t('workout.bodyweight', { reps: 6 }))).toBeOnTheScreen();
+      answers['/v1/training-progress'] = ok({ ...training(0, 1), lifts: [lift('dip', false, { baseline: added, best: added })] });
+      await act(async () => mockFocus());
+      expect(within(screen.getByTestId('strength-row-dip')).getByText('+10 kg × 6')).toBeOnTheScreen();
+    });
+
+    test('the chart card says it the same way (best set and where it started)', async () => {
+      mockExercises = [pullUp];
+      const start = { loadKg: 0, reps: 5, day: '2026-09-07' };
+      answers = weekTwelve();
+      answers['/v1/training-progress'] = ok({ ...training(1, 1), lifts: [lift('pull_up', true, { baseline: start, best: set, weeks: liftWeeks([0, 0]) })] });
+      await show();
+      expect(screen.getByTestId('strength-best')).toHaveTextContent(t('workout.bodyweight', { reps: 6 }));
+      expect(screen.getByText(t('progress.strength.started', { set: t('workout.bodyweight', { reps: 5 }) }))).toBeOnTheScreen();
+    });
   });
 
   test('partial data: a first workout and only 3 of 7 weigh-ins shows the baseline and the dots, no chart of either', async () => {
@@ -423,6 +471,15 @@ describe('without the health data consent', () => {
   test('no first day claimed with the targets: the hero is the plain one', async () => {
     await show();
     expect(screen.getByText("Today's targets.")).toBeOnTheScreen();
+  });
+
+  test('the hero line under it fits the one box that is there: it names Cardio, not "one" of several (K-1028, B5)', async () => {
+    await show();
+    const hero = screen.getByTestId('progress-hero');
+    expect(within(hero).getByText(t('progress.hero.tapLocked'))).toBeOnTheScreen();
+    expect(within(hero).queryByText(t('progress.hero.tap'))).toBeNull();
+    expect(t('progress.hero.tapLocked')).toContain('Cardio');
+    expect(screen.getAllByTestId(/^target-/)).toHaveLength(1);
   });
 });
 
@@ -616,6 +673,43 @@ describe('strength: the lifts, the best set, the effort (ADR-078 #2, Ek 3)', () 
     await show();
     expect(screen.getByRole('button', { name: t('exercises.bench_press.name') }).props.accessibilityState.selected).toBe(true);
     expect(screen.getByTestId('strength-chart')).toBeOnTheScreen();
+  });
+
+  test('25 lifts: one horizontal row of chips, never a wrapped block, and the chart is still there (K-1028, B1)', async () => {
+    const ids = Array.from({ length: 25 }, (_, i) => `lift_${i}`);
+    const lifts = ids.map((id, i) => lift(id, i === 0, { weeks: liftWeeks([100, 102.5, 105]) }));
+    answers['/v1/training-progress'] = ok({ ...training(1, 25), lifts });
+    await show();
+    const row = screen.getByTestId('strength-chips');
+    expect(row.props.horizontal).toBe(true);
+    expect(row.props.showsHorizontalScrollIndicator).toBe(false);
+    expect(within(row).getAllByRole('button')).toHaveLength(25);
+    expect(chart()).toBeOnTheScreen();
+    expect(screen.getByTestId('strength-best')).toBeOnTheScreen();
+  });
+
+  test('the row opens scrolled to the lift shown, so it is never out of sight (K-1028)', async () => {
+    const scrolls = jest.spyOn(ScrollView.prototype, 'scrollTo');
+    try {
+      const squat = lift('squat', false, { weeks: liftWeeks([100]) });
+      const bench = lift('bench_press', true, { weeks: liftWeeks([60, 62.5]) });
+      answers['/v1/training-progress'] = ok({ ...training(1, 2), lifts: [squat, bench] });
+      await show();
+      // The shown lift is bench (the first with a chart); its chip's wrapper gets its place from layout.
+      const wrapper = screen.getByRole('button', { name: t('exercises.bench_press.name') }).parent as NonNullable<Node['parent']>;
+      const other = screen.getByRole('button', { name: t('exercises.squat.name') }).parent as NonNullable<Node['parent']>;
+      scrolls.mockClear();
+      await fireEvent(other, 'layout', { nativeEvent: { layout: { x: 0, y: 0, width: 90, height: 44 } } });
+      expect(scrolls).not.toHaveBeenCalled();
+      await fireEvent(wrapper, 'layout', { nativeEvent: { layout: { x: 400, y: 0, width: 90, height: 44 } } });
+      expect(scrolls).toHaveBeenCalledTimes(1);
+      expect(scrolls).toHaveBeenCalledWith({ x: 400 - tokens.space.md, animated: false });
+      // Near the start it never scrolls to a negative place.
+      await fireEvent(wrapper, 'layout', { nativeEvent: { layout: { x: 4, y: 0, width: 90, height: 44 } } });
+      expect(scrolls).toHaveBeenLastCalledWith({ x: 0, animated: false });
+    } finally {
+      scrolls.mockRestore();
+    }
   });
 
   test('one lift: no chips to pick from', async () => {
