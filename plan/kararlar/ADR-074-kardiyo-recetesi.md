@@ -91,7 +91,7 @@ ağırlık öncesine asla yerleşmez, kullanıcı değişikliğini ezmez · tele
   "+ › Cardio"da bugün kayıtlıysa sormaz, kaydı gösterir ve geri almak için id ister; `logged: [{day, sessionId, source}]` gibi tek
   liste her gün için id taşırdı, telefonun yalnız bugüne ihtiyacı var ve `CardioSession` sözleşmede zaten var (yeni şema yok).
   Bugün hem elle hem saat kaydı varsa `loggedToday` elle olandır (geri alınabilen); birden çok elle varsa en küçük id (hep aynısı,
-  tek tek geri alınır). `loggedDays` şemada `required` değil: bu alandan önce derlenmiş telefon tipleri kırılmasın; sunucu her zaman gönderir.
+  tek tek geri alınır). `loggedDays` şemada `required` değil: yeni telefon eski sunucuya bağlanınca alan yoktur (`loggedDays ?? []`); sunucu her zaman gönderir.
 - **Geri alma:** `DELETE /v1/cardio-sessions/{id}` yalnız `MANUAL` kaydı siler (204). `APPLE_HEALTH` kaydı saatin kaydıdır, silinse bir sonraki
   okumada geri gelirdi: 409 `CONFLICT`. Başkasının ya da olmayan kayıt 404 (kaydın var olduğunu bile söylemez). Elle kayıt silinince aynı günün
-  saat kaydı günü kayıtlı tutar. Telefonun kuyruğundaki aynı `clientId`'li POST silmeden sonra kaydı yeniden yazar; sırayı telefon korur (K-980).
+  saat kaydı günü kayıtlı tutar. Silme fiziksel silmedir: aynı `clientId`'li POST kaydı yeniden yazar (201, yeni id), bu yüzden telefon geri alırken o `clientId`'li bekleyen POST'u kuyruktan düşürür (K-980). İkinci DELETE 404 = zaten silinmiş.
