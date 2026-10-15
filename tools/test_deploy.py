@@ -292,7 +292,10 @@ class Release(unittest.TestCase):
         self.state = self.home / "state.json"
         self.state.write_text(json.dumps({"tags": {}}))
         self.stub("docker", self.DOCKER)
-        self.stub("curl", '#!/bin/sh\n[ -e "$FAKE_HOME/down" ] && exit 22; exit 0\n')
+        # curl -f exits 22 on a 503. `down`: always; `starting`: for as many calls as the file says (the start's own work is not done).
+        self.stub("curl", '#!/bin/sh\necho curl >> "$FAKE_HOME/curl.log"\n[ -e "$FAKE_HOME/down" ] && exit 22\n'
+                          'if [ -s "$FAKE_HOME/starting" ]; then n=$(cat "$FAKE_HOME/starting"); '
+                          'if [ "$n" -gt 0 ]; then echo $((n - 1)) > "$FAKE_HOME/starting"; exit 22; fi; fi\nexit 0\n')
         # sudo: logged, then run without the owner flags (the test is not root).
         self.stub("sudo", '#!/bin/bash\necho "sudo $*" >> "$FAKE_HOME/calls.log"\nargs=(); skip=0; for a in "$@"; do '
                           'if ((skip)); then skip=0; continue; fi; case $a in -o|-g) skip=1;; *) args+=("$a");; esac; done; "${args[@]}"\n')
@@ -361,6 +364,37 @@ class Release(unittest.TestCase):
         (self.home / "crashing").write_text("")
         self.assertNotEqual(self.run_release("keel-backend:new").returncode, 0)
         self.assertEqual(self.tags()["keel-backend:current"], "sha256:old")
+
+    def test_a_start_that_is_still_working_answers_503_and_the_release_waits_for_200(self):
+        # K-908: /health is 503 until the FoodData Central import is done; curl -f turns that into a failed look, and the release goes on looking.
+        self.run_release("keel-backend:old")
+        (self.home / "starting").write_text("3")
+        result = self.run_release("keel-backend:new")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.tags()["keel-backend:current"], "sha256:new")
+        self.assertGreaterEqual((self.home / "curl.log").read_text().count("curl"), 4, "three 503s, then the 200")
+
+    def test_a_start_that_never_gets_ready_fails_within_the_bounded_wait_and_puts_the_old_image_back(self):
+        self.run_release("keel-backend:old")
+        (self.home / "starting").write_text("1000")
+        self.assertNotEqual(self.run_release("keel-backend:new").returncode, 0)
+        self.assertEqual(self.tags()["keel-backend:current"], "sha256:old")
+
+    def test_a_start_whose_runner_failed_does_not_wait_out_the_clock(self):
+        # K-908: a runner that throws ends the process (the start fails, the context closes); Docker restarts it. Waiting
+        # the whole 300 s for a container that has already crashed is waiting for nothing: the restart ends the wait.
+        self.run_release("keel-backend:old")
+        (self.home / "crashing").write_text("")
+        (self.home / "starting").write_text("1000")
+        (self.home / "curl.log").unlink(missing_ok=True)
+        self.assertNotEqual(self.run_release("keel-backend:new").returncode, 0)
+        self.assertEqual(self.tags()["keel-backend:current"], "sha256:old")
+        self.assertLessEqual((self.home / "curl.log").read_text().count("curl"), 2, "gave up at the first restart")
+
+    def test_the_settle_wait_is_short_now_that_health_means_ready(self):
+        # K-908: the settle wait only catches a crash after readiness; the start's own work is behind /health now.
+        default = re.search(r"KEEL_RELEASE_SETTLE:-(\d+)", (DEPLOY / "release.sh").read_text())
+        self.assertLessEqual(int(default.group(1)), 10)
 
     def test_a_rollback_swaps_so_it_can_be_undone(self):
         self.run_release("keel-backend:old")
