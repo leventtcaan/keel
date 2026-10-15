@@ -80,3 +80,19 @@ test('a copy kept for offline does not say what is done today: only this phone\'
 test('no cardio in the program (very active work, no profile yet) still reads this phone\'s records', () => {
   expect(read(program(), [record('c-2')])).toEqual({ kind: 'typed', clientId: 'c-2', minutes: 25 });
 });
+
+describe('the server\'s list is read (review of K-980: the same rule as the meals, meals.ts)', () => {
+  test('online, with the program\'s cardio read: a record kept here that the list does not hold was deleted elsewhere, so it is not today\'s', () => {
+    expect(read(program(cardio()), [record('c-5', { state: 'SYNCED', serverId: 'srv-5' })])).toEqual({ kind: 'none' });
+  });
+
+  test('online: a record still waiting to be sent is today\'s, whatever the list says', () => {
+    expect(read(program(cardio()), [record('c-6', { state: 'PENDING' })])).toEqual({ kind: 'typed', clientId: 'c-6', minutes: 25 });
+  });
+
+  test('a kept (offline) copy, or a program without cardio: the phone\'s own sent records still count, there is no list to say otherwise', () => {
+    const synced = record('c-7', { state: 'SYNCED', serverId: 'srv-7' });
+    expect(read(program(cardio()), [synced], true)).toEqual({ kind: 'typed', clientId: 'c-7', minutes: 25 });
+    expect(read(program(), [synced])).toEqual({ kind: 'typed', clientId: 'c-7', minutes: 25 });
+  });
+});

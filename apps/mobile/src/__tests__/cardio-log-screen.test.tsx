@@ -148,6 +148,48 @@ describe('asking for the minutes', () => {
     expect(screen.getByRole('button', { name: t('programEditor.lessLabel', { what: t('editProgram.cardio.minutesLabel') }) })).toBeDisabled();
   });
 
+  test('slow network: what was just kept is shown at once, so there is no Log to tap a second time while the read comes back', async () => {
+    await show();
+    let release: (data: TrainData) => void = () => {};
+    mockServices.training.read.mockImplementationOnce(() => new Promise<TrainData>((resolve) => (release = resolve)));
+    await press(t('cardioLog.log'));
+
+    // the read after the save has not come back
+    expect(screen.getByText(logged(30))).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: t('cardioLog.log') })).toBeNull();
+    expect(mockServices.queue.record).toHaveBeenCalledTimes(1);
+
+    await act(async () => release({ program: { state: 'ready', value: { id: 'p', source: 'GENERATED', days: [], cardio: cardio() } }, exercises: { state: 'none' }, kept: false }));
+    expect(screen.getByText(logged(30))).toBeOnTheScreen();
+    expect(mockServices.queue.record).toHaveBeenCalledTimes(1);
+  });
+
+  test('the optimistic record can be taken back at once', async () => {
+    await show();
+    mockServices.training.read.mockImplementationOnce(() => new Promise<TrainData>(() => {}));
+    await press(t('cardioLog.log'));
+    await press(t('workout.cardio.undoLabel'));
+    expect(mockServices.takeBack).toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: t('cardioLog.log') })).toBeOnTheScreen();
+  });
+
+  test('a read of the program that fails does not break the screen: it asks for the minutes', async () => {
+    mockServices.training.read.mockRejectedValueOnce(new Error('offline'));
+    await show();
+    expect(screen.getByText(t('train.cardioMinutes', { minutes: workoutParams.cardioMinutesStart }))).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: t('cardioLog.log') })).toBeOnTheScreen();
+  });
+
+  test('a read of this phone\'s records that fails does not break it either', async () => {
+    const original = mockServices.workoutRecords;
+    mockServices.workoutRecords = async () => {
+      throw new Error('disk');
+    };
+    await show();
+    expect(screen.getByRole('button', { name: t('cardioLog.log') })).toBeOnTheScreen();
+    mockServices.workoutRecords = original;
+  });
+
   test('two taps at once keep one session', async () => {
     await show();
     const log = screen.getByRole('button', { name: t('cardioLog.log') });

@@ -243,6 +243,38 @@ describe('where it is not shown', () => {
   });
 });
 
+test('trying again after a failure is the same meal: one clientId, so a try that was kept after all is not logged twice', async () => {
+  mockRecord.mockRejectedValueOnce(Object.assign(new Error('disk'), { name: 'StoreFailed' }));
+  await show();
+  const name = t('food.repeat.spoken', { slot: t('food.slot.LUNCH'), items: 'Chicken rice bowl' });
+  await press(name);
+  await press(name);
+  const ids = mockRecord.mock.calls.map(([record]) => (record as { body: { clientId: string } }).body.clientId);
+  expect(ids).toHaveLength(2);
+  expect(ids[1]).toBe(ids[0]);
+});
+
+test('another meal after a failure is a new one', async () => {
+  mockRecord.mockRejectedValueOnce(Object.assign(new Error('disk'), { name: 'StoreFailed' }));
+  await show();
+  await press(t('food.repeat.spoken', { slot: t('food.slot.LUNCH'), items: 'Chicken rice bowl' }));
+  await press(t('food.suggestions.log', { name: 'Greek yogurt' }));
+  const ids = mockRecord.mock.calls.map(([record]) => (record as { body: { clientId: string } }).body.clientId);
+  expect(ids[1]).not.toBe(ids[0]);
+});
+
+test('the same failure twice is said twice (K-815)', async () => {
+  const { AccessibilityInfo } = jest.requireActual<typeof import('react-native')>('react-native');
+  const announced = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
+  const failure = Object.assign(new Error('disk'), { name: 'StoreFailed' });
+  mockRecord.mockRejectedValueOnce(failure).mockRejectedValueOnce(failure);
+  await show();
+  const name = t('food.repeat.spoken', { slot: t('food.slot.LUNCH'), items: 'Chicken rice bowl' });
+  await press(name);
+  await press(name);
+  expect(announced.mock.calls.filter(([words]) => words === t('food.repeat.failed'))).toHaveLength(2);
+});
+
 test('a meal that could not be kept on the phone says so and does not leave', async () => {
   mockRecord.mockRejectedValueOnce(Object.assign(new Error('disk'), { name: 'StoreFailed' }));
   await show();

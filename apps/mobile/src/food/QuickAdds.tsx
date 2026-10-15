@@ -1,11 +1,11 @@
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
-import { ProblemText } from '@/components/ProblemText';
+import { ProblemText, useProblem } from '@/components/ProblemText';
 import { t } from '@/copy';
 import { useAppServices } from '@/services/ServicesProvider';
 import { newClientId } from '@/sync/send';
@@ -32,19 +32,24 @@ const spoken = (meal: Schemas['Meal']) => meal.items.map((item) => item.name).jo
 export function QuickAdds({ slot, start, onLogged }: { slot: Schemas['MealSlot']; start: MealStart; onLogged: () => void }) {
   const { queue, report } = useAppServices();
   const { color } = useTheme();
-  const [problem, setProblem] = useState<string | null>(null);
+  const [problem, setProblem, occurrence] = useProblem();
   const working = useRef(false); // two taps in the same moment must not log twice
+  // The meal being logged and its clientId: a try that said it failed may have been kept all the same, so trying that meal
+  // again is the same clientId (kept once); another meal is a new one.
+  const attempt = useRef<{ what: string; clientId: string } | null>(null);
 
   const offers = start.offers.filter((meal) => meal.slot === slot);
   const usual = start.usual.slice(0, foodParams.quickUsualMax);
   if (offers.length === 0 && usual.length === 0) return null;
 
-  const log = async (body: Pick<Schemas['NewMeal'], 'repeatOf' | 'items'>) => {
+  const log = async (what: string, body: Pick<Schemas['NewMeal'], 'repeatOf' | 'items'>) => {
     if (working.current) return;
     working.current = true;
     setProblem(null);
+    const id = `${slot}:${what}`;
+    if (attempt.current === null || attempt.current.what !== id) attempt.current = { what: id, clientId: newClientId() };
     try {
-      await queue.record({ kind: 'meal', body: { clientId: newClientId(), eatenAt: new Date().toISOString(), slot, ...body } });
+      await queue.record({ kind: 'meal', body: { clientId: attempt.current.clientId, eatenAt: new Date().toISOString(), slot, ...body } });
       onLogged();
     } catch (error) {
       report({ name: error instanceof Error ? error.name : 'Unknown' });
@@ -71,7 +76,7 @@ export function QuickAdds({ slot, start, onLogged }: { slot: Schemas['MealSlot']
               label={t('meal.quick.add')}
               size="touch"
               accessibilityLabel={t('food.repeat.spoken', { slot: t(`food.slot.${meal.slot}`), items: spoken(meal) })}
-              onPress={() => void log({ repeatOf: meal.id })}
+              onPress={() => void log(`repeat:${meal.id}`, { repeatOf: meal.id })}
             />
           </View>
         </Card>
@@ -84,7 +89,7 @@ export function QuickAdds({ slot, start, onLogged }: { slot: Schemas['MealSlot']
               key={food.foodId}
               accessibilityRole="button"
               accessibilityLabel={t('food.suggestions.log', { name: food.name })}
-              onPress={() => void log({ items: [{ foodId: food.foodId, amount: food.amount }] })}
+              onPress={() => void log(`food:${food.foodId}`, { items: [{ foodId: food.foodId, amount: food.amount }] })}
               style={({ pressed }) => [styles.usual, { borderColor: color.line }, pressed && styles.dim]}>
               <View style={styles.grow}>
                 <Text style={[styles.name, { color: color.text }]}>
@@ -100,7 +105,11 @@ export function QuickAdds({ slot, start, onLogged }: { slot: Schemas['MealSlot']
           ))}
         </View>
       )}
-      {problem !== null && <ProblemText style={[styles.name, { color: color.text }]}>{problem}</ProblemText>}
+      {problem !== null && (
+        <ProblemText occurrence={occurrence} style={[styles.name, { color: color.text }]}>
+          {problem}
+        </ProblemText>
+      )}
     </View>
   );
 }

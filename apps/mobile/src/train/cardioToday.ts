@@ -3,7 +3,9 @@
  * (the typed record if there is one, the watch's when that is all there is) and what this phone holds that the server may
  * not have yet. A typed record is what can be taken back, so it comes first, from whichever side has it; Apple Health's
  * record is shown and stays. A copy of the program kept for offline (`kept`) does not say what was done today — it was
- * the server's word on some earlier day — so then only this phone's own records count.
+ * the server's word on some earlier day — so then only this phone's own records count. Read online with the program's
+ * cardio, the server's list is the truth (as the meals': meals.ts): a record kept here as sent that the list does not hold
+ * was deleted elsewhere, so only a record still waiting to be sent counts besides it.
  */
 import type { components } from '@/api/schema';
 import type { LocalRecord } from '@/sync/store';
@@ -31,8 +33,10 @@ export function todaysCardio({
   if (logged !== undefined && logged.source === 'MANUAL') {
     return { kind: 'typed', clientId: logged.clientId, minutes: logged.minutes, serverId: logged.id };
   }
+  const listRead = !kept && program?.cardio !== undefined;
   const own = records.find((r) => {
     if (r.kind !== 'cardio' || r.state === 'REJECTED') return false;
+    if (listRead && r.state !== 'PENDING') return false;
     const body = r.body as Schemas['NewCardioSession'];
     return body.day === day && body.source === 'MANUAL';
   });

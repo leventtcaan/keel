@@ -31,18 +31,24 @@ export default function CardioScreen() {
   const { color } = useTheme();
   const { day, data, reload } = useReadOnFocus(
     useCallback(async () => {
-      const [read, records] = await Promise.all([training.read(api), workoutRecords().catch(() => [])]);
+      // A read that fails is "not known", never a broken screen: no program (the start minutes), nothing believed of the day.
+      const [read, records] = await Promise.all([training.read(api).catch(() => null), workoutRecords().catch(() => [])]);
+      if (read === null) return { program: null, kept: true, records };
       return { program: read.program.state === 'ready' ? read.program.value : null, kept: read.kept, records };
     }, [api, training, workoutRecords]),
   );
   const [typedMinutes, setMinutes] = useState<number | null>(null);
+  // What was just kept: shown at once, while the read that follows the save is still on its way (a second tap on a slow
+  // network would otherwise find the entry again and write a second session).
+  const [kept, setKept] = useState<{ clientId: string; minutes: number } | null>(null);
   const [problem, setProblem, occurrence] = useProblem();
   const [busy, setBusy] = useState(false);
   // One id until it is kept: a try that said it failed may have been kept all the same, and the same clientId is saved once.
   const attempt = useRef<string | null>(null);
   const working = useRef(false); // two taps in the same moment must not log twice
 
-  const today: TodaysCardio | null = data === null ? null : todaysCardio({ program: data.program, kept: data.kept, records: data.records, day });
+  const read: TodaysCardio | null = data === null ? null : todaysCardio({ program: data.program, kept: data.kept, records: data.records, day });
+  const today: TodaysCardio | null = read !== null && read.kind === 'none' && kept !== null ? { kind: 'typed', ...kept } : read;
   const minutes = typedMinutes ?? (data?.program == null ? workoutParams.cardioMinutesStart : cardioDraft(data.program).minutes);
 
   const log = async () => {
@@ -53,6 +59,7 @@ export default function CardioScreen() {
     try {
       attempt.current ??= newClientId();
       await queue.record({ kind: 'cardio', body: { clientId: attempt.current, day, minutes, source: 'MANUAL' } });
+      setKept({ clientId: attempt.current, minutes });
       attempt.current = null;
       announce(t('workout.cardio.loggedSaid', { minutes }));
       reload();
@@ -77,6 +84,7 @@ export default function CardioScreen() {
         today.serverId,
       );
       if (result === 'taken') {
+        setKept(null);
         setMinutes(null);
         announce(t('workout.cardio.undoneSaid'));
         reload();
