@@ -42,7 +42,10 @@ const mockServices = {
   signOut: jest.fn(async () => {}),
   deleteAccount: jest.fn(async () => {}),
   exportData: jest.fn(async () => {}),
-  consents: { remember: jest.fn(async (_kind: string, _status: string) => {}) },
+  consents: {
+    remember: jest.fn(async (_kind: string, _status: string) => {}),
+    granted: jest.fn(async (_kind: string) => mockConsents.HEALTH_DATA === 'GRANTED'),
+  },
   withdrawHealthData: jest.fn(async () => {
     mockConsents.HEALTH_DATA = 'WITHDRAWN';
   }),
@@ -63,6 +66,16 @@ jest.mock('@/services/ServicesProvider', () => ({
 // The subscription section (K-702) reads the server on its own; its behaviour is subscription-section.test.tsx. Here it
 // would take this file's consent answers (one GET mock for every path) out of their order.
 jest.mock('@/settings/SubscriptionSection', () => ({ SubscriptionSection: () => null }));
+// The training group and the food row (K-982) read the program, the gyms and the profile on their own; their behaviour is
+// settings-groups.test.tsx. Here they would take this file's consent answers out of their order too. The Gyms row stays, to open the gyms.
+jest.mock('@/settings/TrainingGroup', () => ({
+  TrainingGroup: () => {
+    const { SettingsRow } = jest.requireActual('@/settings/SettingsRow');
+    const { router } = jest.requireMock('expo-router');
+    return <SettingsRow label="Gyms" onPress={() => router.push('/gyms')} />;
+  },
+}));
+jest.mock('@/settings/FoodGroup', () => ({ FoodGroup: () => null }));
 
 beforeEach(() => {
   mockConsents = { HEALTH_DATA: 'GRANTED', APPLE_HEALTH: 'NEVER_ASKED', THIRD_PARTY_AI: 'NEVER_ASKED' };
