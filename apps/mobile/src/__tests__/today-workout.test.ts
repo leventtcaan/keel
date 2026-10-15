@@ -7,7 +7,7 @@
  */
 import type { components } from '@/api/schema';
 import type { LocalRecord } from '@/sync/store';
-import { cardioToday, todayCardOf } from '@/today/todayWorkout';
+import { cardioLoggedToday, cardioToday, todayCardOf } from '@/today/todayWorkout';
 import { finishedDay, finishedOnPhone, sessionState, todayKind } from '@/train/week';
 
 type Schemas = components['schemas'];
@@ -254,6 +254,36 @@ describe("today's cardio (ADR-074, K-959)", () => {
     expect(cardioToday(program([], { cardio }), '2026-12-24')).toBeNull();
     expect(cardioToday(program([], { cardio: { ...cardio, sessionsPerWeek: 0 } }), FRIDAY)).toBeNull();
     expect(cardioToday(program([]), FRIDAY)).toBeNull();
+  });
+});
+
+describe("today's cardio, logged (K-1029, Tour 4 B13)", () => {
+  const cardio: Schemas['ProgramCardio'] = {
+    source: 'GENERATED',
+    minutes: 30,
+    sessionsPerWeek: 3,
+    sessions: [{ weekday: 'FRIDAY', place: 'AFTER_LIFT' } as Schemas['PlannedCardio']],
+    doneThisWeek: 1,
+    afterLiftOverLine: false,
+  };
+  const session = (day: string, minutes: number): Schemas['CardioSession'] => ({ id: 's1', clientId: 'c1', day, minutes, source: 'MANUAL' });
+
+  test("the server's record of today: logged", () => {
+    expect(cardioLoggedToday(program([], { cardio: { ...cardio, doneThisWeek: 2, loggedDays: [FRIDAY], loggedToday: session(FRIDAY, 25) } }), FRIDAY)).toBe(true);
+  });
+
+  test('today among the logged days with no record at hand: logged', () => {
+    expect(cardioLoggedToday(program([], { cardio: { ...cardio, loggedDays: ['2026-12-23', FRIDAY] } }), FRIDAY)).toBe(true);
+  });
+
+  test('nothing logged today: none', () => {
+    expect(cardioLoggedToday(program([], { cardio: { ...cardio, loggedDays: ['2026-12-23'] } }), FRIDAY)).toBe(false);
+    expect(cardioLoggedToday(program([], { cardio }), FRIDAY)).toBe(false); // an older server: no fields
+    expect(cardioLoggedToday(program([]), FRIDAY)).toBe(false);
+  });
+
+  test("a record of another day (a copy kept from before) is not today's", () => {
+    expect(cardioLoggedToday(program([], { cardio: { ...cardio, loggedToday: session('2026-12-24', 30) } }), FRIDAY)).toBe(false);
   });
 });
 

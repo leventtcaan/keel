@@ -227,6 +227,7 @@
       "target": "{load} × {reps}",
       "added": "+{load} × {reps}",
       "cardio": "Cardio, {minutes} min",
+      "cardioDone": "Cardio done",
       "cardioOptional": "Cardio optional"
     },
     "food": {
@@ -972,6 +973,8 @@
     "suggestions": {
       "title": "Fits what's left today",
       "item": "{name} · {quantity} {unit}",
+      "itemServing": "{name} · {unit}",
+      "itemServings": "{name} · {quantity} × {unit}",
       "log": "Log {name}"
     },
     "log": "Log a meal",
@@ -1060,7 +1063,15 @@
     "title": "Log a meal",
     "quick": {
       "recent": "Recent",
-      "add": "Add"
+      "add": "Add",
+      "logged": "Logged to {slot}",
+      "loggedSaid": "Logged to {slot}.",
+      "undo": "Undo",
+      "undoLabel": "Take back this meal",
+      "undoneSaid": "Meal taken back.",
+      "undoFailed": "Couldn't take it back. Try again.",
+      "undoOffline": "You're offline. Take it back once you're online.",
+      "done": "Done"
     },
     "editTitle": "Correct a meal",
     "consent": {

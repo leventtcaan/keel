@@ -12,6 +12,7 @@ import { TextField } from '@/components/TextField';
 import { MEAL_CHIP, ask, chipAnswer, coachChips, isChip, readMeal, type Said } from '@/coach/conversation';
 import { t } from '@/copy';
 import { weeklyNote } from '@/coach/note';
+import { amountLine } from '@/food/amountText';
 import { DraftPicks, anyMatched } from '@/food/DraftPicks';
 import { handOffMeal, type HandedMeal } from '@/food/handoff';
 import { useAppServices } from '@/services/ServicesProvider';
@@ -187,7 +188,7 @@ const WAYS = { consent: '/settings', subscription: '/paywall' } as const;
 
 /** A food the meal reader found, in the user's words and measure. */
 const mealItem = (item: Schemas['MealDraft']['items'][number]) =>
-  t('coach.meal.item', { food: item.food, quantity: String(item.amount.quantity), unit: item.amount.unit });
+  amountLine(item.food, item.amount);
 
 /**
  * What VoiceOver says when a coach message arrives (K-815): the words its bubble shows, in order — the answer appears below

@@ -509,6 +509,34 @@ describe("today's workout (#home)", () => {
     expect(mockPush).toHaveBeenCalledWith({ pathname: '/workout', params: { day: 'c' } });
   });
 
+  test('cardio logged today: the line reads as done, not the plan again (K-1029, Tour 4 B13)', async () => {
+    mockAnswers['/v1/program'] = ok({
+      ...PROGRAM,
+      cardio: {
+        ...PROGRAM.cardio,
+        doneThisWeek: 2,
+        loggedDays: ['2026-12-23', '2026-12-25'],
+        loggedToday: { id: 's1', clientId: 'c1', day: '2026-12-25', minutes: 25, source: 'MANUAL' },
+      },
+    });
+    await show();
+    expect(screen.getByText(t('thisWeek.today.cardioDone'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('thisWeek.today.cardio', { minutes: 30 }))).toBeNull();
+  });
+
+  test('cardio logged today, the record not at hand (only the logged days): it still reads as done', async () => {
+    mockAnswers['/v1/program'] = ok({ ...PROGRAM, cardio: { ...PROGRAM.cardio, doneThisWeek: 2, loggedDays: ['2026-12-25'] } });
+    await show();
+    expect(screen.getByText(t('thisWeek.today.cardioDone'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('thisWeek.today.cardio', { minutes: 30 }))).toBeNull();
+  });
+
+  test('cardio logged on another day: today still shows the plan', async () => {
+    mockAnswers['/v1/program'] = ok({ ...PROGRAM, cardio: { ...PROGRAM.cardio, doneThisWeek: 2, loggedDays: ['2026-12-23'] } });
+    await show();
+    expect(screen.getByText(t('thisWeek.today.cardio', { minutes: 30 }))).toBeOnTheScreen();
+  });
+
   test('the moves beyond the first three are counted ("and 1 more"), so the card and the Train tab tell the same session (user test 10 Oct)', async () => {
     await show();
     expect(screen.getByText('and 1 more')).toBeOnTheScreen();

@@ -308,6 +308,13 @@ describe('a meal in words (K-504 draft)', () => {
     expect(allText()).not.toMatch(/kcal/i);
   });
 
+  test('a serving named with its count is not run together with the quantity ("1 medium", not "1 1 medium", K-1029)', async () => {
+    mockParsed = ok({ mode: 'MODEL', items: [{ ...EGGS, food: 'potato', amount: { quantity: 1, unit: '1 medium' } }] });
+    await show();
+    await tellMeal('a baked potato');
+    expect(screen.getByText('potato · 1 medium')).toBeOnTheScreen();
+  });
+
   test('one tap each: the picks go to the meal screen in memory, not in the link', async () => {
     mockParsed = ok({ mode: 'MODEL', items: [EGGS, TOAST] });
     await show();
