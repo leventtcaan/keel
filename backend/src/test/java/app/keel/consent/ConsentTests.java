@@ -95,7 +95,7 @@ class ConsentTests {
     }
 
     @Test
-    void aYesToTheHealthTextThatCalledAwayAHealthStateIsAskedAgain() {
+    void aYesToTheHealthTextThatCalledAwayAHealthStateIsAskedAgain() throws Exception {
         // Version 4 (Levent, 15 Oct; K-1021, ADR-077 Ek 6): traveling, a busy week and a new gym are no health data and stay on a
         // withdrawal. A yes to version 3, which listed "away" among the health data and deleted everything, is not a yes to that.
         AccountId account = TestSessions.newAccount();

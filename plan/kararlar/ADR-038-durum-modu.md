@@ -15,7 +15,7 @@ gürültü süresi, yeniden-baseline kuralı: kaynak yok.**
    isteğe bağlı bitiş günü — ikisi de kullanıcının takviminde, dahil). Hastalık ve ağrı sağlık verisidir → tablo HEALTH_DATA
    rızasının altında: rızasız 403, geri çekmede ve hesap silmede silinir, dışa aktarılır (K-214, K-231).
    *(Ek, 2026-10-15: rıza tür bazındadır, yalnız `SICK`/`PAIN` ister; diğer üçü rızasız kaydedilir, geri çekmede kalır — ADR-077 Ek 6, K-1021. `PUT` gövdesi `until` yerine `days` da alır.)*
-2. **API** `/v1/state`: `GET` (yürürlükteki durum ya da 404), `PUT {kind, until?}` bugünden başlatır (açık bir durum varsa
+2. **API** `/v1/state`: `GET` (yürürlükteki durum ya da 404), `PUT {kind, until? | days?}` (`days`: ADR-077 Ek 6, K-1021) bugünden başlatır (açık bir durum varsa
    dün biter, yenisi bugün başlar; aynı gün başladıysa yerine geçer), `DELETE` "döndüm": açık durum dün biter (bugün başladıysa
    kayıt silinir). Geçmiş kayıtlar kalır (geçmiş haftaların duraklaması onlardan okunur).
 3. **Motor:** `Snapshot.context` — check-in haftasının (bugün ve önceki 6 gün) herhangi bir gününde yürürlükte olan durum.
