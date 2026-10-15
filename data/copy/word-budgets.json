@@ -896,6 +896,7 @@
         "progress.strength.next",
         "progress.strength.set",
         "progress.strength.rowLabel",
+        "progress.strength.rowLabelBodyweight",
         "progress.weight.spoken",
         "progress.consistency.title",
         "progress.consistency.onTrack",
@@ -958,7 +959,7 @@
           "keys": [
             "screens.progress.title",
             "progress.hero.targets",
-            "progress.hero.tap",
+            "progress.hero.tapLocked",
             "thisWeek.food.locked",
             "thisWeek.food.allow",
             "progress.targets.cardio",
