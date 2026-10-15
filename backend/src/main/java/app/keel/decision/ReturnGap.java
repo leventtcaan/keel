@@ -57,13 +57,11 @@ final class ReturnGap {
     }
 
     /**
-     * The day the next call is: the first call's day before the first call; else today while this check-in week's call is
-     * open; else the day the latest call itself says to review (the Hero's: a call made late reviews on its own day) while that is
-     * ahead; else the next check-in day.
+     * The day the next call is: the first call's day before the first call; else the day the latest call says the next opens
+     * on ({@link CheckInWeek#nextCallOn}, the one function; a call made late in its week does not move it) while that is
+     * ahead; else today, the week's call is open. The Hero and the call screens name the same day (K-1024).
      */
-    static LocalDate nextCallOn(Optional<LocalDate> firstCallOn, LocalDate weekOf, boolean openThisWeek, LocalDate today,
-            Optional<LocalDate> latestNextReview) {
-        return firstCallOn.orElseGet(() -> openThisWeek ? today
-                : latestNextReview.filter(review -> review.isAfter(today)).orElseGet(() -> weekOf.plusWeeks(1)));
+    static LocalDate nextCallOn(Optional<LocalDate> firstCallOn, Optional<LocalDate> latestNextCallOn, LocalDate today) {
+        return firstCallOn.orElseGet(() -> latestNextCallOn.filter(next -> next.isAfter(today)).orElse(today));
     }
 }

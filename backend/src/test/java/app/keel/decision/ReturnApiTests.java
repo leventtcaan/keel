@@ -217,14 +217,14 @@ class ReturnApiTests {
         // Finished a week ago: the first call's day has come, and its check-in is open today.
         jdbc.sql("update profile.profile set onboarded_at = now() - make_interval(hours => 168) where account_id = :a").param("a", account.value()).update();
         assertThat(read(send(account, "GET", "/v1/return", null))).containsEntry("nextCallOn", today.toString());
-        // Made this week: the day the Hero names, the call's own next review.
+        // Made this week: the day the Hero names, the call's own next-call day (Decision.nextCallOn).
         assertThat(send(account, "POST", "/v1/check-ins/current/answers",
                 Map.of("clientId", UUID.randomUUID(), "weekOf", today.toString(), "answers", List.of()))).hasStatusOk();
         assertThat(read(send(account, "GET", "/v1/return", null))).containsEntry("nextCallOn", heroDay(account, today));
     }
 
     @Test
-    void aCallMadeLateInTheWeekNamesTheSameDayAsTheHero() throws Exception {
+    void aCallMadeLateInTheWeekNamesTheNextCheckInDayAsTheHeroDoes() throws Exception {
         // Checks in on the weekday three days back, so today is "Thursday" of a Monday week: the call is made late.
         LocalDate today = LocalDate.now(ZoneOffset.UTC);
         LocalDate weekOf = today.minusDays(3);
@@ -236,8 +236,11 @@ class ReturnApiTests {
         Map<String, Object> hero = read(send(account, "GET", "/v1/decisions/current", null));
         Map<String, Object> summary = read(send(account, "GET", "/v1/return", null));
 
-        assertThat(LocalDate.parse((String) hero.get("nextReview"))).as("the call reviews ahead of today").isAfter(today);
-        assertThat(summary.get("nextCallOn")).isEqualTo(hero.get("nextReview"));
+        // K-1024: the next call opens on the check-in day a week on from the call's week (today + 4), not a week from the day it
+        // was made on (the engine's nextReview is the data's look, which this test does not pin).
+        assertThat(hero.get("nextCallOn")).isEqualTo(weekOf.plusWeeks(1).toString());
+        assertThat(LocalDate.parse((String) hero.get("nextCallOn"))).isEqualTo(today.plusDays(4));
+        assertThat(summary.get("nextCallOn")).isEqualTo(hero.get("nextCallOn"));
     }
 
     @Test
@@ -264,11 +267,11 @@ class ReturnApiTests {
         assertThat(kg(planned(account).get("nextLoadKg"))).isEqualByComparingTo(new BigDecimal("60").subtract(step));
     }
 
-    /** The next review of the latest call: the day the Hero names. */
+    /** The next-call day of the latest call: the day the Hero names. */
     private String heroDay(AccountId account, LocalDate today) throws Exception {
-        String review = (String) read(send(account, "GET", "/v1/decisions/current", null)).get("nextReview");
-        assertThat(LocalDate.parse(review)).isAfter(today);
-        return review;
+        String next = (String) read(send(account, "GET", "/v1/decisions/current", null)).get("nextCallOn");
+        assertThat(LocalDate.parse(next)).isAfter(today);
+        return next;
     }
 
     @Test

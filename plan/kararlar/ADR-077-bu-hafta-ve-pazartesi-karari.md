@@ -243,3 +243,18 @@ Ek 6'nın "tetik kayıt boşluğu, cevap sunucuda, aynı boşlukta yeniden sorul
 - **Reddedilen:** (a) cevabı decision'da tutup training'e `ObjectProvider` ile okutmak (CurrentPhase kalıbı): iki tablo ya da ters bağımlılık, tek satırlık
   bir iz için fazla; (b) öneriyi `awayDays`'e bağlamak: ekran EASE_BACK deyip program hafifletmezdi (ya da tersi); (c) cevabı zaman damgasına bağlamak
   (son kayıt gününe değil): yeni kayıtla yeniden sorma kuralı tarihten çıkarılamazdı.
+
+## Ek 9 · Sonraki çağrı günü tek kaynak: `Decision.nextCallOn` (K-1024, 2026-10-15, agent, teknik; KABUL)
+Motor `nextReview`'u çağrı günü + 7 (DeloadLadder, SafetyNet, PhaseGate) ya da karar penceresi (CalorieLadder) olarak yazar; check-in ise çağrının kaydedildiği
+**check-in haftasının** bir sonraki check-in gününde açılır (`CheckInWeek.taken`: hafta, son çağrının haftasından bir hafta sonrasından önceyse kapalı). Perşembe
+yapılan bir çağrının `nextReview`'u Perşembe + 7'dir, sonraki çağrı ise Pazartesi (Perşembe + 4) açılır; Hero ve karar ekranı yanlış günü söylüyordu. Veri penceresi
+yetersizse çağrı yine açılır (motor "henüz karar yok" kaydeder), yani sonraki çağrı günü veri penceresine bağlı değildir.
+- **İki alan, iki anlam.** `Decision.nextReview`: kararın dayandığı verinin yeniden bakıldığı gün (motorun penceresi); hafif hafta ve mola haftasının son günü de ondan hesaplanır
+  (`DecisionService.onTheProgram`), bu yüzden **değişmez** (motor kuralı değil, U14 gerekmez). `Decision.nextCallOn` (yeni, zorunlu): sonraki çağrının gerçekten
+  açıldığı gün, sunucuda tek fonksiyon: `CheckInWeek.nextCallOn(sonÇağrınınHaftası, checkInGünü)` = o haftadan bir hafta sonrasından itibaren (dahil) ilk check-in günü.
+  Fonksiyon `CheckInWeek.taken` kuralının kendisinden türer (test: her check-in günü için hafta tam o günde açılır); check-in günü sonradan değişmişse kullanıcının şimdiki günüdür.
+- **`GET /v1/return` `nextCallOn`** (Ek 8) aynı fonksiyonu kullanır: ilk karar öncesi `firstCallOn`; sonra en son çağrının `nextCallOn`'u gelecekteyse o, değilse bugün
+  (hafta açık); rıza yoksa alan yok. Ek 8'deki "en son kararın `nextReview`'u" kuralı bununla değişti.
+- **Telefon:** "sonraki çağrı / sonraki gözden geçirme" gösteren yerler (Hero, karar ekranı, neden ekranı, Today kartı, kilit ekranı) `nextCallOn` okur; telefon tarih hesaplamaz.
+  Koç metinleri ("looked at again", "stands until its next look") verinin yeniden bakılışını anlatır; `nextReview` okumaya devam eder.
+- **Reddedilen:** `nextReview`'u check-in gününe eşitlemek: hafif hafta ve mola haftasının uzunluğunu sessizce değiştirir (ve CalorieLadder'ın karar penceresini bozar).

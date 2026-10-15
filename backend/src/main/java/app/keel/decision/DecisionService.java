@@ -755,10 +755,10 @@ class DecisionService {
     }
 
     /**
-     * The day of the next call on the user's calendar (K-1020, ADR-077 Ek 8), the one the Hero names: none without the
-     * HEALTH_DATA consent (there is no call to name); the first call's day until it is made; today while this check-in week's
-     * call is open; else the latest call's own {@code nextReview} while ahead; else the next check-in day. Not a refusal
-     * without the consent: the caller still answers what needs none.
+     * The day of the next call on the user's calendar (K-1020, ADR-077 Ek 8 and 9), the one the Hero names: none without the
+     * HEALTH_DATA consent (there is no call to name); the first call's day until it is made; else the day the latest call's
+     * check-in week opens the next ({@link CheckInWeek#nextCallOn}, the same as {@code Decision.nextCallOn}), or today once
+     * it has. Not a refusal without the consent: the caller still answers what needs none.
      */
     @Transactional(readOnly = true)
     Optional<LocalDate> nextCallOn(AccountId account, ProfileFacts profile, LocalDate today) {
@@ -767,10 +767,19 @@ class DecisionService {
         }
         Optional<LocalDate> first = calls.firstMadeOn(account).isPresent() ? Optional.empty()
                 : Optional.of(FirstWeekFacts.firstCallOn(firstDay(account, profile.timeZone()), profile.checkInDay(), today));
-        LocalDate weekOf = CheckInWeek.weekOf(today, profile.checkInDay());
-        Optional<LocalDate> latestReview = calls.newestFirst(account, Optional.empty(), 1).stream().findFirst()
-                .map(call -> LocalDate.parse((String) call.decision().get("nextReview")));
-        return Optional.of(ReturnGap.nextCallOn(first, weekOf, !taken(account, weekOf), today, latestReview));
+        Optional<LocalDate> latestNext = calls.newestFirst(account, Optional.empty(), 1).stream().findFirst()
+                .map(call -> CheckInWeek.nextCallOn(call.weekOf(), profile.checkInDay()));
+        return Optional.of(ReturnGap.nextCallOn(first, latestNext, today));
+    }
+
+    /**
+     * The day the call after each of the user's calls opens (K-1024, contract Decision.nextCallOn): the check-in day a week
+     * on from the call's own check-in week, with the check-in day the user has now. A call made late in its week does not move it.
+     */
+    Function<CallStore.Call, LocalDate> nextCallDay(AccountId account) {
+        Optional<DayOfWeek> checkInDay = profiles.of(account).map(ProfileFacts::checkInDay);
+        // Without a profile (a call outlives none): the call's own weekday, so a week on.
+        return call -> CheckInWeek.nextCallOn(call.weekOf(), checkInDay.orElse(call.weekOf().getDayOfWeek()));
     }
 
     /** The first eight weeks (K-513, ADR-040): this week of the flow; empty before the first day and once it is over. */

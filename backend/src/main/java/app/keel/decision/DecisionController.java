@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -59,9 +60,10 @@ class DecisionController {
         List<CallStore.Call> page = decisions.page(account, Optional.ofNullable(before), size + 1);
         List<CallStore.Call> shown = page.subList(0, Math.min(size, page.size()));
         Optional<UUID> latest = decisions.latestId(account);
+        Function<CallStore.Call, LocalDate> nextCall = decisions.nextCallDay(account);
         // Each call with the trend weight it read (K-611): the ledger says what came after it, never why.
         return new DecisionPage(shown.stream().map(call -> {
-                    Map<String, Object> view = sent(call, latest, decisions);
+                    Map<String, Object> view = sent(call, latest, decisions, nextCall);
                     decisions.trendRead(call).ifPresent(kg -> view.put("readTrendKg", kg));
                     return view;
                 }).toList(),
@@ -71,7 +73,7 @@ class DecisionController {
     @GetMapping("/v1/decisions/current")
     Map<String, Object> current(AccountId account) {
         CallStore.Call call = decisions.current(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
-        return sent(call, Optional.of(call.id()), decisions);
+        return sent(call, Optional.of(call.id()), decisions, decisions.nextCallDay(account));
     }
 
     @GetMapping("/v1/decisions/{id}")
@@ -168,7 +170,7 @@ class DecisionController {
 
     /** Contract Decision as the app reads it: the kept call, and whether "Keep last week's plan" may be offered (K-963). */
     private Map<String, Object> sent(AccountId account, CallStore.Call call) {
-        return sent(call, decisions.latestId(account), decisions);
+        return sent(call, decisions.latestId(account), decisions, decisions.nextCallDay(account));
     }
 
     private static Map<String, Object> sent(CallStore.Call call, Optional<UUID> latest) {
@@ -177,9 +179,14 @@ class DecisionController {
         return view;
     }
 
-    /** As sent, with the first week's watch days on the call that closes it (K-1000, ADR-077 #4). */
-    private Map<String, Object> sent(CallStore.Call call, Optional<UUID> latest, DecisionService decisions) {
+    /**
+     * As sent, with the day the next call opens (K-1024: the one function, not the engine's nextReview) and the first week's
+     * watch days on the call that closes it (K-1000, ADR-077 #4).
+     */
+    private Map<String, Object> sent(CallStore.Call call, Optional<UUID> latest, DecisionService decisions,
+            Function<CallStore.Call, LocalDate> nextCall) {
         Map<String, Object> view = sent(call, latest);
+        view.put("nextCallOn", nextCall.apply(call));
         decisions.observationDays(call).ifPresent(days -> view.put("observationDays", days));
         // What it changed, old to new, from the plan before and after it (K-1000); a hold of the load, the move it changes (K-1009).
         view.put("changes", decisions.changes(call));

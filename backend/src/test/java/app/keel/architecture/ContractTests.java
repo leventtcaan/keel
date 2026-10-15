@@ -313,6 +313,17 @@ class ContractTests {
     }
 
     @Test
+    void aDecisionNamesTheDayTheNextCallOpensApartFromTheEnginesNextReview() throws IOException {
+        // K-1024: two dates, two meanings: the data's look (nextReview, the engine's) and the next call (nextCallOn, the server's).
+        Map<String, Object> decision = map(schemas().get("Decision"));
+
+        assertThat(list(decision.get("required"))).contains("nextReview", "nextCallOn");
+        assertThat(properties(decision).get("nextCallOn")).isEqualTo(Map.of("type", "string", "format", "date", "description",
+                map(properties(decision).get("nextCallOn")).get("description")));
+        assertThat(String.valueOf(map(properties(decision).get("nextReview")).get("description"))).contains("nextCallOn");
+    }
+
+    @Test
     void theConsistencyCarriesItsWeeksAsTheEnginesStates() throws IOException {
         // K-1016 (ADR-078 #2): the 12 weeks grid's cells, not a count the phone makes; the states are the engine's.
         Map<String, Object> schemas = schemas();
