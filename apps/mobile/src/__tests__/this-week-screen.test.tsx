@@ -36,7 +36,7 @@ const decision = (extra: Partial<Schemas['Decision']> = {}): Schemas['Decision']
   action: { type: 'STOP_LOAD_INCREASE' } as Schemas['Decision']['action'],
   reasons: [{ rule: 'plateau', source: { tag: 'EXPERIENCE' } }],
   confidence: 'HIGH',
-  nextReview: '2026-12-28',
+  nextReview: '2027-01-04',
   nextCallOn: '2026-12-28',
   copyKey: 'decision.stop_load_increase.plateau',
   application: { state: 'APPLIED' },
@@ -230,7 +230,7 @@ describe('an ordinary week', () => {
   });
 
   test('the next call tomorrow and today are said so', async () => {
-    mockAnswers['/v1/decisions/current'] = ok(decision({ nextReview: '2026-12-26' }));
+    mockAnswers['/v1/decisions/current'] = ok(decision({ nextCallOn: '2026-12-26' }));
     await show();
     expect(screen.getByText(t('thisWeek.hero.nextCall', { day: 'Saturday' }))).toBeOnTheScreen();
     expect(screen.getByText(t('thisWeek.hero.tomorrow'))).toBeOnTheScreen();

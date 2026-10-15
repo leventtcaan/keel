@@ -25,7 +25,7 @@ const CALL: Schemas['Decision'] = {
     { rule: 'loss_rate', source: { tag: 'LITERATURE' } },
   ],
   confidence: 'HIGH',
-  nextReview: '2026-10-05',
+  nextReview: '2026-10-12',
   nextCallOn: '2026-10-05',
   copyKey: 'decision.continue.toward_goal',
   application: { state: 'NOT_NEEDED' },
