@@ -187,10 +187,11 @@ describe('the first days (ADR-078 #1)', () => {
     expect(mockPush).toHaveBeenLastCalledWith('/settings');
   });
 
-  test("cardio opens the '+' sheet where the cardio log is (ADR-078 Ek 2), not the Train tab", async () => {
+  test("cardio opens the cardio log itself, the screen the '+' sheet's Cardio row opens (ADR-078 Ek 2), not the sheet or the Train tab", async () => {
     await show();
     await fireEvent.press(box('cardio'));
-    expect(mockPush).toHaveBeenCalledWith('/plus');
+    expect(mockPush).toHaveBeenCalledWith('/cardio');
+    expect(mockPush).not.toHaveBeenCalledWith('/plus');
     expect(mockPush).not.toHaveBeenCalledWith('/train');
   });
 
