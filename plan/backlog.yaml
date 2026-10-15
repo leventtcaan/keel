@@ -4982,6 +4982,22 @@ tasks:
     refs: ["plan/kararlar/ADR-018-health-yazma-ve-ice-aktarma.md", "prototip/yeni-yuz.html"]
     learn: ["Okuma ucu: tazelik sırası"]
 
+  - id: K-1026
+    title: "Dönüşte 'Ease back in' seçimi her sorulan boşlukta bir basamak hafifletir"
+    milestone: M9a
+    module: training
+    type: fix
+    size: S
+    status: todo
+    depends_on: [K-1020]
+    why: "K-981 (15 Eki): boşluk return_prompt_days ile return_step_back_after_weeks arasındayken (PICK_UP önerili) kullanıcı 'Ease back in' seçerse sunucu hiçbir şeyi hafifletmiyor ama ekran 'One step lighter' diyor; ADR-077 #5 'öner ama dayatma': kullanıcının seçimi etkili olmalı"
+    acceptance:
+      - "POST /v1/return EASE_BACK: boşluk ne olursa olsun bir sonraki seansta `ReturnLoad`'ın mevcut tek basamak hafifletmesi uygulanır (yeni sayı yok; PICK_UP bastırmasıyla aynı kayıt ve süre kuralı); `Program.backAfterBreak` true döner"
+      - "≥ return_step_back_after_weeks boşlukta davranış değişmez; seans sonrası biter"
+    tests: ["Tablo testi, API testi (CI)"]
+    refs: ["plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md"]
+    learn: ["Kullanıcı seçiminin motora girişi"]
+
   - id: K-1010
     title: "Sunucudaki ek siteler: Caddy /opt/sites altındaki *.caddy dosyalarını içeri alır"
     milestone: M9
