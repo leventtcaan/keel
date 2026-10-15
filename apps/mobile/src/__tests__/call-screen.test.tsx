@@ -357,6 +357,47 @@ describe('what the call changes, and why in a line (K-978 part 2)', () => {
     expect(screen.queryByText(t('decision.ruleShort.energy_floor'))).toBeNull();
   });
 
+  describe('"Hold the weight" on a move (K-1009, user test 8 Oct)', () => {
+    const bench = (extra: Partial<Schemas['DecisionChange']> = {}): Schemas['DecisionChange'] => ({
+      what: 'MOVE',
+      exerciseId: 'bench_press',
+      held: true,
+      before: { target: { loadKg: 72.5, reps: 9 } },
+      after: { target: { loadKg: 72.5, reps: 8 } },
+      ...extra,
+    });
+
+    test('the move and the target the load is held to; the old target is not struck through, so it does not read as a drop', async () => {
+      mockAnswers['/v1/decisions/current'] = ok(decision({ changes: [bench()] }));
+      await show();
+      expect(screen.getByText('Bench press, load held')).toBeOnTheScreen();
+      expect(screen.getByText('72.5 kg × 8')).toBeOnTheScreen();
+      expect(screen.queryByText(/× 9/)).toBeNull();
+      expect(screen.getByLabelText('Bench press, load held: 72.5 kg × 8')).toBeOnTheScreen();
+    });
+
+    test("the target in the user's units", async () => {
+      mockUnits = 'IMPERIAL';
+      mockAnswers['/v1/decisions/current'] = ok(decision({ changes: [bench()] }));
+      await show();
+      expect(screen.getByText(/lb × 8$/)).toBeOnTheScreen();
+      expect(JSON.stringify(screen.toJSON())).not.toMatch(/72\.5 kg/);
+    });
+
+    test('"Keep last week\'s plan": the target in force after it, the held one gone', async () => {
+      mockAnswers['/v1/decisions/current'] = ok(decision({ changes: [bench()] }));
+      await show();
+      mockAnswers['/v1/decisions/current'] = ok(
+        decision({ application: { state: 'DECLINED' }, declinable: false, changes: [bench({ inForce: { target: { loadKg: 72.5, reps: 9 } } })] }),
+      );
+      await press(t('callScreen.keep'));
+      expect(screen.getByText('Bench press, in force')).toBeOnTheScreen();
+      expect(screen.getByText('72.5 kg × 9')).toBeOnTheScreen();
+      expect(screen.queryByText(/load held/)).toBeNull();
+      expect(screen.queryByText('72.5 kg × 8')).toBeNull();
+    });
+  });
+
   test('a call without observationDays says nothing of waiting', async () => {
     mockAnswers['/v1/decisions/current'] = ok(calories());
     await show();

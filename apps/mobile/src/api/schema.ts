@@ -3120,13 +3120,24 @@ export interface components {
         };
         /**
          * @description One target a call moves (K-1000). `what` names it; `before`, `after` and `inForce` carry its value in the field of
-         *     that kind (`targetKcal` for CALORIES, `stepsPerDay` for STEPS, `phase` for PHASE). A plan number, one figure (U5).
-         *     The step target before any was set is the starting one. An empty `before` (and `inForce`) means none was in force: a
-         *     plan begun before the first weigh-in has no calorie target until a call starts one.
+         *     that kind (`targetKcal` for CALORIES, `stepsPerDay` for STEPS, `phase` for PHASE, `target` for MOVE). A plan number,
+         *     one figure (U5). The step target before any was set is the starting one. An empty `before` (and `inForce`) means none
+         *     was in force: a plan begun before the first weigh-in has no calorie target until a call starts one.
+         *
+         *     MOVE (K-1009, ADR-077 Ek 7) is a hold of the load ("Hold the weight") on one move: `exerciseId` is the catalog move,
+         *     `before` the target the program stored for its next session when the call was applied, `after` the one it shows while
+         *     the load is held (the last load at the top of the rep range), and `held` is true: the load is kept, so the phone must
+         *     not write it as a target cut. The move is the one the weekly call counts as the most stalled of those the hold changes.
+         *     Kept with the call when it was applied, so an older call says it too; absent when the hold changed no target and on a
+         *     call applied before it was kept. Declined or undone, `inForce` is `before`.
          */
         DecisionChange: {
             /** @enum {string} */
-            what: "CALORIES" | "STEPS" | "PHASE";
+            what: "CALORIES" | "STEPS" | "PHASE" | "MOVE";
+            /** @description The move, for MOVE only. A catalog exercise id. */
+            exerciseId?: string;
+            /** @description For MOVE only, always true (the load is held at the last load). */
+            held?: boolean;
             before: components["schemas"]["ChangeValue"];
             after: components["schemas"]["ChangeValue"];
             inForce?: components["schemas"]["ChangeValue"];
@@ -3136,6 +3147,12 @@ export interface components {
             targetKcal?: number;
             stepsPerDay?: number;
             phase?: components["schemas"]["Phase"];
+            target?: components["schemas"]["MoveTarget"];
+        };
+        /** @description A move's target as the program holds it (K-1009), the load in kilograms and the reps. */
+        MoveTarget: {
+            loadKg: number;
+            reps: number;
         };
         /**
          * @description The rows a call read (K-519). Weights in kilograms, unrounded (the phone rounds once, ADR-029). A row the call did

@@ -7,9 +7,12 @@ import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { changeRows } from '@/today/callChanges';
 import { callReasons } from '@/today/callReasons';
+import { formatLoad, type UnitSystem } from '@/units/units';
 import en from '../../../../data/copy/en.json';
 
 type Schemas = components['schemas'];
+// The plan's targets carry no load: the units matter only to a move's target (K-1009).
+const rowsOf = (decision: Schemas['Decision'], units: UnitSystem = 'METRIC') => changeRows(decision, units);
 const call = (extra: Partial<Schemas['Decision']> = {}): Schemas['Decision'] => ({
   id: 'd1',
   madeOn: '2026-12-28',
@@ -26,7 +29,7 @@ const call = (extra: Partial<Schemas['Decision']> = {}): Schemas['Decision'] => 
 
 describe('the changes, old to new', () => {
   test('a calorie step: the target before and after, thousands apart', () => {
-    const rows = changeRows(call({ changes: [{ what: 'CALORIES', before: { targetKcal: 2100 }, after: { targetKcal: 1850 } }] }));
+    const rows = rowsOf(call({ changes: [{ what: 'CALORIES', before: { targetKcal: 2100 }, after: { targetKcal: 1850 } }] }));
     expect(rows).toEqual([
       {
         id: 'CALORIES',
@@ -40,7 +43,7 @@ describe('the changes, old to new', () => {
   });
 
   test("steps and phase in their own words; the server's order is kept", () => {
-    const rows = changeRows(
+    const rows = rowsOf(
       call({
         changes: [
           { what: 'STEPS', before: { stepsPerDay: 7000 }, after: { stepsPerDay: 10000 } },
@@ -55,12 +58,12 @@ describe('the changes, old to new', () => {
   });
 
   test('no target was in force (an empty before): a new target, not a change from some number', () => {
-    const [row] = changeRows(call({ changes: [{ what: 'CALORIES', before: {}, after: { targetKcal: 1850 } }] }));
+    const [row] = rowsOf(call({ changes: [{ what: 'CALORIES', before: {}, after: { targetKcal: 1850 } }] }));
     expect(row).toMatchObject({ kind: 'new', label: 'Calories, new', from: null, to: '1,850 kcal', spoken: 'Calories, new: 1,850 kcal' });
   });
 
   test('declined or undone: the target in force, said as in force, never the one the call set', () => {
-    const [kept] = changeRows(
+    const [kept] = rowsOf(
       call({
         application: { state: 'DECLINED' },
         changes: [{ what: 'CALORIES', before: { targetKcal: 2100 }, after: { targetKcal: 1850 }, inForce: { targetKcal: 2100 } }],
@@ -68,7 +71,7 @@ describe('the changes, old to new', () => {
     );
     expect(kept).toMatchObject({ kind: 'inForce', label: 'Calories, in force', from: null, to: '2,100 kcal' });
     expect(JSON.stringify(kept)).not.toContain('1,850');
-    const [undone] = changeRows(
+    const [undone] = rowsOf(
       call({
         application: { state: 'UNDONE' },
         changes: [{ what: 'STEPS', before: { stepsPerDay: 7000 }, after: { stepsPerDay: 10000 }, inForce: { stepsPerDay: 7000 } }],
@@ -78,26 +81,76 @@ describe('the changes, old to new', () => {
   });
 
   test('declined with no target in force before: says so, with no number', () => {
-    const [row] = changeRows(call({ application: { state: 'DECLINED' }, changes: [{ what: 'CALORIES', before: {}, after: { targetKcal: 1850 }, inForce: {} }] }));
+    const [row] = rowsOf(call({ application: { state: 'DECLINED' }, changes: [{ what: 'CALORIES', before: {}, after: { targetKcal: 1850 }, inForce: {} }] }));
     expect(row).toMatchObject({ kind: 'inForce', to: t('callScreen.changes.noneInForce') });
   });
 
   test('no changes: no rows; a change without its value is not made up', () => {
-    expect(changeRows(call())).toEqual([]);
-    expect(changeRows(call({ changes: [{ what: 'CALORIES', before: { targetKcal: 2100 }, after: {} }] }))).toEqual([]);
+    expect(rowsOf(call())).toEqual([]);
+    expect(rowsOf(call({ changes: [{ what: 'CALORIES', before: { targetKcal: 2100 }, after: {} }] }))).toEqual([]);
   });
 });
 
 describe('a call kept off the plan or undone with no target in force (K-978 review)', () => {
   test.each(['DECLINED', 'UNDONE'] as const)('%s with no inForce: no row, the call set a number that is not the plan\'s', (state) => {
-    const rows = changeRows(call({ application: { state }, changes: [{ what: 'CALORIES', before: { targetKcal: 2100 }, after: { targetKcal: 1850 } }] }));
+    const rows = rowsOf(call({ application: { state }, changes: [{ what: 'CALORIES', before: { targetKcal: 2100 }, after: { targetKcal: 1850 } }] }));
     expect(rows).toEqual([]);
   });
 
   test('an applied or pending call still shows its own after', () => {
     for (const state of ['APPLIED', 'PENDING', 'NOT_NEEDED'] as const) {
-      expect(changeRows(call({ application: { state }, changes: [{ what: 'CALORIES', before: { targetKcal: 2100 }, after: { targetKcal: 1850 } }] }))).toHaveLength(1);
+      expect(rowsOf(call({ application: { state }, changes: [{ what: 'CALORIES', before: { targetKcal: 2100 }, after: { targetKcal: 1850 } }] }))).toHaveLength(1);
     }
+  });
+});
+
+describe('a hold of the load on a move (K-1009, ADR-077 Ek 6)', () => {
+  const bench = (extra: Partial<Schemas['DecisionChange']> = {}): Schemas['DecisionChange'] => ({
+    what: 'MOVE',
+    exerciseId: 'bench_press',
+    held: true,
+    before: { target: { loadKg: 72.5, reps: 9 } },
+    after: { target: { loadKg: 72.5, reps: 8 } },
+    ...extra,
+  });
+
+  test('the load is held: the move and the target it is held to, never the old target struck through as a drop', () => {
+    const [row] = rowsOf(call({ changes: [bench()] }));
+    expect(row).toEqual({
+      id: 'MOVE:bench_press',
+      kind: 'held',
+      label: 'Bench press, load held',
+      from: null,
+      to: '72.5 kg × 8',
+      spoken: 'Bench press, load held: 72.5 kg × 8',
+    });
+    expect(JSON.stringify(row)).not.toContain('9');
+  });
+
+  test("the target in the user's units: pounds on a pound screen, never a kilogram", () => {
+    const [row] = rowsOf(call({ changes: [bench()] }), 'IMPERIAL');
+    expect(row.to).toBe(`${formatLoad(72.5, 'IMPERIAL')} × 8`);
+    expect(row.to).not.toContain('kg');
+  });
+
+  test('kept off the plan or undone: the target in force, the held one is not shown', () => {
+    for (const state of ['DECLINED', 'UNDONE'] as const) {
+      const [row] = rowsOf(call({ application: { state }, changes: [bench({ inForce: { target: { loadKg: 72.5, reps: 9 } } })] }));
+      expect(row).toMatchObject({ kind: 'inForce', label: 'Bench press, in force', from: null, to: '72.5 kg × 9' });
+      expect(JSON.stringify(row)).not.toContain('× 8');
+    }
+  });
+
+  test('off the plan with no target in force, or a move the phone has no name for: no row, nothing made up', () => {
+    expect(rowsOf(call({ application: { state: 'DECLINED' }, changes: [bench()] }))).toEqual([]);
+    expect(rowsOf(call({ changes: [bench({ exerciseId: undefined })] }))).toEqual([]);
+    expect(rowsOf(call({ changes: [bench({ exerciseId: 'not_in_the_copy' })] }))).toEqual([]);
+    expect(rowsOf(call({ changes: [bench({ after: {} })] }))).toEqual([]);
+  });
+
+  test('beside the plan targets, in the order the server sent', () => {
+    const rows = rowsOf(call({ changes: [{ what: 'STEPS', before: { stepsPerDay: 7000 }, after: { stepsPerDay: 10000 } }, bench()] }));
+    expect(rows.map((r) => r.kind)).toEqual(['change', 'held']);
   });
 });
 

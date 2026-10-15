@@ -554,18 +554,17 @@ class ProgramController {
     private record Back(LocalDate today, ZoneId zone, Parameters parameters, Optional<GymStore.Gym> gym, Optional<LocalDate> lastSession) {
 
         /** Back after a long break today (K-531): the account's last session before today a long break ago. */
-        boolean afterBreak() {
-            return lastSession.filter(day -> ReturnLoad.afterBreak(day, today, parameters)).isPresent();
+        BackAfterBreak breaks() {
+            return BackAfterBreak.of(lastSession, today, zone, parameters);
         }
     }
 
     /**
      * A target stepped back: on a day back after a long break, one from before today — a target the session back wrote
-     * today is that session's own, not stepped back again.
+     * today is that session's own, not stepped back again (BackAfterBreak, shared with the call's held move, K-1009).
      */
     private static boolean afterBreak(ProgramStore.PlannedExercise planned, Back back) {
-        return back.afterBreak() && planned.nextLoadKg() != null && planned.lastLoadKg() != null && planned.nextFrom() != null
-                && planned.nextFrom().atZone(back.zone()).toLocalDate().isBefore(back.today());
+        return back.breaks().steppedBack(planned);
     }
 
     /**

@@ -79,6 +79,9 @@ class DecisionAccountData implements AccountDataExport {
                 entry.put("planBefore", call.planBefore());
                 entry.put("planAfter", call.planAfter());
             }
+            if (call.heldMove() != null) {
+                entry.put("heldMove", call.heldMove()); // the move a hold of the load changed, as kept when the call was applied (K-1009)
+            }
             // As the call kept it, the engine's internal fat estimate included (ADR-063 #1, GDPR Art. 15): the user's own data, in
             // the file they asked for. It is never shown as a number in the app (U4).
             entry.put("snapshot", json.convertValue(call.snapshot(), Map.class));

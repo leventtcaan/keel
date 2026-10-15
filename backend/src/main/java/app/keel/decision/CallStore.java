@@ -2,6 +2,7 @@ package app.keel.decision;
 
 import app.keel.engine.Phase;
 import app.keel.shared.AccountId;
+import app.keel.training.HeldMove;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -37,15 +38,25 @@ class CallStore {
     /**
      * {@code appliedAt} and the plan before and after it are set once the call is applied; {@code undoneAt} once undone
      * (K-216); {@code declinedAt} while it is declined (K-963) — a call declined after it was applied keeps when that was.
+     * {@code heldMove}: the move whose target a hold of the load changed, as the program had it when the call was applied
+     * (K-1009); null for any other call.
      */
     record Call(UUID id, UUID clientId, LocalDate weekOf, LocalDate madeOn, Instant decidedAt, String parametersHash, StoredSnapshot snapshot,
             Map<String, Object> decision, Application application, Instant appliedAt, Instant undoneAt, Plan planBefore, Plan planAfter,
-            Instant declinedAt) {
+            Instant declinedAt, HeldMove heldMove) {
+
+        /** A call with no move kept. */
+        Call(UUID id, UUID clientId, LocalDate weekOf, LocalDate madeOn, Instant decidedAt, String parametersHash, StoredSnapshot snapshot,
+                Map<String, Object> decision, Application application, Instant appliedAt, Instant undoneAt, Plan planBefore, Plan planAfter,
+                Instant declinedAt) {
+            this(id, clientId, weekOf, madeOn, decidedAt, parametersHash, snapshot, decision, application, appliedAt, undoneAt, planBefore, planAfter,
+                    declinedAt, null);
+        }
 
         /** A call as the engine made it, not applied yet. */
         Call(UUID id, UUID clientId, LocalDate weekOf, LocalDate madeOn, Instant decidedAt, String parametersHash, StoredSnapshot snapshot,
                 Map<String, Object> decision, Application application) {
-            this(id, clientId, weekOf, madeOn, decidedAt, parametersHash, snapshot, decision, application, null, null, null, null, null);
+            this(id, clientId, weekOf, madeOn, decidedAt, parametersHash, snapshot, decision, application, null, null, null, null, null, null);
         }
     }
 
@@ -97,13 +108,14 @@ class CallStore {
      * neither. The row stays locked until the transaction ends, so of two requests applying at once only one changes the
      * plan (K-216).
      */
-    boolean markApplied(AccountId account, UUID callId, Instant at, Plan before, Plan after) {
+    boolean markApplied(AccountId account, UUID callId, Instant at, Plan before, Plan after, HeldMove held) {
         return jdbc.sql("""
                 update decision.weekly_call set application = 'APPLIED', applied_at = :at, plan_before = cast(:before as jsonb),
-                plan_after = cast(:after as jsonb), declined_at = null
+                plan_after = cast(:after as jsonb), held_move = cast(:held as jsonb), declined_at = null
                 where account_id = :account and id = :id and application in ('PENDING', 'DECLINED')""")
                 .param("account", account.value()).param("id", callId).param("at", at.atOffset(ZoneOffset.UTC))
-                .param("before", json.writeValueAsString(before)).param("after", json.writeValueAsString(after)).update() == 1;
+                .param("before", json.writeValueAsString(before)).param("after", json.writeValueAsString(after))
+                .param("held", held == null ? null : json.writeValueAsString(held)).update() == 1;
     }
 
     /** APPLIED → UNDONE; false when the call was not APPLIED. */
@@ -212,7 +224,7 @@ class CallStore {
     private List<Call> calls(String where, Map<String, Object> params, int limit, String lock) {
         return jdbc.sql("""
                         select *, snapshot::text as snapshot_json, decision::text as decision_json, plan_before::text as plan_before_json,
-                        plan_after::text as plan_after_json
+                        plan_after::text as plan_after_json, held_move::text as held_move_json
                         from decision.weekly_call""" + " where " + where + " order by decided_at desc, id desc limit :limit" + lock)
                 .params(params).param("limit", limit)
                 .query((row, n) -> new Call(row.getObject("id", UUID.class), row.getObject("client_id", UUID.class),
@@ -222,8 +234,12 @@ class CallStore {
                         json.readValue(row.getString("decision_json"), Map.class), Application.valueOf(row.getString("application")),
                         instant(row.getObject("applied_at", OffsetDateTime.class)), instant(row.getObject("undone_at", OffsetDateTime.class)),
                         plan(row.getString("plan_before_json")), plan(row.getString("plan_after_json")),
-                        instant(row.getObject("declined_at", OffsetDateTime.class))))
+                        instant(row.getObject("declined_at", OffsetDateTime.class)), held(row.getString("held_move_json"))))
                 .list();
+    }
+
+    private HeldMove held(String kept) {
+        return kept == null ? null : json.readValue(kept, HeldMove.class);
     }
 
     private Plan plan(String kept) {

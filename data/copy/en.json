@@ -258,6 +258,8 @@
       "kcal": "{kcal} kcal",
       "steps": "{steps} steps",
       "phase": { "CUT": "Cutting", "BULK": "Building" },
+      "held": "{move}, load held",
+      "moveTarget": "{load} × {reps}",
       "spoken": "{what}: was {from}, now {to}",
       "spokenValue": "{what}: {to}"
     }
