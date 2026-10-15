@@ -368,11 +368,13 @@ class Release(unittest.TestCase):
     def test_a_start_that_is_still_working_answers_503_and_the_release_waits_for_200(self):
         # K-908: /health is 503 until the FoodData Central import is done; curl -f turns that into a failed look, and the release goes on looking.
         self.run_release("keel-backend:old")
+        (self.home / "curl.log").unlink(missing_ok=True)
         (self.home / "starting").write_text("3")
         result = self.run_release("keel-backend:new")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(self.tags()["keel-backend:current"], "sha256:new")
-        self.assertGreaterEqual((self.home / "curl.log").read_text().count("curl"), 4, "three 503s, then the 200")
+        self.assertEqual((self.home / "starting").read_text().strip(), "0", "all three 503s were looked at")
+        self.assertGreaterEqual((self.home / "curl.log").read_text().count("curl"), 5, "three 503s, the 200, the settle check")
 
     def test_a_start_that_never_gets_ready_fails_within_the_bounded_wait_and_puts_the_old_image_back(self):
         self.run_release("keel-backend:old")
