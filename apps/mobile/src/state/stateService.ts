@@ -1,8 +1,9 @@
 /**
  * State mode on the phone (K-518, ADR-038): what the user declared — traveling, sick, in pain, busy, a new gym — as the
  * server answered it. The server is the truth; the phone keeps the last answer (expo-sqlite/kv-store) so the reminders
- * stay quiet while a state is in force (ADR-036 #7), offline too. Sickness and pain are health data: forgotten with the
- * account and with the health data consent.
+ * stay quiet while a state is in force (ADR-036 #7), offline too. Sickness and pain are health data (K-1021): the server
+ * deletes them with the health data consent and with the account; traveling, a busy week and a new gym are not, and stay
+ * until the account goes. The phone forgets its copy on a withdrawal and reads what stays back on the next Today.
  */
 import type { ApiClient } from '@/api/client';
 import type { components } from '@/api/schema';
@@ -79,9 +80,12 @@ export function createStateService({ api, kv, now, onChange }: Options) {
       if (loaded.state === 'none') await remember(null);
     },
 
-    /** From today on the user's calendar; `until` its last day, if given. Throws by name when not recorded. */
-    declare: async (kind: StateKind, until?: string): Promise<DeclaredState> => {
-      const answer = await reach(() => api.PUT('/v1/state', { body: until === undefined ? { kind } : { kind, until } }));
+    /**
+     * From today on the user's calendar, for `days` days counted with today if given (K-1021): the server writes the last
+     * day, the phone adds no dates. Throws by name when not recorded.
+     */
+    declare: async (kind: StateKind, days?: number): Promise<DeclaredState> => {
+      const answer = await reach(() => api.PUT('/v1/state', { body: days === undefined ? { kind } : { kind, days } }));
       if (answer.data === undefined) throw named('StateRefused', `state not declared: HTTP ${answer.response.status}`);
       await remember(answer.data);
       return answer.data;

@@ -80,10 +80,28 @@ class CardioStore {
                 .param("account", account.value()).param("client", clientId).query((row, n) -> logged(row)).single(), created == 1);
     }
 
-    /** The days in [from, until) with a cardio session: two on one day are that day's session (a typed one and the watch's). */
-    int daysWithCardio(AccountId account, LocalDate from, LocalDate until) {
-        return jdbc.sql("select count(distinct day) from training.cardio_session where account_id = :account and day >= :from and day < :until")
-                .param("account", account.value()).param("from", from).param("until", until).query(Integer.class).single();
+    /** The sessions of the week that begins on {@code monday}, Monday to Sunday: the rows {@link CardioWeek#logged} reads the week from. */
+    List<Logged> inWeek(AccountId account, LocalDate monday) {
+        return jdbc.sql("select * from training.cardio_session where account_id = :account and day >= :from and day < :until order by day, id")
+                .param("account", account.value()).param("from", monday).param("until", monday.plusWeeks(1)).query((row, n) -> logged(row)).list();
+    }
+
+    /** What taking a session back came to. */
+    enum Removal { REMOVED, NOT_TYPED, NOT_FOUND }
+
+    /**
+     * A typed session taken back (K-1019): only a MANUAL one of this account is removed. One read from Apple Health stays, it
+     * is the watch's record and would come back with the next read; a session of another account is not found, whatever it is.
+     */
+    Removal remove(AccountId account, UUID id) {
+        int removed = jdbc.sql("delete from training.cardio_session where account_id = :account and id = :id and source = 'MANUAL'")
+                .param("account", account.value()).param("id", id).update();
+        if (removed == 1) {
+            return Removal.REMOVED;
+        }
+        boolean stays = jdbc.sql("select count(*) from training.cardio_session where account_id = :account and id = :id")
+                .param("account", account.value()).param("id", id).query(Integer.class).single() > 0;
+        return stays ? Removal.NOT_TYPED : Removal.NOT_FOUND;
     }
 
     /** Every cardio session of the account, oldest first. */

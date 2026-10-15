@@ -23,6 +23,7 @@ const CONSISTENCY: Schemas['Consistency'] = {
   done: 16,
   percent: 84,
   record: { onTrackWeeks: 11, countedWeeks: 12, currentRun: 4, forgivenWeeks: 1 },
+  weeks: [],
 };
 const decision = (extra: Partial<Schemas['Decision']> = {}): Schemas['Decision'] => ({
   id: 'd1',

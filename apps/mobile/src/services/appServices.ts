@@ -343,7 +343,8 @@ export async function createAppServices({
       await withdrawConsent(api, 'HEALTH_DATA', true);
       await consents.remember('HEALTH_DATA', 'WITHDRAWN').catch(reportError);
       await forgetSentActivityDays(kv).catch(reportError); // the server deleted them: sent again once allowed again
-      // A state declared went with them on the server (ADR-038): the reminders plan without it.
+      // Sick and in pain went with them on the server (ADR-038, K-1021); a trip, a busy week or a new gym stays there. The phone
+      // forgets its copy either way, and the next read of the server brings back the one that stays: the reminders plan again.
       await state.forget().then(() => reminders.refresh()).catch(reportError);
       // Withdrawn and deleted on the server. A local delete that fails is reported, not a failed withdrawal: while the
       // consent stays withdrawn, whatever stays here is refused by the server (CONSENT_REQUIRED); it goes at sign-out.

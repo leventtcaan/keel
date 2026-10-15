@@ -28,12 +28,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * State mode (K-516, ADR-038): /v1/state — what life brought, declared by the user (U9: never asked for), from today on
- * their calendar. Health data: behind the HEALTH_DATA consent, as every /v1/decisions route.
+ * their calendar. The consent is by what the state is (K-1021, ADR-077 Ek 6): sickness and pain are health data, behind the
+ * HEALTH_DATA consent; traveling, a busy week and a new gym are calendar facts, saved, read and ended without it.
  */
 @RestController
 class StateController {
 
-    record NewState(String kind, LocalDate until) {
+    /** Contract NewDeclaredState: how long, if said, is a count of days or a last day, never both (K-1021). */
+    record NewState(String kind, LocalDate until, Integer days) {
     }
 
     /** Contract DeclaredState; a busy week with its least dose (K-528). */
@@ -68,9 +70,12 @@ class StateController {
     private final ApiLimits api;
     private final Clock clock;
     private final ParameterSet parameters;
+    private final StateLengths lengths;
 
-    StateController(StateStore states, Profiles profiles, ConsentGate consent, ApiLimits api, Clock clock, ParameterSet parameters) {
+    StateController(StateStore states, Profiles profiles, ConsentGate consent, ApiLimits api, Clock clock, ParameterSet parameters,
+            StateLengths lengths) {
         this.parameters = parameters;
+        this.lengths = lengths;
         this.states = states;
         this.profiles = profiles;
         this.consent = consent;
@@ -80,27 +85,39 @@ class StateController {
 
     @GetMapping("/v1/state")
     DeclaredState current(AccountId account) {
-        consent.require(account, ConsentKind.HEALTH_DATA);
         LocalDate today = today(account);
-        return states.current(account, today).map(state -> shown(account, state, today)).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+        StateStore.State state = states.current(account, today).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+        // A health state is read out only with the consent. The withdrawal deletes them, so none is kept without it; asked
+        // here all the same, the way every health route asks, never on the word of what the table happens to hold.
+        if (state.kind().isHealthData()) {
+            consent.require(account, ConsentKind.HEALTH_DATA);
+        }
+        return shown(account, state, today);
     }
 
     @PutMapping("/v1/state")
     DeclaredState declare(AccountId account, @RequestBody NewState declared) {
-        consent.require(account, ConsentKind.HEALTH_DATA);
-        LocalDate today = today(account);
         DeclaredContext kind = Arrays.stream(DeclaredContext.values()).filter(known -> known.name().equals(declared.kind())).findFirst()
                 .orElseThrow(() -> new ApiException(ErrorCode.VALIDATION_FAILED));
-        if (declared.until() != null && !api.range(today, declared.until())) {
+        if (kind.isHealthData()) {
+            consent.require(account, ConsentKind.HEALTH_DATA);
+        }
+        if (declared.days() != null && (declared.until() != null || !lengths.offers(declared.days()))) {
             throw new ApiException(ErrorCode.VALIDATION_FAILED);
         }
-        return shown(account, states.declare(account, kind, today, Optional.ofNullable(declared.until()), clock.instant()), today);
+        LocalDate today = today(account);
+        // The last day is the server's to write on the user's calendar: a count of days includes today.
+        LocalDate until = declared.days() != null ? today.plusDays(declared.days() - 1L) : declared.until();
+        if (until != null && !api.range(today, until)) {
+            throw new ApiException(ErrorCode.VALIDATION_FAILED);
+        }
+        return shown(account, states.declare(account, kind, today, Optional.ofNullable(until), clock.instant()), today);
     }
 
+    /** Ending a state asks for no consent: it takes nothing in, and a health state is not kept without the consent anyway. */
     @DeleteMapping("/v1/state")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void back(AccountId account) {
-        consent.require(account, ConsentKind.HEALTH_DATA);
         states.end(account, today(account));
     }
 

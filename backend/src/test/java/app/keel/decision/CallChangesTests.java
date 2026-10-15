@@ -2,11 +2,21 @@ package app.keel.decision;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import app.keel.engine.Action;
+import app.keel.engine.Confidence;
+import app.keel.engine.CopyKey;
+import app.keel.engine.Decision;
 import app.keel.engine.ParameterKey;
 import app.keel.engine.ParameterSet;
 import app.keel.engine.Parameters;
 import app.keel.engine.Phase;
+import app.keel.engine.Reason;
+import app.keel.engine.RuleId;
 import app.keel.engine.Sex;
+import app.keel.engine.Source;
+import app.keel.engine.SourceTag;
+import app.keel.training.HeldMove;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -112,13 +122,62 @@ class CallChangesTests {
         assertThat(CallChanges.observationDays(snapshot(Sex.MALE, null), parameters)).as("any other call").isEmpty();
     }
 
+    private static final HeldMove BENCH = new HeldMove("bench_press", new HeldMove.Target(new BigDecimal("72.5"), 9),
+            new HeldMove.Target(new BigDecimal("72.5"), 8));
+
+    private static final Map<String, Object> BENCH_ROW = Map.of("what", "MOVE", "exerciseId", "bench_press", "held", true,
+            "before", Map.of("target", Map.of("loadKg", new BigDecimal("72.5"), "reps", 9)),
+            "after", Map.of("target", Map.of("loadKg", new BigDecimal("72.5"), "reps", 8)));
+
+    @Test
+    void aHoldOfTheLoadSaysTheMovesTargetBeforeAndAfterAndThatTheLoadIsHeld() {
+        // K-1009: 72.5 x 9 before the hold, 72.5 x 8 with it; "held" so the phone does not write it as a target cut. The plan
+        // does not move on a hold, so the move is the call's only change.
+        assertThat(CallChanges.of(hold(CallStore.Application.APPLIED, BEFORE, BEFORE, BENCH), PARAMS)).containsExactly(BENCH_ROW);
+    }
+
+    @Test
+    void aHoldDeclinedOrUndoneSaysTheTargetInForceTheOneBeforeTheCall() {
+        for (CallStore.Application off : List.of(CallStore.Application.DECLINED, CallStore.Application.UNDONE)) {
+            assertThat(CallChanges.of(hold(off, BEFORE, BEFORE, BENCH), PARAMS)).as(off.name()).singleElement()
+                    .satisfies(row -> assertThat(row).containsEntry("inForce", Map.of("target", Map.of("loadKg", new BigDecimal("72.5"), "reps", 9))));
+        }
+        assertThat(CallChanges.of(hold(CallStore.Application.APPLIED, BEFORE, BEFORE, BENCH), PARAMS).getFirst()).doesNotContainKey("inForce");
+    }
+
+    @Test
+    void theMoveIsWhatTheCallKeptWhenItWasAppliedNotTheProgramAsItIsNow() {
+        // An older call, opened from Progress, still says its move: the row comes from the call's record, whatever the program does later.
+        assertThat(CallChanges.of(hold(CallStore.Application.APPLIED, BEFORE, BEFORE, BENCH), PARAMS)).hasSize(1);
+        // One applied before the move was kept, or a hold that changed no move's target, has none: nothing is made up.
+        assertThat(CallChanges.of(hold(CallStore.Application.APPLIED, BEFORE, BEFORE, null), PARAMS)).isEmpty();
+        // A call never applied changed nothing.
+        assertThat(CallChanges.of(hold(CallStore.Application.PENDING, null, null, null), PARAMS)).isEmpty();
+    }
+
+    @Test
+    void theMoveComesAfterThePlansTargetsInTheServersOrder() {
+        CallStore.Plan steps = new CallStore.Plan(Phase.CUT, BEFORE.phaseStart(), BEFORE.planStart(), 2600, false, 10000);
+
+        assertThat(CallChanges.of(hold(CallStore.Application.APPLIED, BEFORE, steps, BENCH), PARAMS)).containsExactly(
+                Map.of("what", "STEPS", "before", Map.of("stepsPerDay", 8000), "after", Map.of("stepsPerDay", 10000)), BENCH_ROW);
+    }
+
+    private static CallStore.Call hold(CallStore.Application application, CallStore.Plan before, CallStore.Plan after, HeldMove move) {
+        Decision decision = new Decision(new Action.StopLoadIncrease(),
+                List.of(new Reason(new RuleId("r"), new Source("arastirma/x.md#1", SourceTag.LITERATURE))), Confidence.MEDIUM, TODAY.plusDays(7),
+                new CopyKey("decision.continue"));
+        return new CallStore.Call(UUID.randomUUID(), UUID.randomUUID(), TODAY, TODAY, AT, "hash", null, DecisionJson.of(decision), application,
+                before == null ? null : AT, null, before, after, null, move);
+    }
+
     private static CallStore.Call applied(CallStore.Plan before, CallStore.Plan after) {
         return call(CallStore.Application.APPLIED, before, after);
     }
 
     private static CallStore.Call with(CallStore.Call call, CallStore.Application application) {
         return new CallStore.Call(call.id(), call.clientId(), call.weekOf(), call.madeOn(), call.decidedAt(), call.parametersHash(), call.snapshot(),
-                call.decision(), application, call.appliedAt(), call.undoneAt(), call.planBefore(), call.planAfter(), AT);
+                call.decision(), application, call.appliedAt(), call.undoneAt(), call.planBefore(), call.planAfter(), AT, call.heldMove());
     }
 
     private static CallStore.Call call(CallStore.Application application, CallStore.Plan before, CallStore.Plan after) {

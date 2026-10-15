@@ -135,9 +135,9 @@ class ApplyDecisionApiTests {
         CallStore.Plan after = new CallStore.Plan(Phase.CUT, PLAN_START, TODAY, 2100, false, null);
 
         assertThat(store.markUndone(account, call, Instant.now())).as("never applied").isFalse();
-        assertThat(store.markApplied(account, call, Instant.now(), before, after)).isTrue();
+        assertThat(store.markApplied(account, call, Instant.now(), before, after, null)).isTrue();
         Instant appliedAt = store.byId(account, call).orElseThrow().appliedAt();
-        assertThat(store.markApplied(account, call, Instant.now().plusSeconds(60), after, after)).as("applied already").isFalse();
+        assertThat(store.markApplied(account, call, Instant.now().plusSeconds(60), after, after, null)).as("applied already").isFalse();
         assertThat(store.byId(account, call).orElseThrow().appliedAt()).isEqualTo(appliedAt);
         assertThat(store.markUndone(account, call, Instant.now())).isTrue();
         assertThat(store.markUndone(account, call, Instant.now())).as("undone already").isFalse();
@@ -377,6 +377,141 @@ class ApplyDecisionApiTests {
         assertThat(send(account, "POST", "/v1/decisions/" + rest + "/apply")).hasStatusOk();
 
         assertThat(map(send(account, "GET", "/v1/program"))).doesNotContainKey("loadHeldSince").containsEntry("restUntil", TODAY.plusDays(6).toString());
+    }
+
+    @Test
+    void aHoldOfTheLoadKeepsTheMoveItChangedWithTheCallEvenWhenTheProgramMovesOn() throws Exception {
+        // K-1009 (ADR-077 Ek 7): the move is read from the program when the call is applied and kept with it, as the plan before
+        // and after are, so an older call opened from Progress still says it after the program's target has been rewritten.
+        AccountId account = onACut();
+        send(account, "POST", "/v1/program/generate", Map.of("trainingDays", List.of("MONDAY")));
+        String move = compoundMoves(account).getFirst();
+        int top = repMax(account, move);
+        storeTarget(account, move, top + 1);
+        UUID hold = pending(account, new Action.StopLoadIncrease(), TODAY.minusWeeks(1).with(java.time.DayOfWeek.MONDAY), Instant.now().minusSeconds(60));
+        assertThat((List<?>) map(send(account, "GET", "/v1/decisions/" + hold)).get("changes")).as("not applied yet").isEmpty();
+
+        assertThat(send(account, "POST", "/v1/decisions/" + hold + "/apply")).hasStatusOk();
+
+        assertThat(changes(account, hold)).singleElement().satisfies(change -> {
+            assertThat(change).containsEntry("what", "MOVE").containsEntry("exerciseId", move).containsEntry("held", true).doesNotContainKey("inForce");
+            assertThat(change.get("before")).isEqualTo(Map.of("target", Map.of("loadKg", 72.5, "reps", top + 1)));
+            assertThat(change.get("after")).isEqualTo(Map.of("target", Map.of("loadKg", 72.5, "reps", top)));
+        });
+
+        // The next session writes the held target, and the next call (a week off) is the latest: the hold's call says what it saw.
+        storeTarget(account, move, top);
+        UUID rest = pending(account, new Action.FullRestWeek());
+        assertThat(send(account, "POST", "/v1/decisions/" + rest + "/apply")).hasStatusOk();
+        assertThat(changes(account, hold)).singleElement().satisfies(change -> assertThat(change)
+                .containsEntry("before", Map.of("target", Map.of("loadKg", 72.5, "reps", top + 1))));
+        List<Map<String, Object>> ledger = (List<Map<String, Object>>) map(send(account, "GET", "/v1/decisions")).get("items");
+        assertThat(ledger).filteredOn(call -> hold.toString().equals(call.get("id"))).singleElement()
+                .satisfies(call -> assertThat((List<?>) call.get("changes")).hasSize(1));
+    }
+
+    @Test
+    void keepingLastWeeksPlanSaysTheTargetInForceAndUsingTheCallAgainReadsTheProgramAgain() throws Exception {
+        AccountId account = onACut();
+        send(account, "POST", "/v1/program/generate", Map.of("trainingDays", List.of("MONDAY")));
+        String move = compoundMoves(account).getFirst();
+        int top = repMax(account, move);
+        storeTarget(account, move, top + 1);
+        UUID hold = pending(account, new Action.StopLoadIncrease());
+        assertThat(send(account, "POST", "/v1/decisions/" + hold + "/apply")).hasStatusOk();
+
+        assertThat(send(account, "POST", "/v1/decisions/" + hold + "/decline")).hasStatusOk();
+
+        assertThat(changes(account, hold)).singleElement().satisfies(change -> assertThat(change)
+                .containsEntry("inForce", Map.of("target", Map.of("loadKg", 72.5, "reps", top + 1))));
+
+        // The program's target moved while the call was kept off the plan: using the call again holds the target as it is now.
+        storeTarget(account, move, top + 2);
+        assertThat(send(account, "POST", "/v1/decisions/" + hold + "/apply")).hasStatusOk();
+
+        assertThat(changes(account, hold)).singleElement().satisfies(change -> {
+            assertThat(change).doesNotContainKey("inForce");
+            assertThat(change.get("before")).isEqualTo(Map.of("target", Map.of("loadKg", 72.5, "reps", top + 2)));
+            assertThat(change.get("after")).isEqualTo(Map.of("target", Map.of("loadKg", 72.5, "reps", top)));
+        });
+    }
+
+    @Test
+    void aHoldThatChangesNoMovesTargetKeepsNoMove() throws Exception {
+        AccountId account = onACut();
+        send(account, "POST", "/v1/program/generate", Map.of("trainingDays", List.of("MONDAY")));
+        String move = compoundMoves(account).getFirst();
+        storeTarget(account, move, repMax(account, move));
+        UUID hold = pending(account, new Action.StopLoadIncrease());
+
+        assertThat(send(account, "POST", "/v1/decisions/" + hold + "/apply")).hasStatusOk();
+
+        assertThat(changes(account, hold)).isEmpty();
+        assertThat(jdbc.sql("select held_move is null from decision.weekly_call where id = :id").param("id", hold).query(Boolean.class).single()).isTrue();
+    }
+
+    @Test
+    void ofTwoMovesTheHoldChangesTheOneTheEngineCountsMostStalledNotTheFirstInTheProgram() throws Exception {
+        // Both lifts' targets are above their last load; the first by name (a tie otherwise) is going up, the other has stalled for
+        // three sessions: the sessions decide, and it is the lift "Sessions stalled" in the call's reason counts.
+        AccountId account = onACut();
+        send(account, "POST", "/v1/program/generate", Map.of("trainingDays", List.of("MONDAY")));
+        List<String> compounds = compoundMoves(account).stream().sorted().toList();
+        assertThat(compounds).hasSizeGreaterThanOrEqualTo(2);
+        String rising = compounds.get(0);
+        String stuck = compounds.get(1);
+        storeTarget(account, rising, repMax(account, rising) + 1);
+        storeTarget(account, stuck, repMax(account, stuck) + 1);
+        jdbc.sql("update training.program set created_at = now() - interval '60 days' where account_id = :a").param("a", account.value()).update();
+        for (int week = 4; week >= 1; week--) {
+            UUID workout = UUID.randomUUID();
+            jdbc.sql("insert into training.workout (id, account_id, client_id, started_at) values (:id, :a, gen_random_uuid(), now() - make_interval(days => :days))")
+                    .param("id", workout).param("a", account.value()).param("days", 7 * week).update();
+            logSet(account, workout, rising, 40 + 5 * (4 - week));
+            logSet(account, workout, stuck, 100);
+        }
+        UUID hold = pending(account, new Action.StopLoadIncrease());
+
+        assertThat(send(account, "POST", "/v1/decisions/" + hold + "/apply")).hasStatusOk();
+
+        assertThat(changes(account, hold)).singleElement().satisfies(change -> assertThat(change).containsEntry("exerciseId", stuck));
+    }
+
+    private List<Map<String, Object>> changes(AccountId account, UUID call) throws Exception {
+        return (List<Map<String, Object>>) map(send(account, "GET", "/v1/decisions/" + call)).get("changes");
+    }
+
+    /** The program's catalog compound lifts, in program order. */
+    private List<String> compoundMoves(AccountId account) throws Exception {
+        List<Map<String, Object>> catalog = JSON.readValue(send(account, "GET", "/v1/exercises").getResponse().getContentAsString(), List.class);
+        List<String> compound = catalog.stream().filter(exercise -> "COMPOUND".equals(exercise.get("kind"))).map(exercise -> (String) exercise.get("id")).toList();
+        return jdbc.sql("""
+                select e.exercise_id from training.planned_exercise e join training.program_day d on d.id = e.day_id
+                join training.program p on p.id = d.program_id where p.account_id = :a order by d.seq, e.seq""")
+                .param("a", account.value()).query(String.class).list().stream().filter(compound::contains).distinct().toList();
+    }
+
+    /** The move's next target is 72.5 kg for {@code reps}, with 72.5 kg its last load. */
+    private void storeTarget(AccountId account, String move, int reps) {
+        jdbc.sql("""
+                update training.planned_exercise set next_load_kg = 72.5, next_reps = :reps, last_load_kg = 72.5, next_from = now()
+                where exercise_id = :move and id in (select e.id from training.planned_exercise e join training.program_day d on d.id = e.day_id
+                            join training.program p on p.id = d.program_id where p.account_id = :a)""")
+                .param("reps", reps).param("move", move).param("a", account.value()).update();
+    }
+
+    private void logSet(AccountId account, UUID workout, String move, int loadKg) {
+        jdbc.sql("""
+                insert into training.workout_set (id, workout_id, account_id, client_id, exercise_id, set_type, load_kg, reps)
+                values (gen_random_uuid(), :workout, :a, gen_random_uuid(), :move, 'WORKING', :load, 5)""")
+                .param("workout", workout).param("a", account.value()).param("move", move).param("load", loadKg).update();
+    }
+
+    private int repMax(AccountId account, String move) {
+        return jdbc.sql("""
+                select max(e.rep_max) from training.planned_exercise e join training.program_day d on d.id = e.day_id
+                join training.program p on p.id = d.program_id where p.account_id = :a and e.exercise_id = :move""")
+                .param("a", account.value()).param("move", move).query(Integer.class).single();
     }
 
     @Test

@@ -845,6 +845,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/cardio-sessions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Take back a cardio session the user typed (K-1019)
+         * @description The undo of a typed "Done" (`source` MANUAL); the id is `Program.cardio.loggedToday.id`. A session read from Apple
+         *     Health is the watch's record and stays: CONFLICT (409), and the app offers no undo for it (`loggedToday.source`
+         *     says which it is). A session that is gone, or is not this account's, is NOT_FOUND (404); so a second DELETE of the
+         *     same id answers 404, which means it is already gone. The row is deleted for good, not marked: a POST with the same
+         *     `clientId` writes the session again (201, a new `id`), so the app drops the pending POST of that `clientId` from its
+         *     queue when it takes a session back. The week's `loggedDays` and `doneThisWeek` read the log again, so a day the
+         *     watch also logged stays logged.
+         */
+        delete: operations["deleteCardioSession"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/program/today": {
         parameters: {
             query?: never;
@@ -1209,22 +1237,28 @@ export interface paths {
         /**
          * The state the user declared, in force today (K-516, ADR-038)
          * @description What life brought, declared by the user — never asked for (U9). NOT_FOUND when none is in force today. Sickness and
-         *     pain are health data: CONSENT_REQUIRED without the HEALTH_DATA consent, as every /v1/decisions route; CONFLICT
-         *     without a profile (no calendar to read today on).
+         *     pain are health data (K-1021, ADR-077 Ek 6): one in force is read out only with the HEALTH_DATA consent
+         *     (CONSENT_REQUIRED); traveling, a busy week and a new gym are calendar facts, read without it. CONFLICT without a
+         *     profile (no calendar to read today on).
          */
         get: operations["getState"];
         /**
          * Declare a state from today
-         * @description From today on the user's calendar, until `until` (included) or until they are back. A state in force ends
-         *     yesterday; one begun today is replaced whole. `until` before today, or more than max-range-days on, is
-         *     VALIDATION_FAILED. While a week holds a declared day the week is paused — neither on track nor missed — and the
-         *     week's call waits (NO_DECISION_YET); safety calls never wait (ADR-038).
+         * @description From today on the user's calendar, for `days` days counted with today (3 or 7, data/parameters/state.json ›
+         *     state_until_choices_days; the server writes the last day on the user's calendar), until `until` (included) or,
+         *     with neither, until they are back. A state in force ends yesterday; one begun today is replaced whole. `days` and
+         *     `until` together, a `days` that is not offered, `until` before today, or more than max-range-days on, is
+         *     VALIDATION_FAILED. Sickness and pain are health data (K-1021, ADR-077 Ek 6): CONSENT_REQUIRED without the
+         *     HEALTH_DATA consent; traveling, a busy week and a new gym are saved without it. While a week holds a declared day
+         *     the week is paused — neither on track nor missed — and the week's call waits (NO_DECISION_YET); safety calls never
+         *     wait (ADR-038).
          */
         put: operations["declareState"];
         post?: never;
         /**
          * Back — the state in force ends yesterday
-         * @description A state begun today is taken back. Nothing in force is nothing to do (204 all the same).
+         * @description A state begun today is taken back. Nothing in force is nothing to do (204 all the same). Asked without the
+         *     consent too: ending a state needs none.
          */
         delete: operations["endState"];
         options?: never;
@@ -2253,8 +2287,9 @@ export interface components {
          *     when there is neither: very active work, a gaining phase without training days, no profile yet. Each session is
          *     after the weights on a training day or at a very low pace on an off day, never before the weights (G2 K-35).
          *     `doneThisWeek` is the days of this week (Monday to Sunday, the user's calendar) with a cardio session logged: the
-         *     "1 of 3 this week". Cardio is not in the food budget and not in the weekly consistency, which counts weight
-         *     sessions (ADR-074 #5, #6).
+         *     "1 of 3 this week"; `loggedDays` are those days themselves, so `doneThisWeek` is always their count (K-1019). Two
+         *     sessions on one day, a typed one and the watch's, are that day. Cardio is not in the food budget and not in the
+         *     weekly consistency, which counts weight sessions (ADR-074 #5, #6).
          */
         ProgramCardio: {
             /**
@@ -2270,6 +2305,20 @@ export interface components {
             sessionsPerWeek: number;
             sessions: components["schemas"]["PlannedCardio"][];
             doneThisWeek: number;
+            /**
+             * @description The days of this week with a cardio session logged, oldest first (K-1019); the server always sends it. Not
+             *     `required` because a new app talking to an older server finds the field missing (read it as `loggedDays ?? []`).
+             *     When today is among them the app does not
+             *     ask for cardio again ("+ > Cardio"), it shows `loggedToday`.
+             */
+            loggedDays?: string[];
+            /**
+             * @description Today's cardio record (K-1019); absent when today has none. The typed session if there is one, since that is the one
+             *     that can be taken back (DELETE /v1/cardio-sessions/{id}); a session read from Apple Health only when that is all
+             *     there is (`source` APPLE_HEALTH: show it, offer no undo). Of several typed ones the same one every time, so taking
+             *     them back goes one by one.
+             */
+            loggedToday?: components["schemas"]["CardioSession"];
         };
         /**
          * @description GENERATED is the engine's default; USER the user's own, never overwritten by the engine (ADR-074
@@ -3018,7 +3067,15 @@ export interface components {
         };
         NewDeclaredState: {
             kind: components["schemas"]["StateKind"];
-            /** Format: date */
+            /**
+             * @description How many days, counted with today (K-1021): one of the offered lengths (state_until_choices_days). The server
+             *     writes the last day on the user's calendar; the phone adds no dates. Not with `until`.
+             */
+            days?: number;
+            /**
+             * Format: date
+             * @description The last day, on the user's calendar. Not with `days`.
+             */
             until?: string;
         };
         Consistency: {
@@ -3036,7 +3093,7 @@ export interface components {
             /** @description done over planned, rounded down; absent while nothing is planned. */
             percent?: number;
             /**
-             * @description Present (true) when a state was declared on a day of this week (K-516, ADR-038): the week is neither on track
+             * @description Present (true) when a state was declared on a day of this week (K-516, ADR-038) or the deload ladder set it off (K-1022): the week is neither on track
              *     nor missed, and the record leaves it out.
              */
             paused?: boolean;
@@ -3053,6 +3110,33 @@ export interface components {
                  */
                 forgivenWeeks: number;
             };
+            /**
+             * @description The weeks over, one cell each, for the 12 weeks grid (K-1016, ADR-078 #2): the last progress_grid_weeks of the
+             *     weeks the record counted from, OLDEST FIRST, so the newest cell is the last. This week is not in it (it is not
+             *     over: the fields above are this week, and the record leaves it out too). A week before the first call is not
+             *     listed, so a short history is a short list (never padded; the phone draws the empty cells). The first cell is the
+             *     first Monday on or after the first call: a first call made midway through a week starts the list the Monday after,
+             *     as the record starts. The states come from the same walk as `record`, not a second count. When the record is no
+             *     longer than the grid, the cell counts equal the totals (SPARE cells are `record.forgivenWeeks`, ON_TRACK cells
+             *     `record.onTrackWeeks`); when it is longer, they are a part of the totals (the phone assumes no equality).
+             */
+            weeks: components["schemas"]["ConsistencyWeek"][];
+        };
+        /** @description One week of the consistency grid (K-1016); U7, no state is named for blame. */
+        ConsistencyWeek: {
+            /**
+             * Format: date
+             * @description The Monday the week began.
+             */
+            weekOf: string;
+            /**
+             * @description ON_TRACK: at on_track_min_ratio of the plan or above. SPARE: a lone missed week after a week on track, which the
+             *     run forgave (shown as "spare week", ADR-078 #2); it is still counted in the record, never taken back. MISSED: a
+             *     miss that was not forgiven (the second in a row, or one with no run before it). PAUSED: neither a success nor a
+             *     miss, the record leaves it out: a day of it under a state the user declared (K-516), or the week off the deload ladder set (K-1022, ADR-040; a lighter week still counts).
+             * @enum {string}
+             */
+            state: "ON_TRACK" | "SPARE" | "MISSED" | "PAUSED";
         };
         /**
          * @description The period's weight change (K-988, ADR-078 #2, Ek 1, U8): today's trend weight (the trend_display_days average
@@ -3120,13 +3204,24 @@ export interface components {
         };
         /**
          * @description One target a call moves (K-1000). `what` names it; `before`, `after` and `inForce` carry its value in the field of
-         *     that kind (`targetKcal` for CALORIES, `stepsPerDay` for STEPS, `phase` for PHASE). A plan number, one figure (U5).
-         *     The step target before any was set is the starting one. An empty `before` (and `inForce`) means none was in force: a
-         *     plan begun before the first weigh-in has no calorie target until a call starts one.
+         *     that kind (`targetKcal` for CALORIES, `stepsPerDay` for STEPS, `phase` for PHASE, `target` for MOVE). A plan number,
+         *     one figure (U5). The step target before any was set is the starting one. An empty `before` (and `inForce`) means none
+         *     was in force: a plan begun before the first weigh-in has no calorie target until a call starts one.
+         *
+         *     MOVE (K-1009, ADR-077 Ek 7) is a hold of the load ("Hold the weight") on one move: `exerciseId` is the catalog move,
+         *     `before` the target the program stored for its next session when the call was applied, `after` the one it shows while
+         *     the load is held (the last load at the top of the rep range), and `held` is true: the load is kept, so the phone must
+         *     not write it as a target cut. The move is the one the weekly call counts as the most stalled of those the hold changes.
+         *     Kept with the call when it was applied, so an older call says it too; absent when the hold changed no target and on a
+         *     call applied before it was kept. Declined or undone, `inForce` is `before`.
          */
         DecisionChange: {
             /** @enum {string} */
-            what: "CALORIES" | "STEPS" | "PHASE";
+            what: "CALORIES" | "STEPS" | "PHASE" | "MOVE";
+            /** @description The move, for MOVE only. A catalog exercise id. */
+            exerciseId?: string;
+            /** @description For MOVE only, always true (the load is held at the last load). */
+            held?: boolean;
             before: components["schemas"]["ChangeValue"];
             after: components["schemas"]["ChangeValue"];
             inForce?: components["schemas"]["ChangeValue"];
@@ -3136,6 +3231,12 @@ export interface components {
             targetKcal?: number;
             stepsPerDay?: number;
             phase?: components["schemas"]["Phase"];
+            target?: components["schemas"]["MoveTarget"];
+        };
+        /** @description A move's target as the program holds it (K-1009), the load in kilograms and the reps. */
+        MoveTarget: {
+            loadKg: number;
+            reps: number;
         };
         /**
          * @description The rows a call read (K-519). Weights in kilograms, unrounded (the phone rounds once, ADR-029). A row the call did
@@ -4789,6 +4890,27 @@ export interface operations {
         responses: {
             200: components["responses"]["CardioSessionCreated"];
             201: components["responses"]["CardioSessionCreated"];
+            default: components["responses"]["Error"];
+        };
+    };
+    deleteCardioSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Taken back */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             default: components["responses"]["Error"];
         };
     };

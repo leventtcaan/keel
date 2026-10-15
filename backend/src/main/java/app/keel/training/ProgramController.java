@@ -207,11 +207,13 @@ class ProgramController {
     }
 
     /**
-     * Contract ProgramCardio (K-959, ADR-074): this week's cardio, the days of this week with a session done, and whether a
-     * session after the weights runs past cardio_after_lift_max_minutes (#4: an info line, never a block; G2 K-35).
+     * Contract ProgramCardio (K-959, ADR-074): this week's cardio, the days of this week with a session done (K-1019: the days
+     * themselves, {@code doneThisWeek} their count, and today's record), and whether a session after the weights runs past
+     * cardio_after_lift_max_minutes (#4: an info line, never a block; G2 K-35).
      */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     record ProgramCardio(CardioOrigin source, int minutes, int sessionsPerWeek, List<PlannedCardio> sessions, int doneThisWeek,
-            boolean afterLiftOverLine) {
+            List<LocalDate> loggedDays, CardioStore.Logged loggedToday, boolean afterLiftOverLine) {
     }
 
     /** Contract PlannedCardio: one session of the week, after the weights or on an off day. */
@@ -542,9 +544,12 @@ class ProgramController {
         LocalDate monday = CardioWeek.weekOf(today);
         return CardioWeek.prescription(own, phase, CardioWeek.trainingDays(program, facts.map(ProfileFacts::trainingDays).orElse(Set.of())),
                         facts.flatMap(ProfileFacts::activity).map(activity -> ActivityLevel.valueOf(activity.name())), p)
-                .map(week -> new ProgramCardio(week.origin(), week.minutes(), week.sessions().size(),
-                        week.sessions().stream().map(PlannedCardio::of).toList(), cardio.daysWithCardio(account, monday, monday.plusWeeks(1)),
-                        week.afterLiftOverLine(p)));
+                .map(week -> {
+                    // One walk over the week's sessions: the count and the days cannot part (K-1019).
+                    CardioWeek.LoggedWeek logged = CardioWeek.logged(cardio.inWeek(account, monday), monday, today);
+                    return new ProgramCardio(week.origin(), week.minutes(), week.sessions().size(), week.sessions().stream().map(PlannedCardio::of).toList(),
+                            logged.doneThisWeek(), logged.days(), logged.today().orElse(null), week.afterLiftOverLine(p));
+                });
     }
 
     /**
@@ -554,18 +559,17 @@ class ProgramController {
     private record Back(LocalDate today, ZoneId zone, Parameters parameters, Optional<GymStore.Gym> gym, Optional<LocalDate> lastSession) {
 
         /** Back after a long break today (K-531): the account's last session before today a long break ago. */
-        boolean afterBreak() {
-            return lastSession.filter(day -> ReturnLoad.afterBreak(day, today, parameters)).isPresent();
+        BackAfterBreak breaks() {
+            return BackAfterBreak.of(lastSession, today, zone, parameters);
         }
     }
 
     /**
      * A target stepped back: on a day back after a long break, one from before today — a target the session back wrote
-     * today is that session's own, not stepped back again.
+     * today is that session's own, not stepped back again (BackAfterBreak, shared with the call's held move, K-1009).
      */
     private static boolean afterBreak(ProgramStore.PlannedExercise planned, Back back) {
-        return back.afterBreak() && planned.nextLoadKg() != null && planned.lastLoadKg() != null && planned.nextFrom() != null
-                && planned.nextFrom().atZone(back.zone()).toLocalDate().isBefore(back.today());
+        return back.breaks().steppedBack(planned);
     }
 
     /**

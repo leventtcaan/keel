@@ -154,6 +154,17 @@ class ContractTests {
     }
 
     @Test
+    void aStateIsDeclaredWithItsKindAndEitherAnEndDayOrAFewDaysCountedFromToday() throws Exception {
+        // K-1021 (ADR-077 Ek 6): the phone sends the length as a count of days; the server writes the last day on the user's
+        // calendar. The field is the record's, and it is optional: neither is "until I'm back".
+        Map<String, Object> declared = map(schemas().get("NewDeclaredState"));
+        assertThat(properties(declared).keySet()).containsExactlyInAnyOrderElementsOf(componentNames(Class.forName("app.keel.decision.StateController$NewState")));
+        assertThat(properties(declared).keySet()).containsExactlyInAnyOrder("kind", "until", "days");
+        assertThat(list(declared.get("required"))).containsExactly("kind");
+        assertThat(map(properties(declared).get("days"))).containsEntry("type", "integer").containsEntry("minimum", 1);
+    }
+
+    @Test
     void theAddedDayIsAWeekdayTheServerFillsAndAnswersWithTheProgram() throws Exception {
         // K-1012 (ADR-073 Ek 9): the phone sends the weekday only; the day's content is the server's (U1).
         Map<String, Object> schemas = schemas();
@@ -226,6 +237,15 @@ class ContractTests {
         assertThat(map(map(map(contract().get("paths")).get("/v1/program/cardio")).get("put")).get("operationId")).isEqualTo("putProgramCardio");
         // Back to the coach's default (ADR-074 Ek 1).
         assertThat(map(map(map(contract().get("paths")).get("/v1/program/cardio")).get("delete")).get("operationId")).isEqualTo("deleteProgramCardio");
+        // K-1019: this week's logged days (optional for the phones built before it; the server always sends them), today's record is the
+        // logged session itself, and a typed one is taken back (409 for a session read from Apple Health).
+        Map<String, Object> week = properties(map(schemas.get("ProgramCardio")));
+        assertThat(list(map(schemas.get("ProgramCardio")).get("required"))).doesNotContain("loggedDays", "loggedToday");
+        assertThat(map(map(week.get("loggedDays")).get("items")).get("format")).isEqualTo("date");
+        assertThat(map(week.get("loggedToday")).get("$ref")).isEqualTo("#/components/schemas/CardioSession");
+        Map<String, Object> taken = map(map(map(contract().get("paths")).get("/v1/cardio-sessions/{id}")).get("delete"));
+        assertThat(taken.get("operationId")).isEqualTo("deleteCardioSession");
+        assertThat(map(taken.get("responses"))).containsKey("204");
     }
 
     private static List<String> componentNames(Class<?> record) {
@@ -290,6 +310,24 @@ class ContractTests {
         assertThat(list(map(schemas.get("Experience")).get("enum"))).containsExactlyElementsOf(names(app.keel.profile.Experience.values()));
         assertThat(properties(schedule)).containsKeys("usualTrainingTime", "sessionsLastMonth");
         assertThat(list(schedule.get("required"))).doesNotContain("usualTrainingTime", "sessionsLastMonth");
+    }
+
+    @Test
+    void theConsistencyCarriesItsWeeksAsTheEnginesStates() throws IOException {
+        // K-1016 (ADR-078 #2): the 12 weeks grid's cells, not a count the phone makes; the states are the engine's.
+        Map<String, Object> schemas = schemas();
+        Map<String, Object> consistency = map(schemas.get("Consistency"));
+        Map<String, Object> weeks = map(properties(consistency).get("weeks"));
+        Map<String, Object> week = map(schemas.get("ConsistencyWeek"));
+
+        assertThat(list(consistency.get("required"))).contains("weeks");
+        assertThat(weeks.get("type")).isEqualTo("array");
+        assertThat(map(weeks.get("items")).get("$ref")).isEqualTo("#/components/schemas/ConsistencyWeek");
+        assertThat(properties(week).keySet()).containsExactlyInAnyOrder("weekOf", "state");
+        assertThat(list(week.get("required"))).containsExactlyInAnyOrder("weekOf", "state");
+        assertThat(list(map(properties(week).get("state")).get("enum")))
+                .containsExactlyElementsOf(names(app.keel.engine.ConsistencyWeek.State.values()));
+        assertThat(list(map(properties(week).get("state")).get("enum"))).containsExactly("ON_TRACK", "SPARE", "MISSED", "PAUSED");
     }
 
     @Test

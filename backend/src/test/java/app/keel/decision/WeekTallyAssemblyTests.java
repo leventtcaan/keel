@@ -4,6 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import app.keel.engine.ActionTally;
 import app.keel.engine.Consistency;
+import app.keel.engine.ConsistencyRecord;
+import app.keel.engine.ConsistencyWeek;
+import app.keel.engine.ConsistencyWeek.State;
+import app.keel.engine.RepositoryParameters;
+import app.keel.engine.Parameters;
+import app.keel.engine.Sex;
 import app.keel.engine.WeekTally;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -198,6 +204,86 @@ class WeekTallyAssemblyTests {
         // Sunday 27 Sep: the week of 21 Sep ends today, not over yet.
         assertThat(WeekTallies.since(LocalDate.of(2026, 9, 14), LocalDate.of(2026, 9, 27))).containsExactly(LocalDate.of(2026, 9, 14));
         assertThat(WeekTallies.since(LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 1))).isEmpty();
+    }
+
+    // ── the ladder's week off in the walk (K-1022, ADR-040, K-435: a week of rest is part of the plan) ─────────
+
+    private static final Parameters P = RepositoryParameters.forSex(Sex.MALE);
+
+    @Test
+    void aWeekWithADayOfRestIsPausedWhateverWasDone() {
+        List<WeekTally> weeks = List.of(week(0, 9), week(1, 0), week(2, 9));
+
+        List<WeekTally> paused = WeekTallies.pausedOn(weeks, Set.of(MON_28_SEP.plusWeeks(1).plusDays(3)));
+
+        assertThat(paused).extracting(WeekTally::paused).containsExactly(false, true, false);
+    }
+
+    @Test
+    void aRestWeekIsNotAMissAndBurnsNoSpareWeek() {
+        // on track, rest (nothing done), on track: three cells, the middle one paused, nothing forgiven, the run goes on.
+        List<WeekTally> weeks = WeekTallies.pausedOn(List.of(week(0, 9), week(1, 0), week(2, 9)), restDays(1));
+
+        Consistency.Walked walked = Consistency.walked(weeks, P);
+
+        assertThat(walked.weeks()).extracting(ConsistencyWeek::state).containsExactly(State.ON_TRACK, State.PAUSED, State.ON_TRACK);
+        assertThat(walked.record()).isEqualTo(new ConsistencyRecord(2, 2, 2, 0));
+    }
+
+    @Test
+    void aMissRightAfterARestWeekIsStillTheForgivenOne() {
+        // on track, rest, a lone miss: the rest did not use the spare week, so this miss gets it (walked and counted alike).
+        List<WeekTally> weeks = WeekTallies.pausedOn(List.of(week(0, 9), week(1, 0), week(2, 2)), restDays(1));
+
+        Consistency.Walked walked = Consistency.walked(weeks, P);
+
+        assertThat(walked.weeks()).extracting(ConsistencyWeek::state).containsExactly(State.ON_TRACK, State.PAUSED, State.SPARE);
+        assertThat(walked.record().forgivenWeeks()).isOne();
+    }
+
+    @Test
+    void twoRestWeeksInARowSplitNothingAndCountNothing() {
+        List<WeekTally> weeks = WeekTallies.pausedOn(List.of(week(0, 9), week(1, 0), week(2, 0), week(3, 9)), restDays(1, 2));
+
+        Consistency.Walked walked = Consistency.walked(weeks, P);
+
+        assertThat(walked.weeks()).extracting(ConsistencyWeek::state)
+                .containsExactly(State.ON_TRACK, State.PAUSED, State.PAUSED, State.ON_TRACK);
+        assertThat(walked.record()).isEqualTo(new ConsistencyRecord(2, 2, 2, 0));
+    }
+
+    @Test
+    void aRestWeekBetweenTwoMissesDoesNotSplitThem() {
+        // miss, rest, miss: the rest is left out, the misses are two in a row (as for a declared state).
+        List<WeekTally> weeks = WeekTallies.pausedOn(List.of(week(0, 9), week(1, 2), week(2, 0), week(3, 1)), restDays(2));
+
+        assertThat(Consistency.walked(weeks, P).weeks()).extracting(ConsistencyWeek::state)
+                .containsExactly(State.ON_TRACK, State.SPARE, State.PAUSED, State.MISSED);
+    }
+
+    @Test
+    void aWeekWithoutADayOfRestIsLeftAsItWas() {
+        List<WeekTally> weeks = List.of(week(0, 9), week(1, 2));
+
+        assertThat(WeekTallies.pausedOn(weeks, Set.of())).isEqualTo(weeks);
+        assertThat(WeekTallies.pausedOn(weeks, Set.of(MON_28_SEP.minusDays(1), MON_28_SEP.plusWeeks(2)))).isEqualTo(weeks);
+    }
+
+    @Test
+    void aWeekAlreadyPausedStaysPaused() {
+        List<WeekTally> weeks = List.of(week(0, 9).asPaused());
+
+        assertThat(WeekTallies.pausedOn(weeks, Set.of())).containsExactly(week(0, 9).asPaused());
+    }
+
+    private static Set<LocalDate> restDays(int... weekIndexes) {
+        return java.util.Arrays.stream(weekIndexes).mapToObj(index -> MON_28_SEP.plusWeeks(index).plusDays(2)).collect(java.util.stream.Collectors.toSet());
+    }
+
+    /** The week {@code index} weeks after 28 Sep, only training planned (10), {@code done} of them done. */
+    private static WeekTally week(int index, int done) {
+        ActionTally none = new ActionTally(0, 0);
+        return new WeekTally(MON_28_SEP.plusWeeks(index), new ActionTally(10, done), none, none, none);
     }
 
     @Test

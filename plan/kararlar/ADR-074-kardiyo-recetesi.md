@@ -83,3 +83,15 @@ ağırlık öncesine asla yerleşmez, kullanıcı değişikliğini ezmez · tele
   yürürlükteki fazın varsayılanını taşır. İki kez çağrılması zararsız.
 - **Bilgi satırı (#4):** ağırlık sonrası seans `cardio_after_lift_max_minutes`'ı aşarsa `ProgramCardio.afterLiftOverLine` true; sunucu
   hesaplar (`CardioPrescription.afterLiftOverLine`), telefon kural işletmez (ADR-075 #3).
+
+## Ek 2 · Haftanın kayıtlı günleri ve elle kaydın geri alınması (K-1019, 2026-10-15, agent, teknik)
+- **Tek yürüyüş:** `ProgramCardio.doneThisWeek` artık `loggedDays.length`'tir; ikisi de haftanın kayıtlarının tek geçişinden
+  (`CardioWeek.logged`) çıkar, ayrışamaz. Hafta, gün birleştirme (elle + saat = tek gün) ve kullanıcının takvimi Ek 1 ile aynı.
+- **Telefona verilen:** `loggedDays: date[]` (kartın adı) ve `loggedToday: CardioSession` (bugünün kaydı). Neden ikincisi: telefon
+  "+ › Cardio"da bugün kayıtlıysa sormaz, kaydı gösterir ve geri almak için id ister; `logged: [{day, sessionId, source}]` gibi tek
+  liste her gün için id taşırdı, telefonun yalnız bugüne ihtiyacı var ve `CardioSession` sözleşmede zaten var (yeni şema yok).
+  Bugün hem elle hem saat kaydı varsa `loggedToday` elle olandır (geri alınabilen); birden çok elle varsa en küçük id (hep aynısı,
+  tek tek geri alınır). `loggedDays` şemada `required` değil: yeni telefon eski sunucuya bağlanınca alan yoktur (`loggedDays ?? []`); sunucu her zaman gönderir.
+- **Geri alma:** `DELETE /v1/cardio-sessions/{id}` yalnız `MANUAL` kaydı siler (204). `APPLE_HEALTH` kaydı saatin kaydıdır, silinse bir sonraki
+  okumada geri gelirdi: 409 `CONFLICT`. Başkasının ya da olmayan kayıt 404 (kaydın var olduğunu bile söylemez). Elle kayıt silinince aynı günün
+  saat kaydı günü kayıtlı tutar. Silme fiziksel silmedir: aynı `clientId`'li POST kaydı yeniden yazar (201, yeni id), bu yüzden telefon geri alırken o `clientId`'li bekleyen POST'u kuyruktan düşürür (K-980). İkinci DELETE 404 = zaten silinmiş.

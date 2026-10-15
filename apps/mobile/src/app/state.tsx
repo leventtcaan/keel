@@ -14,17 +14,10 @@ import { stateParams } from '@/state/params';
 import type { StateKind } from '@/state/stateService';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
-import { localDay } from '@/today/today';
 
 const KINDS: StateKind[] = ['TRAVELING', 'SICK', 'PAIN', 'BUSY', 'NEW_GYM'];
 const SAID: Record<string, string> = { NoConnection: 'state.screen.noConnection' };
 const nameOf = (error: unknown) => (error instanceof Error ? error.name : 'Unknown');
-
-/** The last day of a few days counted with today, on the phone's calendar. */
-function lastDay(days: number): string {
-  const now = new Date();
-  return localDay(new Date(now.getFullYear(), now.getMonth(), now.getDate() + days - 1));
-}
 
 /**
  * Saying life got in the way (K-518, ADR-038, L3 §4.2): one of five states, each said in a line, until the user is back
@@ -47,7 +40,8 @@ export default function StateScreen() {
     setBusy(true);
     setProblem(null);
     try {
-      await state.declare(kind, days === null ? undefined : lastDay(days));
+      // A count of days, counted with today by the server on the user's calendar (K-1021): the phone works out no date.
+      await state.declare(kind, days ?? undefined);
       router.back();
     } catch (error) {
       report({ name: nameOf(error) });

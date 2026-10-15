@@ -953,6 +953,29 @@
           "dynamic": [{"what": "the day the call was made (Mon, Dec 28)", "words": 2}, {"what": "the next call's date (Mon, Jan 4)", "words": 2}]
         },
         {
+          "face": "a hold of the load on a move",
+          "keys": [
+            ["callScreen.back", "callScreen.backProgress"],
+            "decision.stop_load_increase.label",
+            "decision.stop_load_increase.plateau.title",
+            "callScreen.inPlan",
+            "callScreen.changes.held",
+            "callScreen.changes.moveTarget",
+            "units.kg",
+            "decision.ruleShort.plateau",
+            "callScreen.confidence",
+            ["callScreen.level.LOW", "callScreen.level.MEDIUM", "callScreen.level.HIGH"],
+            "callScreen.nextCall",
+            "callScreen.gotIt",
+            "callScreen.keep"
+          ],
+          "dynamic": [
+            {"what": "the day the call was made (Mon, Dec 28)", "words": 2},
+            {"what": "the next call's date (Mon, Jan 4)", "words": 2},
+            {"what": "the move's name from the copy, the longest at three words (Dumbbell bench press)", "words": 3}
+          ]
+        },
+        {
           "face": "the safety call",
           "keys": [
             ["callScreen.back", "callScreen.backProgress"],

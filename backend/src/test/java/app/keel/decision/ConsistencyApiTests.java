@@ -7,6 +7,7 @@ import app.keel.identity.TestSessions;
 import app.keel.persistence.PostgresTestConfiguration;
 import app.keel.profile.TestOnboarding;
 import app.keel.shared.AccountId;
+import app.keel.training.TrainingCalls;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -209,6 +210,159 @@ class ConsistencyApiTests {
 
         assertThat(index).as("weeks over since the plan began").isGreaterThanOrEqualTo(3);
         assertThat(record).containsEntry("countedWeeks", index).containsEntry("onTrackWeeks", index - 1).containsEntry("forgivenWeeks", 1);
+    }
+
+    @Test
+    void theWeeksOverAreOneCellEachFromTheSameWalkAsTheRecord() throws Exception {
+        // K-1016 (ADR-078 #2): on track, a lone miss (spare), on track, a week under a declared state (paused), on track.
+        // Two sessions (the profile's days) and three weigh-ins of four are 5 of 6, on track (on_track_min_ratio).
+        AccountId account = consenting();
+        LocalDate today = LocalDate.now(ISTANBUL);
+        LocalDate began = today.minusDays(45);
+        jdbc.sql("""
+                insert into decision.plan (account_id, phase, phase_start, plan_start, target_kcal, observing_maintenance)
+                values (:a, 'CUT', :began, :began, 2600, false)""").param("a", account.value()).param("began", began).update();
+        List<String> mondays = new java.util.ArrayList<>();
+        for (LocalDate week = began.with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY)); week.plusDays(6).isBefore(today); week = week.plusWeeks(1)) {
+            int index = mondays.size();
+            mondays.add(week.toString());
+            if (index == 3) {
+                declared(account, week.plusDays(2)); // a state on a day of the week pauses it, whatever was done
+            }
+            if (index == 1 || index == 3) {
+                continue; // nothing done
+            }
+            for (int day : new int[] {0, 3}) {
+                workout(account, "WORKING", week.plusDays(day).atTime(12, 0).atZone(ISTANBUL).toInstant());
+            }
+            for (int day : new int[] {0, 1, 2}) {
+                send(account, "POST", "/v1/weigh-ins", Map.of("clientId", UUID.randomUUID(), "measuredAt",
+                        week.plusDays(day).atTime(8, 0).atZone(ISTANBUL).toInstant().toString(), "kg", 82.0, "source", "MANUAL"));
+            }
+        }
+        assertThat(mondays).as("weeks over since the plan began").hasSizeGreaterThanOrEqualTo(5);
+
+        Map<String, Object> consistency = read(get(account));
+
+        List<Map<String, Object>> cells = (List<Map<String, Object>>) consistency.get("weeks");
+        assertThat(cells).extracting(cell -> cell.get("weekOf")).as("oldest first, the weeks over and not this one").isEqualTo(mondays);
+        assertThat(cells).extracting(cell -> cell.get("state")).startsWith("ON_TRACK", "SPARE", "ON_TRACK", "PAUSED", "ON_TRACK")
+                .containsOnly("ON_TRACK", "SPARE", "PAUSED");
+        Map<String, Object> record = (Map<String, Object>) consistency.get("record");
+        assertThat(cells.stream().filter(cell -> cell.get("state").equals("SPARE")).count()).isEqualTo(((Number) record.get("forgivenWeeks")).longValue());
+        assertThat(cells.stream().filter(cell -> cell.get("state").equals("ON_TRACK")).count()).isEqualTo(((Number) record.get("onTrackWeeks")).longValue());
+        assertThat(cells.stream().filter(cell -> !cell.get("state").equals("PAUSED")).count()).isEqualTo(((Number) record.get("countedWeeks")).longValue());
+    }
+
+    @Test
+    void noWeekIsOverOnTheFirstWeekSoTheListIsEmpty() throws Exception {
+        // K-1016: a record shorter than the grid is a shorter list, never padded; none at all is an empty one.
+        Map<String, Object> consistency = read(get(afterTheFirstCall()));
+
+        assertThat(consistency).containsEntry("weeks", List.of());
+    }
+
+    @Test
+    void theGridIsTheLastTwelveWeeksAndTheRecordIsTheWholeHistory() throws Exception {
+        // K-1016, ADR-078 #2 (progress_grid_weeks 12): twenty weeks nothing was done in, so the first is a miss with no run
+        // to forgive and so is each after it. The grid shows the last twelve of the weeks over; the record counts them all.
+        AccountId account = consenting();
+        LocalDate thisMonday = LocalDate.now(ISTANBUL).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate began = thisMonday.minusWeeks(20);
+        jdbc.sql("""
+                insert into decision.plan (account_id, phase, phase_start, plan_start, target_kcal, observing_maintenance)
+                values (:a, 'CUT', :began, :began, 2600, false)""").param("a", account.value()).param("began", began).update();
+
+        Map<String, Object> consistency = read(get(account));
+
+        List<Map<String, Object>> cells = (List<Map<String, Object>>) consistency.get("weeks");
+        assertThat(cells).hasSize(12);
+        assertThat(cells.getLast()).isEqualTo(Map.of("weekOf", thisMonday.minusWeeks(1).toString(), "state", "MISSED"));
+        assertThat(cells.getFirst().get("weekOf")).isEqualTo(thisMonday.minusWeeks(12).toString());
+        assertThat(cells).extracting(cell -> cell.get("state")).containsOnly("MISSED");
+        assertThat((Map<String, Object>) consistency.get("record")).containsEntry("countedWeeks", 20).containsEntry("forgivenWeeks", 0);
+    }
+
+    @Test
+    void theLaddersWeekOffIsPausedAndALighterWeekStillCounts() throws Exception {
+        // K-1022 (ADR-040, K-435): on track, a week off the engine called (nothing done: planned rest), a lone miss, on track,
+        // a lighter week with nothing done. The rest is neither a miss nor the spare week, so the miss after it is forgiven;
+        // the lighter week was still asked, so it is a miss like any (spare, after a run).
+        AccountId account = consenting();
+        List<LocalDate> mondays = recordOfWeeks(account);
+        TrainingCalls calls = context.getBean(TrainingCalls.class);
+        assertThat(calls.restWeek(account, UUID.randomUUID(), mondays.get(1), mondays.get(1).plusDays(6))).isTrue();
+        assertThat(calls.lighterWeek(account, UUID.randomUUID(), new java.math.BigDecimal("0.5"), mondays.get(4), mondays.get(4).plusDays(6))).isTrue();
+        for (int index = 0; index < mondays.size(); index++) {
+            if (index != 1 && index != 2 && index != 4) {
+                onTrackWeek(account, mondays.get(index));
+            }
+        }
+
+        Map<String, Object> consistency = read(get(account));
+
+        List<Map<String, Object>> cells = (List<Map<String, Object>>) consistency.get("weeks");
+        assertThat(cells).extracting(cell -> cell.get("state")).startsWith("ON_TRACK", "PAUSED", "SPARE", "ON_TRACK", "SPARE");
+        Map<String, Object> record = (Map<String, Object>) consistency.get("record");
+        assertThat(record).containsEntry("forgivenWeeks", 2).containsEntry("countedWeeks", mondays.size() - 1);
+    }
+
+    @Test
+    void aWeekOffTheUserUndidIsNotAWeekOff() throws Exception {
+        // K-1022: undoing the call deletes its change; the week it covered is judged by what was asked of it again.
+        AccountId account = consenting();
+        List<LocalDate> mondays = recordOfWeeks(account);
+        UUID call = UUID.randomUUID();
+        TrainingCalls calls = context.getBean(TrainingCalls.class);
+        calls.restWeek(account, call, mondays.get(1), mondays.get(1).plusDays(6));
+        for (int index = 0; index < mondays.size(); index++) {
+            if (index != 1) {
+                onTrackWeek(account, mondays.get(index));
+            }
+        }
+        List<Map<String, Object>> rested = (List<Map<String, Object>>) read(get(account)).get("weeks");
+        assertThat(rested.get(1).get("state")).isEqualTo("PAUSED");
+
+        calls.undo(account, call);
+
+        Map<String, Object> consistency = read(get(account));
+        assertThat(((List<Map<String, Object>>) consistency.get("weeks")).get(1).get("state")).isEqualTo("SPARE");
+        assertThat((Map<String, Object>) consistency.get("record")).containsEntry("forgivenWeeks", 1).containsEntry("countedWeeks", mondays.size());
+    }
+
+    /** A plan begun 45 days ago (five or six whole weeks since): the Mondays of the weeks over, oldest first, nothing logged yet. */
+    private List<LocalDate> recordOfWeeks(AccountId account) {
+        // The ladder changes a program, so there is one: two days, as the profile's, so the weeks gone by ask the same.
+        program(account, "MONDAY", "THURSDAY");
+        LocalDate today = LocalDate.now(ISTANBUL);
+        LocalDate began = today.minusDays(45);
+        jdbc.sql("""
+                insert into decision.plan (account_id, phase, phase_start, plan_start, target_kcal, observing_maintenance)
+                values (:a, 'CUT', :began, :began, 2600, false)""").param("a", account.value()).param("began", began).update();
+        List<LocalDate> mondays = new java.util.ArrayList<>();
+        for (LocalDate week = began.with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY)); week.plusDays(6).isBefore(today); week = week.plusWeeks(1)) {
+            mondays.add(week);
+        }
+        assertThat(mondays).as("weeks over since the plan began").hasSizeGreaterThanOrEqualTo(5);
+        return mondays;
+    }
+
+    /** Two sessions (the profile's days) and three weigh-ins of four are 5 of 6, on track (on_track_min_ratio). */
+    private void onTrackWeek(AccountId account, LocalDate monday) throws Exception {
+        for (int day : new int[] {0, 3}) {
+            workout(account, "WORKING", monday.plusDays(day).atTime(12, 0).atZone(ISTANBUL).toInstant());
+        }
+        for (int day : new int[] {0, 1, 2}) {
+            send(account, "POST", "/v1/weigh-ins", Map.of("clientId", UUID.randomUUID(), "measuredAt",
+                    monday.plusDays(day).atTime(8, 0).atZone(ISTANBUL).toInstant().toString(), "kg", 82.0, "source", "MANUAL"));
+        }
+    }
+
+    /** A state declared on that one day (K-516): the week it falls in is paused. */
+    private void declared(AccountId account, LocalDate day) {
+        jdbc.sql("""
+                insert into decision.declared_state (id, account_id, kind, starts_on, ends_on, created_at)
+                values (:id, :a, 'SICK', :day, :day, now())""").param("id", UUID.randomUUID()).param("a", account.value()).param("day", day).update();
     }
 
     @Test
