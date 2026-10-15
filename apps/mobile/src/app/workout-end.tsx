@@ -10,6 +10,7 @@ import { Button } from '@/components/Button';
 import { MuscleMap } from '@/components/MuscleMap';
 import { announce } from '@/components/ProblemText';
 import { t } from '@/copy';
+import { HealthJit } from '@/health/HealthJit';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { FocusMode, useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
@@ -102,6 +103,8 @@ function Body({ end, units, figure, onRetry }: { end: WorkoutEnd | null; units: 
       <ScrollView contentContainerStyle={styles.body}>
         <Hero dayName={day === null ? null : dayName(day)} />
         {rest}
+        {/* Apple Health, asked the first time (K-980, ADR-018 Ek 1): nothing here once asked, or where it cannot be. */}
+        {end !== null && <HealthJit />}
         {ready !== null && <Button label={t('workoutEnd.share')} onPress={() => router.push('/share')} />}
         <Button label={t('workoutEnd.done')} variant="ghost" onPress={() => router.dismissTo('/train')} />
       </ScrollView>

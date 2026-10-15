@@ -24,7 +24,7 @@ export function consentVersion(kind: ConsentKind): string {
  * Records the consent on the server. Only the health consents are granted here; the AI consent names its provider and
  * data (K-511). Throws when the server did not record it, so a screen never goes on as if it had.
  */
-export async function grantConsent(api: ApiClient, kind: Exclude<ConsentKind, 'THIRD_PARTY_AI'>): Promise<void> {
+export async function grantConsent(api: Pick<ApiClient, 'PUT'>, kind: Exclude<ConsentKind, 'THIRD_PARTY_AI'>): Promise<void> {
   const answer = await reach(() => api.PUT('/v1/consents/{kind}', { params: { path: { kind } }, body: { textVersion: consentVersion(kind) } }));
   if (answer.data === undefined) throw named('ConsentRefused', `consent ${kind} not recorded: HTTP ${answer.response.status}`);
 }
@@ -45,7 +45,7 @@ export async function withdrawConsent(api: ApiClient, kind: ConsentKind, confirm
  * that fails leaves no consent behind for a connection that never happened, and nothing is read from Apple Health before
  * the consent is recorded (K-404 reads only with it). A failing sheet is HealthSheetFailed; the grant fails like any.
  */
-export async function connectAppleHealth(api: ApiClient, health: HealthAccess): Promise<void> {
+export async function connectAppleHealth(api: Pick<ApiClient, 'PUT'>, health: Pick<HealthAccess, 'requestRead'>): Promise<void> {
   try {
     await health.requestRead();
   } catch {

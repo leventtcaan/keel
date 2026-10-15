@@ -22,7 +22,7 @@
 | [ADR-015](kararlar/ADR-015-modul-haritasi.md) | Backend modül haritası (12 modül) | KABUL |
 | [ADR-016](kararlar/ADR-016-gorsel-dil-rubin.md) | Görsel dil: C iskeleti + RUBİN paleti + koyu mod + sistem katmanı | YERİNİ ALDI → ADR-070 |
 | [ADR-017](kararlar/ADR-017-hareket-gosterimi.md) | Hareket gösterimi: kendi çekimler, ilk tekrar / son tekrar | KABUL |
-| [ADR-018](kararlar/ADR-018-health-yazma-ve-ice-aktarma.md) | Apple Health'e antrenman yazma, geçmiş içe aktarma | KABUL (+ Ek 1: izin anında) |
+| [ADR-018](kararlar/ADR-018-health-yazma-ve-ice-aktarma.md) | Apple Health'e antrenman yazma, geçmiş içe aktarma | KABUL (+ Ek 1: izin anında, Ek 2: izin kartı ve tartı geri alma) |
 | [ADR-019](kararlar/ADR-019-yetki-devri-ve-otomasyon.md) | Yetki devri: agent birleştirir (CI kapısı), teknik izin ve teknik ADR agent'ta | KABUL |
 | [ADR-020](kararlar/ADR-020-m1-kural-kararlari.md) | M1 kural kararları (L-1…L-13, eşik onayları) + M2/M3 ön kararları | KABUL |
 | [ADR-021](kararlar/ADR-021-omurga-sabit-olcumu.md) | Haftalık omurga: "sabit" ve "bekle" ölçümü (K-106) | KABUL (madde 2 ADR-027 ile değişti) |

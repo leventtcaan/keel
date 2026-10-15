@@ -39,6 +39,9 @@ const P = {
  */
 /** The kilograms the server keeps (K-402: Apple Health's weights are rounded to it before they are sent). */
 export const storedKgDecimals = P.storedKgDecimals;
+/** One step of a body weight, as a scale shows it (K-980): the last decimal of `weight_display_decimals`, in kg and lb alike. */
+export const weightDecimals = P.weightDecimals;
+export const weightStep = 10 ** -P.weightDecimals;
 
 export function roundTo(value: number, decimals: number): number {
   const factor = 10 ** decimals;

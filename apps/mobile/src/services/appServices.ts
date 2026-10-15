@@ -9,6 +9,7 @@ import { type ConsentState, createConsentState } from '@/consent/consentState';
 import { withdrawConsent } from '@/consent/consents';
 import { forgetSentActivityDays } from '@/health/activitySync';
 import { type HealthWriteAccess, healthWriteUnavailable } from '@/health/health';
+import { type HealthAsk, createHealthAsk } from '@/health/justInTime';
 import { type HealthWriting, createHealthWriting } from '@/health/healthWrite';
 import { notificationsUnavailable } from '@/notifications/notificationAccess';
 import { type NotificationAccess, type Reminders, createReminders } from '@/notifications/reminders';
@@ -37,6 +38,7 @@ import type { AppleReauth } from '@/session/appleSignIn';
 import { type PhotoFiles, type PhotoLibrary, createPhotoLibrary, noPhotoFiles } from '@/photos/library';
 import { HEALTH_KINDS, type SyncProblem, type SyncQueue, createSyncQueue } from '@/sync/queue';
 import { newClientId, sendWithApi } from '@/sync/send';
+import { type TakeBack, createTakeBack } from '@/sync/takeBack';
 import { type LocalRecord, type SqlDatabase, openRecordStore } from '@/sync/store';
 import { type AppearancePreference, createAppearance } from '@/theme/appearance';
 import { type KeyValue, type UnitsPreference, createUnitsPreference } from '@/units/preference';
@@ -116,6 +118,13 @@ export type AppServices = {
   training: TrainingCache;
   /** The phone's workouts, their sets and their finishes, sent or not (K-405): the session is built from them. */
   workoutRecords(): Promise<LocalRecord[]>;
+  /**
+   * A record taken back, on the phone and on the server (a weigh-in, a cardio session; K-980, ADR-074 Ek 2): the queue held
+   * meanwhile, a copy still waiting dropped with the delete.
+   */
+  takeBack: TakeBack;
+  /** Whether Apple Health was asked about already (K-980, ADR-018 Ek 1): once, at the first weigh-in or workout. */
+  healthAsk: HealthAsk;
   /** A set of the session corrected or deleted, on the phone and on the server, never two versions of it (K-972). */
   workoutEdits: SetEdits;
   /** The server's open workout, with its sets, kept as the phone's own (K-999): its sets are never sent again. */
@@ -193,6 +202,7 @@ export async function createAppServices({
   const sessionSkips = createSessionSkips(kv);
   const sessionSwaps = createSessionSwaps(kv);
   const healthWriting = await createHealthWriting({ kv, access: healthWrite, report });
+  const healthAsk = createHealthAsk({ kv });
   const profile = await createProfileStatus({
     kv,
     api,
@@ -280,6 +290,7 @@ export async function createAppServices({
     sessionPause.forget().catch(reportError); // and the open session's pause (K-972)
     sessionSkips.forget().catch(reportError); // and what was skipped in it
     sessionSwaps.forget().catch(reportError); // and what was swapped in it
+    healthAsk.forget().catch(reportError); // and whether Apple Health was asked about: the next person is asked afresh (K-980)
     healthWriting.forget().catch(reportError); // and the Apple Health switches (K-412); what was written stays the user's
     trialReminder.forget().catch(reportError); // and the trial reminder: the account's, not the next person's (K-707)
     planPreviews.forget(); // and the plan just shown, kept in memory for the paywall (K-967)
@@ -316,6 +327,8 @@ export async function createAppServices({
     sessionSkips,
     sessionSwaps,
     healthWriting,
+    healthAsk,
+    takeBack: createTakeBack({ store, queue }),
     /**
      * Deletes the account on the server (202: every module removes its own data, AccountDeletionRequested). From that
      * answer on its tokens are refused, so the phone only forgets: the session, and with it the records and settings

@@ -292,3 +292,57 @@ test('what moved: no moves, no card', async () => {
   expect(await screen.findByText(t('workoutEnd.title'))).toBeTruthy();
   expect(screen.queryByText(t('workoutEnd.moved'))).toBeNull();
 });
+
+describe('Apple Health at the end of the first workout (K-980, ADR-018 Ek 1, prototype #health-jit)', () => {
+  const kept = new Map<string, string>();
+  const requestRead = jest.fn(async () => {});
+  const original = { ...mockServices };
+
+  function arrange(over: { available?: boolean; asked?: boolean } = {}) {
+    kept.clear();
+    if (over.asked === true) kept.set('health.asked', '1');
+    Object.assign(mockServices, {
+      api: { PUT: jest.fn(async () => ({ data: { status: 'GRANTED' }, response: new Response(null, { status: 200 }) })) },
+      health: { available: over.available ?? true, requestRead },
+      consents: { granted: async (kind: string) => kind === 'HEALTH_DATA', remember: jest.fn(async () => {}) },
+      healthAsk: {
+        asked: async () => kept.has('health.asked'),
+        markAsked: async () => void kept.set('health.asked', '1'),
+        forget: async () => void kept.delete('health.asked'),
+      },
+      report: jest.fn(),
+    });
+  }
+  afterEach(() => {
+    for (const key of Object.keys(mockServices)) if (!(key in original)) delete (mockServices as Record<string, unknown>)[key];
+  });
+
+  test('asked under the numbers the first time; Not now ends it for good', async () => {
+    arrange();
+    await show();
+    expect(await screen.findByRole('header', { name: t('health.jit.title') })).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: t('health.jit.notNow') }));
+    await act(async () => {});
+    expect(screen.queryByRole('header', { name: t('health.jit.title') })).toBeNull();
+    expect(kept.get('health.asked')).toBe('1');
+    expect(requestRead).not.toHaveBeenCalled();
+  });
+
+  test('Continue shows Apple\'s sheet', async () => {
+    arrange();
+    await show();
+    await fireEvent.press(await screen.findByRole('button', { name: t('health.jit.continue') }));
+    await act(async () => {});
+    expect(requestRead).toHaveBeenCalled();
+  });
+
+  test.each([
+    ['asked at the first weigh-in already', { asked: true }],
+    ['Apple Health cannot be asked on this build', { available: false }],
+  ])('not asked again: %s', async (_, over) => {
+    arrange(over);
+    await show();
+    expect(await screen.findByText(t('workoutEnd.title'))).toBeTruthy();
+    expect(screen.queryByRole('header', { name: t('health.jit.title') })).toBeNull();
+  });
+});

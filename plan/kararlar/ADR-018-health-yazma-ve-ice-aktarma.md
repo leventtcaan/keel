@@ -41,3 +41,26 @@ gösteren motor testi.
 Onboarding'deki Apple Health ekranı kalkar. İzin **ilk kullanıldığı anda** bir kez istenir: ilk tartıda ya da ilk antrenmanda (`health-jit`);
 "Not now" serbest, Ayarlar'dan sonra verilir. Okunan türler aynı; antrenman penceresinde aktif enerji (ADR-074 #5, ADR-075 #7) ve kardiyo için
 antrenman okuması eklenir. Yazma ayrı anahtarla sürer.
+
+## Ek 2 · İzin kartı ve tartının geri alınması (K-980, #443, 2026-10-15, agent, teknik)
+- **Kart sayfa değil, satır içi:** `HealthJit` ilk tartının **kaydından sonra**, kaydın altında ve ilk antrenmanın bitiş ekranında çıkar. Tartı kart
+  sorulmadan önce telefona yazılır; Apple'ın sayfası açılmasa, rıza kaydedilemese ya da "Not now" denince tartı kaybolmaz. Reddedilen: prototipteki gibi
+  Save'i bloklayan sayfa (izin hatası kaydı yutardı).
+- **"Bir kez":** kv anahtarı `health.asked` (hesaba aittir, çıkışta silinir, `docs/yasal/veri-envanteri.json`'da). "Not now" ya da bağlanma işaretler;
+  Apple'ın sayfası açılmazsa ya da rıza kaydedilemezse işaretlenmez (tekrar sorulabilir). Sorulmaz: bu yapıda Health yok (Expo Go), sağlık verisi rızası
+  yok (okunan sağlık verisi), Apple Health zaten açık, daha önce soruldu. Sıra Ayarlar'dakiyle aynı: önce Apple sayfası, sonra rıza (`connectAppleHealth`).
+- **Bilgilendirilmiş rıza:** kart neyin okunup yazıldığını iki satırda söyler; rıza metni "What we read" ile bir dokunuş uzaktadır.
+- **Tartıyı geri alma** (`takeBack`, `src/sync/takeBack.ts`; kardiyo da kullanır, ADR-074 Ek 3): kuyruk tutulur; hiç denenmemiş kayıt yerelden gider;
+  denenmiş ama sonucu bilinmeyen kayıt önce gönderilir (sunucu kimliği bilinsin), sonra `DELETE /v1/weigh-ins/{id}` ile silinir ve yerel kopya
+  **ve bekleyen kopya** düşer (silme fiziksel; aynı `clientId` satırı yeniden yazardı, ADR-074 Ek 2). 404 = alındı; 409 ya da cevapsızlık hiçbir şeyi
+  değiştirmez. Apple Health'e yazılmış tartı (K-412) geri alınmaz: `HealthWriteAccess`'te silme yok; kullanıcının Health kopyası kalır.
+- **Çevrimdışı sınır:** kayıt hemen gönderilmeyi dener (kuyruk kaydın hemen ardından boşalır); çevrimdışıyken bu deneme "denendi" sayılır ve sunucunun
+  kaydı alıp almadığı bilinemez. Bu yüzden çevrimdışı Undo sunucuya ulaşamaz: hiçbir şey silinmez, ekran "You're offline. Take it back once you're
+  online." der ve Undo düğmesi kalır; bağlantı gelince aynı düğme yeniden dener (önce gönderir, sunucu kimliğiyle siler). Veri kaybı yoktur: tartı
+  ya yerelde bekler ya sunucudadır. Reddedilen: denenmiş bir kaydı sunucuya sormadan yerelden silmek (sunucuda kalmış olabilir, kimse silmezdi).
+- **Health kopyası:** yazma anahtarı açık ve iOS izin veriyorsa (`healthWriting.shown('weighIns') === 'on'`) Undo'dan sonra ekran "Taken back. Your Apple
+  Health copy stays." der (görünür ve VoiceOver'a); kapalıysa bu söz yoktur.
+- **Kart kapsamı = rıza kapsamı:** "Reads steps, sleep, weight, active energy and workouts" `consent.apple_health.body`'deki okunan türlerle aynıdır
+  (test: `health-jit-card.test.tsx`).
+- **"Last" ve ön dolum:** "Last: 80.4 kg" yanına sunucunun `measuredAt`'ı telefonun takviminde kısa tarih olarak yazılır (bugünse yazılmaz); eşik yok,
+  yalnız biçim. `source === 'IMPORT'` olan son kayıt gösterilir ama alan doldurulmaz (geçmiş veridir, bu sabahın tartısı değil).
