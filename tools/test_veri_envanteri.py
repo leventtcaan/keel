@@ -429,6 +429,23 @@ class OperationsMatchTheServer(unittest.TestCase):
         self.assertIn("keeps no access log", section)
 
 
+    def test_the_weekly_counts_are_derived_stored_nowhere_and_said_in_the_policy(self):
+        # K-905, ADR-081: leading indicators come from the tables above, so no table of events exists to list or to delete.
+        counts = self.operations["weekly usage counts"]
+        self.assertTrue(counts["kept_for"].startswith("not stored"))
+        self.assertEqual(counts["policy"], "data-technical")
+        section = " ".join(_section(self.policy, "data-technical").split())
+        self.assertIn("They are never listed per person, a group of fewer than five people shows no figure, and the counts are stored nowhere", section)
+        self.assertIn("when something was logged and how it arrived, and whether a weekly call changed your plan, never what you logged", section)
+        self.assertIn("no analytics service and no tracking in the app", section)
+        # The health data section and the consent text (data/copy/en.json, version 5) say the same count (Levent 15 Oct).
+        health = " ".join(_section(self.policy, "data-health").split())
+        self.assertIn("in totals across all users and never per person or by value, whether the coaching works", health)
+        purpose = json.loads(COPY.read_text(encoding="utf-8"))["consent"]["health_data"]["points"]["purpose"]
+        self.assertIn("in totals across all users and never per person or by value, whether the coaching works", purpose)
+        self.assertEqual([t for t in migration_tables() if re.search(r"analytic|telemetry|metric|tracking|usage_event", t)], [])
+
+
 class PermissionsMatchTheApp(unittest.TestCase):
     def test_every_permission_text_both_ways(self):
         asked = set(re.findall(r"en\.permissions\.(\w+)", APP_CONFIG.read_text(encoding="utf-8")))

@@ -643,5 +643,94 @@ class CiDeployCommand(unittest.TestCase):
         self.assertEqual(self.calls(), [])
 
 
+class WeeklyReport(unittest.TestCase):
+    """K-905, ADR-081: the leading indicators are read from what the server already keeps, by a report that can only read, and
+    that selects nothing about a person. (The numbers themselves are checked on synthetic rows in a real PostgreSQL by the
+    backend's WeeklyReportTests.)"""
+    SQL = DEPLOY / "weekly-report.sql"
+    # What the report may read of a health table: when something happened and which way it came in, never what it measured.
+    TIMES_AND_KEYS = {"id", "account_id", "measured_at", "measured_on", "taken_on", "eaten_at", "decided_at", "applied_at", "source", "day",
+                     "created_at"}  # created_at: the account's own (the one health table dates are recipes and states, not read)
+
+    @classmethod
+    def code(cls):
+        """The statement without comments and string literals (the literals are names of calls and sources, not columns)."""
+        text = re.sub(r"--[^\n]*", "", cls.SQL.read_text())
+        text = re.sub(r"'[^']*'", "''", text)
+        return re.sub(r"\s+", " ", text).strip().lower()
+
+    def test_it_is_one_select_that_cannot_write(self):
+        code = self.code()
+        self.assertTrue(code.startswith("with "), "one statement, a select")
+        self.assertEqual(code.count(";"), 1)
+        self.assertTrue(code.endswith(";"))
+        self.assertNotRegex(code, r"\b(insert|update|delete|create|drop|alter|truncate|grant|revoke|copy|vacuum|call|do|set|reset|lock)\b")
+        # Functions that write, reach outside, or read the server instead of the tables (dblink, pg_read_file, set_config, nextval...).
+        self.assertNotRegex(code, r"\b(set_config|dblink\w*|pg_\w+|nextval|setval|lo_\w+|txid_\w+)\b")
+        # The one setting it reads is its own: current_setting only ever names a keel.* parameter.
+        names = re.findall(r"current_setting\(\s*'([^']*)'", re.sub(r"--[^\n]*", "", self.SQL.read_text()))
+        self.assertEqual(sorted(set(names)), ["keel.cohort_weeks", "keel.min_cell", "keel.report_as_of", "keel.week_days"])
+        self.assertEqual(code.count("current_setting("), len(names))
+
+    def test_a_group_smaller_than_the_minimum_shows_no_number(self):
+        # The cell size is a parameter of the report, five unless set; WeeklyReportTests checks the suppression on rows.
+        code = self.code()
+        self.assertRegex(code, r"::int, 5\) as min_cell")
+        output = code[code.rindex(") select "):]
+        columns = re.findall(r"\bas (\w+)", output)
+        self.assertEqual(columns[:2], ["cohort", "started"])
+        self.assertGreater(len(columns), 5)
+        self.assertEqual(output.count("case when g.started >= p.min_cell"), len(columns) - 2, "every figure but the group's size is behind the minimum")
+
+    def test_it_names_no_health_value_and_no_account_in_its_output(self):
+        inventory = json.loads((ROOT / "docs/yasal/veri-envanteri.json").read_text())
+        health_columns = {c for t in inventory["server"] if t["class"] == "health" for c in t["columns"]}
+        self.assertIn("kg", health_columns, "the inventory's health columns are found")
+        code = self.code()
+        code = code.replace("decision -> '' ->> ''", "")  # the one thing read of a call's decision: its action's type
+        code = re.sub(r"\b(decision|nutrition|measurement)\.", "", code)  # schema names are not columns
+        words = set(re.findall(r"[a-z_][a-z0-9_]*", code))
+        self.assertEqual(sorted(words & (health_columns - self.TIMES_AND_KEYS)), [])
+        output = code[code.rindex(") select "):]  # the statement's own select, after its last with-query
+        self.assertNotRegex(output, r"\b(account_id|id)\b", "aggregates only: no row of the output is a person")
+        self.assertIn("group by grouping sets", code)
+        self.assertIn("'total (window)'", self.SQL.read_text())
+
+    def test_what_it_reads_of_a_call_decision_is_only_its_action_type(self):
+        text = re.sub(r"--[^\n]*", "", self.SQL.read_text())
+        self.assertEqual(len(re.findall(r"\bdecision\b(?!\.)", text)), 1, "the column `decision` appears once")
+        self.assertIn("c.decision -> 'action' ->> 'type' <> 'NO_DECISION_YET'", text)
+
+    def test_the_numbers_are_derived_so_no_analytics_table_exists(self):
+        for migration in sorted((ROOT / "backend/src/main/resources/db/migration").glob("V*.sql")):
+            for table in re.findall(r"create\s+table\s+(?:if\s+not\s+exists\s+)?([a-z_.]+)", migration.read_text(), re.I):
+                with self.subTest(table=table):
+                    self.assertNotRegex(table, r"analytic|telemetry|metric|tracking|usage_event")
+
+    def test_the_script_is_psql_in_the_database_container_read_only_and_prints_only(self):
+        script = (DEPLOY / "weekly-report.sh").read_text()
+        commands = re.sub(r"(?m)^\s*#.*$", "", script)
+        self.assertEqual(re.findall(r"-e PGOPTIONS='([^']*)'", script), ["-c default_transaction_read_only=on"], "exactly this, nothing added")
+        self.assertIn('"$dir/kc" exec -T -e PGOPTIONS=\'-c default_transaction_read_only=on\' postgres', script)
+        self.assertIn('cat "$dir/weekly-report.sql"', script)
+        self.assertNotRegex(commands, r"\b(curl|wget|nc|ssh|scp|sendmail|mail)\b", "it prints; it sends nothing anywhere")
+        self.assertRegex(script, r"\$as_of =~ \^\[0-9\]\{4\}", "a value is checked before it becomes part of a SET")
+        self.assertNotRegex(script, r"\$\{?KEEL_", "no secret is read or needed")
+
+    def test_a_date_that_is_not_one_or_is_in_the_future_is_refused_before_anything_runs(self):
+        script = str(DEPLOY / "weekly-report.sh")
+        for argument in ("2999-01-01", "tomorrow", "2026-13-01x", "2026-10-1"):
+            with self.subTest(as_of=argument):
+                result = subprocess.run(["bash", script, "--as-of", argument], capture_output=True, text=True,
+                                        env={"PATH": "/usr/bin:/bin"})  # no docker on this PATH: nothing could run
+                self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertEqual(subprocess.run(["bash", script, "--weeks", "100"], capture_output=True, text=True, env={"PATH": "/usr/bin:/bin"}).returncode, 2)
+
+    def test_the_readme_lists_both_files(self):
+        readme = (DEPLOY / "README.md").read_text()
+        self.assertIn("`weekly-report.sh`", readme)
+        self.assertIn("`weekly-report.sql`", readme)
+
+
 if __name__ == "__main__":
     unittest.main()

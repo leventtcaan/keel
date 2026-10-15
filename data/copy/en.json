@@ -1826,7 +1826,7 @@
       "title": "Your health data, for your coaching",
       "points": {
         "collected": "Your weight, waist, steps, sleep and active energy, what you conclude from your progress photos and the look you pick, your meals and recipes, your plan and check-in answers, what you tell the app about being sick or in pain, and the foods you avoid are health data.",
-        "purpose": "We use your health data to make your weekly calls and show your progress, and for nothing else. We never sell it or use it for ads. You can export or delete it at any time.",
+        "purpose": "We use your health data to make your weekly calls and show your progress. We also count, in totals across all users and never per person or by value, whether the coaching works. We never sell it or use it for ads. You can export or delete it at any time.",
         "withdraw": "You can withdraw this consent in Settings: your health data is then deleted for good, with your past calls, except your training log, which isn't health data and stays. The calls stop until you allow it again.",
         "scope": "Importing past workouts from another app also needs this consent, as they can carry your weight. Telling the app you are traveling, in a busy week or at a new gym isn't health data and needs no consent: if you withdraw, it stays, and it goes only with your account."
       }
