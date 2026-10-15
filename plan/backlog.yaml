@@ -4998,6 +4998,75 @@ tasks:
     refs: ["plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md"]
     learn: ["Kullanıcı seçiminin motora girişi"]
 
+  - id: K-1027
+    title: "Tur 4: küçük düğmeler 44 pt dokunma hedefi; paylaşım ekranında kapat ve hazırlanıyor durumu"
+    milestone: M9a
+    module: mobile
+    type: fix
+    size: S
+    status: todo
+    depends_on: []
+    why: "Tur 4 (15 Eki) B6/B16/B20: Button size='sm' 35-38 pt ('I'm back', hero 'Settings', Settings 'Save'); B22 Share dokunuşu ~4 sn sessiz; B25 SHARE ekranında görünür çıkış yok"
+    acceptance:
+      - "Button size='sm' dokunma alanı ≥ size.touch (44 pt); görünüm değişmeden (hitSlop ya da minHeight, gerekçe PR'da); test dokunma alanını ölçer"
+      - "SHARE ekranında üstte görünür kapat/geri; sticker hazırlanırken düğmede metin (en.json) ve erişilebilirlik durumu busy"
+    tests: ["jest: Button hitSlop/minHeight, share ekranı kapat + busy"]
+    refs: ["prototip/kullanici-testi.md", "prototip/yeni-yuz.html"]
+    learn: ["Dokunma hedefi ile görünen boyutun ayrılması"]
+
+  - id: K-1028
+    title: "Tur 4: İlerleme Strength kartında grafik önce, ızgara açıklaması tam, vücut ağırlığı hareketi"
+    milestone: M9a
+    module: mobile
+    type: fix
+    size: S
+    status: todo
+    depends_on: []
+    why: "Tur 4 B1: 25 hareketli kullanıcıda Strength kartı ~2 ekran çip, grafik görünmüyor; B2: Consistency ızgarasında kaçan hafta hücresinin açıklaması yok; B4: rızasız baseline'da Pull-up '0 kg × 6'; B5: rızasız hero 'Tap one to log it' tek kutuya"
+    acceptance:
+      - "Strength: seçili hareketin grafiği ve satırı çiplerden önce ya da çipler tek satır yatay kaydırılır (prototipe göre; prototipte yoksa gerekçe PR'da); 25 harekette grafik ilk ekranda"
+      - "Izgara açıklaması her hücre durumunu adlandırır, suçlamasız dille (U7; metin en.json)"
+      - "Vücut ağırlığı hareketinde yük 0 iken 'Bodyweight × N' benzeri mevcut metin (yeni sayı yok)"
+      - "Rızasız hero alt metni rızasız yüzle uyumlu"
+    tests: ["jest: progress-w12 benzeri 25 hareket, ızgara açıklaması, bodyweight satırı"]
+    refs: ["plan/kararlar/ADR-078-ilerleme.md", "prototip/yeni-yuz.html"]
+    learn: ["Uzun liste ile birincil içeriğin önceliği"]
+
+  - id: K-1029
+    title: "Tur 4: Recent'ten öğün kaydına onay + Undo, porsiyon yazımı, This week kardiyo satırı kaydı gösterir"
+    milestone: M9a
+    module: mobile
+    type: fix
+    size: S
+    status: todo
+    depends_on: []
+    why: "Tur 4 B9: Recent '+' öğünü sessizce kaydedip sayfayı kapatıyor, geri alma yok (diğer kayıtlar 'Saved' + Undo); B10: '1 1 medium'; B13: kardiyo kaydı sonrası Home This week 'Cardio, 30 min' satırı değişmiyor (ProgramCardio.loggedToday/loggedDays sunucuda var)"
+    acceptance:
+      - "Recent '+' sonrası diğer kayıtlarla aynı 'Logged' + Undo kalıbı; Undo öğünü sunucudan siler (mevcut uç)"
+      - "Adet ve porsiyon birleşik okunmaz (örn. '1 × medium' ya da tek alan; metin en.json)"
+      - "This week kardiyo satırı loggedToday/loggedDays'i gösterir (telefon tarih hesabı yapmaz, U1)"
+    tests: ["jest: Recent undo, porsiyon biçimi, kardiyo satırı"]
+    refs: ["plan/kararlar/ADR-078-ilerleme.md"]
+    learn: ["Geri alınabilir kayıt kalıbı"]
+
+  - id: K-1030
+    title: "Tur 4: dönüş haftasında antrenman sorusu yok; hero çağrı günü nextCallOn; vücut ağırlığında ısınma; hareket sayısı = şerit"
+    milestone: M9a
+    module: decision
+    type: fix
+    size: S
+    status: todo
+    depends_on: []
+    why: "Tur 4 B14 (Tur 3'ten kalan): 8 gün kayıtsız dönüşte check-in 'How did training go this week? Getting weaker' soruyor; B15: return-8d hero 'Tuesday', çağrı bugün (nextCallOn Thu); B29: Pull-up'ta ısınma; '0 of 9 exercises' ama şeritte 8 parça; B28: gün eklendikten sonra Train bandı hâlâ 'Add one training day.'"
+    acceptance:
+      - "Haftada seans yokken antrenman eğilimi sorusu sorulmaz ya da 'haven't trained' seçeneği olur (soruların kaynağı ve ilgili ADR okunur; ADR ile çelişirse dur, düzenleyiciye yaz)"
+      - "Hero gün etiketi sunucunun nextCallOn'undan (U1)"
+      - "Vücut ağırlığı hareketinde 'Log warm-up' yok; başlıktaki hareket sayısı ile şerit parçaları aynı kaynaktan"
+      - "Uygulanmış ADD_TRAINING_DAY çağrısında Train bandı yapılmış işi söyler (prototip/en.json; yoksa bulgu olarak bırak)"
+    tests: ["Tablo/API testi (CI) gerekiyorsa; jest: hero etiketi, ısınma, sayaç"]
+    refs: ["plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md", "prototip/kullanici-testi.md"]
+    learn: ["Veri yokken soru sormamak (U3)"]
+
   - id: K-1010
     title: "Sunucudaki ek siteler: Caddy /opt/sites altındaki *.caddy dosyalarını içeri alır"
     milestone: M9
