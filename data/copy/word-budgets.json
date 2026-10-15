@@ -1514,6 +1514,9 @@
       "notFirstView": [
         "share.title",
         "share.share",
+        "share.preparing",
+        "share.back",
+        "settings.backMark",
         "share.note",
         "share.nothing",
         "share.failed",

@@ -171,8 +171,8 @@ function Actions(props: { file: string; chosen: string | null; searching: boolea
 }
 
 const styles = StyleSheet.create({
-  row: { gap: tokens.space.xs, paddingVertical: tokens.space.sm, borderBottomWidth: tokens.border.hairline },
-  offers: { gap: tokens.space.xs },
+  row: { gap: tokens.space.sm, paddingVertical: tokens.space.sm, borderBottomWidth: tokens.border.hairline },
+  offers: { gap: tokens.space.sm },
   buttons: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm },
   name: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
   text: { fontSize: tokens.type.body },

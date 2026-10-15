@@ -1,6 +1,6 @@
-import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import type Svg from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -51,6 +51,8 @@ export default function ShareScreen() {
   const [video, setVideo] = useState(false);
   const [fellBack, setFellBack] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Which button was pressed, so that one says it is working (the other only waits).
+  const [working, setWorking] = useState<'story' | 'sheet' | null>(null);
   const [problem, setProblem] = useState<Problem | null>(null);
   const image = useRef<Svg>(null);
   // The sticker alone, drawn out of sight: what a Story takes as the sticker, whatever the preview sits on.
@@ -127,9 +129,10 @@ export default function ShareScreen() {
   const png = (drawing: typeof image) =>
     new Promise<string | null>((resolve) => (drawing.current === null ? resolve(null) : drawing.current.toDataURL((base64?: string) => resolve(base64 ? base64 : null))));
   /** One hand-over at a time; a failure is said by name only, an empty drawing too. */
-  const hand = async (job: () => Promise<void>) => {
+  const hand = async (from: 'story' | 'sheet', job: () => Promise<void>) => {
     if (busy) return;
     setBusy(true);
+    setWorking(from);
     setProblem(null);
     setFellBack(false);
     try {
@@ -139,6 +142,7 @@ export default function ShareScreen() {
       setProblem('share');
     } finally {
       setBusy(false);
+      setWorking(null);
     }
   };
   const sheet = async () => {
@@ -146,9 +150,9 @@ export default function ShareScreen() {
     if (base64 === null) throw Object.assign(new Error('empty'), { name: 'EmptyImage' });
     await shareImage(base64);
   };
-  const share = () => void hand(sheet);
+  const share = () => void hand('sheet', sheet);
   const toStory = () =>
-    void hand(async () => {
+    void hand('story', async () => {
       const alone = await png(bare);
       if (alone === null) throw Object.assign(new Error('empty'), { name: 'EmptyImage' });
       // Without the App ID or Instagram the share sheet takes over, with the image as previewed.
@@ -183,8 +187,8 @@ export default function ShareScreen() {
         {videoNote}
         {problem !== null && <Failed problem={problem} />}
         {fallbackNote}
-        <Button label={t('share.story')} disabled={busy} onPress={toStory} />
-        <Button label={t('share.share')} variant="ghost" disabled={busy} onPress={share} />
+        <Button label={working === 'story' ? t('share.preparing') : t('share.story')} disabled={busy} busy={working === 'story'} onPress={toStory} />
+        <Button label={working === 'sheet' ? t('share.preparing') : t('share.share')} variant="ghost" disabled={busy} busy={working === 'sheet'} onPress={share} />
         <Text style={[styles.small, { color: color.muted }]}>{t('share.note')}</Text>
         <View style={styles.hidden} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
           <StickerImage ref={bare} testID="bare" sticker={sticker} width={drawnWidth()} />
@@ -195,6 +199,9 @@ export default function ShareScreen() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.body}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('share.back')} onPress={() => router.back()} style={styles.back}>
+          <Text style={[styles.backText, { color: color.text }]}>{`${t('settings.backMark')} ${t('share.back')}`}</Text>
+        </Pressable>
         <ScreenTitle>{t('share.title')}</ScreenTitle>
         {facts?.waiting === true && <Text style={[styles.small, { color: color.muted }]}>{t('workoutEnd.pending')}</Text>}
         {facts?.partial === true && <Text style={[styles.small, { color: color.muted }]}>{t('share.partial')}</Text>}
@@ -223,6 +230,8 @@ const styles = StyleSheet.create({
   part: { gap: tokens.space.md, alignItems: 'stretch' },
   hidden: { height: 0, overflow: 'hidden' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm, justifyContent: 'center' },
+  back: { minHeight: tokens.size.touch, justifyContent: 'center', alignSelf: 'flex-start' },
+  backText: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },
 });

@@ -2,7 +2,7 @@
  * Base components render from tokens in both themes (K-301, ADR-016).
  * Colours are read from the palette, never repeated here, so a palette change cannot make these tests lie.
  */
-import { render, screen, userEvent } from '@testing-library/react-native';
+import { fireEvent, render, screen, userEvent } from '@testing-library/react-native';
 import type { ReactElement } from 'react';
 
 import { Button } from '@/components/Button';
@@ -152,6 +152,51 @@ describe('Button behaviour', () => {
   test('an enabled Button at rest is not dimmed', async () => {
     await renderIn('light', <Button label="Apply" onPress={() => {}} />);
     expect(screen.getByRole('button', { name: 'Apply' })).not.toHaveStyle({ opacity: tokens.opacity.dim });
+  });
+});
+
+describe('Button touch area (K-1027)', () => {
+  // The visible height is whatever the text and padding make; the layout event is the only place it is known.
+  const laidOut = (height: number, width = 120) => ({ nativeEvent: { layout: { x: 0, y: 0, width, height } } });
+  const reach = (button: ReturnType<typeof screen.getByRole>) => {
+    const slop = button.props.hitSlop ?? {};
+    return { tall: button.props.hitSlop === undefined ? 0 : (slop.top ?? 0) + (slop.bottom ?? 0), wide: (slop.left ?? 0) + (slop.right ?? 0) };
+  };
+
+  test.each([35, 38])('a %s pt small Button reaches at least size.touch tall, its look unchanged', async (height) => {
+    await renderIn('light', <Button label="Save" size="sm" onPress={() => {}} />);
+    const button = screen.getByRole('button', { name: 'Save' });
+    const before = JSON.stringify(button.props.style);
+    await fireEvent(button, 'layout', laidOut(height));
+    const after = screen.getByRole('button', { name: 'Save' });
+    expect(height + reach(after).tall).toBeGreaterThanOrEqual(tokens.size.touch);
+    expect(after).not.toHaveStyle({ minHeight: tokens.size.touch });
+    expect(JSON.stringify(after.props.style)).toBe(before);
+  });
+
+  test('a short, narrow Button also reaches size.touch across', async () => {
+    await renderIn('light', <Button label="Go" size="sm" onPress={() => {}} />);
+    await fireEvent(screen.getByRole('button', { name: 'Go' }), 'layout', laidOut(36, 30));
+    const { wide } = reach(screen.getByRole('button', { name: 'Go' }));
+    expect(30 + wide).toBeGreaterThanOrEqual(tokens.size.touch);
+  });
+
+  test('a Button already tall enough gets no extra reach', async () => {
+    await renderIn('light', <Button label="Apply" onPress={() => {}} />);
+    await fireEvent(screen.getByRole('button', { name: 'Apply' }), 'layout', laidOut(tokens.size.touch + 10, 300));
+    expect(reach(screen.getByRole('button', { name: 'Apply' }))).toEqual({ tall: 0, wide: 0 });
+  });
+});
+
+describe('Button busy (K-1027)', () => {
+  test('busy is told to a screen reader; at rest it is not', async () => {
+    await renderIn('light', <Button label="Share" busy onPress={() => {}} />);
+    expect(screen.getByRole('button', { name: 'Share' }).props.accessibilityState).toMatchObject({ busy: true });
+  });
+
+  test('a Button at rest is not busy', async () => {
+    await renderIn('light', <Button label="Share" onPress={() => {}} />);
+    expect(screen.getByRole('button', { name: 'Share' }).props.accessibilityState?.busy ?? false).toBe(false);
   });
 });
 
