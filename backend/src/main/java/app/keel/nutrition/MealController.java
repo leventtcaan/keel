@@ -8,6 +8,7 @@ import app.keel.shared.AccountId;
 import app.keel.shared.ApiException;
 import app.keel.shared.ApiLimits;
 import app.keel.shared.ErrorCode;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -60,9 +61,11 @@ class MealController {
     private final FoodController.NutritionLimits limits;
     private final RecipeStore recipes;
     private final FoodStore foods;
+    private final Clock clock;
 
     MealController(MealStore store, FoodEstimator estimator, Profiles profiles, ConsentGate consent, ObjectProvider<DailyTargets> targets,
-            ApiLimits api, FoodController.NutritionLimits limits, RecipeStore recipes, FoodStore foods) {
+            ApiLimits api, FoodController.NutritionLimits limits, RecipeStore recipes, FoodStore foods, Clock clock) {
+        this.clock = clock;
         this.limits = limits;
         this.recipes = recipes;
         this.foods = foods;
@@ -143,6 +146,30 @@ class MealController {
         return List.copyOf(fitting);
     }
 
+    /**
+     * The foods the user ate most recently (K-1025), for the meal screen's one-tap "Recent": from the meals of the last
+     * suggestion-days up to the user's today, freshest first, each in the amount of its last time, estimated from the database now
+     * (U1, U5) — never one they cannot eat, a few at most. With a slot, the foods last had in it come first, then the rest.
+     * Not tied to the day's target: it answers with no target, and past one (that is the day's suggestions).
+     */
+    @GetMapping("/v1/foods/recent")
+    List<Suggestion> recent(AccountId account, @RequestParam(required = false) MealStore.Slot slot) {
+        consent.require(account, ConsentKind.HEALTH_DATA);
+        LocalDate today = LocalDate.now(clock.withZone(zoneOf(account)));
+        List<MealStore.Meal> eaten = store.days(account, today.minusDays(limits.suggestionDays()), today);
+        List<MealSuggestions.Recent> recent = MealSuggestions.recent(eaten, Optional.ofNullable(slot), profiles.foodsAvoided(account),
+                id -> ingredientNames(account, id));
+        List<Suggestion> shown = new java.util.ArrayList<>();
+        // The freshest few are estimated, not every food of the weeks (each estimate reads the database); one gone is skipped.
+        for (MealSuggestions.Recent candidate : recent.subList(0, Math.min(recent.size(), limits.suggestionCandidates()))) {
+            if (shown.size() == limits.recentFoods()) {
+                break;
+            }
+            estimated(account, candidate.foodId(), candidate.amount()).ifPresent(shown::add);
+        }
+        return List.copyOf(shown);
+    }
+
     /** A recipe's ingredients by name (a food is only its own name): what a foods-to-avoid word is read against too. */
     private List<String> ingredientNames(AccountId account, String foodId) {
         if (!foodId.startsWith(FoodEstimator.RECIPE)) {
@@ -158,9 +185,12 @@ class MealController {
 
     /** A usual amount as the database estimates it now; a food or recipe gone since (or now refused) is not offered. */
     private Optional<Suggestion> estimated(AccountId account, MealSuggestions.Usual usual) {
+        return estimated(account, usual.foodId(), usual.amount());
+    }
+
+    private Optional<Suggestion> estimated(AccountId account, String foodId, FoodEstimator.Amount amount) {
         try {
-            FoodEstimator.EstimatedItem item = estimator.estimate(account, List.of(new FoodEstimator.ItemRequest(usual.foodId(), usual.amount())))
-                    .items().getFirst();
+            FoodEstimator.EstimatedItem item = estimator.estimate(account, List.of(new FoodEstimator.ItemRequest(foodId, amount))).items().getFirst();
             return Optional.of(new Suggestion(item.foodId(), item.name(), item.amount(), item.kcal(), item.proteinG()));
         } catch (ApiException gone) {
             return Optional.empty();

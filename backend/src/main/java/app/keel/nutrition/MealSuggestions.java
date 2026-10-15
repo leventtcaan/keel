@@ -7,6 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
@@ -24,6 +25,46 @@ final class MealSuggestions {
     }
 
     private record Seen(FoodEstimator.EstimatedItem item, Instant at) {
+    }
+
+    /** A food the user ate lately (K-1025): in the amount of its last time, and when. */
+    record Recent(String foodId, String name, FoodEstimator.Amount amount, Instant last) {
+    }
+
+    /**
+     * The foods the user ate lately, each once, freshest first (K-1025); never one they cannot eat (as {@link #usual} reads it).
+     * With a slot, the foods last had in that slot come first, in the amount of that time and freshest of those, then the rest
+     * by their latest time: the list is not short because of the slot.
+     */
+    static List<Recent> recent(List<MealStore.Meal> meals, Optional<MealStore.Slot> slot, List<String> avoid, Function<String, List<String>> alsoNamed) {
+        Map<String, Boolean> left = new LinkedHashMap<>();
+        Map<String, Seen> latest = new LinkedHashMap<>();
+        Map<String, Seen> latestInSlot = new LinkedHashMap<>();
+        for (MealStore.Meal meal : meals) {
+            for (FoodEstimator.EstimatedItem item : meal.items()) {
+                boolean avoided = left.computeIfAbsent(item.foodId(), id -> avoids(item.name(), avoid)
+                        || alsoNamed.apply(id).stream().anyMatch(name -> avoids(name, avoid)));
+                if (avoided) {
+                    continue;
+                }
+                Seen seen = new Seen(item, meal.eatenAt());
+                latest.merge(item.foodId(), seen, MealSuggestions::fresher);
+                if (slot.isPresent() && meal.slot() == slot.get()) {
+                    latestInSlot.merge(item.foodId(), seen, MealSuggestions::fresher);
+                }
+            }
+        }
+        Comparator<Seen> freshestFirst = Comparator.comparing(Seen::at, Comparator.reverseOrder()).thenComparing(seen -> seen.item().foodId());
+        List<Seen> ordered = new ArrayList<>(latestInSlot.values().stream().sorted(freshestFirst).toList());
+        latest.entrySet().stream().filter(food -> !latestInSlot.containsKey(food.getKey())).map(Map.Entry::getValue).sorted(freshestFirst)
+                .forEach(ordered::add);
+        return ordered.stream().map(seen -> new Recent(seen.item().foodId(), seen.item().name(),
+                new FoodEstimator.Amount(seen.item().amount().quantity(), seen.item().amount().unit(), FoodEstimator.AmountCertainty.ESTIMATED), seen.at()))
+                .toList();
+    }
+
+    private static Seen fresher(Seen one, Seen other) {
+        return other.at().isAfter(one.at()) ? other : one;
     }
 
     private MealSuggestions() {

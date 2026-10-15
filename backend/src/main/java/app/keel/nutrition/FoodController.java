@@ -26,7 +26,8 @@ class FoodController {
     /** What a request can ask for (keel.nutrition). */
     @ConfigurationProperties("keel.nutrition")
     record NutritionLimits(int defaultSearchResults, int maxSearchResults, int maxQueryLength, int maxItems, BigDecimal maxGrams, int maxPortions,
-            int maxRecipeName, int maxRecipes, int suggestions, int suggestionDays, int suggestionCandidates) {
+            int maxRecipeName, int maxRecipes, int suggestions, int suggestionDays, int suggestionCandidates,
+            int recentFoods) {
     }
 
     record FoodSearch(String q, Integer limit) {
