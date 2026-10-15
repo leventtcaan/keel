@@ -48,6 +48,9 @@ jest.mock('expo-router/unstable-native-tabs', () => {
   return { NativeTabs };
 });
 
+// The layout also asks the server whether to ask about coming back (K-981); that is return-prompt.test.tsx's and navigation.test.tsx's.
+jest.mock('@/return/useReturnPrompt', () => ({ useReturnPrompt: () => {} }));
+
 beforeEach(() => {
   mockBar.props = undefined;
   mockTriggers.length = 0;

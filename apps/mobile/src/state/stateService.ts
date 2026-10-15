@@ -24,8 +24,8 @@ type Options = {
   onChange: () => void;
 };
 
-/** By name, so a screen tells no connection from a refusal (V3: never the message). */
-function named(name: 'NoConnection' | 'StateRefused', message: string): Error {
+/** By name, so a screen tells no connection from a refusal, and a refusal for want of the consent from the rest (V3: never the message). */
+function named(name: 'NoConnection' | 'StateRefused' | 'ConsentRequired', message: string): Error {
   return Object.assign(new Error(message), { name });
 }
 
@@ -82,11 +82,15 @@ export function createStateService({ api, kv, now, onChange }: Options) {
 
     /**
      * From today on the user's calendar, for `days` days counted with today if given (K-1021): the server writes the last
-     * day, the phone adds no dates. Throws by name when not recorded.
+     * day, the phone adds no dates. Throws by name when not recorded: `NoConnection`; `ConsentRequired` when the server wants
+     * the health data consent first (403 CONSENT_REQUIRED: sickness and pain, K-1021); `StateRefused` otherwise.
      */
     declare: async (kind: StateKind, days?: number): Promise<DeclaredState> => {
       const answer = await reach(() => api.PUT('/v1/state', { body: days === undefined ? { kind } : { kind, days } }));
-      if (answer.data === undefined) throw named('StateRefused', `state not declared: HTTP ${answer.response.status}`);
+      if (answer.data === undefined) {
+        const consent = answer.response.status === 403 && answer.error?.code === 'CONSENT_REQUIRED';
+        throw named(consent ? 'ConsentRequired' : 'StateRefused', `state not declared: HTTP ${answer.response.status}`);
+      }
       await remember(answer.data);
       return answer.data;
     },

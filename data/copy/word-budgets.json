@@ -1490,18 +1490,52 @@
       "budget": 45,
       "source": "prototip/yeni-yuz.html",
       "task": "K-981",
-      "file": null,
-      "keys": [],
-      "notFirstView": []
+      "note": "The prototype's welcome says 'Nothing lost'; ADR-077 Ek 6 has the screen say what is kept (plan, logs, goals) and nothing about a streak. The away line is one of two (one day, several days), the longest counts. 'Ease back in' names the server's targets for the first two compound moves when the program shows them a step lighter, else a plain line, the longest counts; the moves are dynamic (a name of up to two words and a unit, twice).",
+      "file": "src/app/return.tsx",
+      "keys": [
+        "return.title",
+        ["return.away.one", "return.away.other"],
+        "return.suggested",
+        "return.ease.title",
+        ["return.ease.body", "return.ease.plain"],
+        "return.pickUp.title",
+        "return.pickUp.body",
+        "return.rebuild.title",
+        "return.rebuild.body",
+        "return.nextCall",
+        "return.continue",
+        "return.later"
+      ],
+      "dynamic": [
+        { "what": "the two moves, as 'Squat 95 kg, Bench press 70 kg' (names and units; the loads are numbers)", "words": 5 },
+        { "what": "the next call's date (Mon, Jan 25)", "words": 2 }
+      ],
+      "notFirstView": ["return.retry", "return.loading"]
     },
     {
       "screen": "life",
       "budget": 30,
       "source": "prototip/yeni-yuz.html",
       "task": "K-981",
-      "file": null,
-      "keys": [],
-      "notFirstView": []
+      "note": "The five tiles carry their label only (the earlier line under each state left the first view to stay in the prototype's budget). The consent step, shown for Sick and In pain without the health data consent, is its own view and not the first.",
+      "file": "src/app/state.tsx",
+      "keys": [
+        "state.screen.back",
+        "state.screen.title",
+        "state.screen.intro",
+        "state.tile.traveling",
+        "state.tile.sick",
+        "state.tile.pain",
+        "state.tile.busy",
+        "state.tile.new_gym",
+        "state.screen.until",
+        "state.screen.untilBack",
+        "state.screen.forDays",
+        "state.screen.forDays",
+        "state.screen.pause"
+      ],
+      "uncounted": ["settings.backMark"],
+      "notFirstView": ["state.consent.why", "state.consent.allow", "state.consent.notNow", "consent.health_data.title", "consent.health_data.body"]
     }
   ]
 }

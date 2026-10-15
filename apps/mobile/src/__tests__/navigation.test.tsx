@@ -22,6 +22,9 @@ jest.mock('expo-font', () => ({ useFonts: () => [true, null] }));
 let mockSignedIn = true;
 let mockGate: 'unknown' | 'required' | 'open' = 'open';
 const mockHealthWriteOff = { workouts: false, weighIns: false };
+// What the server says on opening the app about a gap in the log (K-981): nothing to ask, as for most opens.
+let mockReturn: { awayDays: number; shouldPrompt: boolean; suggested: 'EASE_BACK' | 'PICK_UP' } = { awayDays: 0, shouldPrompt: false, suggested: 'PICK_UP' };
+const mockAnswers: unknown[] = [];
 const mockRemindersOff = { enabled: false, cue: '' };
 const mockServices = {
   signInWithApple: jest.fn(),
@@ -31,7 +34,14 @@ const mockServices = {
     GET: async (path: string) =>
       path === '/v1/consents'
         ? { data: [], response: new Response(null, { status: 200 }) }
-        : { error: { code: 'NOT_FOUND', message: 'x' }, response: new Response(null, { status: 404 }) },
+        : path === '/v1/return'
+          ? { data: mockReturn, response: new Response(null, { status: 200 }) }
+          : { error: { code: 'NOT_FOUND', message: 'x' }, response: new Response(null, { status: 404 }) },
+    POST: async (_path: string, init: { body: unknown }) => {
+      mockAnswers.push(init.body);
+      mockReturn = { ...mockReturn, shouldPrompt: false };
+      return { data: mockReturn, response: new Response(null, { status: 200 }) };
+    },
   },
   health: { available: false },
   consents: { granted: async () => false }, // the settings screen asks whether the health data consent is given (K-982)
@@ -81,6 +91,8 @@ jest.mock('@/services/ServicesProvider', () => ({
 beforeEach(() => {
   mockSignedIn = true;
   mockGate = 'open';
+  mockReturn = { awayDays: 0, shouldPrompt: false, suggested: 'PICK_UP' };
+  mockAnswers.length = 0;
 });
 
 test.each(['required', 'unknown'] as const)(
@@ -267,4 +279,42 @@ test('signed out, Settings is not reachable', async () => {
     jest.runAllTimers();
   });
   expect(router.getPathname()).toBe('/sign-in');
+});
+
+describe('coming back after a gap in the log (K-981, ADR-077 #5)', () => {
+  test('the server says to ask: the app opens on the return screen over This week; answered, it is back on This week', async () => {
+    mockReturn = { awayDays: 22, shouldPrompt: true, suggested: 'EASE_BACK' };
+    const router = renderRouter(APP, { initialUrl: '/' });
+    await router;
+    await act(async () => {
+      jest.runAllTimers();
+    });
+    expect(router.getPathname()).toBe('/return');
+    expect(screen.getByRole('header', { name: t('return.title') })).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: t('return.continue') }));
+    await act(async () => {
+      jest.runAllTimers();
+    });
+    expect(mockAnswers).toEqual([{ choice: 'EASE_BACK' }]);
+    expect(router.getPathname()).toBe('/');
+  });
+
+  test('the server says not to: the app stays on This week', async () => {
+    const router = renderRouter(APP, { initialUrl: '/' });
+    await router;
+    await act(async () => {
+      jest.runAllTimers();
+    });
+    expect(router.getPathname()).toBe('/');
+  });
+
+  test('signed out, /return is not reachable', async () => {
+    mockSignedIn = false;
+    const router = renderRouter(APP, { initialUrl: '/return' });
+    await router;
+    await act(async () => {
+      jest.runAllTimers();
+    });
+    expect(router.getPathname()).toBe('/sign-in');
+  });
 });
