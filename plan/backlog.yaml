@@ -4256,7 +4256,7 @@ tasks:
     module: aso
     type: human
     size: M
-    status: todo
+    status: done
     depends_on: []
     why: "İsim en yüksek ASO ağırlığı; uydurma/çağrışımsal, içinde AI/Fit/Coach yok"
     acceptance:

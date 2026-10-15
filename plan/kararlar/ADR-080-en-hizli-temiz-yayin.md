@@ -41,3 +41,7 @@ var olmak için değil.
   (vergi ödemek değil, Apple'ın ödeme yapabilmesi için form); **mali müşavir (GVK 20/B) gelir gelince** (M11).
 - SANDBOX kabulü inceleme boyunca açık kalır: Apple incelemecisi satın almayı sandbox'ta dener (ADR-056 #4'ün "mağaza yayınında çıkar" kısmı
   incelemeden sonraya kalır).
+
+## Ek 2 (16 Eki, Levent): ad ve fiyat
+- Ürün adı **Next Call** (mağazada "Next Call: Lift & Diet Coach"); App Store'da aynı adlı uygulama yok (iTunes arama, 16 Eki); tam marka taraması yapılmadı [doğrulanmadı]. Paket kimliği `dev.leventtcaan.keel` kalır (görünmez).
+- Fiyat ADR-012: $12,99/ay, $59,99/yıl; deneme 2 hafta ücretsiz (ADR-071). Entitlement `premium` (sunucu yapılandırması).
