@@ -40,9 +40,11 @@ final class MealSuggestions {
         Map<String, Boolean> left = new LinkedHashMap<>();
         Map<String, Seen> latest = new LinkedHashMap<>();
         Map<String, Seen> latestInSlot = new LinkedHashMap<>();
+        // Nothing to avoid, nothing to look up: a recipe's ingredients are not read for a list that can exclude nothing.
+        boolean somethingToAvoid = avoid.stream().anyMatch(word -> !word.isBlank());
         for (MealStore.Meal meal : meals) {
             for (FoodEstimator.EstimatedItem item : meal.items()) {
-                boolean avoided = left.computeIfAbsent(item.foodId(), id -> avoids(item.name(), avoid)
+                boolean avoided = somethingToAvoid && left.computeIfAbsent(item.foodId(), id -> avoids(item.name(), avoid)
                         || alsoNamed.apply(id).stream().anyMatch(name -> avoids(name, avoid)));
                 if (avoided) {
                     continue;
@@ -63,8 +65,9 @@ final class MealSuggestions {
                 .toList();
     }
 
+    /** The fresher of two times a food was had; at the same moment (a food twice in a meal), the later item: the last amount. */
     private static Seen fresher(Seen one, Seen other) {
-        return other.at().isAfter(one.at()) ? other : one;
+        return other.at().isBefore(one.at()) ? one : other;
     }
 
     private MealSuggestions() {

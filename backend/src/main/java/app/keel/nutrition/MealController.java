@@ -160,7 +160,8 @@ class MealController {
         List<MealSuggestions.Recent> recent = MealSuggestions.recent(eaten, Optional.ofNullable(slot), profiles.foodsAvoided(account),
                 id -> ingredientNames(account, id));
         List<Suggestion> shown = new java.util.ArrayList<>();
-        // The freshest few are estimated, not every food of the weeks (each estimate reads the database); one gone is skipped.
+        // The freshest suggestion-candidates are estimated, not every food of the weeks (each estimate reads the database); one gone
+        // is skipped, so fewer than recent-foods come back only when some of them are gone (recent-foods <= candidates is checked at start).
         for (MealSuggestions.Recent candidate : recent.subList(0, Math.min(recent.size(), limits.suggestionCandidates()))) {
             if (shown.size() == limits.recentFoods()) {
                 break;

@@ -155,6 +155,25 @@ class MealSuggestionsTests {
     }
 
     @Test
+    void withNothingToAvoidNoRecipeIsLookedInto() {
+        java.util.function.Function<String, List<String>> never = id -> {
+            throw new AssertionError("a recipe's ingredients were read for a list that excludes nothing: " + id);
+        };
+        MealStore.Meal meals = meal(1, item("recipe:1", "Morning bowl", "1", "portion"));
+
+        assertThat(ids(MealSuggestions.recent(List.of(meals), Optional.empty(), List.of(), never))).containsExactly("recipe:1");
+        assertThat(ids(MealSuggestions.recent(List.of(meals), Optional.empty(), List.of(" ", ""), never))).containsExactly("recipe:1");
+    }
+
+    @Test
+    void aFoodTwiceInOneMealIsOfferedInTheAmountOfTheLastItem() {
+        List<MealSuggestions.Recent> recent = MealSuggestions.recent(List.of(meal(1, item("rice", "Rice", "100", "g"), item("rice", "Rice", "150", "g"))),
+                Optional.empty(), List.of(), id -> List.of());
+
+        assertThat(recent).singleElement().satisfies(one -> assertThat(one.amount().quantity()).isEqualByComparingTo("150"));
+    }
+
+    @Test
     void itFitsWhatIsLikelyLeftEvenAtItsHighEnd() {
         DayBudget.Balance left = new DayBudget.Balance(300, 500);
         assertThat(MealSuggestions.fits(new FoodRanges.Range(350, 400), left)).isTrue();

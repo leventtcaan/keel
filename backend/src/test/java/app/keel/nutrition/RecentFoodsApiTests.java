@@ -159,13 +159,52 @@ class RecentFoodsApiTests {
         return account;
     }
 
-    /** A meal some days ago (an hour earlier than now, so it is that user's day and not the next) of foods and grams in pairs. */
+    @Test
+    void theWindowIsTwentyEightDaysBackAndNotTheTwentyNinth() throws Exception {
+        // suggestion-days 28: the day 28 days ago is in, the 29th is not (at noon UTC of the day, whatever hour the test runs at).
+        AccountId account = consenting();
+        meal(account, 28, "LUNCH", CHICKEN, 200);
+        meal(account, 29, "LUNCH", CEREAL, 50);
+
+        assertThat(list(send(account, "GET", "/v1/foods/recent", null))).extracting(item -> item.get("foodId")).containsExactly(CHICKEN);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void aRecipeIsOfferedAsIsAndNotWhenOneOfItsIngredientsIsAvoided() throws Exception {
+        jdbc.sql("""
+                insert into nutrition.food (id, name, source, kcal, protein_g, carbs_g, fat_g) values
+                ('test:k1025-walnut', 'K-1025 test walnuts', 'FOUNDATION', 654, 15, 14, 65) on conflict (id) do nothing""").update();
+        AccountId account = consenting();
+        Map<String, Object> recipe = JSON.readValue(send(account, "POST", "/v1/recipes", Map.of("clientId", UUID.randomUUID(), "name", "K-1025 bowl",
+                "portions", 2, "items", List.of(Map.of("foodId", "test:k1025-walnut", "amount", Map.of("quantity", 40, "unit", "g"))))).getResponse()
+                .getContentAsString(), Map.class);
+        String recipeId = "recipe:" + recipe.get("id");
+        assertThat(send(account, "POST", "/v1/meals", Map.of("clientId", UUID.randomUUID(), "eatenAt", Instant.now().minus(Duration.ofHours(30)).toString(),
+                "slot", "BREAKFAST", "items", List.of(Map.of("foodId", recipeId, "amount", Map.of("quantity", 1, "unit", "portion")))))).hasStatus(201);
+
+        assertThat(list(send(account, "GET", "/v1/foods/recent", null))).singleElement().satisfies(item -> {
+            assertThat(item).containsEntry("foodId", recipeId);
+            assertThat((Map<String, Object>) item.get("kcal")).containsKeys("low", "high");
+        });
+
+        assertThat(send(account, "PUT", "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "MALE", "heightCm", 180, "birthYear", 1996,
+                "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC", "food", Map.of("avoid", List.of("walnut")),
+                "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", "MONDAY", "timeZone", "UTC")))).hasStatusOk();
+        assertThat(list(send(account, "GET", "/v1/foods/recent", null))).as("the bowl holds walnuts").isEmpty();
+    }
+
+    /**
+     * A meal some days ago of foods and grams in pairs: at noon UTC of that day (a user without a profile lives on UTC), so
+     * it is that day whatever hour the test runs at; today's, an hour earlier than now.
+     */
     private void meal(AccountId account, int daysAgo, String slot, Object... foodAndGrams) {
         List<Map<String, Object>> items = new java.util.ArrayList<>();
         for (int i = 0; i < foodAndGrams.length; i += 2) {
             items.add(Map.of("foodId", foodAndGrams[i], "amount", Map.of("quantity", foodAndGrams[i + 1], "unit", "g")));
         }
-        Instant at = Instant.now().minus(Duration.ofDays(daysAgo)).minus(1, ChronoUnit.HOURS);
+        Instant at = daysAgo == 0 ? Instant.now().minus(1, ChronoUnit.HOURS)
+                : java.time.LocalDate.now(java.time.ZoneOffset.UTC).minusDays(daysAgo).atTime(12, 0).toInstant(java.time.ZoneOffset.UTC);
         assertThat(send(account, "POST", "/v1/meals", Map.of("clientId", UUID.randomUUID(), "eatenAt", at.toString(), "slot", slot, "items", items)))
                 .hasStatus(201);
     }
