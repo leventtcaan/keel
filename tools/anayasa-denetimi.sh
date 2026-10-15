@@ -21,7 +21,7 @@ MOBILE_SUITES=(
   scanners.test.ts
   tokens.test.ts
   typography.test.ts
-  share-card.test.ts
+  share-stickers.test.ts
   parameters.test.ts
   routes-protected.test.ts
   retired-entries.test.ts
