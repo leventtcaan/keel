@@ -1,13 +1,14 @@
 /**
  * Share (K-975, ADR-076; prototype `#share`): started by the user from the end of a workout (or from Progress), never
  * offered on its own. The sticker is made on this phone from what the server says (the workout's summary, the weeks, the
- * lifts) and handed to the share sheet as an image. Nothing goes to the server: the screen only reads (GET), and the
- * image is never sent by the app.
+ * lifts), on the user's own photo, a dark ground or nothing ("In Instagram"), and handed to the share sheet as an image.
+ * Nothing goes to the server: the screen only reads (GET), and the image is never sent by the app.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
 import ShareScreen from '@/app/share';
 import { t } from '@/copy';
+import { discardBackground, pickBackground } from '@/share/background';
 import type { Sticker } from '@/share/stickers';
 import { ThemeProvider } from '@/theme/theme';
 import type { WorkoutSummaryRead } from '@/train/workoutEnd';
@@ -43,8 +44,13 @@ const mockServices = {
   ]),
   health: { readWatchActiveEnergy: jest.fn(async () => 310) },
   consents: { granted: jest.fn(async () => true) },
+  // The app's own progress photos (K-614): the picker has no way to reach them, and this screen never asks.
+  photos: { list: jest.fn(), read: jest.fn() },
   report: jest.fn(),
 };
+jest.mock('@/share/background', () => ({ pickBackground: jest.fn(), discardBackground: jest.fn() }));
+const mockPick = pickBackground as jest.Mock;
+const mockDiscard = discardBackground as jest.Mock;
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => mockUnits }));
 jest.mock('@/train/workoutEnd', () => ({ loadWorkoutSummary: jest.fn(async () => mockEnd) }));
 jest.mock('expo-router', () => ({
@@ -58,9 +64,14 @@ jest.mock('@/share/Sticker', () => {
   const { forwardRef: mockForwardRef, useImperativeHandle: mockHandle } = jest.requireActual<typeof import('react')>('react');
   const { Text: MockText } = jest.requireActual<typeof import('react-native')>('react-native');
   return {
-    StickerImage: mockForwardRef(function MockSticker({ sticker }: { sticker: Sticker }, ref) {
+    StickerImage: mockForwardRef(function MockSticker({ sticker, backdrop }: { sticker: Sticker; backdrop?: { kind: string; uri?: string } }, ref) {
       mockHandle(ref, () => ({ toDataURL: (done: (base64?: string) => void) => done(mockDataUrl) }));
-      return <MockText testID="sticker">{[sticker.kicker, sticker.title, ...sticker.stats.flatMap((s) => [s.value, s.label]), ...sticker.lines].join('\n')}</MockText>;
+      return (
+        <>
+          <MockText testID="sticker">{[sticker.kicker, sticker.title, ...sticker.stats.flatMap((s) => [s.value, s.label]), ...sticker.lines].join('\n')}</MockText>
+          <MockText testID="backdrop">{backdrop === undefined ? 'none' : `${backdrop.kind} ${backdrop.uri ?? ''}`.trim()}</MockText>
+        </>
+      );
     }),
   };
 });
@@ -101,12 +112,15 @@ beforeEach(() => {
   mockUnits = 'METRIC';
   mockParams = { workout: 'w1' };
   mockDataUrl = 'iVBORw0KGgo=';
+  mockPick.mockResolvedValue(null);
   mockAnswers = { '/v1/consistency': ok(CONSISTENCY), '/v1/training-progress': ok(PROGRESS) };
 });
 afterEach(() => {
   // The image never goes to the server: no write of any kind, no fetch of its own.
   for (const write of [mockServices.api.POST, mockServices.api.PUT, mockServices.api.PATCH, mockServices.api.DELETE]) expect(write).not.toHaveBeenCalled();
   expect(fetchSpy).not.toHaveBeenCalled();
+  expect(mockServices.photos.list).not.toHaveBeenCalled();
+  expect(mockServices.photos.read).not.toHaveBeenCalled();
 });
 
 async function show() {
@@ -119,6 +133,8 @@ async function show() {
 }
 const sticker = () => screen.getByTestId('sticker').props.children as string;
 const chip = (kind: string) => screen.getByRole('button', { name: t(`share.kind.${kind}`) });
+const background = (name: string) => screen.getByRole('button', { name: t(`share.background.${name}`) });
+const backdrop = () => screen.getByTestId('backdrop').props.children as string;
 
 test('from a workout: the four stickers to pick from, the workout first, its words in the preview', async () => {
   await show();
@@ -260,4 +276,137 @@ test("the stickers read no health data: with the real reading, the Watch's energ
   expect(mockServices.consents.granted).not.toHaveBeenCalled();
   // The summary once, the weeks once, the lifts once: nothing twice.
   expect(mockServices.api.GET.mock.calls.map(([path]) => path).sort()).toEqual(['/v1/consistency', '/v1/training-progress', '/v1/workouts/{id}/summary']);
+});
+
+describe('the background', () => {
+  test('four to pick from, a dark ground to begin with (a whole image for any place it goes)', async () => {
+    await show();
+
+    expect(['gallery', 'camera', 'dark', 'instagram'].map((b) => background(b).props.accessibilityState?.selected)).toEqual([false, false, true, false]);
+    expect(backdrop()).toBe('dark');
+  });
+
+  test("the gallery: the user's photo is the ground; the picker is asked for it by name", async () => {
+    mockPick.mockResolvedValueOnce({ uri: 'file:///cache/ImagePicker/a.jpg' });
+    await show();
+
+    await fireEvent.press(background('gallery'));
+    await act(async () => {});
+
+    expect(mockPick).toHaveBeenCalledWith('gallery');
+    expect(backdrop()).toBe('photo file:///cache/ImagePicker/a.jpg');
+    expect(background('gallery').props.accessibilityState?.selected).toBe(true);
+    expect(background('dark').props.accessibilityState?.selected).toBe(false);
+  });
+
+  test('the camera takes the photo the same way', async () => {
+    mockPick.mockResolvedValueOnce({ uri: 'file:///cache/ImagePicker/b.jpg' });
+    await show();
+
+    await fireEvent.press(background('camera'));
+    await act(async () => {});
+
+    expect(mockPick).toHaveBeenCalledWith('camera');
+    expect(backdrop()).toBe('photo file:///cache/ImagePicker/b.jpg');
+  });
+
+  test('a picker closed without a photo changes nothing', async () => {
+    await show();
+
+    await fireEvent.press(background('gallery'));
+    await act(async () => {});
+
+    expect(backdrop()).toBe('dark');
+    expect(background('dark').props.accessibilityState?.selected).toBe(true);
+  });
+
+  test("a camera that is not allowed: said, with the way out, and the ground stays", async () => {
+    mockPick.mockResolvedValueOnce('denied');
+    await show();
+
+    await fireEvent.press(background('camera'));
+    await act(async () => {});
+
+    expect(screen.getByText(t('share.denied'))).toBeOnTheScreen();
+    expect(backdrop()).toBe('dark');
+  });
+
+  test('a picker that fails: said by name only, the ground stays', async () => {
+    mockPick.mockRejectedValueOnce(Object.assign(new Error('/private/var/IMG_1.jpg'), { name: 'PickerFailed' }));
+    await show();
+
+    await fireEvent.press(background('gallery'));
+    await act(async () => {});
+
+    expect(screen.getByText(t('share.photoFailed'))).toBeOnTheScreen();
+    expect(mockServices.report).toHaveBeenCalledWith({ name: 'PickerFailed' });
+    expect(JSON.stringify(mockServices.report.mock.calls)).not.toContain('IMG_1');
+    expect(backdrop()).toBe('dark');
+  });
+
+  test('"In Instagram": the sticker alone, and what that means', async () => {
+    await show();
+
+    await fireEvent.press(background('instagram'));
+
+    expect(backdrop()).toBe('none');
+    expect(screen.getByText(t('share.instagramNote'))).toBeOnTheScreen();
+    // Until Story sharing (K-976) the sticker goes to the system sheet: the note promises nothing more than the clear background.
+    expect(t('share.instagramNote')).toMatch(/clear background/i);
+    expect(t('share.instagramNote')).not.toMatch(/you pick|choose/i);
+  });
+
+  test("a photo is shared like any ground: once, made on the phone", async () => {
+    mockPick.mockResolvedValueOnce({ uri: 'file:///cache/ImagePicker/a.jpg' });
+    await show();
+    await fireEvent.press(background('gallery'));
+    await act(async () => {});
+
+    await fireEvent.press(screen.getByRole('button', { name: t('share.share') }));
+    await act(async () => {});
+
+    expect(mockServices.shareImage).toHaveBeenCalledTimes(1);
+    expect(mockServices.shareImage).toHaveBeenCalledWith('iVBORw0KGgo=');
+  });
+
+  test("the picker's copy of a photo is removed when another ground replaces it, and when the screen closes", async () => {
+    mockPick.mockResolvedValueOnce({ uri: 'file:///cache/ImagePicker/a.jpg' }).mockResolvedValueOnce({ uri: 'file:///cache/ImagePicker/b.jpg' });
+    const { unmount } = await render(
+      <ThemeProvider scheme="light">
+        <ShareScreen />
+      </ThemeProvider>,
+    );
+    await act(async () => {});
+
+    await fireEvent.press(background('gallery'));
+    await act(async () => {});
+    expect(mockDiscard).not.toHaveBeenCalled();
+
+    await fireEvent.press(background('camera'));
+    await act(async () => {});
+    expect(mockDiscard).toHaveBeenCalledTimes(1);
+    expect(mockDiscard).toHaveBeenLastCalledWith('file:///cache/ImagePicker/a.jpg');
+
+    await fireEvent.press(background('dark'));
+    expect(mockDiscard).toHaveBeenLastCalledWith('file:///cache/ImagePicker/b.jpg');
+
+    await unmount();
+    expect(mockDiscard).toHaveBeenCalledTimes(2); // nothing left to remove at the end
+  });
+
+  test('a photo still held when the screen closes is removed then', async () => {
+    mockPick.mockResolvedValueOnce({ uri: 'file:///cache/ImagePicker/a.jpg' });
+    const { unmount } = await render(
+      <ThemeProvider scheme="light">
+        <ShareScreen />
+      </ThemeProvider>,
+    );
+    await act(async () => {});
+    await fireEvent.press(background('gallery'));
+    await act(async () => {});
+
+    await unmount();
+
+    expect(mockDiscard).toHaveBeenCalledWith('file:///cache/ImagePicker/a.jpg');
+  });
 });

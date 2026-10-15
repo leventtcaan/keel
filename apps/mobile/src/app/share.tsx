@@ -1,6 +1,6 @@
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
-import { PixelRatio, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import type Svg from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -9,27 +9,31 @@ import { Chip } from '@/components/Chip';
 import { ProblemText } from '@/components/ProblemText';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
-import { layout } from '@/share/layout';
-import { shareParams } from '@/share/params';
-import { StickerImage } from '@/share/Sticker';
+import { type Source, discardBackground, pickBackground } from '@/share/background';
+import { Preview } from '@/share/Preview';
+import type { Backdrop } from '@/share/Sticker';
 import { type StickerFacts, stickersFor } from '@/share/stickers';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
-import { focusPalette, tokens } from '@/theme/tokens';
+import { tokens } from '@/theme/tokens';
 import { load } from '@/today/today';
 import { movesOf } from '@/train/trainData';
 import { type WorkoutSummaryRead, loadWorkoutSummary } from '@/train/workoutEnd';
 
 /** The widest the preview is drawn, in points; narrower on a narrow screen. */
-const PREVIEW_MAX = 320;
+const PREVIEW_MAX = 240;
+/** The grounds a sticker can sit on: the user's own photo (gallery or camera), a dark one, or none (Instagram's own). */
+type Ground = Source | 'dark' | 'instagram';
 
 type Facts = StickerFacts & { partial: boolean; waiting: boolean };
 
 /**
  * Share (K-975, ADR-076; prototype `#share`): started by the user, from the end of a workout (`?workout=`) or from
  * Progress, never offered on its own. Four stickers (Workout, PR, Streak, Progress) made on this phone from what the server
- * says; the user picks one, it is drawn, and its PNG goes to the system share sheet (Save, TikTok, More). The screen only
- * reads; the app sends the image nowhere. The weekly call is not a sticker (ADR-076 #1).
+ * says; the user picks one and what it sits on (their photo from the gallery or camera, dark, or nothing for "In
+ * Instagram"), it is drawn, and its PNG goes to the system share sheet (Save, TikTok, More). The photo is the user's own
+ * and stays on the phone; the progress photos are not offered. The screen only reads; the app sends the image nowhere.
+ * The weekly call is not a sticker (ADR-076 #1).
  */
 export default function ShareScreen() {
   const services = useAppServices();
@@ -40,9 +44,13 @@ export default function ShareScreen() {
   const { workout } = useLocalSearchParams<{ workout?: string }>();
   const [facts, setFacts] = useState<Facts | null>(null);
   const [picked, setPicked] = useState<string | null>(null);
+  const [ground, setGround] = useState<Ground>('dark');
+  const [photo, setPhoto] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const [problem, setProblem] = useState<Problem | null>(null);
   const image = useRef<Svg>(null);
+  // The picker's copy of the chosen photo, in this app's cache: removed when another ground replaces it and when the screen closes.
+  const held = useRef<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -68,52 +76,84 @@ export default function ShareScreen() {
     }, [services, api, training, workout, report]),
   );
 
+  const forget = useCallback(() => {
+    if (held.current === null) return;
+    try {
+      discardBackground(held.current);
+    } catch (error) {
+      report({ name: error instanceof Error ? error.name : 'Unknown' });
+    }
+    held.current = null;
+  }, [report]);
+  useEffect(() => forget, [forget]);
+
   const stickers = facts === null ? [] : stickersFor(facts, units);
   const sticker = stickers.find((s) => s.kind === picked) ?? stickers[0];
+  const backdrop: Backdrop | undefined = ground === 'instagram' ? undefined : photo !== null ? { kind: 'photo', uri: photo } : { kind: 'dark' };
 
+  const choose = async (source: Source) => {
+    setProblem(null);
+    try {
+      const chosen = await pickBackground(source);
+      if (chosen === 'denied') return setProblem('denied');
+      if (chosen === null) return;
+      forget();
+      held.current = chosen.uri;
+      setPhoto(chosen.uri);
+      setGround(source);
+    } catch (error) {
+      report({ name: error instanceof Error ? error.name : 'Unknown' });
+      setProblem('photo');
+    }
+  };
+  const plain = (next: 'dark' | 'instagram') => {
+    setProblem(null);
+    forget();
+    setPhoto(null);
+    setGround(next);
+  };
   const share = () => {
     if (busy || image.current === null) return;
     setBusy(true);
-    setFailed(false);
+    setProblem(null);
     image.current.toDataURL((base64?: string) => {
       // The drawing can answer with nothing; that is a failure to say, not a share of an empty file.
       if (!base64) {
         report({ name: 'EmptyImage' });
-        setFailed(true);
+        setProblem('share');
         setBusy(false);
         return;
       }
       shareImage(base64)
         .catch((error: unknown) => {
           report({ name: error instanceof Error ? error.name : 'Unknown' });
-          setFailed(true);
+          setProblem('share');
         })
         .finally(() => setBusy(false));
     });
   };
 
-  // The image is drawn at the size that comes out at the width in share.json on this screen's scale, and shown smaller.
-  const full = shareParams.storyWidth / PixelRatio.get();
-  const shown = Math.min(width - 2 * tokens.space.lg, PREVIEW_MAX);
-  const scale = shown / full;
-  const height = sticker === undefined ? 0 : (full * layout(sticker).height) / shareParams.storyWidth;
-
+  // Built before the JSX: a literal inside a JSX child is read as text by the copy guard (copy-literals.test.ts).
+  const instagramNote = ground === 'instagram' ? <Text style={[styles.small, { color: color.muted }]}>{t('share.instagramNote')}</Text> : null;
   const choice =
     sticker === undefined ? (
       facts !== null && <Text style={[styles.text, { color: color.textSecondary }]}>{t('share.nothing')}</Text>
     ) : (
       <View style={styles.part}>
-        <View style={[styles.frame, { width: shown, height: height * scale, backgroundColor: focusPalette.background }]}>
-          <View style={{ width: full, height, transformOrigin: 'top left', transform: [{ scale }] }}>
-            <StickerImage ref={image} sticker={sticker} width={full} />
-          </View>
-        </View>
+        <Preview sticker={sticker} backdrop={backdrop} width={Math.min(width - 2 * tokens.space.lg, PREVIEW_MAX)} imageRef={image} />
         <View style={styles.chips}>
           {stickers.map((s) => (
             <Chip key={s.kind} touch label={t(`share.kind.${s.kind}`)} selected={s.kind === sticker.kind} onPress={() => setPicked(s.kind)} />
           ))}
         </View>
-        {failed && <Failed />}
+        <View style={styles.chips}>
+          <Chip touch label={t('share.background.gallery')} selected={ground === 'gallery'} onPress={() => void choose('gallery')} />
+          <Chip touch label={t('share.background.camera')} selected={ground === 'camera'} onPress={() => void choose('camera')} />
+          <Chip touch label={t('share.background.dark')} selected={ground === 'dark'} onPress={() => plain('dark')} />
+          <Chip touch label={t('share.background.instagram')} selected={ground === 'instagram'} onPress={() => plain('instagram')} />
+        </View>
+        {instagramNote}
+        {problem !== null && <Failed problem={problem} />}
         <Button label={t('share.share')} disabled={busy} onPress={share} />
         <Text style={[styles.small, { color: color.muted }]}>{t('share.note')}</Text>
       </View>
@@ -131,16 +171,18 @@ export default function ShareScreen() {
   );
 }
 
-function Failed() {
+type Problem = 'share' | 'denied' | 'photo';
+
+function Failed({ problem }: { problem: Problem }) {
   const { color } = useTheme();
-  return <ProblemText style={[styles.text, { color: color.text }]}>{t('share.failed')}</ProblemText>;
+  const words = { share: t('share.failed'), denied: t('share.denied'), photo: t('share.photoFailed') };
+  return <ProblemText style={[styles.text, { color: color.text }]}>{words[problem]}</ProblemText>;
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   body: { padding: tokens.space.lg, gap: tokens.space.lg },
   part: { gap: tokens.space.md, alignItems: 'stretch' },
-  frame: { alignSelf: 'center', overflow: 'hidden', borderRadius: tokens.radius.card },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm, justifyContent: 'center' },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },
