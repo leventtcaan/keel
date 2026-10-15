@@ -14,7 +14,7 @@ import org.springframework.stereotype.Repository;
 
 /**
  * What the user answered on coming back from a gap (K-1020, ADR-077 #5 and Ek 8): one answer per account, the newest, kept
- * with the last log the gap began from. Training keeps it because PICK_UP changes what the program shows after a break
+ * with the last log the gap began from. Training keeps it because PICK_UP and EASE_BACK change what the program shows after a break
  * (training cannot read decision, whose route takes the answer).
  */
 @Repository
@@ -45,6 +45,16 @@ public class ReturnAnswers {
          */
         boolean picksUpFrom(LocalDate lastSession, LocalDate today, ZoneId zone, Parameters parameters) {
             return choice == Choice.PICK_UP && coversGapFrom(lastSession) && !ReturnLoad.afterBreak(answeredOn(zone), today, parameters);
+        }
+
+        /**
+         * Whether the answer makes the break measured from this session eased whatever its length (K-1026): EASE_BACK, for the
+         * first session back only, on the same terms as a pick up: it falls when a session was done after the gap, and after
+         * return_step_back_after_weeks with no session (then a break that long is eased by itself, ReturnLoad). The one step
+         * ReturnLoad gives, never a second.
+         */
+        boolean easesBackFrom(LocalDate lastSession, LocalDate today, ZoneId zone, Parameters parameters) {
+            return choice == Choice.EASE_BACK && coversGapFrom(lastSession) && !ReturnLoad.afterBreak(answeredOn(zone), today, parameters);
         }
     }
 
@@ -78,6 +88,18 @@ public class ReturnAnswers {
      */
     public Optional<LocalDate> breakFrom(AccountId account, Optional<LocalDate> lastSession, LocalDate today, ZoneId zone, Parameters parameters) {
         return breakFrom(lastSession, lastSession.isPresent() ? of(account) : Optional.empty(), today, zone, parameters);
+    }
+
+    /**
+     * Whether the user chose to ease back in for the session they come back to (K-1026): the break is stepped back whatever its
+     * length, the one step ReturnLoad gives. Given the day {@link #breakFrom} returned.
+     */
+    public boolean easedBack(AccountId account, Optional<LocalDate> breakFrom, LocalDate today, ZoneId zone, Parameters parameters) {
+        return easedBack(breakFrom, breakFrom.isPresent() ? of(account) : Optional.empty(), today, zone, parameters);
+    }
+
+    static boolean easedBack(Optional<LocalDate> breakFrom, Optional<Answer> answer, LocalDate today, ZoneId zone, Parameters parameters) {
+        return breakFrom.filter(day -> answer.filter(given -> given.easesBackFrom(day, today, zone, parameters)).isPresent()).isPresent();
     }
 
     static Optional<LocalDate> breakFrom(Optional<LocalDate> lastSession, Optional<Answer> answer, LocalDate today, ZoneId zone, Parameters parameters) {

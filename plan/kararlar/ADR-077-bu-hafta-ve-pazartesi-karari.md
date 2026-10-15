@@ -258,3 +258,9 @@ yetersizse çağrı yine açılır (motor "henüz karar yok" kaydeder), yani son
 - **Telefon:** "sonraki çağrı / sonraki gözden geçirme" gösteren yerler (Hero, karar ekranı, neden ekranı, Today kartı, kilit ekranı) `nextCallOn` okur; telefon tarih hesaplamaz.
   Koç metinleri ("looked at again", "stands until its next look") verinin yeniden bakılışını anlatır; `nextReview` okumaya devam eder.
 - **Reddedilen:** `nextReview`'u check-in gününe eşitlemek: hafif hafta ve mola haftasının uzunluğunu sessizce değiştirir (ve CalorieLadder'ın karar penceresini bozar).
+
+## Ek 11 · "Ease back in" seçimi kısa molada da bir basamak hafifletir (K-1026, 2026-10-15, agent, teknik; KABUL)
+Ek 8, EASE_BACK cevabını "program zaten yapıyor" diye hiçbir şeye bağlamamıştı; ama boşluk `return_prompt_days` ile `return_step_back_after_weeks` arasındaysa (PICK_UP önerili) program hiçbir şey hafifletmez, ekran ise "One step lighter" der. ADR-077 #5 "öner ama dayatma": kullanıcının seçimi etkili olmalı.
+- **EASE_BACK, PICK_UP ile aynı kayıt ve süre kuralıyla zorlamadır** (`ReturnAnswers.Answer.easesBackFrom`): cevabın kapsadığı boşluk için (yeni bir seans boşluktan sonra yapılmadıkça) ilk seansa dönüşte `ReturnLoad`ın mevcut tek basamağı uygulanır, program `backAfterBreak: true` döner; yeni sayı yok.
+  Seans yapılınca (son seans boşluğun başladığı günden yeni) ya da cevaptan `return_step_back_after_weeks` sonra seanssız geçerse zorlama biter; o süre dolunca mola zaten uzundur ve `ReturnLoad` kendiliğinden hafifletir. İkinci bir basamak yoktur (uzun molada seçim hiçbir şey eklemez).
+- Okuma noktaları tek: `BackAfterBreak.of(.., easedBack, ..)` programı (`ProgramController`) ve kararın tutulan hareketini (`TrainingMoveTargets`, K-1009) aynı karara getirir. REBUILD ve PICK_UP davranışı değişmez.

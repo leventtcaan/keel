@@ -179,6 +179,35 @@ class ReturnApiTests {
     }
 
     @Test
+    void easingBackStepsAShortBreakBackAndEndsWithTheNextSession() throws Exception {
+        // K-1026 (ADR-077 Ek 11): ten days away is asked but under return_step_back_after_weeks, so nothing is eased on its own;
+        // the user who chooses to ease back in gets the one step ReturnLoad gives, for the session they come back to.
+        BigDecimal step = BigDecimal.valueOf(parameters.forSex(Sex.MALE).number(ParameterKey.LOAD_INCREMENT_UPPER_KG));
+        AccountId account = account(true);
+        assertThat(send(account, "PUT", "/v1/program", Map.of("days", List.of(Map.of("name", "Upper", "weekday", "MONDAY", "exercises", List.of(
+                Map.of("exerciseId", "bench_press", "sets", 3, "reps", Map.of("min", 6, "max", 10)))))))).hasStatusOk();
+        String workout = start(account, clock.instant().minus(Duration.ofDays(10)));
+        set(account, workout, 60, 10);
+        assertThat(send(account, "POST", "/v1/workouts/" + workout + "/finish",
+                Map.of("endedAt", clock.instant().toString(), "uncleanExerciseIds", List.of()))).hasStatusOk();
+        assertThat(kg(planned(account).get("nextLoadKg"))).as("ten days: the usual next load").isEqualByComparingTo(new BigDecimal("60").add(step));
+        assertThat(program(account)).doesNotContainKey("backAfterBreak");
+
+        assertThat(send(account, "POST", "/v1/return", Map.of("choice", "EASE_BACK"))).hasStatusOk();
+
+        assertThat(kg(planned(account).get("nextLoadKg"))).as("chosen: one step lighter").isEqualByComparingTo(new BigDecimal("60").subtract(step));
+        assertThat(program(account)).containsEntry("backAfterBreak", true);
+
+        // A session after the gap the answer was for (four days ago), and none since: the choice was for the break before it.
+        String back = start(account, clock.instant().minus(Duration.ofDays(4)));
+        set(account, back, 55, 10);
+        assertThat(send(account, "POST", "/v1/workouts/" + back + "/finish",
+                Map.of("endedAt", clock.instant().toString(), "uncleanExerciseIds", List.of()))).hasStatusOk();
+
+        assertThat(program(account)).doesNotContainKey("backAfterBreak");
+    }
+
+    @Test
     void rebuildingChangesNoTargetOfTheProgram() throws Exception {
         BigDecimal step = BigDecimal.valueOf(parameters.forSex(Sex.MALE).number(ParameterKey.LOAD_INCREMENT_UPPER_KG));
         AccountId account = withAProgramDoneAMonthAgo();
