@@ -26,7 +26,7 @@ class TopicReplyTests {
 
     static final CallFacts CUT = new CallFacts(UUID.randomUUID(), LocalDate.of(2026, 10, 5), Map.of("type", "ADJUST_CALORIES", "kcalPerDay", -500),
             List.of(new CallFacts.Rule("not_toward_goal", "EXPERIENCE"), new CallFacts.Rule("stall_window", "EXPERIENCE")), "MEDIUM",
-            LocalDate.of(2026, 10, 12), "decision.adjust_calories.not_toward_goal", true);
+            LocalDate.of(2026, 10, 12), LocalDate.of(2026, 10, 19), "decision.adjust_calories.not_toward_goal", true);
 
     private static final TopicReply READ = new TopicReply(400);
 
@@ -50,7 +50,7 @@ class TopicReplyTests {
 
     @Test
     void aCallWithoutReasonsGivesNoRule() {
-        CallFacts bare = new CallFacts(CUT.id(), CUT.madeOn(), CUT.action(), List.of(), CUT.confidence(), CUT.nextReview(), CUT.copyKey(), true);
+        CallFacts bare = new CallFacts(CUT.id(), CUT.madeOn(), CUT.action(), List.of(), CUT.confidence(), CUT.nextReview(), CUT.nextCallOn(), CUT.copyKey(), true);
         assertThat(READ.read("{\"topic\":\"WHY\"}", bare)).contains(new TopicReply.Classified(Topic.WHY, null));
     }
 
@@ -84,7 +84,7 @@ class TopicReplyTests {
         // Whatever numbers a call carries (a step, a fraction, a phase), the model gets none: it writes none (K-529).
         for (Map<String, Object> action : List.<Map<String, Object>>of(Map.of("type", "DELOAD", "setsFraction", 0.5), Map.of("type", "CHANGE_PHASE", "to", "CUT"),
                 Map.of("type", "CHANGE_MOVEMENT", "stepsPerDay", 2000))) {
-            CallFacts call = new CallFacts(CUT.id(), CUT.madeOn(), action, CUT.reasons(), "HIGH", CUT.nextReview(), CUT.copyKey(), true);
+            CallFacts call = new CallFacts(CUT.id(), CUT.madeOn(), action, CUT.reasons(), "HIGH", CUT.nextReview(), CUT.nextCallOn(), CUT.copyKey(), true);
             String facts = Explanation.facts(call);
             assertThat(facts).contains("\"action\":\"" + action.get("type") + "\"", "not_toward_goal", "EXPERIENCE")
                     .doesNotContain("0.5", "CUT\"", "2000", "HIGH", "2026");

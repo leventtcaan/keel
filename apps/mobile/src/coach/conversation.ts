@@ -32,7 +32,7 @@ export function linesOf(answer: Schemas['CoachAnswer'], date: DayWords): Line[] 
   if (answer.rule !== undefined && !NOT_ABOUT_THE_CALL.has(answer.topic)) {
     const rule = `decision.rule.${answer.rule}`;
     if (has(rule)) lines.push({ key: rule });
-    if (answer.call !== undefined) lines.push(stands(answer.call.nextReview, date));
+    if (answer.call !== undefined) lines.push(stands(answer.call.nextCallOn, date));
   }
   return lines;
 }
@@ -74,8 +74,8 @@ export function chipAnswer(chip: string, decision: Loaded<Schemas['Decision']>, 
     const call = decision.value;
     const reasons = call.safety === true ? [] : call.reasons.map((reason) => `decision.rule.${reason.rule}`).filter((key) => has(key));
     return {
-      lines: [...reasons.map((key) => ({ key })), stands(call.nextReview, date)],
-      call: { decisionId: call.id, copyKey: call.copyKey, nextReview: call.nextReview },
+      lines: [...reasons.map((key) => ({ key })), stands(call.nextCallOn, date)],
+      call: { decisionId: call.id, copyKey: call.copyKey, nextReview: call.nextReview, nextCallOn: call.nextCallOn },
     };
   }
   const said: Said = { lines: [{ key: CHIP_WORDS[chip] }] };
@@ -83,8 +83,12 @@ export function chipAnswer(chip: string, decision: Loaded<Schemas['Decision']>, 
   return chip === 'today.chips.swap' && session !== undefined ? { ...said, open: { key: 'coach.chip.openWorkout', day: session } } : said;
 }
 
-function stands(nextReview: string, date: DayWords): Line {
-  return { key: 'coach.answer.stands', values: { date: date(nextReview) } };
+/**
+ * That the call stands, until the day the next call opens: the server's Decision.nextCallOn (U1; the phone works out no
+ * date, and not nextReview, which is the engine's window for the data). Without it the sentence has no date.
+ */
+function stands(nextCallOn: string | undefined, date: DayWords): Line {
+  return nextCallOn === undefined ? { key: 'coach.answer.standsNoDate' } : { key: 'coach.answer.stands', values: { date: date(nextCallOn) } };
 }
 
 export type Asked =

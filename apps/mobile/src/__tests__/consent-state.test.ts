@@ -77,6 +77,17 @@ test('a grant to a text the phone no longer shows is not given: the user is aske
   expect(await offline.granted('APPLE_HEALTH')).toBe(true);
 });
 
+test('a yes to version 4 of the health data text is not a yes to version 5: not given online, nor offline from what the phone kept', async () => {
+  const kv = memoryKv();
+  const four = { data: [{ kind: 'HEALTH_DATA', status: 'GRANTED', textVersion: '4' }], response: new Response(null, { status: 200 }) };
+  const online = createConsentState({ api: { GET: async () => four } as never, kv });
+  expect(await online.granted('HEALTH_DATA')).toBe(false);
+  expect(await online.held('HEALTH_DATA')).toBe(true); // still withdrawable as it stands (GDPR Art. 7(3))
+  kv.items.set('consent.HEALTH_DATA', 'GRANTED@4');
+  const offline = createConsentState({ api: { GET: async () => Promise.reject(new TypeError('offline')) } as never, kv });
+  expect(await offline.granted('HEALTH_DATA')).toBe(false);
+});
+
 test('a grant to the text shown now is given, online and offline', async () => {
   const kv = memoryKv();
   const current = {

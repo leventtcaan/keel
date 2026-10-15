@@ -470,7 +470,7 @@ describe('Apple Health under the first weigh-in (K-980, ADR-018 Ek 1)', () => {
 test('without the health data consent: the consent first, nothing to type, nothing kept (ADR-030 #25)', async () => {
   mockGranted = false;
   await show();
-  expect(screen.getByText(t('consent.health_data.body'))).toBeOnTheScreen();
+  expect(screen.getByText(t('consent.health_data.points.collected'))).toBeOnTheScreen();
   expect(screen.queryByRole('button', { name: t('weighIn.save') })).toBeNull();
 
   await press(t('weighIn.consent.allow'));

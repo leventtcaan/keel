@@ -98,6 +98,7 @@ class ConsentTests {
     void aYesToTheHealthTextThatCalledAwayAHealthStateIsAskedAgain() throws Exception {
         // Version 4 (Levent, 15 Oct; K-1021, ADR-077 Ek 6): traveling, a busy week and a new gym are no health data and stay on a
         // withdrawal. A yes to version 3, which listed "away" among the health data and deleted everything, is not a yes to that.
+        // Version 5 (K-1032) is the same meaning in points; 4 is asked again in its own test below.
         AccountId account = TestSessions.newAccount();
         insert(account, "HEALTH_DATA", "3", null, null);
 
@@ -105,8 +106,26 @@ class ConsentTests {
         assertThat(list(account)).filteredOn(c -> "HEALTH_DATA".equals(c.get("kind"))).singleElement()
                 .satisfies(c -> assertThat(c).containsEntry("status", "GRANTED").containsEntry("textVersion", "3"));
         assertThat(put(account, "HEALTH_DATA", Map.of("textVersion", "3"))).hasStatus(400);
-        assertThat(put(account, "HEALTH_DATA", Map.of("textVersion", "4"))).hasStatusOk();
+        assertThat(put(account, "HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA))).hasStatusOk();
         assertThat(gate.granted(account, ConsentKind.HEALTH_DATA)).isTrue();
+    }
+
+    @Test
+    void aYesToVersion4OfTheHealthTextIsOutdatedAndAskedAgain() throws Exception {
+        // Version 5 (Levent, 15 Oct; K-1032): the text is 3-4 short points, same meaning. A new text is a new version
+        // (GDPR Art. 7(1)): a yes to the paragraph of version 4 is a yes to another text, so it reads as given to "4" (the phone
+        // shows it OUTDATED), the gate refuses it, and only the current version is taken again.
+        AccountId account = TestSessions.newAccount();
+        insert(account, "HEALTH_DATA", "4", null, null);
+
+        assertThat(gate.granted(account, ConsentKind.HEALTH_DATA)).isFalse();
+        assertThat(list(account)).filteredOn(c -> "HEALTH_DATA".equals(c.get("kind"))).singleElement()
+                .satisfies(c -> assertThat(c).containsEntry("status", "GRANTED").containsEntry("textVersion", "4"));
+        assertThat(put(account, "HEALTH_DATA", Map.of("textVersion", "4"))).hasStatus(400);
+        assertThat(put(account, "HEALTH_DATA", Map.of("textVersion", "5"))).hasStatusOk();
+        assertThat(gate.granted(account, ConsentKind.HEALTH_DATA)).isTrue();
+        assertThat(list(account)).filteredOn(c -> "HEALTH_DATA".equals(c.get("kind"))).singleElement()
+                .satisfies(c -> assertThat(c).containsEntry("textVersion", "5"));
     }
 
     @Test

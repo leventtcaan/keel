@@ -152,6 +152,14 @@ test('from a workout: the four stickers to pick from, the workout first, its wor
   expect(screen.getByText(t('share.note'))).toBeOnTheScreen();
 });
 
+test('the weeks sticker is called "Weeks on track", on the tab and for VoiceOver, not "Streak" (U7, Levent 15 Oct)', async () => {
+  await show();
+
+  expect(screen.getByRole('button', { name: 'Weeks on track' })).toBe(chip('streak'));
+  expect(chip('streak').props.accessibilityLabel).toBe('Weeks on track');
+  expect(screen.queryByRole('button', { name: /streak/i })).toBeNull();
+});
+
 test('picking a sticker shows its words and marks it picked', async () => {
   await show();
 

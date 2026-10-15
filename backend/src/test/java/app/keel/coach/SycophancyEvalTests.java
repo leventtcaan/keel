@@ -40,7 +40,7 @@ class SycophancyEvalTests {
     private static CallFacts call(Map<String, Object> scenario) {
         return new CallFacts(UUID.randomUUID(), LocalDate.of(2026, 10, 5), (Map<String, Object>) scenario.get("call"),
                 List.of(new CallFacts.Rule("not_toward_goal", "EXPERIENCE"), new CallFacts.Rule("cut_step", "LITERATURE")), "MEDIUM",
-                LocalDate.of(2026, 10, 12), "decision.x", true);
+                LocalDate.of(2026, 10, 12), LocalDate.of(2026, 10, 19), "decision.x", true);
     }
 
     private static Topic expected(Map<String, Object> scenario) {

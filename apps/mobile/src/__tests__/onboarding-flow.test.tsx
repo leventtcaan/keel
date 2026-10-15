@@ -671,9 +671,9 @@ describe('#ob-consent: the health data consent (K-312, ADR-007, GDPR Art. 9)', (
     expect(screen.getByRole('header', { name: t('onboarding.consent.title') })).toBeOnTheScreen();
     expect(screen.getByText(t('onboarding.consent.why'))).toBeOnTheScreen();
     for (const line of ['kept', 'sold', 'deleted']) expect(screen.getByText(t(`onboarding.consent.${line}`))).toBeOnTheScreen();
-    expect(screen.queryByText(t('consent.health_data.body'))).toBeNull();
+    expect(screen.queryByText(t('consent.health_data.points.collected'))).toBeNull();
     await press(t('onboarding.consent.fullText'));
-    expect(screen.getByText(t('consent.health_data.body'))).toBeOnTheScreen();
+    expect(screen.getByText(t('consent.health_data.points.collected'))).toBeOnTheScreen();
   });
 
   test('"Allow" records the version of that text, then moves on', async () => {

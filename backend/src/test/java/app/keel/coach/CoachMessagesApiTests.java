@@ -69,8 +69,11 @@ class CoachMessagesApiTests {
         // No words of the model's: a topic and the rule that answers it; the app says them in its own copy (K-529).
         assertThat(answer).containsEntry("mode", "MODEL").containsEntry("topic", "WHY").containsEntry("rule", leading)
                 .doesNotContainKeys("copyKey", "text");
+        // nextCallOn (K-1032, U1): the day the next call opens, the Decision's own, for the sentence "the call stands until ..." —
+        // the phone works out no date.
+        assertThat(call.get("nextCallOn")).isNotNull();
         assertThat((Map<String, Object>) answer.get("call")).isEqualTo(Map.of("decisionId", call.get("id"), "copyKey", "decision.adjust_calories.cut",
-                "nextReview", call.get("nextReview")));
+                "nextReview", call.get("nextReview"), "nextCallOn", call.get("nextCallOn")));
         // The model got the kind of call and its rules by kind of source — not its numbers, not its dates, no research
         // path, no name (K-523): it writes nothing, so it needs nothing more.
         assertThat(fake.requests()).singleElement().satisfies(request -> {

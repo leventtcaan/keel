@@ -4,7 +4,6 @@ import { StyleSheet, Text, View } from 'react-native';
 import { ProblemText } from '@/components/ProblemText';
 import { Button } from '@/components/Button';
 import {
-  CONSENT_COPY,
   type ConsentStatus,
   connectAppleHealth,
   grantConsent,
@@ -12,6 +11,7 @@ import {
   type PhoneConsentStatus,
   withdrawConsent,
 } from '@/consent/consents';
+import { ConsentText } from '@/consent/ConsentText';
 import { t } from '@/copy';
 import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
@@ -139,7 +139,7 @@ export function ConsentsSection({ onChanged }: { onChanged?: () => void } = {}) 
           disabled={busy}
         />
       ) : undefined;
-    const text = open === kind ? <Text style={[styles.text, { color: color.textSecondary }]}>{t(`${CONSENT_COPY[kind]}.body`)}</Text> : null;
+    const text = open === kind ? <ConsentText kind={kind} /> : null;
     const confirm =
       asking === kind ? (
         <Confirm

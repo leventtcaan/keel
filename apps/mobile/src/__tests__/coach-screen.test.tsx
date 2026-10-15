@@ -27,13 +27,13 @@ const DECISION: Schemas['Decision'] = {
   ],
   confidence: 'MEDIUM',
   nextReview: '2026-10-05',
-  nextCallOn: '2026-10-05',
+  nextCallOn: '2026-10-12', // not nextReview: the coach says the day the next call opens (U1)
   copyKey: 'decision.adjust_calories.not_toward_goal',
   application: { state: 'PENDING' },
   declinable: false,
   changes: [],
 };
-const CALL = { decisionId: 'd1', copyKey: 'decision.adjust_calories.not_toward_goal', nextReview: '2026-10-05' };
+const CALL = { decisionId: 'd1', copyKey: 'decision.adjust_calories.not_toward_goal', nextReview: '2026-10-05', nextCallOn: '2026-10-12' };
 // Tuesday: a session today.
 const PROGRAM: Schemas['Program'] = { id: 'p1', source: 'GENERATED', days: [{ id: 'a', nameKey: 'programDays.upper_a.name', weekday: 'TUESDAY', exercises: [] }] };
 
@@ -128,7 +128,7 @@ test("'Why this call?' is answered on the phone: every rule's sentence, the call
   await press(t('today.chips.why'));
   expect(count(t('decision.rule.not_toward_goal'))).toBe(rules + 1);
   expect(screen.getByText(t('decision.rule.cut_step'))).toBeOnTheScreen();
-  expect(screen.getByText(t('coach.answer.stands', { date: 'Mon, Oct 5' }))).toBeOnTheScreen();
+  expect(screen.getByText(t('coach.answer.stands', { date: 'Mon, Oct 12' }))).toBeOnTheScreen();
   expect(count(t('decision.adjust_calories.not_toward_goal.title'))).toBe(cards + 1);
   expect(mockPOST).not.toHaveBeenCalled();
 });
@@ -187,10 +187,19 @@ test("a message: sent as written; the answer is the topic's sentence, the rule's
   expect(screen.getByText('I am starving')).toBeOnTheScreen();
   expect(screen.getByText(t('coach.topic.hunger'))).toBeOnTheScreen();
   expect(screen.getByText(t('decision.rule.cut_step'))).toBeOnTheScreen();
-  expect(screen.getByText(t('coach.answer.stands', { date: 'Mon, Oct 5' }))).toBeOnTheScreen();
+  expect(screen.getByText(t('coach.answer.stands', { date: 'Mon, Oct 12' }))).toBeOnTheScreen();
   expect(count(t('decision.adjust_calories.not_toward_goal.title'))).toBe(cards + 1);
   expect(screen.queryByText(t('coach.standard'))).toBeNull();
   expect(screen.getByLabelText(t('coach.input')).props.value).toBe('');
+});
+
+test('a call the server gave no next-call day for: the coach says the call stands, with no date (U1)', async () => {
+  const { nextCallOn: _none, ...bare } = CALL;
+  mockSent = ok({ mode: 'MODEL', topic: 'HUNGER', rule: 'cut_step', call: bare });
+  await show();
+  await send('I am starving');
+  expect(screen.getByText(t('coach.answer.standsNoDate'))).toBeOnTheScreen();
+  expect(screen.queryByText(t('coach.answer.stands', { date: 'Mon, Oct 5' }))).toBeNull();
 });
 
 test('a doctor brought up: the coach says only that the doctor comes first — not that the call stands (U6)', async () => {
@@ -199,7 +208,7 @@ test('a doctor brought up: the coach says only that the doctor comes first — n
   const cards = count(t('decision.adjust_calories.not_toward_goal.title'));
   await send('I started new medication');
   expect(screen.getByText(t('coach.topic.health'))).toBeOnTheScreen();
-  expect(screen.queryByText(t('coach.answer.stands', { date: 'Mon, Oct 5' }))).toBeNull();
+  expect(screen.queryByText(t('coach.answer.stands', { date: 'Mon, Oct 12' }))).toBeNull();
   // Nor the call's card: the answer adds none — nothing says the call stands after the doctor (U6).
   expect(count(t('decision.adjust_calories.not_toward_goal.title'))).toBe(cards);
 });

@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { ProblemText, useProblem } from '@/components/ProblemText';
+import { ConsentText } from '@/consent/ConsentText';
 import { grantConsent } from '@/consent/consents';
 import { t } from '@/copy';
 import { useDraft } from '@/onboarding/OnboardingContext';
@@ -137,7 +138,7 @@ export default function HealthDataStep() {
 
   // Built outside the JSX below, like the other conditional parts (the raw-text guard reads JSX children).
   const text = fullText ? (
-    <Text style={[styles.full, { color: color.textSecondary, backgroundColor: color.surface }]}>{t('consent.health_data.body')}</Text>
+    <ConsentText kind="HEALTH_DATA" small style={[styles.full, { backgroundColor: color.surface }]} />
   ) : (
     <Pressable accessibilityRole="button" onPress={() => setFullText(true)} style={styles.link}>
       <Text style={[styles.linkText, { color: color.accent }]}>{t('onboarding.consent.fullText')}</Text>
@@ -170,6 +171,6 @@ const styles = StyleSheet.create({
   point: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
   link: { minHeight: tokens.size.touch, justifyContent: 'center', alignSelf: 'flex-start' },
   linkText: { fontSize: tokens.type.body, fontWeight: tokens.weight.bold },
-  full: { fontSize: tokens.type.bodySmall, padding: tokens.space.md, borderRadius: tokens.radius.button },
+  full: { padding: tokens.space.md, borderRadius: tokens.radius.button },
   note: { fontSize: tokens.type.bodySmall, padding: tokens.space.md, borderRadius: tokens.radius.button, overflow: 'hidden' },
 });

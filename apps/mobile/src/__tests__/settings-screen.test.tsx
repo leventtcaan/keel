@@ -159,7 +159,7 @@ describe('consents', () => {
   test('View shows the text the consent was given to', async () => {
     await show();
     await press(`${t('settings.consents.view')} ${row('HEALTH_DATA')}`);
-    expect(screen.getByText(t('consent.health_data.body'))).toBeOnTheScreen();
+    expect(screen.getByText(t('consent.health_data.points.collected'))).toBeOnTheScreen();
   });
 
   test('Withdraw asks first — the only warn-coloured button is its confirmation — then withdraws and shows the new state', async () => {
@@ -194,6 +194,13 @@ describe('consents', () => {
     });
     expect(screen.getAllByText(t('settings.consents.allowed'))).toHaveLength(1);
     expect(mockServices.consents.remember).toHaveBeenCalledWith('HEALTH_DATA', 'GRANTED');
+  });
+
+  test('the health data consent given to version 4 reads outdated: the text was revised into points (K-1032)', async () => {
+    mockVersions.HEALTH_DATA = '4';
+    await show();
+    expect(screen.getByText(t('settings.consents.outdated'))).toBeOnTheScreen();
+    expect(screen.queryAllByText(t('settings.consents.allowed'))).toHaveLength(0);
   });
 
   test('a consent given to a text since revised (K-429): not allowed, and both ways are open — the new text, or withdrawing', async () => {

@@ -8,6 +8,7 @@ import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
 import { ProblemText, announce, useProblem } from '@/components/ProblemText';
 import { ScreenTitle } from '@/components/ScreenTitle';
+import { ConsentText } from '@/consent/ConsentText';
 import { grantConsent } from '@/consent/consents';
 import { t } from '@/copy';
 import { HealthJit } from '@/health/HealthJit';
@@ -183,7 +184,7 @@ export default function WeighInScreen() {
     step === 'consent' ? (
       <View style={styles.part}>
         <Text style={[styles.heading, { color: color.text }]}>{t('consent.health_data.title')}</Text>
-        <Text style={[styles.text, { color: color.textSecondary }]}>{t('consent.health_data.body')}</Text>
+        <ConsentText kind="HEALTH_DATA" />
         {problem !== null && (
           <ProblemText style={[styles.text, { color: color.text }]} occurrence={occurrence}>
             {problem}

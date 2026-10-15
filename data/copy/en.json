@@ -1174,7 +1174,7 @@
     "kind": {
       "workout": "Workout",
       "pr": "PR",
-      "streak": "Streak",
+      "streak": "Weeks on track",
       "progress": "Progress"
     },
     "background": {
@@ -1816,9 +1816,14 @@
   },
   "consent": {
     "health_data": {
-      "version": "4",
+      "version": "5",
       "title": "Your health data, for your coaching",
-      "body": "Your weight, waist, steps, sleep and active energy, what you conclude from your progress photos and the look you pick, your meals and recipes, your plan and check-in answers, what you tell the app about being sick or in pain, and the foods you avoid are health data. We use them to make your weekly calls and show your progress, and for nothing else. We never sell them or use them for ads. You can export or delete them at any time. Importing past workouts from another app also needs this consent, as they can carry your weight. You can also withdraw this consent in Settings: everything above is then deleted for good, with your past calls, except your training log, which isn't health data and stays; the calls stop until you allow it again. Telling the app you are traveling, in a busy week or at a new gym isn't health data and needs no consent: if you withdraw, it stays, and it goes only with your account."
+      "points": {
+        "collected": "Your weight, waist, steps, sleep and active energy, what you conclude from your progress photos and the look you pick, your meals and recipes, your plan and check-in answers, what you tell the app about being sick or in pain, and the foods you avoid are health data.",
+        "purpose": "We use your health data to make your weekly calls and show your progress, and for nothing else. We never sell it or use it for ads. You can export or delete it at any time.",
+        "withdraw": "You can withdraw this consent in Settings: your health data is then deleted for good, with your past calls, except your training log, which isn't health data and stays. The calls stop until you allow it again.",
+        "scope": "Importing past workouts from another app also needs this consent, as they can carry your weight. Telling the app you are traveling, in a busy week or at a new gym isn't health data and needs no consent: if you withdraw, it stays, and it goes only with your account."
+      }
     },
     "apple_health": {
       "version": "1-draft",
@@ -2183,7 +2188,8 @@
       "call": "This week's call stands as it is. What changes it is new data, not a different answer.",
       "no_call": "There's no call yet. The first one comes with your first weekly check-in.",
       "daily_limit": "Today's coach answers are used up. Here's this week's call as it stands; tomorrow the coach answers your messages again.",
-      "stands": "The call stands until its next look on {date}: new data changes it, not a different answer."
+      "stands": "The call stands until its next look on {date}: new data changes it, not a different answer.",
+      "standsNoDate": "The call stands: new data changes it, not a different answer."
     },
     "topic": {
       "less": "It's fair to want it lighter.",
