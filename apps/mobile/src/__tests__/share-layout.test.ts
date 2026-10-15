@@ -42,7 +42,7 @@ test('every piece of text is drawn, in order from the top, no one over another',
   const drawn = text(items);
 
   expect(drawn.map((i) => i.text)).toEqual(
-    expect.arrayContaining(['Workout complete', 'Full body A', '52', 'minutes', '4,280', 'kg lifted', '14', 'sets', '100 kg × 8', 'squat PR', 'keel']),
+    expect.arrayContaining(['Workout complete', 'Full body A', '52', 'minutes', '4,280', 'kg lifted', '14', 'sets', '100 kg × 8', 'squat PR', 'Next Call']),
   );
   // Each box is [baseline - size, baseline]; boxes in one column never meet, and all sit inside the image.
   const boxes = drawn.map((i) => ({ x: i.x, top: i.y - i.size, bottom: i.y }));
@@ -65,7 +65,7 @@ test('the stats sit in two columns, the value above its label', () => {
 
 test('the word mark closes the sticker, at its right edge', () => {
   const { items } = layout(WORKOUT);
-  const mark = text(items).find((i) => i.text === 'keel')!;
+  const mark = text(items).find((i) => i.text === 'Next Call')!;
   expect(mark.anchor).toBe('end');
   expect(mark.x).toBeLessThanOrEqual(shareParams.storyWidth);
   expect(Math.max(...text(items).map((i) => i.y))).toBe(mark.y);

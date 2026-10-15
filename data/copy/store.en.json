@@ -1,5 +1,5 @@
 {
-  "_about": "App Store listing text, draft (K-804, ADR-061). No product name until M10; keyword choice and localisation are M10's (ASO). Scanned like en.json: U4, U6, person names, and Apple's limits below.",
+  "_about": "App Store listing text, draft (K-804, ADR-061). The listing name is Next Call (ADR-080 Ek 2), set in App Store Connect; keyword choice and localisation are M10's (ASO). Scanned like en.json: U4, U6, person names, and Apple's limits below.",
   "limits": {
     "_source": "developer.apple.com/help/app-store-connect/reference/app-information/app-information (name, subtitle) and .../platform-version-information (promotional text, description, keywords), checked 2026-10-05",
     "subtitle": 30,

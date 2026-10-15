@@ -20,6 +20,9 @@ const TEMPORARY_BUNDLE_ID = 'dev.leventtcaan.keel';
 export default ({ config }: ConfigContext): ExpoConfig =>
   ({
     ...config,
+    // ADR-080 Ek 2: the name under the icon is the product name, from the copy file (K2). The slug (keel) and the bundle id
+    // stay: they are identifiers, and the App Store listing name is set in App Store Connect, not here.
+    name: en.app.name,
     ios: {
       ...config.ios,
       bundleIdentifier: process.env.KEEL_IOS_BUNDLE_ID ?? TEMPORARY_BUNDLE_ID,

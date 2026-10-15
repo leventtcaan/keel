@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "keel"
+    "name": "Next Call"
   },
   "welcome": {
     "headline": "Stop guessing in the gym.",
@@ -2499,7 +2499,7 @@
     "reminders": {
       "title": "Reminders, if you want them",
       "on": "Reminders are on. You can change them in Settings at any time.",
-      "refused": "Notifications are off for keel in iOS. Only iOS Settings can turn them on now.",
+      "refused": "Notifications are off for Next Call in iOS. Only iOS Settings can turn them on now.",
       "cueKeptOnlyOn": "Kept only if you turn reminders on."
     },
     "weights": {
@@ -2575,7 +2575,7 @@
     },
     "checkIn": {
       "title": "A new week",
-      "body": "Last week is closed. Open keel to see where it stands and set up this one."
+      "body": "Last week is closed. Open Next Call to see where it stands and set up this one."
     },
     "quiet": {
       "title": "It's been a week",
@@ -2671,7 +2671,7 @@
       "body": "It renews then unless you cancel. To cancel: Settings, then Subscription.",
       "ask": "Remind me before it ends",
       "set": "We'll remind you on {date}.",
-      "refused": "Notifications for keel are off in iOS Settings, so there's no reminder.",
+      "refused": "Notifications for Next Call are off in iOS Settings, so there's no reminder.",
       "failed": "Couldn't set the reminder. Try again in a moment."
     },
     "failed": "The App Store couldn't show the plans. Try again in a moment.",
@@ -2732,7 +2732,7 @@
     "noCalls": "No weekly calls without your OK for health data, so the check-in morning reminder waits.",
     "turnOnAll": "Turn on all three",
       "on": "On",
-      "blocked": "Notifications for keel are off in iOS Settings.",
+      "blocked": "Notifications for Next Call are off in iOS Settings.",
       "openSettings": "Open iOS Settings",
       "failed": "Couldn't change reminders. Try again.",
       "cue": {
@@ -2862,8 +2862,8 @@
     }
   },
   "permissions": {
-    "healthRead": "keel reads your steps, sleep, weight, active energy and workouts to make your weekly calls. It never reads heart data, cycle data, medications, health records or location.",
-    "healthWrite": "keel adds to Apple Health only what you turn on in Settings: the workouts you finish, the weigh-ins you type. It writes nothing else.",
+    "healthRead": "Next Call reads your steps, sleep, weight, active energy and workouts to make your weekly calls. It never reads heart data, cycle data, medications, health records or location.",
+    "healthWrite": "Next Call adds to Apple Health only what you turn on in Settings: the workouts you finish, the weigh-ins you type. It writes nothing else.",
     "camera": "To read the barcode on a food pack, to take a photo of a meal you want to log, to take your progress photos, or to take a photo to put behind a share sticker. Progress photos and share sticker photos stay on this phone. No video or sound is recorded.",
     "photos": "To choose a photo of a meal you want to log, a progress photo, or a photo or video to put behind a share sticker. Only the photo or video you pick is used."
   },
@@ -2896,7 +2896,7 @@
     "take": "Take photos",
     "compare": "Compare",
     "delete": "Delete all photos",
-    "deleteBody": "This deletes every progress photo keel keeps on this phone. keel has no other copy.",
+    "deleteBody": "This deletes every progress photo Next Call keeps on this phone. Next Call has no other copy.",
     "deleteConfirm": "Delete photos",
     "deleteKeep": "Keep them",
     "deleteFailed": "Couldn't delete the photos. Try again."
@@ -2918,7 +2918,7 @@
     "shutter": "Take photo",
     "library": "Choose from library",
     "allow": "Allow camera",
-    "denied": "The camera is off for keel. Turn it on in iOS Settings, or choose a photo from your library.",
+    "denied": "The camera is off for Next Call. Turn it on in iOS Settings, or choose a photo from your library.",
     "failed": "Couldn't keep that photo on this phone. Try again.",
     "close": "Close"
   },
