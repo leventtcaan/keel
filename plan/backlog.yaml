@@ -3377,7 +3377,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-807]
     why: "Apple Sufficient Contrast metin dışı öğeler için 3:1 öneriyor; alan kutusu 1.12, çip kenarı 1.27-1.34, seçili hareket satırı 1.12 (K-807 inceleme). Görsel dil belirteci (ADR-016) → Levent onayı"
     acceptance:
@@ -4135,7 +4135,7 @@ tasks:
     module: product
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-903]
     why: "8 hafta beklemeden öğrenmek"
     acceptance:
@@ -4185,7 +4185,7 @@ tasks:
     module: backend
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-901]
     why: "K-901 güvenlik incelemesi I2: Spring web sunucusu ApplicationRunner'lardan önce açılır; /health 200 derken içe aktarma sürüyor olabilir, sonra çökerse release.sh bunu ancak 30 sn içinde görür"
     acceptance:
@@ -4219,7 +4219,7 @@ tasks:
     module: infra
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-812]
     why: "K-812 incelemesi: /v1/account/apple-revocation her istekte ES256 imzası + Apple'a iki çağrı; hesap başına sınır yok, Apple'ın sınırı belgelenmemiş. RATE_LIMITED kodu tanımlı ama kullanılmıyor"
     acceptance:

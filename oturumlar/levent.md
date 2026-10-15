@@ -240,3 +240,10 @@
 - takıldım: kart kabulüne yazdığım 'her hücre adlandırılır' bugünkü bilinçli kararla çelişti (geri alındı); #595'in ilk hali imkânsız fikstürle no-op'tu; #596 çift dokunuş testi korumayı kanıtlamıyordu (mutasyonla bulundu); #599 DB testi yalnız CI'da kırmızı yandı; disk 3,2 GB'a indi (jest önbelleği temizlendi)
 - sıradaki: Levent K-983 → K-984 TestFlight + cihaz turu → M9 Part 3 (K-904, `M9-part3.md`)
 - AI: bütün kod, test, inceleme agent (Opus düzenleyici + ~20 Sonnet uygulayıcı/inceleme ajanı); Levent 9 ürün sorusunu cevapladı
+
+## 2026-10-15/16 · YAYIN Oturum 1 (yayın öncesi kod) — ADR-080 ile yeniden planlandı; Opus düzenleyici, Sonnet ajanlar
+- yaptım: ADR-080 (en hızlı temiz yayın: sessiz mağaza yayını, beta 2 hafta paralel, K-805 M10'a, klipler/AI/pazarlama M11) + backlog/yol haritası/kilometre taşları; 5 PR: #602 /health hazır olma, #603 öncü göstergeler (ADR-081), #604 hız sınırı (ADR-082), #605 RevenueCat REST (V50), #606 kontrast 3:1
+- karar: Levent — en hızlı yayın, klipler sonra; öncü göstergeler için rıza amacına toplam sayım eklendi (sürüm 5 kalır); kontrast onaylı. Agent — ADR-081, ADR-082, ADR-056 Ek 3, ADR-065 Ek 2
+- takıldım: iki ajan aynı ADR numarasını aldı (082'ye taşındı); ajanlar yerelde Docker/Postgres koştu, disk 3 GB'a indi (durduruldu, volume temizlendi); RevenueCat kuralı üç inceleme turunda oturdu (kilitlenme → iadeden sonra açılma → gecikmeli webhook düşmesi)
+- sıradaki: Levent K-983 + RevenueCat anahtarı → YAYIN Oturum 2 (K-984); K-1001 ad + K-805 → Oturum 3
+- AI: bütün kod, test, inceleme agent (Opus düzenleyici + ~15 Sonnet uygulayıcı/inceleme ajanı); Levent 2 karar verdi

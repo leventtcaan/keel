@@ -8,9 +8,10 @@
 2. **K-1001** ürün adı (+ marka kontrolü: USPTO/EUIPO/TÜRKPATENT, App Store araması). Mağaza metni, ekran görüntüleri buna bağlı.
 3. **K-805** mali müşavir (W-8BEN, GVK 20/B) → ASC › Agreements, Tax, and Banking: Paid Applications Agreement + vergi + banka.
 4. **K-904** dış TestFlight grubu: birkaç kişi (kayıt tutan, salona giden), e-postalar TestFlight'a.
-5. (İsteğe bağlı) **K-976** Facebook App ID → EAS ortam değişkeni `EXPO_PUBLIC_FACEBOOK_APP_ID`.
+5. **RevenueCat gizli API anahtarı** → VPS ortam değişkeni `KEEL_REVENUECAT_API_KEY` (`deploy/env.example`, init-env.sh).
+6. (İsteğe bağlı) **K-976** Facebook App ID → EAS ortam değişkeni `EXPO_PUBLIC_FACEBOOK_APP_ID`.
 
-## Oturum 1 · Yayın öncesi kod (şimdi başlayabilir, K-983'ü beklemez)
+## Oturum 1 · Yayın öncesi kod — ✅ BİTTİ (16 Eki, #602-#606)
 ```
 oturum-baslat. Toplu mod. Yayın öncesi kod (ADR-080): plan/oturum-promptlari/YAYIN.md › Oturum 1.
 Kartlar (M9): K-905 öncü göstergeler (sağlık verisiz, kendi sunucumuzda, olay şeması ADR; yayın günü ölçer), K-908 /health hazır olmayı söyler,

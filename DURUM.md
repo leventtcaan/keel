@@ -5,7 +5,19 @@ guncelleme: 2026-10-10
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (15 Eki gece — ADR-080: en hızlı temiz yayın)
+## ▶ DEVAM NOKTASI (16 Eki — YAYIN Oturum 1 BİTTİ: yayın öncesi kod)
+**Oturum 1 ÇIKIŞ (main `6b6946d6`, anayasa denetimi passed):** #602 K-908 `/health` 503 → 200 (release.sh bekler) · #603 K-905 öncü göstergeler
+(mevcut tablolardan, `ssh keel-vps /opt/keel/deploy/weekly-report.sh`; 5 kişiden küçük grupta oran yok; ADR-081; rıza amacı ve politika güncellendi, sürüm 5) ·
+#604 K-817 hız sınırı (hesap/adres ayrı tablo, dolunca en erken dolan atılır; `edge` ağı 172.30.250.0/24 sabit; ADR-082) · #605 K-704 RevenueCat REST tazeleme
+(webhook'tan 300 sn sonra iki yönde söz sahibi, `answered_at` V50; TRANSFER alıcısı; hesap silinince müşteri kaydı da silinir, anahtar yokken üretimde bekler) ·
+#606 K-816 metin dışı kontrast 3:1 (`edge` belirteci; Levent onayladı). İncelemeler: release testi boş geçiyordu, öncü göstergelerde küçük grup = tek kişi,
+hız sınırında dolunca sayımsız geçiş + alt ağ, RevenueCat'te ödeyen kullanıcı kilitlenmesi + iadeden sonra geri açılma + gecikmeli webhook düşmesi → hepsi düzeldi.
+**Sıradaki:** YAYIN Oturum 2 (K-984 TestFlight + cihaz turu) — K-983'ten sonra; Oturum 3 (mağazaya çıkış) — K-1001 ad + K-805 vergi/banka.
+**Levent'i bekleyen:** K-983 ASC deneme · K-1001 ürün adı · K-805 mali müşavir + ASC vergi/banka · dış TestFlight grubu (K-904) · **RevenueCat gizli API anahtarı
+VPS'te `KEEL_REVENUECAT_API_KEY`** (yokken silinen hesapların RevenueCat kaydı bekler, her 5 dk bir hata satırı) · (isteğe bağlı) K-976 App ID.
+**Not:** ilk yayında `edge` ağı yeniden yaratılır (kısa kesinti, ADR-082 #7); privacy.md silme paragrafına RevenueCat müşteri kaydı silme cümlesi K-1033'te (anahtar canlı olunca).
+
+## (önceki) DEVAM NOKTASI (15 Eki gece — ADR-080: en hızlı temiz yayın)
 **Plan:** `plan/oturum-promptlari/YAYIN.md` — Oturum 1 yayın öncesi kod (şimdi başlayabilir) · Oturum 2 K-984 TestFlight + cihaz turu (K-983'ten sonra) ·
 Oturum 3 mağazaya çıkış (K-1001 ad + K-805 vergi/banka hazır olunca). Önce sessiz yayın; pazarlama ve klipler/AI/Live Activity M11 (güncellemeler).
 **Levent'i bekleyen:** K-983 ASC deneme · K-1001 ürün adı · K-805 mali müşavir + ASC vergi/banka · dış TestFlight grubu (K-904) · (isteğe bağlı) K-976 App ID.
