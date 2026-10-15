@@ -18,9 +18,9 @@ milestones:
   - {id: M7, title: "Abonelik", goal: "Satın alma, yetki, kota"}
   - {id: M8, title: "Uyum ve yasal", goal: "Yasal metinler, silme, App Store uyumu"}
   - {id: M9a, title: "Yeni yüz", goal: "Faz 5 prototipinin (ADR-069..078) koda geçmesi: 3 sekme + '+', yeni onboarding, oturum, paylaşım, karar, ilerleme; cihazda gezildi. Listede M9'dan önce: beta kohortu (K-904) buna bağlı"}
-  - {id: M9, title: "Beta", goal: "Dağıtım, TestFlight, başvurulu kohort, öncü göstergeler"}
-  - {id: M10, title: "Lansman", goal: "İsim, ASO, mağaza, lansman günü"}
-  - {id: M11, title: "Lansman sonrası", goal: "Maliyeti görünsün diye listede duran, ilk yayında olmayan işler"}
+  - {id: M9, title: "Yayın öncesi", goal: "Dağıtım, TestFlight, 2 haftalık dış beta, öncü göstergeler, yayın sertliği (ADR-080)"}
+  - {id: M10, title: "Mağazaya çıkış", goal: "İsim, vergi + banka, EN-US ASO, ekran görüntüleri, mağaza başvurusu: sessiz yayın (ADR-080)"}
+  - {id: M11, title: "Yayın sonrası: pazarlama + güncellemeler", goal: "Pazarlama lansmanı (Featuring, Product Hunt, CPP, yerelleştirme), hareket klipleri, AI katmanı ve ilk yayında olmayan işler (ADR-080)"}
 
 tasks:
 
@@ -1756,7 +1756,7 @@ tasks:
       - "SVG vurgulama"
   - id: K-419
     title: "Hareket kliplerini çek ve denetle"
-    milestone: M4
+    milestone: M11
     module: design
     type: human
     size: L
@@ -1775,7 +1775,7 @@ tasks:
 
   - id: K-425
     title: "Hareket kliplerini oynat (ilk tekrar / son tekrar yan yana)"
-    milestone: M4
+    milestone: M11
     module: mobile
     type: feature
     size: S
@@ -1793,7 +1793,7 @@ tasks:
 
   - id: K-426
     title: "Dinlenme sayacı kilit ekranında: Live Activity"
-    milestone: M4
+    milestone: M11
     module: mobile
     type: feature
     size: M
@@ -1941,7 +1941,7 @@ tasks:
 
   - id: K-313
     title: "Onboarding: referans görünüş adımı"
-    milestone: M4
+    milestone: M11
     module: mobile
     type: feature
     size: S
@@ -2165,7 +2165,7 @@ tasks:
 
   - id: K-510
     title: "Spike: Apple Foundation Models cihaz üstü katman"
-    milestone: M5
+    milestone: M11
     module: mobile
     type: spike
     size: M
@@ -2260,7 +2260,7 @@ tasks:
       - "Şema doğrulama"
   - id: K-515
     title: "Kilit ekranı karar widget'ı ve App Intents spike"
-    milestone: M5
+    milestone: M11
     module: mobile
     type: feature
     size: M
@@ -2578,7 +2578,7 @@ tasks:
 
   - id: K-533
     title: "Sağlayıcı gerçek ölçümü: 54 itiraz + öğün seti, üç aday (yayına çıkarken)"
-    milestone: M10
+    milestone: M11
     module: coach
     type: spike
     size: S
@@ -3015,7 +3015,7 @@ tasks:
 
   - id: K-704
     title: "subscription: RevenueCat REST tazelemesi (webhook sonrası, TRANSFER alıcısı)"
-    milestone: M7
+    milestone: M9
     module: subscription
     type: feature
     size: S
@@ -3172,7 +3172,7 @@ tasks:
 
   - id: K-805
     title: "Vergi ve hesap: W-8BEN, GVK 20/B, ödeme akışı"
-    milestone: M11  # ADR-059 #5: satıştan sonra
+    milestone: M10
     module: legal
     type: human
     size: S
@@ -3354,7 +3354,7 @@ tasks:
 
   - id: K-815
     title: "Erişilebilirlik cihaz turu: Dynamic Type en büyük boyut + VoiceOver ile ortak görevler"
-    milestone: M9
+    milestone: M9a
     module: mobile
     type: test
     size: M
@@ -4053,6 +4053,7 @@ tasks:
     acceptance:
       - "Anayasa denetimi temiz; kelime bütçeleri testte yeşil; iki temada kontrast testleri yeşil"
       - "TestFlight derlemesi; Levent akış testi senaryolarını (prototip/akis-testi.md A-D) cihazda yürütür, notları backlog'a girer"
+      - "Aynı turda K-815 erişilebilirlik turu (AX5, VoiceOver, Reduce Motion, Bold + Increase Contrast)"
     tests:
       - "tools/anayasa-denetimi.sh çıktısı, cihaz kaydı"
     refs: ["plan/kararlar/ADR-067-uiux-revizyonu-once.md", "prototip/akis-testi.md"]
@@ -4111,7 +4112,7 @@ tasks:
     learn: ["Mobil derleme ve imzalama", "TestFlight"]
 
   - id: K-904
-    title: "Beta kohortu: başvuru formu ve 8 hafta taahhüdü"
+    title: "Kısa dış TestFlight: 2 hafta, küçük grup, mağaza hazırlığıyla paralel (ADR-080)"
     milestone: M9
     module: product
     type: human
@@ -4120,8 +4121,9 @@ tasks:
     depends_on: [K-903, K-984]
     why: "Beta'yı yeni başlayan için tasarla, zaten kayıt tutan ileri kullanıcıyla test et"
     acceptance:
-      - "Başvuru formu; 8 haftalık taahhüt açıkça soruluyor"
-      - "Kohort seçildi; boyutlandırma (~%15 8. hafta kalır) hesaba katıldı"
+      - "Levent dış TestFlight grubunu seçer (küçük, kayıt tutan kullanıcılar); davet TestFlight'tan, form yok"
+      - "2 hafta; geri bildirim TestFlight'ın kendi kanalından; engelleyici bulgu → kart, yayın öncesi kapanır"
+      - "Mağaza hazırlığıyla (M10) paralel; yayını engelleyen yalnız engelleyici bulgu"
     tests:
       - "Kohort listesi"
     refs: ["arastirma/05-faz4-pazarlama.md#3.6"]
@@ -4146,7 +4148,7 @@ tasks:
 
   - id: K-906
     title: "Beta geri bildirim döngüsü"
-    milestone: M9
+    milestone: M11
     module: product
     type: human
     size: S
@@ -4195,7 +4197,7 @@ tasks:
     learn: ["Spring Boot availability (liveness/readiness)"]
   - id: K-536
     title: "Kilitten kilo girişi: parametreli Siri/Shortcuts intent'i (uygulamayı açmadan)"
-    milestone: M9
+    milestone: M11
     module: mobile
     type: feature
     size: M
@@ -4230,6 +4232,24 @@ tasks:
       - "Hız sınırlama (token bucket)"
 
 # ───────────────────────────── M10 · Lansman ─────────────────────────────
+  - id: K-1033
+    title: "Mağaza başvurusu: ASC beyanları, SANDBOX kapanır, AI kapalı ekranlar dürüst, App Review ve sessiz yayın"
+    milestone: M10
+    module: product
+    type: chore
+    size: M
+    status: todo
+    depends_on: [K-984, K-1001, K-1002, K-1003, K-805]
+    why: "ADR-080: önce sessiz mağaza yayını. Gizlilik etiketi, yaş, erişilebilirlik beyanları docs/yasal/app-store-beyanlari.md'de; SANDBOX yalnız beta boyunca (ADR-056 #4); yayında AI sağlayıcı yok"
+    acceptance:
+      - "ASC: gizlilik etiketi, yaş derecelendirmesi, erişilebilirlik beyanları app-store-beyanlari.md ile birebir (agent hazırlar, Levent girer)"
+      - "Üretim ortamında SANDBOX kabulü kapalı; RevenueCat üretim anahtarları ortam değişkeninde (V5)"
+      - "AI'a bağlı yüzeyler (koç serbest metin, öğün fotoğraf analizi) sağlayıcı yokken çökmez ve dürüst durum gösterir; test"
+      - "Review notları (demo hesap yolu, sağlık feragatnamesi, abonelik) hazır; gönderim ve 'Release' Levent'te (mağaza yayını, ADR-019)"
+    tests: ["Anayasa denetimi, ortam testi, jest AI kapalı yüzeyler"]
+    refs: ["plan/kararlar/ADR-080-en-hizli-temiz-yayin.md", "docs/yasal/app-store-beyanlari.md", "plan/kararlar/ADR-056-yetki-sunucuda.md"]
+    learn: ["App Review süreci"]
+
   - id: K-1001
     title: "Ürün adı ve marka kontrolü"
     milestone: M10
@@ -4258,7 +4278,7 @@ tasks:
     why: "Sıfır bütçeyle en yüksek getirili kanal"
     acceptance:
       - "Başlık/alt başlık/100 karakter keyword kurallara uygun; AI yalnız gizli keyword alanında"
-      - "EN-US + EN-UK + ES-MX metadata"
+      - "Yayında yalnız EN-US (ADR-080); EN-UK + ES-MX M11'de"
       - "IAP ürün adları da keyword taşıyor"
     tests:
       - "Apple Search Ads hacim verisiyle kontrol"
@@ -4284,7 +4304,7 @@ tasks:
 
   - id: K-1004
     title: "Custom Product Pages"
-    milestone: M10
+    milestone: M11
     module: aso
     type: docs
     size: S
@@ -4300,7 +4320,7 @@ tasks:
 
   - id: K-1005
     title: "Featuring başvurusu"
-    milestone: M10
+    milestone: M11
     module: aso
     type: human
     size: S
@@ -4333,7 +4353,7 @@ tasks:
 
   - id: K-1007
     title: "Lansman günü: Product Hunt + Show HN aynı 48 saat"
-    milestone: M10
+    milestone: M11
     module: product
     type: human
     size: S

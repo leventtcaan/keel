@@ -71,9 +71,9 @@ tetikleyiciler · ilk 8 hafta akışı + 5. hafta risk skoru · kilit ekranı ka
 App Store gizlilik etiketleri ve yaş derecelendirmesi · yasaklı ifade taraması testte · vergi/W-8BEN (Levent, mali müşavir).
 **Öğrenme:** GDPR, App Review kuralları, sağlık iddia sınırları.
 
-## M9 · Beta
-**Çıkış:** VPS'te Docker Compose + HTTPS + yedek · TestFlight · başvurulu beta kohortu (zaten kayıt tutan ileri kullanıcı) ·
-öncü göstergeler (ilk değere kadar süre, 2. hafta retention, "plan değişti" anını gören %) · geri bildirim döngüsü.
+## M9 · Yayın öncesi (ADR-080)
+**Çıkış:** VPS'te Docker Compose + HTTPS + yedek · TestFlight · 2 haftalık dış TestFlight (küçük grup, mağaza hazırlığıyla paralel) ·
+öncü göstergeler yayın gününden ölçer · hız sınırı, `/health` hazır olma, metin dışı kontrast, RevenueCat tazeleme.
 **Öğrenme:** Docker, dağıtım, gözlemlenebilirlik, ürün metrikleri.
 
 ## M9 ara · UI/UX revizyonu (ADR-067, ADR-068, ADR-069)
@@ -84,13 +84,14 @@ uygulamada metin azaldı · revizyon koda geçti ve TestFlight'ta cihazda gezild
 **Durum (7 Eki):** araştırma, prototip (tur 3 onaylı) ve kararlar bitti (ADR-070..078). Kod kilometre taşı **M9a · Yeni yüz**
 (`plan/backlog.yaml`, K-951..K-984 + K-910; kurallar `plan/yeni-yuz-kurallar.md`; dört part `plan/oturum-promptlari/YENI-YUZ-kod.md`). K-904 (beta kohortu) K-984'e bağlı.
 
-## M10 · Lansman
-**Çıkış:** ürün adı + marka kontrolü · ASO (başlık/alt başlık/keyword, 3 yerelleştirme hilesi) · ilk 2 ekran görüntüsü mesajı
-taşıyor · LLM'in çıkarabileceği açıklama (GEO) · Custom Product Pages · Featuring başvurusu (≥3 hafta önce) · yorum cevap
-rutini · Product Hunt + Show HN aynı 48 saat. **Ocak'ta lansman yok** (`arastirma/05-faz4-pazarlama.md` §1).
+## M10 · Mağazaya çıkış (sessiz yayın, ADR-080)
+**Çıkış:** ürün adı + marka kontrolü · vergi + banka (Paid Applications Agreement) · EN-US ASO · ekran görüntüleri + açıklama ·
+puan isteği değer anında · ASC beyanları, SANDBOX kapalı, AI kapalı yüzeyler dürüst · App Review → uygulama mağazada, reklam/itiş yok.
 
-## M11 · Lansman sonrası
-Maliyeti görünsün diye listede duran, ilk yayında olmayan işler: Apple Watch uygulaması (Swift).
+## M11 · Yayın sonrası: pazarlama + güncellemeler (ADR-080)
+Pazarlama lansmanı ayrı planla, ilk gerçek kullanım verisiyle: Featuring (≥3 hafta önce), Product Hunt + Show HN aynı 48 saat,
+Custom Product Pages, EN-UK + ES-MX yerelleştirme, yorum cevap rutini (**Ocak'ta pazarlama itişi yok**, `arastirma/05-faz4-pazarlama.md` §1).
+Güncellemelerle: hareket klipleri, Live Activity, kilit ekranı, Siri ile kilo, AI sağlayıcı + koç AI katmanı, Apple Watch, videoya gömme.
 
 > Not: `arastirma/ham/K1-lansman-otopsileri.md` "MVP = karar mantığı, kalanı v2" önerir; bu öneri **reddedildi**
 > (Levent, 9 Eyl: MVP diye kısma yok).
