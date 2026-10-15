@@ -3950,7 +3950,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: doing
+    status: done
     depends_on: [K-953, K-965, K-974, K-1016, K-1017, K-1018, K-1022]
     why: "ADR-078: Levent 'en kötü ekran'; ilk gün eyleme dönük, sonra tek cümle sonuç"
     acceptance:
@@ -5004,7 +5004,7 @@ tasks:
     module: mobile
     type: fix
     size: S
-    status: todo
+    status: done
     depends_on: []
     why: "Tur 4 (15 Eki) B6/B16/B20: Button size='sm' 35-38 pt ('I'm back', hero 'Settings', Settings 'Save'); B22 Share dokunuşu ~4 sn sessiz; B25 SHARE ekranında görünür çıkış yok"
     acceptance:
@@ -5020,7 +5020,7 @@ tasks:
     module: mobile
     type: fix
     size: S
-    status: todo
+    status: done
     depends_on: []
     why: "Tur 4 B1: 25 hareketli kullanıcıda Strength kartı ~2 ekran çip, grafik görünmüyor; B2: Consistency ızgarasında kaçan hafta hücresinin açıklaması yok; B4: rızasız baseline'da Pull-up '0 kg × 6'; B5: rızasız hero 'Tap one to log it' tek kutuya"
     acceptance:
@@ -5038,7 +5038,7 @@ tasks:
     module: mobile
     type: fix
     size: S
-    status: todo
+    status: done
     depends_on: []
     why: "Tur 4 B9: Recent '+' öğünü sessizce kaydedip sayfayı kapatıyor, geri alma yok (diğer kayıtlar 'Saved' + Undo); B10: '1 1 medium'; B13: kardiyo kaydı sonrası Home This week 'Cardio, 30 min' satırı değişmiyor (ProgramCardio.loggedToday/loggedDays sunucuda var)"
     acceptance:
@@ -5055,7 +5055,7 @@ tasks:
     module: decision
     type: fix
     size: S
-    status: todo
+    status: done
     depends_on: []
     why: "Tur 4 B14 (Tur 3'ten kalan): 8 gün kayıtsız dönüşte check-in 'How did training go this week? Getting weaker' soruyor; B15: return-8d hero 'Tuesday', çağrı bugün (nextCallOn Thu); B29: Pull-up'ta ısınma; '0 of 9 exercises' ama şeritte 8 parça; B28: gün eklendikten sonra Train bandı hâlâ 'Add one training day.'"
     acceptance:
@@ -5066,6 +5066,22 @@ tasks:
     tests: ["Tablo/API testi (CI) gerekiyorsa; jest: hero etiketi, ısınma, sayaç"]
     refs: ["plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md", "prototip/kullanici-testi.md"]
     learn: ["Veri yokken soru sormamak (U3)"]
+
+  - id: K-1031
+    title: "Dönüş haftasında antrenman sorusu: seans yokken ne sorulur, kalori kararı ne kadar bekler"
+    milestone: M9a
+    module: decision
+    type: human
+    size: S
+    status: todo
+    depends_on: []
+    why: "Tur 4 B14 (Tur 3'ten kalan): 8 gün kayıtsız dönüşte check-in 'How did training go this week? Getting weaker' soruyor. #595'te denenen 'seans yoksa sorma' geri alındı: kesimde kalori kararı antrenman cevabına bağlı (G7 K-98), soru kalkınca hafta 'henüz karar yok' ile harcanıyor, başka yerde çalışıp kaydetmeyen kullanıcı cevap veremiyor"
+    acceptance:
+      - "Levent seçer: (a) soruya 'Haven't trained' seçeneği, motor bunu antrenman yok bilgisi olarak okur · (b) soru sorulmaz, motor kendi bekleme kuralı ve metniyle yazar · (c) böyle kalır; kalori kararının en çok kaç hafta bekleyeceği"
+      - "Seçimden sonra ADR-077 eki + motor/sözleşme kartı (kaynak G7 K-98, U3, U2)"
+    tests: ["Karar sonrası kartta"]
+    refs: ["plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md", "arastirma/ham/guray/G7-whisper-arsiv.md"]
+    learn: ["Veri yokluğu ile olumsuz veri ayrımı"]
 
   - id: K-1010
     title: "Sunucudaki ek siteler: Caddy /opt/sites altındaki *.caddy dosyalarını içeri alır"

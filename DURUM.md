@@ -938,15 +938,19 @@ K-1014 · K-1013 iki PR'a bölündü (A karar/Bu hafta, B oturum/Edit).
 | K-1025 son yenenler | ✅ | #576 · #580 | 'Recent', `quick_recent_max` |
 | K-982 Ayarlar | ✅ | #569 | Health yazma rızadan bağımsız; Units Appearance içinde |
 | K-980 Kayıt ekranları | ✅ | #570 · #572 | takeBack; çevrimdışı Undo yok (ADR-018 Ek 2); IMPORT ön dolum yok |
-| K-979 İlerleme | 🔍 | #571 ✅ · #577 (auto-merge) · kardiyo kutusu PR'ı | ADR-078 Ek 2/3; `progress.json` |
+| K-979 İlerleme | ✅ | #571 · #577 · #583 | ADR-078 Ek 2/3; `progress.json`; Cardio kutusu → `/cardio` |
 | K-981 Dönüş + Life | ✅ | #578 | her durumda 'Not now'; ADR-077 Ek 10; K-1026 #579 (Ek 11) |
 | K-975 Paylaşım A | ✅ | #573 · #575 | ADR-054 kartı kalktı; panel cihazda bakılacak |
-| K-976 Paylaşım B | ✔ birleşmeye hazır | #582 | lazy require + koruma testi (`virtual` mock); doğrulama PASS |
+| K-976 Paylaşım B | ✅ kod | #582 | lazy require + koruma testi (`virtual` mock); App ID Levent'te (yokken sistem sayfası) |
 | K-977 Paylaşım C | ↪ M11 | | Levent 14 Eki |
 | K-910 Kalın Metin | 🛠 cihaz | #581 ✅ (Refs) | `useBoldText` + gizli kopya; cihazda doğrulama Tur 4/K-984 |
 | Tur 4 yürüyüşü | ✅ | | 23 senaryo; engelleyici yok; 3 önemli + 26 küçük → K-1027..K-1030 |
-| K-1027..K-1030 Tur 4 düzeltmeleri | ⏳ | #589 dal (WIP) | K-1028/29/30 başlamadı |
-| K-984 TestFlight + cihaz turu | ⏳ | | K-983 (Levent) bekler |
+| K-1027 küçük düğme 44 pt + Share geri/busy | ✅ | #593 | ölçülen hitSlop; MoveRow aralığı space.sm |
+| K-1028 İlerleme Strength tek satır, bodyweight, rızasız hero | ✅ | #594 | B2 (kaçan hafta açıklaması) geri alındı → Levent |
+| K-1029 öğün Undo, porsiyon yazımı, kardiyo satırı | ✅ | #596 | kayıttan sonra sayfa gizlenir; çift dokunuş testi mutasyonla kanıtlı |
+| K-1030 hero 'Today', nokta satırları | ✅ | #595 | B14 sunucu değişikliği geri alındı → K-1031 (Levent); B28, Pull-up ısınma ertelendi |
+| K-1031 dönüş haftası antrenman sorusu | ⏳ Levent | | seçenekler kartta |
+| K-984 TestFlight + cihaz turu | ⏳ | | otomatik satır ✅ (anayasa denetimi passed; budget + copy-budget + contrast 199 test yeşil, main `6136e36f`); derleme + cihaz turu Levent |
 
 ## M9 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M9.md`. Part prompt'ları `M9-part1.md`, `M9-part2.md`, `M9-part3.md`.
