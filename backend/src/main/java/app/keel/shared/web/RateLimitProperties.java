@@ -7,11 +7,12 @@ import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * keel.rate-limit (K-817, K2): the memory bound, how often idle clients are swept out, and for every group its rule. A
- * missing group or a number that limits nothing stops the server at start.
+ * keel.rate-limit (K-817, K2): the memory bound of each table (accounts and addresses are kept apart, so a flood of
+ * addresses on a route anyone can call cannot make room in the table that guards what costs money), and for every
+ * group its rule. A missing group or a number that limits nothing stops the server at start.
  */
 @ConfigurationProperties("keel.rate-limit")
-public record RateLimitProperties(int maxKeys, Duration sweepEvery, Map<RateLimitGroup, Rule> groups) {
+public record RateLimitProperties(int maxAccountKeys, int maxAddressKeys, Map<RateLimitGroup, Rule> groups) {
 
     /** A client may make {@code burst} requests at once and then one more every {@code refillEvery}. */
     public record Rule(int burst, Duration refillEvery) {
@@ -27,11 +28,8 @@ public record RateLimitProperties(int maxKeys, Duration sweepEvery, Map<RateLimi
     }
 
     public RateLimitProperties {
-        if (maxKeys < 1) {
-            throw new IllegalArgumentException("keel.rate-limit.max-keys must be at least 1");
-        }
-        if (sweepEvery == null || sweepEvery.isNegative() || sweepEvery.isZero()) {
-            throw new IllegalArgumentException("keel.rate-limit.sweep-every must be longer than 0");
+        if (maxAccountKeys < 1 || maxAddressKeys < 1) {
+            throw new IllegalArgumentException("keel.rate-limit.max-account-keys and max-address-keys must be at least 1");
         }
         Map<RateLimitGroup, Rule> all = new EnumMap<>(RateLimitGroup.class);
         if (groups != null) {

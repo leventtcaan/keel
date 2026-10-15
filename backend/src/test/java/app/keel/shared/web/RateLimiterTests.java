@@ -42,7 +42,7 @@ class RateLimiterTests {
     }
 
     private final Moving clock = new Moving();
-    private final RateLimiter limiter = new RateLimiter(clock, 1000, Duration.ofMinutes(1));
+    private final RateLimiter limiter = new RateLimiter(clock, 1000);
 
     private void spendTheBurst(RateLimiter on, String key) {
         for (int i = 0; i < 3; i++) {
@@ -140,24 +140,49 @@ class RateLimiterTests {
     }
 
     @Test
-    void memoryIsBoundedWhenMoreClientsThanTheLimitAreActive() {
-        RateLimiter small = new RateLimiter(clock, 5, Duration.ofMinutes(1));
+    void whenTheTableIsFullANewClientIsStillCountedNeverLetThroughFree() {
+        RateLimiter small = new RateLimiter(clock, 5);
         for (int i = 0; i < 100; i++) {
             small.tryAcquire("client-" + i, BURST_OF_3);
         }
+        assertThat(small.size()).isEqualTo(5);
 
+        // A client that arrives at a full table has its burst and then waits, like any other: the bound costs memory, not the limit.
+        spendTheBurst(small, "client-new");
+        assertThat(small.tryAcquire("client-new", BURST_OF_3).allowed()).isFalse();
         assertThat(small.size()).isEqualTo(5);
-        // Past the bound a new client is let through uncounted (memory over accuracy); a client already counted is still limited.
-        assertThat(small.tryAcquire("client-new", BURST_OF_3).allowed()).isTrue();
-        assertThat(small.size()).isEqualTo(5);
-        small.tryAcquire("client-0", BURST_OF_3);
-        small.tryAcquire("client-0", BURST_OF_3);
-        assertThat(small.tryAcquire("client-0", BURST_OF_3).allowed()).isFalse();
+    }
+
+    @Test
+    void whenTheTableIsFullTheClientCloserToBeingForgottenGoesFirst() {
+        RateLimiter small = new RateLimiter(clock, 2);
+        small.tryAcquire("light", BURST_OF_3);
+        clock.pass(Duration.ofMillis(1));
+        spendTheBurst(small, "heavy");
+
+        small.tryAcquire("newcomer", BURST_OF_3);
+
+        // light would have been full again first, so it loses its place (a fresh burst is all that costs); heavy keeps its count.
+        assertThat(small.size()).isEqualTo(2);
+        assertThat(small.tryAcquire("heavy", BURST_OF_3).allowed()).isFalse();
+    }
+
+    @Test
+    void manyClientsPastTheBoundAreHandledWithoutScanningTheTable() {
+        RateLimiter small = new RateLimiter(clock, 1000);
+        long started = System.nanoTime();
+        for (int i = 0; i < 200_000; i++) {
+            small.tryAcquire("client-" + i, BURST_OF_3);
+        }
+
+        assertThat(small.size()).isEqualTo(1000);
+        // A scan of 1000 keys on every new key would be 200 million steps under the lock; this is a few hundred thousand.
+        assertThat(Duration.ofNanos(System.nanoTime() - started)).isLessThan(Duration.ofSeconds(20));
     }
 
     @Test
     void roomComesBackWhenIdleClientsAreSweptOut() {
-        RateLimiter small = new RateLimiter(clock, 2, Duration.ofMinutes(1));
+        RateLimiter small = new RateLimiter(clock, 2);
         small.tryAcquire("a", BURST_OF_3);
         small.tryAcquire("b", BURST_OF_3);
 

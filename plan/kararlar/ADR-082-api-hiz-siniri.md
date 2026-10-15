@@ -22,10 +22,14 @@ hesabın spam'ini durdurmaz.
 3. **Sayılar yapılandırmada** (`keel.rate-limit`, `application.yml`, K2); eksik grup ya da 0 sayı sunucuyu başlatmaz:
    `sign-in` 20 / 30 sn (saatte ~120: kurulum başına bir giriş; paylaşılan adres, ör. operatör NAT'ı, birkaç düzine kullanıcıyı
    aynı anda görebilir) · `apple-revocation` 3 / 1 dk (silme başına bir; kapanan Apple sayfası bir iki yeniden dener) · `coach` 10 /
-   20 sn · `meal-photo` 5 / 30 sn (günlük kotaların altında kalır, yalnız döngüyü durdurur). `max-keys` 100000 (~10 MB), `sweep-every` 1 dk.
-4. **Bellek sınırlı:** bucket'ı yeniden dolmuş (an geçmiş) istemci hiç görülmemiş gibidir; `sweep-every`'de silinir. Tablo `max-keys`'e
-   ulaşırsa (hepsi hâlâ bekleyen istemci) yeni istemci **sayılmadan geçer**: bellek, taşkını tam saymaktan önemlidir; sayılanlar
-   sınırlı kalır.
+   20 sn · `meal-photo` 5 / 30 sn (günlük kotaların altında kalır, yalnız döngüyü durdurur). `max-account-keys` 50000, `max-address-keys` 10000.
+4. **Bellek sınırlı, sınır asla sayımsız geçirmez:** iki ayrı tablo: hesap anahtarlı (para harcayan gruplar) ve adres anahtarlı (giriş;
+   herkesin doldurabileceği, bu yüzden küçük olan). Oturumsuz bir adres seli hesap tablosuna dokunamaz: koç, yemek fotoğrafı ve iptal
+   sınırı o selde de işler. Tablo dolunca yeni istemci **sayılır**: bucket'ı en erken dolacak istemci (unutulmaya en yakın, en az
+   kaybeden) yerini bırakır ve sonraki isteği taze burst ile başlar. (İlk taslakta dolu tabloda yeni istemci sayılmadan geçiyordu;
+   inceleme bunu seli parayla ödenen uçlara açık bir delik buldu, tasarım değişti.) Yeniden dolmuş bucket'lar sıranın başındadır ve
+   her istekte baştan atılır: tarama yok, zamanlayıcı yok; iki adım da O(log n). Bellek: istemci başına ~300 bayt (iki harita girişi,
+   kutulanmış sayı, anahtar metni); sınırlarda ~15 MB (hesap) + ~3 MB (adres).
 5. **Yanıt:** 429, gövde sözleşmenin `Error`'ı (`RATE_LIMITED`, sabit mesaj), `Retry-After` tam saniye (yukarı yuvarlanır, en az 1).
    Sınırlayıcı yöntemden **önce** çalışır (`HandlerInterceptor`, güvenlikten sonra): reddedilen isteğin gövdesi okunmaz. Reddedilen istek
    sayacı ilerletmez.
@@ -33,10 +37,24 @@ hesabın spam'ini durdurmaz.
    anahtar loga yazılmaz (reddi `SafeLog` kodla ve türle yazar). Adres bellekte kalır, diske yazılmaz (Caddy erişim günlüğü de tutmaz).
 7. **İstemci adresi yalnız güvenilen vekilden:** `getRemoteAddr()`. `server.forward-headers-strategy: native` ile Tomcat
    (`RemoteIpValve`) bağlantının adresini `X-Forwarded-For`'dan **yalnız bağlantı** `server.tomcat.remoteip.internal-proxies`'ten
-   gelirse değiştirir; bu liste yalnız Docker köprü ağları (`172.16.0.0/12, 192.168.0.0/16`; loopback, 10/8, CGNAT, link-local dahil
-   değil). Caddy `reverse_proxy`, `trusted_proxies` verilmedikçe istemcinin gönderdiği `X-Forwarded-*` değerlerini yok sayar ve gördüğü
-   adresi yazar (Caddy belgesi, reverse_proxy › Defaults); `Caddyfile`'da `trusted_proxies` yok (`tools/test_deploy.py` korur). Uygulama
-   hiçbir başlığı kendisi okumaz. IPv6 istemci /64'ü ile sayılır (bir ev/telefon /64 alır; tek adresle saymak döndürerek aşmayı bedava yapar).
+   gelirse değiştirir; bu liste tam olarak `deploy/compose.yaml`'ın sabitlediği `edge` ağının alt ağı: `172.30.250.0/24` (ipam). Ağda
+   yalnız Caddy ve backend var; ikisinin eşleşmesini ve bu üyeliği `tools/test_deploy.py` denetler. Daha geniş bir aralık (172.16/12,
+   192.168/16: başka bir konteynerin ya da başka bir Docker ağının bağlantısı da vekil sayılırdı) bilerek yok. Uygulama hiçbir başlığı
+   kendisi okumaz. IPv6 istemci /64'ü ile sayılır (bir ev/telefon /64 alır; tek adresle saymak döndürerek aşmayı bedava yapar).
+   Alt ağ değişince compose `edge` ağını yeniden yaratır: ilk yayında `deploy.sh` kısa bir kesintiyle konteynerleri yeniden kurar.
+   **Caddy (K6):** `reverse_proxy`, `trusted_proxies` verilmedikçe gelen `X-Forwarded-*` değerlerini yok sayar ve gördüğü adresi yazar:
+   "By default, the proxy will ignore their values from incoming requests, to prevent spoofing"
+   (https://caddyserver.com/docs/caddyfile/directives/reverse_proxy#defaults; belge metni
+   https://raw.githubusercontent.com/caddyserver/website/master/src/docs/markdown/caddyfile/directives/reverse_proxy.md,
+   15 Eki 2026'da okundu). Davranış 2.5.0'dan beri (sürüm notu: "Incoming X-Forwarded-* headers will no longer be automatically
+   trusted", https://github.com/caddyserver/caddy/releases/tag/v2.5.0); `deploy/compose.yaml` Caddy 2.11.6. `Caddyfile`'da
+   `trusted_proxies` yok (`tools/test_deploy.py` korur).
+   **Bilinen risk, IPv6 ve docker-proxy:** Docker, köprü ağına IPv6 ile gelen bağlantıyı kullanıcı alanı vekiliyle (docker-proxy)
+   iletirse Caddy istemciyi köprünün geçit adresi (`172.30.250.1`) olarak görür; o durumda tüm IPv6 istemciler tek anahtara çöker
+   (giriş sınırı herkes için paylaşılır, 429 görülür) ve başlık sahteciliği değil sayım bozulur. Önlem: sunucunun alan adına AAAA kaydı
+   eklememek (yalnız IPv4) ve `daemon.json`'da ip6tables kapalı kalır. Yayında şöyle anlaşılır: sessiz mağaza yayınından önce IPv6
+   olan bir ağdan (ör. telefon verisi) giriş uç noktasına art arda 21 istek, sonra başka bir IPv6 ağından bir istek; ikincisi de 429 ise çökmüş
+   demektir. Başlangıçta uyarı günlüğü bilerek yok: başlangıçta istek ya da istemci adresi yok; kod eklemek bu riski ölçmez.
 8. **Sözleşme:** `components/responses/RateLimited` (kod `RATE_LIMITED`, `Retry-After` başlığı) ve beş işlemde `"429"`.
    Telefon: 429 bugün genel hata yoluna düşer (`load` → `failed`), sakin metin zaten orada; ek metin yok.
 
@@ -50,7 +68,6 @@ hesabın spam'ini durdurmaz.
 - **Bucket4j/Resilience4j:** gereksiz bağımlılık (yukarıda).
 - **Caddy `rate_limit` modülü:** resmî imajda yok (eklenti derlemesi gerekir), hesap başına sayamaz (oturum jetonunu çözmez).
 - **Veritabanında sayaç:** her istekte yazma; zaten pahalı uçların başına bir yazma daha, V3 yüzeyi büyür.
-- **Sınırda 429 yerine DETERMINISTIC yanıt:** kota için doğru (K-508); hız sınırı kötü kullanım içindir, hata olarak söylenmesi gerekir.
 
 ## Sonuçlar
 - Sunucu yeniden başlayınca sayaçlar sıfırlanır (kasıtlı: kısa pencereli bir koruma).
@@ -63,7 +80,7 @@ Düşük: işaretler ve yapılandırma kalkar; sözleşmeye 429 eklemek geriye u
 ## Etkilenen
 `backend/.../shared/` (`RateLimited`, `RateLimitGroup`, `RateLimitedException`), `shared/web/` (`RateLimiter`, `RateLimitInterceptor`,
 `RateLimitProperties`, `ClientAddress`, `ApiErrorHandler`), `identity/AuthController`, `privacy/AppleRevocationController`,
-`coach/CoachController`, `application.yml`, `contracts/openapi.yaml`, `deploy/Caddyfile` (yorum), `tools/test_deploy.py`.
+`coach/CoachController`, `application.yml`, `contracts/openapi.yaml`, `deploy/compose.yaml` (edge alt ağı), `deploy/Caddyfile` (yorum), `tools/test_deploy.py`.
 
 ## Doğrulama
 `RateLimiterTests` (pencere, patlama, boşta silme, bellek sınırı, saat enjekte), `RateLimitInterceptorTests` (429 + Retry-After, hesap/adres

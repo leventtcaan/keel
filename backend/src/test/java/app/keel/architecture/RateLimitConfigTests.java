@@ -42,21 +42,24 @@ class RateLimitConfigTests {
             Map<String, Object> groups = binder.bind("keel.rate-limit.groups", Bindable.mapOf(String.class, Object.class)).get();
 
             assertThat(groups.keySet()).containsExactlyInAnyOrder("sign-in", "apple-revocation", "coach", "meal-photo");
-            assertThat(binder.bind("keel.rate-limit.max-keys", Integer.class).get()).isPositive();
+            int accounts = binder.bind("keel.rate-limit.max-account-keys", Integer.class).get();
+            int addresses = binder.bind("keel.rate-limit.max-address-keys", Integer.class).get();
+            // Addresses are what anyone can fill: their table is the small one, apart from the accounts' (ADR-082).
+            assertThat(addresses).isPositive().isLessThan(accounts);
         });
     }
 
     @Test
-    void theContainerTakesTheClientAddressFromXForwardedForOnlyWhenTheProxyIsOnTheDockerNetworks() {
+    void theContainerTakesTheClientAddressFromXForwardedForOnlyWhenTheProxyIsOnTheEdgeNetwork() {
         ProductionProfileTests.server("prod").run(context -> {
             var env = context.getEnvironment();
             String trusted = env.getProperty("server.tomcat.remoteip.internal-proxies");
 
             assertThat(env.getProperty("server.forward-headers-strategy")).isEqualTo("native");
             assertThat(trusted).as("trusted proxies").isNotBlank();
-            // Docker's default address pools are all a bridge network gets; nothing wider (loopback, 10/8, link-local, CGNAT,
-            // IPv6 ranges) so a connection that is not Caddy's can never choose its address.
-            assertThat(List.of(trusted.split("\\s*,\\s*"))).containsExactlyInAnyOrder("172.16.0.0/12", "192.168.0.0/16");
+            // Exactly the subnet deploy/compose.yaml pins for the edge network (tools/test_deploy.py checks they match): nothing
+            // wider (no 172.16/12, 192.168/16, loopback, 10/8, link-local), so only Caddy's network can choose an address.
+            assertThat(List.of(trusted.split("\\s*,\\s*"))).containsExactly("172.30.250.0/24");
             assertThat(env.getProperty("server.tomcat.remoteip.remote-ip-header", "X-Forwarded-For")).isEqualTo("X-Forwarded-For");
         });
     }

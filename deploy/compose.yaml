@@ -76,7 +76,12 @@ services:
 networks:
   internal:
     internal: true
-  edge: {}
+  # The subnet is pinned: the backend trusts X-Forwarded-For from exactly this range and no other (server.tomcat.remoteip.
+  # internal-proxies in backend application.yml; tools/test_deploy.py checks they match). Caddy is the only other member.
+  edge:
+    ipam:
+      config:
+        - subnet: 172.30.250.0/24
 
 volumes:
   postgres:

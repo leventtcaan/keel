@@ -153,6 +153,17 @@ class Retention(unittest.TestCase):
         directives = [l.strip() for l in caddyfile.splitlines() if l.strip() and not l.strip().startswith("#")]
         self.assertFalse([d for d in directives if re.search(r"trusted_proxies|X-Forwarded-For|client_ip_headers", d)])
 
+    def test_the_edge_network_is_pinned_and_it_is_the_only_one_the_backend_trusts_the_client_address_from(self):
+        # K-817, ADR-082: the backend takes X-Forwarded-For only from a connection inside server.tomcat.remoteip.internal-proxies;
+        # that must be exactly the edge subnet, and only Caddy and the backend may be on it.
+        ipam = compose()["networks"]["edge"]["ipam"]["config"]
+        self.assertEqual(len(ipam), 1)
+        yml = (ROOT / "backend/src/main/resources/application.yml").read_text()
+        trusted = re.search(r'^\s*internal-proxies:\s*"([^"]+)"', yml, re.M).group(1)
+        self.assertEqual(trusted, ipam[0]["subnet"])
+        on_edge = sorted(name for name, service in compose()["services"].items() if "edge" in service.get("networks", {}))
+        self.assertEqual(on_edge, ["backend", "caddy"])
+
     def test_caddy_imports_other_sites_read_only(self):
         caddyfile = (DEPLOY / "Caddyfile").read_text()
         self.assertIn("import /etc/caddy/sites/*.caddy", caddyfile.splitlines())

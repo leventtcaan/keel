@@ -72,11 +72,13 @@ keel:
   # The numbers are for a person, not a script: sign-in happens once per install (a shared address may see a few dozen at
   # once), revocation once per deletion (a closed Apple sheet may retry twice), the coach and the meal photo sit under their
   # daily quotas (coach_messages_per_day 25, photo_analyses_per_day 10, data/parameters/quota.yaml) and this only stops a loop.
-  # It keeps a key and a time per client in memory (V3: nothing a request carried); idle clients are swept out every
-  # sweep-every, and past max-keys a new client is let through uncounted (about 10 MB at the bound).
+  # It keeps a key and a time per client in memory (V3: nothing a request carried); a client whose bucket is full again is
+  # forgotten. Two tables, each bounded: accounts (what costs money) and addresses (what anyone can fill, so the small one).
+  # A full table never lets a request through uncounted: the client closest to being forgotten gives up its place, and
+  # starts again with a fresh burst. About 300 bytes a client: ~15 MB and ~3 MB at the bounds.
   rate-limit:
-    max-keys: 100000
-    sweep-every: 1m
+    max-account-keys: 50000
+    max-address-keys: 10000
     groups:
       sign-in:
         burst: 20
@@ -237,12 +239,13 @@ keel:
 # never repeats the path.
 server:
   # Behind Caddy (deploy/Caddyfile) the connection's address is Caddy's. Tomcat takes the client's from X-Forwarded-For only
-  # when the connection comes from these networks, the Docker bridge networks Caddy is on (K-817): a connection from anywhere
-  # else cannot choose its address. Caddy overwrites what clients send in that header with the address it saw.
+  # when the connection comes from this subnet, the one deploy/compose.yaml pins for the edge network Caddy is on (K-817;
+  # tools/test_deploy.py checks they are the same): a connection from anywhere else cannot choose its address. Caddy
+  # overwrites what clients send in that header with the address it saw (ADR-082).
   forward-headers-strategy: native
   tomcat:
     remoteip:
-      internal-proxies: "172.16.0.0/12, 192.168.0.0/16"
+      internal-proxies: "172.30.250.0/24"
   error:
     include-path: never
     include-message: never

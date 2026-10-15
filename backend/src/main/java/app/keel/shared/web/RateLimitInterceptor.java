@@ -20,11 +20,14 @@ import org.springframework.web.servlet.HandlerInterceptor;
  */
 final class RateLimitInterceptor implements HandlerInterceptor {
 
-    private final RateLimiter limiter;
+    private final RateLimiter accounts;
+    private final RateLimiter addresses;
     private final RateLimitProperties properties;
 
-    RateLimitInterceptor(RateLimiter limiter, RateLimitProperties properties) {
-        this.limiter = limiter;
+    /** Two tables, each with its own bound: what is counted by account never shares room with what is counted by address. */
+    RateLimitInterceptor(RateLimiter accounts, RateLimiter addresses, RateLimitProperties properties) {
+        this.accounts = accounts;
+        this.addresses = addresses;
         this.properties = properties;
     }
 
@@ -38,20 +41,24 @@ final class RateLimitInterceptor implements HandlerInterceptor {
             return true;
         }
         RateLimitGroup group = limited.value();
-        RateLimiter.Decision decision = limiter.tryAcquire(group.name() + "|" + owner(group, request), properties.rule(group));
+        String account = account(group);
+        RateLimiter.Decision decision = account != null
+                ? accounts.tryAcquire(group.name() + "|account:" + account, properties.rule(group))
+                : addresses.tryAcquire(group.name() + "|address:" + ClientAddress.key(request), properties.rule(group));
         if (!decision.allowed()) {
             throw new RateLimitedException(decision.retryAfterSeconds());
         }
         return true;
     }
 
-    private static String owner(RateLimitGroup group, HttpServletRequest request) {
+    /** The signed-in account for a group counted by account; null when the group is counted by address or there is no session. */
+    private static String account(RateLimitGroup group) {
         if (group.scope() == RateLimitGroup.Scope.ACCOUNT) {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             if (authentication != null && authentication.getPrincipal() instanceof Jwt token && token.getSubject() != null) {
-                return "account:" + token.getSubject();
+                return token.getSubject();
             }
         }
-        return "address:" + ClientAddress.key(request);
+        return null;
     }
 }

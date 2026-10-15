@@ -16,8 +16,8 @@ class RateLimitPropertiesTests {
 
     private static Map<String, String> allGroups() {
         Map<String, String> values = new HashMap<>();
-        values.put("keel.rate-limit.max-keys", "500");
-        values.put("keel.rate-limit.sweep-every", "30s");
+        values.put("keel.rate-limit.max-account-keys", "500");
+        values.put("keel.rate-limit.max-address-keys", "50");
         for (String group : new String[] {"sign-in", "apple-revocation", "coach", "meal-photo"}) {
             values.put("keel.rate-limit.groups." + group + ".burst", "4");
             values.put("keel.rate-limit.groups." + group + ".refill-every", "20s");
@@ -33,8 +33,8 @@ class RateLimitPropertiesTests {
     void theGroupsAreTheEnumsAndEachHasItsBurstAndRefill() {
         RateLimitProperties properties = bind(allGroups());
 
-        assertThat(properties.maxKeys()).isEqualTo(500);
-        assertThat(properties.sweepEvery()).isEqualTo(Duration.ofSeconds(30));
+        assertThat(properties.maxAccountKeys()).isEqualTo(500);
+        assertThat(properties.maxAddressKeys()).isEqualTo(50);
         assertThat(properties.groups()).containsOnlyKeys(RateLimitGroup.values());
         assertThat(properties.rule(RateLimitGroup.APPLE_REVOCATION)).isEqualTo(new RateLimitProperties.Rule(4, Duration.ofSeconds(20)));
     }
@@ -56,7 +56,7 @@ class RateLimitPropertiesTests {
         Map<String, String> noRefill = allGroups();
         noRefill.put("keel.rate-limit.groups.sign-in.refill-every", "0s");
         Map<String, String> noKeys = allGroups();
-        noKeys.put("keel.rate-limit.max-keys", "0");
+        noKeys.put("keel.rate-limit.max-address-keys", "0");
 
         assertThatThrownBy(() -> bind(noBurst)).hasRootCauseInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> bind(noRefill)).hasRootCauseInstanceOf(IllegalArgumentException.class);

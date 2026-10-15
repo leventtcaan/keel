@@ -72,10 +72,14 @@ class RateLimitInterceptorTests {
         for (RateLimitGroup group : RateLimitGroup.values()) {
             rules.put(group, BURST_OF_2);
         }
-        RateLimitProperties properties = new RateLimitProperties(1000, Duration.ofMinutes(1), rules);
-        RateLimiter limiter = new RateLimiter(java.time.Clock.systemUTC(), properties.maxKeys(), properties.sweepEvery());
-        mvc = MockMvcBuilders.standaloneSetup(new Probe()).setControllerAdvice(new ApiErrorHandler())
-                .addInterceptors(new RateLimitInterceptor(limiter, properties)).build();
+        mvc = serverWith(1000, 1000, rules);
+    }
+
+    private static MockMvc serverWith(int accountKeys, int addressKeys, Map<RateLimitGroup, RateLimitProperties.Rule> rules) {
+        RateLimitProperties properties = new RateLimitProperties(accountKeys, addressKeys, rules);
+        var clock = java.time.Clock.systemUTC();
+        return MockMvcBuilders.standaloneSetup(new Probe()).setControllerAdvice(new ApiErrorHandler())
+                .addInterceptors(new RateLimitInterceptor(new RateLimiter(clock, accountKeys), new RateLimiter(clock, addressKeys), properties)).build();
     }
 
     @AfterEach
@@ -180,5 +184,27 @@ class RateLimitInterceptorTests {
         for (int i = 0; i < 20; i++) {
             call("/v1/probe/free").andExpect(status().isOk());
         }
+    }
+
+    @Test
+    void aFloodOfAddressesOnSignInCannotTakeTheLimitOffTheCoachOrThePhoto() throws Exception {
+        Map<RateLimitGroup, RateLimitProperties.Rule> rules = new EnumMap<>(RateLimitGroup.class);
+        for (RateLimitGroup group : RateLimitGroup.values()) {
+            rules.put(group, BURST_OF_2);
+        }
+        // Three addresses fit; a hundred arrive.
+        mvc = serverWith(1000, 3, rules);
+        for (int i = 0; i < 100; i++) {
+            call("/v1/probe/sign-in", from("203.0.113." + i)).andExpect(status().isOk());
+        }
+
+        // A new account is counted as usual: its burst, then a refusal. The flood made no room and let nothing through free.
+        signedInAs(UUID.randomUUID());
+        call("/v1/probe/coach").andExpect(status().isOk());
+        call("/v1/probe/coach").andExpect(status().isOk());
+        call("/v1/probe/coach").andExpect(status().isTooManyRequests());
+        call("/v1/probe/photo").andExpect(status().isOk());
+        call("/v1/probe/photo").andExpect(status().isOk());
+        call("/v1/probe/photo").andExpect(status().isTooManyRequests());
     }
 }
