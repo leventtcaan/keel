@@ -629,6 +629,22 @@ class WeeklyReport(unittest.TestCase):
         self.assertEqual(code.count(";"), 1)
         self.assertTrue(code.endswith(";"))
         self.assertNotRegex(code, r"\b(insert|update|delete|create|drop|alter|truncate|grant|revoke|copy|vacuum|call|do|set|reset|lock)\b")
+        # Functions that write, reach outside, or read the server instead of the tables (dblink, pg_read_file, set_config, nextval...).
+        self.assertNotRegex(code, r"\b(set_config|dblink\w*|pg_\w+|nextval|setval|lo_\w+|txid_\w+)\b")
+        # The one setting it reads is its own: current_setting only ever names a keel.* parameter.
+        names = re.findall(r"current_setting\(\s*'([^']*)'", re.sub(r"--[^\n]*", "", self.SQL.read_text()))
+        self.assertEqual(sorted(set(names)), ["keel.cohort_weeks", "keel.min_cell", "keel.report_as_of", "keel.week_days"])
+        self.assertEqual(code.count("current_setting("), len(names))
+
+    def test_a_group_smaller_than_the_minimum_shows_no_number(self):
+        # The cell size is a parameter of the report, five unless set; WeeklyReportTests checks the suppression on rows.
+        code = self.code()
+        self.assertRegex(code, r"::int, 5\) as min_cell")
+        output = code[code.rindex(") select "):]
+        columns = re.findall(r"\bas (\w+)", output)
+        self.assertEqual(columns[:2], ["cohort", "started"])
+        self.assertGreater(len(columns), 5)
+        self.assertEqual(output.count("case when g.started >= p.min_cell"), len(columns) - 2, "every figure but the group's size is behind the minimum")
 
     def test_it_names_no_health_value_and_no_account_in_its_output(self):
         inventory = json.loads((ROOT / "docs/yasal/veri-envanteri.json").read_text())
@@ -641,7 +657,8 @@ class WeeklyReport(unittest.TestCase):
         self.assertEqual(sorted(words & (health_columns - self.TIMES_AND_KEYS)), [])
         output = code[code.rindex(") select "):]  # the statement's own select, after its last with-query
         self.assertNotRegex(output, r"\b(account_id|id)\b", "aggregates only: no row of the output is a person")
-        self.assertIn("group by grouping sets", output)
+        self.assertIn("group by grouping sets", code)
+        self.assertIn("'total (window)'", self.SQL.read_text())
 
     def test_what_it_reads_of_a_call_decision_is_only_its_action_type(self):
         text = re.sub(r"--[^\n]*", "", self.SQL.read_text())
@@ -657,11 +674,21 @@ class WeeklyReport(unittest.TestCase):
     def test_the_script_is_psql_in_the_database_container_read_only_and_prints_only(self):
         script = (DEPLOY / "weekly-report.sh").read_text()
         commands = re.sub(r"(?m)^\s*#.*$", "", script)
+        self.assertEqual(re.findall(r"-e PGOPTIONS='([^']*)'", script), ["-c default_transaction_read_only=on"], "exactly this, nothing added")
         self.assertIn('"$dir/kc" exec -T -e PGOPTIONS=\'-c default_transaction_read_only=on\' postgres', script)
         self.assertIn('cat "$dir/weekly-report.sql"', script)
         self.assertNotRegex(commands, r"\b(curl|wget|nc|ssh|scp|sendmail|mail)\b", "it prints; it sends nothing anywhere")
         self.assertRegex(script, r"\$as_of =~ \^\[0-9\]\{4\}", "a value is checked before it becomes part of a SET")
         self.assertNotRegex(script, r"\$\{?KEEL_", "no secret is read or needed")
+
+    def test_a_date_that_is_not_one_or_is_in_the_future_is_refused_before_anything_runs(self):
+        script = str(DEPLOY / "weekly-report.sh")
+        for argument in ("2999-01-01", "tomorrow", "2026-13-01x", "2026-10-1"):
+            with self.subTest(as_of=argument):
+                result = subprocess.run(["bash", script, "--as-of", argument], capture_output=True, text=True,
+                                        env={"PATH": "/usr/bin:/bin"})  # no docker on this PATH: nothing could run
+                self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertEqual(subprocess.run(["bash", script, "--weeks", "100"], capture_output=True, text=True, env={"PATH": "/usr/bin:/bin"}).returncode, 2)
 
     def test_the_readme_lists_both_files(self):
         readme = (DEPLOY / "README.md").read_text()

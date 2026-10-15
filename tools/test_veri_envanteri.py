@@ -435,8 +435,14 @@ class OperationsMatchTheServer(unittest.TestCase):
         self.assertTrue(counts["kept_for"].startswith("not stored"))
         self.assertEqual(counts["policy"], "data-technical")
         section = " ".join(_section(self.policy, "data-technical").split())
-        self.assertIn("are never listed per person and are stored nowhere", section)
+        self.assertIn("They are never listed per person, a group of fewer than five people shows no figure, and the counts are stored nowhere", section)
+        self.assertIn("when something was logged and how it arrived, and whether a weekly call changed your plan, never what you logged", section)
         self.assertIn("no analytics service and no tracking in the app", section)
+        # The health data section and the consent text (data/copy/en.json, version 5) say the same count (Levent 15 Oct).
+        health = " ".join(_section(self.policy, "data-health").split())
+        self.assertIn("in totals across all users and never per person or by value, whether the coaching works", health)
+        purpose = json.loads(COPY.read_text(encoding="utf-8"))["consent"]["health_data"]["points"]["purpose"]
+        self.assertIn("in totals across all users and never per person or by value, whether the coaching works", purpose)
         self.assertEqual([t for t in migration_tables() if re.search(r"analytic|telemetry|metric|tracking|usage_event", t)], [])
 
 

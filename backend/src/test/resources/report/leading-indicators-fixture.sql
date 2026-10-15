@@ -1,8 +1,9 @@
 -- Synthetic rows for WeeklyReportTests (K-905, ADR-081): invented ids and times, no real person. The report runs "as of"
 -- 2025-10-27 12:00 UTC (a Monday). Each account is named for what it checks; the expected numbers are in the test.
 
--- Sign-up week of Monday 2025-09-29: a1..a5, all made 2025-10-01 10:00 UTC; its week 2 is 2025-10-08 10:00 up to 2025-10-15 10:00.
+-- Sign-up week of Monday 2025-09-29: a1..a5, all made 2025-10-01 10:00 UTC; its week 2 is the days 2025-10-08 to 2025-10-14.
 -- Sign-up week of Monday 2025-10-13: b1, b2, e (e made exactly two weeks before the report: settled, on the edge).
+-- Sign-up week of Monday 2025-09-01: see the end of this file.
 -- Outside the report: late (made after it), old (made in July: beyond the cohort weeks shown).
 insert into identity.account (id, apple_subject, created_at)
 values ('00000000-0000-0000-0000-0000000000a1', 'synthetic-a1', '2025-10-01 10:00+00'),
@@ -80,3 +81,37 @@ insert into decision.weekly_call (id, account_id, client_id, week_of, made_on, d
                                   application, applied_at, plan_before, plan_after)
 values (gen_random_uuid(), '00000000-0000-0000-0000-0000000000f2', gen_random_uuid(), '2025-07-07', '2025-07-09',
         '2025-07-09 10:00+00', 'h', '{}', '{"action": {"type": "ADJUST_CALORIES"}}', 'APPLIED', '2025-07-09 10:00+00', '{}', '{}');
+
+-- Sign-up week of Monday 2025-09-01: eight accounts made 2025-09-01 22:00 UTC (late in the day, so that a window counted in
+-- hours from the minute of sign-up would differ from one counted in UTC days). Its week 2 is the days 2025-09-08 to
+-- 2025-09-14 (day 7 up to, not including, day 14). "in" accounts have rows on the first and last day of it and are active;
+-- "out" accounts have rows on the days just before (09-07) and after (09-15) and are not. One pair per source that has only a day
+-- (cardio, waist, photo check) and one for a source that has a time (a workout, 00:30 on day 7 is under seven days after sign-up).
+insert into identity.account (id, apple_subject, created_at)
+values ('00000000-0000-0000-0000-0000000000c1', 'synthetic-cardio-in', '2025-09-01 22:00+00'),
+       ('00000000-0000-0000-0000-0000000000c0', 'synthetic-cardio-out', '2025-09-01 22:00+00'),
+       ('00000000-0000-0000-0000-0000000000d1', 'synthetic-waist-in', '2025-09-01 22:00+00'),
+       ('00000000-0000-0000-0000-0000000000d0', 'synthetic-waist-out', '2025-09-01 22:00+00'),
+       ('00000000-0000-0000-0000-0000000000d3', 'synthetic-photo-in', '2025-09-01 22:00+00'),
+       ('00000000-0000-0000-0000-0000000000d2', 'synthetic-photo-out', '2025-09-01 22:00+00'),
+       ('00000000-0000-0000-0000-0000000000c3', 'synthetic-workout-in', '2025-09-01 22:00+00'),
+       ('00000000-0000-0000-0000-0000000000c2', 'synthetic-workout-out', '2025-09-01 22:00+00');
+insert into training.cardio_session (id, account_id, client_id, day, minutes, source)
+values (gen_random_uuid(), '00000000-0000-0000-0000-0000000000c1', gen_random_uuid(), '2025-09-08', 30, 'MANUAL'),
+       (gen_random_uuid(), '00000000-0000-0000-0000-0000000000c1', gen_random_uuid(), '2025-09-14', 30, 'MANUAL'),
+       (gen_random_uuid(), '00000000-0000-0000-0000-0000000000c0', gen_random_uuid(), '2025-09-07', 30, 'MANUAL'),
+       (gen_random_uuid(), '00000000-0000-0000-0000-0000000000c0', gen_random_uuid(), '2025-09-15', 30, 'MANUAL');
+insert into measurement.waist (id, account_id, client_id, measured_on, cm)
+values (gen_random_uuid(), '00000000-0000-0000-0000-0000000000d1', gen_random_uuid(), '2025-09-08', 80.0),
+       (gen_random_uuid(), '00000000-0000-0000-0000-0000000000d1', gen_random_uuid(), '2025-09-14', 80.0),
+       (gen_random_uuid(), '00000000-0000-0000-0000-0000000000d0', gen_random_uuid(), '2025-09-07', 80.0),
+       (gen_random_uuid(), '00000000-0000-0000-0000-0000000000d0', gen_random_uuid(), '2025-09-15', 80.0);
+insert into measurement.photo_check (id, account_id, client_id, taken_on, look)
+values (gen_random_uuid(), '00000000-0000-0000-0000-0000000000d3', gen_random_uuid(), '2025-09-08', 'SAME'),
+       (gen_random_uuid(), '00000000-0000-0000-0000-0000000000d3', gen_random_uuid(), '2025-09-14', 'SAME'),
+       (gen_random_uuid(), '00000000-0000-0000-0000-0000000000d2', gen_random_uuid(), '2025-09-07', 'SAME'),
+       (gen_random_uuid(), '00000000-0000-0000-0000-0000000000d2', gen_random_uuid(), '2025-09-15', 'SAME');
+insert into training.workout (id, account_id, client_id, started_at, unclean_exercise_ids, paused_seconds)
+values (gen_random_uuid(), '00000000-0000-0000-0000-0000000000c3', gen_random_uuid(), '2025-09-08 00:30+00', '{}', 0),
+       (gen_random_uuid(), '00000000-0000-0000-0000-0000000000c2', gen_random_uuid(), '2025-09-07 23:30+00', '{}', 0),
+       (gen_random_uuid(), '00000000-0000-0000-0000-0000000000c2', gen_random_uuid(), '2025-09-15 00:30+00', '{}', 0);

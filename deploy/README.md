@@ -57,7 +57,7 @@ Once, on the Mac, after the first deploy:
   `~/KeelBackups`, `~/Library/Logs/keel-backup-pull.log`.
 
 - **Leading indicators:** `ssh keel-vps /opt/keel/deploy/weekly-report.sh` (Mondays; `--as-of YYYY-MM-DD`, `--weeks N`). One table, a row per
-  sign-up week and a total. It reads the tables the server already keeps, in a read-only session; it opens nothing and sends
+  sign-up week and a total (window); a group of fewer than five accounts shows only its size. It reads the tables the server already keeps, in a read-only session; it opens nothing and sends
   nothing. Definitions: the header of `weekly-report.sql`, ADR-081.
 
 ## Secrets

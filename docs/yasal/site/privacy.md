@@ -69,7 +69,8 @@ Health data is a special category under the GDPR (Art. 9). The app keeps it only
 When energy intake looks too low, the app may ask whether your period has stopped. The answer is used for that week's
 call only and is **never kept**.
 
-*Why:* to make your weekly calls and show your progress — nothing else. *How long:* until you withdraw the consent or delete
+*Why:* to make your weekly calls and show your progress, and to count, in totals across all users and never per person or by
+value, whether the coaching works (see Technical records) — nothing else. *How long:* until you withdraw the consent or delete
 your account, whichever comes first. Withdrawing deletes all of the above for good (a second pass a few minutes later
 catches anything that was being saved at that moment); the weekly calls stop until you allow it again.
 
@@ -107,10 +108,11 @@ the import can carry body weight; imported sessions then stay in the training lo
 - Our server's logs record each request's route, status and timing. They never record your account, what you sent, or any
   health data. The web server in front of it keeps no access log; its error messages can include an IP address. Logs are
   deleted after 14 days.
-- Once a week the controller counts, for all users together, how many people started, how soon they got their first
+- From time to time the controller counts, for all users together, how many people started, how soon they got their first
   weekly call, how many were still using the app in their second week and how many saw their plan change. The counts are
-  worked out on our own server from the records above (only when something was logged, never what it was), are never
-  listed per person and are stored nowhere. There is no analytics service and no tracking in the app.
+  worked out on our own server from the records above: when something was logged and how it arrived, and whether a weekly
+  call changed your plan, never what you logged. They are never listed per person, a group of fewer than five people shows
+  no figure, and the counts are stored nowhere. There is no analytics service and no tracking in the app.
 
 *Why:* to make deletions reliable, keep the service running and learn whether it works for people (legitimate interest, GDPR Art. 6(1)(f)).
 

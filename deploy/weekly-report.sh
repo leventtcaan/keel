@@ -19,6 +19,7 @@ while [[ $# -gt 0 ]]; do
 done
 # The values go into SET statements: only the shapes below get through.
 if [[ -n $as_of && ! $as_of =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then echo "--as-of: YYYY-MM-DD" >&2; exit 2; fi
+if [[ -n $as_of && $as_of > $(date -u +%F) ]]; then echo "--as-of: not in the future (nothing has happened yet)" >&2; exit 2; fi
 if [[ -n $weeks && ! $weeks =~ ^[0-9]{1,2}$ ]]; then echo "--weeks: a number up to 99" >&2; exit 2; fi
 
 {
