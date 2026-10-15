@@ -31,7 +31,7 @@ function useHealthConsent() {
 
 /**
  * Settings (K-309, K-982; prototype `#settings`, ADR-069 #3, ADR-070 #3), opened from This week. Seven groups in one order:
- * Appearance (the theme, and the units), Training (days, cardio, gyms, the workout import), Food (what the user avoids),
+ * Appearance (the theme, and the units as a row of it), Training (days, cardio, gyms, the workout import), Food (what the user avoids),
  * Reminders (ADR-036: the three kinds, on or off, and the routine sentence), Health and data (the consents, Apple Health),
  * Subscription (K-702) and Account (export, delete, sign out). Food and Health and data follow the health data consent.
  */
@@ -45,8 +45,9 @@ export default function SettingsScreen() {
           <Text style={[styles.back, { color: color.text }]}>{`${t('settings.backMark')} ${t('settings.back')}`}</Text>
         </Pressable>
         <ScreenTitle>{t('settings.title')}</ScreenTitle>
-        <AppearanceSection />
-        <UnitsSection />
+        <AppearanceSection>
+          <UnitsSection inGroup />
+        </AppearanceSection>
         <TrainingGroup />
         <FoodGroup granted={granted} />
         <RemindersSection />

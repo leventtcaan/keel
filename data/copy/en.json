@@ -2716,7 +2716,7 @@
     },
     "health": {
       "title": "Health and data",
-      "locked": "Adding to Apple Health and bringing in its history need your OK for health data."
+      "locked": "Bringing in Apple Health history needs your OK for health data."
     }
   },
   "permissions": {

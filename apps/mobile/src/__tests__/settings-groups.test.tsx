@@ -52,6 +52,7 @@ let gyms: Schemas['Gym'][];
 let profile: Schemas['Profile'];
 let consent: 'GRANTED' | 'NEVER_ASKED';
 let profileRefused = false;
+let profileGate: Promise<void> | null = null; // a profile read waits for it, where a test holds the answer back
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 const api = createApiClient({
   baseUrl: 'https://api.example.test',
@@ -63,7 +64,10 @@ const api = createApiClient({
     if (path === '/v1/program') return program === null ? json({ code: 'NOT_FOUND' }, 404) : json(program);
     if (path === '/v1/gyms') return json(gyms);
     if (path === '/v1/subscription') return json(SUBSCRIPTION);
-    if (path === '/v1/profile' && request.method === 'GET') return json(profile);
+    if (path === '/v1/profile' && request.method === 'GET') {
+      await profileGate;
+      return json(profile);
+    }
     if (path === '/v1/profile' && request.method === 'PUT') {
       if (profileRefused) return json({ code: 'INTERNAL' }, 500);
       profile = JSON.parse(text);
@@ -119,7 +123,7 @@ const mockServices = {
     subscribe: () => () => {},
     permission: jest.fn(async () => ({ granted: false, canAskAgain: true })),
   },
-  healthWriting: { current: () => mockHealthWriteOff, subscribe: () => () => {}, shown: () => 'off' },
+  healthWriting: { current: () => mockHealthWriteOff, subscribe: () => () => {}, shown: () => 'off', turnOn: jest.fn(async (_which: string) => true), turnOff: jest.fn(async (_which: string) => {}) },
 };
 jest.mock('@/services/ServicesProvider', () => ({
   useAppServices: () => mockServices,
@@ -135,6 +139,7 @@ beforeEach(() => {
   profile = PROFILE;
   consent = 'GRANTED';
   profileRefused = false;
+  profileGate = null;
   mockUnits = 'METRIC';
   mockAppearance = 'light';
   mockServices.health.available = true;
@@ -177,12 +182,13 @@ describe('the groups', () => {
     expect(seen).toEqual(GROUPS.map((g) => GROUP_TITLE[g]));
   });
 
-  test('Units (kg and lb) sit in the Appearance group, before Training', async () => {
+  test('Units (kg and lb) are a row inside the Appearance group, not a group of their own', async () => {
     await show();
     const order = headers();
-    const units = order.indexOf(t('settings.units.title'));
-    expect(units).toBeGreaterThan(order.indexOf(GROUP_TITLE.appearance));
-    expect(units).toBeLessThan(order.indexOf(GROUP_TITLE.training));
+    expect(order).not.toContain(t('settings.units.title'));
+    const group = screen.getByRole('header', { name: GROUP_TITLE.appearance }).parent!;
+    expect(within(group).getByText(t('settings.units.title'))).toBeOnTheScreen();
+    expect(within(group).getByRole('button', { name: t('settings.units.metric') })).toBeSelected();
     await press(t('settings.units.imperial'));
     expect(mockServices.units.set).toHaveBeenCalledWith('IMPERIAL');
   });
@@ -338,14 +344,20 @@ describe('without the health data consent', () => {
     expect(calls.some((c) => c.path === '/v1/profile')).toBe(false);
   });
 
-  test('Health and data is locked: the consent shows Not allowed with a way to allow it; the Apple Health switches and the weigh-in import are not offered', async () => {
+  test('Health and data is locked: the consent shows Not allowed with a way to allow it; the weigh-in import is not offered', async () => {
     await show();
     // Both rows, Health data and Apple Health, say Not allowed; only the first can be allowed.
     expect(screen.getAllByText(t('settings.consents.notAllowed'))).toHaveLength(2);
     expect(button(`${t('settings.consents.allow')} ${t('settings.consents.HEALTH_DATA')}`)).toBeEnabled();
     expect(screen.getByText(t('settings.health.locked'))).toBeOnTheScreen();
-    expect(screen.queryByText(t('settings.healthWrite.title'))).toBeNull();
     expect(screen.queryByText(t('settings.import.weighIns'))).toBeNull();
+  });
+
+  test('the Apple Health write switches do not wait for the read consent (ADR-018 §1): shown and changeable, so a switch left on can always be turned off', async () => {
+    await show();
+    expect(screen.getByText(t('settings.healthWrite.title'))).toBeOnTheScreen();
+    await press(t('settings.healthWrite.turnOnLabel', { what: t('settings.healthWrite.workouts') }));
+    expect(mockServices.healthWriting.turnOn).toHaveBeenCalledWith('workouts');
   });
 
   test('allowing the consent unlocks both at once', async () => {
@@ -353,7 +365,36 @@ describe('without the health data consent', () => {
     await press(`${t('settings.consents.allow')} ${t('settings.consents.HEALTH_DATA')}`);
     expect(button(`${t('settings.food.avoid')}, peanuts, shellfish`)).toBeEnabled();
     expect(screen.queryByText(t('settings.health.locked'))).toBeNull();
-    expect(screen.getByText(t('settings.healthWrite.title'))).toBeOnTheScreen();
+    expect(screen.getByText(t('settings.import.weighIns'))).toBeOnTheScreen();
+  });
+
+  test('withdrawing and allowing again leaves no old list and no open editor behind: the profile is read afresh', async () => {
+    consent = 'GRANTED';
+    await show();
+    await press(`${t('settings.food.avoid')}, peanuts, shellfish`);
+    expect(screen.getByLabelText(t('settings.food.label'))).toBeOnTheScreen();
+    // The consent goes (the server deletes the list with it); the withdrawal path of the phone is stood in by the fake.
+    mockServices.withdrawHealthData.mockImplementationOnce(async () => {
+      consent = 'NEVER_ASKED';
+      profile = { ...PROFILE, food: {} };
+    });
+    await press(`${t('settings.consents.withdraw')} ${t('settings.consents.HEALTH_DATA')}`);
+    await press(t('settings.withdrawConfirm.confirm'));
+    expect(screen.getByText(t('settings.food.locked'))).toBeOnTheScreen();
+    expect(screen.queryByLabelText(t('settings.food.label'))).toBeNull();
+
+    // Allowed again, the new read is held back: until it answers, the old list must not be on the screen.
+    profile = { ...PROFILE, food: { avoid: ['eggs'] } };
+    let release = () => {};
+    profileGate = new Promise<void>((resolve) => (release = resolve));
+    calls = [];
+    await press(`${t('settings.consents.allow')} ${t('settings.consents.HEALTH_DATA')}`);
+    expect(screen.queryByText(/peanuts|shellfish/)).toBeNull();
+    expect(screen.queryByLabelText(t('settings.food.label'))).toBeNull();
+    expect(calls.some((c) => c.method === 'GET' && c.path === '/v1/profile')).toBe(true);
+    await act(async () => release());
+    expect(button(`${t('settings.food.avoid')}, eggs`)).toBeOnTheScreen();
+    expect(screen.queryByLabelText(t('settings.food.label'))).toBeNull();
   });
 
   test('training, reminders, the subscription and the account do not wait for the consent', async () => {

@@ -24,6 +24,16 @@ type Foods = 'loading' | 'failed' | string[];
  * profile with the new list, the rest of it as the server just gave it (the same way as the units, K-310).
  */
 export function FoodGroup({ granted }: { granted: boolean | null }) {
+  // Keyed by the consent: when it goes or comes back, what was read and typed under the last yes is dropped with the
+  // component, so a yes given again starts from a read, never from the old list (the server deleted it, K-231).
+  return (
+    <Section title={t('settings.food.title')}>
+      <FoodRows key={String(granted === true)} granted={granted} />
+    </Section>
+  );
+}
+
+function FoodRows({ granted }: { granted: boolean | null }) {
   const { api } = useAppServices();
   const { busy, problem, run } = useAction();
   const [foods, setFoods] = useState<Foods>('loading');
@@ -74,10 +84,10 @@ export function FoodGroup({ granted }: { granted: boolean | null }) {
       </View>
     ) : null;
   return (
-    <Section title={t('settings.food.title')}>
+    <>
       {row}
       {editor}
-    </Section>
+    </>
   );
 }
 
