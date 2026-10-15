@@ -23,7 +23,7 @@ public record ConsistencyWeek(LocalDate weekOf, State state) {
         SPARE,
         /** A miss that was not forgiven: the second in a row, or one with no run before it. */
         MISSED,
-        /** Neither a success nor a miss, left out of the record: a day of the week under a declared state (K-516). */
+        /** Neither a success nor a miss, left out of the record: a day of the week under a declared state (K-516), or the ladder's week off (K-1022). */
         PAUSED
     }
 }
