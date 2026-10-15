@@ -176,8 +176,11 @@ test('A2: "+" → Weigh-in → Save → Apple Health, asked on the way → back 
     kind: 'meal',
     body: expect.objectContaining({ slot: 'LUNCH', repeatOf: 'm-lunch' }),
   });
-  expect(mockStack).toEqual(['/']);
   expect(taps).toBe(3);
+  // The meal says it is logged and offers Undo (K-1029); Done is the way out, not a step of logging, as the weigh-in's.
+  expect(screen.getByText(t('meal.quick.logged', { slot: t('food.slot.LUNCH') }))).toBeOnTheScreen();
+  await tap(t('meal.quick.done'));
+  expect(mockStack).toEqual(['/']);
 });
 
 test('the next weigh-in is three taps: Apple Health is not asked twice', async () => {
@@ -201,7 +204,7 @@ test('the sheet names every way to log, each one tap from the "+"', async () => 
   }
 });
 
-test('a meal: "+", Meal, "Same as yesterday" Add — three taps, and the page it began from is back', async () => {
+test('a meal: "+", Meal, "Same as yesterday" Add — three taps, logged with Undo, and Done takes the page it began from back', async () => {
   await show();
   await tap(t('plus.entry'));
   await tap(new RegExp(`^${t('plus.meal')}`));
@@ -209,8 +212,11 @@ test('a meal: "+", Meal, "Same as yesterday" Add — three taps, and the page it
   await tap(t('food.repeat.spoken', { slot: t('food.slot.LUNCH'), items: 'Chicken rice bowl' }));
 
   expect(mockServices.queue.record).toHaveBeenCalledWith({ kind: 'meal', body: expect.objectContaining({ repeatOf: 'm-lunch', slot: 'LUNCH' }) });
-  expect(mockStack).toEqual(['/']);
   expect(taps).toBeLessThanOrEqual(3);
+  // Logged, with Undo (K-1029); Done is the way out, not a step of logging.
+  expect(screen.getByText(t('meal.quick.logged', { slot: t('food.slot.LUNCH') }))).toBeOnTheScreen();
+  await tap(t('meal.quick.done'));
+  expect(mockStack).toEqual(['/']);
 });
 
 test('cardio: "+", Cardio, Log — three taps; opened again the same day it shows the record instead of asking', async () => {

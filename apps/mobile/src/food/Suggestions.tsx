@@ -7,6 +7,7 @@ import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
+import { amountLine } from './amountText';
 import { handOffMeal } from './handoff';
 
 type Suggestion = components['schemas']['Suggestion'];
@@ -35,7 +36,7 @@ export function Suggestions({ suggestions }: { suggestions: Suggestion[] }) {
           style={[styles.row, { borderTopColor: color.line }]}>
           <View style={styles.words}>
             <Text style={[styles.text, { color: color.text }]}>
-              {t('food.suggestions.item', { name: suggestion.name, quantity: String(suggestion.amount.quantity), unit: suggestion.amount.unit })}
+              {amountLine(suggestion.name, suggestion.amount)}
             </Text>
           </View>
           <Text style={[styles.kcal, { color: color.text }]}>

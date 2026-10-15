@@ -19,7 +19,7 @@ import { repCount } from '@/train/reps';
 import { sessionMoves } from '@/train/workout';
 import { type UnitSystem, loadValue } from '@/units/units';
 
-import { type TodayCard as Card, type TodayParts, cardioToday } from './todayWorkout';
+import { type TodayCard as Card, type TodayParts, cardioLoggedToday, cardioToday } from './todayWorkout';
 import { weekdayOf } from './week';
 
 type Schemas = components['schemas'];
@@ -225,8 +225,15 @@ export function TodayCard({ card, program, today, parts, onChanged }: Props) {
         />
       );
       const minutes = program === null ? null : cardioToday(program, today);
+      // Cardio already logged today is the server's word (K-1029): the row says it is done, not the plan again.
+      const logged = program !== null && cardioLoggedToday(program, today);
       const cardio =
-        minutes === null ? null : (
+        logged ? (
+          <View style={[styles.row, styles.cardio, { borderTopColor: color.line }]}>
+            <SymbolView name="checkmark.circle.fill" size={tokens.type.body} tintColor={color.accent} />
+            <Text style={[styles.fine, { color: color.textSecondary }]}>{t('thisWeek.today.cardioDone')}</Text>
+          </View>
+        ) : minutes === null ? null : (
           <View style={[styles.row, styles.cardio, { borderTopColor: color.line }]}>
             <SymbolView name="figure.run" size={tokens.type.body} tintColor={color.muted} />
             <Text style={[styles.fine, { color: color.textSecondary }]}>

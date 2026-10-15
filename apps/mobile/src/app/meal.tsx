@@ -51,6 +51,8 @@ export default function MealScreen() {
     edit === undefined ? null : day === undefined ? { state: 'gone' } : { state: 'loading' },
   );
   const [confirming, setConfirming] = useState(false);
+  // A quick add logged and shown with Undo and Done (K-1029): the rest of the sheet is away meanwhile, so no second Save is a second meal.
+  const [quickLogged, setQuickLogged] = useState(false);
   const { color } = useTheme();
   const [step, setStep] = useState<Step>('checking');
   const [slot, setSlot] = useState<Schemas['MealSlot']>(() => defaultSlot(new Date()));
@@ -257,30 +259,36 @@ export default function MealScreen() {
   const entry =
     step === 'entry' && (original === null || original.state === 'ready') ? (
       <View style={styles.part}>
-        <View style={styles.chips}>
-          {SLOTS.map((option) => (
-            <Chip key={option} label={t(`food.slot.${option}`)} selected={slot === option} onPress={() => setSlot(option)} />
-          ))}
-        </View>
+        {!quickLogged && (
+          <View style={styles.chips}>
+            {SLOTS.map((option) => (
+              <Chip key={option} label={t(`food.slot.${option}`)} selected={slot === option} onPress={() => setSlot(option)} />
+            ))}
+          </View>
+        )}
 
-        {original === null && !fromCoach && items.length === 0 && start !== null && <QuickAdds slot={slot} start={start} recent={recent} onLogged={() => router.back()} />}
+        {original === null && !fromCoach && items.length === 0 && start !== null && <QuickAdds slot={slot} start={start} recent={recent} onDone={() => router.back()} onLoggedChange={setQuickLogged} />}
 
-        <ItemRows
-          items={items}
-          known={known}
-          recipes={knownRecipes}
-          onChange={change}
-          onRemove={(index) => setItems((before) => before.filter((_, i) => i !== index))}
-        />
+        {!quickLogged && (
+          <>
+            <ItemRows
+              items={items}
+              known={known}
+              recipes={knownRecipes}
+              onChange={change}
+              onRemove={(index) => setItems((before) => before.filter((_, i) => i !== index))}
+            />
 
-        <FoodPicker full={full} onFood={add} recipes={readRecipes} onRecipe={addOwnRecipe} />
+            <FoodPicker full={full} onFood={add} recipes={readRecipes} onRecipe={addOwnRecipe} />
 
-        {shown !== null && <EstimateCard estimate={shown} question={question} />}
-        {fromPhoto && question !== null && <Text style={[styles.text, { color: color.textSecondary }]}>{t('meal.photo.why')}</Text>}
-        {problem !== null && <ProblemText style={[styles.text, { color: color.text }]}>{problem}</ProblemText>}
-        {unchecked && <Text style={[styles.text, { color: color.text }]}>{t(fromCoach ? 'meal.fromCoach.notChecked' : 'meal.edit.notChecked')}</Text>}
-        <Button label={t('meal.save')} onPress={() => void save()} disabled={busy || requests === null || !checked} />
-        {deleting}
+            {shown !== null && <EstimateCard estimate={shown} question={question} />}
+            {fromPhoto && question !== null && <Text style={[styles.text, { color: color.textSecondary }]}>{t('meal.photo.why')}</Text>}
+            {problem !== null && <ProblemText style={[styles.text, { color: color.text }]}>{problem}</ProblemText>}
+            {unchecked && <Text style={[styles.text, { color: color.text }]}>{t(fromCoach ? 'meal.fromCoach.notChecked' : 'meal.edit.notChecked')}</Text>}
+            <Button label={t('meal.save')} onPress={() => void save()} disabled={busy || requests === null || !checked} />
+            {deleting}
+          </>
+        )}
       </View>
     ) : null;
 

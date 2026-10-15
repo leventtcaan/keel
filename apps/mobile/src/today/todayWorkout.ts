@@ -101,3 +101,13 @@ export function cardioToday(program: Schemas['Program'], day: string): number | 
   const weekday = weekdayOf(day);
   return cardio.sessions.some((s) => s.weekday === weekday) ? cardio.minutes : null;
 }
+
+/**
+ * Whether cardio is already logged today, as the server says it (K-1029, ProgramCardio.loggedToday / loggedDays). The phone
+ * only compares days it was given: a record of another day (a copy of the program kept from before) is not today's, and no
+ * week or date is worked out here (U1).
+ */
+export function cardioLoggedToday(program: Schemas['Program'], day: string): boolean {
+  const cardio = program.cardio;
+  return cardio !== undefined && (cardio.loggedToday?.day === day || cardio.loggedDays?.includes(day) === true);
+}

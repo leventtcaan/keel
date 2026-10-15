@@ -464,7 +464,7 @@
         ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
         ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
         "thisWeek.today.more",
-        ["thisWeek.today.cardio", "thisWeek.today.cardioOptional"],
+        ["thisWeek.today.cardio", "thisWeek.today.cardioOptional", "thisWeek.today.cardioDone"],
         ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around"],
         "food.budget.kcalUnit",
         "thisWeek.food.log"
@@ -495,7 +495,7 @@
             ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
             ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
             ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
-            ["thisWeek.today.cardio", "thisWeek.today.cardioOptional"],
+            ["thisWeek.today.cardio", "thisWeek.today.cardioOptional", "thisWeek.today.cardioDone"],
             "thisWeek.today.full",
             ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around"],
             "food.budget.kcalUnit",
@@ -593,7 +593,7 @@
             ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
             ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
             "thisWeek.today.more",
-            ["thisWeek.today.cardio", "thisWeek.today.cardioOptional"],
+            ["thisWeek.today.cardio", "thisWeek.today.cardioOptional", "thisWeek.today.cardioDone"],
             ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around"],
             "food.budget.kcalUnit",
             "thisWeek.food.log"
@@ -622,7 +622,7 @@
             ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
             ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
             "thisWeek.today.more",
-            ["thisWeek.today.cardio", "thisWeek.today.cardioOptional"],
+            ["thisWeek.today.cardio", "thisWeek.today.cardioOptional", "thisWeek.today.cardioDone"],
             ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around"],
             "food.budget.kcalUnit",
             "thisWeek.food.log"
@@ -646,7 +646,7 @@
             ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
             ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
             "thisWeek.today.more",
-            ["thisWeek.today.cardio", "thisWeek.today.cardioOptional"],
+            ["thisWeek.today.cardio", "thisWeek.today.cardioOptional", "thisWeek.today.cardioDone"],
             "thisWeek.food.locked",
             "thisWeek.food.allow"
           ]
@@ -669,7 +669,7 @@
             ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
             ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
             "thisWeek.today.more",
-            ["thisWeek.today.cardio", "thisWeek.today.cardioOptional"],
+            ["thisWeek.today.cardio", "thisWeek.today.cardioOptional", "thisWeek.today.cardioDone"],
             ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around"],
             "food.budget.kcalUnit",
             "thisWeek.food.log"
@@ -706,7 +706,7 @@
         ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
         ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
         "thisWeek.today.more",
-        ["thisWeek.today.cardio", "thisWeek.today.cardioOptional"],
+        ["thisWeek.today.cardio", "thisWeek.today.cardioOptional", "thisWeek.today.cardioDone"],
         ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around"],
         "food.budget.kcalUnit",
         "thisWeek.food.log"
@@ -1152,7 +1152,17 @@
         "food.repeat.spoken",
         "food.repeat.failed",
         "food.suggestions.item",
+        "food.suggestions.itemServing",
+        "food.suggestions.itemServings",
         "food.suggestions.log",
+        "meal.quick.logged",
+        "meal.quick.loggedSaid",
+        "meal.quick.undoneSaid",
+        "meal.quick.undo",
+        "meal.quick.undoLabel",
+        "meal.quick.undoFailed",
+        "meal.quick.undoOffline",
+        "meal.quick.done",
         "food.budget.kcalUnit",
         "format.range"
       ],
