@@ -148,6 +148,10 @@ Health stays in Apple Health (you can delete it in the Health app).
 - A meal photo is sent only when you choose to analyze it, and only once the AI coach is active (see below). The app keeps
   no copy of it: the files it writes to read the photo are deleted once it is read, and any left over when you sign out
   or delete your account.
+- **Sharing your progress.** A share sticker is drawn on your phone and leaves it only when you share it: through the
+  iPhone share sheet to the app you pick, or with Instagram Story, which hands the sticker and the photo or video you
+  chose to the Instagram app on this phone. That handover goes through the iPhone pasteboard and expires after 5 minutes;
+  with Handoff on, your other Apple devices can paste it in that time. We send nothing to Instagram or Meta ourselves.
 
 ### What else stays on the phone {#data-on-phone}
 

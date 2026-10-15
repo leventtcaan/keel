@@ -909,8 +909,8 @@ Simülatör düzeneği (repoya girmez): `../keel-sim` worktree + scratchpad `sim
 
 -----
 **Levent (14 Eki, boşluk taraması):** İlerleme bölüm bölüm açılır · Life: rıza yalnız Sick/In pain · Cardio kutusu kardiyo kaydına · dönüş metni dürüst ('Nothing lost' yok) → ADR-078 Ek 2, ADR-077 Ek 6.
-**K1 listesi (part sonunda toplu):** #548 iki API beklentisi (+16→0, +127→13) · #549 Food today→Food left (3 beklenti), bodyweight ısınma yok · #550 callFace PENDING foot, Keep/Got it testleri, yer tutuculu metinler, kept'te DONE gösterilir · #559 call-changes yardımcı · #562 GET 403→404, DELETE 403→204, consent-versions '3'→'4' · #563 tam harita + loggedDays · #566 today-workout workoutId · #569 settings/navigation donanımı, healthWrite kilit beklentisi · #570 router.back kalktı, trendReady kurulumu, earlyNote metni · #571 progress-screen yeniden yazıldı (e1RM grafiği ADR-078) · #573 share-card testleri silindi (ADR-076) · #574 ReturnGap/ReturnApi nextCallOn, fikstür tarihleri.
-**Levent'e part sonu soruları (biriken):** İlerleme hero 'Day 1.' yerine 'Today's targets.' (ADR-078 #1; telefon gün sayamaz) · koç 'The call stands until its next look' nextReview'u söylüyor (Hero nextCallOn) · privacy.md'ye eklenen iki satır (K-1021, K-1020) yayında.
+**K1 listesi — Levent hepsini onayladı (15 Eki; + #595 hero 'Today', #596 Recent onay/Undo):** #548 iki API beklentisi (+16→0, +127→13) · #549 Food today→Food left (3 beklenti), bodyweight ısınma yok · #550 callFace PENDING foot, Keep/Got it testleri, yer tutuculu metinler, kept'te DONE gösterilir · #559 call-changes yardımcı · #562 GET 403→404, DELETE 403→204, consent-versions '3'→'4' · #563 tam harita + loggedDays · #566 today-workout workoutId · #569 settings/navigation donanımı, healthWrite kilit beklentisi · #570 router.back kalktı, trendReady kurulumu, earlyNote metni · #571 progress-screen yeniden yazıldı (e1RM grafiği ADR-078) · #573 share-card testleri silindi (ADR-076) · #574 ReturnGap/ReturnApi nextCallOn, fikstür tarihleri.
+**Levent cevapları (15 Eki, part sonu):** B14 → 'Haven't trained' (K-1031) · kaçan hafta adlandırılmaz, böyle kalır · rıza metni maddeler, sürüm 5 (K-1032) · 'Streak' → 'Weeks on track' (K-1032) · koç nextCallOn'a (K-1032) · Calls 12 yeter · privacy.md'ye Story satırı (eklendi) · TestFlight K-983'ten sonra. **Önceki sorular:** İlerleme hero 'Day 1.' yerine 'Today's targets.' (ADR-078 #1; telefon gün sayamaz) · koç 'The call stands until its next look' nextReview'u söylüyor (Hero nextCallOn) · privacy.md'ye eklenen iki satır (K-1021, K-1020) yayında.
 **Ders (Part 4):** paralel mobil ajan sayısı 3'ü aşınca yük 400'e çıktı ve jest zaman aşımları arttı; sınır gerçekten 3.
 **Part 4 başı (14 Eki):** senkron — ana checkout ayrık HEAD = `origin/main` `26df54a0`, temiz (yalnız `.claude/launch.json`); açık PR yalnız Dependabot
 (#546 shell-quote güvenlik düzeltmesi, kilit dosyası, CI yeşil → auto-merge; #547 actions/setup-node 7.0 → 7.1 ara sürüm, yama değil → beklemede, ADR-019 #6);
@@ -949,7 +949,9 @@ K-1014 · K-1013 iki PR'a bölündü (A karar/Bu hafta, B oturum/Edit).
 | K-1028 İlerleme Strength tek satır, bodyweight, rızasız hero | ✅ | #594 | B2 (kaçan hafta açıklaması) geri alındı → Levent |
 | K-1029 öğün Undo, porsiyon yazımı, kardiyo satırı | ✅ | #596 | kayıttan sonra sayfa gizlenir; çift dokunuş testi mutasyonla kanıtlı |
 | K-1030 hero 'Today', nokta satırları | ✅ | #595 | B14 sunucu değişikliği geri alındı → K-1031 (Levent); B28, Pull-up ısınma ertelendi |
-| K-1031 dönüş haftası antrenman sorusu | ⏳ Levent | | seçenekler kartta |
+| K-1031 'Haven't trained' seçeneği | ⏳ | | Levent 15 Eki (a) |
+| K-1032 rıza metni v5 · 'Weeks on track' · koç nextCallOn | ⏳ | | Levent 15 Eki |
+| privacy.md Story paylaşım satırı | ✅ | main | Levent 15 Eki; last_updated 15 October |
 | K-984 TestFlight + cihaz turu | ⏳ | | otomatik satır ✅ (anayasa denetimi passed; budget + copy-budget + contrast 199 test yeşil, main `6136e36f`); derleme + cihaz turu Levent |
 
 ## M9 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
