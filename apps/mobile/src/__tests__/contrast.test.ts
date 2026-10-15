@@ -119,3 +119,37 @@ test('nothing inside the decision block is drawn in the warning colour: there it
   expect(warned.map((file) => path.relative(path.resolve(__dirname, '..'), file))).toEqual([]);
   for (const [, p] of Object.entries(palettes)) expect(contrast(p.warn, inverse(p).background)).toBeLessThan(4.5);
 });
+
+// K-816 (WCAG 1.4.11 Non-text Contrast, Apple's Sufficient Contrast): what shows that something is a control, or in what
+// state it is, reaches 3:1 against what is next to it. Text-only filled cards keep their fill (ADR-070 #6): their words
+// identify them; a field, a chip and a row of dots have no words that do, so their edge or mark does.
+describe.each(surfaces)('%s palette: non-text parts of controls', (_, p) => {
+  test('the control edge (text field box, unselected chip, outlined row) reaches 3:1 on the page and on a surface', () => {
+    expect(contrast(p.edge, p.background)).toBeGreaterThanOrEqual(3);
+    expect(contrast(p.edge, p.surface)).toBeGreaterThanOrEqual(3);
+  });
+
+  test('the accent (a selected ring, the current dot, a filled mark) reaches 3:1 on the page, a surface and the soft ground', () => {
+    expect(contrast(p.accent, p.background)).toBeGreaterThanOrEqual(3);
+    expect(contrast(p.accent, p.surface)).toBeGreaterThanOrEqual(3);
+    expect(contrast(p.accent, p.accentSoft)).toBeGreaterThanOrEqual(3);
+  });
+
+  test('the filled part of a bar tells from the empty track (progress, the week segments)', () => {
+    expect(contrast(p.accent, p.track)).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe.each(Object.entries({ light: palettes.light, dark: palettes.dark, focus: focusPalette }))('%s palette: edge on a raised control', (_, p) => {
+  test('the edge reaches 3:1 on the raised ground too', () => {
+    expect(contrast(p.edge, p.raise)).toBeGreaterThanOrEqual(3);
+  });
+});
+
+// A selected state drawn as a soft fill alone is 1.1:1 on the page; the ring of the accent carries it.
+describe.each(Object.entries(palettes))('%s palette: a soft accent ground that is a control', (_, p) => {
+  test('the soft ground alone is not enough on the page (1.4.11): the accent ring around it is', () => {
+    expect(contrast(p.accentSoft, p.background)).toBeLessThan(3);
+    expect(contrast(p.accent, p.background)).toBeGreaterThanOrEqual(3);
+  });
+});

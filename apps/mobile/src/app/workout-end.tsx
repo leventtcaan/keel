@@ -239,7 +239,7 @@ function Segment({ filled }: { filled: boolean }) {
   const { color } = useTheme();
   const fill = filled ? <View testID="segment-done" style={[styles.fill, { backgroundColor: color.accent }]} /> : null;
   return (
-    <View testID="segment" style={[styles.segment, { backgroundColor: color.track }]}>
+    <View testID="segment" style={[styles.segment, { backgroundColor: color.track, borderColor: color.edge }]}>
       {fill}
     </View>
   );
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
   card: { borderRadius: tokens.radius.card, padding: tokens.space.md, gap: tokens.space.sm },
   weekHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
   segments: { flexDirection: 'row', gap: tokens.space.xs },
-  segment: { flex: 1, height: tokens.size.track, borderRadius: tokens.radius.track, overflow: 'hidden' },
+  segment: { flex: 1, height: tokens.size.track, borderRadius: tokens.radius.track, borderWidth: tokens.border.hairline, overflow: 'hidden' },
   fill: { flex: 1 },
   number: { fontSize: tokens.type.number, fontWeight: tokens.weight.bold },
   heading: { fontSize: tokens.type.heading, fontWeight: tokens.weight.bold },

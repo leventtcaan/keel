@@ -83,7 +83,7 @@ describe.each(schemes)('%s theme', (scheme) => {
     expect(screen.getByText('Later')).toHaveStyle({ color: p.text });
   });
 
-  test('an unselected Chip is a surface with a line; a selected one is inverse', async () => {
+  test('an unselected Chip is a surface with the control edge (3:1, K-816); a selected one is inverse', async () => {
     await renderIn(
       scheme,
       <>
@@ -93,7 +93,7 @@ describe.each(schemes)('%s theme', (scheme) => {
     );
     expect(screen.getByRole('button', { name: 'Off' })).toHaveStyle({
       backgroundColor: p.surface,
-      borderColor: p.line,
+      borderColor: p.edge,
       borderRadius: tokens.radius.chip,
     });
     expect(screen.getByRole('button', { name: 'On' })).toHaveStyle({ backgroundColor: p.decisionBackground });
@@ -116,7 +116,8 @@ describe.each(schemes)('%s theme', (scheme) => {
   test('ProgressBar fills with the accent on the track colour', async () => {
     await renderIn(scheme, <ProgressBar value={0.4} label="Protein" />);
     const bar = screen.getByRole('progressbar', { name: 'Protein' });
-    expect(bar).toHaveStyle({ backgroundColor: p.track, height: tokens.size.track });
+    // The track's outline is the control edge: the bar's extent is told at 3:1, not by a 1.2:1 fill (K-816).
+    expect(bar).toHaveStyle({ backgroundColor: p.track, height: tokens.size.track, borderColor: p.edge, borderWidth: tokens.border.hairline });
     expect(screen.getByTestId('progress-fill')).toHaveStyle({ backgroundColor: p.accent, width: '40%' });
   });
 
@@ -248,6 +249,22 @@ describe('ProgressBar value', () => {
     await renderIn('light', <ProgressBar value={value} label="Protein" />);
     expect(screen.getByRole('progressbar', { name: 'Protein' })).toHaveAccessibilityValue({ min: 0, max: 100, now });
     expect(screen.getByTestId('progress-fill')).toHaveStyle({ width: `${now}%` });
+  });
+});
+
+describe.each(schemes)('TextField box in the %s theme (K-816)', (scheme) => {
+  const p = palettes[scheme];
+
+  test('its box is drawn in the control edge, empty and not focused; a problem takes the text colour', async () => {
+    await renderIn(
+      scheme,
+      <>
+        <TextField label="Reps" value="" onChangeText={() => {}} />
+        <TextField label="Sets" value="" onChangeText={() => {}} problem="Too many" />
+      </>,
+    );
+    expect(screen.getByLabelText('Reps').parent).toHaveStyle({ backgroundColor: p.surface, borderColor: p.edge, borderWidth: tokens.border.outline });
+    expect(screen.getByLabelText('Sets').parent).toHaveStyle({ borderColor: p.text });
   });
 });
 
