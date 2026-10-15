@@ -28,6 +28,7 @@ K-984 hazırlığı (TestFlight; K-983 Levent ASC bekler). Cihaz turunda yeniden
 - İlerleme › Calls yalnız son 12 karar; "Show older" gerekir mi.
 - Tur 4: rıza metni (Sick/In pain) tek paragraf ~19 satır — maddelere bölünsün mü (metin sürümü 4, değişirse 5 olur).
 - Tur 4 B2: İlerleme ızgarasında kaçan hafta sade hücre, açıklamada adı yok (bilinçli, #577 incelemesi); Tur 4'te 'gri hücre açıklamasız' bulundu — açıklamaya nötr bir satır (ör. 'Other weeks') eklensin mi, yoksa böyle mi kalsın.
+- Tur 4 B14 (motor/ürün): 8 gün kayıtsız dönüşte check-in 'How did training go this week? Getting weaker' soruyor. Denenen çözüm (soruyu seans yoksa sorma) geri alındı: kesimde kalori kararı antrenman cevabına bağlı (G7 K-98), soru kalkınca hafta 'henüz karar yok' ile harcanıyor ve başka yerde çalışıp kaydetmeyen kullanıcı cevap veremiyor. Seçenekler: (a) soruya 'Haven't trained' seçeneği, motor bunu 'antrenman yok' bilgisi olarak okur (öneri: kullanıcı yine cevap verebilir, veri dürüst); (b) soru sorulmaz, motor kendi 'önce bir seans kaydet' bekleme kuralıyla yazar; (c) böyle kalsın. Kalori kararının en çok kaç hafta bekleyebileceği de Levent'te.
 - Tur 4: paylaşım sekmesi adı "Streak" (içerik haftalık "Weeks on track") — ad değişsin mi.
 - Story gizlilik satırı privacy.md'ye; iOS pasteboard 5 dk.
 - K-976 Facebook App ID (`EXPO_PUBLIC_FACEBOOK_APP_ID`, EAS ortam değişkeni) · K-983 ASC deneme.
