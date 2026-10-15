@@ -61,4 +61,12 @@ class SafeLogTests {
                 + SafeLogTests.class.getName() + "#aFailureLineCarriesTheCodeTheCausesAndWhereNeverAMessage:")
                 .doesNotContain("82.4").doesNotContain("88 cm").doesNotContain("x / 0");
     }
+
+    @Test
+    void aDegradedLineNamesTheTaskThatRunsWithoutSomethingItNeedsAndNothingElse(CapturedOutput log) throws Exception {
+        SafeLog.degraded(SafeLogTests.class.getDeclaredMethod("aDegradedLineNamesTheTaskThatRunsWithoutSomethingItNeedsAndNothingElse", CapturedOutput.class));
+
+        assertThat(log.getAll()).contains("WARN").contains("degraded task=" + SafeLogTests.class.getName()
+                + "#aDegradedLineNamesTheTaskThatRunsWithoutSomethingItNeedsAndNothingElse");
+    }
 }

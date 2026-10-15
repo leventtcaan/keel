@@ -188,7 +188,7 @@ class Scripts(unittest.TestCase):
         group = re.search(r"(?ms)^\{\n(.*?)^\} \| ssh ", text)
         self.assertIsNotNone(group, "the values are written inside one { … } | ssh group")
         outside = text[:group.start()] + text[group.end():]
-        self.assertEqual(len(re.findall(r'printf "KEEL_', group.group(1))), 8)
+        self.assertEqual(len(re.findall(r'printf "KEEL_', group.group(1))), 9)
         self.assertNotIn('printf "KEEL_', outside)
         self.assertIn("read -rsp", text, "the RevenueCat secret is not echoed while typed")
         self.assertIn("umask 077", text)

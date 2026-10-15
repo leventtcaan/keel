@@ -55,7 +55,7 @@ yapılandırmadan okunur. RevenueCat'in webhook'u (resmî doküman, 4 Eki okundu
    | EXPIRATION, başka neden | EXPIRED | olay anı |
    Her geçiş yalnız olaydan hesaplanır (önceki durumdan değil) → aynı olayı iki kez uygulamak bir kez uygulamakla aynı.
 6. **TRANSFER:** `transferred_from`'daki bizim hesaplar → EXPIRED, erişim olay anında biter. `transferred_to` için olay bitiş tarihi
-   taşımaz; alıcı hesabın erişimi sonraki olayıyla (RENEWAL vb.) gelir. Eksik: REST ile anında tazeleme (aşağıda).
+   taşımaz; alıcı hesabın erişimi sonraki olayıyla (RENEWAL vb.) gelir. Eksik olan REST ile anında tazeleme Ek 3'te (K-704).
 7. **Sıra:** olay zamanı (`event_timestamp_ms`) hesabın `lastEventAt`'inden **eskiyse** kaydedilir ama durumu değiştirmez (geri
    götürmez); eşit ya da yeniyse uygulanır. Yok sayılan olaylar `lastEventAt`'i ilerletmez.
 8. **Tekillik:** `subscription.webhook_event (event_id birincil anahtar, account_id, type, event_at)`; ekleme `on conflict do nothing`,
@@ -91,8 +91,7 @@ eden olay = bir kez; farklı zamanlı olayların her sırası aynı sonuç = en 
 değişmez, yinelenen olay bir kez, eski olay geri götürmez, bilinmeyen hesap saklanmaz, silme + dışa aktarma), `EntitlementGuardTests`.
 
 ## Açık iş
-- **K-704:** RevenueCat REST tazelemesi (`GET /v1/subscribers/{id}`) — webhook'tan sonra ve TRANSFER alıcısı için; RevenueCat hesabı
-  ve gizli API anahtarı (Levent) sonrası.
+- **K-704:** RevenueCat REST tazelemesi — Ek 3'te yapıldı; canlı için Levent'in gizli API anahtarı `KEEL_REVENUECAT_API_KEY` bekliyor.
 - M9 kontrol listesi: `environments`'tan SANDBOX çıkar.
 
 ## Ek 1 · K-705 telefonun okuduğu durum (agent, 4 Eki)
@@ -111,3 +110,47 @@ silinir (`keel.subscription.event-retention`, `WebhookEventCleanup`; GDPR Md. 5(
 gelen bir teslim (RevenueCat'in kendi denemeleri ~2,5 saatte biter; panelin elle "Retry"ı süresiz) yeniden tartılır: #7 gereği **kesinlikle daha eski**
 olay durumu geri götürmez. Açık kalan tek durum: aynı milisaniyede iki olay, ikisinden eskisinin bir ay sonra elle yeniden gönderilmesi — o zaman
 durum o olayınkine döner; olasılık çok düşük, kabul edildi (K-814 incelemesi).
+
+## Ek 3 (2026-10-15, K-704) — REST tazelemesi, TRANSFER alıcısı, müşterinin silinmesi
+**Doğrulanan (RevenueCat resmî doküman, 15 Eki okundu):** API **v1**, taban `https://api.revenuecat.com/v1`, başlık `Authorization: Bearer <gizli anahtar>`
+(`https://www.revenuecat.com/docs/api-v1`). `GET /subscribers/{app_user_id}` (`.../api-v1/customers`): 200 müşteri bulundu, **201 müşteri yoktu, oluşturuldu**,
+401; cevap `request_date_ms`, `subscriber.entitlements.<id>.{expires_date, grace_period_expires_date, product_identifier}`,
+`subscriber.subscriptions.<ürün>.{period_type, is_sandbox, unsubscribe_detected_at, billing_issues_detected_at, refunded_at}` (`.../api-v1/customer-info-model`);
+tarihler ISO 8601 `Z`. `DELETE /subscribers/{app_user_id}`: "Deletion is queued asynchronously", 200/401/404, yeniden denenebilir akışta **200 ve 404 ikisi de başarı**.
+Webhook sayfası her webhook'tan sonra `GET /subscribers` öneriyor (`.../integrations/webhooks`). TRANSFER'de `transferred_from` ve `transferred_to` her zaman gelir,
+`environment` "bazen" (`.../webhooks/event-types-and-fields`). **`[doğrulanmadı]`:** (a) bugün üretilen bir gizli anahtarın v1 uç noktalarını yetkilendirdiği (v2 sayfası
+"v1 anahtarları v2'de çalışmaz" diyor; ters yön yazmıyor) — Levent anahtarı girince canlıda bir `curl` ile sınanır, 401 = anahtar türü; (b) `expires_date: null`'ın anlamı
+(ömür boyu varsayımı çıkarım) — null ise bir şey yazılmaz; (c) REST'in bir webhook'tan hemen sonra o olayı yansıttığı (doküman "tutarlı biçim" der, gecikme garantisi yazmaz);
+(d) `period_type` REST'te küçük harf (örnekte "normal"), webhook'ta büyük — karşılaştırma harf duyarsız; (e) silmenin takma adlı (`$RCAnonymousID`) kayıtları da götürdüğü.
+
+**Kararlar**
+1. **Çağrı `privacy` içinde** (`RevenueCatRest`, `EgressGate.call`, hedef `REVENUECAT_ACCOUNT`; tek çıkış kapısı, EgressRuleTests). `subscription` `privacy`'ye bağlanamaz
+   (allowedDependencies değişmez); köprü `shared.RevenueCatSubscribers` (tek yöntem `fetch`). Dışarı yalnız hesabın opak UUID'si + gizli anahtar gider (V1/V2: sağlık verisi yok);
+   privacy.md'nin RevenueCat'in aldığı veri listesi değişmez. Yeni bağımlılık yok (JDK `HttpClient`, Apple kalıbı).
+2. **Anahtar** `KEEL_REVENUECAT_API_KEY` → `keel.privacy.revenuecat.api-key` (V5; `deploy/env.example`, `init-env.sh`). **Yoksa ya da boşsa** tazeleme ve silme kapalı;
+   başlangıçta **tek** uyarı (`SafeLog.degraded`), çağrı başına yok. Üretimde zorunlu **değil** (Apple'ın tersine): Levent anahtarı girene kadar beta webhook'la çalışır.
+   Anahtar `toString`'de, istisnada, logda yok (SafeLog yalnız tür ve yer yazar; test).
+3. **Zaman aşımı** `keel.privacy.egress-timeout` (10 sn, bağlanma + cevap), yönlendirme izlenmez (anahtar başka yere gitmez).
+4. **Tazeleme:** webhook işlendi ve **işlem kesinleşti**, sonra (işlem dışı, kilit tutmadan) `GET`; hesabın olayı yetkiyle ilgiliyse (`SubscriptionState.of` dolu, hesap bizim)
+   ya da TRANSFER'in `transferred_to`'su bizim hesapsa. Tazeleme yalnız **ekler**: her hata (anahtar yok, RevenueCat cevap vermiyor, cevap kullanılamaz) webhook sonucunu
+   bozmaz, cevap yine 200 (RevenueCat uygulanmış olayı boşuna yeniden gönderirdi); hata `SafeLog.backgroundFailure` ile (tür + yer, mesaj yok).
+5. **Sıra kuralı:** REST cevabının anı = `request_date_ms` (RevenueCat'in saati; webhook'un `event_timestamp_ms`'i ile aynı saat — bizim saatimiz değil). Cevap bir durum olarak
+   (`lastEventAt = request_date_ms`) **aynı `SubscriptionState.next`'ten** geçer (#7): durumdan kesinlikle eskiyse yok sayılır, eşit/yeniyse uygulanır. Yani REST durumu
+   geri götürmez; iki cevap ve olay hangi sırada gelirse gelsin en yeni an kazanır. Cevap anı yoksa/bozuksa hata (sıra bilinmeyen tahmin edilmez). Olay kimliği yazılmaz (cevap olay değil;
+   iki kez sormak bir kez sormaktır).
+6. **Cevap → durum:** yapılandırılmış yetki yoksa, `expires_date` null ise, ya da yetkinin ürünü `subscriptions`'ta yoksa/`is_sandbox` yoksa/ortamı `environments`'ta değilse
+   **hiçbir şey değişmez** (yetki yokluğu erişimi **almaz**: yanlış yetki adı herkesin erişimini bitirirdi; webhook'taki "ortam yoksa izinsiz" ile aynı). Varsa `accessUntil` =
+   `expires_date` (ya da daha geç `grace_period_expires_date`); durum: `refunded_at` → REFUNDED (erişim o ana kadar), bitiş ≤ cevap anı → EXPIRED, `billing_issues_detected_at` → BILLING_ISSUE,
+   `unsubscribe_detected_at` → CANCELLED, `period_type` trial → TRIAL, yoksa ACTIVE. Erişim yine yalnız `accessUntil`'den.
+7. **TRANSFER alıcısı** (#6'nın eksik yarısı): `transferred_to`'daki bizim hesaplar için REST sorulur; olayda ortam yoksa da (REST kendi `is_sandbox`'ını tartar). Bırakılan hesap yine olaydan EXPIRED.
+8. **Hesap silinince müşteri de silinir** (M8 envanter açığı 4, V6): `DELETE /subscribers/{id}` — `privacy`'de `AccountDeletionRequested` dinleyicisi (`RevenueCatCustomerDeletion`).
+   **Hata politikası: yeniden dene, engelleme.** Her modülün silmesi kendi dinleyicisi/yayını olduğu için RevenueCat'in çökmesi yalnız bu dinleyiciyi düşürür; bizim verimiz yine silinir.
+   Düşen yayın olay kaydında kalır ve `DeletionRetry` (5 dk) başarana dek yeniden gönderir; silme tekrarı zararsız (200 ve 404 = silindi); `DeletionSweep` ikinci geçişi (10 dk) bir webhook
+   tazelemesinin silmeden sonra yeniden yarattığı (GET 201 yaratır) müşteriyi de siler. 401 (anahtar reddedildi) kurulum hatası sayılır: INTERNAL, ERROR log, yine yeniden denenir.
+   Alternatif — hata yut, logla geç: RevenueCat'te kişisel kayıt sessizce kalırdı; reddedildi. Alternatif — silmeyi RevenueCat'e bağlı kılmak: reddedildi (V6, verimizin silinmesi başkasına bağlı olamaz).
+9. **Kalan risk:** (c) maddesi. REST bir webhook'tan sonra henüz yansıtmamışsa ve cevabın anı olay anından yeniyse, cevap erişimi kısaltabilir; bir sonraki olay/cevap düzeltir. Beta'da
+   izlenir; sorun görülürse "cevap erişimi yalnız `request_date_ms` ile durumun anı arası X saniyeden uzaksa kısaltır" korkuluğu eklenir.
+
+**Doğrulama:** `RevenueCatRestTests` (sahte HTTP: yol, Bearer, 200/201/404/401/429/5xx, zaman aşımı, yönlendirme, anahtar yok = istek yok + tek uyarı, anahtar logda yok),
+`RevenueCatSubscriberTests` (cevap → durum, sıra), `RevenueCatRefreshTests` (DB: webhook sonrası tazeleme, eski cevap geri götürmez, TRANSFER alıcısı, hata/anahtar yok = webhook sonucu + 200,
+silinmiş hesaba yazılmaz), `RevenueCatCustomerDeletionTests` (DB: müşteri silinir; RevenueCat çökükken kendi verimiz silinir, yayın kalır, yeniden denemeyle silinir), `SafeLogTests`, `tools/test_deploy.py`.

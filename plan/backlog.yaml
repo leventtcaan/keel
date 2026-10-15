@@ -3019,7 +3019,7 @@ tasks:
     module: subscription
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-701]
     why: "RevenueCat her webhook'tan sonra GET /subscribers öneriyor; TRANSFER alıcısının bitiş tarihi olayda yok (ADR-056 açık iş). Önce Levent: RevenueCat hesabı + gizli API anahtarı"
     acceptance:

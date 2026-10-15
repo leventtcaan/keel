@@ -33,21 +33,49 @@ class Subscriptions {
         this.properties = properties;
     }
 
+    /**
+     * Weighs the event, and names the accounts whose entitlement RevenueCat's REST API is then asked about (K-704): the account
+     * of an event that says something about the entitlement, and a TRANSFER's receivers — an event carries no end for them, so
+     * their access would wait for their next event. {@code receivers} are the TRANSFER's {@code transferred_to}.
+     */
     @Transactional
-    void receive(SubscriptionEvent event) {
-        // No environment is none allowed (an immutable set's contains(null) throws: a 500 RevenueCat would send five times more).
-        if (event.environment() == null || !properties.environments().contains(event.environment())) {
-            return;
-        }
+    List<AccountId> receive(SubscriptionEvent event, List<String> receivers) {
         if ("TRANSFER".equals(event.type())) {
             // The purchases moved to another app user id: the accounts they left have no access from that moment (ADR-056 #6).
-            for (String from : event.transferredFrom() == null ? List.<String>of() : event.transferredFrom()) {
-                accounts.of(from).ifPresent(account -> apply(account, event, SubscriptionState.transferredAway(event.at())));
+            if (allowed(event)) {
+                for (String from : event.transferredFrom() == null ? List.<String>of() : event.transferredFrom()) {
+                    accounts.of(from).ifPresent(account -> apply(account, event, SubscriptionState.transferredAway(event.at())));
+                }
             }
-            return;
+            // The REST answer weighs the store environment itself, so a receiver is asked about whether the event names one or not.
+            return receivers.stream().map(accounts::of).flatMap(Optional::stream).distinct().toList();
         }
-        SubscriptionState.of(event, properties.entitlement())
-                .ifPresent(implied -> accounts.of(event.appUserId()).ifPresent(account -> apply(account, event, implied)));
+        if (!allowed(event)) {
+            return List.of();
+        }
+        return SubscriptionState.of(event, properties.entitlement())
+                .flatMap(implied -> accounts.of(event.appUserId()).map(account -> {
+                    apply(account, event, implied);
+                    return account;
+                })).stream().toList();
+    }
+
+    /** No environment is none allowed (an immutable set's contains(null) throws: a 500 RevenueCat would send five times more). */
+    private boolean allowed(SubscriptionEvent event) {
+        return event.environment() != null && properties.environments().contains(event.environment());
+    }
+
+    /**
+     * RevenueCat's REST answer for an account that still exists, weighed as an event is (K-704): by its moment, so an answer
+     * older than the state never takes it back. Not an event: no id is recorded, and asking twice is the same as asking once.
+     */
+    @Transactional
+    void answered(AccountId account, SubscriptionState answer) {
+        // The account may have been deleted since the ask began (the second deletion pass would remove a state written now, but
+        // not writing it is simpler): only an account that is still ours is written.
+        if (accounts.of(account.value().toString()).isPresent()) {
+            keep(account, answer);
+        }
     }
 
     private void apply(AccountId account, SubscriptionEvent event, SubscriptionState implied) {
@@ -58,6 +86,11 @@ class Subscriptions {
         if (first == 0) {
             return; // sent again: applied the first time
         }
+        keep(account, implied);
+    }
+
+    /** The account's state after {@code implied}: the first state, or the later of the two (SubscriptionState.next). */
+    private void keep(AccountId account, SubscriptionState implied) {
         Optional<SubscriptionState> current = locked(account);
         if (current.isEmpty()) {
             // The account's first state; an event for it at the same moment may have made it first — then it is weighed below.

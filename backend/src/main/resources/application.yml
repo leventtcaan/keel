@@ -169,6 +169,12 @@ keel:
     retry-every: 5m
     # A call out through EgressGate (K-812: Apple's /auth/token and /auth/revoke) gives up after this long, connecting or answering.
     egress-timeout: 10s
+    # RevenueCat's REST API v1 (K-704, ADR-056 Ek 3): read the subscriber after a webhook, delete the customer at account
+    # deletion. The secret API key from the environment (V5); not set (development, CI, beta before it is made) and both are off,
+    # with one warning at start. base-uri ends in a slash.
+    revenuecat:
+      api-key: ${KEEL_REVENUECAT_API_KEY}
+      base-uri: https://api.revenuecat.com/v1/
   # The language model the coach uses (K-503, ADR-004, ADR-042): an adapter the server has, the model, the output limit
   # and the provider's list prices per million tokens. "fake" until a provider is chosen (K-511; ADR-041: no real call,
   # no spending yet) — it sends nothing anywhere. The AI consent names the provider (keel.consent.third-party-ai).

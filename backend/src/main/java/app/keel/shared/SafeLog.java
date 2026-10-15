@@ -72,6 +72,16 @@ public final class SafeLog {
         write(LOG.atError(), "failure", fields);
     }
 
+    /**
+     * A task that runs without something it would use (a setting not made, K-704): which one, once, at start. Not a failure and
+     * not per call — a line per request would bury the others.
+     */
+    public static void degraded(Method task) {
+        Map<LogField, Object> fields = new EnumMap<>(LogField.class);
+        fields.put(LogField.TASK, task.getDeclaringClass().getName() + "#" + task.getName());
+        write(LOG.atWarn(), "degraded", fields);
+    }
+
     private static void describe(Throwable failure, Map<LogField, Object> fields) {
         List<String> chain = new ArrayList<>();
         Throwable root = failure;

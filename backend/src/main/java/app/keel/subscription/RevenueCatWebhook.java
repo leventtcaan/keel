@@ -13,7 +13,8 @@ import org.springframework.web.bind.annotation.RestController;
  * POST /webhooks/revenuecat (K-701, ADR-056 #1-2): RevenueCat's word that a subscription changed. Not the app's API (no
  * session, not in the contract): the signature over the raw body is the only proof of who sent it, so nothing is read before
  * it is checked — an unsigned, changed or late request is 401 and changes nothing (RevenueCat sends it again). Read up to the
- * longest an event can be and no further (413). 200 once the event is weighed, whether it changed anything or not.
+ * longest an event can be and no further (413). 200 once the event is weighed, whether it changed anything or not — and, for an
+ * event about an account's entitlement, once its REST refresh has been tried (RevenueCatRefresh; its failure changes nothing).
  */
 @RestController
 class RevenueCatWebhook {
@@ -23,11 +24,13 @@ class RevenueCatWebhook {
     private final Subscriptions subscriptions;
     private final RevenueCatProperties properties;
     private final Clock clock;
+    private final RevenueCatRefresh refresh;
 
-    RevenueCatWebhook(Subscriptions subscriptions, RevenueCatProperties properties, Clock clock) {
+    RevenueCatWebhook(Subscriptions subscriptions, RevenueCatProperties properties, Clock clock, RevenueCatRefresh refresh) {
         this.subscriptions = subscriptions;
         this.properties = properties;
         this.clock = clock;
+        this.refresh = refresh;
     }
 
     @PostMapping(PATH)
@@ -44,7 +47,8 @@ class RevenueCatWebhook {
                 properties.signatureTolerance())) {
             throw new ApiException(ErrorCode.UNAUTHENTICATED);
         }
-        subscriptions.receive(RevenueCatEvents.read(body));
+        // The event is applied and committed first; only then RevenueCat's REST API is asked (K-704), outside any transaction.
+        subscriptions.receive(RevenueCatEvents.read(body), RevenueCatEvents.transferredTo(body)).forEach(refresh::refresh);
         return ResponseEntity.ok().build();
     }
 }

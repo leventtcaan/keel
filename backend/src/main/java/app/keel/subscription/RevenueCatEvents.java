@@ -20,16 +20,14 @@ final class RevenueCatEvents {
     private RevenueCatEvents() {
     }
 
+    /** Who a TRANSFER gave the purchases to ({@code transferred_to}): not part of an event's state, only of whom to ask after (K-704). */
+    static List<String> transferredTo(byte[] body) {
+        List<String> receivers = texts(eventOf(body), "transferred_to");
+        return receivers == null ? List.of() : receivers;
+    }
+
     static SubscriptionEvent read(byte[] body) {
-        Map<?, ?> event;
-        try {
-            if (!(JSON.readValue(body, Object.class) instanceof Map<?, ?> sent) || !(sent.get("event") instanceof Map<?, ?> inside)) {
-                throw new ApiException(ErrorCode.VALIDATION_FAILED);
-            }
-            event = inside;
-        } catch (JacksonException notJson) {
-            throw new ApiException(ErrorCode.VALIDATION_FAILED);
-        }
+        Map<?, ?> event = eventOf(body);
         String id = text(event, "id");
         String type = text(event, "type");
         Instant at = moment(event, "event_timestamp_ms");
@@ -39,6 +37,17 @@ final class RevenueCatEvents {
         return new SubscriptionEvent(id, type, at, text(event, "app_user_id"), texts(event, "entitlement_ids"), text(event, "period_type"),
                 moment(event, "expiration_at_ms"), moment(event, "grace_period_expiration_at_ms"), text(event, "cancel_reason"),
                 text(event, "expiration_reason"), text(event, "environment"), texts(event, "transferred_from"));
+    }
+
+    private static Map<?, ?> eventOf(byte[] body) {
+        try {
+            if (!(JSON.readValue(body, Object.class) instanceof Map<?, ?> sent) || !(sent.get("event") instanceof Map<?, ?> inside)) {
+                throw new ApiException(ErrorCode.VALIDATION_FAILED);
+            }
+            return inside;
+        } catch (JacksonException notJson) {
+            throw new ApiException(ErrorCode.VALIDATION_FAILED);
+        }
     }
 
     private static String text(Map<?, ?> event, String key) {
