@@ -1139,9 +1139,17 @@
       "streak": "Streak",
       "progress": "Progress"
     },
-    "preview": "Sticker preview",
+    "background": {
+      "gallery": "Gallery",
+      "camera": "Camera",
+      "dark": "Dark",
+      "instagram": "In Instagram"
+    },
+    "instagramNote": "Only the sticker goes. You pick the background in Instagram.",
+    "denied": "The camera isn't allowed for this app. You can allow it in the iPhone's Settings, or choose a photo from the gallery.",
+    "photoFailed": "That photo couldn't be opened. Try another.",
     "share": "Share",
-    "note": "Made on this phone. No body weight. Save, TikTok and more are in the share sheet.",
+    "note": "Made on this phone. No body weight. Your photo stays yours. Save, TikTok and more are in the share sheet.",
     "nothing": "Nothing to share yet. A workout, a week on track or a stronger lift gives you a sticker.",
     "failed": "Couldn't make the sticker. Try again.",
     "partial": "Some of it couldn't be read (no connection?). The stickers show what could.",

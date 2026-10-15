@@ -13,7 +13,7 @@ import type Svg from 'react-native-svg';
 import { t } from '@/copy';
 import { layout } from '@/share/layout';
 import { shareParams } from '@/share/params';
-import { StickerImage } from '@/share/Sticker';
+import { type Backdrop, StickerImage } from '@/share/Sticker';
 import type { Sticker } from '@/share/stickers';
 
 const WORKOUT: Sticker = {
@@ -42,7 +42,8 @@ const all = (node: Node | null, out: Node[] = []): Node[] => {
   for (const child of node.children ?? []) if (typeof child !== 'string') all(child, out);
   return out;
 };
-const nodes = async (sticker: Sticker, width = 360) => all((await render(<StickerImage sticker={sticker} width={width} />)).toJSON() as Node);
+const nodes = async (sticker: Sticker, width = 360, backdrop?: Backdrop) =>
+  all((await render(<StickerImage sticker={sticker} width={width} backdrop={backdrop} />)).toJSON() as Node);
 const words = (list: Node[]) => list.flatMap((n) => (typeof n.props.content === 'string' ? [n.props.content] : []));
 
 test.each(KINDS.map((s) => [s.kind, s] as const))('%s: every piece of its words is drawn, with the word mark', async (_, sticker) => {
@@ -68,6 +69,41 @@ test('the image is as wide as asked and as tall as its words: its view box is th
   expect(svg.props).toMatchObject({ width: 360, vbWidth: shareParams.storyWidth, vbHeight: height });
   expect(svg.props.height).toBeCloseTo((360 * height) / shareParams.storyWidth, 5);
   expect(height).toBeLessThan(shareParams.storyHeight);
+});
+
+describe('behind the words', () => {
+  const PHOTO: Backdrop = { kind: 'photo', uri: 'file:///cache/ImagePicker/a.jpg' };
+
+  test('dark: a Story-sized image (9:16 from share.json), the words low in it, inside the margins', async () => {
+    const list = await nodes(WORKOUT, 360, { kind: 'dark' });
+
+    expect(list[0].props).toMatchObject({ vbWidth: shareParams.storyWidth, vbHeight: shareParams.storyHeight });
+    const ground = list.find((n) => n.type === 'RNSVGRect' && n.props.fill !== undefined)!;
+    expect(ground.props).toMatchObject({ width: shareParams.storyWidth, height: shareParams.storyHeight });
+    expect(ground.props.fillOpacity).toBeUndefined(); // the ground is solid
+    // The group holding the words sits at the bottom: its top is below the middle, its bottom inside the image.
+    const group = list.find((n) => n.type === 'RNSVGGroup' && n.props.matrix !== undefined)!;
+    const top = (group.props.matrix as number[])[5];
+    expect(top).toBeGreaterThan(shareParams.storyHeight / 2);
+    expect(top + layout(WORKOUT).height).toBeLessThan(shareParams.storyHeight);
+  });
+
+  test("a photo: the user's file, filling the image, under the words", async () => {
+    const list = await nodes(WORKOUT, 360, PHOTO);
+
+    const photo = list.find((n) => n.type === 'RNSVGImage')!;
+    expect(photo.props).toMatchObject({ width: shareParams.storyWidth, height: shareParams.storyHeight, src: { uri: PHOTO.uri } });
+    expect(photo.props.meetOrSlice).toBe(1); // slice: cover the image, never letterbox
+    expect(list.indexOf(photo)).toBeLessThan(list.findIndex((n) => n.type === 'RNSVGText'));
+  });
+
+  test('with a backdrop the words are the same; without one the image is only as tall as the words', async () => {
+    const withPhoto = words(await nodes(WORKOUT, 360, PHOTO));
+    const alone = words(await nodes(WORKOUT, 360));
+
+    expect(withPhoto).toEqual(alone);
+    expect((await nodes(WORKOUT))[0].props.vbHeight).toBe(layout(WORKOUT).height);
+  });
 });
 
 test('each week is a cell in its own look: a spare week is not a missed one', async () => {

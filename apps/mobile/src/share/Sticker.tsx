@@ -1,10 +1,10 @@
 import { forwardRef } from 'react';
-import Svg, { Rect, Text as SvgText } from 'react-native-svg';
+import Svg, { G, Image as SvgImage, Rect, Text as SvgText } from 'react-native-svg';
 
 import { t } from '@/copy';
 import { palettes, tokens } from '@/theme/tokens';
 
-import { type Item, layout } from './layout';
+import { type Item, MARGIN, layout } from './layout';
 import { shareParams } from './params';
 import type { Sticker, WeekCell } from './stickers';
 
@@ -15,30 +15,48 @@ const PANEL_RADIUS = 56;
 const CELL_RADIUS = 12;
 const OUTLINE = 4;
 const DASH = '10 8';
+/** An image scaled to cover the whole frame, centred, the overflow cropped. */
+const COVER = 'xMidYMid slice';
 
-type Props = { sticker: Sticker; width: number };
+/** What the sticker sits on, drawn into the same image: the user's photo or a plain dark ground. None: the sticker alone. */
+export type Backdrop = { kind: 'dark' } | { kind: 'photo'; uri: string };
+
+type Props = { sticker: Sticker; width: number; backdrop?: Backdrop };
 
 /**
  * One sticker (K-975): its words on a see-through dark panel, the weeks as cells, the word mark. Drawn as SVG so the phone
  * can make the PNG itself (react-native-svg's toDataURL through the ref); the image is `width` points wide and its
- * pixels are that times the screen's scale, which the screen picks to come out at the width in share.json. Nothing is
- * drawn by a server and nothing else goes in: no photo, no body, no figure (U12, V1).
+ * pixels are that times the screen's scale, which the screen picks to come out at the width in share.json. With a
+ * backdrop the image is the Story size (9:16, ADR-076 #8) with the sticker low in it, on the user's own photo or a dark
+ * ground; without, only as tall as its words, see-through. Nothing is drawn by a server and no body or figure goes in
+ * (U12); the photo is the user's file, read here and nowhere else (V1).
  */
-export const StickerImage = forwardRef<Svg, Props>(function StickerImage({ sticker, width }, ref) {
+export const StickerImage = forwardRef<Svg, Props>(function StickerImage({ sticker, width, backdrop }, ref) {
   const { items, height } = layout(sticker);
+  const canvas = backdrop === undefined ? height : shareParams.storyHeight;
+  // Under the words: the user's photo filling the image (never letterboxed), or a plain dark ground, or nothing.
+  const ground =
+    backdrop === undefined ? null : backdrop.kind === 'photo' ? (
+      <SvgImage x={0} y={0} width={shareParams.storyWidth} height={canvas} href={{ uri: backdrop.uri }} preserveAspectRatio={COVER} />
+    ) : (
+      <Rect x={0} y={0} width={shareParams.storyWidth} height={canvas} fill={palettes.dark.background} />
+    );
   const pieces = [sticker.kicker, sticker.title, ...sticker.stats.map((s) => `${s.value} ${s.label}`), ...sticker.lines];
   return (
     <Svg
       ref={ref}
       width={width}
-      height={(width * height) / shareParams.storyWidth}
-      viewBox={`0 0 ${shareParams.storyWidth} ${height}`}
+      height={(width * canvas) / shareParams.storyWidth}
+      viewBox={`0 0 ${shareParams.storyWidth} ${canvas}`}
       accessible
       accessibilityRole="image"
       // What is on it, read out: the user checks what an image says before it leaves the phone.
       accessibilityLabel={[t('share.spoken'), ...pieces].join('. ')}>
-      <Rect x={0} y={0} width={shareParams.storyWidth} height={height} rx={PANEL_RADIUS} fill={ink.decisionBackground} fillOpacity={tokens.opacity.scrim} />
-      {items.map((item, i) => (item.kind === 'text' ? <Words key={i} item={item} /> : <Cell key={i} item={item} />))}
+      {ground}
+      <G transform={`translate(0 ${canvas - height - (backdrop === undefined ? 0 : MARGIN)})`}>
+        <Rect x={0} y={0} width={shareParams.storyWidth} height={height} rx={PANEL_RADIUS} fill={ink.decisionBackground} fillOpacity={tokens.opacity.scrim} />
+        {items.map((item, i) => (item.kind === 'text' ? <Words key={i} item={item} /> : <Cell key={i} item={item} />))}
+      </G>
     </Svg>
   );
 });
