@@ -4131,3 +4131,35 @@ describe('walkthrough round 3: the session (K-1013)', () => {
     });
   });
 });
+
+// A workout the server had open that this phone kept as its own (K-999, openSession.ts): the server's clientIds, SYNCED with its ids.
+describe('continued from the server (K-999)', () => {
+  const kept = () => {
+    const startedAt = new Date(Date.now() - 30 * 60_000).toISOString();
+    mockRecords = [
+      ...lastWeek(),
+      { ...record('workout', 'other-phone-w', { clientId: 'other-phone-w', startedAt, programDayId: 'day-a' }), serverId: 'srv-w' },
+      {
+        ...record('set', 'other-phone-s1', { clientId: 'other-phone-s1', exerciseId: 'bench_press', setType: 'WORKING', loadKg: 62.5, reps: 6, rir: 2, side: 'BOTH' }, 'other-phone-w'),
+        serverId: 'srv-s1',
+      },
+    ];
+  };
+
+  test("opens on the server's sets: the first is done, the next is the second", async () => {
+    kept();
+    await show();
+    expect(await screen.findByText(t('workout.log', { number: 2 }))).toBeOnTheScreen();
+  });
+
+  test("the next set goes under the server's workout, and the set the server has is not logged again", async () => {
+    kept();
+    await show();
+    await fireEvent.press(await screen.findByText(t('workout.log', { number: 2 })));
+    expect(sets()).toHaveLength(1);
+    const [next] = sets();
+    expect(next.workoutClientId).toBe('other-phone-w');
+    expect(next.body.clientId).not.toBe('other-phone-s1');
+    expect(mockRecord.mock.calls.map(([o]) => o.kind)).not.toContain('workout');
+  });
+});

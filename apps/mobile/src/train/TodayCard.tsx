@@ -11,6 +11,7 @@ import { tokens } from '@/theme/tokens';
 import { type UnitSystem, formatLoad } from '@/units/units';
 
 import { MoveThumb } from './MoveThumb';
+import { OpenElsewhere } from './OpenElsewhere';
 import { dayName, exerciseName, rackNote } from './program';
 import { repCount } from './reps';
 import { swapChoice } from './swap';
@@ -42,6 +43,10 @@ type Props = {
   /** The user's check-in day, the server's (profile): the day that "reads what happened" after a skip; null when not known. */
   checkInDay: Schemas['Weekday'] | null;
   onStart: (programDayId: string) => void;
+  /** The server's id of today's session's workout when it is open and not on this phone (K-999): the way to continue it here. */
+  openWorkoutId: string | null;
+  /** The server's word on the week may have changed (an open workout ended or discarded): the tab reads it again. */
+  onReload: () => void;
   /** Today's change of a session undone (UNDO), or the short version made full again (FULL); null while one is sent. */
   onChange: ((programDayId: string, change: 'UNDO' | 'FULL') => void) | null;
   /** What came of the last change, said under the card (an undo the server could not make, a failure). */
@@ -68,7 +73,7 @@ export function TodayCard(props: Props) {
   );
 }
 
-function Body({ program, today, date, kind, stale, finishedDay, movedAway, moves, units, underWay, canPick, checkInDay, onStart, onChange, notice }: Props) {
+function Body({ program, today, date, kind, stale, finishedDay, movedAway, moves, units, underWay, canPick, checkInDay, onStart, openWorkoutId, onReload, onChange, notice }: Props) {
   const { color } = useTheme();
   // One sheet per tap: a second tap before the sheet is up must not open a second one (as Start, K-405 review).
   const opening = useRef(false);
@@ -123,6 +128,7 @@ function Body({ program, today, date, kind, stale, finishedDay, movedAway, moves
   const change = () => sheet({ pathname: '/today-change', params: { day: session?.day.id ?? '' } });
   let dock = null;
   if (underWay) dock = <Button label={t('train.continueWorkout')} onPress={() => router.push('/workout')} />;
+  else if (elsewhere && openWorkoutId !== null) dock = <OpenElsewhere workoutId={openWorkoutId} onChanged={onReload} />;
   else if (session !== null) {
     dock = (
       <View style={styles.dock}>
