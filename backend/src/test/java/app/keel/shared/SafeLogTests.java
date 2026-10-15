@@ -61,4 +61,34 @@ class SafeLogTests {
                 + SafeLogTests.class.getName() + "#aFailureLineCarriesTheCodeTheCausesAndWhereNeverAMessage:")
                 .doesNotContain("82.4").doesNotContain("88 cm").doesNotContain("x / 0");
     }
+
+    @Test
+    void aDegradedLineNamesTheTaskThatRunsWithoutSomethingItNeedsAndNothingElse(CapturedOutput log) throws Exception {
+        SafeLog.degraded(SafeLogTests.class.getDeclaredMethod("aDegradedLineNamesTheTaskThatRunsWithoutSomethingItNeedsAndNothingElse", CapturedOutput.class));
+
+        assertThat(log.getAll()).contains("WARN").contains("degraded task=" + SafeLogTests.class.getName()
+                + "#aDegradedLineNamesTheTaskThatRunsWithoutSomethingItNeedsAndNothingElse");
+    }
+
+    @Test
+    void anIgnoredLineIsDebugAndNamesOnlyTheTask() throws Exception {
+        java.lang.reflect.Method task = SafeLogTests.class.getDeclaredMethod("anIgnoredLineIsDebugAndNamesOnlyTheTask");
+        ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger("keel");
+        ch.qos.logback.classic.Level before = logger.getLevel();
+        ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent> lines = new ch.qos.logback.core.read.ListAppender<>();
+        lines.start();
+        logger.addAppender(lines);
+        logger.setLevel(ch.qos.logback.classic.Level.DEBUG);
+        try {
+            SafeLog.ignored(task);
+        } finally {
+            logger.setLevel(before);
+            logger.detachAppender(lines);
+        }
+
+        assertThat(lines.list).singleElement().satisfies(line -> {
+            assertThat(line.getLevel()).isEqualTo(ch.qos.logback.classic.Level.DEBUG);
+            assertThat(line.getFormattedMessage()).isEqualTo("ignored task=" + SafeLogTests.class.getName() + "#anIgnoredLineIsDebugAndNamesOnlyTheTask");
+        });
+    }
 }

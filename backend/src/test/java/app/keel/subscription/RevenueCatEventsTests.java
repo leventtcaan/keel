@@ -59,4 +59,14 @@ class RevenueCatEventsTests {
                     refused -> assertThat(refused.code()).isEqualTo(ErrorCode.VALIDATION_FAILED));
         }
     }
+
+    @Test
+    void aTransfersReceiversComeFromTransferredToAloneAndOnlyAsText() {
+        byte[] transfer = ("{\"event\": {\"id\": \"e\", \"type\": \"TRANSFER\", \"event_timestamp_ms\": 1, \"transferred_from\": [\"a\"], "
+                + "\"transferred_to\": [\"b\", 7, null, \"c\"]}}").getBytes(StandardCharsets.UTF_8);
+        byte[] none = "{\"event\": {\"id\": \"e\", \"type\": \"RENEWAL\", \"event_timestamp_ms\": 1, \"transferred_to\": \"b\"}}".getBytes(StandardCharsets.UTF_8);
+
+        assertThat(RevenueCatEvents.transferredTo(transfer)).containsExactly("b", "c");
+        assertThat(RevenueCatEvents.transferredTo(none)).isEmpty();
+    }
 }

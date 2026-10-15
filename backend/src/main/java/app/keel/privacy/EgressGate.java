@@ -29,7 +29,9 @@ public class EgressGate {
         /** A language model (M5): only with the THIRD_PARTY_AI consent (Apple 5.1.2(i)). */
         THIRD_PARTY_AI,
         /** Account housekeeping with Apple (revoking Sign in with Apple tokens on deletion): no health data. */
-        APPLE_ACCOUNT
+        APPLE_ACCOUNT,
+        /** Purchase housekeeping with RevenueCat (K-704: reading and deleting a customer by our opaque account id): no health data. */
+        REVENUECAT_ACCOUNT
     }
 
     /** What the other side answered: its status and its body, as text. */
@@ -63,6 +65,31 @@ public class EgressGate {
                 .collect(Collectors.joining("&"));
         HttpRequest request = HttpRequest.newBuilder(uri).timeout(timeout).header("Content-Type", "application/x-www-form-urlencoded")
                 .header("Accept", "application/json").POST(HttpRequest.BodyPublishers.ofString(body)).build();
+        return exchange(request);
+    }
+
+    /**
+     * A call with no body (K-704: RevenueCat's GET and DELETE of a subscriber), answered whatever its status; no answer in time is
+     * SERVICE_UNAVAILABLE. Redirects are not followed, so a header with a key goes only where it was sent. Package-private, as
+     * {@link #postForm}: the headers are credentials and are not logged.
+     */
+    Answer call(Destination destination, String method, URI uri, Map<String, String> headers) {
+        if (destination == Destination.THIRD_PARTY_AI) {
+            throw new IllegalArgumentException("a call to an AI names its provider: sendToAi");
+        }
+        HttpRequest.Builder request = HttpRequest.newBuilder(uri).timeout(timeout).header("Accept", "application/json")
+                .method(method, HttpRequest.BodyPublishers.noBody());
+        try {
+            headers.forEach(request::header);
+        } catch (IllegalArgumentException invalidHeader) {
+            // A header value the HTTP client refuses (a key with a newline in it): the JDK's message may quote the value, so it is
+            // dropped. This is our setup, not the other side's answer (V5).
+            throw new ApiException(ErrorCode.INTERNAL);
+        }
+        return exchange(request.build());
+    }
+
+    private Answer exchange(HttpRequest request) {
         try {
             HttpResponse<String> answer = http.send(request, HttpResponse.BodyHandlers.ofString());
             return new Answer(answer.statusCode(), answer.body());

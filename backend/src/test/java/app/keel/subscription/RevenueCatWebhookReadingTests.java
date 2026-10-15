@@ -23,7 +23,7 @@ class RevenueCatWebhookReadingTests {
     private static final int LIMIT = 1024;
     private final RevenueCatWebhook webhook = new RevenueCatWebhook(null,
             new RevenueCatProperties("test secret", Duration.ofMinutes(5), "premium", Set.of("PRODUCTION"), LIMIT),
-            Clock.fixed(Instant.parse("2026-10-04T12:00:00Z"), ZoneOffset.UTC));
+            Clock.fixed(Instant.parse("2026-10-04T12:00:00Z"), ZoneOffset.UTC), null);
 
     /** A request whose length is unknown, as a chunked one is. */
     private static MockHttpServletRequest undeclared(byte[] body) {

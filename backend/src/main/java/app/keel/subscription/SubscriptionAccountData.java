@@ -49,12 +49,16 @@ class SubscriptionAccountData implements AccountDataExport {
                     return entry;
                 }).list());
         // What is kept, nothing more: an account without a subscription has no part for it (no empty entries).
-        jdbc.sql("select status, access_until, last_event_at from subscription.subscription where account_id = :account")
+        jdbc.sql("select status, access_until, last_event_at, answered_at from subscription.subscription where account_id = :account")
                 .param("account", account.value()).query((row, n) -> {
                     Map<String, Object> entry = new LinkedHashMap<>();
                     entry.put("status", row.getString("status"));
                     entry.put("accessUntil", row.getObject("access_until", OffsetDateTime.class).toInstant().toString());
                     entry.put("lastEventAt", row.getObject("last_event_at", OffsetDateTime.class).toInstant().toString());
+                    OffsetDateTime answeredAt = row.getObject("answered_at", OffsetDateTime.class);
+                    if (answeredAt != null) {
+                        entry.put("answeredAt", answeredAt.toInstant().toString());
+                    }
                     return entry;
                 }).optional().ifPresent(subscription -> section.put("subscription", subscription));
         List<Map<String, Object>> events = jdbc.sql("select type, event_at from subscription.webhook_event where account_id = :account order by event_at, type")
