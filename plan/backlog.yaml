@@ -5025,7 +5025,7 @@ tasks:
     why: "Tur 4 B1: 25 hareketli kullanıcıda Strength kartı ~2 ekran çip, grafik görünmüyor; B2: Consistency ızgarasında kaçan hafta hücresinin açıklaması yok; B4: rızasız baseline'da Pull-up '0 kg × 6'; B5: rızasız hero 'Tap one to log it' tek kutuya"
     acceptance:
       - "Strength: seçili hareketin grafiği ve satırı çiplerden önce ya da çipler tek satır yatay kaydırılır (prototipe göre; prototipte yoksa gerekçe PR'da); 25 harekette grafik ilk ekranda"
-      - "Izgara açıklaması her hücre durumunu adlandırır, suçlamasız dille (U7; metin en.json)"
+      - "Izgara açıklaması: kaçan hafta bilerek adlandırılmaz (8e373f36, #577 incelemesi); sade hücreye açıklama gerekip gerekmediği Levent'te (B2)"
       - "Vücut ağırlığı hareketinde yük 0 iken 'Bodyweight × N' benzeri mevcut metin (yeni sayı yok)"
       - "Rızasız hero alt metni rızasız yüzle uyumlu"
     tests: ["jest: progress-w12 benzeri 25 hareket, ızgara açıklaması, bodyweight satırı"]

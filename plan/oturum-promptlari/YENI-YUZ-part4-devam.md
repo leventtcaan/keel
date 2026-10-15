@@ -27,6 +27,7 @@ K-984 hazırlığı (TestFlight; K-983 Levent ASC bekler). Cihaz turunda yeniden
 - Koç "The call stands until its next look" → nextCallOn'a geçsin mi.
 - İlerleme › Calls yalnız son 12 karar; "Show older" gerekir mi.
 - Tur 4: rıza metni (Sick/In pain) tek paragraf ~19 satır — maddelere bölünsün mü (metin sürümü 4, değişirse 5 olur).
+- Tur 4 B2: İlerleme ızgarasında kaçan hafta sade hücre, açıklamada adı yok (bilinçli, #577 incelemesi); Tur 4'te 'gri hücre açıklamasız' bulundu — açıklamaya nötr bir satır (ör. 'Other weeks') eklensin mi, yoksa böyle mi kalsın.
 - Tur 4: paylaşım sekmesi adı "Streak" (içerik haftalık "Weeks on track") — ad değişsin mi.
 - Story gizlilik satırı privacy.md'ye; iOS pasteboard 5 dk.
 - K-976 Facebook App ID (`EXPO_PUBLIC_FACEBOOK_APP_ID`, EAS ortam değişkeni) · K-983 ASC deneme.
