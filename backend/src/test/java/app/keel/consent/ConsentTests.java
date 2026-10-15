@@ -95,6 +95,21 @@ class ConsentTests {
     }
 
     @Test
+    void aYesToTheHealthTextThatCalledAwayAHealthStateIsAskedAgain() {
+        // Version 4 (Levent, 15 Oct; K-1021, ADR-077 Ek 6): traveling, a busy week and a new gym are no health data and stay on a
+        // withdrawal. A yes to version 3, which listed "away" among the health data and deleted everything, is not a yes to that.
+        AccountId account = TestSessions.newAccount();
+        insert(account, "HEALTH_DATA", "3", null, null);
+
+        assertThat(gate.granted(account, ConsentKind.HEALTH_DATA)).isFalse();
+        assertThat(list(account)).filteredOn(c -> "HEALTH_DATA".equals(c.get("kind"))).singleElement()
+                .satisfies(c -> assertThat(c).containsEntry("status", "GRANTED").containsEntry("textVersion", "3"));
+        assertThat(put(account, "HEALTH_DATA", Map.of("textVersion", "3"))).hasStatus(400);
+        assertThat(put(account, "HEALTH_DATA", Map.of("textVersion", "4"))).hasStatusOk();
+        assertThat(gate.granted(account, ConsentKind.HEALTH_DATA)).isTrue();
+    }
+
+    @Test
     void aYesToTheHealthTextFromBeforeItSaidWithdrawingDeletesIsAskedAgain() throws Exception {
         // K-429 (ADR-037 #36): 2-draft says a withdrawal deletes the data it covers; a yes to 1-draft is not a yes to that.
         AccountId account = TestSessions.newAccount();
