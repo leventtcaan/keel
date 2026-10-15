@@ -3,6 +3,8 @@ package app.keel.privacy;
 import app.keel.shared.AccountId;
 import app.keel.shared.ApiException;
 import app.keel.shared.ErrorCode;
+import app.keel.shared.RateLimitGroup;
+import app.keel.shared.RateLimited;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,6 +30,7 @@ class AppleRevocationController {
     }
 
     @PostMapping("/v1/account/apple-revocation")
+    @RateLimited(RateLimitGroup.APPLE_REVOCATION)
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void revoke(AccountId account, @RequestBody AppleRevocationRequest request) {
         if (request.authorizationCode() == null || request.authorizationCode().isBlank()) {

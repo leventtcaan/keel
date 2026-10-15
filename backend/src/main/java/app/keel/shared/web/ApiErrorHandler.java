@@ -2,6 +2,7 @@ package app.keel.shared.web;
 
 import app.keel.shared.ApiException;
 import app.keel.shared.ErrorCode;
+import app.keel.shared.RateLimitedException;
 import app.keel.shared.SafeLog;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.TypeMismatchException;
@@ -23,6 +24,12 @@ class ApiErrorHandler {
     /** An error a module raises on purpose. */
     @ExceptionHandler(ApiException.class)
     ResponseEntity<ApiError> refused(ApiException e, HttpServletRequest request) {
+        if (e instanceof RateLimitedException tooMany) {
+            // How long to wait, in whole seconds (RFC 9110 §10.2.3); the contract's RateLimited response lists the header.
+            HttpHeaders headers = new HttpHeaders();
+            headers.set(HttpHeaders.RETRY_AFTER, Long.toString(tooMany.retryAfterSeconds()));
+            return answer(e.code(), e, request, headers);
+        }
         return answer(e.code(), e, request);
     }
 

@@ -3,6 +3,8 @@ package app.keel.coach;
 import app.keel.shared.AccountId;
 import app.keel.shared.ApiException;
 import app.keel.shared.ErrorCode;
+import app.keel.shared.RateLimitGroup;
+import app.keel.shared.RateLimited;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
@@ -55,6 +57,7 @@ class CoachController {
      * cleaned before anything is counted or sent (MealDraft.readPhoto), and is kept nowhere.
      */
     @PostMapping(value = "/v1/meals/photo", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @RateLimited(RateLimitGroup.MEAL_PHOTO)
     MealDraft.Draft photo(AccountId account, HttpServletRequest request) throws IOException {
         int limit = photoProperties.maxBody();
         if (request.getContentLengthLong() > limit) {
@@ -78,6 +81,7 @@ class CoachController {
 
     /** POST /v1/meals/parse (K-504; contract MealWords → MealDraft): a meal in words, as a draft of the database's foods. */
     @PostMapping("/v1/meals/parse")
+    @RateLimited(RateLimitGroup.COACH)
     MealDraft.Draft parse(AccountId account, @RequestBody MealWords words) {
         if (words == null || words.text() == null || words.text().isBlank() || words.text().length() > mealProperties.maxTextChars()) {
             throw new ApiException(ErrorCode.VALIDATION_FAILED);
@@ -86,6 +90,7 @@ class CoachController {
     }
 
     @PostMapping("/v1/coach/messages")
+    @RateLimited(RateLimitGroup.COACH)
     AnswerView ask(AccountId account, @RequestBody Question question) {
         if (question == null || question.text() == null || question.text().isBlank() || question.text().length() > properties.maxQuestionChars()) {
             throw new ApiException(ErrorCode.VALIDATION_FAILED);

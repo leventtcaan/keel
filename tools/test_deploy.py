@@ -146,6 +146,13 @@ class Retention(unittest.TestCase):
         self.assertFalse([d for d in directives if re.match(r"log\b", d)])
         self.assertIn("reverse_proxy backend:8080", directives)
 
+    def test_caddy_trusts_no_forwarded_header_so_the_client_address_the_backend_counts_is_the_one_caddy_saw(self):
+        # K-817: Caddy's reverse_proxy ignores a client's X-Forwarded-For unless trusted_proxies names its sender; none is
+        # named, and the backend takes the header only from the Docker networks (application.yml, RateLimitConfigTests).
+        caddyfile = (DEPLOY / "Caddyfile").read_text()
+        directives = [l.strip() for l in caddyfile.splitlines() if l.strip() and not l.strip().startswith("#")]
+        self.assertFalse([d for d in directives if re.search(r"trusted_proxies|X-Forwarded-For|client_ip_headers", d)])
+
     def test_caddy_imports_other_sites_read_only(self):
         caddyfile = (DEPLOY / "Caddyfile").read_text()
         self.assertIn("import /etc/caddy/sites/*.caddy", caddyfile.splitlines())

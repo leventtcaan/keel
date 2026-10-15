@@ -67,6 +67,29 @@ keel:
     max-range-days: 400
     earliest-year: 1900
     latest-year: 2200
+  # How often a client may call the routes that cost something (K-817, ADR-081): a burst, then one request every refill-every,
+  # counted per account (per address at sign-in, where there is no account yet). Past it: 429 RATE_LIMITED with Retry-After.
+  # The numbers are for a person, not a script: sign-in happens once per install (a shared address may see a few dozen at
+  # once), revocation once per deletion (a closed Apple sheet may retry twice), the coach and the meal photo sit under their
+  # daily quotas (coach_messages_per_day 25, photo_analyses_per_day 10, data/parameters/quota.yaml) and this only stops a loop.
+  # It keeps a key and a time per client in memory (V3: nothing a request carried); idle clients are swept out every
+  # sweep-every, and past max-keys a new client is let through uncounted (about 10 MB at the bound).
+  rate-limit:
+    max-keys: 100000
+    sweep-every: 1m
+    groups:
+      sign-in:
+        burst: 20
+        refill-every: 30s
+      apple-revocation:
+        burst: 3
+        refill-every: 1m
+      coach:
+        burst: 10
+        refill-every: 20s
+      meal-photo:
+        burst: 5
+        refill-every: 30s
   # Who can hold an account (K-225, ADR-027 #13): adults only, one age everywhere so a launch has no country table.
   profile:
     adult-age: 18
@@ -213,6 +236,13 @@ keel:
 # loggers would print an exception's message, which may hold what the request carried; and the fallback error body
 # never repeats the path.
 server:
+  # Behind Caddy (deploy/Caddyfile) the connection's address is Caddy's. Tomcat takes the client's from X-Forwarded-For only
+  # when the connection comes from these networks, the Docker bridge networks Caddy is on (K-817): a connection from anywhere
+  # else cannot choose its address. Caddy overwrites what clients send in that header with the address it saw.
+  forward-headers-strategy: native
+  tomcat:
+    remoteip:
+      internal-proxies: "172.16.0.0/12, 192.168.0.0/16"
   error:
     include-path: never
     include-message: never

@@ -52,3 +52,19 @@ keel:
       max-side: 1024
       max-bytes: 2500000
       jpeg-quality: 0.85
+  # The request limits (K-817) are out of the way of the other tests, which sign in and ask many times from one address and
+  # account in a few seconds; RateLimitApiTests sets small ones of its own.
+  rate-limit:
+    groups:
+      sign-in:
+        burst: 100000
+        refill-every: 1ms
+      apple-revocation:
+        burst: 100000
+        refill-every: 1ms
+      coach:
+        burst: 100000
+        refill-every: 1ms
+      meal-photo:
+        burst: 100000
+        refill-every: 1ms
