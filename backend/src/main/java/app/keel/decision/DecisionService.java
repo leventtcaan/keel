@@ -41,6 +41,8 @@ import app.keel.shared.AccountId;
 import app.keel.shared.ApiException;
 import app.keel.shared.ErrorCode;
 import app.keel.training.TrainingCalls;
+import app.keel.training.TrainingMoveTargets;
+import app.keel.training.HeldMove;
 import app.keel.training.PlannedDays;
 import app.keel.training.TrainingStatusReader;
 import java.math.BigDecimal;
@@ -88,6 +90,7 @@ class DecisionService {
     private final Clock clock;
     private final WeekLogs logs;
     private final TrainingCalls training;
+    private final TrainingMoveTargets moves;
     private final TrainingStatusReader statuses;
     private final PlannedSessions planned;
     private final StateStore states;
@@ -97,7 +100,8 @@ class DecisionService {
 
     DecisionService(CallStore calls, Profiles profiles, Measurements measurements, ConsentGate consent, ParameterSet parameters,
             QuestionBudget budget, Clock clock, WeekLogs logs, TrainingCalls training, TrainingStatusReader statuses, StateStore states,
-            AccountDates accounts, PlannedSessions planned) {
+            AccountDates accounts, PlannedSessions planned, TrainingMoveTargets moves) {
+        this.moves = moves;
         this.planned = planned;
         this.accounts = accounts;
         this.states = states;
@@ -464,7 +468,8 @@ class DecisionService {
         }
         Week week = week(account);
         Starting starting = starting(week).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
-        return StartingTarget.of(starting.plan(), starting.estimate(), week.parameters());
+        PlanTargets targets = startingPlanTargets(account, week, starting).orElseThrow(() -> new ApiException(ErrorCode.CONFLICT));
+        return StartingTarget.of(starting.plan(), starting.estimate(), targets, week.parameters());
     }
 
     /** The first plan as the first call would start it, and the estimate its target comes from (K-989). */
@@ -541,12 +546,15 @@ class DecisionService {
         }
         Action action = DecisionJson.action(call.decision());
         Optional<Integer> maintenance = maintenance(account, week);
+        // A hold of the load keeps the move whose target it changes, read from the program before the hold is in force and kept
+        // with the call as the plan before and after it are (K-1009, ADR-077 Ek 7). Applied again ("Use this call") it is read again.
+        HeldMove held = action instanceof Action.StopLoadIncrease ? moves.heldMove(account).orElse(null) : null;
         CallStore.Plan after = (onTheProgram(account, id, action, week.today(), LocalDate.parse((String) call.decision().get("nextReview")))
                 ? Optional.of(before)
                 : PlanChange.after(before, action, week.today(), week.parameters(), maintenance, miniCutTarget(action, week, before, maintenance)))
                 .orElseThrow(() -> new ApiException(ErrorCode.CONFLICT));
         // Only the request that moved the call from PENDING (or DECLINED) changes the plan; another one at the same moment reads it.
-        if (calls.markApplied(account, id, clock.instant(), before, after)) {
+        if (calls.markApplied(account, id, clock.instant(), before, after, held)) {
             calls.replace(account, after);
         }
         return targetsAfter(account);
@@ -658,7 +666,10 @@ class DecisionService {
         }).toList();
     }
 
-    /** What the call changed in the plan, old to new (K-1000), the step target read as the plan holds it (the starting one before any is set). */
+    /**
+     * What the call changed in the plan, old to new (K-1000), the step target read as the plan holds it (the starting one before
+     * any is set), and for a hold of the load the move whose target it changed (K-1009), as kept when the call was applied.
+     */
     List<Map<String, Object>> changes(CallStore.Call call) {
         if (call.snapshot() == null) {
             return List.of();
@@ -822,8 +833,16 @@ class DecisionService {
         } catch (ApiException unreadable) {
             return Optional.empty();
         }
-        return starting(week).flatMap(first -> bodyweight(account, week).flatMap(kg -> PlanTargets.of(first.plan(), kg, week.sex(),
-                week.body().ageYears(), planned.perWeek(account, week.profile()), week.parameters())));
+        return starting(week).flatMap(first -> startingPlanTargets(account, week, first));
+    }
+
+    /**
+     * The targets the first plan has at today's bodyweight (K-1017): the budget's and GET /v1/targets/starting's one
+     * computation — the protein and the steps the first call plans are these, not a second formula (U1).
+     */
+    private Optional<PlanTargets> startingPlanTargets(AccountId account, Week week, Starting first) {
+        return bodyweight(account, week).flatMap(kg -> PlanTargets.of(first.plan(), kg, week.sex(), week.body().ageYears(),
+                planned.perWeek(account, week.profile()), week.parameters()));
     }
 
     /**

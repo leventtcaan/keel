@@ -194,7 +194,7 @@ class DecisionApplicationTests {
             assertThat(store.plan(account)).contains(LAST_WEEKS_PLAN);
             assertThat(map(send(account, "GET", "/v1/decisions/" + call))).as(safety.rule()).containsEntry("declinable", false);
 
-            assertThat(store.markApplied(account, call, Instant.now(), LAST_WEEKS_PLAN, safetyPlan)).isTrue();
+            assertThat(store.markApplied(account, call, Instant.now(), LAST_WEEKS_PLAN, safetyPlan, null)).isTrue();
             store.replace(account, safetyPlan);
 
             assertThat(send(account, "POST", "/v1/decisions/" + call + "/decline")).as(safety.rule() + " applied").hasStatus(409);

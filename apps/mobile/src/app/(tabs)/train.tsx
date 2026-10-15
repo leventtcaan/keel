@@ -1,4 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { type ReactNode, useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,6 +14,7 @@ import { t } from '@/copy';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
+import type { LocalRecord } from '@/sync/store';
 import { load } from '@/today/today';
 import { useReadOnFocus } from '@/today/useReadOnFocus';
 import { CallRow } from '@/train/CallRow';
@@ -20,7 +22,7 @@ import { changeToday } from '@/train/changes';
 import { dayName, programNotes } from '@/train/program';
 import { TodayCard } from '@/train/TodayCard';
 import { movesOf } from '@/train/trainData';
-import { finishedDay, movedOffToday, sessionState, splitName, todayKind, weekRows } from '@/train/week';
+import { type WeekRow, finishedDay, movedOffToday, sessionDone, sessionState, splitName, todayKind, weekRows } from '@/train/week';
 
 type Schemas = components['schemas'];
 
@@ -49,7 +51,12 @@ export default function TrainScreen() {
         state.current().catch(() => null),
         load(() => api.GET('/v1/decisions/current')),
       ]);
-      return { ...read, own, records, declared, decision };
+      // The user's check-in day, for a skipped session's line ("Sunday reads what happened"); read only when a session of
+      // the week is skipped.
+      const skipped = read.program.state === 'ready' && read.program.value.week?.some((s) => s.skipped === true) === true;
+      const profile = skipped ? await load(() => api.GET('/v1/profile')) : null;
+      const checkInDay = profile?.state === 'ready' ? profile.value.schedule.checkInDay : null;
+      return { ...read, own, records, declared, decision, checkInDay };
     }, [api, training, workoutRecords, state]),
   );
 
@@ -168,7 +175,8 @@ export default function TrainScreen() {
         moves={moves}
         units={units}
         underWay={active !== null}
-        canPick={pick && rows.some((row) => startable(row.session))}
+        canPick={pick && rows.some((row) => startable(program, row, data?.records ?? []))}
+        checkInDay={data?.checkInDay ?? null}
         onStart={start}
         onChange={changing ? null : (id, change) => void changeToday_(id, change)}
         notice={
@@ -184,16 +192,27 @@ export default function TrainScreen() {
           {t('train.thisWeek')}
         </Text>
         {rows.map((row) => {
+          const done = sessionDone(program, row, data?.records ?? []);
           const tag = row.session.skipped === true ? t('train.skippedTag') : row.session.moved === true ? t('train.moved') : null;
           const label = t('train.startDay', { day: dayName(row.day) });
           const startRow =
-            pick && startable(row.session) ? <Button label={t('train.startThis')} accessibilityLabel={label} variant="ghost" onPress={() => start(row.day.id)} /> : null;
+            pick && startable(program, row, data?.records ?? []) ? (
+              <Button label={t('train.startThis')} accessibilityLabel={label} variant="ghost" onPress={() => start(row.day.id)} />
+            ) : null;
+          // A session done carries its tick, as the week strip's day does (the same words: it is done).
+          const tick = done ? (
+            <View accessible accessibilityLabel={t('train.doneTag')} style={styles.doneMark}>
+              <SymbolView name="checkmark" size={tokens.type.bodySmall} tintColor={color.accent} weight="bold" />
+              <Text style={[styles.small, { color: color.muted }]}>{t('train.doneTag')}</Text>
+            </View>
+          ) : null;
           return (
             <View key={row.day.id} style={[styles.row, { borderColor: color.line }]}>
               <Text style={[styles.text, styles.grow, { color: color.text }]}>
                 {t('train.weekRow', { weekday: t(`programEditor.weekdayShort.${row.weekday}`), day: dayName(row.day) })}
               </Text>
               {tag !== null && <Text style={[styles.small, { color: color.muted }]}>{tag}</Text>}
+              {tick}
               {startRow}
             </View>
           );
@@ -216,8 +235,8 @@ function undone(before: Schemas['Program'], after: Schemas['Program'], programDa
   return now.date !== was.date || now.moved !== true;
 }
 
-/** A session of the week that can be started from its row: not skipped, not done already (the server's word). */
-const startable = (session: Schemas['WeekSession']) => session.skipped !== true && session.workout?.state !== 'DONE';
+/** A session of the week that can be started from its row: not skipped, not done already (the one rule of its tick, sessionDone). */
+const startable = (program: Schemas['Program'], row: WeekRow, records: LocalRecord[]) => row.session.skipped !== true && !sessionDone(program, row, records);
 
 const SAID = { conflict: 'todayChange.conflict', offline: 'todayChange.offline', failed: 'todayChange.failed' } as const;
 
@@ -259,6 +278,7 @@ const styles = StyleSheet.create({
   week: { gap: tokens.space.xs },
   row: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, minHeight: tokens.size.touch, borderTopWidth: tokens.border.hairline },
   grow: { flex: 1 },
+  doneMark: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.xs },
   loading: { alignSelf: 'flex-start', minHeight: tokens.size.touch },
   top: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
   edit: { minHeight: tokens.size.touch, minWidth: tokens.size.touch, alignItems: 'center', justifyContent: 'center' },

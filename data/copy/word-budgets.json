@@ -379,6 +379,7 @@
         ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
         ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
         ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
+        "thisWeek.today.more",
         ["thisWeek.today.cardio", "thisWeek.today.cardioOptional"],
         ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around"],
         "food.budget.kcalUnit",
@@ -507,6 +508,7 @@
             ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
             ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
             ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
+            "thisWeek.today.more",
             ["thisWeek.today.cardio", "thisWeek.today.cardioOptional"],
             ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around"],
             "food.budget.kcalUnit",
@@ -524,7 +526,7 @@
             ["thisWeek.onTrack", "thisWeek.countedByWeek"],
             ["decision.no_decision_yet.label", "decision.increase_calories.label", "decision.change_movement.label", "decision.hard_stop.label", "decision.change_phase.label", "decision.stop_load_increase.label", "decision.deload.label", "decision.full_rest_week.label", "decision.fix_recovery.label", "decision.continue.label", "decision.fix_adherence.label", "decision.fix_training.label", "decision.adjust_calories.label", "decision.mini_cut.label", "decision.add_training_day.label", "decision.move_missed_sessions.label"],
             "thisWeek.hero.notApplied",
-            "thisWeek.hero.notAppliedShort",
+            ["thisWeek.hero.notAppliedShort", "thisWeek.hero.pending"],
             "thisWeek.hero.useCall",
             "thisWeek.today.today",
             "programDays.full_body_a.name",
@@ -535,6 +537,7 @@
             ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
             ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
             ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
+            "thisWeek.today.more",
             ["thisWeek.today.cardio", "thisWeek.today.cardioOptional"],
             ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around"],
             "food.budget.kcalUnit",
@@ -558,6 +561,7 @@
             ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
             ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
             ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
+            "thisWeek.today.more",
             ["thisWeek.today.cardio", "thisWeek.today.cardioOptional"],
             "thisWeek.food.locked",
             "thisWeek.food.allow"
@@ -580,6 +584,7 @@
             ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
             ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
             ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
+            "thisWeek.today.more",
             ["thisWeek.today.cardio", "thisWeek.today.cardioOptional"],
             ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around"],
             "food.budget.kcalUnit",
@@ -616,13 +621,14 @@
         ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
         ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
         ["thisWeek.today.target", "thisWeek.today.added", "train.setsReps"],
+        "thisWeek.today.more",
         ["thisWeek.today.cardio", "thisWeek.today.cardioOptional"],
         ["thisWeek.food.left", "thisWeek.food.over", "thisWeek.food.around"],
         "food.budget.kcalUnit",
         "thisWeek.food.log"
       ],
       "uncounted": ["thisWeek.strip.letter.MONDAY", "thisWeek.strip.letter.TUESDAY", "thisWeek.strip.letter.WEDNESDAY", "thisWeek.strip.letter.THURSDAY", "thisWeek.strip.letter.FRIDAY", "thisWeek.strip.letter.SATURDAY", "thisWeek.strip.letter.SUNDAY"],
-      "notFirstView": ["today.failed", "today.retry", "thisWeek.settings", "thisWeek.strip.label", "thisWeek.strip.mark", "thisWeek.hero.settingsLabel", "thisWeek.hero.openCall", "thisWeek.hero.monday.openLabel", "thisWeek.today.label", "thisWeek.today.changeLabel", "thisWeek.today.startLabel", "thisWeek.today.doneLabel", "thisWeek.food.allowLabel", "thisWeek.food.lineLabel", "thisWeek.food.lineLabelAround", "food.budget.single", "format.range", "today.state.declare", "thisWeek.food.allow", "thisWeek.food.locked", "thisWeek.hero.callsOff", "thisWeek.hero.firstCall", "thisWeek.hero.firstWeek", "thisWeek.hero.inDays", "thisWeek.hero.nextCall", "thisWeek.hero.notApplied", "thisWeek.hero.notAppliedShort", "thisWeek.hero.settings", "thisWeek.hero.start", "thisWeek.hero.today", "thisWeek.hero.tomorrow", "thisWeek.hero.train", "thisWeek.hero.useCall", "thisWeek.hero.weighIn", "thisWeek.hero.yourWeek", "thisWeek.today.continue", "thisWeek.today.done", "thisWeek.today.doneStats.one", "thisWeek.today.doneStats.other", "thisWeek.today.full", "thisWeek.today.movedTo", "thisWeek.today.open", "thisWeek.today.openElsewhere", "thisWeek.today.openSets.none", "thisWeek.today.openSets.one", "thisWeek.today.openSets.other", "thisWeek.today.rest", "thisWeek.today.skipped", "thisWeek.today.skippedNoDay", "thisWeek.today.undo", "today.state.back", "today.state.paused"],
+      "notFirstView": ["today.failed", "today.retry", "thisWeek.settings", "thisWeek.strip.label", "thisWeek.strip.mark", "thisWeek.hero.settingsLabel", "thisWeek.hero.openCall", "thisWeek.hero.monday.openLabel", "thisWeek.today.label", "thisWeek.today.changeLabel", "thisWeek.today.startLabel", "thisWeek.today.doneLabel", "thisWeek.food.allowLabel", "thisWeek.food.lineLabel", "thisWeek.food.lineLabelAround", "food.budget.single", "format.range", "today.state.declare", "thisWeek.food.allow", "thisWeek.food.locked", "thisWeek.hero.callsOff", "thisWeek.hero.firstCall", "thisWeek.hero.firstWeek", "thisWeek.hero.inDays", "thisWeek.hero.nextCall", "thisWeek.hero.notApplied", "thisWeek.hero.notAppliedShort", "thisWeek.hero.pending", "thisWeek.hero.settings", "thisWeek.hero.start", "thisWeek.hero.today", "thisWeek.hero.tomorrow", "thisWeek.hero.train", "thisWeek.hero.useCall", "thisWeek.hero.weighIn", "thisWeek.hero.yourWeek", "thisWeek.today.continue", "thisWeek.today.done", "thisWeek.today.doneStats.one", "thisWeek.today.doneStats.other", "thisWeek.today.full", "thisWeek.today.movedTo", "thisWeek.today.open", "thisWeek.today.openElsewhere", "thisWeek.today.openSets.none", "thisWeek.today.openSets.one", "thisWeek.today.openSets.other", "thisWeek.today.rest", "thisWeek.today.skipped", "thisWeek.today.skippedNoDay", "thisWeek.today.undo", "today.state.back", "today.state.paused"],
       "parts": ["src/today/Hero.tsx", "src/today/WeekStrip.tsx", "src/today/TodayCard.tsx", "src/today/FoodLine.tsx", "src/today/StateCard.tsx"],
       "faces": []
     },
@@ -666,6 +672,7 @@
         "train.kept",
         "train.days.one",
         "train.skippedTag",
+        "train.doneTag",
         "train.moved",
         "train.startThis",
         "train.startDay",
@@ -868,6 +875,7 @@
       "notFirstView": [
         "callScreen.applied",
         "callScreen.undone",
+        "callScreen.notAppliedYet",
         "callScreen.subscription",
         "callScreen.none",
         "callScreen.failed",
@@ -924,6 +932,29 @@
             "callScreen.gotIt"
           ],
           "dynamic": [{"what": "the day the call was made (Mon, Dec 28)", "words": 2}, {"what": "the next call's date (Mon, Jan 4)", "words": 2}]
+        },
+        {
+          "face": "a hold of the load on a move",
+          "keys": [
+            ["callScreen.back", "callScreen.backProgress"],
+            "decision.stop_load_increase.label",
+            "decision.stop_load_increase.plateau.title",
+            "callScreen.inPlan",
+            "callScreen.changes.held",
+            "callScreen.changes.moveTarget",
+            "units.kg",
+            "decision.ruleShort.plateau",
+            "callScreen.confidence",
+            ["callScreen.level.LOW", "callScreen.level.MEDIUM", "callScreen.level.HIGH"],
+            "callScreen.nextCall",
+            "callScreen.gotIt",
+            "callScreen.keep"
+          ],
+          "dynamic": [
+            {"what": "the day the call was made (Mon, Dec 28)", "words": 2},
+            {"what": "the next call's date (Mon, Jan 4)", "words": 2},
+            {"what": "the move's name from the copy, the longest at three words (Dumbbell bench press)", "words": 3}
+          ]
         },
         {
           "face": "the safety call",
@@ -998,10 +1029,26 @@
             ["callScreen.level.LOW", "callScreen.level.MEDIUM", "callScreen.level.HIGH"],
             "callScreen.nextCall",
             "callScreen.week1.soundsRight",
-            "callScreen.week1.changeIt",
-            "callScreen.gotIt"
+            "callScreen.week1.changeIt"
           ],
           "dynamic": [{"what": "the day the call was made (Mon, Oct 12)", "words": 2}, {"what": "the next call's date (Mon, Oct 19)", "words": 2}, {"what": "the suggested day (Sat)", "words": 1}]
+        },
+        {
+          "face": "one more day, added in Edit",
+          "keys": [
+            "decision.add_training_day.label",
+            "decision.add_training_day.first_week_add_day.title",
+            "callScreen.week1.daysLabel",
+            "callScreen.week1.addInEdit",
+            "decision.ruleShort.first_week_add_day",
+            "callScreen.observation",
+            "callScreen.confidence",
+            ["callScreen.level.LOW", "callScreen.level.MEDIUM", "callScreen.level.HIGH"],
+            "callScreen.nextCall",
+            "callScreen.week1.openEdit",
+            "callScreen.week1.changeIt"
+          ],
+          "dynamic": [{"what": "the day the call was made (Mon, Oct 12)", "words": 2}, {"what": "the next call's date (Mon, Oct 19)", "words": 2}, {"what": "the suggested day in the note (Saturday)", "words": 1}]
         },
         {
           "face": "change it",
@@ -1013,8 +1060,7 @@
             "callScreen.week1.keepSuggestion",
             "callScreen.week1.moveHead",
             "callScreen.week1.addHead",
-            "callScreen.week1.done",
-            "callScreen.keep"
+            "callScreen.week1.done"
           ],
           "dynamic": [{"what": "the day in the hint, twice (Thursday instead of Wednesday)", "words": 2}, {"what": "the day to move (Wednesday)", "words": 1}, {"what": "the free days to pick from (Tuesday, Thursday, Saturday, Sunday)", "words": 4}]
         }

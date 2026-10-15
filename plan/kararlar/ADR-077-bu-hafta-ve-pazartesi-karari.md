@@ -187,3 +187,29 @@ Karar ekranı (#3) ve 1. hafta gün seçimi (#4, Ek 1) telefonda hesap istemez (
   değişmez; uzun boşluk seriyi bitirebilir, ekran bunu iddia etmez ve suçlamaz (U7).
 - **Rıza veri türüne göre:** Sick ve In pain sağlık verisidir, HEALTH_DATA rızası ister; Traveling, Busy, New gym takvim bilgisidir, rızasız
   kaydedilir (K-1021). Süre telefonda tarih toplanmadan gün sayısıyla gönderilir; seçenekler 3 ve 7 gün (#6).
+
+## Ek 7 · Yük tutma kararında hareket hedefi satırı (K-1009, 2026-10-14, agent, teknik; KABUL; saklama düzenleyici incelemesiyle sıkılaştırıldı)
+Ek 4'ün "hareket hedefi satırı antrenman modülünden gelir" sözü şöyle yerine gelir (`Decision.changes[]`, sözleşme `DecisionChange.what = MOVE`):
+- **Satır:** `{what: MOVE, exerciseId, held: true, before: {target: {loadKg, reps}}, after: {target: {loadKg, reps}}, inForce?}`. `before`: karar
+  uygulanırken programın o hareket için sakladığı sonraki hedef; `after`: yük tutulurken programın göstereceği hedef (`NextTargets.shown`: son yük, tekrar
+  aralığının üstü, K-217). Sayılar kg ve tekrar, programın birimiyle; telefon yalnız yazar (U1). `held: true`: yük korunuyor, telefon bunu "hedef düştü" diye
+  yazmaz (kullanıcı testi, 8 Eki). DECLINED/UNDONE'da `inForce` = `before` (tutma kalkar, program karardan önceki hedefte).
+- **Saklama (karar kaydı karar anındaki veriden yeniden üretilir, decision/package-info, ADR-003/005):** hareket satırı, CALORIES/STEPS/PHASE gibi, kararın kendi
+  kaydından okunur. Karar uygulanırken (`DecisionService.apply`, `training.holdLoad`'dan önce, aynı işlemde) `TrainingMoveTargets.heldMove` programdan hesaplar
+  ve `decision.weekly_call.held_move` (jsonb, göç V48, geri doldurma yok) sütununa `plan_before/plan_after` ile birlikte yazılır. Okuma saklı değerden yapılır:
+  son karar olma şartı yoktur; Progress › Calls'tan açılan eski hold kararı da satırını söyler, program hedefi sonradan yeniden yazılmış olsa da. `held_move`
+  null (V48'den önce uygulanmış karar, hold hedefi değiştirmemiş ya da hold dışı karar): satır yok, uydurulmaz.
+- **Yeniden uygulama:** "Use this call" (DECLINED → APPLIED) hold'u yeniden kurar; o aradan program hedefi değişmiş olabilir (seans yazmış olabilir). Bu yüzden
+  `held_move` yeniden hesaplanır ve yazılır: satır, kararın kullanıcı için gerçekten yürürlüğe girdiği andaki hedefi söyler. Aynı karar iki kez uygulanırsa
+  ikincisi bir şey değiştirmez (`APPLIED` ise erken döner). Geri alma/reddetme `held_move`'u silmez: `inForce` onunla söylenir.
+- **Hareket seçimi (kural değil, okuma):** hold'un hedefini gerçekten değiştirdiği hareketler arasından motorun "en çok takılan" saydığı. Sıra
+  `TrainingStatuses.byStall` ile aynı kodla: takılan seans sayısı › takılma ayı › bu hafta geriye giden yük › ad (`TrainingStatuses.of` da bunu kullanır; kopya
+  yok). Böylece nedenin "Sessions stalled: N" satırı ve hareket satırı aynı hareketten gelir. Aday havuzu motorunki: programdaki katalog bileşik hareketleri
+  (`TrainingStatusReader.compoundLifts`); kullanıcının kendi hareketi aday değil (sözleşme `exerciseId` katalog kimliğidir). Yeni eşik, yeni parametre yok.
+  Hold'un hedefi değiştirmediği hareket (hedef zaten son yükte ve aralık içinde), hiç kaldırılmamış hareket ya da uzun aradan sonra bir basamak hafif gösterilen
+  hedef (K-531, `BackAfterBreak` programla paylaşılan tek okuma) satır olmaz. Tek satır gelir.
+- **Modül sınırı:** decision zaten training'e bağlı (`allowedDependencies`); training yeni bir okuma servisi sunar (`TrainingMoveTargets.heldMove`), tersi
+  bağımlılık yok.
+- **Reddedilen:** (a) satırı okuma anında programdan hesaplamak ve yalnız son kararda göstermek (ilk sürüm): karar kaydı sonradan değişen programa bağlı olurdu,
+  eski karar satırsız kalırdı; (b) birden çok hareket satırı (ekran ≤45 kelime, başlık "en çok takılan hareket"); (c) telefonun hedefi `Program`'dan hesaplaması
+  (kural işletir, U1); (d) hold'un hedefi değiştirmediği hareket için eşit `before`/`after` satırı (değişiklik yok).

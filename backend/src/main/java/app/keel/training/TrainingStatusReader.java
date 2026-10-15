@@ -112,12 +112,28 @@ public class TrainingStatusReader {
             return Optional.empty();
         }
         Instant to = today.plusDays(1).atStartOfDay(zone).toInstant();
-        Map<String, List<TrainingStatuses.Session>> compound = sessions(account, program.get(), made.get(), to, zone,
-                move -> move.kind() == ExerciseCatalog.Kind.COMPOUND);
+        Map<String, List<TrainingStatuses.Session>> compound = sessions(account, program.get(), made.get(), to, zone, TrainingStatusReader::compound);
         List<LocalDate> workoutDays = log.workoutStarts(account, made.get(), to).stream().map(at -> at.atZone(zone).toLocalDate()).toList();
         // Missed plan weeks only from a week this program was in force from the start of (K-535, ADR-049).
         return Optional.of(TrainingStatuses.of(compound, calls.changes(account), workoutDays, pausedDays, program.get().days().size(), today,
                 checkInDay, TrainingStatuses.judgedFrom(made.get(), zone)));
+    }
+
+    /**
+     * The program's catalog compound lifts with their sessions, as {@link #status} reads them to find the most stalled one
+     * (K-1009: the call's held move is chosen in the same order). The user's own moves are not among them. Empty without a program.
+     */
+    Map<String, List<TrainingStatuses.Session>> compoundLifts(AccountId account, LocalDate today, ZoneId zone) {
+        Optional<ProgramStore.Program> program = programs.current(account);
+        Optional<Instant> made = programs.createdAt(account);
+        if (program.isEmpty() || made.isEmpty()) {
+            return Map.of();
+        }
+        return sessions(account, program.get(), made.get(), today.plusDays(1).atStartOfDay(zone).toInstant(), zone, TrainingStatusReader::compound);
+    }
+
+    private static boolean compound(ExerciseCatalog.Exercise move) {
+        return move.kind() == ExerciseCatalog.Kind.COMPOUND;
     }
 
     /**

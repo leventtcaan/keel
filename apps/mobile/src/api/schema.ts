@@ -2084,6 +2084,12 @@ export interface components {
             day: string;
             /** @description The day's target (a plan number, one figure); before the first call, the starting target (K-997). */
             targetKcal: number;
+            /**
+             * @description The day's protein target in grams (a plan number, one figure), chosen like targetKcal: the plan's; before the first
+             *     call, the starting plan's, from the same computation as GET /v1/targets/starting (K-1017). The app shows it, it
+             *     multiplies nothing (U1).
+             */
+            targetProteinG: number;
             eaten: components["schemas"]["Nutrients"];
             left: components["schemas"]["Left"];
         };
@@ -2163,6 +2169,14 @@ export interface components {
              *     or moved to a day; a day on no weekday is not on the calendar. This server always sends it.
              */
             week?: components["schemas"]["WeekSession"][];
+            /**
+             * @description Whether POST /v1/program/days can add a day to this program (K-1013, ADR-073 Ek 9): a generated program of
+             *     `add_day_from_days` days, each on its own weekday. The same rule that endpoint answers with, so the app offers
+             *     "add a day" only where it works and sends the user to Edit otherwise (the app holds no rule of its own). The
+             *     endpoint can still answer CONFLICT for a weekday the program trains already. This server always sends it; absent
+             *     (an older server) means not known: the app adds the day in Edit.
+             */
+            canAddDay?: boolean;
         };
         /**
          * @description The program reviewed (K-956, ADR-073 #2): at most review_max_suggestions suggestions, in priority order (training
@@ -3133,13 +3147,24 @@ export interface components {
         };
         /**
          * @description One target a call moves (K-1000). `what` names it; `before`, `after` and `inForce` carry its value in the field of
-         *     that kind (`targetKcal` for CALORIES, `stepsPerDay` for STEPS, `phase` for PHASE). A plan number, one figure (U5).
-         *     The step target before any was set is the starting one. An empty `before` (and `inForce`) means none was in force: a
-         *     plan begun before the first weigh-in has no calorie target until a call starts one.
+         *     that kind (`targetKcal` for CALORIES, `stepsPerDay` for STEPS, `phase` for PHASE, `target` for MOVE). A plan number,
+         *     one figure (U5). The step target before any was set is the starting one. An empty `before` (and `inForce`) means none
+         *     was in force: a plan begun before the first weigh-in has no calorie target until a call starts one.
+         *
+         *     MOVE (K-1009, ADR-077 Ek 7) is a hold of the load ("Hold the weight") on one move: `exerciseId` is the catalog move,
+         *     `before` the target the program stored for its next session when the call was applied, `after` the one it shows while
+         *     the load is held (the last load at the top of the rep range), and `held` is true: the load is kept, so the phone must
+         *     not write it as a target cut. The move is the one the weekly call counts as the most stalled of those the hold changes.
+         *     Kept with the call when it was applied, so an older call says it too; absent when the hold changed no target and on a
+         *     call applied before it was kept. Declined or undone, `inForce` is `before`.
          */
         DecisionChange: {
             /** @enum {string} */
-            what: "CALORIES" | "STEPS" | "PHASE";
+            what: "CALORIES" | "STEPS" | "PHASE" | "MOVE";
+            /** @description The move, for MOVE only. A catalog exercise id. */
+            exerciseId?: string;
+            /** @description For MOVE only, always true (the load is held at the last load). */
+            held?: boolean;
             before: components["schemas"]["ChangeValue"];
             after: components["schemas"]["ChangeValue"];
             inForce?: components["schemas"]["ChangeValue"];
@@ -3149,6 +3174,12 @@ export interface components {
             targetKcal?: number;
             stepsPerDay?: number;
             phase?: components["schemas"]["Phase"];
+            target?: components["schemas"]["MoveTarget"];
+        };
+        /** @description A move's target as the program holds it (K-1009), the load in kilograms and the reps. */
+        MoveTarget: {
+            loadKg: number;
+            reps: number;
         };
         /**
          * @description The rows a call read (K-519). Weights in kilograms, unrounded (the phone rounds once, ADR-029). A row the call did
@@ -3517,11 +3548,17 @@ export interface components {
          * @description Where the plan's calories start (K-114, ADR-072 #6): the target is one number (U5: a target may be), the maintenance
          *     estimate it comes from is a range (U5), and the scale corrects it over observationDays (the engine's
          *     maintenance_observation_days for the user's sex) before the first calorie call.
+         *     The first plan's protein and daily steps are here too (K-1017): the first day's "Protein / 114 g" and "Steps / 7,000", the
+         *     numbers the first call plans and GET /v1/targets then answers (one source, U1).
          */
         StartingTarget: {
             targetKcal: number;
             maintenanceKcal: components["schemas"]["KcalRange"];
             observationDays: number;
+            /** @description The protein target in grams at today's bodyweight (a plan number, one figure; steps_target_start's sibling for the day). */
+            proteinG: number;
+            /** @description The daily step target the plan starts with (steps_target_start in data/parameters/nutrition.yaml). */
+            stepsPerDay: number;
         };
         CoachQuestion: {
             text: string;
