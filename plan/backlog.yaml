@@ -4662,7 +4662,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-995, K-972]
     why: "#512 incelemesi (9 Eki): `WeekSession.workout.state = OPEN` ama seans bu telefonun kayıtlarında yok (başka cihaz, uygulama yeniden kuruldu); kart yalnız 'Started, not on this phone' der, Continue de Start da yok. Kullanıcı seansına dönemez ve sunucu başlamış seansı taşıtmaz"
     acceptance:
@@ -4921,7 +4921,7 @@ tasks:
     module: decision
     type: fix
     size: S
-    status: todo
+    status: done
     depends_on: [K-1016]
     why: "K-1016 incelemesi (15 Eki): motor 'bu hafta dinlen' (FullRestWeek → TrainingChanges REST_WEEK) dediği hafta, tutarlılık yürüyüşü planlı seansları sayıp hiç yapılmadı diye MISSED/SPARE yazıyor ve af hakkını yakıyor; ADR-040 ve K-435 'mola planın parçası' diyor (U7, U2). Izgara hücre hücre gösterince görünür oldu"
     acceptance:
@@ -4938,7 +4938,7 @@ tasks:
     module: decision
     type: fix
     size: S
-    status: todo
+    status: done
     depends_on: [K-1022]
     why: "K-1022 incelemesi (15 Eki): `WeekLogs.adherence` yalnız bildirilmiş durumları duraklatıyor; motorun REST_WEEK haftası pencerede 0/planlı antrenman sayılıyor. Eşiğe yakın kullanıcıda mola sonrası ilk karar ADHERENCE_PARTIAL'a düşebiliyor: motorun kendi önerdiği dinlenme kullanıcının aleyhine (U7, U2; ADR-040 Ek 1)"
     acceptance:
@@ -4948,6 +4948,23 @@ tasks:
     tests: ["Tablo testi (eşik kenarı, tam duraklamış pencere), API testi (CI)"]
     refs: ["plan/kararlar/ADR-040-ilk-sekiz-hafta.md"]
     learn: ["Karar girdisinde planlı dinlenme"]
+
+  - id: K-1024
+    title: "Sonraki karar günü tek kaynak: Decision.nextReview ile check-in günü ayrışmasın"
+    milestone: M9a
+    module: decision
+    type: fix
+    size: S
+    status: todo
+    depends_on: [K-1020]
+    why: "K-1020 incelemesi (15 Eki): motor `nextReview`'u çağrı günü + 7 yazıyor (DeloadLadder, SafetyNet, PhaseGate); check-in ise kullanıcının check-in gününde açılıyor (`currentCheckIn`). Çağrı Perşembe yapılırsa Hero 'Next call Thursday' der, karar Pazartesi açılır"
+    acceptance:
+      - "Bir sonraki çağrının gerçekten açılacağı gün tek fonksiyondan (sunucu); Hero, karar ekranı ('sonraki tarih') ve GET /v1/return aynı günü gösterir"
+      - "Motorun `nextReview` alanının anlamı belgelenir (veri penceresi mi, takvim mi); gerekiyorsa sözleşmede ayrı alan; telefon tarih hesaplamaz"
+      - "Geç yapılan çağrı (check-in gününden sonra) ve ilk karar öncesi için test"
+    tests: ["Tablo testi, API testi (CI), mobil ekran testi"]
+    refs: ["plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md"]
+    learn: ["Tarih alanının tek anlamı"]
 
   - id: K-1010
     title: "Sunucudaki ek siteler: Caddy /opt/sites altındaki *.caddy dosyalarını içeri alır"
