@@ -75,3 +75,11 @@ aynı olması); `https://<alan>/health` 200; geri yükleme provası çıktısı 
 - **Yedek:** her yedeğin yanında o anki tablo sayımları (`.counts`, kişisel veri değil); prova bunlarla karşılaştırır (canlı veri 02:30'dan sonra
   değişir). Mac kopyaları Time Machine dışında (`tmutil addexclusion`) — yoksa 14 gün sözünü aşarlar; en yeni yedek 26 saatten eskiyse bildirim.
 - **`init-env.sh`:** Compose'un `.env` okuyucusunun değiştireceği karakterleri reddeder. `/opt/keel/fdc` 755 (kapsayıcı kullanıcısı okur).
+
+## Ek 2 (K-908) — `/health` hazırlıktır
+- `GET /health` Spring Boot'un `ReadinessState`'ine bağlandı: `ACCEPTING_TRAFFIC` olana kadar **503** (`{"status":"STARTING"}`), sonra 200
+  (`{"status":"UP"}`). Spring Boot bunu tüm `ApplicationRunner`'lar (FDC içe aktarma) döndükten sonra yayımlar; bir runner hata verirse
+  yayımlamaz, başlangıç düşer ve bağlam kapanır (Ek 1'deki "canlılık, hazırlık değil" açığı kapandı). Kapanırken yeniden 503.
+- `release.sh`: 200'ü sınırlı süre (300 sn) bekler; kapsayıcı bekleme sırasında çıkıp yeniden başlarsa (düşen başlangıç) beklemeyi bırakıp
+  başarısız olur ve eski imajı geri koyar. Yerleşme beklemesi 30 → 10 sn (yalnız hazır dedikten sonraki çökmeyi yakalar).
+- Compose'ta backend için `healthcheck`, Caddy'de sağlık denetimi yok (`/health`'e yalnız `release.sh` bakar); tutarsızlık yok.
