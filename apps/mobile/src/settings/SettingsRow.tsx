@@ -45,8 +45,9 @@ const styles = StyleSheet.create({
     paddingVertical: tokens.space.sm,
     borderRadius: tokens.radius.card,
   },
-  label: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
-  value: { flex: 1, textAlign: 'right', fontSize: tokens.type.bodySmall },
+  // Both grow into the room the row has, so neither box is as wide as its text (Bold Text, K-910).
+  label: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold, flexGrow: 1, flexShrink: 1 },
+  value: { flexGrow: 1, flexShrink: 1, textAlign: 'right', fontSize: tokens.type.bodySmall },
   mark: { fontSize: tokens.type.body },
   dim: { opacity: tokens.opacity.dim },
 });

@@ -33,7 +33,7 @@ export function DecisionBlock({ eyebrow, aside, title, children, onPress, pressL
         eyebrow !== undefined && <Text style={[styles.eyebrow, { color: color.accentInk }]}>{eyebrow}</Text>
       ) : (
         <View style={styles.top}>
-          <Text style={[styles.eyebrow, { color: color.accentInk }]}>{eyebrow}</Text>
+          <Text style={[styles.eyebrow, styles.eyebrowBeside, { color: color.accentInk }]}>{eyebrow}</Text>
           <InverseSurface>{aside}</InverseSurface>
         </View>
       )}
@@ -66,6 +66,8 @@ const styles = StyleSheet.create({
   dim: { opacity: tokens.opacity.dim },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space.sm },
   eyebrow: { fontSize: tokens.type.label, fontWeight: tokens.weight.bold },
+  /** Beside the mark the eyebrow takes the rest of the line, so its box is wider than its text (Bold Text, K-910). */
+  eyebrowBeside: { flexGrow: 1, flexShrink: 1 },
   title: {
     fontFamily: tokens.font.display,
     fontSize: tokens.type.decisionTitle,
