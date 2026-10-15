@@ -21,5 +21,5 @@ export function lockScreenCall(decision: components['schemas']['Decision'] | nul
   // The server words a safety call as a change of phase; a screen anyone can see does not rely on that alone (review).
   const label = decision.safety === true ? SAFETY_LABEL : labelKey(decision.copyKey);
   if (!has(label)) return { line: t('widget.call.ready'), next: null };
-  return { line: t(label), next: t('today.call.nextReview', { date: weekdayDate(decision.nextCallOn) }) };
+  return { line: t(label), next: t('today.call.nextCall', { date: weekdayDate(decision.nextCallOn) }) };
 }

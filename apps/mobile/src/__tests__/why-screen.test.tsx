@@ -90,7 +90,7 @@ test('the call, the data it read, the rules each with its kind of source, its co
   expect(screen.getByText(t('today.call.source.EXPERIENCE'))).toBeOnTheScreen();
   expect(screen.getByText(t('today.call.source.LITERATURE'))).toBeOnTheScreen();
   expect(screen.getByText(t('today.call.confidence.HIGH'))).toBeOnTheScreen();
-  expect(screen.getByText(t('today.call.nextReview', { date: 'Mon, Oct 5' }))).toBeOnTheScreen();
+  expect(screen.getByText(t('today.call.nextCall', { date: 'Mon, Oct 5' }))).toBeOnTheScreen();
   expect(screen.getByText(t('why.boundary'))).toBeOnTheScreen();
   // The research file is the server's: a path means nothing on a phone.
   expect(allText()).not.toContain('arastirma/');

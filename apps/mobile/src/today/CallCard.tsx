@@ -115,7 +115,7 @@ export function CallCard({ decision, onChanged }: { decision: Decision | null; o
       {waits ? <Text style={[styles.text, { color: color.decisionTextSecondary }]}>{t('today.call.waitNote')}</Text> : null}
       {change}
       <Text style={[styles.small, { color: color.decisionMuted }]}>
-        {t('today.call.nextReview', { date: REVIEW_DAY.format(new Date(`${decision.nextCallOn}T00:00:00Z`)) })}
+        {t('today.call.nextCall', { date: REVIEW_DAY.format(new Date(`${decision.nextCallOn}T00:00:00Z`)) })}
       </Text>
       <Button label={open ? t('today.call.hide') : t('today.call.why')} variant="ghost" size="sm" onPress={() => setOpen(!open)} />
       {reasons}

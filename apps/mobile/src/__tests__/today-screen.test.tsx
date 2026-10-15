@@ -295,7 +295,7 @@ test("this week's call: its label, its words from the copy key, its confidence; 
   await press(t('today.call.why'));
 
   expect(screen.getByText(t('today.call.source.EXPERIENCE'))).toBeOnTheScreen();
-  expect(screen.getByText(t('today.call.nextReview', { date: 'Mon, Oct 5' }))).toBeOnTheScreen();
+  expect(screen.getByText(t('today.call.nextCall', { date: 'Mon, Oct 5' }))).toBeOnTheScreen();
   expect(screen.getAllByText(t('decision.continue.toward_goal.title'))).toHaveLength(1); // the leading reason is the title
   expect(screen.getByText(t('decision.rule.toward_goal'))).toBeOnTheScreen(); // and says its own sentence (K-522)
   expect(screen.getByText(t('decision.rule.energy_floor'))).toBeOnTheScreen();
@@ -745,7 +745,7 @@ describe("the coach's own questions (K-520, ADR-039)", () => {
 });
 
 describe("the call's three variants (K-502, prototype 3.2-3.4): from what the server says, never decided here", () => {
-  const nextReview = t('today.call.nextReview', { date: 'Mon, Oct 5' });
+  const nextReview = t('today.call.nextCall', { date: 'Mon, Oct 5' });
 
   test('no change: its confidence, nothing to do differently, the next review in sight; nothing to apply', async () => {
     await showPart(callPart);
