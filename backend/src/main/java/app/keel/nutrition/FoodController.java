@@ -26,7 +26,16 @@ class FoodController {
     /** What a request can ask for (keel.nutrition). */
     @ConfigurationProperties("keel.nutrition")
     record NutritionLimits(int defaultSearchResults, int maxSearchResults, int maxQueryLength, int maxItems, BigDecimal maxGrams, int maxPortions,
-            int maxRecipeName, int maxRecipes, int suggestions, int suggestionDays, int suggestionCandidates) {
+            int maxRecipeName, int maxRecipes, int suggestions, int suggestionDays, int suggestionCandidates,
+            int recentFoods) {
+
+        /** A recent list longer than the candidates tried could never fill: a configuration error at start, not a silent cut (K-1025). */
+        public NutritionLimits {
+            if (recentFoods < 1 || recentFoods > suggestionCandidates) {
+                throw new IllegalArgumentException("keel.nutrition.recent-foods must be 1 to suggestion-candidates (" + suggestionCandidates
+                        + "), was " + recentFoods);
+            }
+        }
     }
 
     record FoodSearch(String q, Integer limit) {

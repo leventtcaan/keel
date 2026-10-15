@@ -34,7 +34,7 @@ const NUMBER = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
  * Watch measured, only when it did (else three boxes in one row); the record (the heaviest of the session's, the real
  * set, its next target from the program) or the baseline; what moved per move against last time (the server's words for
  * it, a lighter day said calmly); the muscles worked, on the one muscle map; this week's
- * sessions as segments; Share and Done. A record is felt (haptics, Ek 5); nothing else is. No e1RM, no badge, no points.
+ * sessions as segments; Share (the stickers of this workout, K-975) and Done. A record is felt (haptics, Ek 5); nothing else is. No e1RM, no badge, no points.
  * Route `/workout-end?workout=<clientId>`. Until the workout reaches the server, the hero and a way to try again: the
  * phone counts nothing.
  */
@@ -79,12 +79,12 @@ export default function WorkoutEndScreen() {
 
   return (
     <FocusMode>
-      <Body end={end} units={units} figure={figure} onRetry={read} />
+      <Body end={end} units={units} figure={figure} workout={workout} onRetry={read} />
     </FocusMode>
   );
 }
 
-function Body({ end, units, figure, onRetry }: { end: WorkoutEnd | null; units: UnitSystem; figure: Figure; onRetry: () => void }) {
+function Body({ end, units, figure, workout, onRetry }: { end: WorkoutEnd | null; units: UnitSystem; figure: Figure; workout: string; onRetry: () => void }) {
   const { color } = useTheme();
   const ready = end?.kind === 'ready' ? end : null;
   const day = ready === null ? null : (ready.program?.days.find((d) => d.id === ready.programDayId) ?? null);
@@ -105,7 +105,7 @@ function Body({ end, units, figure, onRetry }: { end: WorkoutEnd | null; units: 
         {rest}
         {/* Apple Health, asked the first time (K-980, ADR-018 Ek 1): nothing here once asked, or where it cannot be. */}
         {end !== null && <HealthJit />}
-        {ready !== null && <Button label={t('workoutEnd.share')} onPress={() => router.push('/share')} />}
+        {ready !== null && <Button label={t('workoutEnd.share')} onPress={() => router.push({ pathname: '/share', params: { workout } })} />}
         <Button label={t('workoutEnd.done')} variant="ghost" onPress={() => router.dismissTo('/train')} />
       </ScrollView>
     </SafeAreaView>

@@ -33,6 +33,7 @@ import { type SessionSwaps, createSessionSwaps } from '@/train/sessionSwaps';
 import { type AlertAccess, type RestAlert, alertsUnavailable, createRestAlert } from '@/train/restAlert';
 import type { Figure } from '@/train/demo';
 import { type TrainingCache, createTrainingCache } from '@/train/trainData';
+import { type MealStart, readMealStart, readRecentFoods } from '@/food/mealStart';
 import { noPhotoCache, type PhotoCache } from '@/food/photo';
 import type { AppleReauth } from '@/session/appleSignIn';
 import { type PhotoFiles, type PhotoLibrary, createPhotoLibrary, noPhotoFiles } from '@/photos/library';
@@ -131,6 +132,10 @@ export type AppServices = {
   adoptWorkout(workout: components['schemas']['Workout']): Promise<void>;
   /** The phone's meals, sent or not (K-407): today's list shows a meal saved offline at once. */
   mealRecords(): Promise<LocalRecord[]>;
+  /** What the meal screen can log in one tap: yesterday's meals for the open slots (K-980); `day` is today (YYYY-MM-DD). */
+  mealStart(day: string): Promise<MealStart>;
+  /** The foods eaten lately for the slot being logged, the slot's own first (K-1025); none when they could not be read. */
+  recentFoods(slot: components['schemas']['MealSlot']): Promise<components['schemas']['Suggestion'][]>;
   /** Forgets the phone's copy of a record the server no longer has (a meal corrected or deleted, K-407). */
   forgetRecord(clientId: string): Promise<void>;
   /** A problem, by name only (V3): the same reporter the queue uses. */
@@ -382,6 +387,8 @@ export async function createAppServices({
       },
     }),
     mealRecords: async () => (await store.all()).filter((record) => record.kind === 'meal'),
+    mealStart: (day: string) => readMealStart({ api, mealRecords: async () => (await store.all()).filter((record) => record.kind === 'meal') }, day),
+    recentFoods: (slot: components['schemas']['MealSlot']) => readRecentFoods({ api }, slot),
     forgetRecord: store.forgetClient,
     claimPhotos: async (owner: string) => {
       const kept = await kv.getItemAsync(PHOTO_OWNER);

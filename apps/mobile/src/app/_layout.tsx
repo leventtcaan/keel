@@ -44,6 +44,7 @@ function AppStack() {
         <Stack.Screen name="settings" />
         <Stack.Screen name="weigh-in" options={{ presentation: 'modal' }} />
         <Stack.Screen name="meal" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="cardio" options={{ presentation: 'modal' }} />
         <Stack.Screen name="workout" />
         <Stack.Screen name="workout-end" />
         <Stack.Screen name="exercise-history" />
@@ -54,6 +55,8 @@ function AppStack() {
         <Stack.Screen name="check-in" />
         <Stack.Screen name="call" />
         <Stack.Screen name="state" options={{ presentation: 'modal' }} />
+        {/* Coming back after a gap (K-981): over the tabs, answered rather than swiped away. */}
+        <Stack.Screen name="return" options={{ gestureEnabled: false }} />
         <Stack.Screen name="photo-capture" options={{ presentation: 'modal' }} />
         <Stack.Screen name="compare" />
         <Stack.Screen name="share" />

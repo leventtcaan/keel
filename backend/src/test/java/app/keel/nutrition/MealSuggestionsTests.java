@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -68,6 +69,108 @@ class MealSuggestionsTests {
                 item("rice", "Rice, white, cooked", "150", "g"))), List.of("nut"),
                 id -> id.equals("recipe:1") ? List.of("Oats, rolled", "Walnuts, chopped") : List.of());
         assertThat(usual).extracting(MealSuggestions.Usual::foodId).containsExactly("rice");
+    }
+
+    // ── recent foods (K-1025) ───────────────────────────────────────────────────────────────────────────────
+
+    private static MealStore.Meal meal(int daysAgo, MealStore.Slot slot, FoodEstimator.EstimatedItem... items) {
+        MealStore.Meal at = meal(daysAgo, items);
+        return new MealStore.Meal(at.id(), at.clientId(), at.eatenAt(), at.day(), slot, at.items());
+    }
+
+    private static List<String> ids(List<MealSuggestions.Recent> recent) {
+        return recent.stream().map(MealSuggestions.Recent::foodId).toList();
+    }
+
+    @Test
+    void theRecentFoodsAreEachOnceFreshestFirstInTheAmountOfTheirLastTime() {
+        List<MealSuggestions.Recent> recent = MealSuggestions.recent(List.of(
+                meal(9, item("rice", "Rice, white, cooked", "150", "g"), item("egg", "Egg, whole", "2", "piece")),
+                meal(5, item("rice", "Rice, white, cooked", "200", "g")),
+                meal(3, item("yogurt", "Yogurt, greek", "1", "cup")),
+                meal(1, item("egg", "Egg, whole", "3", "piece"))), Optional.empty(), List.of(), id -> List.of());
+
+        assertThat(ids(recent)).containsExactly("egg", "yogurt", "rice");
+        assertThat(recent.getFirst().amount().quantity()).as("the last time, not the usual one").isEqualByComparingTo("3");
+        assertThat(recent.get(2).amount().quantity()).isEqualByComparingTo("200");
+        assertThat(recent.getFirst().amount().certainty()).as("an amount to eat again is an estimate").isEqualTo(FoodEstimator.AmountCertainty.ESTIMATED);
+        assertThat(recent.getFirst().last()).isEqualTo(NOW.minusSeconds(86_400));
+    }
+
+    @Test
+    void theMealsComeInAnyOrder() {
+        List<MealSuggestions.Recent> recent = MealSuggestions.recent(List.of(meal(1, item("a", "A", "1", "g")), meal(7, item("b", "B", "1", "g")),
+                meal(3, item("c", "C", "1", "g"))), Optional.empty(), List.of(), id -> List.of());
+
+        assertThat(ids(recent)).containsExactly("a", "c", "b");
+    }
+
+    @Test
+    void withASlotTheFoodsLastHadThereComeFirstThenTheRestByFreshness() {
+        List<MealSuggestions.Recent> recent = MealSuggestions.recent(List.of(
+                meal(1, MealStore.Slot.DINNER, item("fish", "Fish", "150", "g")),
+                meal(2, MealStore.Slot.BREAKFAST, item("oats", "Oats", "60", "g")),
+                meal(4, MealStore.Slot.LUNCH, item("rice", "Rice", "150", "g")),
+                meal(6, MealStore.Slot.BREAKFAST, item("egg", "Egg", "2", "piece"))), Optional.of(MealStore.Slot.BREAKFAST), List.of(), id -> List.of());
+
+        // Breakfast foods first (oats 2 days ago, egg 6), then dinner and lunch by when they were last had.
+        assertThat(ids(recent)).containsExactly("oats", "egg", "fish", "rice");
+    }
+
+    @Test
+    void aFoodHadInTheSlotIsOfferedInTheAmountOfItsLastTimeThereNotElsewhere() {
+        List<MealSuggestions.Recent> recent = MealSuggestions.recent(List.of(
+                meal(1, MealStore.Slot.DINNER, item("yogurt", "Yogurt", "300", "g")),
+                meal(3, MealStore.Slot.BREAKFAST, item("yogurt", "Yogurt", "100", "g"))), Optional.of(MealStore.Slot.BREAKFAST), List.of(), id -> List.of());
+
+        assertThat(recent).singleElement().satisfies(one -> {
+            assertThat(one.amount().quantity()).isEqualByComparingTo("100");
+            assertThat(one.last()).isEqualTo(NOW.minusSeconds(3 * 86_400L));
+        });
+        // Without a slot the same food is the dinner's, 300 g, a day ago.
+        assertThat(MealSuggestions.recent(List.of(meal(1, MealStore.Slot.DINNER, item("yogurt", "Yogurt", "300", "g")),
+                meal(3, MealStore.Slot.BREAKFAST, item("yogurt", "Yogurt", "100", "g"))), Optional.empty(), List.of(), id -> List.of())
+                .getFirst().amount().quantity()).isEqualByComparingTo("300");
+    }
+
+    @Test
+    void aSlotNobodyHasEatenInIsTheRecentFoodsAsWithoutOne() {
+        List<MealStore.Meal> meals = List.of(meal(1, MealStore.Slot.LUNCH, item("rice", "Rice", "150", "g")), meal(2, MealStore.Slot.DINNER, item("fish", "Fish", "150", "g")));
+
+        assertThat(ids(MealSuggestions.recent(meals, Optional.of(MealStore.Slot.SNACK), List.of(), id -> List.of()))).containsExactly("rice", "fish");
+    }
+
+    @Test
+    void noMealsIsNoRecentFoods() {
+        assertThat(MealSuggestions.recent(List.of(), Optional.of(MealStore.Slot.LUNCH), List.of(), id -> List.of())).isEmpty();
+    }
+
+    @Test
+    void recentFoodsNeverHoldOneTheUserCannotEatOrARecipeWithIt() {
+        List<MealSuggestions.Recent> recent = MealSuggestions.recent(List.of(meal(1, item("pb", "Peanut butter", "2", "tablespoon"),
+                item("recipe:1", "Morning bowl", "1", "portion"), item("peas", "Peas, green", "80", "g"))), Optional.empty(), List.of("NUT"),
+                id -> id.equals("recipe:1") ? List.of("Walnuts, chopped") : List.of());
+
+        assertThat(ids(recent)).containsExactly("peas");
+    }
+
+    @Test
+    void withNothingToAvoidNoRecipeIsLookedInto() {
+        java.util.function.Function<String, List<String>> never = id -> {
+            throw new AssertionError("a recipe's ingredients were read for a list that excludes nothing: " + id);
+        };
+        MealStore.Meal meals = meal(1, item("recipe:1", "Morning bowl", "1", "portion"));
+
+        assertThat(ids(MealSuggestions.recent(List.of(meals), Optional.empty(), List.of(), never))).containsExactly("recipe:1");
+        assertThat(ids(MealSuggestions.recent(List.of(meals), Optional.empty(), List.of(" ", ""), never))).containsExactly("recipe:1");
+    }
+
+    @Test
+    void aFoodTwiceInOneMealIsOfferedInTheAmountOfTheLastItem() {
+        List<MealSuggestions.Recent> recent = MealSuggestions.recent(List.of(meal(1, item("rice", "Rice", "100", "g"), item("rice", "Rice", "150", "g"))),
+                Optional.empty(), List.of(), id -> List.of());
+
+        assertThat(recent).singleElement().satisfies(one -> assertThat(one.amount().quantity()).isEqualByComparingTo("150"));
     }
 
     @Test

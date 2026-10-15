@@ -121,12 +121,15 @@ export const tokens = {
     /** Nothing below 11 pt (ADR-016, kept by ADR-070). */
     min: 11,
     /**
-     * The share card's text, in its image units (1080 wide, K-612) — an image, scaled to the screen to preview and kept
-     * at full size in the PNG: large enough to read in a feed, smaller ones would be under 11 pt once scaled down.
+     * The share stickers' text, in their image units (1080 wide, K-975) — an image, scaled to the screen to preview and
+     * kept at full size in the PNG: large enough to read in a feed; a long text steps down from these (layout.ts).
      */
-    shareHeading: 64,
-    shareLine: 52,
-    shareFooter: 34,
+    shareKicker: 40,
+    shareTitle: 150,
+    shareValue: 104,
+    shareLabel: 36,
+    shareLine: 48,
+    shareMark: 72,
   },
   weight: {
     regular: '400',
@@ -158,6 +161,8 @@ export const tokens = {
   opacity: {
     /** Pressed and disabled controls. */
     dim: 0.5,
+    /** The dark panel behind a sticker's words, so they read on any photo (K-975). */
+    scrim: 0.45,
   },
   /** The app's few movements of its own, each skipped under Reduce Motion (K-807). */
   motion: {

@@ -26,4 +26,5 @@ export const foodParams = {
   barcodeMaxChars: param<number>('barcode_max_chars'),
   photoMaxSide: param<number>('meal_photo_max_side'),
   photoQuality: param<number>('meal_photo_jpeg_quality'),
+  quickRecentMax: param<number>('quick_recent_max'),
 };

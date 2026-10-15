@@ -1,11 +1,14 @@
 /**
- * The logging flows, walked tap by tap (K-980; prototype/akis-testi.md A2: "+ → weigh-in → Apple Health, just in time →
- * This week"). ADR-018 Ek 1 sets the count: a weigh-in in four taps at most, the first one included, with Apple Health
- * asked on the way. The screens are the real ones; only the navigator and the services are stand-ins.
+ * The logging flows, walked tap by tap (K-980; prototip/akis-testi.md A2: "+ → weigh-in → Apple Health, just in time →
+ * This week; add a meal"). ADR-018 Ek 1 sets the count: a weigh-in in four taps at most, the first one included, with Apple
+ * Health asked on the way, and a meal in two or three. The screens are the real ones; only the navigator and the services
+ * are stand-ins.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { useEffect, useState } from 'react';
 
+import CardioScreen from '@/app/cardio';
+import MealScreen from '@/app/meal';
 import PlusScreen from '@/app/plus';
 import WeighInScreen from '@/app/weigh-in';
 import { PlusEntry } from '@/components/PlusEntry';
@@ -32,6 +35,7 @@ jest.mock('expo-router', () => ({
     dismissTo: (p: string) => mockRouter.dismissTo(p),
   },
   useRouter: () => mockRouter,
+  useLocalSearchParams: () => ({}),
   useFocusEffect: (effect: () => void) => {
     const React = jest.requireActual<typeof import('react')>('react');
     React.useEffect(() => effect(), [effect]);
@@ -39,6 +43,16 @@ jest.mock('expo-router', () => ({
 }));
 jest.mock('expo-crypto', () => ({ randomUUID: () => jest.requireActual<typeof import('node:crypto')>('node:crypto').randomUUID() }));
 
+// Yesterday's lunch, the one "Same as yesterday" offers at lunch time (13:00 below).
+const YESTERDAY_LUNCH = {
+  id: 'm-lunch',
+  clientId: 'c-lunch',
+  eatenAt: '2026-10-14T10:10:00Z',
+  slot: 'LUNCH',
+  items: [{ foodId: 'f1', name: 'Chicken rice bowl', amount: { quantity: 1, unit: 'bowl' }, kcal: { low: 610, high: 720 }, proteinG: { low: 40, high: 50 } }],
+  kcal: { low: 610, high: 720 },
+  proteinG: { low: 40, high: 50 },
+};
 const kept = new Map<string, string>();
 const requestRead = jest.fn(async () => {});
 const mockServices = {
@@ -52,6 +66,8 @@ const mockServices = {
     DELETE: jest.fn(),
   },
   queue: { record: jest.fn(async (_record: unknown) => true) },
+  mealStart: jest.fn(async (_day: string) => ({ offers: [YESTERDAY_LUNCH] as never[] })),
+  recentFoods: jest.fn(async (_slot: string) => [] as never[]),
   training: { read: jest.fn(async () => ({ program: { state: 'none' as const }, exercises: { state: 'none' as const }, kept: false })) },
   workoutRecords: async () => [],
   takeBack: jest.fn(),
@@ -78,10 +94,44 @@ function Harness() {
   const top = stack[stack.length - 1];
   return (
     <ThemeProvider scheme="light">
-      {top === '/plus' ? <PlusScreen /> : top === '/weigh-in' ? <WeighInScreen /> : <PlusEntry />}
+      {top === '/plus' ? (
+        <PlusScreen />
+      ) : top === '/weigh-in' ? (
+        <WeighInScreen />
+      ) : top === '/meal' ? (
+        <MealScreen />
+      ) : top === '/cardio' ? (
+        <CardioScreen />
+      ) : (
+        <PlusEntry />
+      )}
     </ThemeProvider>
   );
 }
+
+beforeAll(() => {
+  // Thursday 15 Oct 2026, 13:00 on the phone: lunch.
+  jest.useFakeTimers({
+    now: new Date(2026, 9, 15, 13, 0),
+    doNotFake: [
+      'hrtime',
+      'nextTick',
+      'performance',
+      'queueMicrotask',
+      'requestAnimationFrame',
+      'cancelAnimationFrame',
+      'requestIdleCallback',
+      'cancelIdleCallback',
+      'setImmediate',
+      'clearImmediate',
+      'setInterval',
+      'clearInterval',
+      'setTimeout',
+      'clearTimeout',
+    ],
+  });
+});
+afterAll(() => jest.useRealTimers());
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -116,6 +166,18 @@ test('A2: "+" → Weigh-in → Save → Apple Health, asked on the way → back 
   // Done is the way out, not a step of logging: the weigh-in is kept and Apple Health asked before it.
   await tap(t('weighIn.done'));
   expect(mockStack).toEqual(['/']);
+
+  // ... and then a meal, from the same page (A2's last step).
+  taps = 0;
+  await tap(t('plus.entry'));
+  await tap(new RegExp(`^${t('plus.meal')}`));
+  await tap(t('food.repeat.spoken', { slot: t('food.slot.LUNCH'), items: 'Chicken rice bowl' }));
+  expect(mockServices.queue.record).toHaveBeenLastCalledWith({
+    kind: 'meal',
+    body: expect.objectContaining({ slot: 'LUNCH', repeatOf: 'm-lunch' }),
+  });
+  expect(mockStack).toEqual(['/']);
+  expect(taps).toBe(3);
 });
 
 test('the next weigh-in is three taps: Apple Health is not asked twice', async () => {
@@ -137,4 +199,40 @@ test('the sheet names every way to log, each one tap from the "+"', async () => 
   for (const key of ['plus.weighIn', 'plus.meal', 'plus.workout', 'plus.life']) {
     expect(screen.getByRole('button', { name: new RegExp(t(key)) })).toBeOnTheScreen();
   }
+});
+
+test('a meal: "+", Meal, "Same as yesterday" Add — three taps, and the page it began from is back', async () => {
+  await show();
+  await tap(t('plus.entry'));
+  await tap(new RegExp(`^${t('plus.meal')}`));
+  expect(mockStack).toEqual(['/', '/meal']);
+  await tap(t('food.repeat.spoken', { slot: t('food.slot.LUNCH'), items: 'Chicken rice bowl' }));
+
+  expect(mockServices.queue.record).toHaveBeenCalledWith({ kind: 'meal', body: expect.objectContaining({ repeatOf: 'm-lunch', slot: 'LUNCH' }) });
+  expect(mockStack).toEqual(['/']);
+  expect(taps).toBeLessThanOrEqual(3);
+});
+
+test('cardio: "+", Cardio, Log — three taps; opened again the same day it shows the record instead of asking', async () => {
+  const records: unknown[] = [];
+  mockServices.queue.record.mockImplementation(async (record: unknown) => {
+    records.push(record);
+    return true;
+  });
+  mockServices.workoutRecords = async () =>
+    records.map((r, i) => ({ seq: i, clientId: (r as { body: { clientId: string } }).body.clientId, kind: 'cardio', parentClientId: null, body: (r as { body: unknown }).body, state: 'PENDING', serverId: null, serverBody: null, errorCode: null })) as never;
+  await show();
+
+  await tap(t('plus.entry'));
+  await tap(t('plus.cardio'));
+  expect(mockStack).toEqual(['/', '/cardio']);
+  await tap(t('cardioLog.log'));
+  expect(taps).toBe(3);
+  expect(records).toHaveLength(1);
+
+  await tap(t('cardioLog.done'));
+  await tap(t('plus.entry'));
+  await tap(t('plus.cardio'));
+  expect(screen.getByText(t('workout.cardio.loggedSaid', { minutes: 30 }))).toBeOnTheScreen();
+  expect(screen.queryByRole('button', { name: t('cardioLog.log') })).toBeNull();
 });

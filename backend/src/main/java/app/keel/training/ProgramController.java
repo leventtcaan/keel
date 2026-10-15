@@ -492,7 +492,8 @@ class ProgramController {
         Parameters forAccount = parametersFor(account);
         Optional<LocalDate> lastSession = returns.breakFrom(account, log.lastSessionBefore(account, today.atStartOfDay(zone).toInstant())
                 .map(started -> started.atZone(zone).toLocalDate()), today, zone, forAccount);
-        Back back = new Back(today, zone, forAccount, gyms.current(account), lastSession);
+        boolean easedBack = returns.easedBack(account, lastSession, today, zone, forAccount);
+        Back back = new Back(today, zone, forAccount, gyms.current(account), lastSession, easedBack);
         // "Beat last time" is the last session before today's, as the break is (a session under way is not its own last time).
         Map<String, List<TrainingLog.WorkSet>> lastSessions = log.lastSessions(account, today.atStartOfDay(zone).toInstant());
         BiFunction<ProgramStore.PlannedExercise, List<String>, PlannedExercise> asShown = (planned, onTheDay) -> {
@@ -560,11 +561,12 @@ class ProgramController {
      * What a target back after a break is read with: the user's day, the engine's parameters, the gym in use, and the day
      * of the account's last session before today.
      */
-    private record Back(LocalDate today, ZoneId zone, Parameters parameters, Optional<GymStore.Gym> gym, Optional<LocalDate> lastSession) {
+    private record Back(LocalDate today, ZoneId zone, Parameters parameters, Optional<GymStore.Gym> gym, Optional<LocalDate> lastSession,
+            boolean easedBack) {
 
         /** Back after a long break today (K-531): the account's last session before today a long break ago. */
         BackAfterBreak breaks() {
-            return BackAfterBreak.of(lastSession, today, zone, parameters);
+            return BackAfterBreak.of(lastSession, easedBack, today, zone, parameters);
         }
     }
 

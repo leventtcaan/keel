@@ -64,3 +64,17 @@ antrenman okuması eklenir. Yazma ayrı anahtarla sürer.
   (test: `health-jit-card.test.tsx`).
 - **"Last" ve ön dolum:** "Last: 80.4 kg" yanına sunucunun `measuredAt`'ı telefonun takviminde kısa tarih olarak yazılır (bugünse yazılmaz); eşik yok,
   yalnız biçim. `source === 'IMPORT'` olan son kayıt gösterilir ama alan doldurulmaz (geçmiş veridir, bu sabahın tartısı değil).
+
+## Ek 3 · Öğün ekranı: iki üç dokunuş (K-980, #443, 2026-10-15, agent, teknik)
+- **"+" › Meal › Add** (3 dokunuş): yeni öğün ekranı, forma girmeden iki yol sunar. **"Same as yesterday"**: dünün, **seçili öğünün** (kahvaltı, öğle, ...)
+  öğünü; `repeatOffers` (bugün o öğün yoksa) ile aynı kural, `repeatOf` ile dünkü gibi yazılır. **"Recent"** (K-1025, 2026-10-15): `GET /v1/foods/recent?slot=` (kullanıcının son yedikleri, her yiyecek bir kez, **son seferki miktarla**, kalori veritabanından
+  şimdi tahmin edilmiş aralık; o öğünde son yenenler önce, sonra tazelik sırası; sıralamayı sunucu yapar, telefon yapmaz). Hedeften bağımsızdır (hedef yokken ya da
+  hedef aşılınca da döner). Bir dokunuş o yiyeceği o miktarla seçili öğüne yazar; yeniden deneme aynı `clientId`dir. Öğün seçimi değişince liste o öğünle yeniden
+  okunur. En çok `quick_recent_max` (2) satır gösterilir: kelime bütçesi (25) ve "ilk bakışta az" ilkesi; gerisi aramadadır. Sunucu tavanı `recent-foods` (5,
+  `application.yml`); gösterilen sayı tavandan fazla olamaz (backend `NutritionLimitsTests` ayna testi). Kalori aralıktır (U5), metin renginde (yargılayan renk yok, U7).
+- **Önceki ve yeni uçlar:** "Same as yesterday" mevcut `repeatOffers` ile; "Recent" K-1025'in ucuyla. İlk günde ikisi de boş, ekran hiçbir şey çizmez (kullanıcı testi: ilk
+  gün "Same as yesterday/Recent" olmasın).
+- **Geçici hâl kalktı (K-1025):** ilk sürümde "Usual foods" (`GET /v1/days/{day}/suggestions`, sık yenenlerden bugünkü kalana sığanlar) vardı; kabul kriterindeki "son yiyecekler"
+  değildi (hedef aşılınca ya da hedef yokken boş dönerdi, K-507). O uç Food sekmesinde kalır ("ne yenebilir"); öğün ekranı artık "Recent"i okur.
+- **Form olduğu gibi:** arama, barkod (`Scan`, VoiceOver'a "Scan a barcode"), porsiyon, çok kalem, tahmin. Elle bir yiyecek eklenince hızlı yollar çekilir; düzeltme
+  ekranında hiç yoktur. Okumalar `AppServices.mealStart` ve `recentFoods` içindedir (ekran `api`yi doğrudan çağırmaz); okunamazsa hızlı yol yoktur, form çalışır.

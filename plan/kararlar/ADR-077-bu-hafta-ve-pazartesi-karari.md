@@ -258,3 +258,35 @@ yetersizse çağrı yine açılır (motor "henüz karar yok" kaydeder), yani son
 - **Telefon:** "sonraki çağrı / sonraki gözden geçirme" gösteren yerler (Hero, karar ekranı, neden ekranı, Today kartı, kilit ekranı) `nextCallOn` okur; telefon tarih hesaplamaz.
   Koç metinleri ("looked at again", "stands until its next look") verinin yeniden bakılışını anlatır; `nextReview` okumaya devam eder.
 - **Reddedilen:** `nextReview`'u check-in gününe eşitlemek: hafif hafta ve mola haftasının uzunluğunu sessizce değiştirir (ve CalorieLadder'ın karar penceresini bozar).
+
+## Ek 10 · Dönüş ve duraklatma ekranları telefonda (K-981, 2026-10-15, agent, teknik; KABUL)
+Ek 6 ve Ek 8'in telefon yarısı. Telefon boşluk ve tarih saymaz; "ne zaman sor" yalnız `shouldPrompt`tır.
+- **Ne zaman:** sekmeler ayaktayken (`(tabs)/_layout`; giriş yapmış, onboarding bitmiş, abonelik kapısı açık) uygulama açılışında ve öne her gelişinde
+  `GET /v1/return` sorulur; `shouldPrompt` ise `/return` sekmelerin üstüne açılır. Cevap alınamazsa (bağlantı yok, hata) hiçbir şey sorulmaz, sonraki açılış tekrar
+  sorar. Kullanıcı bir sekmede değilse (antrenman, tartı, öğün) üstüne açılmaz; soru sonraki açılışa kalır. Ekran kaydırarak kapatılmaz (`gestureEnabled: false`);
+  sunucu artık sormuyorsa (başka telefonda cevaplandı) kendiliğinden kapanır. **Kaçış yolu her zaman var:** "Not now" (yükleniyor, hazır, hata; cevap giderken
+  kapalı) hiçbir şey göndermeden ekranı kapatır, sunucu cevaplanmayanı sonraki açılışta yine sorar (#5 "öner ama dayatma").
+- **Metin (Ek 6):** "Welcome back" + "{days} days away. Plan, logs and goals kept." Prototipteki "Nothing lost" yok; seri hakkında bir şey söylenmez. Önerilen seçenek
+  (`suggested`) işaretli ve başta seçili; kullanıcı değiştirebilir. "Next call: …" `nextCallOn`'dan; alan yoksa (rıza yok) satır yok.
+- **Cevap:** `POST /v1/return`; sonuç ekran değişimidir (toast değil, kullanıcı testi): EASE_BACK ve PICK_UP'ta geldiği ekrana döner (Bu hafta bugünün hedeflerini
+  sunucudan okur); REBUILD'de programın kendi "Rebuild" sayfasına (`/edit-program?part=rebuild`) geçer: o sayfa programı değiştirmeden önce onay ister ve
+  `POST /v1/program/generate`'i çağırır (yeni bir rebuild akışı yazılmadı).
+- **Örnek ağırlıklar:** "Ease back in" satırı, program bir mola sonrası hafif hedef gösteriyorsa (`Program.backAfterBreak`), ilk iki bileşik hareketin `nextLoadKg`'ını
+  sunucudan olduğu gibi söyler; aksi halde ağırlık söylemez (hedefler olağan hedeflerdir). Telefon ağırlık hesaplamaz. "Pick up where I left off" ağırlık söylemez ve
+  "Targets unchanged." der: PICK_UP "programın hedefleri olduğu gibi" demektir, son setin yükü değil (`lastBestSet` bu yüzden kullanılmadı; "Same weights as
+  before" bir söz olurdu, hedef son setin bir basamak üstü olabilir). "Ease back in" yalın satırı ("One step lighter.") K-1026 ile (EASE_BACK her sorulan boşlukta
+  bir basamak hafifletir, `backAfterBreak` true) her boşlukta doğrudur.
+- **Duraklat (#6):** beş durum döşemesi (yalnız ad; açıklama satırları 30 kelime bütçesi için ilk görünümden çıktı) + süre (Until I'm back / 3 days / 7 days;
+  seçenekler `state.json`'dan). Sick ve In pain HEALTH_DATA rızası ister (K-1021): rıza yoksa aynı ekranda rıza adımı çıkar (weigh-in/meal ile aynı metin ve kalıp),
+  "Allow and continue" rızayı kaydedip seçileni süresiyle birlikte bildirir; "Not now" seçimi koruyarak döşemelere döner. Sunucu CONSENT_REQUIRED derse (telefonun rıza
+  bilgisi geride) aynı adım; genel hata cümlesi değil. Rıza az önce verilmişken sunucu yine isterse (sunucunun tutmadığı bir metin sürümü) döngü yok: seçim
+  korunur, "Something went wrong on our side. Try again in a moment." denir ve olay adıyla bildirilir. Traveling, Busy week, New gym rızasız bildirilir.
+- **Reddedilen:** (a) `Stack.Protected` ile açılış yönlendirmesi: sekmelerin kendisini gizler, soru sekmelerin üstünde olmalı; (b) dönüş ekranında kaçış yolu olmaması (ilk sürüm: "üç seçeneğin biri zaten hiçbir şey değiştirmiyor"): öneri dayatmaya döner; PICK_UP bir cevaptır (sunucu kaydeder, sorulmaz), "Not now" ise cevap vermemektir ve sunucu sormaya devam eder, ikisi ayrı şey; (c) rebuild'i dönüş ekranından
+  doğrudan `generate` ile yapmak: programı onaysız değiştirir.
+
+## Ek 11 · "Ease back in" seçimi kısa molada da bir basamak hafifletir (K-1026, 2026-10-15, agent, teknik; KABUL)
+Ek 8, EASE_BACK cevabını "program zaten yapıyor" diye hiçbir şeye bağlamamıştı; ama boşluk `return_prompt_days` ile `return_step_back_after_weeks` arasındaysa (PICK_UP önerili) program hiçbir şey hafifletmez, ekran ise "One step lighter" der. ADR-077 #5 "öner ama dayatma": kullanıcının seçimi etkili olmalı.
+- **EASE_BACK, PICK_UP ile aynı kayıt ve süre kuralıyla zorlamadır** (`ReturnAnswers.Answer.easesBackFrom`): cevabın kapsadığı boşluk için (yeni bir seans boşluktan sonra yapılmadıkça) ilk seansa dönüşte `ReturnLoad`ın mevcut tek basamağı uygulanır, program `backAfterBreak: true` döner; yeni sayı yok.
+  Seans yapılınca (son seans boşluğun başladığı günden yeni) ya da cevaptan `return_step_back_after_weeks` sonra seanssız geçerse zorlama biter; o süre dolunca mola zaten uzundur ve `ReturnLoad` kendiliğinden hafifletir. İkinci bir basamak yoktur (uzun molada seçim hiçbir şey eklemez).
+- Okuma noktaları tek: `BackAfterBreak.of(.., easedBack, ..)` programı (`ProgramController`) ve kararın tutulan hareketini (`TrainingMoveTargets`, K-1009) aynı karara getirir. REBUILD ve PICK_UP davranışı değişmez.
+

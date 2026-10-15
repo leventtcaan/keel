@@ -1,12 +1,28 @@
 {
   "parameters": [
     {
-      "key": "share_withheld_rules",
-      "value": ["low_energy_safety", "low_energy_availability", "rapid_loss", "loss_rate_cap", "loss_rate_cap_bodyweight", "low_fat_floor"],
-      "unit": "rules",
+      "key": "story_width_px",
+      "value": 1080,
+      "unit": "px",
       "tag": "urun",
-      "source": "plan/kararlar/ADR-054-paylasim-karti.md#D1",
-      "note": "A latest call resting on one of these rules is left off the share card (K-612, ADR-054 §4): the engine's safety net (SafetyNet) — a health signal, and rapid loss gives the weight's direction away even with the weight trend off. Provisional until question 104 is answered."
+      "source": "plan/kararlar/ADR-076-paylasim-cikartma.md#D1",
+      "note": "The width of the image made for a share, in pixels (9:16 with story_height_px). The sticker is drawn at this width over the phone's pixel ratio, so the PNG comes out at it."
+    },
+    {
+      "key": "story_height_px",
+      "value": 1920,
+      "unit": "px",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-076-paylasim-cikartma.md#D1",
+      "note": "The height of a Story-sized image (a photo or dark background, K-975 part B); a sticker alone is as tall as its words."
+    },
+    {
+      "key": "progress_lifts",
+      "value": 3,
+      "unit": "lifts",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-076-paylasim-cikartma.md#D1",
+      "note": "How many lifts the Progress sticker names: the ones that gained the most kilos since their baseline."
     }
   ]
 }

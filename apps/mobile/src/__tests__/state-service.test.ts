@@ -87,6 +87,17 @@ test('a refusal or no answer throws by name, and nothing changes on the phone', 
   expect(await refusing.state.inForce()).toBe(true);
 });
 
+test("Sick and In pain need the health data consent (K-1021): the server's CONSENT_REQUIRED is told apart from any other refusal, and nothing is kept", async () => {
+  const needs = { error: { code: 'CONSENT_REQUIRED', message: 'x' }, response: new Response(null, { status: 403 }) };
+  const { state, changed } = service({ PUT: jest.fn(async () => needs) });
+  await expect(state.declare('SICK')).rejects.toMatchObject({ name: 'ConsentRequired' });
+  expect(await state.inForce()).toBe(false);
+  expect(changed).not.toHaveBeenCalled();
+  // Another 403, or another refusal, is not for want of the consent.
+  const other = service({ PUT: jest.fn(async () => refused(403)) });
+  await expect(other.state.declare('SICK')).rejects.toMatchObject({ name: 'StateRefused' });
+});
+
 test('forgotten: nothing is known, nothing kept', async () => {
   const { state, kv } = service({});
   await state.keep({ state: 'ready', value: { kind: 'SICK', since: '2026-10-07' } });

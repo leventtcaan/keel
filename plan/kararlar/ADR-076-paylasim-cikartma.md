@@ -39,6 +39,11 @@ indirmeden reels ve story'lerden tanıyor (ADR-071 #6). Bugün paylaşım RN `Sh
      kayabilir; kayarsa Levent'e sorulur.
 8. **Boyut:** önizleme ve kayıt 9:16 (1080 × 1920); çıkartma şeffaf, Story'de kullanıcı yerleştirir.
 
+## D1 · Sayılar ve listeler (K-975)
+Kararın sayıları `data/parameters/share.json`'da (telefonun okuduğu parametre; kod değil): görüntü genişliği 1080 ve Story yüksekliği 1920 (#8:
+`story_width_px`, `story_height_px`), Progress çıkartmasının andığı hareket sayısı 3 (#2: `progress_lifts`). `share_withheld_rules` kalktı: karar
+hiç paylaşılmadığı için (#1) dışarıda tutulacak karar yok.
+
 ## Neden
 Strava kalıbı (şeffaf istatistik + kendi görüntün) paylaşımı insanın anına bağlar, uygulamanın reklamına değil; logo markayı taşır. Antrenman
 anı kategorinin paylaşılan anı (Hevy, Strava). Kararın paylaşılmaması sağlık sinyali taşıyan kararların (güvenlik ağı) dışarı çıkma riskini de

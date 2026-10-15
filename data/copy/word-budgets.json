@@ -983,6 +983,7 @@
         "plus.weighIn",
         "plus.meal",
         "plus.workout",
+        "plus.cardio",
         "plus.life"
       ],
       "notFirstView": []
@@ -1067,18 +1068,84 @@
       "budget": 25,
       "source": "prototip/yeni-yuz.html",
       "task": "K-980",
-      "file": null,
-      "keys": [],
-      "notFirstView": []
+      "note": "The first view is the first day's: the title, the four slots, the search with its Search and Scan buttons, Log it; nothing is offered when there is no yesterday and no recent food. The face with the quick adds is the ordinary day: 'Same as yesterday' with Add, 'Recent' (at most quick_recent_max, data/parameters/food.json). Food names are the person's and the database's own words, as the prototype leaves them out of its count; the unit of an amount (g) and the kcal after each range are counted as listed. The plus on a recent food and the barcode button are spoken, not read.",
+      "file": "src/app/meal.tsx",
+      "parts": ["src/food/QuickAdds.tsx", "src/food/FoodPicker.tsx"],
+      "keys": [
+        "meal.title",
+        "food.slot.BREAKFAST",
+        "food.slot.LUNCH",
+        "food.slot.DINNER",
+        "food.slot.SNACK",
+        "meal.search.label",
+        "meal.search.go",
+        "meal.barcode.scanShort",
+        "meal.save"
+      ],
+      "notFirstView": [
+        "consent.health_data.title",
+        "consent.health_data.body",
+        "meal.consent.allow",
+        "meal.consent.notNow",
+        "meal.consent.failed",
+        "meal.edit.delete",
+        "meal.edit.confirmDelete",
+        "meal.edit.needsConnection",
+        "meal.estimate.question",
+        "meal.photo.why",
+        "meal.saveFailed",
+        "meal.full",
+        "meal.search.add",
+        "meal.search.tooShort",
+        "meal.search.failed",
+        "meal.search.none",
+        "meal.recipes.heading",
+        "meal.recipes.add",
+        "meal.recipes.unavailable",
+        "meal.barcode.scan",
+        "meal.barcode.notFound",
+        "meal.barcode.badNumber",
+        "meal.barcode.failed",
+        "food.repeat.spoken",
+        "food.repeat.failed",
+        "food.suggestions.item",
+        "food.suggestions.log",
+        "food.budget.kcalUnit",
+        "format.range"
+      ],
+      "faces": [
+        {
+          "face": "quick adds",
+          "keys": [
+            "meal.title",
+            "food.slot.BREAKFAST",
+            "food.slot.LUNCH",
+            "food.slot.DINNER",
+            "food.slot.SNACK",
+            "food.repeat.title",
+            "meal.quick.add",
+            "meal.quick.recent",
+            "meal.search.label",
+            "meal.search.go",
+            "meal.barcode.scanShort",
+            "meal.save"
+          ],
+          "dynamic": [
+            { "what": "kcal after the range of Same as yesterday", "words": 1 },
+            { "what": "the unit (g) and kcal of each of two recent foods", "words": 4 }
+          ]
+        }
+      ]
     },
     {
       "screen": "barcode",
       "budget": 10,
       "source": "prototip/yeni-yuz.html",
       "task": "K-980",
-      "file": null,
-      "keys": [],
-      "notFirstView": []
+      "note": "The reader as the person meets it: its title, the typed number, Look up, Close. Why the camera is off and what a wrong number says are other states, off the first view.",
+      "file": "src/food/BarcodeScanner.tsx",
+      "keys": ["meal.barcode.title", "meal.barcode.type", "meal.barcode.lookUp", "meal.barcode.close"],
+      "notFirstView": ["meal.barcode.denied", "meal.barcode.invalid", "meal.barcode.askAgain"]
     },
     {
       "screen": "checkin",
@@ -1359,27 +1426,123 @@
       "budget": 25,
       "source": "prototip/yeni-yuz.html",
       "task": "K-975",
-      "file": null,
-      "keys": [],
-      "notFirstView": []
+      "file": "src/app/share.tsx",
+      "keys": [
+        "workoutEnd.title",
+        "workoutEnd.minutes.other",
+        "workoutEnd.liftedKg",
+        "workoutEnd.sets.other",
+        "share.sticker.workout.recordLabel",
+        "share.sticker.workout.baselineValue",
+        "share.sticker.workout.baselineLabel",
+        "app.name"
+      ],
+      "dynamic": [
+        { "what": "the session's day (Full body A)", "words": 3 },
+        { "what": "the record's load unit (100 kg × 8)", "words": 1 },
+        { "what": "the record's move (squat PR)", "words": 1 }
+      ],
+      "parts": ["src/share/stickers.ts", "src/share/Sticker.tsx", "src/share/layout.ts"],
+      "faces": [
+        {
+          "face": "the PR sticker",
+          "keys": ["share.sticker.pr.kicker", "share.sticker.pr.best", "share.sticker.pr.change", "share.sticker.pr.since", "app.name"],
+          "dynamic": [
+            { "what": "the move (Romanian deadlift)", "words": 2 },
+            { "what": "the set's and the gain's unit (100 kg × 8, +20 kg)", "words": 2 },
+            { "what": "the baseline's day (Jul 13)", "words": 2 }
+          ]
+        },
+        {
+          "face": "the PR sticker of a first session",
+          "keys": ["workoutEnd.baseline", "workoutEnd.baselineBody", "app.name"],
+          "dynamic": [{ "what": "the move (Romanian deadlift)", "words": 2 }]
+        },
+        {
+          "face": "the Streak sticker",
+          "keys": ["share.sticker.streak.kicker", "share.sticker.streak.title", ["share.sticker.streak.spare.one", "share.sticker.streak.spare.other"], "app.name"],
+          "dynamic": []
+        },
+        {
+          "face": "the Progress sticker",
+          "keys": ["share.sticker.progress.kicker", ["share.sticker.progress.inWeeks.one", "share.sticker.progress.inWeeks.other", "share.sticker.progress.soFar"], "share.sticker.progress.lift", "app.name"],
+          "dynamic": [{ "what": "the three lifts, each its move and its unit (Squat +20 kg)", "words": 9 }]
+        }
+      ],
+      "notFirstView": [
+        "share.title",
+        "share.share",
+        "share.note",
+        "share.nothing",
+        "share.failed",
+        "share.denied",
+        "share.photoFailed",
+        "share.instagramNote",
+        "share.background.gallery",
+        "share.background.camera",
+        "share.background.dark",
+        "share.background.instagram",
+        "share.partial",
+        "share.spoken",
+        "workoutEnd.pending",
+        "workoutEnd.liftedLb",
+        "workoutEnd.minutes.one",
+        "workoutEnd.sets.one",
+        "workoutEnd.set",
+        "share.sticker.workout.plain"
+      ]
     },
     {
       "screen": "return",
       "budget": 45,
       "source": "prototip/yeni-yuz.html",
       "task": "K-981",
-      "file": null,
-      "keys": [],
-      "notFirstView": []
+      "note": "The prototype's welcome says 'Nothing lost'; ADR-077 Ek 6 has the screen say what is kept (plan, logs, goals) and nothing about a streak. The away line is one of two (one day, several days), the longest counts. 'Ease back in' names the server's targets for the first two compound moves when the program shows them a step lighter, else a plain line, the longest counts; the moves are dynamic (a name of up to two words and a unit, twice).",
+      "file": "src/app/return.tsx",
+      "keys": [
+        "return.title",
+        ["return.away.one", "return.away.other"],
+        "return.suggested",
+        "return.ease.title",
+        ["return.ease.body", "return.ease.plain"],
+        "return.pickUp.title",
+        "return.pickUp.body",
+        "return.rebuild.title",
+        "return.rebuild.body",
+        "return.nextCall",
+        "return.continue",
+        "return.later"
+      ],
+      "dynamic": [
+        { "what": "the two moves, as 'Squat 95 kg, Bench press 70 kg' (names and units; the loads are numbers)", "words": 5 },
+        { "what": "the next call's date (Mon, Jan 25)", "words": 2 }
+      ],
+      "notFirstView": ["return.retry", "return.loading"]
     },
     {
       "screen": "life",
       "budget": 30,
       "source": "prototip/yeni-yuz.html",
       "task": "K-981",
-      "file": null,
-      "keys": [],
-      "notFirstView": []
+      "note": "The five tiles carry their label only (the earlier line under each state left the first view to stay in the prototype's budget). The consent step, shown for Sick and In pain without the health data consent, is its own view and not the first.",
+      "file": "src/app/state.tsx",
+      "keys": [
+        "state.screen.back",
+        "state.screen.title",
+        "state.screen.intro",
+        "state.tile.traveling",
+        "state.tile.sick",
+        "state.tile.pain",
+        "state.tile.busy",
+        "state.tile.new_gym",
+        "state.screen.until",
+        "state.screen.untilBack",
+        "state.screen.forDays",
+        "state.screen.forDays",
+        "state.screen.pause"
+      ],
+      "uncounted": ["settings.backMark"],
+      "notFirstView": ["state.consent.why", "state.consent.allow", "state.consent.notNow", "consent.health_data.title", "consent.health_data.body"]
     }
   ]
 }

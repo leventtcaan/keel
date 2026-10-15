@@ -551,6 +551,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/foods/recent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The foods the user ate most recently, each in the amount of its last time (K-1025)
+         * @description For the meal screen's one-tap "Recent": from the user's own meals of the last `suggestion-days` (28), freshest first,
+         *     each food once, in the amount it was last had, with its kcal as the database estimates it now (U1, U5: a range).
+         *     Never a food in the profile's foods to avoid. With `slot`, the foods last had in that slot come first (freshest of
+         *     those), then the others by freshness: the list is never short because of the slot. A few at most (`recent-foods`); a
+         *     food or recipe gone since is skipped. Independent of the day's target: it answers with no target, and past one.
+         *     A user with no meals gets an empty list. CONSENT_REQUIRED without the HEALTH_DATA consent; only the user's own meals.
+         */
+        get: operations["getRecentFoods"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/recipes": {
         parameters: {
             query?: never;
@@ -1370,7 +1395,7 @@ export interface paths {
          *     days of the answer (a log dated back after it leaves the question answered). Sent again for the same gap, the
          *     newer answer replaces the older. PICK_UP keeps the program's targets as they were (`Program.backAfterBreak` absent,
          *     `nextLoadKg` not eased) for the first session back, within `return_step_back_after_weeks` of the answer: without a
-         *     session in that time it falls and the usual step back applies; EASE_BACK leaves the usual step back as it is; REBUILD changes
+         *     session in that time it falls and the usual step back applies. EASE_BACK steps the targets back by the same one step whatever the length of the break (K-1026): `Program.backAfterBreak` true for the first session back, on the same terms as PICK_UP (it ends with a session after the gap); REBUILD changes
          *     nothing here (the phone calls POST /v1/program/generate). CONFLICT when there is no gap to answer (no log, or fewer
          *     days than `return_prompt_days`) or no profile. Answers the summary as it is after the answer.
          */
@@ -4599,6 +4624,29 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description The suggestions, in order */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Suggestion"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getRecentFoods: {
+        parameters: {
+            query?: {
+                slot?: components["schemas"]["MealSlot"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The recent foods, in order */
             200: {
                 headers: {
                     [name: string]: unknown;

@@ -95,3 +95,16 @@ ağırlık öncesine asla yerleşmez, kullanıcı değişikliğini ezmez · tele
 - **Geri alma:** `DELETE /v1/cardio-sessions/{id}` yalnız `MANUAL` kaydı siler (204). `APPLE_HEALTH` kaydı saatin kaydıdır, silinse bir sonraki
   okumada geri gelirdi: 409 `CONFLICT`. Başkasının ya da olmayan kayıt 404 (kaydın var olduğunu bile söylemez). Elle kayıt silinince aynı günün
   saat kaydı günü kayıtlı tutar. Silme fiziksel silmedir: aynı `clientId`'li POST kaydı yeniden yazar (201, yeni id), bu yüzden telefon geri alırken o `clientId`'li bekleyen POST'u kuyruktan düşürür (K-980). İkinci DELETE 404 = zaten silinmiş.
+
+## Ek 3 · "+ > Cardio" kaydı (K-980, #443, 2026-10-15, agent, teknik)
+- **Yalnız dakika** (#6: pace yok; kalori yazılmaz). Dakika `Program.cardio.minutes`'tan başlar; programda kardiyo yoksa (`VERY_ACTIVE`, profil yok)
+  `cardio_minutes_start`. Adımlayıcı Edit › Cardio ile aynı bileşendir (`MinutesStepper`: `cardio_minutes_step`, `cardio_minutes_max`).
+- **Bugün kayıtlıysa sorulmaz, kayıt gösterilir** (`todaysCardio`): sunucunun `loggedToday`'ı (elle olan önce, Ek 2) ve telefonda bekleyen ya da yeni yazılmış
+  elle kayıt. Çevrimdışı kopya (`kept`) bugünü söylemez: o zaman yalnız telefonun kendi kayıtları sayılır. `APPLE_HEALTH` kaydı gösterilir, geri alma
+  yoktur, tekrar sorulmaz; "Apple Watch measured N kcal" yalnız saat ölçtüyse (#5). Elle ve saat kaydı birlikteyse elle olan görünür (geri alınabilen).
+- **Undo = `takeBack`** (ADR-018 Ek 2): kuyruk tutulur, `DELETE /v1/cardio-sessions/{id}` sunucu kimliğiyle, **aynı `clientId`'li bekleyen POST
+  kuyruktan düşer** (Ek 2), 404 = zaten silinmiş = alındı, 409 (saat kaydı) ve cevapsızlık hiçbir şeyi değiştirmez ve söylenir. Geri alınınca ekran
+  yeniden dakika sorar; yeni kayıt yeni `clientId` alır.
+- **Sağlık verisi değil:** rıza sorulmaz (antrenman verisi, aktif enerji yalnız Apple Health kaydında, Ek 1).
+- **Değişmeyen:** seansın son adımındaki Done/Undo (K-973, ADR-075 Ek 9: "yalnız gönderilmemişken") bu ekle değişmedi; DELETE ucu artık var, o ekran da
+  `takeBack`'e taşınabilir (ayrı iş).

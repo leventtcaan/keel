@@ -15,6 +15,8 @@ import { FoodPicker } from '@/food/FoodPicker';
 import { ItemRows } from '@/food/ItemRows';
 import { type DraftItem, type KnownFoods, type KnownRecipes, PORTION, addFood, addRecipe, draftOf, itemsHanded, recipeItemId, requestsOf } from '@/food/draft';
 import { defaultSlot } from '@/food/meals';
+import { QuickAdds } from '@/food/QuickAdds';
+import { useMealStart, useRecentFoods } from '@/food/useMealStart';
 import { clearMeal, handedFrom, peekMeal } from '@/food/handoff';
 import { foodParams } from '@/food/params';
 import { useAppServices } from '@/services/ServicesProvider';
@@ -128,6 +130,11 @@ export default function MealScreen() {
     if (done) await forgetRecord(meal.clientId).catch((error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' }));
     return done;
   };
+
+  // The one-tap offers (K-980): for a new meal only, and only while nothing is being put together by hand.
+  const quick = step === 'entry' && edit === undefined && !fromCoach;
+  const start = useMealStart(quick);
+  const recent = useRecentFoods(quick, slot);
 
   const requests = requestsOf(items, known, knownRecipes);
   const key = requests === null ? null : JSON.stringify(requests);
@@ -255,6 +262,8 @@ export default function MealScreen() {
             <Chip key={option} label={t(`food.slot.${option}`)} selected={slot === option} onPress={() => setSlot(option)} />
           ))}
         </View>
+
+        {original === null && !fromCoach && items.length === 0 && start !== null && <QuickAdds slot={slot} start={start} recent={recent} onLogged={() => router.back()} />}
 
         <ItemRows
           items={items}

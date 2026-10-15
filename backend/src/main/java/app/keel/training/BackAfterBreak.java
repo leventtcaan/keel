@@ -18,6 +18,11 @@ record BackAfterBreak(boolean longBreak, LocalDate today, ZoneId zone) {
         return new BackAfterBreak(lastSession.filter(day -> ReturnLoad.afterBreak(day, today, parameters)).isPresent(), today, zone);
     }
 
+    /** As above, and a break the user chose to ease back in from is a long one whatever its length (K-1026). */
+    static BackAfterBreak of(Optional<LocalDate> lastSession, boolean easedBack, LocalDate today, ZoneId zone, Parameters parameters) {
+        return new BackAfterBreak(lastSession.isPresent() && (easedBack || ReturnLoad.afterBreak(lastSession.get(), today, parameters)), today, zone);
+    }
+
     /** Whether the target shown for this planned exercise today is stepped back: one from before today on a day back after a long break. */
     boolean steppedBack(ProgramStore.PlannedExercise planned) {
         return longBreak && planned.nextLoadKg() != null && planned.lastLoadKg() != null && planned.nextFrom() != null

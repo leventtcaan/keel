@@ -1,108 +1,161 @@
-import { useFocusEffect } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Switch, Text, View, useWindowDimensions } from 'react-native';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import type Svg from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ProblemText } from '@/components/ProblemText';
-import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
+import { Chip } from '@/components/Chip';
+import { ProblemText } from '@/components/ProblemText';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
-import { windowFrom } from '@/progress/strength';
-import { type CardFacts, cardText, strengthFact } from '@/share/card';
-import { ShareCard } from '@/share/ShareCard';
+import { type Source, discardBackground, pickBackground } from '@/share/background';
+import { Preview } from '@/share/Preview';
+import type { Backdrop } from '@/share/Sticker';
+import { type StickerFacts, stickersFor } from '@/share/stickers';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
-import { load, localDay } from '@/today/today';
-import { sessionsOf } from '@/train/history';
-import { historyFrom, movesOf } from '@/train/trainData';
+import { load } from '@/today/today';
+import { movesOf } from '@/train/trainData';
+import { type WorkoutSummaryRead, loadWorkoutSummary } from '@/train/workoutEnd';
 
-type Schemas = components['schemas'];
+/** The widest the preview is drawn, in points; narrower on a narrow screen. */
+const PREVIEW_MAX = 240;
+/** The grounds a sticker can sit on: the user's own photo (gallery or camera), a dark one, or none (Instagram's own). */
+type Ground = Source | 'dark' | 'instagram';
+
+type Facts = StickerFacts & { partial: boolean; waiting: boolean };
 
 /**
- * Share your progress (K-612, L3 Y5): started by the user, never offered on its own. The card is made on this phone from
- * what the app already shows — the record (K-608), the latest call, the strength chart's lift (K-604) — and the weight
- * trend only when the user turns it on. It is drawn here and handed to the share sheet as an image; the screen only
- * reads, and the app sends the image nowhere.
+ * Share (K-975, ADR-076; prototype `#share`): started by the user, from the end of a workout (`?workout=`) or from
+ * Progress, never offered on its own. Four stickers (Workout, PR, Streak, Progress) made on this phone from what the server
+ * says; the user picks one and what it sits on (their photo from the gallery or camera, dark, or nothing for "In
+ * Instagram"), it is drawn, and its PNG goes to the system share sheet (Save, TikTok, More). The photo is the user's own
+ * and stays on the phone; the progress photos are not offered. The screen only reads; the app sends the image nowhere.
+ * The weekly call is not a sticker (ADR-076 #1).
  */
 export default function ShareScreen() {
-  const { api, training, workoutRecords, shareImage, report } = useAppServices();
+  const services = useAppServices();
+  const { api, training, shareImage, report } = services;
   const units = useUnits();
   const { color } = useTheme();
   const { width } = useWindowDimensions();
-  const [facts, setFacts] = useState<CardFacts | null>(null);
-  const [showWeight, setShowWeight] = useState(false);
+  const { workout } = useLocalSearchParams<{ workout?: string }>();
+  const [facts, setFacts] = useState<Facts | null>(null);
+  const [picked, setPicked] = useState<string | null>(null);
+  const [ground, setGround] = useState<Ground>('dark');
+  const [photo, setPhoto] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [failed, setFailed] = useState(false);
-  // A part the server could not give (offline): said, so an empty card is not read as "nothing yet".
-  const [partial, setPartial] = useState(false);
-  const card = useRef<Svg>(null);
+  const [problem, setProblem] = useState<Problem | null>(null);
+  const image = useRef<Svg>(null);
+  // The picker's copy of the chosen photo, in this app's cache: removed when another ground replaces it and when the screen closes.
+  const held = useRef<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
-      const now = new Date();
-      const today = localDay(now);
-      const trend = { params: { query: { from: windowFrom(today), to: today } } };
       void Promise.all([
+        workout === undefined ? Promise.resolve(null) : loadWorkoutSummary(services, workout).catch((): WorkoutSummaryRead => ({ kind: 'failed', problem: 'ServerError' })),
         load(() => api.GET('/v1/consistency')),
-        load(() => api.GET('/v1/decisions/current')),
-        load(() => api.GET('/v1/weight-trend', trend)),
-        training.read(api),
-        training.own(api),
-        training.history(api, now),
-        workoutRecords(),
+        load(() => api.GET('/v1/training-progress')),
+        training.read(api).catch(() => null),
+        training.own(api).catch(() => []),
       ])
-        .then(([consistency, call, weights, data, own, history, records]) => {
-          const sessions = sessionsOf(history.state === 'ready' ? history.value : null, records, historyFrom(now));
-          setPartial([consistency, call, weights].some((read) => read.state === 'failed'));
+        .then(([end, consistency, progress, data, own]) =>
           setFacts({
+            workout: end?.kind === 'ready' ? { summary: end.summary, programDayId: end.programDayId, program: data?.program.state === 'ready' ? data.program.value : null } : null,
             consistency: consistency.state === 'ready' ? consistency.value : null,
-            latestCall: call.state === 'ready' ? call.value : null,
-            strength: strengthFact(movesOf(data, own), sessions, today),
-            weight: weights.state === 'ready' ? trendChange(weights.value) : null,
-          });
-        })
+            progress: progress.state === 'ready' ? progress.value : null,
+            moves: movesOf(data, own),
+            // Said, so a sticker that is missing is not read as "nothing yet": a part the server could not give.
+            partial: [consistency, progress].some((read) => read.state === 'failed') || end?.kind === 'failed',
+            waiting: end?.kind === 'pending',
+          }),
+        )
         .catch((error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' }));
-    }, [api, training, workoutRecords, report]),
+    }, [services, api, training, workout, report]),
   );
 
-  const text = facts === null ? null : cardText(facts, units, showWeight);
+  const forget = useCallback(() => {
+    if (held.current === null) return;
+    try {
+      discardBackground(held.current);
+    } catch (error) {
+      report({ name: error instanceof Error ? error.name : 'Unknown' });
+    }
+    held.current = null;
+  }, [report]);
+  useEffect(() => forget, [forget]);
+
+  const stickers = facts === null ? [] : stickersFor(facts, units);
+  const sticker = stickers.find((s) => s.kind === picked) ?? stickers[0];
+  const backdrop: Backdrop | undefined = ground === 'instagram' ? undefined : photo !== null ? { kind: 'photo', uri: photo } : { kind: 'dark' };
+
+  const choose = async (source: Source) => {
+    setProblem(null);
+    try {
+      const chosen = await pickBackground(source);
+      if (chosen === 'denied') return setProblem('denied');
+      if (chosen === null) return;
+      forget();
+      held.current = chosen.uri;
+      setPhoto(chosen.uri);
+      setGround(source);
+    } catch (error) {
+      report({ name: error instanceof Error ? error.name : 'Unknown' });
+      setProblem('photo');
+    }
+  };
+  const plain = (next: 'dark' | 'instagram') => {
+    setProblem(null);
+    forget();
+    setPhoto(null);
+    setGround(next);
+  };
   const share = () => {
-    if (busy || card.current === null) return;
+    if (busy || image.current === null) return;
     setBusy(true);
-    setFailed(false);
-    card.current.toDataURL((base64) => {
+    setProblem(null);
+    image.current.toDataURL((base64?: string) => {
+      // The drawing can answer with nothing; that is a failure to say, not a share of an empty file.
+      if (!base64) {
+        report({ name: 'EmptyImage' });
+        setProblem('share');
+        setBusy(false);
+        return;
+      }
       shareImage(base64)
         .catch((error: unknown) => {
           report({ name: error instanceof Error ? error.name : 'Unknown' });
-          setFailed(true);
+          setProblem('share');
         })
         .finally(() => setBusy(false));
     });
   };
 
   // Built before the JSX: a literal inside a JSX child is read as text by the copy guard (copy-literals.test.ts).
-  const weightSwitch =
-    facts?.weight == null ? null : (
-      <View style={styles.row}>
-        <View style={styles.words}>
-          <Text style={[styles.text, { color: color.text }]}>{t('share.showWeight')}</Text>
-          <Text style={[styles.small, { color: color.muted }]}>{t('share.weightNote')}</Text>
-        </View>
-        <Switch accessibilityLabel={t('share.showWeight')} value={showWeight} onValueChange={setShowWeight} />
-      </View>
-    );
-  const shareable =
-    text === null ? null : text.lines.length === 0 ? (
-      <Text style={[styles.text, { color: color.textSecondary }]}>{t('share.nothing')}</Text>
+  const instagramNote = ground === 'instagram' ? <Text style={[styles.small, { color: color.muted }]}>{t('share.instagramNote')}</Text> : null;
+  const choice =
+    sticker === undefined ? (
+      facts !== null && <Text style={[styles.text, { color: color.textSecondary }]}>{t('share.nothing')}</Text>
     ) : (
       <View style={styles.part}>
-        <ShareCard ref={card} text={text} width={width - 2 * tokens.space.lg} />
-        {weightSwitch}
-        {failed && <Failed />}
+        <Preview sticker={sticker} backdrop={backdrop} width={Math.min(width - 2 * tokens.space.lg, PREVIEW_MAX)} imageRef={image} />
+        <View style={styles.chips}>
+          {stickers.map((s) => (
+            <Chip key={s.kind} touch label={t(`share.kind.${s.kind}`)} selected={s.kind === sticker.kind} onPress={() => setPicked(s.kind)} />
+          ))}
+        </View>
+        <View style={styles.chips}>
+          <Chip touch label={t('share.background.gallery')} selected={ground === 'gallery'} onPress={() => void choose('gallery')} />
+          <Chip touch label={t('share.background.camera')} selected={ground === 'camera'} onPress={() => void choose('camera')} />
+          <Chip touch label={t('share.background.dark')} selected={ground === 'dark'} onPress={() => plain('dark')} />
+          <Chip touch label={t('share.background.instagram')} selected={ground === 'instagram'} onPress={() => plain('instagram')} />
+        </View>
+        {instagramNote}
+        {problem !== null && <Failed problem={problem} />}
         <Button label={t('share.share')} disabled={busy} onPress={share} />
+        <Text style={[styles.small, { color: color.muted }]}>{t('share.note')}</Text>
       </View>
     );
 
@@ -110,31 +163,27 @@ export default function ShareScreen() {
     <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.body}>
         <ScreenTitle>{t('share.title')}</ScreenTitle>
-        <Text style={[styles.text, { color: color.textSecondary }]}>{t('share.note')}</Text>
-        {partial && <Text style={[styles.small, { color: color.muted }]}>{t('share.partial')}</Text>}
-        {shareable}
+        {facts?.waiting === true && <Text style={[styles.small, { color: color.muted }]}>{t('workoutEnd.pending')}</Text>}
+        {facts?.partial === true && <Text style={[styles.small, { color: color.muted }]}>{t('share.partial')}</Text>}
+        {choice}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-/** The trend's first and last point in the window: what it was and what it is, both measured, and since when. */
-function trendChange(points: Schemas['TrendPoint'][]): CardFacts['weight'] {
-  if (points.length < 2) return null;
-  return { fromKg: points[0].kg, toKg: points[points.length - 1].kg, since: points[0].day };
-}
+type Problem = 'share' | 'denied' | 'photo';
 
-function Failed() {
+function Failed({ problem }: { problem: Problem }) {
   const { color } = useTheme();
-  return <ProblemText style={[styles.text, { color: color.text }]}>{t('share.failed')}</ProblemText>;
+  const words = { share: t('share.failed'), denied: t('share.denied'), photo: t('share.photoFailed') };
+  return <ProblemText style={[styles.text, { color: color.text }]}>{words[problem]}</ProblemText>;
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   body: { padding: tokens.space.lg, gap: tokens.space.lg },
-  part: { gap: tokens.space.md },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space.md },
-  words: { flex: 1, gap: tokens.space.xs },
+  part: { gap: tokens.space.md, alignItems: 'stretch' },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm, justifyContent: 'center' },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },
 });
