@@ -8,6 +8,7 @@ import app.keel.engine.ConsistencyRecord;
 import app.keel.engine.ConsistencyWeek;
 import app.keel.engine.ConsistencyWeek.State;
 import app.keel.engine.RepositoryParameters;
+import app.keel.engine.ParameterKey;
 import app.keel.engine.Parameters;
 import app.keel.engine.Sex;
 import app.keel.engine.WeekTally;
@@ -274,6 +275,48 @@ class WeekTallyAssemblyTests {
         List<WeekTally> weeks = List.of(week(0, 9).asPaused());
 
         assertThat(WeekTallies.pausedOn(weeks, Set.of())).containsExactly(week(0, 9).asPaused());
+    }
+
+    // ── the call's adherence window without the ladder's week off (K-1023, ADR-040 Ek 1) ───────────────────────
+
+    private static final WeekTallies.Logs SOMETHING_LOGGED = new WeekTallies.Logs(List.of(MON_28_SEP), Set.of(), Map.of(), Map.of());
+
+    @Test
+    void aRestWeekInTheWindowDoesNotPullTheAdherenceUnderTheLine() {
+        // 15 of 21, a week off with 13 of 21, 15 of 21: counted, 43 of 63 is under the line; left out, 30 of 42 is over it.
+        BigDecimal line = BigDecimal.valueOf(P.number(ParameterKey.ON_TRACK_MIN_RATIO));
+        List<WeekTally> window = List.of(wide(0, 15), wide(1, 13), wide(2, 15));
+        assertThat(Consistency.windowRatio(window)).hasValueSatisfying(ratio -> assertThat(ratio).isLessThan(line));
+
+        List<WeekTally> judged = WeekTallies.pausedOn(window, restDays(1));
+
+        assertThat(WeekTallies.adherence(SOMETHING_LOGGED, judged)).hasValueSatisfying(count -> {
+            assertThat(count).isEqualTo(new Consistency.WindowCount(30, 42));
+            assertThat(count.ratio()).isGreaterThanOrEqualTo(line);
+        });
+    }
+
+    @Test
+    void aWindowOfWeeksAllOffHasNoAdherenceLikeADeclaredOne() {
+        List<WeekTally> window = List.of(wide(0, 0), wide(1, 0));
+
+        assertThat(WeekTallies.adherence(SOMETHING_LOGGED, WeekTallies.pausedOn(window, restDays(0, 1)))).isEmpty();
+    }
+
+    @Test
+    void aWeekOffAndADeclaredStateTogetherLeaveOnlyTheRestOfTheWindow() {
+        List<WeekTally> window = List.of(wide(0, 15), wide(1, 13), wide(2, 3), wide(3, 18));
+        List<WeekTally> declared = WeekTallies.pausedOn(window, Set.of(MON_28_SEP.plusWeeks(2)));
+
+        List<WeekTally> judged = WeekTallies.pausedOn(declared, restDays(1));
+
+        assertThat(WeekTallies.adherence(SOMETHING_LOGGED, judged)).contains(new Consistency.WindowCount(33, 42));
+    }
+
+    /** The week {@code index} weeks after 28 Sep with 21 sessions asked, {@code done} of them done (a big week for ratios). */
+    private static WeekTally wide(int index, int done) {
+        ActionTally none = new ActionTally(0, 0);
+        return new WeekTally(MON_28_SEP.plusWeeks(index), new ActionTally(21, done), none, none, none);
     }
 
     private static Set<LocalDate> restDays(int... weekIndexes) {

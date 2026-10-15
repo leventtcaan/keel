@@ -71,8 +71,10 @@ class WeekLogs {
             return Optional.empty();
         }
         WeekTallies.Logs logs = logs(account, profile, weeks.getFirst(), weeks.getLast().plusWeeks(1).minusDays(1), bodyweight);
-        return WeekTallies.adherence(logs, paused(account, WeekTallies.of(weeks, logs, asked(account, profile, plan, bodyweight, ageYears, parameters)),
-                today));
+        // Weeks under a declared state and the ladder's weeks off are left out, as in consistency (K-516, K-1023, ADR-040 Ek 1); a window
+        // left with nothing asked has no adherence.
+        return WeekTallies.adherence(logs, restWeeks(account, paused(account,
+                WeekTallies.of(weeks, logs, asked(account, profile, plan, bodyweight, ageYears, parameters)), today)));
     }
 
     /**
@@ -129,8 +131,8 @@ class WeekLogs {
     /**
      * The weeks the deload ladder set a week off in, paused too (K-1022, ADR-040, K-435: a week of rest is part of the plan,
      * neither a success nor a miss; it splits no run and uses no spare week). Read from the applied changes, so a week off the
-     * user undid is not one. A lighter week is still a week asked, and counts as it did. Consistency only: the call's
-     * adherence window reads {@link #paused} as before.
+     * user undid is not one. A lighter week is still a week asked, and counts as it did. Read by the
+     * consistency and by the call's adherence window alike (K-1023): one source for a planned rest.
      */
     private List<WeekTally> restWeeks(AccountId account, List<WeekTally> weeks) {
         if (weeks.isEmpty()) {
