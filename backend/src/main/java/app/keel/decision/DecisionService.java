@@ -754,6 +754,19 @@ class DecisionService {
         return Optional.of(FirstWeekFacts.firstCallOn(firstDay(account, profile.timeZone()), profile.checkInDay(), today));
     }
 
+    /**
+     * The day the next call can be made on the user's calendar (K-1020, ADR-077 Ek 8): the first call's day until it is made,
+     * then today while this check-in week's call is not made, else the next check-in day. No consent check: the day is the
+     * calendar's; the caller decides what it may show.
+     */
+    @Transactional(readOnly = true)
+    LocalDate nextCallOn(AccountId account, ProfileFacts profile, LocalDate today) {
+        Optional<LocalDate> first = calls.firstMadeOn(account).isPresent() ? Optional.empty()
+                : Optional.of(FirstWeekFacts.firstCallOn(firstDay(account, profile.timeZone()), profile.checkInDay(), today));
+        LocalDate weekOf = CheckInWeek.weekOf(today, profile.checkInDay());
+        return ReturnGap.nextCallOn(first, weekOf, taken(account, weekOf), today);
+    }
+
     /** The first eight weeks (K-513, ADR-040): this week of the flow; empty before the first day and once it is over. */
     @Transactional(readOnly = true)
     Optional<FirstWeeks.Week> firstWeeks(AccountId account) {

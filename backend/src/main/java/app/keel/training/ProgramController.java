@@ -239,6 +239,7 @@ class ProgramController {
     private final Clock clock;
     private final GymStore gyms;
     private final TrainingLog log;
+    private final ReturnAnswers returns;
     private final StartingWeightReps startingWeightReps;
     private final ProgramReviews reviews;
     private final TodaySessions todays;
@@ -250,7 +251,8 @@ class ProgramController {
     ProgramController(ProgramStore store, ProgramTemplates templates, ExerciseCatalog catalog, ParameterSet parameters, Profiles profiles,
             WorkoutController.TrainingLimits limits, TrainingCalls calls, Clock clock, GymStore gyms, TrainingLog log,
             StartingWeightReps startingWeightReps, ProgramReviews reviews, CardioStore cardio, CardioController.CardioLimits cardioLimits,
-            ObjectProvider<CurrentPhase> phases, CustomExerciseStore customs, TodaySessions todays) {
+            ObjectProvider<CurrentPhase> phases, CustomExerciseStore customs, TodaySessions todays, ReturnAnswers returns) {
+        this.returns = returns;
         this.todays = todays;
         this.reviews = reviews;
         this.customs = customs;
@@ -486,8 +488,9 @@ class ProgramController {
         boolean held = TrainingChanges.inForce(changes, TrainingChanges.Kind.HOLD_LOAD, today).isPresent();
         // The break is the account's, from its training log (ADR-043 #75): the last session done before today, any day of the
         // program or none. Before today, so the session back itself — and a program read during it — stays a step lighter.
-        Optional<LocalDate> lastSession = log.lastSessionBefore(account, today.atStartOfDay(zone).toInstant())
-                .map(started -> started.atZone(zone).toLocalDate());
+        // Unless the user picked up where they left off (K-1020): then no break is eased until the next session.
+        Optional<LocalDate> lastSession = returns.breakFrom(account, log.lastSessionBefore(account, today.atStartOfDay(zone).toInstant())
+                .map(started -> started.atZone(zone).toLocalDate()));
         Back back = new Back(today, zone, parametersFor(account), gyms.current(account), lastSession);
         // "Beat last time" is the last session before today's, as the break is (a session under way is not its own last time).
         Map<String, List<TrainingLog.WorkSet>> lastSessions = log.lastSessions(account, today.atStartOfDay(zone).toInstant());
