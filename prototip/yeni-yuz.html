@@ -162,7 +162,7 @@ button{cursor:pointer}
 .weekhead b{font:900 20px/1 var(--f-display)}
 .week{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
 .day{display:grid;justify-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--muted)}
-.mark{width:36px;height:36px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;position:relative;color:transparent}
+.mark{width:36px;height:36px;border-radius:50%;border:2px solid var(--edge);display:grid;place-items:center;position:relative;color:transparent}
 .mark.planned{border-style:dashed;border-color:var(--faint)}
 .mark.done{background:var(--ink);border-color:var(--ink);color:var(--bg)}
 .mark.logged::after{content:"";width:8px;height:8px;border-radius:50%;background:var(--ink)}
@@ -267,7 +267,7 @@ button{cursor:pointer}
 .prep ol{list-style:none;margin:0;padding:0;display:grid;gap:16px}
 .prep li{display:flex;align-items:center;gap:12px;font-size:19px;font-weight:700;opacity:.25;transition:opacity .3s}
 .prep li.on{opacity:1}
-.tick{width:32px;height:32px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;flex:none;color:transparent}
+.tick{width:32px;height:32px;border-radius:50%;border:2px solid var(--edge);display:grid;place-items:center;flex:none;color:transparent}
 .prep li.on .tick{background:var(--ink);border-color:var(--ink);color:var(--bg)}
 .bullets{list-style:none;margin:0;padding:0;display:grid;gap:12px}
 .bullets li{display:flex;align-items:center;gap:14px;font-size:17px;font-weight:600}
@@ -296,7 +296,7 @@ button{cursor:pointer}
 .tday{display:grid;gap:10px}
 .tday label.tname,.ownmv label.tname{display:grid;gap:4px;font-size:13px;font-weight:700;color:var(--muted)}
 .ownmv{display:grid;gap:8px}
-.tday input,.ownmv input{min-height:44px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);font:700 17px var(--f-body);padding-inline:12px}
+.tday input,.ownmv input{min-height:44px;border-radius:12px;border:1.5px solid var(--edge);background:var(--bg);color:var(--ink);font:700 17px var(--f-body);padding-inline:12px}
 .twd{display:flex;gap:4px;flex-wrap:wrap}
 .twd button{min-width:44px;min-height:40px;border-radius:10px;border:1.5px solid var(--edge);background:var(--bg);color:var(--ink);font-weight:700;font-size:14px}
 .twd button[aria-pressed="true"]{background:var(--block);color:var(--block-fg);border-color:transparent}

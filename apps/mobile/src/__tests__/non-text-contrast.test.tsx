@@ -6,7 +6,7 @@ import { render, screen } from '@testing-library/react-native';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
-import { WeighInDots } from '@/progress/Parts';
+import { MuscleBars, WeighInDots } from '@/progress/Parts';
 import { ThemeProvider } from '@/theme/theme';
 import { type ColorScheme, palettes } from '@/theme/tokens';
 import { MoveDots } from '@/train/MoveDots';
@@ -44,6 +44,16 @@ describe.each(schemes)('%s theme', (scheme) => {
     );
     expect(screen.getByTestId('weight-dot-filled')).toHaveStyle({ backgroundColor: p.accent });
     for (const dot of screen.getAllByTestId('weight-dot-empty')) expect(dot).toHaveStyle({ borderColor: p.edge });
+  });
+
+  test('the track of a muscle\'s sets bar is outlined in the control edge', async () => {
+    await render(
+      <ThemeProvider scheme={scheme}>
+        <MuscleBars muscles={[{ muscle: 'quads', plannedSets: 10, doneSets: 6, targetSets: 10, plannedShare: 1, doneShare: 0.6 }]} />
+      </ThemeProvider>,
+    );
+    // The bar row is name, track, count: the track is the middle child.
+    expect(screen.getByTestId('muscle-bar-quads').children[1]).toHaveStyle({ backgroundColor: p.track, borderColor: p.edge });
   });
 });
 
