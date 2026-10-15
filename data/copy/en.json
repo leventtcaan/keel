@@ -2934,6 +2934,81 @@
       }
     }
   },
+  "progress": {
+    "failed": "Some of this didn't load.",
+    "retry": "Try again",
+    "hero": {
+      "targets": "Today's targets.",
+      "firstWorkout": "First workout in. Today's targets.",
+      "tap": "Tap one to log it.",
+      "early": "Your numbers build week by week.",
+      "record": "{counted} weeks · {onTrack} on track",
+      "recordOne": "1 week · {onTrack} on track"
+    },
+    "result": {
+      "stronger": "Stronger on {stronger} of {tracked} lifts.",
+      "strongerOne": "Stronger on your lift.",
+      "down": "Down {amount}.",
+      "up": "Up {amount}.",
+      "steady": "Weight steady."
+    },
+    "targets": {
+      "calories": "Calories",
+      "protein": "Protein",
+      "steps": "Steps",
+      "cardio": "Cardio",
+      "ofKcal": "/ {target}",
+      "ofGrams": "/ {target} g",
+      "ofSteps": "/ {target}",
+      "ofCardio": "/ {count} this week",
+      "fromMeals": "From your meals",
+      "appleHealth": "Apple Health",
+      "connect": "Connect Apple Health",
+      "each": "{minutes} min each",
+      "label": {
+        "calories": "Calories, {eaten} of {target} kilocalories",
+        "protein": "Protein, {eaten} of {target} grams",
+        "steps": "Steps, {steps} of {target}",
+        "stepsOff": "Steps, Apple Health not connected, target {target}",
+        "cardio": "Cardio, {done} of {count} this week, {minutes} minutes each"
+      },
+      "hint": {
+        "meal": "Opens the meal log",
+        "health": "Opens Apple Health",
+        "connect": "Opens Settings to connect Apple Health",
+        "cardio": "Opens the log"
+      }
+    },
+    "muscles": {
+      "title": "This week's muscles",
+      "planned": "planned",
+      "thisWeek": "this week",
+      "legendPlanned": "Planned",
+      "legendDone": "Done"
+    },
+    "strength": {
+      "title": "Strength",
+      "baseline": "your baseline",
+      "next": "Next time every set has a target to beat.",
+      "locked": "After your first workout",
+      "set": "{load} × {reps}",
+      "rowLabel": "{move}, {load} for {reps} reps"
+    },
+    "weight": {
+      "title": "Weight trend",
+      "count": "{count} of {min}",
+      "after": "Shows after {min} weigh-ins.",
+      "spoken": "{count} of {min} weigh-ins so far"
+    },
+    "consistency": {
+      "title": "Consistency",
+      "onTrack": "On track",
+      "spare": "Spare week",
+      "paused": "Paused",
+      "note": "A missed week never resets your record.",
+      "spoken": "Last {count} weeks, oldest first: {onTrack} on track, {spare} spare, {paused} paused."
+    }
+  },
   "strength": {
     "title": "Strength",
     "subtitle": "Estimated 1RM, week by week",

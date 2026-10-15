@@ -144,6 +144,11 @@ export const tokens = {
     touch: 44,
     /** The screen's one primary button (ADR-070 #6). */
     primaryButton: 54,
+    /** Progress (ADR-078, prototype `.tgt`): a target box's least height; a week of the 12 weeks grid; a weigh-in dot; a legend swatch. */
+    targetBox: 104,
+    weekCell: 24,
+    dot: 14,
+    swatch: 10,
   },
   opacity: {
     /** Pressed and disabled controls. */
