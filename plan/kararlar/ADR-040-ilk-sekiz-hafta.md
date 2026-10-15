@@ -58,4 +58,4 @@ hâlâ "planlı seanslar yapılmadı" diye kaçmış sayıyor, af hakkını yak�
   Izgarada PAUSED. `record` ve `weeks[]` aynı yürüyüşten (`WeekLogs.restWeeks` haftayı `asPaused` yapar, yürüyüş değişmez).
 - Kaynak `TrainingStatusReader.breaks(...).rest()` (decision → training okuma yönü, ADR-015 değişmez); çağrı geri alınınca değişiklik satırı silindiği için o hafta mola sayılmaz (`TrainingCalls.undo`).
 - `LIGHTER_WEEK` değişmez: hafta yine istenmiştir, hafif de olsa sayılır.
-- Kapsam: yalnız tutarlılık (`/v1/consistency`, bu haftanın `paused` alanı, FirstWeeks takvimi). Kararın uyum penceresi (`WeekLogs.adherence`) bu Ek ile değişmez; mola haftasının orada nasıl sayıldığı ayrı bir soru.
+- Kapsam: tutarlılık (`/v1/consistency`, bu haftanın `paused` alanı, FirstWeeks takvimi) ve kararın uyum penceresi (K-1023): `WeekLogs.adherence` de aynı `restWeeks` duraklatmasını kullanır, mola haftası "x of y" sayımına girmez (eşiğe yakın kullanıcıda mola sonrası ilk karar uyum yüzünden düşmez, U7). Pencere tamamen duraklarsa uyum yoktur: bildirilmiş durumla aynı boş pencere yolu (K-516).
