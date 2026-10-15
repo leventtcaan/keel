@@ -76,7 +76,7 @@
    | Promotional Text | `store.en.json › promotionalText` (157/170) |
    | Description | `store.en.json › description` (3011/4000), olduğu gibi yapıştır |
    | Keywords | `gym,training,strength,macro,nutrition,weight,tracker,log,food,progressive,overload,deload,rpe,reps` (98/100 bayt) |
-   | Support URL | `https://leventtcaan.github.io/keel/` **EKSİK:** Apple, bu sayfanın **gerçek iletişim bilgisi** (e-posta ya da telefon) göstermesini ister. `_config.yml › contact_email` hâlâ "[contact address to be added before launch]". Önce e-postanı koy (Levent), sonra bu URL doğru olur |
+   | Support URL | `https://leventtcaan.github.io/keel/` (sayfa iletişim adresini gösterir: nextcall.app@gmail.com) |
    | Marketing URL | boş bırak (isteğe bağlı) |
    | Copyright | `2026 Levent Can Ceylan` (`_config.yml › controller_name`; Apple © işaretini kendisi ekler) |
    | Screenshots | K-1003: 5-6 dikey, caption'lı. Yer tutucu: `docs/magaza/ekran-goruntuleri/` (henüz yok) |
