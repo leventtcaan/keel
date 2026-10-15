@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { FitText } from '@/components/FitText';
 import { InverseSurface, useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
@@ -47,7 +48,9 @@ function Content({ title, body, tag, hero, selected }: Required<Pick<Props, 'tit
   return (
     <>
       {tag !== undefined && (
-        <Text style={[styles.tag, { backgroundColor: color.accent, color: color.onAccent }]}>{tag}</Text>
+        <View style={[styles.tag, { backgroundColor: color.accent }]}>
+          <FitText style={[styles.tagText, { color: color.onAccent }]}>{tag}</FitText>
+        </View>
       )}
       <View style={styles.row}>
         <Text style={[hero ? styles.heroTitle : styles.title, { color: color.text }]}>{title}</Text>
@@ -73,18 +76,17 @@ const styles = StyleSheet.create({
   dim: { opacity: tokens.opacity.dim },
   hero: { padding: tokens.space.lg, gap: tokens.space.sm, borderWidth: tokens.border.ring },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: tokens.space.sm },
-  title: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold, flexShrink: 1 },
-  heroTitle: { fontFamily: tokens.font.display, fontSize: tokens.type.decisionTitle, flexShrink: 1 },
+  title: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold, flexGrow: 1, flexShrink: 1 },
+  heroTitle: { fontFamily: tokens.font.display, fontSize: tokens.type.decisionTitle, flexGrow: 1, flexShrink: 1 },
   body: { fontSize: tokens.type.bodySmall },
   tag: {
     alignSelf: 'flex-start',
     borderRadius: tokens.radius.chip,
     paddingHorizontal: tokens.space.sm,
     paddingVertical: tokens.space.xs,
-    fontSize: tokens.type.label,
-    fontWeight: tokens.weight.bold,
     overflow: 'hidden',
   },
+  tagText: { fontSize: tokens.type.label, fontWeight: tokens.weight.bold },
   dot: {
     width: DOT,
     height: DOT,
