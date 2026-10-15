@@ -1183,11 +1183,33 @@
       "other": "Something went wrong. Try again."
     }
   },
+  "health": {
+    "jit": {
+      "title": "Use Apple Health?",
+      "reads": "Reads weight, steps and workouts",
+      "writes": "Writes weigh-ins back, if you allow",
+      "continue": "Continue",
+      "notNow": "Not now",
+      "read": "What we read",
+      "sheetFailed": "Apple Health didn't open. Try again, or leave it for now.",
+      "failed": "Couldn't record your choice. Check your connection and try again."
+    }
+  },
   "weighIn": {
     "title": "Weigh-in",
     "label": "Weight ({unit})",
-    "note": "Morning, after the bathroom, before food. The trend matters, not one morning.",
+    "last": "Last: {value}",
+    "trendSoon": "Trend starts after {count} weigh-ins.",
+    "minus": "Lower by {step} {unit}",
+    "plus": "Raise by {step} {unit}",
     "save": "Save",
+    "savedLine": "Saved: {value}",
+    "savedSaid": "Saved. {value}.",
+    "undo": "Undo",
+    "undoLabel": "Take back this weigh-in",
+    "undoneSaid": "Weigh-in taken back.",
+    "undoFailed": "Couldn't take it back. Check your connection and try again.",
+    "done": "Done",
     "invalid": "That doesn't look like a weight. Check the number.",
     "saveFailed": "Couldn't save it on this phone. Try again.",
     "consent": {
@@ -1202,7 +1224,7 @@
       "year": "Year",
       "spoken": "Weigh-ins faint, the 7-day trend in bold"
     },
-    "earlyNote": "Two weeks of weigh-ins before the trend says much. Keep weighing; the line fills in."
+    "earlyNote": "Early days; the line settles."
   },
   "ledger": {
     "title": "Your calls",
@@ -2138,7 +2160,9 @@
     "ftUnit": "ft",
     "inUnit": "in",
     "kgUnit": "kg",
-    "lbUnit": "lb"
+    "lbUnit": "lb",
+    "kgSpoken": "kilograms",
+    "lbSpoken": "pounds"
   },
   "onboarding": {
     "progress": "Step {step} of {total}",

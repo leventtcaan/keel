@@ -761,18 +761,63 @@
       "budget": 15,
       "source": "prototip/yeni-yuz.html",
       "task": "K-980",
-      "file": null,
-      "keys": [],
-      "notFirstView": []
+      "note": "The first view is the entry before the trend is ready (the user's first seven weigh-ins): the number with its unit, 'Last: 80.4 kg', when the trend starts, Save. The faces are the entry with the trend drawn (its title, the two range chips, the short early note), the weigh-in just saved (what was kept, when the trend starts, Undo, Done) and the consent (its title and text are legal lines, off the first view, ADR-072 #9). The unit after the number and in 'Last' is the one word the phone writes (kg or lb); the plus and minus buttons are spoken, not read. Apple Health under the first weigh-in is its own screen, health-jit.",
+      "file": "src/app/weigh-in.tsx",
+      "parts": ["src/weighIn/ScaleRow.tsx"],
+      "keys": ["weighIn.title", "weighIn.last", "weighIn.trendSoon", "weighIn.save"],
+      "dynamic": [
+        { "what": "the unit after the number (kg or lb)", "words": 1 },
+        { "what": "the unit in the last weight (80.4 kg)", "words": 1 }
+      ],
+      "notFirstView": [
+        "weighIn.label",
+        "weighIn.invalid",
+        "weighIn.saveFailed",
+        "weighIn.savedSaid",
+        "weighIn.undoLabel",
+        "weighIn.undoneSaid",
+        "weighIn.undoFailed",
+        "weighIn.consent.failed",
+        "consent.health_data.title",
+        "consent.health_data.body"
+      ],
+      "faces": [
+        {
+          "face": "trend ready",
+          "keys": [
+            "weighIn.title",
+            "weighIn.last",
+            ["weighIn.chart.title", "weighIn.chart.yearTitle"],
+            "weighIn.chart.weeks",
+            "weighIn.chart.year",
+            "weighIn.earlyNote",
+            "weighIn.save"
+          ],
+          "dynamic": [
+            { "what": "the unit after the number (kg or lb)", "words": 1 },
+            { "what": "the unit in the last weight (80.4 kg)", "words": 1 }
+          ]
+        },
+        {
+          "face": "saved",
+          "keys": ["weighIn.title", "weighIn.savedLine", "weighIn.trendSoon", "weighIn.undo", "weighIn.done"],
+          "dynamic": [{ "what": "the unit in what was kept (80.4 kg)", "words": 1 }]
+        },
+        {
+          "face": "consent",
+          "keys": ["weighIn.title", "weighIn.consent.allow", "weighIn.consent.notNow"]
+        }
+      ]
     },
     {
       "screen": "health-jit",
       "budget": 30,
       "source": "prototip/yeni-yuz.html",
       "task": "K-980",
-      "file": null,
-      "keys": [],
-      "notFirstView": []
+      "note": "A card under the first weigh-in and under the first workout's numbers, not a screen of its own; what is read and written in two lines. The consent's text is one tap away (What we read), off the first view.",
+      "file": "src/health/HealthJit.tsx",
+      "keys": ["health.jit.title", "health.jit.reads", "health.jit.writes", "health.jit.read", "health.jit.continue", "health.jit.notNow"],
+      "notFirstView": ["consent.apple_health.body", "health.jit.sheetFailed", "health.jit.failed"]
     },
     {
       "screen": "meal",
