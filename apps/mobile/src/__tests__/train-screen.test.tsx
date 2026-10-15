@@ -858,6 +858,18 @@ describe('open on the server, not on this phone (K-999)', () => {
     expect(reads()).toBe(before + 1);
   });
 
+  test('Discard from a card that is out of date (the server has it ended): nothing is deleted, it says so, the tab reads again', async () => {
+    open();
+    mockWorkout = () => ({ data: { ...OPEN_ELSEWHERE, endedAt: '2026-09-29T08:30:00Z' }, response: { status: 200 } });
+    await show();
+    await fireEvent.press(await screen.findByText(t('openElsewhere.discard')));
+    const before = reads();
+    await fireEvent.press(screen.getByText(t('workout.ending.confirm')));
+    expect(await screen.findByText(t('openElsewhere.closed'))).toBeTruthy();
+    expect(mockWorkoutCalls.mock.calls.filter(([method]) => method === 'DELETE')).toHaveLength(0);
+    expect(reads()).toBe(before + 1);
+  });
+
   test('Discard with no connection says so, deletes nothing here, and can be tried again', async () => {
     open();
     mockDelete = () => Promise.reject(new TypeError('Network request failed'));

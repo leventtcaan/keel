@@ -8,6 +8,7 @@ import type { components } from '@/api/schema';
 import { type Outbound, type SendResult, createSyncQueue } from '@/sync/queue';
 import { openRecordStore } from '@/sync/store';
 import { continueOpen, createAdopt, discardOpen } from '@/train/openSession';
+import { createSetEdits } from '@/train/setEdits';
 import { activeWorkout } from '@/train/workout';
 
 import { nodeSqlite } from './support/nodeSqlite';
@@ -149,20 +150,93 @@ describe('Continue', () => {
 });
 
 describe('Discard', () => {
-  const del = (outcome: () => Promise<{ response: { status: number; ok: boolean } }>) => ({ DELETE: jest.fn(outcome) }) as unknown as Parameters<typeof discardOpen>[0] & { DELETE: jest.Mock };
+  type Reply = () => Promise<unknown>;
+  const answer = (data: unknown, status = 200) => ({ data: status === 200 ? data : undefined, error: status === 200 ? undefined : { code: 'X' }, response: new Response(null, { status }) });
+  const server = (read: Reply, remove: Reply = async () => ({ response: { status: 204, ok: true } })) =>
+    ({ GET: jest.fn(read), DELETE: jest.fn(remove) }) as unknown as Parameters<typeof discardOpen>[0] & { GET: jest.Mock; DELETE: jest.Mock };
 
-  test("deletes the server's workout and its sets", async () => {
-    const api = del(async () => ({ response: { status: 204, ok: true } }));
+  test("reads the workout first, then deletes the server's workout and its sets", async () => {
+    const api = server(async () => answer(WORKOUT));
     expect(await discardOpen(api, 'srv-w')).toEqual({ kind: 'done' });
+    expect(api.GET).toHaveBeenCalledWith('/v1/workouts/{id}', { params: { path: { id: 'srv-w' } } });
     expect(api.DELETE).toHaveBeenCalledWith('/v1/workouts/{id}', { params: { path: { id: 'srv-w' } } });
   });
 
-  test('gone already is gone (a repeat, K-998)', async () => {
-    expect(await discardOpen(del(async () => ({ response: { status: 404, ok: false } })), 'srv-w')).toEqual({ kind: 'done' });
+  test('a card from before the end (the server has it ended: DONE, or closed by itself) deletes nothing: there is no Undo', async () => {
+    const api = server(async () => answer({ ...WORKOUT, endedAt: '2026-12-25T09:00:00Z' }));
+    expect(await discardOpen(api, 'srv-w')).toEqual({ kind: 'closed' });
+    expect(api.DELETE).not.toHaveBeenCalled();
   });
 
-  test('no connection is offline; another refusal is a failure', async () => {
-    expect(await discardOpen(del(async () => Promise.reject(new TypeError('Network request failed'))), 'srv-w')).toEqual({ kind: 'offline' });
-    expect(await discardOpen(del(async () => ({ response: { status: 500, ok: false } })), 'srv-w')).toEqual({ kind: 'failed' });
+  test('gone already is gone, read or deleted (a repeat, K-998)', async () => {
+    const readGone = server(async () => answer(null, 404));
+    expect(await discardOpen(readGone, 'srv-w')).toEqual({ kind: 'done' });
+    expect(readGone.DELETE).not.toHaveBeenCalled();
+    expect(await discardOpen(server(async () => answer(WORKOUT), async () => ({ response: { status: 404, ok: false } })), 'srv-w')).toEqual({ kind: 'done' });
+  });
+
+  test('no connection is offline, on the read or on the delete; another refusal is a failure; nothing is deleted unread', async () => {
+    const offlineRead = server(async () => Promise.reject(new TypeError('Network request failed')));
+    expect(await discardOpen(offlineRead, 'srv-w')).toEqual({ kind: 'offline' });
+    expect(offlineRead.DELETE).not.toHaveBeenCalled();
+    expect(await discardOpen(server(async () => answer(WORKOUT), async () => Promise.reject(new TypeError('Network request failed'))), 'srv-w')).toEqual({ kind: 'offline' });
+    const refusedRead = server(async () => answer(null, 500));
+    expect(await discardOpen(refusedRead, 'srv-w')).toEqual({ kind: 'failed' });
+    expect(refusedRead.DELETE).not.toHaveBeenCalled();
+    expect(await discardOpen(server(async () => answer(WORKOUT), async () => ({ response: { status: 500, ok: false } })), 'srv-w')).toEqual({ kind: 'failed' });
+  });
+});
+
+describe('kept in one step', () => {
+  test('a failure in the middle of the sets keeps nothing: no workout either, so the card still offers Continue', async () => {
+    const db = nodeSqlite();
+    const store = await openRecordStore(db);
+    // A real SQL failure on the second set (a constraint of its own), as a full disk or a killed app would be.
+    await db.execAsync(`CREATE TRIGGER refuse_second BEFORE INSERT ON records WHEN NEW.client_id = 'other-phone-s2' BEGIN SELECT RAISE(ABORT, 'disk'); END;`);
+    const queue = createSyncQueue({ store, send: async () => ({ status: 500 }), report: () => {} });
+    await expect(createAdopt({ store, queue })(WORKOUT)).rejects.toThrow();
+    expect(await store.all()).toEqual([]);
+    expect(activeWorkout(await store.all())).toBeNull();
+    // Tried again once the cause is gone: kept whole.
+    await db.execAsync('DROP TRIGGER refuse_second');
+    await createAdopt({ store, queue })(WORKOUT);
+    expect((await store.all()).map((r) => r.state)).toEqual(['SYNCED', 'SYNCED', 'SYNCED']);
+  });
+});
+
+describe('a set the server had, corrected or deleted in the session (K-972)', () => {
+  async function adopted() {
+    const store = await openRecordStore(nodeSqlite());
+    const queue = createSyncQueue({ store, send: async (record) => ({ status: 201, id: 'new', body: record.body }), report: () => {} });
+    const deleted: [string, string][] = [];
+    const edits = createSetEdits({
+      store,
+      queue,
+      newClientId: () => 'fresh',
+      deleteOnServer: async (workout, set) => void deleted.push([workout, set]),
+      deleteWorkoutOnServer: async () => {},
+    });
+    await createAdopt({ store, queue })(WORKOUT);
+    return { store, edits, deleted };
+  }
+
+  test("deleting it deletes the server's set, under the server's workout", async () => {
+    const { store, edits, deleted } = await adopted();
+    await edits.change('other-phone-s1', null);
+    expect(deleted).toEqual([['srv-w', 'srv-s1']]);
+    expect((await store.all()).map((r) => r.clientId)).toEqual(['other-phone-w', 'other-phone-s2']);
+  });
+
+  test('correcting it deletes the server\'s set and puts the corrected one, new, in its place', async () => {
+    const { store, edits, deleted } = await adopted();
+    await edits.change('other-phone-s1', { clientId: 'x', exerciseId: 'squat', setType: 'WORKING', loadKg: 85, reps: 8, rir: 2, side: 'BOTH' });
+    expect(deleted).toEqual([['srv-w', 'srv-s1']]);
+    const records = await store.all();
+    expect(records.map((r) => [r.clientId, r.state])).toEqual([
+      ['other-phone-w', 'SYNCED'],
+      ['fresh', 'PENDING'],
+      ['other-phone-s2', 'SYNCED'],
+    ]);
+    expect((records[1].body as { loadKg: number }).loadKg).toBe(85);
   });
 });

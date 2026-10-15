@@ -70,6 +70,12 @@ export function OpenElsewhere({ workoutId, onChanged }: Props) {
   const discard = () =>
     run(async () => {
       const answer = await discardOpen(api, workoutId);
+      if (answer.kind === 'closed') {
+        // Ended meanwhile (the card is from before): nothing deleted, the week is read again.
+        setProblem(t(SAID.closed));
+        onChanged();
+        return;
+      }
       if (answer.kind !== 'done') {
         setProblem(t(answer.kind === 'offline' ? 'openElsewhere.discardOffline' : 'workout.ending.failed'));
         return;

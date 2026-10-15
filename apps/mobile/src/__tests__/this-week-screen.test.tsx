@@ -764,6 +764,15 @@ describe("today's workout (#home)", () => {
       expect(mockGET.mock.calls.filter(([path]) => path === '/v1/program')).toHaveLength(reads + 1);
     });
 
+    test('Discard from a card that is out of date (the server has it ended): nothing is deleted, it says so', async () => {
+      await elsewhere();
+      mockAnswers['/v1/workouts/{id}'] = ok({ ...OPEN, endedAt: '2026-12-25T09:00:00Z' });
+      await press(t('openElsewhere.discardLabel'));
+      await press(t('workout.ending.confirm'));
+      expect(screen.getByText(t('openElsewhere.closed'))).toBeOnTheScreen();
+      expect(mockDELETE).not.toHaveBeenCalled();
+    });
+
     test('Fill in later leaves it open and says it counts; nothing is sent', async () => {
       await elsewhere();
       await press(t('openElsewhere.laterLabel'));

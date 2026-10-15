@@ -297,14 +297,19 @@ koşulsuz kıyaslıyordu. Yarım seans ile tam seans aynı şey değildir; sayı
 - **Continue** `GET /v1/workouts/{id}` ile seansı ve setlerini okur; telefon bunları **kendi kaydı** yapar: seans ve her set sunucunun clientId'leriyle
   (yanıtta var: `Workout.clientId`, `LoggedSet.clientId`), `SYNCED` ve sunucu kimlikleriyle yazılır. Sonrası her seans gibidir: yeni set kuyruğa
   (K-961) sunucunun seans kimliğiyle gider; sunucuda olan set **bir daha gönderilmez** (kuyruk yalnız `PENDING` yollar). Kayıtlar kuyruk tutulurken
-  yazılır (`SyncQueue.exclusive`): yazma ile `SYNCED` işareti arasında gönderim başlayamaz. İki kez Continue ya da yarıda kalmış deneme eksik olanı
+  (`SyncQueue.exclusive`) ve **tek SQL ifadesiyle** (`RecordStore.keepFromServer`, çoklu `INSERT … ON CONFLICT DO UPDATE`) yazılır: ya hepsi ya hiçbiri
+  (seanssız set ya da setsiz seans kalmaz), yazma ile `SYNCED` işareti arasında gönderim başlayamaz. **Neden transaction değil:** expo-sqlite 57'nin
+  `withTransactionAsync`'i başka async sorguları da içine alır (hata olursa onların yazısını da geri sarar), `withExclusiveTransactionAsync` ayrı bağlantı
+  ister; tek ifade ikisini de gerektirmez. İki kez Continue ya da yarıda kalmış deneme eksik olanı
   ekler, ikilemez. Seans ekranı yeni bir yol değildir: `/workout` (gün yok) yerel kayıttaki açık seansı açar.
 - **Duraklama sunucunun bilmediği şeydir** (`pausedSeconds` yalnız bitişte gider, Ek 4/6): benimsenen seans duraklamasız açılır; başka telefonda geçen
   uzak saatler sayaca girer (bilinen sınır; bitirirken kullanıcı süreyi göremez, özet dakikası `endedAt − startedAt`). Sunucu açık seansın duraklamasını
   taşırsa ayrı iş.
 - **Karttaki üç yol:** Continue (yukarısı) · **Fill in later**: seans zaten sunucuda açık ve sayılıyor, gönderilecek bir şey yok; kart bunu söyler
-  (`unfinished_session_close_hours` içinde devam) ve Continue kalır · **Discard**: bir kez daha sorar, `DELETE /v1/workouts/{id}` (K-998; 404 de
-  "gitti" sayılır). Karttaki Discard'ın **Undo'su yoktur**: telefon seansın setlerini tutmuyor (seans ekranındaki Discard'da tutuyor), geri getirmek
+  (`unfinished_session_close_hours` içinde devam) ve Continue kalır · **Discard**: bir kez daha sorar, **önce `GET` ile okur**: sunucuda artık bitmişse (`endedAt`: öbür telefonda
+  Finish, ya da kendiliğinden kapanma; kart eskiydi) silmez, "ended already" der ve haftayı yeniden okur (Undo olmadığı için geri dönüşsüz kayıp olurdu); sonra
+  `DELETE /v1/workouts/{id}` (K-998; 404 de "gitti" sayılır). Okuma ile silme arasında yalnız sunucunun kendi kapanışı girebilir (son setten saatler
+  sonra): korunmaz. Karttaki Discard'ın **Undo'su yoktur**: telefon seansın setlerini tutmuyor (seans ekranındaki Discard'da tutuyor), geri getirmek
   için önce okumak gerekirdi. Onay sorusu ve "Nothing is saved." bunun karşılığıdır. Kardiyo (Ek 9) başka telefonda kaydedildiyse zaten kendi
   kaydıdır, Discard'dan etkilenmez.
 - **Hata:** okuma ya da silme başarısızsa kart söyler (bağlantı yok / sunucu yanıtı) ve aynı düğme tekrar dener; seans bu arada bitmiş (`endedAt`)
@@ -312,3 +317,6 @@ koşulsuz kıyaslıyordu. Yarım seans ile tam seans aynı şey değildir; sayı
   var olan "Continue workout" o seansı açar; sunucudaki açık seans ancak o bitince/atılınca önerilir (bilinen sınır).
 - **Reddedilen:** Continue'da seansı yalnız bellekte tutmak (yeniden başlatmada kaybolur, ilk setten önce ikinci seans doğardı); setleri `PENDING` yazıp
   sunucunun idempotansına bırakmak (her Continue'da sunucuya gereksiz yük ve `attempted` karışıklığı).
+- **Bilinen sınır: öbür telefondaki swap/skip.** Seans içi swap ve skip yalnız o telefondaydı (Ek 7, `sessionSwaps`/`sessionSkips`; sunucu bilmez). Benimsenince
+  swap'lı hareketin setleri planın dışındaki eklenmiş hareket gibi görünür, planlı hareket de yapılmamış sayılır; sunucuda olan setler doğru kalır, yalnız
+  ekrandaki gruplama farklıdır. Sunucu swap/skip'i taşırsa ayrı iş.

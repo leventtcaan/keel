@@ -6,8 +6,8 @@
  * Kept on the phone, the workout and its sets are the phone's own records under the clientIds the server has (the
  * workout's and every set's, which the server sends back), already SYNCED with the server's ids: the queue sends only
  * what is logged from now on, never a set the server has. The records go in with the queue held (SyncQueue.exclusive), so
- * no send starts between a record being written and being marked as the server's. Kept twice, or after a try that stopped
- * half way, it adds what is missing and never doubles. The pause is not the server's to know (it learns it at the finish,
+ * the records go in with ONE statement (SyncQueue.exclusive keeps sends out meanwhile), so a failure half way keeps nothing, never a
+ * workout without its sets. Kept twice, it adds what is missing and never doubles. The pause is not the server's to know (it learns it at the finish,
  * WorkoutFinish.pausedSeconds), so the session opens running.
  */
 import type { ApiClient } from '@/api/client';
@@ -20,7 +20,7 @@ type Schemas = components['schemas'];
 
 /** `closed`: the server has ended it meanwhile; `gone`: it has it no more (discarded elsewhere). Neither is kept. */
 export type Continued = { kind: 'opened' } | { kind: 'closed' } | { kind: 'gone' } | { kind: 'offline' } | { kind: 'failed' };
-export type Discarded = { kind: 'done' } | { kind: 'offline' } | { kind: 'failed' };
+export type Discarded = { kind: 'done' } | { kind: 'closed' } | { kind: 'offline' } | { kind: 'failed' };
 
 type Deps = { api: Pick<ApiClient, 'GET'>; adopt: (workout: Schemas['Workout']) => Promise<void> };
 
@@ -40,8 +40,17 @@ export async function continueOpen({ api, adopt }: Deps, workoutId: string): Pro
   return { kind: 'opened' };
 }
 
-/** Discard (K-998): the server deletes the workout and its sets. Gone already is gone, as for a set. */
-export async function discardOpen(api: Pick<ApiClient, 'DELETE'>, workoutId: string): Promise<Discarded> {
+/**
+ * Discard (K-998): the server deletes the workout and its sets, with no way back from the card (the phone holds none of its
+ * sets). So it reads the workout first: one the server has ended meanwhile (finished on the other phone, or closed by itself:
+ * the card was from before) is `closed`, never deleted; gone already is done, as for a set. Between the read and the delete
+ * only a close by the server itself can come, hours after the last set: not guarded.
+ */
+export async function discardOpen(api: Pick<ApiClient, 'GET' | 'DELETE'>, workoutId: string): Promise<Discarded> {
+  const read = await load(() => api.GET('/v1/workouts/{id}', { params: { path: { id: workoutId } } }));
+  if (read.state === 'none') return { kind: 'done' };
+  if (read.state !== 'ready') return { kind: read.state === 'failed' && read.problem === 'NoConnection' ? 'offline' : 'failed' };
+  if (read.value.endedAt !== undefined) return { kind: 'closed' };
   let status: number;
   try {
     const { response } = await api.DELETE('/v1/workouts/{id}', { params: { path: { id: workoutId } } });
@@ -52,7 +61,7 @@ export async function discardOpen(api: Pick<ApiClient, 'DELETE'>, workoutId: str
   return status === 204 || status === 404 ? { kind: 'done' } : { kind: 'failed' };
 }
 
-type AdoptDeps = { store: Pick<RecordStore, 'insert' | 'markSynced'>; queue: Pick<SyncQueue, 'exclusive'> };
+type AdoptDeps = { store: Pick<RecordStore, 'keepFromServer'>; queue: Pick<SyncQueue, 'exclusive'> };
 
 export function createAdopt({ store, queue }: AdoptDeps) {
   return (workout: Schemas['Workout']): Promise<void> =>
@@ -62,12 +71,10 @@ export function createAdopt({ store, queue }: AdoptDeps) {
         startedAt: workout.startedAt,
         ...(workout.programDayId === undefined ? {} : { programDayId: workout.programDayId }),
       };
-      await store.insert({ clientId: workout.clientId, kind: 'workout', parentClientId: null, body });
-      await store.markSynced(workout.clientId, workout.id, workout);
-      // In the order they were done: the records keep the order they are written in.
-      for (const { id, ...set } of workout.sets) {
-        await store.insert({ clientId: set.clientId, kind: 'set', parentClientId: workout.clientId, body: set });
-        await store.markSynced(set.clientId, id, { ...set, id });
-      }
+      // The workout and every set in one step, in the order they were done (the records keep the order they are written in).
+      await store.keepFromServer([
+        { clientId: workout.clientId, kind: 'workout', parentClientId: null, body, serverId: workout.id, serverBody: workout },
+        ...workout.sets.map(({ id, ...set }) => ({ clientId: set.clientId, kind: 'set', parentClientId: workout.clientId, body: set, serverId: id, serverBody: { ...set, id } })),
+      ]);
     });
 }
