@@ -332,12 +332,12 @@ class ReturnApiTests {
 
     private void cardio(AccountId account, int daysAgo) {
         assertThat(send(account, "POST", "/v1/cardio-sessions", Map.of("clientId", UUID.randomUUID(),
-                "day", LocalDate.now(ZoneOffset.UTC).minusDays(daysAgo).toString(), "minutes", 30, "source", "MANUAL"))).hasStatusOk();
+                "day", LocalDate.now(ZoneOffset.UTC).minusDays(daysAgo).toString(), "minutes", 30, "source", "MANUAL"))).hasStatus(201);
     }
 
     private void weighIn(AccountId account, int daysAgo) {
         assertThat(send(account, "POST", "/v1/weigh-ins", Map.of("clientId", UUID.randomUUID(),
-                "measuredAt", clock.instant().minus(Duration.ofDays(daysAgo)).toString(), "kg", 82.4, "source", "MANUAL"))).hasStatusOk();
+                "measuredAt", clock.instant().minus(Duration.ofDays(daysAgo)).toString(), "kg", 82.4, "source", "MANUAL"))).hasStatus(201);
     }
 
     private void meal(AccountId account, int daysAgo) {
@@ -346,7 +346,7 @@ class ReturnApiTests {
                 values ('fdc:171477', 'Chicken breast, roasted', 'FOUNDATION', 165, 31, 0, 3.6) on conflict (id) do nothing""").update();
         assertThat(send(account, "POST", "/v1/meals", Map.of("clientId", UUID.randomUUID(),
                 "eatenAt", clock.instant().minus(Duration.ofDays(daysAgo)).toString(), "slot", "LUNCH",
-                "items", List.of(Map.of("foodId", "fdc:171477", "amount", Map.of("quantity", 200, "unit", "g")))))).hasStatusOk();
+                "items", List.of(Map.of("foodId", "fdc:171477", "amount", Map.of("quantity", 200, "unit", "g")))))).hasStatus(201);
     }
 
     /** Own program, one day with bench 6-10 first; one session of it 30 days ago, every set at the top: its next load is 60 plus a step. */
