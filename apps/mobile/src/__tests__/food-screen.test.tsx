@@ -19,6 +19,7 @@ const refused = (status: number, code: string): Answer => ({ error: { code, mess
 const BUDGET = (low: number, high: number): Schemas['DayBudget'] => ({
   day: '2026-09-29',
   targetKcal: 2300,
+  targetProteinG: 140,
   eaten: {
     kcal: { low: 1350, high: 1520 },
     proteinG: { low: 80, high: 96 },

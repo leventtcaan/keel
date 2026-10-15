@@ -14,7 +14,7 @@ import { tokens } from '@/theme/tokens';
 import { addProgramDay } from '@/train/changes';
 
 import type { ChangeRow } from './callChanges';
-import { type DayCall, type Saved, SERVER_ADDS_FROM_DAYS, type Weekday, dayCall, freeDays, moveDays, trainingWeekdays } from './week1';
+import { type DayCall, type Saved, type Weekday, dayCall, freeDays, moveDays, trainingWeekdays } from './week1';
 import { type Loaded, load } from './today';
 
 type Schemas = components['schemas'];
@@ -61,8 +61,8 @@ export type Week1 = {
  * K-995 B; the program edit of K-970). Null for every other call; for one whose missed days are no training days any
  * more (already moved) there is nothing to pick, only what could not be saved, said. A missed day the program no longer
  * trains on (moved elsewhere already) is left out, the others stay. One more day: the same way, with the suggested
- * weekday filled: for a program of two days the server adds the chosen weekday with its content (POST /v1/program/days,
- * K-1012); for any other count, or when the server says no (409), the day is added in the training days.
+ * weekday filled: where the server says it can (Program.canAddDay) it adds the chosen weekday with its content (POST
+ * /v1/program/days, K-1012); otherwise, or when it says no all the same (409), the day is added in the training days.
  */
 export function useWeek1(decision: Schemas['Decision'] | null): Week1 | null {
   const { api, report } = useAppServices();
@@ -122,18 +122,28 @@ export function useWeek1(decision: Schemas['Decision'] | null): Week1 | null {
   let suggestion: string;
   let rows: ChangeRow[];
   let submit: () => Promise<void>;
-  let leave: ReactNode = null;
+  // The add call, for a program the server cannot add a day to: the day is added in Edit; why, said under the rows.
+  let inEdit = false;
+  let why: string | null = null;
 
   if (call.kind === 'add') {
     const suggestedDay = call.suggested[0];
     const day = picks[NEW_DAY] ?? suggestedDay;
     slots = [{ key: NEW_DAY, head: t('callScreen.week1.addHead'), chosen: day }];
     suggestion = suggestedDay === undefined ? '' : t('callScreen.week1.suggestionAdd', { day: full(suggestedDay) });
-    rows = [row('days', t('callScreen.week1.daysLabel'), null, String(call.toDays)), row('new', t('callScreen.week1.newDay'), null, day === undefined ? t('callScreen.week1.noDay') : short(day))];
-    leave = <Button label={t('callScreen.gotIt')} variant="ghost" disabled={busy} onPress={() => router.back()} />;
-    // The server fills the new day from the program's own generator, but only for a program of two days (K-1012); any
-    // other count, or its 409 (a user's own program, a taken day): the day is added in the program editor.
-    const edit = () => router.push('/edit-program?part=days');
+    // The server fills the new day from the program's own generator where it says it can (Program.canAddDay, K-1013: the
+    // rule POST /v1/program/days answers with; the phone counts no days). Where it cannot, or does not say (an older
+    // server), or refuses all the same (409: a weekday taken meanwhile): the day is added in the program editor, with the
+    // day marked there. The call lists "New day" only when this call adds it, and says before the tap when Edit does.
+    const serverAdds = program?.state === 'ready' && program.value.canAddDay === true;
+    inEdit = program?.state === 'ready' && !serverAdds;
+    const added = serverAdds;
+    rows = [
+      row('days', t('callScreen.week1.daysLabel'), null, String(call.toDays)),
+      ...(added ? [row('new', t('callScreen.week1.newDay'), null, day === undefined ? t('callScreen.week1.noDay') : short(day))] : []),
+    ];
+    if (inEdit && day !== undefined) why = t('callScreen.week1.addInEdit', { day: full(day) });
+    const edit = () => router.push({ pathname: '/edit-program', params: { part: 'days', ...(day === undefined ? {} : { adding: day }) } });
     submit = async () => {
       if (sending.current || day === undefined) return;
       sending.current = true;
@@ -142,7 +152,7 @@ export function useWeek1(decision: Schemas['Decision'] | null): Week1 | null {
       try {
         const current = await readProgram();
         if (current === null) return;
-        if (current.days.length !== SERVER_ADDS_FROM_DAYS) return edit();
+        if (current.canAddDay !== true) return edit();
         const result = await addProgramDay(api, day);
         if (result.kind === 'done') {
           setProgram({ state: 'ready', value: result.program });
@@ -236,7 +246,6 @@ export function useWeek1(decision: Schemas['Decision'] | null): Week1 | null {
         </View>
       ))}
       <Button label={t('callScreen.week1.done')} onPress={() => setChanging(false)} />
-      <Button label={t('callScreen.keep')} variant="ghost" onPress={() => router.back()} />
     </ScrollView>
   ) : null;
 
@@ -244,12 +253,16 @@ export function useWeek1(decision: Schemas['Decision'] | null): Week1 | null {
     rows,
     dock: (
       <View style={styles.dock}>
-        <Button label={t(picked ? 'callScreen.week1.done' : 'callScreen.week1.soundsRight')} disabled={busy || !complete} onPress={() => void submit()} />
+        <Button label={t(inEdit ? 'callScreen.week1.openEdit' : picked ? 'callScreen.week1.done' : 'callScreen.week1.soundsRight')} disabled={busy || !complete} onPress={() => void submit()} />
         <Button label={t('callScreen.week1.changeIt')} variant="ghost" disabled={busy} onPress={() => setChanging(true)} />
-        {leave}
       </View>
     ),
-    note,
+    note: (
+      <>
+        {why === null ? null : <Text style={[styles.text, { color: color.textSecondary }]}>{why}</Text>}
+        {note}
+      </>
+    ),
     changing: picker,
   };
 }

@@ -11,6 +11,7 @@ import { t } from '@/copy';
 import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
+import { load } from '@/today/today';
 import { useReadOnFocus } from '@/today/useReadOnFocus';
 import { changeToday } from '@/train/changes';
 import { dayName } from '@/train/program';
@@ -38,8 +39,10 @@ export default function TodayChangeScreen() {
   const { day: programDayId } = useLocalSearchParams<{ day?: string }>();
   const { data } = useReadOnFocus(
     useCallback(async () => {
-      const [read, records] = await Promise.all([training.read(api), workoutRecords()]);
-      return { program: read.program.state === 'ready' ? read.program.value : null, kept: read.kept, records };
+      const [read, records, profile] = await Promise.all([training.read(api), workoutRecords(), load(() => api.GET('/v1/profile'))]);
+      // The user's check-in day, the day that reads what a skip left ("Skip today"): the server's, never a fixed Monday.
+      const checkInDay = profile.state === 'ready' ? profile.value.schedule.checkInDay : null;
+      return { program: read.program.state === 'ready' ? read.program.value : null, kept: read.kept, records, checkInDay };
     }, [api, training, workoutRecords]),
   );
   const [problem, setProblem, occurrence] = useProblem();
@@ -107,8 +110,11 @@ export default function TodayChangeScreen() {
     if (rest.length === 0) return t('todayChange.moveTo', { weekday: short(first.weekday) });
     return t('todayChange.moveShifts', { days: preview.shifts.map((s) => t('train.weekRow', { weekday: short(s.weekday), day: dayName(s.day) })).join(', ') });
   };
+  const checkInDay = data?.checkInDay ?? null;
+  const skipBody = () =>
+    checkInDay === null ? t('todayChange.skip.bodyNoDay') : t('todayChange.skip.body', { day: t(`onboarding.schedule.dayName.${checkInDay}`) });
   const row = (key: Row) => {
-    const body = key === 'move' ? moveBody() : t(`todayChange.${key}.body`);
+    const body = key === 'move' ? moveBody() : key === 'skip' ? skipBody() : t(`todayChange.${key}.body`);
     const off = busy || (key === 'move' && preview?.conflict != null);
     return (
       <Pressable

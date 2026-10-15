@@ -18,7 +18,7 @@ import { CardioEditor } from '@/train/CardioEditor';
 import { type Changed, type Undone, applySuggestion, coachCardio, editProgram, putCardio, rebuild, undoChange } from '@/train/changes';
 import type { SaveOutcome } from '@/train/OwnMoveForm';
 import { dayName, exerciseName } from '@/train/program';
-import { type EditedDay, draftFits, editedDays, programEditOf, targetsLost } from '@/train/programEdit';
+import { type EditedDay, WEEKDAYS, draftFits, editedDays, newDay, programEditOf, targetsLost, weekdayTaken, withWeekday } from '@/train/programEdit';
 import { ProgramEditor } from '@/train/ProgramEditor';
 import { suggestionWords } from '@/train/review';
 import { type Move, movesOf, ownMove } from '@/train/trainData';
@@ -54,7 +54,7 @@ const SAID = { conflict: 'editProgram.stale', offline: 'editProgram.offline', fa
 export default function EditProgramScreen() {
   const { api, training, workoutRecords, report } = useAppServices();
   const { color } = useTheme();
-  const params = useLocalSearchParams<{ part?: string }>();
+  const params = useLocalSearchParams<{ part?: string; adding?: string }>();
   const part = PARTS.find((p) => p === params.part) ?? null;
   const { data, reload } = useReadOnFocus(
     useCallback(async () => {
@@ -105,6 +105,17 @@ export default function EditProgramScreen() {
   const [leaving, setLeaving] = useState(false);
   const base = useMemo(() => (program === null ? [] : editedDays(program)), [program]);
   const days = draft ?? base;
+  // Opened from the first week's "add a day" call, which could not add the day itself (K-1013): the weekday the user chose
+  // comes marked on a new day, once; the page says why the day is added here.
+  const adding = WEEKDAYS.find((weekday) => weekday === params.adding);
+  const [marked, setMarked] = useState(false);
+  // State adjusted while rendering (React's way for a value that follows what was read), once the program is there.
+  if (!marked && part === 'days' && adding !== undefined && program !== null) {
+    setMarked(true);
+    const more = newDay(base);
+    if (more.length > base.length && !weekdayTaken(more, more.length - 1, adding)) setDraft(withWeekday(more, more.length - 1, adding));
+  }
+  const markedDay = part === 'days' && adding !== undefined && draft?.some((d) => d.weekday === adding && !base.some((b) => b.weekday === adding)) === true;
   const edit = program === null ? null : programEditOf(days, program);
   // Dirty is the edit that would be sent against the one the program is: a day moved to Tuesday and back to Monday, a space
   // after a name, are no edit (the server saves nothing then, and the page must not say it did).
@@ -291,6 +302,9 @@ export default function EditProgramScreen() {
     const notReady = dirty && edit === null ? <Text style={[styles.small, { color: color.textSecondary }]}>{t('editProgram.notReady')}</Text> : null;
     const editor = (
       <View style={styles.rows}>
+        {markedDay && adding !== undefined && (
+          <Text style={[styles.text, { color: color.textSecondary }]}>{t('editProgram.addingDay', { day: t(`programEditor.weekdayName.${adding}`) })}</Text>
+        )}
         <ProgramEditor days={days} onChange={onEdit} moves={catalog} makeOwn={makeOwn} />
         {warning}
         {notReady}

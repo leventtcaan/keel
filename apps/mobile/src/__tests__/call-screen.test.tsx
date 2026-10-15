@@ -12,6 +12,7 @@ import CallScreen from '@/app/call';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { ThemeProvider } from '@/theme/theme';
+import { palettes } from '@/theme/tokens';
 
 type Schemas = components['schemas'];
 type Answer = { data?: unknown; error?: { code: string; message: string }; response: Response };
@@ -124,6 +125,34 @@ describe("this week's call", () => {
     await press(t('callScreen.use'));
     expect(mockPOST).toHaveBeenCalledWith('/v1/decisions/{id}/apply', { params: { path: { id: 'd1' } } });
     expect(screen.getByText(t('callScreen.inPlan'))).toBeOnTheScreen();
+  });
+
+  test('a call not applied yet (pending): "Use this call" is the one primary action, "Got it" only leaves (user test 10 Oct)', async () => {
+    const p = palettes.light;
+    mockAnswers['/v1/decisions/current'] = ok(decision({ application: { state: 'PENDING' }, declinable: false }));
+    await show();
+    expect(screen.getByRole('button', { name: t('callScreen.use') })).toHaveStyle({ backgroundColor: p.accent });
+    expect(screen.getByRole('button', { name: t('callScreen.gotIt') })).not.toHaveStyle({ backgroundColor: p.accent });
+  });
+
+  test('a call the user kept off the plan (declined) is not pressed on them (U2): "Use this call" stays the second way, "Got it" the primary', async () => {
+    const p = palettes.light;
+    mockAnswers['/v1/decisions/current'] = ok(decision({ application: { state: 'DECLINED' }, declinable: false }));
+    await show();
+    expect(screen.getByRole('button', { name: t('callScreen.use') })).not.toHaveStyle({ backgroundColor: p.accent });
+    expect(screen.getByRole('button', { name: t('callScreen.gotIt') })).toHaveStyle({ backgroundColor: p.accent });
+  });
+
+  test('a call in the plan keeps "Got it" as its primary action', async () => {
+    await show();
+    expect(screen.getByRole('button', { name: t('callScreen.gotIt') })).toHaveStyle({ backgroundColor: palettes.light.accent });
+  });
+
+  test('pending says it is not applied yet, in the foot where "In this week\'s plan" would be; it is not read as in the plan', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(decision({ application: { state: 'PENDING' }, declinable: true }));
+    await show();
+    expect(screen.getByText(t('callScreen.notAppliedYet'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('callScreen.inPlan'))).toBeNull();
   });
 
   test('a call resting on the safety net: no second way, and none of its reasons said (ADR-028 #24)', async () => {
@@ -326,6 +355,47 @@ describe('what the call changes, and why in a line (K-978 part 2)', () => {
     expect(screen.getByText('2 of 3 sessions happened. The plan stays.')).toBeOnTheScreen();
     expect(screen.getByText('Food and weight wait until day 14.')).toBeOnTheScreen();
     expect(screen.queryByText(t('decision.ruleShort.energy_floor'))).toBeNull();
+  });
+
+  describe('"Hold the weight" on a move (K-1009, user test 8 Oct)', () => {
+    const bench = (extra: Partial<Schemas['DecisionChange']> = {}): Schemas['DecisionChange'] => ({
+      what: 'MOVE',
+      exerciseId: 'bench_press',
+      held: true,
+      before: { target: { loadKg: 72.5, reps: 9 } },
+      after: { target: { loadKg: 72.5, reps: 8 } },
+      ...extra,
+    });
+
+    test('the move and the target the load is held to; the old target is not struck through, so it does not read as a drop', async () => {
+      mockAnswers['/v1/decisions/current'] = ok(decision({ changes: [bench()] }));
+      await show();
+      expect(screen.getByText('Bench press, load held')).toBeOnTheScreen();
+      expect(screen.getByText('72.5 kg × 8')).toBeOnTheScreen();
+      expect(screen.queryByText(/× 9/)).toBeNull();
+      expect(screen.getByLabelText('Bench press, load held: 72.5 kg × 8')).toBeOnTheScreen();
+    });
+
+    test("the target in the user's units", async () => {
+      mockUnits = 'IMPERIAL';
+      mockAnswers['/v1/decisions/current'] = ok(decision({ changes: [bench()] }));
+      await show();
+      expect(screen.getByText(/lb × 8$/)).toBeOnTheScreen();
+      expect(JSON.stringify(screen.toJSON())).not.toMatch(/72\.5 kg/);
+    });
+
+    test('"Keep last week\'s plan": the target in force after it, the held one gone', async () => {
+      mockAnswers['/v1/decisions/current'] = ok(decision({ changes: [bench()] }));
+      await show();
+      mockAnswers['/v1/decisions/current'] = ok(
+        decision({ application: { state: 'DECLINED' }, declinable: false, changes: [bench({ inForce: { target: { loadKg: 72.5, reps: 9 } } })] }),
+      );
+      await press(t('callScreen.keep'));
+      expect(screen.getByText('Bench press, in force')).toBeOnTheScreen();
+      expect(screen.getByText('72.5 kg × 9')).toBeOnTheScreen();
+      expect(screen.queryByText(/load held/)).toBeNull();
+      expect(screen.queryByText('72.5 kg × 8')).toBeNull();
+    });
   });
 
   test('a call without observationDays says nothing of waiting', async () => {

@@ -169,7 +169,7 @@ function QuestionBlock({ question, pick, onPick }: { question: Question; pick: s
   switch (question.format) {
     case 'CHOICE':
       answer = (question.choices ?? []).map((choice) => (
-        <Chip key={choice} label={t(choiceKey(question.kind, choice))} selected={pick === choice} onPress={() => onPick(choice)} />
+        <Chip key={choice} label={t(choiceKey(question.kind, choice))} selected={pick === choice} touch onPress={() => onPick(choice)} />
       ));
       break;
     case 'SCALE_1_10':
@@ -179,6 +179,7 @@ function QuestionBlock({ question, pick, onPick }: { question: Question; pick: s
           label={String(n)}
           accessibilityLabel={t('checkIn.screen.scaleSpoken', { n })}
           selected={pick === String(n)}
+          touch
           onPress={() => onPick(String(n))}
         />
       ));

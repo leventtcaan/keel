@@ -9,6 +9,7 @@ import CheckInScreen from '@/app/check-in';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { ThemeProvider } from '@/theme/theme';
+import { tokens } from '@/theme/tokens';
 
 type Schemas = components['schemas'];
 type Answer = { data?: unknown; error?: { code: string; message: string }; response: Response };
@@ -164,6 +165,16 @@ test('the week moved under it (409): the check-in is read again, and its answers
   expect(screen.getByText(t('checkIn.screen.moved'))).toBeOnTheScreen();
   expect(screen.getByRole('button', { name: t('checkIn.choice.training.stable') })).not.toBeSelected();
   expect(sendButton()).toBeDisabled();
+});
+
+test('every answer chip is a full touch target (44 pt, user test 10 Oct: they were about 35), choices and the scale alike', async () => {
+  mockCheckIn = async () => ok({ weekOf: '2026-10-05', answered: false, questions: [TRAINING, ENERGY] });
+  await show();
+  const chips = [
+    screen.getByRole('button', { name: t('checkIn.choice.training.improving') }),
+    ...Array.from({ length: 10 }, (_, i) => screen.getByRole('button', { name: t('checkIn.screen.scaleSpoken', { n: i + 1 }) })),
+  ];
+  for (const chip of chips) expect(chip).toHaveStyle({ minHeight: tokens.size.touch, minWidth: tokens.size.touch });
 });
 
 test('a scale question: ten steps, the number sent', async () => {
