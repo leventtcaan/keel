@@ -226,3 +226,10 @@
 - takıldım: incelemeler gerçek hatalar buldu (U13 undo arka kapısı, ilk adım hedefi değişimi kayboluyordu, gün ekle ardışık bacak günü, süperset, lb'de "kg"); 3 yeni arka uç kartı ortada çıktı (K-1011, K-1012, K-1014); simülatörde SE ve onboarding yürünemedi
 - sıradaki: M9a Part 4 (`YENI-YUZ-kod.md` › Part 4 prompt'u): K-1013 + K-1014 yürüyüş düzeltmeleri → K-1009 → K-999 → K-979..K-982 → paylaşım → K-984
 - AI: bütün kod, test, inceleme agent (Opus düzenleyici + ~45 Sonnet uygulayıcı/inceleme ajanı); Levent iki ürün kararı verdi
+
+## 2026-10-14/15 · M9a Part 4 (Kalan + kapanış) — toplu mod; Opus düzenleyici, Sonnet ajanlar; token sınırında durdu
+- yaptım: 34 PR birleşti (#546-#581): boşluk taraması → 11 arka uç kartı (K-1016..K-1026: tutarlılık haftaları, ilk gün protein/adım, kilo özeti, kardiyo günleri, dönüş ucu V49, durum rızası, mola haftası, uyum penceresi, sonraki çağrı günü, son yenenler, Ease back); ekranlar İlerleme A, Kayıt (tartı/Health/öğün/kardiyo), Dönüş + Life, Ayarlar, Paylaşım çıkartmaları; yürüyüş düzeltmeleri, başka cihazda açık seans, karar hareket satırı (V48), Kalın Metin
+- karar: Levent — K-976 App ID yok, K-977 v1.x, K-983 sonra, İlerleme bölüm bölüm, Life rızası yalnız Sick/Pain, Cardio kutusu kayda, dönüş metni dürüst, onay metni sürüm 4. Agent — ADR-018 Ek 2/3, ADR-040 Ek 1, ADR-074 Ek 2/3, ADR-075 Ek 10/11, ADR-077 Ek 6-11, ADR-078 Ek 2/3
+- takıldım: paralel mobil ajan 3'ü aşınca yük 400 (jest zaman aşımları); `as Schemas[...]` fikstürleri zorunlu alanı gizledi (iki CI kırmızısı); ADR ek numarası çakıştı; incelemeler gerçek hatalar yakaladı (karar kaydı okuma anında, bayat karttan bitmiş seans silme, atomik olmayan benimseme, mola haftası 'kaçtı', native modül açılışta çöker)
+- sıradaki: `plan/oturum-promptlari/YENI-YUZ-part4-devam.md` (#577, kardiyo kutusu, #582 → Tur 4 → K-984 → ÇIKIŞ)
+- AI: bütün kod, test, inceleme ve ek kararlar agent (Opus düzenleyici + ~60 Sonnet uygulayıcı/inceleme ajanı); Levent 8 ürün sorusunu cevapladı
