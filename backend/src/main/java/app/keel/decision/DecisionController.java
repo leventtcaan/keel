@@ -120,7 +120,10 @@ class DecisionController {
         return decisions.decline(account, id);
     }
 
-    /** Contract Consistency (K-420): this week's four kinds of planned action, the weeks on track, the period's weight change (K-988). */
+    /**
+     * Contract Consistency (K-420): this week's four kinds of planned action, the weeks on track, the period's weight change
+     * (K-988) and the weeks over cell by cell (K-1016).
+     */
     @GetMapping("/v1/consistency")
     Map<String, Object> consistency(AccountId account) {
         DecisionService.ConsistencyNow consistency = decisions.consistency(account);
@@ -143,6 +146,8 @@ class DecisionController {
                 consistency.since())));
         view.put("record", Map.of("onTrackWeeks", now.record().onTrackWeeks(), "countedWeeks", now.record().countedWeeks(),
                 "currentRun", now.record().currentRun(), "forgivenWeeks", now.record().forgivenWeeks()));
+        // The weeks over, oldest first, for the 12 weeks grid (K-1016): states from the record's own walk.
+        view.put("weeks", now.weeks().stream().map(cell -> Map.of("weekOf", cell.weekOf(), "state", cell.state())).toList());
         return view;
     }
 

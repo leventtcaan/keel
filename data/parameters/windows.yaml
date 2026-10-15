@@ -112,3 +112,9 @@ parameters:
     tag: tecrube
     source: "arastirma/ham/guray/G2-kilo-verme.md#K-63"
     note: "Biten kullanıcı haftası bu ve sonrası (akışın sonuna kadar) iken risk okunur, yani 6-9. haftalarda (K-513, ADR-040): G2 K-63 kritik uyum penceresi 5.-8. hafta; I1 F2 risk skoru 5. haftada devreye girer."
+  - key: progress_grid_weeks
+    value: 12
+    unit: weeks
+    tag: urun
+    source: "arastirma/06-faz5-yuz.md#7"
+    note: "SEÇİM, ürün kararı (ADR-078 #2, K-1016): İlerleme'nin tutarlılık ızgarası son bu kadar biten haftayı hücre hücre gösterir (eskiden yeniye); af haftası 'spare week' diye görünür (U7; 06 §7 B2 af gösterimi sorusu). Sayının araştırmada doğrudan karşılığı yok: ADR-078'in sonuç cümlesindeki '12 weeks · 11 on track' ile aynı pencere. Yalnız sunumu keser: kayıt (record.onTrackWeeks, countedWeeks, forgivenWeeks) bütün zamandır ve bu sayıdan etkilenmez; hiçbir karar kuralına girmez."

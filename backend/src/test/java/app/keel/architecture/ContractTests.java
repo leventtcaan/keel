@@ -302,6 +302,24 @@ class ContractTests {
     }
 
     @Test
+    void theConsistencyCarriesItsWeeksAsTheEnginesStates() throws IOException {
+        // K-1016 (ADR-078 #2): the 12 weeks grid's cells, not a count the phone makes; the states are the engine's.
+        Map<String, Object> schemas = schemas();
+        Map<String, Object> consistency = map(schemas.get("Consistency"));
+        Map<String, Object> weeks = map(properties(consistency).get("weeks"));
+        Map<String, Object> week = map(schemas.get("ConsistencyWeek"));
+
+        assertThat(list(consistency.get("required"))).contains("weeks");
+        assertThat(weeks.get("type")).isEqualTo("array");
+        assertThat(map(weeks.get("items")).get("$ref")).isEqualTo("#/components/schemas/ConsistencyWeek");
+        assertThat(properties(week).keySet()).containsExactlyInAnyOrder("weekOf", "state");
+        assertThat(list(week.get("required"))).containsExactlyInAnyOrder("weekOf", "state");
+        assertThat(list(map(properties(week).get("state")).get("enum")))
+                .containsExactlyElementsOf(names(app.keel.engine.ConsistencyWeek.State.values()));
+        assertThat(list(map(properties(week).get("state")).get("enum"))).containsExactly("ON_TRACK", "SPARE", "MISSED", "PAUSED");
+    }
+
+    @Test
     void aStartingWeightIsAMoveAndItsLoad() throws IOException {
         // ADR-072 #5: the move's id and a load in kg; the answer is the program with it as the first target.
         Map<String, Object> put = map(map(map(contract().get("paths")).get("/v1/program/starting-weights")).get("put"));
