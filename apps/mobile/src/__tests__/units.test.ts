@@ -16,6 +16,7 @@ import {
   parseWeightKg,
   roundTo,
   weightInput,
+  weightStepKg,
 } from '@/units/units';
 
 const tenths = (from: number, to: number) => Array.from({ length: Math.round((to - from) * 10) + 1 }, (_, i) => (from * 10 + i) / 10);
@@ -30,6 +31,11 @@ describe('rounding', () => {
 });
 
 describe('body weight', () => {
+  test('one shown step, in kg: a tenth of a kilo, a tenth of a pound', () => {
+    expect(weightStepKg('METRIC')).toBeCloseTo(0.1, 10);
+    expect(weightStepKg('IMPERIAL')).toBeCloseTo(0.045359237, 10);
+  });
+
   test('metric: shown to one decimal', () => {
     expect(formatWeight(81.46, 'METRIC')).toBe('81.5 kg');
     expect(formatWeight(80, 'METRIC')).toBe('80.0 kg');

@@ -4,10 +4,10 @@
  * counted on the phone.
  */
 import type { ProgressRead } from '@/progress/read';
-import { heroOf, phaseOf, strengthOf, targetsOf, weighInDots } from '@/progress/sections';
+import { callsOf, heroOf, phaseOf, strengthOf, targetsOf, weighInDots, weightOf } from '@/progress/sections';
 import type { Loaded } from '@/today/today';
 
-import { budget, consistency, program, starting, summary, training } from './support/progressFixtures';
+import { budget, consistency, decision, decisionPage, lift, liftWeeks, program, starting, summary, trendPoints, training } from './support/progressFixtures';
 
 const none = { state: 'none' } as const;
 const consent = { state: 'consent' } as const;
@@ -27,6 +27,8 @@ const FIRST_DAY: ProgressRead = {
   budget: ready(BUDGET),
   program: ready(PROGRAM({})),
   starting: ready(starting()),
+  calls: none,
+  trend: null,
   stepsToday: 3240,
   moves: new Map(),
 };
@@ -36,6 +38,7 @@ const WEEK_12: ProgressRead = {
   consistency: ready(CONSISTENCY({ weightChange: { kg: -3.8, direction: 'DOWN', since: '2026-07-20' } })),
   summary: ready(summary(80, true)),
   starting: null,
+  trend: ready(trendPoints([84, 83.5, 83])),
 };
 const with_ = (read: ProgressRead, over: Partial<ProgressRead>): ProgressRead => ({ ...read, ...over });
 
@@ -202,5 +205,62 @@ describe('the weigh-ins toward the trend', () => {
   test('no consent or not read: no card', () => {
     expect(weighInDots(with_(FIRST_DAY, { summary: consent }))).toBeNull();
     expect(weighInDots(with_(FIRST_DAY, { summary: failed }))).toBeNull();
+  });
+});
+
+const withLifts = (lifts: ReturnType<typeof lift>[]) => with_(FIRST_DAY, { training: ready({ ...TRAINING(0, lifts.length), lifts }) });
+
+describe('strength once there are weeks to draw', () => {
+  test('every lift has one week and no effort: the baseline list, as on the first workout', () => {
+    expect(strengthOf(withLifts([lift('squat', false, { weeks: liftWeeks([100]) })]))).toBe('baseline');
+  });
+
+  test('a lift with two weeks: the lifts with their chart', () => {
+    expect(strengthOf(withLifts([lift('squat', true, { weeks: liftWeeks([100, 105]) }), lift('bench_press', false, { weeks: liftWeeks([60]) })]))).toBe('lifts');
+  });
+
+  test('an effort line alone opens it too (two sessions can be one week)', () => {
+    const effort = { kind: 'EASIER', loadKg: 100, reps: 8, repsLeft: 1, repsLeftBefore: 0 } as const;
+    expect(strengthOf(withLifts([lift('squat', false, { weeks: liftWeeks([100]), effort })]))).toBe('lifts');
+  });
+});
+
+describe('the weight part', () => {
+  test('before the trend is ready: the weigh-ins so far', () => {
+    expect(weightOf(FIRST_DAY)).toEqual({ kind: 'dots', count: 3, min: 7, note: 'after' });
+  });
+
+  test('ready, with the days the server has in the window: the chart from those points', () => {
+    expect(weightOf(WEEK_12)).toEqual({ kind: 'chart', points: trendPoints([84, 83.5, 83]) });
+  });
+
+  test('ready and read, but no point in the window: the dots stay, saying the average needs a new weigh-in', () => {
+    expect(weightOf(with_(WEEK_12, { trend: ready([]) }))).toEqual({ kind: 'dots', count: 7, min: 7, note: 'stale' });
+  });
+
+  test('the trend not read (failed, no consent, not found, not asked): the dots stay and say nothing of the user (U7, no blame)', () => {
+    for (const trend of [failed, consent, none, null]) {
+      expect(weightOf(with_(WEEK_12, { trend }))).toEqual({ kind: 'dots', count: 7, min: 7, note: null });
+    }
+  });
+
+  test('no consent, or the summary not read: no weight part', () => {
+    expect(weightOf(with_(FIRST_DAY, { summary: consent }))).toBeNull();
+    expect(weightOf(with_(FIRST_DAY, { summary: failed }))).toBeNull();
+  });
+});
+
+describe('the calls', () => {
+  const page = decisionPage([decision('c2', '2026-10-12'), decision('c1', '2026-10-05', { application: { state: 'DECLINED' } })], 'cursor');
+
+  test('the calls the server sent, newest first as sent', () => {
+    expect(callsOf(with_(WEEK_12, { calls: ready(page) }))?.items.map((c) => c.id)).toEqual(['c2', 'c1']);
+  });
+
+  test('none, no consent, or not read: no card', () => {
+    expect(callsOf(with_(WEEK_12, { calls: ready(decisionPage([])) }))).toBeNull();
+    expect(callsOf(with_(WEEK_12, { calls: none }))).toBeNull();
+    expect(callsOf(with_(WEEK_12, { calls: consent }))).toBeNull();
+    expect(callsOf(with_(WEEK_12, { calls: failed }))).toBeNull();
   });
 });

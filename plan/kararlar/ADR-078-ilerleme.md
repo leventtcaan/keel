@@ -72,3 +72,16 @@ efor şablonu girdi tablosuyla · U5 testi: yenen kalori aralık.
   (öğün, Apple Health); kullanıcı yürüyüşünde beklenen buydu (`prototip/kullanici-testi.md`).
 - **Prototipten bilerek ayrılan:** efor satırında `EffortLine` türleri dışındaki cümleler yok; kardiyo sayısı `Program.cardio`'dan (ADR-074: 3 × 30).
 - Yeni arka uç kartları: K-1016 (hafta hafta tutarlılık), K-1017 (ilk gün protein ve adım hedefi), K-1018 (kilo özeti).
+
+## Ek 3 · İlerleme B: güç grafiği, kas çubukları, kilo grafiği, Calls (K-979 PR B, 2026-10-15, agent, teknik)
+- **Güç:** hareket çipleri programın sırasıyla; seçilen hareketin gerçek en iyi seti ve başlangıcı ("Started at 95 kg × 8"; fark telefonda hesaplanmaz),
+  haftalık en iyi set çizgisi (`LiftProgress.weeks`; e1RM yok, B10). Çizgi en az iki haftayla çizilir (tek nokta çizgi değildir; boş grafik yok).
+  Hiçbir hareketin iki haftası ve efor satırı yokken ilk gün biçimi (taban listesi) kalır. `held` haftalar halkayla işaretli. Efor satırı yalnız
+  `EffortLine` türlerinden şablon (STUCK, EASIER, REPS_RISING); ek cümle yok (Ek 2).
+- **Kas çubukları:** ilk karardan sonra "Sets per muscle" (bu hafta / hedef) harita yerine; ilk günler haritada kalır (ADR-078 #1).
+- **Kilo:** `trendReady` ve pencerede `/v1/weight-trend` noktası varsa 7 günlük ortalama grafiği; `trendReady` yoksa ya da pencerede nokta yoksa
+  tartı noktaları kalır. Pencere `data/parameters/progress.json › weight_chart_days` (12 hafta ızgarasıyla aynı dönem); tek nokta varsa yalnız değer.
+- **Calls:** `GET /v1/decisions?limit=calls_shown` (`progress.json`, 12: bir hafta bir karar, ızgarayla aynı dönem); satır mevcut karar ekranını salt
+  okunur açar (`/call?id=`), `DECLINED` "Not applied". Defter ekranı yüzeyden inmiş olduğu için (ADR-069 #3) ona giden yol yok; 12'den eskisi
+  görünmez (açık soru: gerekirse "Show older" sayfalaması ayrı iş).
+- **Grafikler SVG** (`react-native-svg`, mevcut bağımlılık); her grafiğin sesli metin özeti var.
