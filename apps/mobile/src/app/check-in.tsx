@@ -18,6 +18,7 @@ import {
   SCALE,
   type SendProblem,
   sendAnswers,
+  shownQuestions,
 } from '@/checkIn/checkIn';
 import { t } from '@/copy';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
@@ -154,7 +155,7 @@ function Body({ checkIn, picks, onPick, onRetry }: BodyProps) {
       // No paragraph above the questions: each one says why it is asked, under itself (ADR-077 #2, 30 words).
       return (
         <>
-          {checkIn.value.questions.map((question) => (
+          {shownQuestions(checkIn.value, picks).map((question) => (
             <QuestionBlock key={question.kind} question={question} pick={picks[question.kind]} onPick={(pick) => onPick(question.kind, pick)} />
           ))}
         </>

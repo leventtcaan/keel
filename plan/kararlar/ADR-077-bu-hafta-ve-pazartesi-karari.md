@@ -312,11 +312,12 @@ Ek 8, EASE_BACK cevabını "program zaten yapıyor" diye hiçbir şeye bağlamam
   Bu satırlardan "NoDecisionYet" olanlar kaynakta bir *eylem* bulunmadığı yerlerdir (U14: kaynaksız kural yok; U3: yetmeyen veriyle karar yok). Tek kaynaklı olgu şudur: kalori kararı
   antrenman performansına bağlı (K-98), performans bu hafta ölçülemez. Kaynak "antrenman yoksa şunu yap" demiyor; ürün de demez.
   Kaynak etiketi: cut kapısında K-98 `[tecrübe]`, görünüş-WORSE dalında 03 §2.4 `[tecrübe]`.
-- **RECOVERY `NOT_TRAINED`'dan sonra gelmez (motor okumaz).** Ağacın iyileşme dalı "antrenman İYİ" dalının altındadır (03 §2.4); G2 K-87 işaretleri (uyku, enerji, ağrı) antrenmandan
-  toparlanmayı anlatır. Antrenman yokken `FixRecovery` ya da "genetik limit" için kaynak yok, yani cevap sonucu değiştirmez; motor cevap aramaz. Mevcut `DECLINING` ile aynı kalıp:
-  soru listesi tek ekranda gelir (sunucu cevabı bilmeden sorar) ve `RECOVERY` listede kalabilir, ama `NOT_TRAINED` seçilince motor onu okumaz. **Açık nokta (Levent'e):** telefon
-  "tüm sorular cevaplanmadan gönderme" der; `NOT_TRAINED`/`DECLINING` seçen kullanıcı iyileşme sorusunu da cevaplamak zorunda. Düzeltmek sözleşmeye "bu soru isteğe bağlı" alanı
-  ister (telefon bu kuralı kendisi bilemez, U1); bu iş kapsamı dışında, ayrı karta bırakıldı.
+- **RECOVERY `NOT_TRAINED`'dan sonra gelmez (motor okumaz).** Ağacın iyileşme dalı "antrenman İYİ" dalının altındadır (03 §2.4: antrenman KÖTÜ → antrenmanı düzelt; İYİ → iyileşme). Antrenman yokken
+  `FixRecovery` ya da "genetik limit" için kaynak yok, yani cevap sonucu değiştirmez; motor cevap aramaz. `DECLINING`'de de motor iyileşmeyi okumaz (`FixTraining` önce gelir): aynı kalıp.
+  Soru listesi tek ekranda ve cevaplar bilinmeden gelir, bu yüzden sözleşmeye `Question.onlyAfter {kind, choices}` eklendi: sunucu, sonraki soruyu yalnız öncekinin hangi seçeneklerinden sonra
+  hâlâ gerektiğini söyler (`CheckInQuestions.onlyAfter`: her seçenek için motor yeniden koşulur; soru o seçenekten sonra hâlâ soruluyorsa seçenek listede kalır; alan yalnız liste tüm
+  seçeneklerden kısaysa yazılır). `RECOVERY` bugün `onlyAfter: {TRAINING, [IMPROVING, STABLE]}` taşır. Telefon yalnız bu koşulu okur (U1): cevap listenin dışındaysa soruyu göstermez,
+  zorunlu tutmaz, göndermez; önceki cevap verilmeden soru görünür kalır. Böylece "Haven't trained" ya da "Getting weaker" seçen kullanıcıdan alakasız bir iyileşme cevabı istenmez.
 - **Kullanıcı ne görür.** *Bu hafta:* "Haven't trained" seçip gönderince çağrı kaydedilir (her çağrı gibi): ekran **"No call this week."**, tek neden satırı ("No training this week,
   so no lifts to read."), "Next call: <sunucunun `nextCallOn`'u>" gösterir. Plan, kalori ve program **değişmez**. Check-in bu hafta için kapanır (K-212: haftada bir çağrı);
   yani hafta, kullanıcının kendi cevabıyla "kaydedilmiş, karar yok" olarak harcanır; metin bunu söyler, bir soru ya da kayıt bekliyormuş gibi davranmaz ("answer ... and the call follows" yok).
@@ -328,7 +329,7 @@ Ek 8, EASE_BACK cevabını "program zaten yapıyor" diye hiçbir şeye bağlamam
 - **Sınır / risk (Levent'e not):** uyum karar penceresi (21/28 gün) üzerinden sayılır; tek antrenmansız hafta uyumu genelde `on_track_min_ratio` altına indirmez, yani o hafta
   "No call this week." çıkar. Antrenman haftalarca yoksa planlanan seanslar uyumu düşürür ve `FixAdherence` (K-60) önce gelir; ama kayıt tutmadan başka yerde çalışan kullanıcıda
   uyum düşük görünüp aynı yola girebilir. Kaynak bu durumda ek bir eylem vermiyor; kaynak/ürün kararı çıkarsa (ör. "N hafta antrenmansızsa şunu öner") ayrı ADR.
-- **Kod:** `CheckIn.Training.NOT_TRAINED`, `WeeklySpine` (`NO_TRAINING_THIS_WEEK`, iki yer), sözleşme `DecisionBasis.answers.training`, `data/copy/en.json`
+- **Kod:** `CheckIn.Training.NOT_TRAINED`, `WeeklySpine` (`NO_TRAINING_THIS_WEEK`, iki yer), sözleşme `DecisionBasis.answers.training` ve `Question.onlyAfter` (`CheckInQuestions.onlyAfter`, `shownQuestions` telefonda), `data/copy/en.json`
   (`checkIn.choice.training.not_trained`, `decision.rule` / `ruleShort` / `no_decision_yet.no_training_this_week`), `word-budgets.json`. Soru listesi `CheckInQuestions.choices` zaten
   enum'dan türer (yeni seçenek kendiliğinden gelir). Telefon yalnız gönderir; seçeneğin metni `checkIn.choice.training.<seçenek>`.
 - **K1 notu:** iki testin beklentisi bu karardan değişti, hiçbiri gevşemedi: `QuestionBudgetTests.aQuestionSaysWhyItIsAsked` ve `CheckInQuestionsApiTests` (antrenman sorusunun seçenek listesine

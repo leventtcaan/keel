@@ -175,7 +175,9 @@ class DecisionService {
                 budget.stillAfterPausedWeeks(), states.lastStillSo(account))) {
             asked.add(Answers.Kind.STATE_STILL);
         }
-        return new CheckInView(week.weekOf(), asked.stream().map(CheckInQuestions::describe).toList(), false);
+        // A question the engine stops needing after an earlier answer says so (U1: the phone reads it, it does not know the tree).
+        Map<Answers.Kind, CheckInQuestions.OnlyAfter> onlyAfter = CheckInQuestions.onlyAfter(engine, dataSays, spine, weekBudget);
+        return new CheckInView(week.weekOf(), asked.stream().map(kind -> CheckInQuestions.describe(kind, onlyAfter.get(kind))).toList(), false);
     }
 
     /**

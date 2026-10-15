@@ -3053,6 +3053,16 @@ export interface components {
             copyKey: string;
             /** @description Why this is asked, shown next to the question (U9). */
             reasonCopyKey: string;
+            /**
+             * @description The engine reads this question only after an earlier one of the same check-in was answered with one of `choices`
+             *     (K-1031: recovery is not read after "Haven't trained" or "Getting weaker"). The app skips it otherwise: not shown,
+             *     not required, not sent. Absent when every answer to the earlier question leaves this one needed. The app only
+             *     reads this condition; the tree stays on the server (U1).
+             */
+            onlyAfter?: {
+                kind: components["schemas"]["QuestionKind"];
+                choices: string[];
+            };
         };
         CheckIn: {
             /**

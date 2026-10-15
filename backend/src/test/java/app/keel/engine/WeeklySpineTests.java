@@ -376,7 +376,7 @@ class WeeklySpineTests {
 
     @Test
     void recoveryIsNotAskedAfterNoTrainingBecauseItsBranchSitsUnderTrainingFine() {
-        // The recovery question (03 §2.4, G2 K-87) is the branch for "training fine". Whatever it says, the call is the same.
+        // The recovery question (03 §2.4) is the branch for "training fine". Whatever it says, the call is the same.
         CheckIn worse = ON_PLAN.withLook(Look.WORSE).withTraining(Training.NOT_TRAINED);
         SpineResult asked = spine(Sex.MALE, Phase.CUT, worse, "80.0", "79.5", "79.0");
 
@@ -396,7 +396,7 @@ class WeeklySpineTests {
     void noTrainingIsAnAnswerNotAMissingOne() {
         // NOT_TRAINED never asks again this week for training (it is not UNKNOWN).
         assertThat(WeeklySpine.missingAnswer(decided(spine(Sex.MALE, Phase.CUT, ON_PLAN.withTraining(Training.NOT_TRAINED), "80.0", "80.0", "80.0"))))
-                .isNotEqualTo(java.util.Optional.of(WeeklySpine.Missing.TRAINING));
+                .isEmpty();
     }
 
     @Property

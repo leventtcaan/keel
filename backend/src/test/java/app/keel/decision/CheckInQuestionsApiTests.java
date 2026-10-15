@@ -75,6 +75,9 @@ class CheckInQuestionsApiTests {
         assertThat(questions).extracting(question -> question.get("kind")).containsExactly("TRAINING", "RECOVERY");
         assertThat(questions.getFirst()).containsEntry("format", "CHOICE").containsEntry("choices", List.of("IMPROVING", "STABLE", "DECLINING", "NOT_TRAINED"))
                 .containsEntry("copyKey", "checkIn.question.training").containsEntry("reasonCopyKey", "checkIn.reason.training");
+        // Recovery is read only after the training answers that leave it needed; training, the first question, has no condition.
+        assertThat(questions.getFirst()).doesNotContainKey("onlyAfter");
+        assertThat(questions.get(1)).containsEntry("onlyAfter", Map.of("kind", "TRAINING", "choices", List.of("IMPROVING", "STABLE")));
     }
 
     @Test

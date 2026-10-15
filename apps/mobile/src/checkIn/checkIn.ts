@@ -41,9 +41,20 @@ export function answerOf(question: Question, pick: string | undefined, units: Un
   }
 }
 
-/** Every question's answer, in the order asked — or null while one is missing (the call waits for all). */
+/**
+ * The questions to show: all of them, except one the server says is read only after an earlier answer (`onlyAfter`, K-1031) when
+ * that earlier answer is another one. The condition is the server's; this only reads it (U1). Until the earlier one is answered, it shows.
+ */
+export function shownQuestions(checkIn: CheckIn, picks: Picks): Question[] {
+  return checkIn.questions.filter((question) => {
+    const given = question.onlyAfter === undefined ? undefined : picks[question.onlyAfter.kind];
+    return question.onlyAfter === undefined || given === undefined || question.onlyAfter.choices.includes(given);
+  });
+}
+
+/** Every shown question's answer, in the order asked — or null while one is missing (the call waits for all). A skipped one is not sent. */
 export function answersOf(checkIn: CheckIn, picks: Picks, units: UnitSystem): Answer[] | null {
-  const answers = checkIn.questions.map((question) => answerOf(question, picks[question.kind], units));
+  const answers = shownQuestions(checkIn, picks).map((question) => answerOf(question, picks[question.kind], units));
   return answers.every((answer): answer is Answer => answer !== null) ? answers : null;
 }
 
