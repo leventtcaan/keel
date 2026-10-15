@@ -37,9 +37,9 @@ test("a photo: the sticker's file and the photo itself, the App ID; the file is 
 
   await expect(shareStory({ sticker: STICKER, background: { kind: 'image', uri: 'file:///cache/ImagePicker/a.jpg' } }, value)).resolves.toBe('opened');
 
-  expect(written).toEqual([['keel-story-sticker.png', STICKER]]);
-  expect(value.shareSingle).toHaveBeenCalledWith({ stickerImage: 'file:///cache/keel-story-sticker.png', backgroundImage: 'file:///cache/ImagePicker/a.jpg' });
-  expect(removed).toEqual(['keel-story-sticker.png']);
+  expect(written).toEqual([['next-call-story-sticker.png', STICKER]]);
+  expect(value.shareSingle).toHaveBeenCalledWith({ stickerImage: 'file:///cache/next-call-story-sticker.png', backgroundImage: 'file:///cache/ImagePicker/a.jpg' });
+  expect(removed).toEqual(['next-call-story-sticker.png']);
 });
 
 test('a video: the video file as the background, no image', async () => {
@@ -47,7 +47,7 @@ test('a video: the video file as the background, no image', async () => {
 
   await shareStory({ sticker: STICKER, background: { kind: 'video', uri: 'file:///cache/ImagePicker/v.mov' } }, value);
 
-  expect(value.shareSingle).toHaveBeenCalledWith({ stickerImage: 'file:///cache/keel-story-sticker.png', backgroundVideo: 'file:///cache/ImagePicker/v.mov' });
+  expect(value.shareSingle).toHaveBeenCalledWith({ stickerImage: 'file:///cache/next-call-story-sticker.png', backgroundVideo: 'file:///cache/ImagePicker/v.mov' });
 });
 
 test('a colour (dark, or "In Instagram"): both ends of the background the same, so Instagram does not paint its own', async () => {
@@ -56,7 +56,7 @@ test('a colour (dark, or "In Instagram"): both ends of the background the same, 
   await shareStory({ sticker: STICKER, background: { kind: 'color', hex: '#0E1010' } }, value);
 
   expect(value.shareSingle).toHaveBeenCalledWith({
-    stickerImage: 'file:///cache/keel-story-sticker.png',
+    stickerImage: 'file:///cache/next-call-story-sticker.png',
     backgroundTopColor: '#0E1010',
     backgroundBottomColor: '#0E1010',
   });
@@ -89,7 +89,7 @@ describe('what goes wrong after it started', () => {
     const { value, removed } = deps({ shareSingle: async () => Promise.reject(new Error('User did not share')) });
 
     await expect(shareStory({ sticker: STICKER, background: { kind: 'color', hex: '#0E1010' } }, value)).resolves.toBe('cancelled');
-    expect(removed).toEqual(['keel-story-sticker.png']);
+    expect(removed).toEqual(['next-call-story-sticker.png']);
     expect(value.report).not.toHaveBeenCalled();
   });
 
@@ -97,7 +97,7 @@ describe('what goes wrong after it started', () => {
     const { value, removed } = deps({ shareSingle: async () => Promise.reject(Object.assign(new Error('boom'), { name: 'ShareFailed' })) });
 
     await expect(shareStory({ sticker: STICKER, background: { kind: 'color', hex: '#0E1010' } }, value)).rejects.toMatchObject({ name: 'ShareFailed' });
-    expect(removed).toEqual(['keel-story-sticker.png']);
+    expect(removed).toEqual(['next-call-story-sticker.png']);
   });
 
   test('a file that could not be written: no Story, the failure reaches the screen, nothing left', async () => {
@@ -105,7 +105,7 @@ describe('what goes wrong after it started', () => {
 
     await expect(shareStory({ sticker: STICKER, background: { kind: 'color', hex: '#0E1010' } }, value)).rejects.toMatchObject({ name: 'WriteFailed' });
     expect(value.shareSingle).not.toHaveBeenCalled();
-    expect(removed).toEqual(['keel-story-sticker.png']);
+    expect(removed).toEqual(['next-call-story-sticker.png']);
   });
 
   test('a file that could not be removed is reported by name; the Story still opened', async () => {

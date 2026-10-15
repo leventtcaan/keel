@@ -43,9 +43,9 @@ test('written as base64, its url to the sheet, removed after; no request', async
 
   await deviceShareImage(jest.fn())('iVBORw0KGgo=');
 
-  expect(mockWrites).toEqual([['file:///cache/keel-sticker.png', 'iVBORw0KGgo=', { encoding: 'base64' }]]);
-  expect(mockShare).toHaveBeenCalledWith({ url: 'file:///cache/keel-sticker.png' });
-  expect(mockDeleted).toEqual(['file:///cache/keel-sticker.png']);
+  expect(mockWrites).toEqual([['file:///cache/next-call-sticker.png', 'iVBORw0KGgo=', { encoding: 'base64' }]]);
+  expect(mockShare).toHaveBeenCalledWith({ url: 'file:///cache/next-call-sticker.png' });
+  expect(mockDeleted).toEqual(['file:///cache/next-call-sticker.png']);
   expect(fetchSpy).not.toHaveBeenCalled();
 });
 
@@ -54,7 +54,7 @@ test('a sheet closed without sharing: the file is removed all the same', async (
 
   await deviceShareImage(jest.fn())('iVBORw0KGgo=');
 
-  expect(mockDeleted).toEqual(['file:///cache/keel-sticker.png']);
+  expect(mockDeleted).toEqual(['file:///cache/next-call-sticker.png']);
 });
 
 test('a file that could not be written: no sheet, nothing to remove, the failure reaches the screen', async () => {
@@ -73,5 +73,5 @@ test('a sheet that fails: the file is removed and the failure reaches the screen
 
   await expect(deviceShareImage(jest.fn())('iVBORw0KGgo=')).rejects.toMatchObject({ name: 'ShareFailed' });
 
-  expect(mockDeleted).toEqual(['file:///cache/keel-sticker.png']);
+  expect(mockDeleted).toEqual(['file:///cache/next-call-sticker.png']);
 });

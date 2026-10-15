@@ -63,7 +63,7 @@ describe('with the App ID', () => {
     expect(mockShareSingle).toHaveBeenCalledWith({
       social: 'instagramstories',
       appId: '1234567890',
-      stickerImage: 'file:///cache/keel-story-sticker.png',
+      stickerImage: 'file:///cache/next-call-story-sticker.png',
       backgroundImage: 'file:///cache/ImagePicker/a.jpg',
     });
   });
@@ -74,8 +74,8 @@ describe('with the App ID', () => {
 
     await deviceShareStory(jest.fn(), '1234567890', library)(INPUT);
 
-    expect(mockWrites).toEqual(['file:///cache/keel-story-sticker.png']);
-    expect(mockDeleted).toEqual(['file:///cache/keel-story-sticker.png']);
+    expect(mockWrites).toEqual(['file:///cache/next-call-story-sticker.png']);
+    expect(mockDeleted).toEqual(['file:///cache/next-call-story-sticker.png']);
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
