@@ -81,9 +81,10 @@ export function heroOf(read: ProgressRead, units: UnitSystem): { title: string; 
     const sub = countedWeeks === 0 ? null : t(countedWeeks === 1 ? 'progress.hero.recordOne' : 'progress.hero.record', { counted: countedWeeks, onTrack: onTrackWeeks });
     return { title: resultSentence(read, units), sub };
   }
-  // Without the consent the lifts and the calls are not read together: no first workout line there.
+  // Without the consent the lifts and the calls are not read together: no first workout line there. Nor are the food and
+  // steps boxes, so what is left to tap is the Cardio box: the line says that (K-1028).
   const worked = phase === 'first' && read.training.state === 'ready' && read.training.value.lifts.length > 0;
-  return { title: t(worked ? 'progress.hero.firstWorkout' : 'progress.hero.targets'), sub: targetsOf(read).length === 0 ? null : t('progress.hero.tap') };
+  return { title: t(worked ? 'progress.hero.firstWorkout' : 'progress.hero.targets'), sub: targetsOf(read).length === 0 ? null : t(phase === 'locked' ? 'progress.hero.tapLocked' : 'progress.hero.tap') };
 }
 
 /**

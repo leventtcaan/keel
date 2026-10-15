@@ -171,13 +171,13 @@ describe('the one hero (ADR-077 #1)', () => {
       state: ready({ kind: 'BUSY', since: '2026-12-22' } as Schemas['DeclaredState']),
       checkIn: ready({ weekOf: '2026-12-28', questions: [{} as Schemas['Question']], answered: false }),
     });
-    expect(heroOf(paused)).toEqual({ kind: 'monday', week: null, questions: 1, weekday: 'MONDAY' });
+    expect(heroOf(paused)).toEqual({ kind: 'monday', week: null, questions: 1 });
   });
 
   test('the check-in open, not answered: "Open your call", with the week and how many questions', () => {
     const checkIn = ready({ weekOf: '2026-12-28', questions: [{} as Schemas['Question']], answered: false });
-    expect(heroOf(data({ checkIn, firstWeeks: ready({ ...FIRST_WEEKS, week: 3 }) }))).toEqual({ kind: 'monday', week: 3, questions: 1, weekday: 'MONDAY' });
-    expect(heroOf(data({ checkIn }))).toEqual({ kind: 'monday', week: null, questions: 1, weekday: 'MONDAY' });
+    expect(heroOf(data({ checkIn, firstWeeks: ready({ ...FIRST_WEEKS, week: 3 }) }))).toEqual({ kind: 'monday', week: 3, questions: 1 });
+    expect(heroOf(data({ checkIn }))).toEqual({ kind: 'monday', week: null, questions: 1 });
   });
 
   test("answered: the week's call", () => {

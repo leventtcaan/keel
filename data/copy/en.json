@@ -3055,6 +3055,7 @@
       "targets": "Today's targets.",
       "firstWorkout": "First workout in. Today's targets.",
       "tap": "Tap one to log it.",
+      "tapLocked": "Tap Cardio to log it.",
       "early": "Your numbers build week by week.",
       "record": "{counted} weeks · {onTrack} on track",
       "recordOne": "1 week · {onTrack} on track"
@@ -3111,6 +3112,7 @@
       "locked": "After your first workout",
       "set": "{load} × {reps}",
       "rowLabel": "{move}, {load} for {reps} reps",
+      "rowLabelBodyweight": "{move}, bodyweight for {reps} reps",
       "started": "Started at {set}",
       "legendHeld": "Ring: the call held the load",
       "spoken": "{move}, best set by week: {first} in the week of {firstDate}, {last} in the week of {lastDate}. Lowest {low}, highest {high}.",

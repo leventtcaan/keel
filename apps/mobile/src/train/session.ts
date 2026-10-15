@@ -13,12 +13,17 @@ import type { ExercisePlan } from './workout';
 type Schemas = components['schemas'];
 type Entry = { loadKg: number; reps: number };
 
+/** The body alone is the load: a bodyweight move, or a weighted one with nothing added (setText and the spoken labels agree on it). */
+export function isBodyOnly(set: { loadKg: number }, move: Schemas['Exercise']): boolean {
+  return move.load === 'BODYWEIGHT' || (move.load === 'BODYWEIGHT_PLUS_EXTERNAL' && set.loadKg === 0);
+}
+
 /**
  * A load, an added load with its plus (a weighted dip), or the body alone (a weighted move with nothing added too). The
  * reps may be a range ("6-10"), as a target says them.
  */
 export function setText(set: { loadKg: number; reps: number | string }, move: Schemas['Exercise'], units: UnitSystem): string {
-  if (move.load === 'BODYWEIGHT' || (move.load === 'BODYWEIGHT_PLUS_EXTERNAL' && set.loadKg === 0))
+  if (isBodyOnly(set, move))
     return t('workout.bodyweight', { reps: set.reps });
   const key = move.load === 'BODYWEIGHT_PLUS_EXTERNAL' ? 'workout.added' : 'workout.set';
   return t(key, { load: formatLoad(set.loadKg, units), reps: set.reps });

@@ -3,7 +3,7 @@
  * hero block, then today. The week, its number, the call's day and the days to it are the server's (ADR-077 Ek 2); the
  * phone lays them out. First week, an ordinary week, Monday with the check-in open, a call declined, no consent.
  */
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 
 import TodayScreen from '@/app/(tabs)/index';
 import type { components } from '@/api/schema';
@@ -301,13 +301,21 @@ describe('Monday, the check-in open (#home-mon)', () => {
   test('"Open your call": the call is ready, one question first; the tap opens the check-in', async () => {
     mockAnswers['/v1/first-weeks'] = ok({ week: 4, risk: [], readsRisk: false, training: true, contentKey: 'first_weeks.week4' });
     await show();
-    expect(screen.getByText(t('onboarding.schedule.dayName.MONDAY'))).toBeOnTheScreen();
+    expect(within(screen.getByTestId('hero')).getByText(t('thisWeek.hero.today'))).toBeOnTheScreen();
     expect(screen.getAllByText(t('thisWeek.week', { week: 4 })).length).toBeGreaterThan(0);
     expect(screen.getByText(`${t('thisWeek.hero.monday.ready', { week: 4 })} ${t('thisWeek.hero.monday.one')}`)).toBeOnTheScreen();
     await press(t('thisWeek.hero.monday.openLabel'));
     expect(mockPush).toHaveBeenCalledWith('/check-in');
     // Last week's call waits behind the check-in: one hero.
     expect(screen.queryByText(t('decision.stop_load_increase.label'))).toBeNull();
+  });
+
+  test('back after a gap: the check-in is open, so the hero says Today, never the earlier day the check-in week is named by (B15)', async () => {
+    onPhone(new Date(2026, 11, 31, 8, 0)); // Thursday 31 Dec 2026, check-in day Monday
+    mockAnswers['/v1/check-ins/current'] = ok({ weekOf: '2026-12-28', questions: [{ kind: 'HUNGER' }], answered: false });
+    await show();
+    expect(within(screen.getByTestId('hero')).getByText(t('thisWeek.hero.today'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('onboarding.schedule.dayName.MONDAY'))).toBeNull();
   });
 
   test('two questions, said as two; past the first eight weeks, no week number', async () => {

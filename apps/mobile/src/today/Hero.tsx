@@ -87,7 +87,7 @@ export function Hero({ hero, today, onChanged }: Props) {
       return (
         <View testID="hero" style={[styles.block, { backgroundColor: color.decisionBackground }]}>
           <View style={styles.row}>
-            <Text style={[styles.meta, { color: color.decisionMuted }]}>{t(`onboarding.schedule.dayName.${hero.weekday}`)}</Text>
+            <Text style={[styles.meta, { color: color.decisionMuted }]}>{t('thisWeek.hero.today')}</Text>
             {hero.week === null ? null : <Text style={[styles.meta, { color: color.decisionMuted }]}>{t('thisWeek.week', { week: hero.week })}</Text>}
           </View>
           <Pressable
