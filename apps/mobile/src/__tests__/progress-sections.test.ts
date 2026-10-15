@@ -116,6 +116,11 @@ describe('the hero', () => {
     });
   });
 
+  test('without the consent there is no first workout line (the calls and the lifts are not read together)', () => {
+    const locked = with_(FIRST_DAY, { consistency: consent, training: ready(TRAINING(0, 3)) });
+    expect(heroOf(locked, 'METRIC')?.title).toBe("Today's targets.");
+  });
+
   test('with no box to tap there is nothing to tap', () => {
     const bare = with_(FIRST_DAY, { budget: none, starting: none, program: none });
     expect(heroOf(bare, 'METRIC')).toEqual({ title: "Today's targets.", sub: null });

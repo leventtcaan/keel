@@ -81,7 +81,8 @@ export function heroOf(read: ProgressRead, units: UnitSystem): { title: string; 
     const sub = countedWeeks === 0 ? null : t(countedWeeks === 1 ? 'progress.hero.recordOne' : 'progress.hero.record', { counted: countedWeeks, onTrack: onTrackWeeks });
     return { title: resultSentence(read, units), sub };
   }
-  const worked = read.training.state === 'ready' && read.training.value.lifts.length > 0;
+  // Without the consent the lifts and the calls are not read together: no first workout line there.
+  const worked = phase === 'first' && read.training.state === 'ready' && read.training.value.lifts.length > 0;
   return { title: t(worked ? 'progress.hero.firstWorkout' : 'progress.hero.targets'), sub: targetsOf(read).length === 0 ? null : t('progress.hero.tap') };
 }
 

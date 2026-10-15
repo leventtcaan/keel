@@ -76,6 +76,8 @@ export default function ProgressScreen() {
     const failed = [progress.training, progress.consistency, progress.summary, progress.budget, progress.program].some((part) => part.state === 'failed');
 
     const strengthCard = strength === null ? null : <StrengthCard part={strength} lifts={lifts} moves={progress.moves} units={units} />;
+    // The weigh-ins toward the trend stay until it is ready, before the first call and after it.
+    const weighIns = dots === null ? null : <WeighInDots count={dots.count} min={dots.min} />;
     const musclesCard = <MusclesCard muscles={muscles} figure={figure} />;
     // Built outside the JSX below (the raw-text guard reads JSX children).
     const running = phase === 'running';
@@ -99,13 +101,14 @@ export default function ProgressScreen() {
       <>
         {strengthCard}
         {musclesCard}
+        {weighIns}
         <ConsistencyGrid weeks={weeks} />
       </>
     ) : (
       <>
         {musclesCard}
         {strengthCard}
-        {dots === null ? null : <WeighInDots count={dots.count} min={dots.min} />}
+        {weighIns}
       </>
     );
     body = (

@@ -3006,7 +3006,7 @@
       "spare": "Spare week",
       "paused": "Paused",
       "note": "A missed week never resets your record.",
-      "spoken": "Last {count} weeks, oldest first: {onTrack} on track, {spare} spare, {paused} paused."
+      "spoken": "Last {count} weeks, oldest first: {onTrack} on track, {spare} spare, {paused} paused, {other} other weeks."
     }
   },
   "strength": {

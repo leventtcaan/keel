@@ -307,10 +307,24 @@ describe('the 12th week (ADR-078 #2)', () => {
     const cells = within(grid).getAllByTestId(/^consistency-cell-/);
     expect(cells).toHaveLength(12);
     expect(cells.map((c) => c.props.testID.split('-')[2])).toEqual(['ON_TRACK', 'ON_TRACK', 'ON_TRACK', 'SPARE', 'ON_TRACK', 'ON_TRACK', 'ON_TRACK', 'ON_TRACK', 'MISSED', 'PAUSED', 'ON_TRACK', 'ON_TRACK']);
-    expect(grid.props.accessibilityLabel).toBe(t('progress.consistency.spoken', { count: 12, onTrack: 9, spare: 1, paused: 1 }));
+    expect(grid.props.accessibilityLabel).toBe(t('progress.consistency.spoken', { count: 12, onTrack: 9, spare: 1, paused: 1, other: 1 }));
     expect(screen.getByText('Spare week')).toBeOnTheScreen();
     expect(screen.getByText('Paused')).toBeOnTheScreen();
     expect(screen.getByText('A missed week never resets your record.')).toBeOnTheScreen();
+  });
+
+  test('a missed week is in the spoken summary only as "other weeks", never named', async () => {
+    await show();
+    const said = screen.getByTestId('consistency-grid').props.accessibilityLabel as string;
+    expect(said).toContain('1 other weeks');
+    expect(said).not.toMatch(/miss/i);
+  });
+
+  test('the trend not ready yet: the weigh-ins toward it stay after the first call too', async () => {
+    answers['/v1/weigh-ins/summary'] = ok(summary(3));
+    await show();
+    expect(screen.getByText('3 of 7')).toBeOnTheScreen();
+    expect(screen.getByText('Shows after 7 weigh-ins.')).toBeOnTheScreen();
   });
 
   test('a missed week is not named: no legend entry, no red', async () => {
@@ -338,7 +352,7 @@ describe('the 12th week (ADR-078 #2)', () => {
     answers['/v1/consistency'] = ok(consistency({ weeks: weeks(['SPARE', 'ON_TRACK']), record: { onTrackWeeks: 40, countedWeeks: 52, currentRun: 2, forgivenWeeks: 5 } }));
     await show();
     expect(screen.getByText('52 weeks · 40 on track')).toBeOnTheScreen();
-    expect(screen.getByTestId('consistency-grid').props.accessibilityLabel).toBe(t('progress.consistency.spoken', { count: 2, onTrack: 1, spare: 1, paused: 0 }));
+    expect(screen.getByTestId('consistency-grid').props.accessibilityLabel).toBe(t('progress.consistency.spoken', { count: 2, onTrack: 1, spare: 1, paused: 0, other: 0 }));
   });
 
   test('the muscles still show (the sets-per-muscle bars come next)', async () => {
@@ -456,7 +470,7 @@ describe.each(['light', 'dark'] as const)('in the %s theme', (scheme) => {
     const cell = (state: string) => flat(screen.getAllByTestId(new RegExp(`^consistency-cell-${state}-`))[0]) as { backgroundColor?: string; borderColor?: string };
     expect(cell('ON_TRACK').backgroundColor).toBe(palettes[scheme].accent);
     expect(cell('SPARE').backgroundColor).toBe(palettes[scheme].accentSoft);
-    expect(cell('MISSED').backgroundColor).toBe(palettes[scheme].track);
+    expect(cell('MISSED').backgroundColor).toBe(palettes[scheme].weekMissed);
   });
 });
 
@@ -476,6 +490,40 @@ describe('the tab keeps its other ways in', () => {
     await show();
     expect(screen.queryByRole('button', { name: t('projection.view.title') })).toBeNull();
     expect(screen.queryByRole('button', { name: t('coach.entry') })).toBeNull();
+  });
+});
+
+describe('privacy (V1): nothing written, nothing about a photo, leaves the phone from this tab', () => {
+  const KNOWN = [
+    'GET /v1/training-progress',
+    'GET /v1/consistency',
+    'GET /v1/weigh-ins/summary',
+    'GET /v1/days/{day}/budget 2026-10-15',
+    'GET /v1/program',
+    'GET /v1/targets/starting',
+    'GET /v1/first-weeks',
+  ];
+
+  test.each([
+    ['the first days', firstDay],
+    ['the 12th week', weekTwelve],
+  ])('%s: only reads, only from the known list, with photos on the phone', async (_, scenario) => {
+    answers = scenario();
+    mockPhotoChecks = [{ takenOn: '2026-09-20', photos: { front: 'file:///docs/2026-09-20-front.jpg' } }];
+    await show();
+    await act(async () => mockFocus());
+    expect(mockApiCalls.length).toBeGreaterThan(0);
+    expect(mockApiCalls.filter((call) => !call.startsWith('GET '))).toEqual([]);
+    expect(mockApiCalls.filter((call) => !KNOWN.includes(call))).toEqual([]);
+  });
+
+  test('pressing every button of the tab sends nothing either', async () => {
+    jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    mockPhotoChecks = [{ takenOn: '2026-09-20', photos: { front: 'file:///docs/2026-09-20-front.jpg' } }];
+    await show();
+    mockApiCalls.length = 0;
+    for (const button of screen.getAllByRole('button')) await fireEvent.press(button);
+    expect(mockApiCalls.filter((call) => !call.startsWith('GET '))).toEqual([]);
   });
 });
 
