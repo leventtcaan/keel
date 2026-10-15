@@ -26,6 +26,7 @@ const CALL: Schemas['Decision'] = {
   ],
   confidence: 'HIGH',
   nextReview: '2026-10-05',
+  nextCallOn: '2026-10-05',
   copyKey: 'decision.continue.toward_goal',
   application: { state: 'NOT_NEEDED' },
   declinable: false,

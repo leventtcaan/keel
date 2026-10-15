@@ -20,6 +20,7 @@ const call = (extra: Partial<Schemas['Decision']> = {}): Schemas['Decision'] => 
   reasons: [{ rule: 'not_toward_goal', source: { tag: 'EXPERIENCE' } }],
   confidence: 'MEDIUM',
   nextReview: '2027-01-04',
+  nextCallOn: '2027-01-04',
   copyKey: 'decision.adjust_calories.not_toward_goal',
   application: { state: 'APPLIED' },
   declinable: true,

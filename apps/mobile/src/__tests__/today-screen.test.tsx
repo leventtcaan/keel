@@ -66,6 +66,7 @@ const decision = (copyKey: string, extra: Partial<Schemas['Decision']> = {}): Sc
   ],
   confidence: 'HIGH',
   nextReview: '2026-10-05',
+  nextCallOn: '2026-10-05',
   copyKey,
   application: { state: 'NOT_NEEDED' },
   declinable: false,

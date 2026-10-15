@@ -19,6 +19,7 @@ const call = (action: Record<string, unknown>, extra: Partial<Schemas['Decision'
   ],
   confidence: 'MEDIUM',
   nextReview: '2026-10-12',
+  nextCallOn: '2026-10-12',
   copyKey: 'decision.adjust_calories.not_toward_goal',
   application: { state: 'PENDING' },
   declinable: false,

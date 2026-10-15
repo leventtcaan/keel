@@ -67,6 +67,7 @@ describe('chipAnswer', () => {
     ],
     confidence: 'HIGH',
     nextReview: '2026-10-12',
+    nextCallOn: '2026-10-12',
     copyKey: 'decision.continue.toward_goal',
     application: { state: 'NOT_NEEDED' },
     declinable: false,

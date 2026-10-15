@@ -30,6 +30,7 @@ const decision = (extra: Partial<Schemas['Decision']> = {}): Schemas['Decision']
   ],
   confidence: 'MEDIUM',
   nextReview: '2027-01-04',
+  nextCallOn: '2027-01-04',
   copyKey: 'decision.stop_load_increase.plateau',
   application: { state: 'APPLIED' },
   declinable: true,

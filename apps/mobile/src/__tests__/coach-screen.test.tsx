@@ -27,6 +27,7 @@ const DECISION: Schemas['Decision'] = {
   ],
   confidence: 'MEDIUM',
   nextReview: '2026-10-05',
+  nextCallOn: '2026-10-05',
   copyKey: 'decision.adjust_calories.not_toward_goal',
   application: { state: 'PENDING' },
   declinable: false,

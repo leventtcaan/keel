@@ -37,6 +37,7 @@ const decision = (extra: Partial<Schemas['Decision']> = {}): Schemas['Decision']
   reasons: [{ rule: 'plateau', source: { tag: 'EXPERIENCE' } }],
   confidence: 'HIGH',
   nextReview: '2026-12-28',
+  nextCallOn: '2026-12-28',
   copyKey: 'decision.stop_load_increase.plateau',
   application: { state: 'APPLIED' },
   declinable: true,
