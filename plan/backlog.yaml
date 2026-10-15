@@ -4011,7 +4011,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-951, K-959]
     why: "ADR-070 #3 tema seçici; ADR-074 #4 kardiyo; yiyecek kısıtı ve içe aktarma Ayarlar'da (ADR-069)"
     acceptance:
@@ -4886,7 +4886,7 @@ tasks:
     module: decision
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-1021]
     why: "Part 4 boşluk taraması (14 Eki): K-981 #return için boşluk süresi, tetik parametresi (`return_prompt_days` yalnız R5'te), 'Pick up where I left off' karşılığı, sonraki karar tarihi ve cevabın izi sunucuda yok"
     acceptance:
@@ -4965,6 +4965,22 @@ tasks:
     tests: ["Tablo testi, API testi (CI), mobil ekran testi"]
     refs: ["plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md"]
     learn: ["Tarih alanının tek anlamı"]
+
+  - id: K-1025
+    title: "Son yenen yiyecekler ucu ve öğün ekranında 'Recent' (tek dokunuş)"
+    milestone: M9a
+    module: nutrition
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-980]
+    why: "K-980 B incelemesi (15 Eki): kabul kriteri 'son yiyecekler tek dokunuş'; mevcut `GET /v1/days/{day}/suggestions` hedefe sığanları veriyor, hedef aşılınca ya da hedef yokken boş, öğüne bakmıyor. Geçici olarak 'Usual foods' (ADR-018 Ek 3)"
+    acceptance:
+      - "`GET /v1/foods/recent?slot=` → son yenen yiyecekler tazelik sırasıyla, kalem başına son miktar ve kalori aralığı (U5); sınır parametreden (`food.json`); rızasız 403; hedeften bağımsız"
+      - "Öğün ekranı hızlı yolu 'Recent' (prototip #meal): tek dokunuş, aynı clientId ile yeniden deneme; 'Usual foods' kalkar"
+    tests: ["Tablo testi, API testi (CI), sözleşme testi, ekran testi"]
+    refs: ["plan/kararlar/ADR-018-health-yazma-ve-ice-aktarma.md", "prototip/yeni-yuz.html"]
+    learn: ["Okuma ucu: tazelik sırası"]
 
   - id: K-1010
     title: "Sunucudaki ek siteler: Caddy /opt/sites altındaki *.caddy dosyalarını içeri alır"
