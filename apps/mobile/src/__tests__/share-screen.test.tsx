@@ -351,6 +351,9 @@ describe('the background', () => {
 
     expect(backdrop()).toBe('none');
     expect(screen.getByText(t('share.instagramNote'))).toBeOnTheScreen();
+    // Until Story sharing (K-976) the sticker goes to the system sheet: the note promises nothing more than the clear background.
+    expect(t('share.instagramNote')).toMatch(/clear background/i);
+    expect(t('share.instagramNote')).not.toMatch(/you pick|choose/i);
   });
 
   test("a photo is shared like any ground: once, made on the phone", async () => {

@@ -1145,7 +1145,7 @@
       "dark": "Dark",
       "instagram": "In Instagram"
     },
-    "instagramNote": "Only the sticker goes. You pick the background in Instagram.",
+    "instagramNote": "Shares the sticker with a clear background.",
     "denied": "The camera isn't allowed for this app. You can allow it in the iPhone's Settings, or choose a photo from the gallery.",
     "photoFailed": "That photo couldn't be opened. Try another.",
     "share": "Share",
@@ -2807,8 +2807,8 @@
   "permissions": {
     "healthRead": "keel reads your steps, sleep, weight, active energy and workouts to make your weekly calls. It never reads heart data, cycle data, medications, health records or location.",
     "healthWrite": "keel adds to Apple Health only what you turn on in Settings: the workouts you finish, the weigh-ins you type. It writes nothing else.",
-    "camera": "To read the barcode on a food pack, to take a photo of a meal you want to log, or to take your progress photos, which stay on this phone. No video or sound is recorded.",
-    "photos": "To choose a photo of a meal you want to log, or a progress photo. Only the photo you pick is used."
+    "camera": "To read the barcode on a food pack, to take a photo of a meal you want to log, to take your progress photos, or to take a photo to put behind a share sticker. Progress photos and share sticker photos stay on this phone. No video or sound is recorded.",
+    "photos": "To choose a photo of a meal you want to log, a progress photo, or a photo to put behind a share sticker. Only the photo you pick is used."
   },
   "history": {
     "records": "Records",

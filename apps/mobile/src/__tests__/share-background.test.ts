@@ -5,6 +5,7 @@
  */
 import * as ImagePicker from 'expo-image-picker';
 
+import { t } from '@/copy';
 import { discardBackground, pickBackground } from '@/share/background';
 
 const mockDeleted: string[] = [];
@@ -89,5 +90,16 @@ describe('the copy in the cache', () => {
   test('already gone: nothing to do, no failure', () => {
     expect(() => discardBackground(ASSET.uri)).not.toThrow();
     expect(mockDeleted).toEqual([]);
+  });
+});
+
+describe('what the system asks the user (the store review reads these)', () => {
+  test('the camera text names the share background, and that it stays on the phone', () => {
+    expect(t('permissions.camera')).toMatch(/share sticker/i);
+    expect(t('permissions.camera')).toMatch(/stays? on this phone/i);
+  });
+
+  test('the photos text names the share background too', () => {
+    expect(t('permissions.photos')).toMatch(/share sticker/i);
   });
 });
