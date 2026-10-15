@@ -1,15 +1,15 @@
 /**
- * A meal in two or three taps (K-980, ADR-018 Ek 1, prototype `#meal`): "Same as yesterday" for the slot, and the foods the
- * user usually eats, each one tap, ranges only (U5) and no colour that judges (neutral). The offers are the ones the Food tab
- * has: yesterday's meals for a slot today has nothing in (`repeatOffers`) and `GET /v1/days/{day}/suggestions`. The first
- * day has neither, so nothing is shown. The full form (search, barcode, amounts) is below, as it was.
+ * A meal in two or three taps (K-980, ADR-018 Ek 1 and 3, prototype `#meal`): "Same as yesterday" for the slot, and the foods
+ * eaten lately ("Recent", `GET /v1/foods/recent?slot=`, K-1025), each one tap, ranges only (U5) and no colour that judges
+ * (neutral). "Same as yesterday" is yesterday's meal for a slot today has nothing in (`repeatOffers`). The first day has
+ * neither, so nothing is shown. The full form (search, barcode, amounts) is below, as it was.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
 import type { components } from '@/api/schema';
 import MealScreen from '@/app/meal';
 import { t } from '@/copy';
-import { readMealStart } from '@/food/mealStart';
+import { readMealStart, readRecentFoods } from '@/food/mealStart';
 import { foodParams } from '@/food/params';
 import { ThemeProvider } from '@/theme/theme';
 import { palettes } from '@/theme/tokens';
@@ -38,16 +38,16 @@ let mockGranted = true;
 let mockEdit: string | undefined;
 let mockYesterday: Schemas['Meal'][] | Answer = [YESTERDAY_LUNCH, YESTERDAY_DINNER];
 let mockToday: Schemas['Meal'][] = [];
-let mockSuggestions: Schemas['Suggestion'][] | Answer = [YOGURT, BANANA, OATS];
+let mockRecent: Schemas['Suggestion'][] | Answer = [YOGURT, BANANA, OATS];
 const mockRecord = jest.fn(async (_record: unknown) => true);
 const mockBack = jest.fn();
-const mockGET = jest.fn(async (path: string, init?: { params?: { query?: { day?: string } } }) => {
+const mockGET = jest.fn(async (path: string, init?: { params?: { query?: { day?: string; slot?: string } } }) => {
   if (path === '/v1/meals') {
     const day = init?.params?.query?.day;
     if (day === '2026-09-28') return Array.isArray(mockYesterday) ? ok(mockYesterday) : mockYesterday;
     return ok(mockToday);
   }
-  if (path === '/v1/days/{day}/suggestions') return Array.isArray(mockSuggestions) ? ok(mockSuggestions) : mockSuggestions;
+  if (path === '/v1/foods/recent') return Array.isArray(mockRecent) ? ok(mockRecent) : mockRecent;
   return refused(404);
 });
 jest.mock('expo-crypto', () => ({ randomUUID: () => jest.requireActual<typeof import('node:crypto')>('node:crypto').randomUUID() }));
@@ -61,6 +61,7 @@ const mockServices = {
   consents: { granted: async () => mockGranted, remember: jest.fn(async () => {}) },
   // The real read, over this test's server: what is offered is what the Food tab's pieces make of these answers.
   mealStart: (day: string) => readMealStart({ api: mockServices.api as never, mealRecords: async () => [] }, day),
+  recentFoods: (slot: Schemas['MealSlot']) => readRecentFoods({ api: mockServices.api as never }, slot),
   forgetRecord: jest.fn(async () => {}),
   report: jest.fn(),
 };
@@ -96,7 +97,7 @@ beforeEach(() => {
   mockEdit = undefined;
   mockYesterday = [YESTERDAY_LUNCH, YESTERDAY_DINNER];
   mockToday = [];
-  mockSuggestions = [YOGURT, BANANA, OATS];
+  mockRecent = [YOGURT, BANANA, OATS];
 });
 
 async function show() {
@@ -148,10 +149,10 @@ describe('Same as yesterday', () => {
 
   test('the first day has no yesterday: nothing offered', async () => {
     mockYesterday = [];
-    mockSuggestions = [];
+    mockRecent = [];
     await show();
     expect(screen.queryByText(t('food.repeat.title'))).toBeNull();
-    expect(screen.queryByText(t('meal.quick.usual'))).toBeNull();
+    expect(screen.queryByText(t('meal.quick.recent'))).toBeNull();
   });
 
   test('two taps at once log one meal', async () => {
@@ -164,10 +165,10 @@ describe('Same as yesterday', () => {
   });
 });
 
-describe('the foods the user usually eats', () => {
+describe('the foods eaten lately', () => {
   test('a few, each with its amount and range; one tap logs it in the slot', async () => {
     await show();
-    expect(screen.getByText(t('meal.quick.usual'))).toBeOnTheScreen();
+    expect(screen.getByText(t('meal.quick.recent'))).toBeOnTheScreen();
     expect(screen.getByText(t('food.suggestions.item', { name: 'Greek yogurt', quantity: '170', unit: 'g' }))).toBeOnTheScreen();
     expect(screen.getByText(`${t('format.range', { low: 150, high: 170 })} ${t('food.budget.kcalUnit')}`)).toBeOnTheScreen();
 
@@ -185,11 +186,11 @@ describe('the foods the user usually eats', () => {
     expect(mockBack).toHaveBeenCalled();
   });
 
-  test('no more than the screen has room for (food.json › quick_usual_max)', async () => {
+  test('no more than the screen has room for (food.json › quick_recent_max)', async () => {
     await show();
     const rows = [YOGURT, BANANA, OATS].filter((s) => screen.queryByRole('button', { name: t('food.suggestions.log', { name: s.name }) }) !== null);
-    expect(rows).toHaveLength(foodParams.quickUsualMax);
-    expect(rows.map((s) => s.name)).toEqual([YOGURT, BANANA, OATS].slice(0, foodParams.quickUsualMax).map((s) => s.name));
+    expect(rows).toHaveLength(foodParams.quickRecentMax);
+    expect(rows.map((s) => s.name)).toEqual([YOGURT, BANANA, OATS].slice(0, foodParams.quickRecentMax).map((s) => s.name));
   });
 
   test('the slot chosen is the slot logged', async () => {
@@ -197,6 +198,29 @@ describe('the foods the user usually eats', () => {
     await press(t('food.slot.SNACK'));
     await press(t('food.suggestions.log', { name: 'Greek yogurt' }));
     expect(mockRecord).toHaveBeenCalledWith(expect.objectContaining({ body: expect.objectContaining({ slot: 'SNACK' }) }));
+  });
+
+  test('asks the server for the slot being logged, and again when the slot changes; the order is the server\'s', async () => {
+    await show();
+    expect(mockGET).toHaveBeenCalledWith('/v1/foods/recent', { params: { query: { slot: 'LUNCH' } } });
+
+    mockRecent = [BANANA, YOGURT, OATS];
+    await press(t('food.slot.SNACK'));
+
+    expect(mockGET).toHaveBeenCalledWith('/v1/foods/recent', { params: { query: { slot: 'SNACK' } } });
+    const shown = screen.getAllByRole('button', { name: /^Log / }).map((row) => row.props.accessibilityLabel as string);
+    expect(shown[0]).toBe(t('food.suggestions.log', { name: 'Banana' }));
+    expect(shown[1]).toBe(t('food.suggestions.log', { name: 'Greek yogurt' }));
+  });
+
+  test('trying a recent food again after a failure is the same meal: one clientId', async () => {
+    mockRecord.mockRejectedValueOnce(Object.assign(new Error('disk'), { name: 'StoreFailed' }));
+    await show();
+    await press(t('food.suggestions.log', { name: 'Greek yogurt' }));
+    await press(t('food.suggestions.log', { name: 'Greek yogurt' }));
+    const ids = mockRecord.mock.calls.map(([record]) => (record as { body: { clientId: string } }).body.clientId);
+    expect(ids).toHaveLength(2);
+    expect(ids[1]).toBe(ids[0]);
   });
 
   test('ranges only, in the text colour: no word or colour that judges the number (U5, U7)', async () => {
@@ -211,10 +235,10 @@ describe('the foods the user usually eats', () => {
 describe('where it is not shown', () => {
   test('unread (offline, a server that did not answer): the form alone, no error', async () => {
     mockYesterday = refused(500);
-    mockSuggestions = refused(500);
+    mockRecent = refused(500);
     await show();
     expect(screen.queryByText(t('food.repeat.title'))).toBeNull();
-    expect(screen.queryByText(t('meal.quick.usual'))).toBeNull();
+    expect(screen.queryByText(t('meal.quick.recent'))).toBeNull();
     expect(screen.getByLabelText(t('meal.search.label'))).toBeOnTheScreen();
   });
 
@@ -229,7 +253,7 @@ describe('where it is not shown', () => {
     mockEdit = 'm-1';
     await show();
     expect(screen.queryByText(t('food.repeat.title'))).toBeNull();
-    expect(screen.queryByText(t('meal.quick.usual'))).toBeNull();
+    expect(screen.queryByText(t('meal.quick.recent'))).toBeNull();
   });
 
   test('once a food is being put together by hand, the quick adds step aside', async () => {
@@ -239,7 +263,7 @@ describe('where it is not shown', () => {
     await press(t('meal.search.go'));
     await press(t('meal.search.add', { name: 'Rice, white, cooked' }));
     expect(screen.queryByText(t('food.repeat.title'))).toBeNull();
-    expect(screen.queryByText(t('meal.quick.usual'))).toBeNull();
+    expect(screen.queryByText(t('meal.quick.recent'))).toBeNull();
   });
 });
 

@@ -138,12 +138,12 @@
       "note": "The JPEG the phone writes from the shrunk photo (K-408, ADR-046): small enough to send quickly, clear enough to tell the foods apart. The server writes its own again (0.85)."
     },
     {
-      "key": "quick_usual_max",
+      "key": "quick_recent_max",
       "value": 2,
       "unit": "count",
       "tag": "urun",
       "source": "plan/kararlar/ADR-018-health-yazma-ve-ice-aktarma.md#Ek 1",
-      "note": "How many of the user's usual foods (GET /v1/days/{day}/suggestions) the meal screen offers for one tap (K-980, prototype #meal): the fast path stays a few lines, so the screen keeps within its word budget with 'Same as yesterday' above it (data/copy/word-budgets.json). The server sends a few at most, the most eaten first; the rest are a search away."
+      "note": "How many of the foods eaten lately (GET /v1/foods/recent, K-1025) the meal screen offers for one tap (K-980, prototype #meal): the fast path stays a few lines, so the screen keeps within its word budget with 'Same as yesterday' above it (data/copy/word-budgets.json). The server orders them (the slot's own first, then the freshest) and sends up to keel.nutrition.recent-foods (application.yml, 5); this is how many of those the screen shows, so it is never more than the server's ceiling (backend NutritionLimitsTests mirrors it). The rest are a search away."
     }
   ]
 }
