@@ -37,11 +37,20 @@ paths:
     get:
       tags: [system]
       operationId: getHealth
-      summary: Liveness check
+      summary: Readiness check
+      description: |
+        200 once the application accepts traffic: the web server is up and the start's own work (the FoodData Central
+        import) has finished. 503 until then, and again while the application shuts down (K-908).
       security: []
       responses:
         "200":
-          description: The service is up
+          description: The service is up and ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+        "503":
+          description: The service is starting (or stopping) and does not take traffic yet
           content:
             application/json:
               schema:
@@ -2154,7 +2163,8 @@ components:
       properties:
         status:
           type: string
-          enum: [UP]
+          description: UP with 200; STARTING with 503
+          enum: [UP, STARTING]
     Error:
       type: object
       description: Shared error body. Messages never contain health data (anayasa V3).

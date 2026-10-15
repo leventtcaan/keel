@@ -30,6 +30,7 @@ export function inverse(p: Palette): Palette {
     textSecondary: p.decisionTextSecondary,
     muted: p.decisionMuted,
     line: p.decisionLine,
+    edge: p.decisionEdge,
     track: p.decisionLine,
     accent: p.accentInk,
     onAccent: p.onAccentInk,
