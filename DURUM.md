@@ -5,7 +5,12 @@ guncelleme: 2026-10-10
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (15 Eki gece — M9a Part 4 BİTTİ: Part 4 ÇIKIŞ = M9a ÇIKIŞ (kod))
+## ▶ DEVAM NOKTASI (15 Eki gece — ADR-080: en hızlı temiz yayın)
+**Plan:** `plan/oturum-promptlari/YAYIN.md` — Oturum 1 yayın öncesi kod (şimdi başlayabilir) · Oturum 2 K-984 TestFlight + cihaz turu (K-983'ten sonra) ·
+Oturum 3 mağazaya çıkış (K-1001 ad + K-805 vergi/banka hazır olunca). Önce sessiz yayın; pazarlama ve klipler/AI/Live Activity M11 (güncellemeler).
+**Levent'i bekleyen:** K-983 ASC deneme · K-1001 ürün adı · K-805 mali müşavir + ASC vergi/banka · dış TestFlight grubu (K-904) · (isteğe bağlı) K-976 App ID.
+
+## (önceki) DEVAM NOKTASI (15 Eki gece — M9a Part 4 BİTTİ: Part 4 ÇIKIŞ = M9a ÇIKIŞ (kod))
 **Levent'i bekleyen:** K-983 (App Store Connect 2 haftalık deneme) → sonra K-984 (TestFlight derlemesi + cihaz turu; prompt `YENI-YUZ-part4-devam.md` › "K-984 prompt'u"). K-976 Facebook App ID (`EXPO_PUBLIC_FACEBOOK_APP_ID`, EAS ortam değişkeni) cihaz turundan önce gelirse Story gerçek yoldan denenir.
 **Sonra:** M9 Part 3 (beta kohortu, K-904) → `plan/oturum-promptlari/M9-part3.md`. Ayrıntı DURUM › M9a ilerleme › Part 4 ÇIKIŞ.
 
