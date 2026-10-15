@@ -1,20 +1,27 @@
 /**
- * Share your progress (K-612, L3 Y5): the user starts it; the card is made on this phone from the record, the latest call
- * and a lift — the weight trend only when turned on — and handed to the share sheet as an image. Nothing goes to the
- * server: the screen only reads (GET), and the image is never sent by the app.
+ * Share (K-975, ADR-076; prototype `#share`): started by the user from the end of a workout (or from Progress), never
+ * offered on its own. The sticker is made on this phone from what the server says (the workout's summary, the weeks, the
+ * lifts) and handed to the share sheet as an image. Nothing goes to the server: the screen only reads (GET), and the
+ * image is never sent by the app.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
 import ShareScreen from '@/app/share';
 import { t } from '@/copy';
-import type { CardText } from '@/share/card';
+import type { Sticker } from '@/share/stickers';
 import { ThemeProvider } from '@/theme/theme';
+import type { WorkoutSummaryRead } from '@/train/workoutEnd';
 
 type Answer = { data?: unknown; error?: { code: string; message: string }; response: Response };
 const ok = (data: unknown): Answer => ({ data, response: new Response(null, { status: 200 }) });
 const none: Answer = { error: { code: 'NOT_FOUND', message: 'x' }, response: new Response(null, { status: 404 }) };
+const broken: Answer = { error: { code: 'INTERNAL', message: 'x' }, response: new Response(null, { status: 500 }) };
 
 let mockAnswers: Record<string, Answer> = {};
+let mockEnd: WorkoutSummaryRead = { kind: 'pending' };
+const PROGRAM = { days: [{ id: 'day-a', nameKey: 'programDays.full_body_a.name', exercises: [] }] };
+let mockUnits = 'METRIC';
+let mockParams: Record<string, string> = { workout: 'w1' };
 const mockServices = {
   api: {
     GET: jest.fn(async (path: string, _init?: unknown) => mockAnswers[path] ?? none),
@@ -24,52 +31,77 @@ const mockServices = {
     DELETE: jest.fn(),
   },
   training: {
-    read: jest.fn(async () => ({ program: { state: 'none' }, exercises: { state: 'ready', value: [] }, kept: false })),
+    read: jest.fn(async () => ({ program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: [] }, kept: false })),
     own: jest.fn(async () => []),
-    history: jest.fn(async () => ({ state: 'ready', value: [] })),
   },
-  workoutRecords: jest.fn(async () => []),
   shareImage: jest.fn(async (_base64: string) => {}),
+  // What the end screen also reads (the Watch's energy, K-974): the stickers use none of it, so none may be touched.
+  queue: { drain: jest.fn(async () => undefined) },
+  workoutRecords: jest.fn(async () => [
+    { seq: 1, clientId: 'w1', kind: 'workout', parentClientId: null, body: { clientId: 'w1', startedAt: '2026-10-13T08:00:00Z', programDayId: 'day-a' }, state: 'SYNCED', serverId: 'srv-w1', serverBody: null, errorCode: null },
+    { seq: 2, clientId: 'f1', kind: 'finish', parentClientId: 'w1', body: { endedAt: '2026-10-13T08:52:00Z' }, state: 'SYNCED', serverId: null, serverBody: null, errorCode: null },
+  ]),
+  health: { readWatchActiveEnergy: jest.fn(async () => 310) },
+  consents: { granted: jest.fn(async () => true) },
   report: jest.fn(),
 };
-jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => 'METRIC' }));
+jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => mockUnits }));
+jest.mock('@/train/workoutEnd', () => ({ loadWorkoutSummary: jest.fn(async () => mockEnd) }));
 jest.mock('expo-router', () => ({
   router: { back: jest.fn() },
+  useLocalSearchParams: () => mockParams,
   useFocusEffect: (effect: () => void) => jest.requireActual<typeof import('react')>('react').useEffect(effect, []),
 }));
-// The card as text, with the image the ref would make: the real drawing is share-card-view.test.tsx.
-jest.mock('@/share/ShareCard', () => {
+// The sticker as text, with the image the ref would make: the real drawing is share-sticker-view.test.tsx.
+let mockDataUrl: string | undefined = 'iVBORw0KGgo=';
+jest.mock('@/share/Sticker', () => {
   const { forwardRef: mockForwardRef, useImperativeHandle: mockHandle } = jest.requireActual<typeof import('react')>('react');
   const { Text: MockText } = jest.requireActual<typeof import('react-native')>('react-native');
   return {
-    ShareCard: mockForwardRef(function MockCard({ text }: { text: CardText }, ref) {
-      mockHandle(ref, () => ({ toDataURL: (done: (base64: string) => void) => done('iVBORw0KGgo=') }));
-      return <MockText testID="card">{[text.heading, ...text.lines, text.footer].join('\n')}</MockText>;
+    StickerImage: mockForwardRef(function MockSticker({ sticker }: { sticker: Sticker }, ref) {
+      mockHandle(ref, () => ({ toDataURL: (done: (base64?: string) => void) => done(mockDataUrl) }));
+      return <MockText testID="sticker">{[sticker.kicker, sticker.title, ...sticker.stats.flatMap((s) => [s.value, s.label]), ...sticker.lines].join('\n')}</MockText>;
     }),
   };
 });
+
+const READY: WorkoutSummaryRead = {
+  kind: 'ready',
+  summary: {
+    workoutId: 'w1',
+    liftedKg: 4280,
+    workingSets: 14,
+    minutes: 52,
+    marks: [{ exerciseId: 'squat', kind: 'RECORD', loadKg: 100, reps: 8 }],
+    moves: [],
+    weekOf: '2026-10-12',
+    muscles: [],
+  },
+  programDayId: 'day-a',
+};
+const CONSISTENCY = {
+  weekOf: '2026-10-12',
+  training: { done: 3, planned: 3 },
+  protein: { done: 5, planned: 7 },
+  steps: { done: 5, planned: 7 },
+  weighIns: { done: 6, planned: 7 },
+  planned: 24,
+  done: 18,
+  record: { onTrackWeeks: 11, countedWeeks: 12, currentRun: 4, forgivenWeeks: 1 },
+  weeks: [{ weekOf: '2026-09-28', state: 'ON_TRACK' }],
+};
+const lift = { exerciseId: 'squat', baseline: { loadKg: 80, reps: 8, day: '2026-07-13' }, best: { loadKg: 100, reps: 8, day: '2026-10-12' }, stronger: true, weeks: [] };
+const PROGRESS = { weekOf: '2026-10-12', muscles: [], lifts: [lift], strongerLifts: 1, trackedLifts: 1 };
 
 const fetchSpy = jest.fn();
 beforeEach(() => {
   jest.clearAllMocks();
   global.fetch = fetchSpy;
-  mockAnswers = {
-    '/v1/consistency': ok({
-      weekOf: '2026-09-28',
-      training: { done: 2, planned: 3 },
-      protein: { done: 5, planned: 7 },
-      steps: { done: 5, planned: 7 },
-      weighIns: { done: 6, planned: 7 },
-      planned: 24,
-      done: 18,
-      record: { onTrackWeeks: 11, countedWeeks: 12, currentRun: 4, forgivenWeeks: 1 },
-    }),
-    '/v1/decisions/current': ok({ action: { type: 'CHANGE_MOVEMENT' }, copyKey: 'decision.change_movement.bmr_floor', reasons: [{ rule: 'bmr_floor', source: 'x' }] }),
-    '/v1/weight-trend': ok([
-      { day: '2026-07-10', kg: 84.2 },
-      { day: '2026-10-03', kg: 81.6 },
-    ]),
-  };
+  mockEnd = READY;
+  mockUnits = 'METRIC';
+  mockParams = { workout: 'w1' };
+  mockDataUrl = 'iVBORw0KGgo=';
+  mockAnswers = { '/v1/consistency': ok(CONSISTENCY), '/v1/training-progress': ok(PROGRESS) };
 });
 afterEach(() => {
   // The image never goes to the server: no write of any kind, no fetch of its own.
@@ -85,51 +117,115 @@ async function show() {
   );
   await act(async () => {});
 }
-const card = () => screen.getByTestId('card').props.children as string;
+const sticker = () => screen.getByTestId('sticker').props.children as string;
+const chip = (kind: string) => screen.getByRole('button', { name: t(`share.kind.${kind}`) });
 
-test('the card: the record and the latest call; no weight until turned on', async () => {
+test('from a workout: the four stickers to pick from, the workout first, its words in the preview', async () => {
   await show();
 
-  expect(card()).toContain(t('share.card.record', { onTrack: 11, counted: 12 }));
-  expect(card()).toContain(t('share.card.call', { call: t('decision.change_movement.bmr_floor.title') }));
-  expect(card()).not.toContain(t('share.card.weight', { date: 'Jul 10', from: '84.2 kg', to: '81.6 kg' }));
+  expect(['workout', 'pr', 'streak', 'progress'].map((k) => chip(k).props.accessibilityState?.selected)).toEqual([true, false, false, false]);
+  expect(sticker()).toContain(t('programDays.full_body_a.name'));
+  expect(sticker()).toContain('52');
   expect(screen.getByText(t('share.note'))).toBeOnTheScreen();
 });
 
-test('turned on, the weight trend is on the card with its real values; off again, gone', async () => {
+test('picking a sticker shows its words and marks it picked', async () => {
   await show();
 
-  expect(screen.getByLabelText(t('share.showWeight')).props.value).toBe(false); // off by default
-  await fireEvent(screen.getByLabelText(t('share.showWeight')), 'valueChange', true);
-  await act(async () => {});
-  expect(card()).toContain(t('share.card.weight', { date: 'Jul 10', from: '84.2 kg', to: '81.6 kg' }));
+  await fireEvent.press(chip('streak'));
+  expect(sticker()).toContain(t('share.sticker.streak.title', { onTrack: 11, counted: 12 }));
+  expect(chip('streak').props.accessibilityState?.selected).toBe(true);
+  expect(chip('workout').props.accessibilityState?.selected).toBe(false);
 
-  await fireEvent(screen.getByLabelText(t('share.showWeight')), 'valueChange', false);
-  await act(async () => {});
-  expect(card()).not.toContain('84.2');
+  await fireEvent.press(chip('progress'));
+  expect(sticker()).toContain(t('share.sticker.progress.inWeeks.other', { count: 12 }));
+  await fireEvent.press(chip('pr'));
+  expect(sticker()).toContain(t('share.sticker.pr.best'));
 });
 
-test('share: the image made on the phone goes to the share sheet', async () => {
+test('from Progress (no workout): the weeks and the lifts only; no workout, no PR', async () => {
+  mockParams = {};
+  await show();
+
+  expect(screen.queryByRole('button', { name: t('share.kind.workout') })).toBeNull();
+  expect(screen.queryByRole('button', { name: t('share.kind.pr') })).toBeNull();
+  expect(chip('streak').props.accessibilityState?.selected).toBe(true);
+  expect(chip('progress')).toBeTruthy();
+});
+
+test('Share makes the PNG on the phone and hands it to the sheet once; the button waits for the sheet', async () => {
+  let close: () => void = () => {};
+  mockServices.shareImage.mockImplementationOnce(() => new Promise<void>((resolve) => (close = resolve)));
   await show();
 
   await fireEvent.press(screen.getByRole('button', { name: t('share.share') }));
-  await act(async () => {});
-
+  await fireEvent.press(screen.getByRole('button', { name: t('share.share') }));
+  expect(mockServices.shareImage).toHaveBeenCalledTimes(1);
   expect(mockServices.shareImage).toHaveBeenCalledWith('iVBORw0KGgo=');
+  expect(screen.getByRole('button', { name: t('share.share') }).props.accessibilityState?.disabled).toBe(true);
+
+  await act(async () => close());
+  expect(screen.getByRole('button', { name: t('share.share') }).props.accessibilityState?.disabled).toBe(false);
 });
 
-test('a failure is said; reported by name only', async () => {
+test('a share that fails says so by name only, and trying again clears it', async () => {
   mockServices.shareImage.mockRejectedValueOnce(Object.assign(new Error('weights'), { name: 'ShareFailed' }));
   await show();
 
   await fireEvent.press(screen.getByRole('button', { name: t('share.share') }));
   await act(async () => {});
-
   expect(screen.getByText(t('share.failed'))).toBeOnTheScreen();
   expect(mockServices.report).toHaveBeenCalledWith({ name: 'ShareFailed' });
+  expect(JSON.stringify(mockServices.report.mock.calls)).not.toContain('weights');
+
+  await fireEvent.press(screen.getByRole('button', { name: t('share.share') }));
+  await act(async () => {});
+  expect(mockServices.shareImage).toHaveBeenCalledTimes(2);
+  expect(screen.queryByText(t('share.failed'))).toBeNull();
 });
 
-test('nothing to put on a card: it says so and offers no share', async () => {
+test('an image the drawing could not make (empty): said, nothing handed to the sheet, the button free again', async () => {
+  mockDataUrl = undefined;
+  await show();
+
+  await fireEvent.press(screen.getByRole('button', { name: t('share.share') }));
+  await act(async () => {});
+
+  expect(mockServices.shareImage).not.toHaveBeenCalled();
+  expect(screen.getByText(t('share.failed'))).toBeOnTheScreen();
+  expect(screen.getByRole('button', { name: t('share.share') }).props.accessibilityState?.disabled).toBe(false);
+});
+
+test("the workout's numbers are not yet on the server: said calmly, the weeks and lifts still offered", async () => {
+  mockEnd = { kind: 'pending' };
+  await show();
+
+  expect(screen.getByText(t('workoutEnd.pending'))).toBeOnTheScreen();
+  expect(screen.queryByRole('button', { name: t('share.kind.workout') })).toBeNull();
+  expect(chip('streak').props.accessibilityState?.selected).toBe(true);
+});
+
+test('a part the server could not give (offline): said, the rest offered', async () => {
+  mockAnswers = { '/v1/consistency': broken, '/v1/training-progress': ok(PROGRESS) };
+  await show();
+
+  expect(screen.getByText(t('share.partial'))).toBeOnTheScreen();
+  expect(chip('workout')).toBeTruthy();
+  expect(screen.queryByRole('button', { name: t('share.kind.streak') })).toBeNull();
+});
+
+test('a workout read that throws: said as a part missing, the rest still offered, nothing blank', async () => {
+  const { loadWorkoutSummary } = jest.requireMock('@/train/workoutEnd') as { loadWorkoutSummary: jest.Mock };
+  loadWorkoutSummary.mockRejectedValueOnce(Object.assign(new Error('boom'), { name: 'DbError' }));
+  await show();
+
+  expect(screen.getByText(t('share.partial'))).toBeOnTheScreen();
+  expect(screen.queryByRole('button', { name: t('share.kind.workout') })).toBeNull();
+  expect(chip('streak')).toBeTruthy();
+});
+
+test('nothing yet to share: said, and no Share button', async () => {
+  mockParams = {};
   mockAnswers = {};
   await show();
 
@@ -137,69 +233,31 @@ test('nothing to put on a card: it says so and offers no share', async () => {
   expect(screen.queryByRole('button', { name: t('share.share') })).toBeNull();
 });
 
-describe('after the review (K-612)', () => {
-  const bench = { id: 'bench_press', nameKey: 'exercises.bench_press.name', kind: 'COMPOUND', muscles: [], alternatives: [], load: 'EXTERNAL', equipment: 'BARBELL', unilateral: false, setupFields: [] };
-  const workout = (day: string, kg: number) => ({
-    id: day,
-    clientId: day,
-    startedAt: `${day}T17:00:00Z`,
-    endedAt: `${day}T18:00:00Z`,
-    sets: [{ id: `${day}-s`, clientId: `${day}-s`, exerciseId: 'bench_press', setType: 'WORKING', loadKg: kg, reps: 8, rir: 2 }],
-  });
+test("in pounds when that is the user's unit", async () => {
+  mockUnits = 'IMPERIAL';
+  await show();
 
-  test('the weight trend is read over the strength chart\'s window', async () => {
-    await show();
+  expect(sticker()).toContain(t('workoutEnd.liftedLb'));
+});
 
-    const asked = mockServices.api.GET.mock.calls.find(([p]) => p === '/v1/weight-trend')?.[1] as { params: { query: { from: string; to: string } } };
-    expect(asked.params.query.from <= asked.params.query.to).toBe(true);
-    expect(Date.parse(asked.params.query.to) - Date.parse(asked.params.query.from)).toBeGreaterThan(80 * 24 * 3600 * 1000);
-  });
+test('the workout is read by the id it came with; the weeks and lifts from the server; the moves from the program', async () => {
+  const { loadWorkoutSummary } = jest.requireMock('@/train/workoutEnd') as { loadWorkoutSummary: jest.Mock };
+  await show();
 
-  test('a lift from the history is on the card, since its first week', async () => {
-    mockServices.training.read.mockResolvedValueOnce({ program: { state: 'none' }, exercises: { state: 'ready', value: [bench] }, kept: false } as never);
-    const today = new Date();
-    const day = (back: number) => new Date(today.getTime() - back * 24 * 3600 * 1000).toISOString().slice(0, 10);
-    mockServices.training.history.mockResolvedValueOnce({ state: 'ready', value: [workout(day(40), 80), workout(day(5), 85)] } as never);
-    await show();
+  expect(loadWorkoutSummary).toHaveBeenCalledWith(mockServices, 'w1');
+  expect(mockServices.api.GET.mock.calls.map(([path]) => path).sort()).toEqual(['/v1/consistency', '/v1/training-progress']);
+  expect(mockServices.training.read).toHaveBeenCalled();
+});
 
-    expect(card()).toContain(t('exercises.bench_press.name'));
-  });
+test("the stickers read no health data: with the real reading, the Watch's energy and the consents are never touched, and only what is needed is asked", async () => {
+  const { loadWorkoutSummary } = jest.requireMock('@/train/workoutEnd') as { loadWorkoutSummary: jest.Mock };
+  loadWorkoutSummary.mockImplementationOnce(jest.requireActual<typeof import('@/train/workoutEnd')>('@/train/workoutEnd').loadWorkoutSummary);
+  mockAnswers['/v1/workouts/{id}/summary'] = ok((READY as { summary: unknown }).summary);
+  await show();
 
-  test('one trend point: no change to show, and no switch for it', async () => {
-    mockAnswers['/v1/weight-trend'] = ok([{ day: '2026-10-03', kg: 81.6 }]);
-    await show();
-
-    expect(screen.queryByLabelText(t('share.showWeight'))).toBeNull();
-  });
-
-  test('shared once, it can be shared again; a failure then a success clears the failure', async () => {
-    mockServices.shareImage.mockRejectedValueOnce(Object.assign(new Error('x'), { name: 'ShareFailed' }));
-    await show();
-
-    await fireEvent.press(screen.getByRole('button', { name: t('share.share') }));
-    await act(async () => {});
-    expect(screen.getByText(t('share.failed'))).toBeOnTheScreen();
-    await fireEvent.press(screen.getByRole('button', { name: t('share.share') }));
-    await act(async () => {});
-
-    expect(mockServices.shareImage).toHaveBeenCalledTimes(2);
-    expect(screen.queryByText(t('share.failed'))).toBeNull();
-  });
-
-  test('a part that could not be read is said, apart from "nothing yet"', async () => {
-    mockServices.api.GET.mockImplementation(async (path: string) =>
-      path === '/v1/consistency' ? ({ error: { code: 'X', message: 'x' }, response: new Response(null, { status: 500 }) } as never) : (mockAnswers[path] ?? none),
-    );
-    await show();
-
-    expect(screen.getByText(t('share.partial'))).toBeOnTheScreen();
-    mockServices.api.GET.mockImplementation(async (path: string) => mockAnswers[path] ?? none);
-  });
-
-  test('a read that throws is reported by name', async () => {
-    mockServices.training.read.mockRejectedValueOnce(Object.assign(new Error('x'), { name: 'NoConnection' }));
-    await show();
-
-    expect(mockServices.report).toHaveBeenCalledWith({ name: 'NoConnection' });
-  });
+  expect(sticker()).toContain(t('programDays.full_body_a.name'));
+  expect(mockServices.health.readWatchActiveEnergy).not.toHaveBeenCalled();
+  expect(mockServices.consents.granted).not.toHaveBeenCalled();
+  // The summary once, the weeks once, the lifts once: nothing twice.
+  expect(mockServices.api.GET.mock.calls.map(([path]) => path).sort()).toEqual(['/v1/consistency', '/v1/training-progress', '/v1/workouts/{id}/summary']);
 });

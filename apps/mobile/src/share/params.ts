@@ -1,4 +1,4 @@
-/** The share card (K-612), from data/parameters/share.json (ADR-029: parameters the phone reads). */
+/** The share stickers (K-975), from data/parameters/share.json (ADR-029: parameters the phone reads). */
 import params from '../../../../data/parameters/share.json';
 
 type Parameter = { key: string; value: unknown };
@@ -9,5 +9,7 @@ function param<T>(key: string): T {
 }
 
 export const shareParams = {
-  withheldRules: param<string[]>('share_withheld_rules'),
+  storyWidth: param<number>('story_width_px'),
+  storyHeight: param<number>('story_height_px'),
+  progressLifts: param<number>('progress_lifts'),
 };
