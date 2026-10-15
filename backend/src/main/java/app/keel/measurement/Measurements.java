@@ -53,9 +53,17 @@ public class Measurements {
 
     private List<WeighIn> daily(AccountId account, LocalDate from, LocalDate to, boolean imported) {
         ZoneId zone = zoneOf(account);
+        return firstOfEachDay(store.weighIns(account, from.atStartOfDay(zone).toInstant(), to.plusDays(1).atStartOfDay(zone).toInstant(), imported),
+                zone);
+    }
+
+    /**
+     * One weigh-in per local day, the day's first, from weigh-ins oldest first. The one rule for "a day with a weigh-in":
+     * the series the engine reads, the trend the user sees and the weight summary's count (K-1018) all take their days here.
+     */
+    static List<WeighIn> firstOfEachDay(List<MeasurementStore.WeighIn> weighIns, ZoneId zone) {
         Map<LocalDate, WeighIn> firstOfDay = new LinkedHashMap<>();
-        for (MeasurementStore.WeighIn weighIn : store.weighIns(account, from.atStartOfDay(zone).toInstant(),
-                to.plusDays(1).atStartOfDay(zone).toInstant(), imported)) {
+        for (MeasurementStore.WeighIn weighIn : weighIns) {
             LocalDate day = weighIn.measuredAt().atZone(zone).toLocalDate();
             firstOfDay.putIfAbsent(day, new WeighIn(day, weighIn.kg()));
         }

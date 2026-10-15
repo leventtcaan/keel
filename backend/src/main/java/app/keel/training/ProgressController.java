@@ -106,7 +106,6 @@ class ProgressController {
         // Every earlier session, oldest first: a move the day's last session did not have is compared with its own last.
         List<List<TrainingLog.WorkSet>> sessionsBefore = List.copyOf(done.stream().collect(Collectors.groupingBy(ProgressReads.Row::workoutId,
                 LinkedHashMap::new, Collectors.mapping(ProgressReads.Row::set, Collectors.toList()))).values());
-        Optional<BigDecimal> previous = lastOfDay.map(ProgressSummary::lifted);
         List<SetMark> marks = sets.stream().collect(Collectors.groupingBy(TrainingLog.WorkSet::exerciseId, LinkedHashMap::new, Collectors.toList()))
                 .entrySet().stream()
                 .flatMap(move -> PersonalRecords.of(before.stream().map(ProgressReads.Row::set).filter(set -> set.exerciseId().equals(move.getKey())).toList(),
@@ -133,7 +132,7 @@ class ProgressController {
         // how long it lasted is not known.
         Integer minutes = workout.endedAt() == null || workout.endedAt().equals(workout.startedAt()) ? null
                 : ProgressSummary.activeMinutes(workout.startedAt(), workout.endedAt(), workout.pausedSeconds());
-        return new WorkoutSummary(id, minutes, lifted, ProgressSummary.changePercent(lifted, previous).orElse(null), workingSets, marks, moves,
+        return new WorkoutSummary(id, minutes, lifted, ProgressSummary.changePercent(sets, lastOfDay, parameters(account)).orElse(null), workingSets, marks, moves,
                 ProgressSummary.monday(day), week.stream().filter(muscle -> trained.contains(muscle.muscle())).toList());
     }
 

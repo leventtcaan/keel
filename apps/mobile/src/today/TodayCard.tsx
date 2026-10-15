@@ -12,6 +12,7 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { type Changed, changeToday } from '@/train/changes';
 import { MoveThumb } from '@/train/MoveThumb';
+import { workoutParams } from '@/train/params';
 import { dayName, exerciseName } from '@/train/program';
 import { repCount } from '@/train/reps';
 import { sessionMoves } from '@/train/workout';
@@ -146,14 +147,16 @@ export function TodayCard({ card, program, today, parts, onChanged }: Props) {
   switch (card.kind) {
     case 'open': {
       // Under way on another phone (or no longer kept here): the session goes on there; this one starts none (K-995).
+      // The server closes it that many hours after it started (unfinished_session_close_hours, the phone's parameter file).
+      const hours = workoutParams.unfinishedSessionCloseHours;
       const sets =
         card.sets === null
           ? t('thisWeek.today.openElsewhere')
           : card.sets === 0
-            ? t('thisWeek.today.openSets.none')
+            ? t('thisWeek.today.openSets.none', { hours })
             : card.sets === 1
-              ? t('thisWeek.today.openSets.one')
-              : t('thisWeek.today.openSets.other', { count: card.sets });
+              ? t('thisWeek.today.openSets.one', { hours })
+              : t('thisWeek.today.openSets.other', { count: card.sets, hours });
       const resume = card.onPhone ? <Button label={t('thisWeek.today.continue')} size="sm" onPress={() => router.push('/workout')} /> : null;
       body = (
         <>
@@ -230,7 +233,10 @@ export function TodayCard({ card, program, today, parts, onChanged }: Props) {
           </View>
         );
       // The session's own moves, as the session takes them (short version, today's swaps): one rule for both.
-      const moves = sessionMoves(day, program?.week, today)
+      const all = sessionMoves(day, program?.week, today);
+      const rest = all.length - FIRST_MOVES;
+      const more = rest > 0 ? <Text style={[styles.fine, { color: color.textSecondary }]}>{t('thisWeek.today.more', { count: rest })}</Text> : null;
+      const moves = all
         .slice(0, FIRST_MOVES)
         .map((planned) => {
           const id = planned.exerciseId;
@@ -256,6 +262,7 @@ export function TodayCard({ card, program, today, parts, onChanged }: Props) {
             </View>,
           )}
           {moves}
+          {more}
           {cardio}
           {full}
         </>

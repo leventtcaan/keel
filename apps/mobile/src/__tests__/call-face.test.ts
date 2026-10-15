@@ -27,7 +27,8 @@ test('in the plan: "In this week\'s plan"; the server allowing it, "Keep last we
 
 test('declined: "Not applied", and "Use this call"; not in the plan yet: "Use this call" too', () => {
   expect(callFace(call('DECLINED'), false)).toEqual({ foot: 'notApplied', second: 'use' });
-  expect(callFace(call('PENDING', true), false)).toEqual({ foot: null, second: 'use' });
+  // Pending says so ("Not applied yet", user test 10 Oct): it was silent, as if the call were in the plan.
+  expect(callFace(call('PENDING', true), false)).toEqual({ foot: 'notAppliedYet', second: 'use' });
 });
 
 test('undone, or a call that changes nothing: its words only', () => {

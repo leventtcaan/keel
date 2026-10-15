@@ -79,9 +79,10 @@ class ProgressApiTests {
 
         Map<String, Object> summary = map(send("GET", account, "/v1/workouts/" + second + "/summary"));
 
-        // 2 × 540 + 375 + 3 × 800 + 2 × 300 = 4455 kg against 3 × 480 + 3 × 800 = 3840: +16%.
+        // 2 × 540 + 375 + 3 × 800 + 2 × 300 = 4455 kg lifted. The percent is over the moves both sessions did (K-1014): the curl
+        // is new, so 1455 + 2400 = 3855 kg of bench and squat against 3 × 480 + 3 × 800 = 3840: +0%, not the +16% the curl made.
         assertThat(((Number) summary.get("liftedKg")).doubleValue()).isEqualTo(4455.0);
-        assertThat(summary.get("liftedChangePercent")).isEqualTo(16);
+        assertThat(summary.get("liftedChangePercent")).isEqualTo(0);
         assertThat(summary.get("workingSets")).isEqualTo(8);
         // No earlier bench set dominates 60 × 9 or 62.5 × 6 (the 100 × 20 warm-up is none, or neither would be); the second
         // 60 × 9 ties the first; the heaviest record is the session's. The squat ties.
@@ -165,8 +166,31 @@ class ProgressApiTests {
         assertThat((List<Map<String, Object>>) summary.get("moves")).containsExactly(
                 Map.of("exerciseId", "bench_press", "best", Map.of("loadKg", 80, "reps", 9), "change", "REPS", "by", 1),
                 Map.of("exerciseId", "squat", "best", Map.of("loadKg", 105, "reps", 7), "change", "REPS", "by", 1));
-        // The percent is the same day's: 3 × 720 + 3 × 735 against 3 × 640.
-        assertThat(summary.get("liftedChangePercent")).isEqualTo(127);
+        // The percent is the same day's, over the move both did (K-1014): the bench, 3 × 720 against 3 × 640 (+12.5%, rounded up);
+        // the squat swapped in is no gain.
+        assertThat(summary.get("liftedChangePercent")).isEqualTo(13);
+    }
+
+    @Test
+    void aHalfSessionIsNotComparedWithAWholeOneAndNeitherIsTheWholeWithTheHalf() throws Exception {
+        // K-1014 (the 10 Oct walkthrough's "-81% vs last time"): two sets of one move are a fragment of the day.
+        AccountId account = withAProgram();
+        Instant now = clock.instant();
+        String whole = start(account, now.minus(Duration.ofDays(9)));
+        sets(account, whole, "bench_press", 3, 80, 8, 1, "WORKING");
+        sets(account, whole, "squat", 3, 100, 8, 1, "WORKING");
+        sets(account, whole, "barbell_curl", 3, 30, 10, 1, "WORKING");
+        String half = start(account, now.minus(Duration.ofDays(5)));
+        sets(account, half, "bench_press", 2, 80, 8, 1, "WORKING");
+        String today = start(account, now.minus(Duration.ofHours(1)));
+        sets(account, today, "bench_press", 3, 80, 8, 1, "WORKING");
+        sets(account, today, "squat", 3, 100, 8, 1, "WORKING");
+        sets(account, today, "barbell_curl", 3, 30, 10, 1, "WORKING");
+
+        assertThat(map(send("GET", account, "/v1/workouts/" + half + "/summary"))).doesNotContainKey("liftedChangePercent")
+                .containsKey("liftedKg");
+        // The last session of the day is the half one: nothing to compare with, the whole session before it is not skipped to.
+        assertThat(map(send("GET", account, "/v1/workouts/" + today + "/summary"))).doesNotContainKey("liftedChangePercent");
     }
 
     @Test

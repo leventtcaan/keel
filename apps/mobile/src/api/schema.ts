@@ -260,6 +260,35 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/weigh-ins/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The last weigh-in, how many days have one, and whether the trend is ready to show
+         * @description For the weigh screen's "Last" value and the progress screen's weight section ("3 of 7"). `last` is the newest
+         *     weigh-in whatever its source, absent until there is one. `weighInCount` is the days with at least one weigh-in,
+         *     over all time, counted the way the weight trend takes its days (`/v1/weight-trend`: the user's local days, imported
+         *     history included, ADR-053), so two weigh-ins in one day are one. `trendMinWeighIns` is the engine's
+         *     `trend_min_weighins` and `trendReady` is `weighInCount >= trendMinWeighIns`: the phone shows the trend when it is
+         *     true and counts nothing itself (ADR-078 Ek 2). `trendReady` is the gate only, not "the chart has a point": the chart
+         *     is drawn from the `/v1/weight-trend` points, and with none in the window the phone draws no chart (ADR-078 Ek 2: no
+         *     empty chart). Needs the health-data consent (CONSENT_REQUIRED without it). No profile is needed: without one the
+         *     days are the UTC days and this answers 200, while `/v1/weight-trend` answers NOT_FOUND. `/v1/weight-trend` itself is
+         *     unchanged.
+         */
+        get: operations["getWeighInSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/weigh-ins/{id}": {
         parameters: {
             query?: never;
@@ -1862,6 +1891,15 @@ export interface components {
             /** Format: uuid */
             id: string;
         };
+        WeighInSummary: {
+            last?: components["schemas"]["WeighIn"];
+            /** @description Days with at least one weigh-in, all time, imported history included. */
+            weighInCount: number;
+            /** @description The weigh-in days the trend needs before it is shown (the engine's `trend_min_weighins`). */
+            trendMinWeighIns: number;
+            /** @description True when `weighInCount` has reached `trendMinWeighIns`. */
+            trendReady: boolean;
+        };
         TrendPoint: {
             /** Format: date */
             day: string;
@@ -2052,6 +2090,12 @@ export interface components {
             day: string;
             /** @description The day's target (a plan number, one figure); before the first call, the starting target (K-997). */
             targetKcal: number;
+            /**
+             * @description The day's protein target in grams (a plan number, one figure), chosen like targetKcal: the plan's; before the first
+             *     call, the starting plan's, from the same computation as GET /v1/targets/starting (K-1017). The app shows it, it
+             *     multiplies nothing (U1).
+             */
+            targetProteinG: number;
             eaten: components["schemas"]["Nutrients"];
             left: components["schemas"]["Left"];
         };
@@ -2131,6 +2175,14 @@ export interface components {
              *     or moved to a day; a day on no weekday is not on the calendar. This server always sends it.
              */
             week?: components["schemas"]["WeekSession"][];
+            /**
+             * @description Whether POST /v1/program/days can add a day to this program (K-1013, ADR-073 Ek 9): a generated program of
+             *     `add_day_from_days` days, each on its own weekday. The same rule that endpoint answers with, so the app offers
+             *     "add a day" only where it works and sends the user to Edit otherwise (the app holds no rule of its own). The
+             *     endpoint can still answer CONFLICT for a weekday the program trains already. This server always sends it; absent
+             *     (an older server) means not known: the app adds the day in Edit.
+             */
+            canAddDay?: boolean;
         };
         /**
          * @description The program reviewed (K-956, ADR-073 #2): at most review_max_suggestions suggestions, in priority order (training
@@ -2733,10 +2785,16 @@ export interface components {
             /** @description Load × reps over the working sets, the load as logged (a bodyweight move's added load). */
             liftedKg: number;
             /**
-             * @description liftedKg against the last earlier session of the same program day (programDayId) that has a working set done
-             *     (at least one rep: a session of skipped sets only is none), in
-             *     whole percent (rounded half up; negative when less). Absent without one, or when it lifted 0 kg: a program
-             *     saved anew has new days, a new basis (ADR-075 Ek 2); the review's changes keep the days.
+             * @description The weight lifted against the last earlier session of the same program day (programDayId) that has a working set
+             *     done (at least one rep: a session of skipped sets only is none), in whole percent (rounded half up; negative when
+             *     less), over the moves both sessions did (a move done in one only is left out). Absent without one, when it lifted
+             *     0 kg: a program saved anew has new days, a new basis (ADR-075 Ek 2); the review's changes keep the days. Also
+             *     absent when the two sessions cannot be compared (K-1014, ADR-075 Ek 10): a half session is not set against a whole
+             *     one, and the phone shows no percent then. Comparable when, over the moves both did, the session with fewer working
+             *     sets did at least summary_compare_min_set_share of the other's, and there are at least short_session_moves of
+             *     those moves (the short version of a day) or their sets are at least summary_compare_min_shared_share of each
+             *     session's working sets. 'Short on time' and a skipped move stay comparable; the earlier session is not looked past
+             *     for a comparable one.
              */
             liftedChangePercent?: number;
             /** @description A one-sided move's sets count once per set, as the side that did fewer (the program's sets are per side). */
@@ -3076,13 +3134,24 @@ export interface components {
         };
         /**
          * @description One target a call moves (K-1000). `what` names it; `before`, `after` and `inForce` carry its value in the field of
-         *     that kind (`targetKcal` for CALORIES, `stepsPerDay` for STEPS, `phase` for PHASE). A plan number, one figure (U5).
-         *     The step target before any was set is the starting one. An empty `before` (and `inForce`) means none was in force: a
-         *     plan begun before the first weigh-in has no calorie target until a call starts one.
+         *     that kind (`targetKcal` for CALORIES, `stepsPerDay` for STEPS, `phase` for PHASE, `target` for MOVE). A plan number,
+         *     one figure (U5). The step target before any was set is the starting one. An empty `before` (and `inForce`) means none
+         *     was in force: a plan begun before the first weigh-in has no calorie target until a call starts one.
+         *
+         *     MOVE (K-1009, ADR-077 Ek 7) is a hold of the load ("Hold the weight") on one move: `exerciseId` is the catalog move,
+         *     `before` the target the program stored for its next session when the call was applied, `after` the one it shows while
+         *     the load is held (the last load at the top of the rep range), and `held` is true: the load is kept, so the phone must
+         *     not write it as a target cut. The move is the one the weekly call counts as the most stalled of those the hold changes.
+         *     Kept with the call when it was applied, so an older call says it too; absent when the hold changed no target and on a
+         *     call applied before it was kept. Declined or undone, `inForce` is `before`.
          */
         DecisionChange: {
             /** @enum {string} */
-            what: "CALORIES" | "STEPS" | "PHASE";
+            what: "CALORIES" | "STEPS" | "PHASE" | "MOVE";
+            /** @description The move, for MOVE only. A catalog exercise id. */
+            exerciseId?: string;
+            /** @description For MOVE only, always true (the load is held at the last load). */
+            held?: boolean;
             before: components["schemas"]["ChangeValue"];
             after: components["schemas"]["ChangeValue"];
             inForce?: components["schemas"]["ChangeValue"];
@@ -3092,6 +3161,12 @@ export interface components {
             targetKcal?: number;
             stepsPerDay?: number;
             phase?: components["schemas"]["Phase"];
+            target?: components["schemas"]["MoveTarget"];
+        };
+        /** @description A move's target as the program holds it (K-1009), the load in kilograms and the reps. */
+        MoveTarget: {
+            loadKg: number;
+            reps: number;
         };
         /**
          * @description The rows a call read (K-519). Weights in kilograms, unrounded (the phone rounds once, ADR-029). A row the call did
@@ -3460,11 +3535,17 @@ export interface components {
          * @description Where the plan's calories start (K-114, ADR-072 #6): the target is one number (U5: a target may be), the maintenance
          *     estimate it comes from is a range (U5), and the scale corrects it over observationDays (the engine's
          *     maintenance_observation_days for the user's sex) before the first calorie call.
+         *     The first plan's protein and daily steps are here too (K-1017): the first day's "Protein / 114 g" and "Steps / 7,000", the
+         *     numbers the first call plans and GET /v1/targets then answers (one source, U1).
          */
         StartingTarget: {
             targetKcal: number;
             maintenanceKcal: components["schemas"]["KcalRange"];
             observationDays: number;
+            /** @description The protein target in grams at today's bodyweight (a plan number, one figure; steps_target_start's sibling for the day). */
+            proteinG: number;
+            /** @description The daily step target the plan starts with (steps_target_start in data/parameters/nutrition.yaml). */
+            stepsPerDay: number;
         };
         CoachQuestion: {
             text: string;
@@ -4021,6 +4102,27 @@ export interface operations {
         responses: {
             200: components["responses"]["WeighInCreated"];
             201: components["responses"]["WeighInCreated"];
+            default: components["responses"]["Error"];
+        };
+    };
+    getWeighInSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeighInSummary"];
+                };
+            };
             default: components["responses"]["Error"];
         };
     };

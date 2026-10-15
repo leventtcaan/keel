@@ -27,8 +27,14 @@ let mockData: TrainData;
 let mockRecords: LocalRecord[] = [];
 let mockAnswer: () => unknown;
 const mockPost = jest.fn(async (..._args: unknown[]) => mockAnswer());
+// The user's check-in day: the day that "reads what happened" after a skip (user test 10 Oct).
+let mockCheckInDay: Schemas['Weekday'] | null = 'MONDAY';
 const mockServices = {
-  api: { POST: (...args: unknown[]) => mockPost(...args) },
+  api: {
+    POST: (...args: unknown[]) => mockPost(...args),
+    GET: async (path: string) =>
+      path === '/v1/profile' && mockCheckInDay !== null ? { data: { schedule: { checkInDay: mockCheckInDay } }, response: { status: 200 } } : { response: { status: 404 } },
+  },
   training: { read: async () => mockData },
   workoutRecords: async () => mockRecords,
 };
@@ -58,6 +64,7 @@ beforeEach(() => {
   mockData = { program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: [] }, kept: false };
   mockRecords = [];
   mockParams = { day: 'a' };
+  mockCheckInDay = 'MONDAY';
   mockAnswer = () => ({ data: PROGRAM, response: { status: 200 } });
 });
 
@@ -73,7 +80,21 @@ test('the three changes, each saying what it does: no catch-up for a skip', asyn
   expect(await screen.findByText('Short on time')).toBeTruthy();
   expect(screen.getByText('Move it')).toBeTruthy();
   expect(screen.getByText('Skip today')).toBeTruthy();
-  expect(screen.getByText('No catch-up. Monday reads what happened.')).toBeTruthy();
+  expect(await screen.findByText('No catch-up. Monday reads what happened.')).toBeTruthy();
+});
+
+test("skip: the day that reads what happened is the user's check-in day (user test 10 Oct)", async () => {
+  mockCheckInDay = 'SUNDAY';
+  await show();
+  expect(await screen.findByText('No catch-up. Sunday reads what happened.')).toBeTruthy();
+  expect(screen.queryByText(/Monday/)).toBeNull();
+});
+
+test('skip, the check-in day not known (profile not read): no day is made up', async () => {
+  mockCheckInDay = null;
+  await show();
+  expect(await screen.findByText(t('todayChange.skip.bodyNoDay'))).toBeTruthy();
+  expect(screen.queryByText(/reads what happened/)).toBeNull();
 });
 
 test.each([

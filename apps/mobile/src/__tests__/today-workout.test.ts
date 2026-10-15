@@ -155,9 +155,11 @@ describe("the program is not read (offline, no copy): the phone's records alone"
 });
 
 describe('the copy of the program kept offline (kept): the phone\'s day, and the server\'s old word is not believed', () => {
-  test("a DONE or an undo that was the server's then is not shown now", () => {
-    const old = { ...onFriday, workout: { id: 'w7', state: 'DONE' as const } };
-    expect(todayCardOf({ ...base, kept: true, program: program([old]) })).toEqual({ kind: 'session', day: A, session: old });
+  test("an OPEN or an undo that was the server's then is not shown now; a DONE is (a finished session does not come undone)", () => {
+    const open = { ...onFriday, workout: { id: 'w7', state: 'OPEN' as const } };
+    expect(todayCardOf({ ...base, kept: true, program: program([open]) })).toEqual({ kind: 'session', day: A, session: open });
+    const finished = { ...onFriday, workout: { id: 'w7', state: 'DONE' as const } };
+    expect(todayCardOf({ ...base, kept: true, program: program([finished]) })).toEqual({ kind: 'done', day: A, workoutId: 'w7' });
     const skipped = { ...onFriday, skipped: true, undoable: true };
     expect(todayCardOf({ ...base, kept: true, program: program([skipped]) })).toEqual({ kind: 'skipped', day: A, undoable: false });
   });

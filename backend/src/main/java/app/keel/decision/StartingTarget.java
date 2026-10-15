@@ -7,17 +7,22 @@ import app.keel.engine.Parameters;
 /**
  * Contract StartingTarget (K-989, ADR-072 #6): where the plan's calories start before the first call — the first plan's
  * target, one number (U5: a target may be); the maintenance estimate it comes from, a range (U5); and how many days the
- * scale watches it before a calorie call (maintenance_observation_days, G2 K-8: observation beats the formula).
+ * scale watches it before a calorie call (maintenance_observation_days, G2 K-8: observation beats the formula). Since
+ * K-1017 the first day's other two targets too: the protein grams and the daily steps the first call plans — read off the
+ * same PlanTargets the plan's targets are (U1: the phone multiplies nothing, one source).
  */
-record StartingTarget(int targetKcal, Range maintenanceKcal, int observationDays) {
+record StartingTarget(int targetKcal, Range maintenanceKcal, int observationDays, int proteinG, int stepsPerDay) {
 
     /** Contract KcalRange. */
     record Range(int low, int high) {
     }
 
-    /** The first plan as the first call would start it, the estimate its target comes from, and the parameters for the user's sex. */
-    static StartingTarget of(CallStore.Plan first, InitialTarget.Estimate estimate, Parameters parameters) {
+    /**
+     * The first plan as the first call would start it, the estimate its target comes from, the targets that plan has at the
+     * user's bodyweight (protein, steps) and the parameters for the user's sex.
+     */
+    static StartingTarget of(CallStore.Plan first, InitialTarget.Estimate estimate, PlanTargets targets, Parameters parameters) {
         return new StartingTarget(first.targetKcal(), new Range(estimate.lowKcal(), estimate.highKcal()),
-                parameters.wholeNumber(ParameterKey.MAINTENANCE_OBSERVATION_DAYS));
+                parameters.wholeNumber(ParameterKey.MAINTENANCE_OBSERVATION_DAYS), targets.proteinG(), targets.stepsPerDay());
     }
 }

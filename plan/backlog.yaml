@@ -3951,7 +3951,7 @@ tasks:
     type: feature
     size: M
     status: todo
-    depends_on: [K-953, K-965, K-974, K-1016, K-1017, K-1018]
+    depends_on: [K-953, K-965, K-974, K-1016, K-1017, K-1018, K-1022]
     why: "ADR-078: Levent 'en kötü ekran'; ilk gün eyleme dönük, sonra tek cümle sonuç"
     acceptance:
       - "K-988 telefon tarafı: dönemin kilo değişimi cümlesi `Consistency.weightChange`'ten ('Down 3.8 kg.'; yön sunucudan, birim kullanıcının tercihi; sakin, U7)"
@@ -4623,18 +4623,18 @@ tasks:
     learn: ["Fikstürün sözleşmeden sapması"]
 
   - id: K-997
-    title: "İlk haftada günün bütçesi başlangıç hedefinden (Food today / Food left)"
+    title: "İlk haftada günün bütçesi başlangıç hedefinden (Food left)"
     milestone: M9a
     module: nutrition
     type: feature
     size: S
     status: done
     depends_on: [K-989]
-    why: "#501 incelemesi (9 Eki): `/v1/days/{day}/budget` hedef yokken 404; ilk karardan önce hedef yok, yeni kullanıcı 7 güne kadar yemek satırı ve Log görmüyor. Prototip ilk haftada 'Food today N kcal', öğünden sonra 'Food left' aralığı (ADR-072 Ek 1, K-989)"
+    why: "#501 incelemesi (9 Eki): `/v1/days/{day}/budget` hedef yokken 404; ilk karardan önce hedef yok, yeni kullanıcı 7 güne kadar yemek satırı ve Log görmüyor. Prototip ilk haftada da 'Food left N kcal' (tek ad; 10 Eki K-1013: 'Food today' kalktı), öğünden sonra aralık (ADR-072 Ek 1, K-989)"
     acceptance:
       - "İlk karardan önce (hedef yok, başlangıç hedefi var) günün bütçesi başlangıç hedefinden hesaplanır; kalan aralık (U5) sunucuda, telefon çıkarma yapmaz"
       - "Rıza yoksa 403 CONSENT_REQUIRED aynen; başlangıç hedefi de yoksa 404 aynen"
-      - "Bu hafta yemek satırı ilk haftada da görünür (Food today / Food left + Log)"
+      - "Bu hafta yemek satırı ilk haftada da görünür (Food left + Log)"
     tests: ["Bütçe tablo testi (hedef var / yalnız başlangıç / hiçbiri), API testi (CI), telefon ekran testi"]
     refs: ["plan/kararlar/ADR-072-teklif-ve-onboarding.md", "plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md"]
     learn: ["Başlangıç değerinin sürekli değerle aynı yoldan geçmesi"]
@@ -4914,6 +4914,23 @@ tasks:
     tests: ["Tablo testi, API testi (CI; rızasız Traveling 2xx, rızasız Sick 403), sözleşme testi"]
     refs: ["plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md"]
     learn: ["Rızanın veri türüne göre kapsamı"]
+
+  - id: K-1022
+    title: "Motorun mola haftası (REST_WEEK) tutarlılıkta kaçmış sayılmaz"
+    milestone: M9a
+    module: decision
+    type: fix
+    size: S
+    status: todo
+    depends_on: [K-1016]
+    why: "K-1016 incelemesi (15 Eki): motor 'bu hafta dinlen' (FullRestWeek → TrainingChanges REST_WEEK) dediği hafta, tutarlılık yürüyüşü planlı seansları sayıp hiç yapılmadı diye MISSED/SPARE yazıyor ve af hakkını yakıyor; ADR-040 ve K-435 'mola planın parçası' diyor (U7, U2). Izgara hücre hücre gösterince görünür oldu"
+    acceptance:
+      - "Motorun uyguladığı REST_WEEK haftası `Consistency.walk`'ta PAUSED (ne tutmuş ne kaçmış; seriyi bölmez, af hakkı yakılmaz); LIGHTER_WEEK değişmez"
+      - "Kaynak: hangi haftanın mola olduğu karar/antrenman kaydından (TrainingChanges), telefon hesaplamaz; `record` ve `weeks[]` aynı yürüyüş"
+      - "Mevcut testlerde değişen beklenti varsa K1 listesine (ADR-040'a dayalı)"
+    tests: ["Tablo testi (mola haftası, mola + ardından kaçan hafta), API testi (CI)"]
+    refs: ["plan/kararlar/ADR-040-ilk-sekiz-hafta.md", "plan/kararlar/ADR-078-ilerleme.md"]
+    learn: ["Planlı dinlenmenin sayımı"]
 
   - id: K-1010
     title: "Sunucudaki ek siteler: Caddy /opt/sites altındaki *.caddy dosyalarını içeri alır"

@@ -446,6 +446,27 @@ class ProgramEditApiTests {
     }
 
     @Test
+    void theProgramSaysWhetherADayCanBeAddedByTheRuleTheAddUses() throws Exception {
+        // K-1013: Program.canAddDay is true exactly where POST /v1/program/days would add (a free weekday given).
+        AccountId account = TestSessions.newAccount();
+        twoDays(account);
+        assertThat(map(send(account, "GET", "/v1/program", null))).containsEntry("canAddDay", true);
+        assertThat(send(account, "POST", "/v1/program/days", Map.of("weekday", "WEDNESDAY"))).hasStatusOk();
+        assertThat(map(send(account, "GET", "/v1/program", null))).as("three days now").containsEntry("canAddDay", false);
+
+        AccountId own = TestSessions.newAccount();
+        assertThat(send(own, "PUT", "/v1/program", Map.of("days", List.of(
+                Map.of("name", "Upper", "weekday", "MONDAY", "exercises", List.of(Map.of("exerciseId", "bench_press", "sets", 3, "reps", Map.of("min", 6, "max", 10)))),
+                Map.of("name", "Lower", "weekday", "THURSDAY", "exercises", List.of(Map.of("exerciseId", "squat", "sets", 3, "reps", Map.of("min", 6, "max", 10)))))))).hasStatusOk();
+        assertThat(map(send(own, "GET", "/v1/program", null))).as("two days, but the user's own").containsEntry("canAddDay", false);
+        assertThat(send(own, "POST", "/v1/program/days", Map.of("weekday", "TUESDAY"))).hasStatus(409);
+
+        AccountId three = TestSessions.newAccount();
+        assertThat(send(three, "POST", "/v1/program/generate", Map.of("trainingDays", List.of("MONDAY", "TUESDAY", "WEDNESDAY")))).hasStatusOk();
+        assertThat(map(send(three, "GET", "/v1/program", null))).as("three days").containsEntry("canAddDay", false);
+    }
+
+    @Test
     void aDayNeedsAWeekdayAndAProgram() throws Exception {
         AccountId account = TestSessions.newAccount();
         assertThat(send(account, "POST", "/v1/program/days", Map.of("weekday", "TUESDAY"))).hasStatus(404);

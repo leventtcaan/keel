@@ -176,7 +176,7 @@ class DecisionController {
     private Map<String, Object> sent(CallStore.Call call, Optional<UUID> latest, DecisionService decisions) {
         Map<String, Object> view = sent(call, latest);
         decisions.observationDays(call).ifPresent(days -> view.put("observationDays", days));
-        // What it changed, old to new, from the plan before and after it (K-1000).
+        // What it changed, old to new, from the plan before and after it (K-1000); a hold of the load, the move it changes (K-1009).
         view.put("changes", decisions.changes(call));
         view.put("reasons", decisions.withFacts(call, castReasons(view.get("reasons"))));
         return view;

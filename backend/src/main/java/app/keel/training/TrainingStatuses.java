@@ -141,15 +141,21 @@ final class TrainingStatuses {
 
     static TrainingStatus of(Map<String, List<Session>> compoundLifts, List<TrainingChanges.Change> changes, List<LocalDate> workoutDays,
             Set<LocalDate> pausedDays, int plannedPerWeek, LocalDate today, DayOfWeek checkInDay, LocalDate since) {
-        // The most stalled; on a tie the longer stall, then the one going backwards, then by name: the same lift whatever the order.
-        List<Session> worst = compoundLifts.entrySet().stream()
-                .max(Comparator.<Map.Entry<String, List<Session>>>comparingInt(lift -> stalledSessions(lift.getValue()))
-                        .thenComparingInt(lift -> monthsStalled(lift.getValue(), today))
-                        .thenComparing(lift -> loadsBelowLastWeek(lift.getValue(), today))
-                        .thenComparing(Map.Entry::getKey, Comparator.reverseOrder()))
-                .map(Map.Entry::getValue).orElse(List.of());
+        List<Session> worst = compoundLifts.entrySet().stream().max(byStall(today)).map(Map.Entry::getValue).orElse(List.of());
         return new TrainingStatus(stalledSessions(worst), weeksLoadHeld(changes, today, checkInDay), monthsStalled(worst, today), restedLastWeek(changes, today),
                 loadsBelowLastWeek(worst, today), weeksPlanMissed(workoutDays, changes, pausedDays, plannedPerWeek, today, since));
+    }
+
+    /**
+     * The order lifts are ranked by how stalled they are, the most stalled last ({@code max} takes it): the longer run of stalled
+     * sessions; on a tie the longer stall in months, then the one going backwards, then by name: the same lift whatever the
+     * order. The weekly call's "most stalled lift" ({@link #of}) and the move a hold of the load is shown on (K-1009) use it.
+     */
+    static Comparator<Map.Entry<String, List<Session>>> byStall(LocalDate today) {
+        return Comparator.<Map.Entry<String, List<Session>>>comparingInt(lift -> stalledSessions(lift.getValue()))
+                .thenComparingInt(lift -> monthsStalled(lift.getValue(), today))
+                .thenComparing(lift -> loadsBelowLastWeek(lift.getValue(), today))
+                .thenComparing(Map.Entry::getKey, Comparator.reverseOrder());
     }
 
     private static boolean wentUp(Session before, Session after) {

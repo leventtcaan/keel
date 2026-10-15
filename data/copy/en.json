@@ -145,6 +145,7 @@
       "today": "Today",
       "notApplied": "Last week's plan stays.",
       "notAppliedShort": "Not applied",
+      "pending": "Not applied yet",
       "useCall": "Use this call",
       "yourWeek": "Your week",
       "train": "Train, and see how it feels.",
@@ -164,6 +165,7 @@
     "today": {
       "label": "Today's workout",
       "today": "Today",
+      "more": "and {count} more",
       "full": "Full workout",
       "undo": "Undo",
       "start": "Start",
@@ -179,9 +181,9 @@
       "doneStats": { "one": "1 set · {lifted} lifted", "other": "{count} sets · {lifted} lifted" },
       "open": "Open workout",
       "openSets": {
-        "none": "Finish anytime this week.",
-        "one": "1 set logged. Finish anytime this week.",
-        "other": "{count} sets logged. Finish anytime this week."
+        "none": "Finish within {hours} hours of starting.",
+        "one": "1 set logged. Finish within {hours} hours of starting.",
+        "other": "{count} sets logged. Finish within {hours} hours of starting."
       },
       "continue": "Continue",
       "openElsewhere": "Started, not on this phone. It still counts.",
@@ -192,7 +194,6 @@
     },
     "food": {
       "left": "Food left",
-      "today": "Food today",
       "over": "Over by",
       "around": "Around target",
       "log": "Log",
@@ -211,6 +212,7 @@
     "subscription": "Your weekly call comes with a subscription.",
     "none": "No call yet. Your first one comes after your first check-in.",
     "notApplied": "Not applied. Kept on record.",
+    "notAppliedYet": "Not applied yet.",
     "undone": "Undone. Your plan is back as it was.",
     "confidence": "Confidence {level}",
     "level": { "LOW": "Low", "MEDIUM": "Medium", "HIGH": "High" },
@@ -232,13 +234,15 @@
       "noDay": "Pick a day",
       "daysLabel": "Training days",
       "newDay": "New day",
-      "changeTitle": "Your call too",
+      "changeTitle": "Change it",
       "changeHint": "We suggested {suggestion}. You know your week.",
       "suggestion": "{to} instead of {from}",
       "suggestionAdd": "adding {day}",
       "keepSuggestion": "Keep the suggestion",
       "moveHead": "Move {day}",
       "addHead": "Add a day",
+      "addInEdit": "We can't add it here. Edit opens with {day} marked.",
+      "openEdit": "Open Edit",
       "join": ", ",
       "saved": "Days saved.",
       "stale": "Not saved: your days can't be moved right now. Check them in Train.",
@@ -254,6 +258,8 @@
       "kcal": "{kcal} kcal",
       "steps": "{steps} steps",
       "phase": { "CUT": "Cutting", "BULK": "Building" },
+      "held": "{move}, load held",
+      "moveTarget": "{load} × {reps}",
       "spoken": "{what}: was {from}, now {to}",
       "spokenValue": "{what}: {to}"
     }
@@ -416,7 +422,8 @@
     "notUndone": "Nothing to undo now: the day has changed since. This is your week as it is.",
     "full": "Full workout",
     "fullBack": "Every move is back for today.",
-    "skipped": "Skipped. Monday reads what happened.",
+    "skipped": "Skipped. {day} reads what happened.",
+    "skippedNoDay": "Skipped. Nothing to make up.",
     "setsReps": "{sets} × {reps}",
     "held": "held",
     "addedLoad": "+{load}",
@@ -430,7 +437,8 @@
     "thisWeek": "This week",
     "weekRow": "{weekday} · {day}",
     "moved": "moved",
-    "skippedTag": "skipped"
+    "skippedTag": "skipped",
+    "doneTag": "Done"
   },
   "editProgram": {
     "title": "Edit program",
@@ -455,10 +463,12 @@
     "targetsLost": "A new rep range, or a move taken out and added again, clears the next weight target of: {moves}. Your next session sets a new one.",
     "saveAnyway": "Save anyway",
     "keepEditing": "Keep editing",
+    "addingDay": "We can't fill in a new day for this plan. {day} is marked: add its moves, then save.",
     "editConflictKept": "Today's workout is on a day you moved or removed, so this can't be saved yet. Your edits are still here.",
     "editConflictCleared": "Your program changed since you opened it. Your edits were cleared. Here it is again.",
     "editConflictUnknown": "That didn't save. Your edits are still here; try again.",
     "leaveWarn": "Your edits aren't saved yet. If you leave, they're gone.",
+    "unsavedNote": "Your edits aren't saved yet. Save them, or leave with Back.",
     "leave": "Leave without saving",
     "editRefused": "This program can't be saved as it is. Check the days and moves, then try again.",
     "listJoin": ", ",
@@ -535,7 +545,7 @@
       "PAST_SUNDAY": "No free day left this week: a session would pass Sunday.",
       "STARTED": "Today's workout has started, so it stays today."
     },
-    "skip": { "title": "Skip today", "body": "No catch-up. Monday reads what happened." },
+    "skip": { "title": "Skip today", "body": "No catch-up. {day} reads what happened.", "bodyNoDay": "No catch-up." },
     "started": "Today's workout has started. Change it in the workout.",
     "none": "No session today to change.",
     "offline": "Couldn't change today. Check your connection and try again.",
