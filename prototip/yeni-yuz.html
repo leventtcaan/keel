@@ -1493,7 +1493,7 @@ const SCREENS = {
     <div class="seg" role="group" aria-label="How long">${[['back', "Until I'm back"], ['3', '3 days'], ['7', '7 days']].map(([v, l]) => `<button type="button" data-act="ll" data-val="${v}" aria-pressed="${S.life.len === v}">${l}</button>`).join('')}</div>
     <div class="dock"><button class="btn primary wide" type="button" data-act="pause" ${S.life.kind ? '' : 'disabled'}>Pause my week</button></div>` },
 
-  settings: { n: 'Ayarlar', t: null, r: () => {
+  settings: { n: 'Ayarlar', t: 45, r: () => {
     const row = (ic, l, v = '') => `<button class="rowbtn" type="button" data-act="proto" data-val="${l}: this screen keeps its face."><span class="lic"><span class="ic">${I[ic](20)}</span><span>${l}</span></span><span class="rv2">${v} ${I.chev(18)}</span></button>`;
     const modeSeg = `<div class="seg" role="group" aria-label="Theme">${[['light', 'Light'], ['dark', 'Dark'], ['system', 'System']].map(([v, l]) => `<button type="button" data-act="mode" data-val="${v}" aria-pressed="${S.mode === v}">${l}</button>`).join('')}</div>`;
     return `${navtop('Settings')}

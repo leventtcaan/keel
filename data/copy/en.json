@@ -2592,7 +2592,7 @@
       "title": "Units",
       "metric": "Metric (kg, cm)",
       "imperial": "Imperial (lb, ft, in)",
-      "note": "Your history stays as logged; everything shows in the units you pick.",
+      "note": "Your history stays as logged.",
       "failed": "Couldn't change units. Check your connection and try again."
     },
     "reminders": {
@@ -2703,10 +2703,36 @@
     },
     "back": "Today",
     "backMark": "‹",
+    "forwardMark": "›",
     "account": {
-      "title": "Your account"
+      "title": "Account"
     },
-    "gyms": "Gyms"
+    "gyms": "Gyms",
+    "training": {
+      "title": "Training",
+      "days": "Training days",
+      "import": "Import workouts",
+      "importFrom": "Strong, Hevy",
+      "noGym": "None yet",
+      "none": "None yet",
+      "unread": "Couldn't load"
+    },
+    "food": {
+      "title": "Food",
+      "avoid": "Foods you avoid",
+      "none": "None",
+      "locked": "Needs your OK for health data",
+      "unread": "Couldn't load",
+      "label": "Foods you don't or can't eat",
+      "hint": "Separate them with commas.",
+      "save": "Save",
+      "cancel": "Cancel",
+      "failed": "Couldn't save that. Try again."
+    },
+    "health": {
+      "title": "Health and data",
+      "locked": "Bringing in Apple Health history needs your OK for health data."
+    }
   },
   "permissions": {
     "healthRead": "keel reads your steps, sleep, weight, active energy and workouts to make your weekly calls. It never reads heart data, cycle data, medications, health records or location.",
