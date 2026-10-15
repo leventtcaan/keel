@@ -157,10 +157,10 @@ test("the muscle map from the server's muscles, in the user's figure; this week 
   expect(mockMap).toHaveBeenLastCalledWith({ muscles: MUSCLES, figure: 'female' });
 });
 
-test('Share opens the share card; Done goes back to the tabs', async () => {
+test('Share opens the stickers of this workout; Done goes back to the tabs', async () => {
   await show();
   await fireEvent.press(await screen.findByText(t('workoutEnd.share')));
-  expect(mockPush).toHaveBeenCalledWith('/share');
+  expect(mockPush).toHaveBeenCalledWith({ pathname: '/share', params: { workout: 'w1' } });
   await fireEvent.press(screen.getByText(t('workoutEnd.done')));
   expect(mockDismiss).toHaveBeenCalledWith('/train');
 });

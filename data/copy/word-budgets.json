@@ -1359,9 +1359,64 @@
       "budget": 25,
       "source": "prototip/yeni-yuz.html",
       "task": "K-975",
-      "file": null,
-      "keys": [],
-      "notFirstView": []
+      "file": "src/app/share.tsx",
+      "keys": [
+        "workoutEnd.title",
+        "workoutEnd.minutes.other",
+        "workoutEnd.liftedKg",
+        "workoutEnd.sets.other",
+        "share.sticker.workout.recordLabel",
+        "share.sticker.workout.baselineValue",
+        "share.sticker.workout.baselineLabel",
+        "app.name"
+      ],
+      "dynamic": [
+        { "what": "the session's day (Full body A)", "words": 3 },
+        { "what": "the record's load unit (100 kg × 8)", "words": 1 },
+        { "what": "the record's move (squat PR)", "words": 1 }
+      ],
+      "parts": ["src/share/stickers.ts", "src/share/Sticker.tsx", "src/share/layout.ts"],
+      "faces": [
+        {
+          "face": "the PR sticker",
+          "keys": ["share.sticker.pr.kicker", "share.sticker.pr.best", "share.sticker.pr.change", "share.sticker.pr.since", "app.name"],
+          "dynamic": [
+            { "what": "the move (Romanian deadlift)", "words": 2 },
+            { "what": "the set's and the gain's unit (100 kg × 8, +20 kg)", "words": 2 },
+            { "what": "the baseline's day (Jul 13)", "words": 2 }
+          ]
+        },
+        {
+          "face": "the PR sticker of a first session",
+          "keys": ["workoutEnd.baseline", "workoutEnd.baselineBody", "app.name"],
+          "dynamic": [{ "what": "the move (Romanian deadlift)", "words": 2 }]
+        },
+        {
+          "face": "the Streak sticker",
+          "keys": ["share.sticker.streak.kicker", "share.sticker.streak.title", ["share.sticker.streak.spare.one", "share.sticker.streak.spare.other"], "app.name"],
+          "dynamic": []
+        },
+        {
+          "face": "the Progress sticker",
+          "keys": ["share.sticker.progress.kicker", ["share.sticker.progress.inWeeks.one", "share.sticker.progress.inWeeks.other", "share.sticker.progress.soFar"], "share.sticker.progress.lift", "app.name"],
+          "dynamic": [{ "what": "the three lifts, each its move and its unit (Squat +20 kg)", "words": 9 }]
+        }
+      ],
+      "notFirstView": [
+        "share.title",
+        "share.share",
+        "share.note",
+        "share.nothing",
+        "share.failed",
+        "share.partial",
+        "share.spoken",
+        "workoutEnd.pending",
+        "workoutEnd.liftedLb",
+        "workoutEnd.minutes.one",
+        "workoutEnd.sets.one",
+        "workoutEnd.set",
+        "share.sticker.workout.plain"
+      ]
     },
     {
       "screen": "return",
