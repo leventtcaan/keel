@@ -3951,7 +3951,7 @@ tasks:
     type: feature
     size: M
     status: todo
-    depends_on: [K-953, K-965, K-974, K-1016, K-1017, K-1018]
+    depends_on: [K-953, K-965, K-974, K-1016, K-1017, K-1018, K-1022]
     why: "ADR-078: Levent 'en kötü ekran'; ilk gün eyleme dönük, sonra tek cümle sonuç"
     acceptance:
       - "K-988 telefon tarafı: dönemin kilo değişimi cümlesi `Consistency.weightChange`'ten ('Down 3.8 kg.'; yön sunucudan, birim kullanıcının tercihi; sakin, U7)"
@@ -4914,6 +4914,23 @@ tasks:
     tests: ["Tablo testi, API testi (CI; rızasız Traveling 2xx, rızasız Sick 403), sözleşme testi"]
     refs: ["plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md"]
     learn: ["Rızanın veri türüne göre kapsamı"]
+
+  - id: K-1022
+    title: "Motorun mola haftası (REST_WEEK) tutarlılıkta kaçmış sayılmaz"
+    milestone: M9a
+    module: decision
+    type: fix
+    size: S
+    status: todo
+    depends_on: [K-1016]
+    why: "K-1016 incelemesi (15 Eki): motor 'bu hafta dinlen' (FullRestWeek → TrainingChanges REST_WEEK) dediği hafta, tutarlılık yürüyüşü planlı seansları sayıp hiç yapılmadı diye MISSED/SPARE yazıyor ve af hakkını yakıyor; ADR-040 ve K-435 'mola planın parçası' diyor (U7, U2). Izgara hücre hücre gösterince görünür oldu"
+    acceptance:
+      - "Motorun uyguladığı REST_WEEK haftası `Consistency.walk`'ta PAUSED (ne tutmuş ne kaçmış; seriyi bölmez, af hakkı yakılmaz); LIGHTER_WEEK değişmez"
+      - "Kaynak: hangi haftanın mola olduğu karar/antrenman kaydından (TrainingChanges), telefon hesaplamaz; `record` ve `weeks[]` aynı yürüyüş"
+      - "Mevcut testlerde değişen beklenti varsa K1 listesine (ADR-040'a dayalı)"
+    tests: ["Tablo testi (mola haftası, mola + ardından kaçan hafta), API testi (CI)"]
+    refs: ["plan/kararlar/ADR-040-ilk-sekiz-hafta.md", "plan/kararlar/ADR-078-ilerleme.md"]
+    learn: ["Planlı dinlenmenin sayımı"]
 
   - id: K-1010
     title: "Sunucudaki ek siteler: Caddy /opt/sites altındaki *.caddy dosyalarını içeri alır"
