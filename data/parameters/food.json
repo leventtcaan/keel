@@ -136,6 +136,14 @@
       "tag": "urun",
       "source": "arastirma/ham/K5-fiyat-kota-maliyet.md#A2",
       "note": "The JPEG the phone writes from the shrunk photo (K-408, ADR-046): small enough to send quickly, clear enough to tell the foods apart. The server writes its own again (0.85)."
+    },
+    {
+      "key": "quick_usual_max",
+      "value": 2,
+      "unit": "count",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-018-health-yazma-ve-ice-aktarma.md#Ek 1",
+      "note": "How many of the user's usual foods (GET /v1/days/{day}/suggestions) the meal screen offers for one tap (K-980, prototype #meal): the fast path stays a few lines, so the screen keeps within its word budget with 'Same as yesterday' above it (data/copy/word-budgets.json). The server sends a few at most, the most eaten first; the rest are a search away."
     }
   ]
 }

@@ -1,5 +1,5 @@
 /**
- * The "+" sheet (K-953, prototype #plus): log a weigh-in, a meal, today's workout, or say life got in the way. The workout
+ * The "+" sheet (K-953, K-980, prototype #plus): log a weigh-in, a meal, today's workout, a cardio session, or say life got in the way. The workout
  * is today's session by name, a workout under way is continued, and with nothing planned today the Train tab opens.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
@@ -68,7 +68,7 @@ async function show() {
 test('the sheet names what can be logged', async () => {
   await show();
   expect(screen.getByRole('header', { name: t('plus.title') })).toBeOnTheScreen();
-  for (const key of ['plus.weighIn', 'plus.meal', 'plus.workout', 'plus.life']) {
+  for (const key of ['plus.weighIn', 'plus.meal', 'plus.workout', 'plus.cardio', 'plus.life']) {
     expect(screen.getByRole('button', { name: new RegExp(t(key)) })).toBeOnTheScreen();
   }
 });
@@ -76,6 +76,7 @@ test('the sheet names what can be logged', async () => {
 test.each([
   ['plus.weighIn', '/weigh-in'],
   ['plus.meal', '/meal'],
+  ['plus.cardio', '/cardio'],
   ['plus.life', '/state'],
 ])('%s opens %s in place of the sheet', async (key, route) => {
   await show();
