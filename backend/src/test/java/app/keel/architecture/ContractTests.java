@@ -324,6 +324,24 @@ class ContractTests {
     }
 
     @Test
+    void theRecentFoodsAreSuggestionsOfTheMealsSlotsAndNeedNoDay() throws Exception {
+        // K-1025: the same shape as a day's suggestion (a range, U5; the amount of the last time), an optional slot from the
+        // meal's own slots, and no day or target in the path.
+        Map<String, Object> get = map(map(map(contract().get("paths")).get("/v1/foods/recent")).get("get"));
+        List<?> parameters = list(get.get("parameters"));
+        Map<String, Object> slot = map(parameters.getFirst());
+        Map<String, Object> schema = map(map(map(map(map(get.get("responses")).get("200")).get("content")).get("application/json")).get("schema"));
+
+        assertThat(get.get("operationId")).isEqualTo("getRecentFoods");
+        assertThat(parameters).hasSize(1);
+        assertThat(slot).containsEntry("name", "slot").containsEntry("in", "query").doesNotContainEntry("required", true);
+        assertThat(map(slot.get("schema")).get("$ref")).isEqualTo("#/components/schemas/MealSlot");
+        assertThat(map(schema.get("items")).get("$ref")).isEqualTo("#/components/schemas/Suggestion");
+        assertThat(list(map(schemas().get("MealSlot")).get("enum")))
+                .containsExactlyElementsOf(names((Enum<?>[]) Class.forName("app.keel.nutrition.MealStore$Slot").getEnumConstants()));
+    }
+
+    @Test
     void theConsistencyCarriesItsWeeksAsTheEnginesStates() throws IOException {
         // K-1016 (ADR-078 #2): the 12 weeks grid's cells, not a count the phone makes; the states are the engine's.
         Map<String, Object> schemas = schemas();

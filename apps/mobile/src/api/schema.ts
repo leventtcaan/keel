@@ -551,6 +551,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/foods/recent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The foods the user ate most recently, each in the amount of its last time (K-1025)
+         * @description For the meal screen's one-tap "Recent": from the user's own meals of the last `suggestion-days` (28), freshest first,
+         *     each food once, in the amount it was last had, with its kcal as the database estimates it now (U1, U5: a range).
+         *     Never a food in the profile's foods to avoid. With `slot`, the foods last had in that slot come first (freshest of
+         *     those), then the others by freshness: the list is never short because of the slot. A few at most (`recent-foods`); a
+         *     food or recipe gone since is skipped. Independent of the day's target: it answers with no target, and past one.
+         *     A user with no meals gets an empty list. CONSENT_REQUIRED without the HEALTH_DATA consent; only the user's own meals.
+         */
+        get: operations["getRecentFoods"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/recipes": {
         parameters: {
             query?: never;
@@ -4599,6 +4624,29 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description The suggestions, in order */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Suggestion"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getRecentFoods: {
+        parameters: {
+            query?: {
+                slot?: components["schemas"]["MealSlot"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The recent foods, in order */
             200: {
                 headers: {
                     [name: string]: unknown;
