@@ -2,6 +2,8 @@ package app.keel.identity;
 
 import app.keel.shared.ApiException;
 import app.keel.shared.ErrorCode;
+import app.keel.shared.RateLimitGroup;
+import app.keel.shared.RateLimited;
 import java.time.Instant;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +42,7 @@ class AuthController {
     }
 
     @PostMapping("/apple")
+    @RateLimited(RateLimitGroup.SIGN_IN)
     @Transactional
     Session signIn(@RequestBody AppleSignIn request) {
         if (blank(request.identityToken()) || blank(request.nonce())) {

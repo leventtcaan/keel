@@ -10,6 +10,8 @@
 		Strict-Transport-Security "max-age=31536000"
 		-Server
 	}
+	# The backend counts requests by client address (K-817). reverse_proxy sets X-Forwarded-For to the address Caddy saw and
+	# ignores one a client sends, as long as no trusted_proxies is named here (tools/test_deploy.py keeps it so).
 	reverse_proxy backend:8080
 }
 

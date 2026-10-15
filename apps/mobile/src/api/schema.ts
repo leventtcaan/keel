@@ -3834,6 +3834,22 @@ export interface components {
                 "application/json": components["schemas"]["Error"];
             };
         };
+        /**
+         * @description Too many requests (K-817, ADR-082): the code is RATE_LIMITED. `Retry-After` is the whole seconds to wait before the
+         *     next try. Counted per account, and per address on sign-in (no account yet); the phone treats it like any other
+         *     failure that may pass, and the app's own daily limits (coach_messages_per_day, photo_analyses_per_day) are a
+         *     separate thing, answered as a DETERMINISTIC draft or answer.
+         */
+        RateLimited: {
+            headers: {
+                /** @description Seconds to wait (RFC 9110 section 10.2.3) */
+                "Retry-After"?: number;
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
         /** @description Stored (201), or already stored with this clientId (200) */
         WeighInCreated: {
             headers: {
@@ -3995,6 +4011,7 @@ export interface operations {
                     "application/json": components["schemas"]["Session"];
                 };
             };
+            429: components["responses"]["RateLimited"];
             default: components["responses"]["Error"];
         };
     };
@@ -4088,6 +4105,7 @@ export interface operations {
                 };
                 content?: never;
             };
+            429: components["responses"]["RateLimited"];
             default: components["responses"]["Error"];
         };
     };
@@ -5978,6 +5996,7 @@ export interface operations {
                     "application/json": components["schemas"]["CoachAnswer"];
                 };
             };
+            429: components["responses"]["RateLimited"];
             default: components["responses"]["Error"];
         };
     };
@@ -6003,6 +6022,7 @@ export interface operations {
                     "application/json": components["schemas"]["MealDraft"];
                 };
             };
+            429: components["responses"]["RateLimited"];
             default: components["responses"]["Error"];
         };
     };
@@ -6028,6 +6048,7 @@ export interface operations {
                     "application/json": components["schemas"]["MealDraft"];
                 };
             };
+            429: components["responses"]["RateLimited"];
             default: components["responses"]["Error"];
         };
     };

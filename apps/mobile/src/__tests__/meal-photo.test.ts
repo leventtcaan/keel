@@ -143,6 +143,11 @@ describe('readMealPhoto (PhotoLogTests)', () => {
     const bad = services(true, refused(400, 'VALIDATION_FAILED'));
     await expect(readMealPhoto({ api: bad.api, consents: bad.consents, report: bad.report }, tools(), 'camera')).resolves.toEqual({ state: 'failed' });
   });
+
+  it('too many requests (429 RATE_LIMITED, K-817) is the same calm failure as any other server answer', async () => {
+    const tooMany = services(true, refused(429, 'RATE_LIMITED'));
+    await expect(readMealPhoto({ api: tooMany.api, consents: tooMany.consents, report: tooMany.report }, tools(), 'camera')).resolves.toEqual({ state: 'failed' });
+  });
 });
 
 describe('nothing of the photo stays on the phone (K-811, V1)', () => {

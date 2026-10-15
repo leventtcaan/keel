@@ -81,6 +81,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Session"
+        "429":
+          $ref: "#/components/responses/RateLimited"
         default:
           $ref: "#/components/responses/Error"
   /v1/auth/refresh:
@@ -155,6 +157,8 @@ paths:
       responses:
         "204":
           description: Apple revoked this app's sign-in for the person
+        "429":
+          $ref: "#/components/responses/RateLimited"
         default:
           $ref: "#/components/responses/Error"
   /v1/account/export:
@@ -1937,6 +1941,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CoachAnswer"
+        "429":
+          $ref: "#/components/responses/RateLimited"
         default:
           $ref: "#/components/responses/Error"
 
@@ -1967,6 +1973,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MealDraft"
+        "429":
+          $ref: "#/components/responses/RateLimited"
         default:
           $ref: "#/components/responses/Error"
   /v1/meals/photo:
@@ -1998,6 +2006,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MealDraft"
+        "429":
+          $ref: "#/components/responses/RateLimited"
         default:
           $ref: "#/components/responses/Error"
 
@@ -2064,6 +2074,22 @@ components:
   responses:
     Error:
       description: Any error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    RateLimited:
+      description: |
+        Too many requests (K-817, ADR-082): the code is RATE_LIMITED. `Retry-After` is the whole seconds to wait before the
+        next try. Counted per account, and per address on sign-in (no account yet); the phone treats it like any other
+        failure that may pass, and the app's own daily limits (coach_messages_per_day, photo_analyses_per_day) are a
+        separate thing, answered as a DETERMINISTIC draft or answer.
+      headers:
+        Retry-After:
+          description: Seconds to wait (RFC 9110 section 10.2.3)
+          schema:
+            type: integer
+            minimum: 1
       content:
         application/json:
           schema:
