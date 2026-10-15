@@ -21,4 +21,14 @@ final class CheckInWeek {
     static boolean taken(LocalDate weekOf, java.util.Optional<LocalDate> lastCallWeek) {
         return lastCallWeek.filter(last -> weekOf.isBefore(last.plusWeeks(1))).isPresent();
     }
+
+    /**
+     * The day the call after one made in the check-in week {@code lastCallWeek} opens (K-1024): the first check-in day on or
+     * after a week from that week's name. The same rule as {@link #taken}, read the other way: a week is open once its name,
+     * the latest check-in day up to a day, is not before {@code lastCallWeek + 1 week}; that first happens on this day. The day
+     * the call itself was made on does not move it (a call made on Thursday of a Monday week still opens the next on Monday).
+     */
+    static LocalDate nextCallOn(LocalDate lastCallWeek, DayOfWeek checkInDay) {
+        return lastCallWeek.plusWeeks(1).with(TemporalAdjusters.nextOrSame(checkInDay));
+    }
 }

@@ -111,7 +111,7 @@ export function Hero({ hero, today, onChanged }: Props) {
           <SymbolView name="chevron.right" size={tokens.type.body} tintColor={color.decisionText} weight="bold" />
         </View>
       );
-      const [next, inDays] = when('thisWeek.hero.nextCall', decision.nextReview, today);
+      const [next, inDays] = when('thisWeek.hero.nextCall', decision.nextCallOn, today);
       // Only a call not applied yet is pressed for (primary); one the user kept off the plan is offered back quietly (U2).
       const use = <Button label={t('thisWeek.hero.useCall')} size="sm" variant={pending ? 'primary' : 'ghost'} disabled={busy} onPress={() => void takeCall(decision)} />;
       // A call not in the plan (kept off it, or not applied yet): the foot has the one thing to do, using it; the block

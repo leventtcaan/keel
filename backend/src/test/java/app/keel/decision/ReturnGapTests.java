@@ -139,37 +139,31 @@ class ReturnGapTests {
     }
 
     @Test
-    void theNextCallIsTodayWhileThisWeeksIsOpen() {
-        LocalDate weekOf = LocalDate.of(2026, 10, 12);
-
-        assertThat(ReturnGap.nextCallOn(Optional.empty(), weekOf, true, TODAY, Optional.of(LocalDate.of(2026, 10, 19)))).isEqualTo(TODAY);
-        assertThat(ReturnGap.nextCallOn(Optional.empty(), weekOf, true, TODAY, Optional.empty())).isEqualTo(TODAY);
+    void theNextCallIsTodayOnceItsDayHasComeAndTheDayItselfWhileAhead() {
+        // The latest call's own next-call day (CheckInWeek.nextCallOn): ahead, it is named; reached or passed, the call is open today.
+        assertThat(ReturnGap.nextCallOn(Optional.empty(), Optional.of(LocalDate.of(2026, 10, 19)), TODAY)).isEqualTo(LocalDate.of(2026, 10, 19));
+        assertThat(ReturnGap.nextCallOn(Optional.empty(), Optional.of(TODAY), TODAY)).isEqualTo(TODAY);
+        assertThat(ReturnGap.nextCallOn(Optional.empty(), Optional.of(LocalDate.of(2026, 10, 5)), TODAY)).isEqualTo(TODAY);
     }
 
     @Test
-    void onceThisWeeksIsMadeTheNextCallIsTheLatestCallsNextReviewWhileItIsAhead() {
-        LocalDate weekOf = LocalDate.of(2026, 10, 12);
+    void aCallMadeLateInTheWeekDoesNotMoveTheNextCallOffTheCheckInDay() {
+        // Called on Thursday 15 Oct for the Monday 12 Oct week: the next opens Monday 19 Oct, not Thursday 22 Oct.
+        Optional<LocalDate> next = Optional.of(CheckInWeek.nextCallOn(LocalDate.of(2026, 10, 12), java.time.DayOfWeek.MONDAY));
 
-        // A call made late (Thursday the 15th) reviews on its own day, not the check-in day: the Hero says that day.
-        assertThat(ReturnGap.nextCallOn(Optional.empty(), weekOf, false, TODAY, Optional.of(LocalDate.of(2026, 10, 22)))).isEqualTo(LocalDate.of(2026, 10, 22));
-        assertThat(ReturnGap.nextCallOn(Optional.empty(), weekOf, false, TODAY, Optional.of(LocalDate.of(2026, 10, 19)))).isEqualTo(LocalDate.of(2026, 10, 19));
-    }
-
-    @Test
-    void aNextReviewThatIsNotAheadFallsBackToTheNextCheckInDay() {
-        LocalDate weekOf = LocalDate.of(2026, 10, 12);
-
-        assertThat(ReturnGap.nextCallOn(Optional.empty(), weekOf, false, TODAY, Optional.of(TODAY))).isEqualTo(LocalDate.of(2026, 10, 19));
-        assertThat(ReturnGap.nextCallOn(Optional.empty(), weekOf, false, TODAY, Optional.of(LocalDate.of(2026, 10, 5)))).isEqualTo(LocalDate.of(2026, 10, 19));
-        assertThat(ReturnGap.nextCallOn(Optional.empty(), weekOf, false, TODAY, Optional.empty())).isEqualTo(LocalDate.of(2026, 10, 19));
+        assertThat(ReturnGap.nextCallOn(Optional.empty(), next, TODAY)).isEqualTo(LocalDate.of(2026, 10, 19));
     }
 
     @Test
     void beforeTheFirstCallTheNextCallIsTheFirstCallsDay() {
         LocalDate first = LocalDate.of(2026, 10, 19);
-        LocalDate weekOf = LocalDate.of(2026, 10, 12);
 
-        assertThat(ReturnGap.nextCallOn(Optional.of(first), weekOf, false, TODAY, Optional.empty())).isEqualTo(first);
-        assertThat(ReturnGap.nextCallOn(Optional.of(first), weekOf, true, TODAY, Optional.empty())).isEqualTo(first);
+        assertThat(ReturnGap.nextCallOn(Optional.of(first), Optional.empty(), TODAY)).isEqualTo(first);
+        assertThat(ReturnGap.nextCallOn(Optional.of(first), Optional.of(TODAY), TODAY)).isEqualTo(first);
+    }
+
+    @Test
+    void withNoCallAtAllTheNextCallIsToday() {
+        assertThat(ReturnGap.nextCallOn(Optional.empty(), Optional.empty(), TODAY)).isEqualTo(TODAY);
     }
 }

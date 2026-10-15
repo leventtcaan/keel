@@ -17,7 +17,8 @@ const call = (copyKey: string, over: Partial<Decision> = {}): Decision =>
     action: { type: 'CONTINUE' },
     reasons: [],
     confidence: 'MEDIUM',
-    nextReview: '2026-10-12',
+    nextReview: '2026-10-19',
+    nextCallOn: '2026-10-12',
     copyKey,
     application: { state: 'NOT_NEEDED' },
     ...over,
@@ -34,7 +35,7 @@ const EVERY_CALL = Object.entries(decisions).flatMap(([action, rules]) =>
 test('the call’s label and when it is looked at again', () => {
   expect(lockScreenCall(call('decision.continue.toward_goal'))).toEqual({
     line: t('decision.continue.label'),
-    next: t('today.call.nextReview', { date: 'Mon, Oct 12' }),
+    next: t('today.call.nextCall', { date: 'Mon, Oct 12' }),
   });
 });
 
@@ -43,7 +44,7 @@ test('every call the app can make says no number on the lock screen (V3)', () =>
   const withNumbers = EVERY_CALL.map((key) => [key, lockScreenCall(call(key)).line] as const).filter(([, line]) => /[\d{}%]/.test(line));
   expect(withNumbers).toEqual([]);
   // The date is the only figure, and only in its own line.
-  for (const key of EVERY_CALL) expect(lockScreenCall(call(key)).next).toMatch(/^Next review [A-Z][a-z]{2}, [A-Z][a-z]{2} \d{1,2}$/);
+  for (const key of EVERY_CALL) expect(lockScreenCall(call(key)).next).toMatch(/^Next call [A-Z][a-z]{2}, [A-Z][a-z]{2} \d{1,2}$/);
 });
 
 test('never the title: on a screen anyone can see, the action only — not why', () => {

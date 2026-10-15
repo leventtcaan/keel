@@ -130,7 +130,7 @@ function Body({ read, onRetry }: { read: Read | null; onRetry: () => void }) {
       ) : null}
       <Card>
         {confident ? <Text style={[styles.text, { color: color.text }]}>{t(`today.call.confidence.${decision.confidence}`)}</Text> : null}
-        <Text style={small}>{t('today.call.nextReview', { date: weekdayDate(decision.nextReview) })}</Text>
+        <Text style={small}>{t('today.call.nextCall', { date: weekdayDate(decision.nextCallOn) })}</Text>
       </Card>
       {decision.safety !== true && <WhatIfButton id={decision.id} />}
       <Text style={small}>{t('why.boundary')}</Text>

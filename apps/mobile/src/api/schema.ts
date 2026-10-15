@@ -1356,8 +1356,8 @@ export interface paths {
          *     is new, not returning: never prompted. `suggested` is the one reading the program shows (`ReturnLoad`,
          *     `return_step_back_after_weeks`): EASE_BACK when the last session is that many weeks back (the first targets are a step
          *     lighter), else PICK_UP. `nextCallOn` is the day of the next call, the one the Hero names: the first call's day before
-         *     the first call (as `GET /v1/first-weeks`); today while this check-in week's call is open; else the latest call's own
-         *     `nextReview` while that is ahead (a call made late reviews on its own day); else the next check-in day. Absent without
+         *     the first call (as `GET /v1/first-weeks`); today while this check-in week's call is open; else the latest call's
+         *     `nextCallOn` (the check-in day after its week, K-1024). Absent without
          *     the HEALTH_DATA consent (no call without it). The phone shows all of it and works none out. Meals and weigh-ins are
          *     read only with the HEALTH_DATA consent (without it they are not counted); CONFLICT without a profile.
          */
@@ -3206,8 +3206,21 @@ export interface components {
             action: components["schemas"]["Action"];
             reasons: components["schemas"]["Reason"][];
             confidence: components["schemas"]["Confidence"];
-            /** Format: date */
+            /**
+             * Format: date
+             * @description When the data this call rests on is looked at again: the engine's own window (a week from the call for most
+             *     rules, the decision window for a calorie change). It also ends a lighter week or a week off the call sets. It is
+             *     NOT the day of the next call; for that read `nextCallOn`.
+             */
             nextReview: string;
+            /**
+             * Format: date
+             * @description The day the next call really opens (K-1024, ADR-077 Ek 9): the first check-in day on or after a week from this
+             *     call's check-in week (`madeOn` may be later in that week: a call made on Thursday still opens the next on the
+             *     check-in Monday), on the user's calendar and with their check-in day. One server function, the same day the Hero,
+             *     the call screen and `GET /v1/return` name. The phone never works a date out.
+             */
+            nextCallOn: string;
             /** @description Where the words for this call live in en.json. */
             copyKey: string;
             /**
@@ -3472,8 +3485,8 @@ export interface components {
             suggested: components["schemas"]["ReturnSuggestion"];
             /**
              * Format: date
-             * @description The day of the next call on the user's calendar, as the Hero names it (the latest call's `nextReview`). Absent
-             *     without the HEALTH_DATA consent: there is no call.
+             * @description The day of the next call on the user's calendar, as the Hero names it (Decision.nextCallOn of the latest call;
+             *     today while this week's call is open). Absent without the HEALTH_DATA consent: there is no call.
              */
             nextCallOn?: string;
         };

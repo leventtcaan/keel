@@ -316,7 +316,7 @@
         "LITERATURE": "From research",
         "PRODUCT": "A rule of this app"
       },
-      "nextReview": "Next review {date}",
+      "nextCall": "Next call {date}",
     "data": "See the data behind it",
     "hold": "Nothing to do differently.",
     "waitNote": "Keep logging the same way. That's what makes the next call clear.",

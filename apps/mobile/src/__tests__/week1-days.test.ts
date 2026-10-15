@@ -34,6 +34,7 @@ const decision = (action: unknown): Schemas['Decision'] =>
     reasons: [{ rule: 'first_week_move_missed', source: { tag: 'EXPERIENCE' } }],
     confidence: 'MEDIUM',
     nextReview: '2026-10-19',
+    nextCallOn: '2026-10-19',
     copyKey: 'decision.move_missed_sessions.first_week_move_missed',
     application: { state: 'NOT_NEEDED' },
     declinable: false,

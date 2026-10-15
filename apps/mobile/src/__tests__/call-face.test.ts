@@ -14,6 +14,7 @@ const call = (state: Schemas['Application']['state'], declinable = false): Schem
   reasons: [{ rule: 'plateau', source: { tag: 'EXPERIENCE' } }],
   confidence: 'MEDIUM',
   nextReview: '2027-01-04',
+  nextCallOn: '2027-01-04',
   copyKey: 'decision.stop_load_increase.plateau',
   application: { state },
   declinable,

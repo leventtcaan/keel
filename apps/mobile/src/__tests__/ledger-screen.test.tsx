@@ -22,6 +22,7 @@ const call = (id: string, madeOn: string, readTrendKg?: number): Decision => ({
   reasons: [{ rule: 'toward_goal', source: { tag: 'EXPERIENCE' } }],
   confidence: 'HIGH',
   nextReview: '2026-10-12',
+  nextCallOn: '2026-10-12',
   copyKey: 'decision.continue.toward_goal',
   application: { state: 'NOT_NEEDED' },
   declinable: false,

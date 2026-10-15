@@ -192,7 +192,7 @@ export default function CallScreen() {
           {waits ? null : (
             <Text style={[styles.small, { color: color.textSecondary }]}>{t('callScreen.confidence', { level: t(`callScreen.level.${decision.confidence}`) })}</Text>
           )}
-          <Text style={[styles.small, { color: color.textSecondary }]}>{t('callScreen.nextCall', { date: weekdayDate(decision.nextReview) })}</Text>
+          <Text style={[styles.small, { color: color.textSecondary }]}>{t('callScreen.nextCall', { date: weekdayDate(decision.nextCallOn) })}</Text>
         </View>
         {failed?.read === decision ? <ProblemText style={[styles.small, { color: color.text }]}>{t(failed.key)}</ProblemText> : null}
         {week1?.note}
