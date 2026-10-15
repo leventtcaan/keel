@@ -184,6 +184,26 @@ describe("this week's call", () => {
     expect(screen.queryByText(t('callScreen.inPlan'))).toBeNull();
   });
 
+  test('a week with no training (K-1031): no call this week, its reason, the next call dated by the server, and nothing that asks for an answer', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(
+      decision({
+        copyKey: 'decision.no_decision_yet.no_training_this_week',
+        action: { type: 'NO_DECISION_YET' } as Schemas['Decision']['action'],
+        reasons: [{ rule: 'no_training_this_week', source: { tag: 'EXPERIENCE' } }],
+        declinable: false,
+        application: { state: 'NOT_NEEDED' },
+      }),
+    );
+    await show();
+    expect(screen.getByText(t('decision.no_decision_yet.no_training_this_week.title'))).toBeOnTheScreen();
+    expect(screen.getByText(t('decision.ruleShort.no_training_this_week'))).toBeOnTheScreen();
+    expect(screen.getByText(t('callScreen.nextCall', { date: 'Mon, Jan 4' }))).toBeOnTheScreen();
+    expect(screen.queryByText(/^Confidence/)).toBeNull();
+    // Nothing on it says a question or a log is awaited: the check-in is done, the next one is dated.
+    const words = [t('decision.no_decision_yet.no_training_this_week.title'), t('decision.no_decision_yet.no_training_this_week.body')].join(' ');
+    expect(words).not.toMatch(/answer|question|log |and the call follows/i);
+  });
+
   test('not kept (no connection): said so, the button stays', async () => {
     await show();
     mockPost = 'offline';

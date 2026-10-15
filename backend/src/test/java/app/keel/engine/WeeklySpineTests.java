@@ -320,6 +320,93 @@ class WeeklySpineTests {
                 .satisfies(d -> isCheckInNeeded(d, "training"));
     }
 
+    // ── "Haven't trained" (K-1031, ADR-077 Ek 12): a week with no training is a fact, not a trend ───────────
+
+    private static final Source GAUGE = new Source("arastirma/ham/guray/G7-whisper-arsiv.md#K-98", SourceTag.EXPERIENCE);
+    private static final Reason NO_TRAINING_CUT = new Reason(new RuleId("no_training_this_week"), GAUGE);
+    private static final Reason NO_TRAINING_LOOK = new Reason(new RuleId("no_training_this_week"), SPINE);
+
+    @Test
+    void aFlatCutWithNoTrainingThisWeekCannotPassTheCalorieGate() {
+        // G7 K-98: calories go down only while training still comes out; with no training the gate cannot pass. No source
+        // says what else to do, so: no call yet, with its own reason (U3), and not the "answer the question" kind.
+        SpineResult result = spine(Sex.MALE, Phase.CUT, ON_PLAN.withTraining(Training.NOT_TRAINED), "80.0", "80.0", "80.0");
+
+        assertThat(decided(result).action()).isEqualTo(new Action.NoDecisionYet());
+        assertThat(decided(result).reasons()).containsExactly(NO_TRAINING_CUT);
+        assertThat(decided(result).copyKey()).isEqualTo(new CopyKey("decision.no_decision_yet.no_training_this_week"));
+        assertThat(WeeklySpine.missingAnswer(decided(result))).as("it waits for no answer: nothing is asked next").isEmpty();
+    }
+
+    @Test
+    void aCutGoingTheWrongWayOrWithTheWaistUpStillHoldsCaloriesWithNoTraining() {
+        // The gate is the cut's whatever the scale does (K-98 is the criterion, not the scale).
+        assertThat(decided(spine(Sex.MALE, Phase.CUT, ON_PLAN.withTraining(Training.NOT_TRAINED), "80.0", "80.6", "81.2")).reasons())
+                .containsExactly(NO_TRAINING_CUT);
+        assertThat(decided(spine(Sex.MALE, Phase.CUT, ON_PLAN.withTraining(Training.NOT_TRAINED).withWaist(Waist.UP), "80.0", "80.0", "80.0"))
+                .reasons()).containsExactly(NO_TRAINING_CUT);
+    }
+
+    @Test
+    void theAdherenceGateStillComesFirstWhenTheWeekHadNoTraining() {
+        // Calories move only on a plan that was followed (G2 K-60), and that gate runs before training's.
+        assertThat(decided(spine(Sex.MALE, Phase.CUT, ON_PLAN.withAdherence(new BigDecimal("0.4")).withTraining(Training.NOT_TRAINED),
+                "80.0", "80.0", "80.0")).action()).isEqualTo(new Action.FixAdherence());
+    }
+
+    @Test
+    void aFlatBulkStillRaisesCaloriesWithNoTraining() {
+        // ADR-021 #3, G3 K-10: the bulk's step has no training condition; "Haven't trained" changes nothing there.
+        assertThat(spine(Sex.MALE, Phase.BULK, ON_PLAN.withTraining(Training.NOT_TRAINED), "70.0", "70.0", "70.0"))
+                .isEqualTo(spine(Sex.MALE, Phase.BULK, ON_PLAN.withTraining(Training.STABLE), "70.0", "70.0", "70.0"));
+    }
+
+    @Test
+    void movingTowardTheGoalButLookingWorseCannotBeJudgedWithNoTraining() {
+        // 03 §2.4: "how is training going?" decides between fixing training and looking at recovery. No training is neither
+        // answer, and the genetic-limit end of the branch (calories back) needs both to be fine: no call yet.
+        for (Phase phase : Phase.values()) {
+            SpineResult result = spine(Sex.MALE, phase, ON_PLAN.withLook(Look.WORSE).withTraining(Training.NOT_TRAINED),
+                    phase == Phase.CUT ? new String[] {"80.0", "79.5", "79.0"} : new String[] {"70.0", "70.5", "71.0"});
+
+            assertThat(decided(result).action()).as(phase.name()).isEqualTo(new Action.NoDecisionYet());
+            assertThat(decided(result).reasons()).as(phase.name()).containsExactly(NO_TRAINING_LOOK);
+        }
+    }
+
+    @Test
+    void recoveryIsNotAskedAfterNoTrainingBecauseItsBranchSitsUnderTrainingFine() {
+        // The recovery question (03 §2.4, G2 K-87) is the branch for "training fine". Whatever it says, the call is the same.
+        CheckIn worse = ON_PLAN.withLook(Look.WORSE).withTraining(Training.NOT_TRAINED);
+        SpineResult asked = spine(Sex.MALE, Phase.CUT, worse, "80.0", "79.5", "79.0");
+
+        assertThat(WeeklySpine.missingAnswer(decided(asked))).isEmpty();
+        for (Recovery recovery : Recovery.values()) {
+            assertThat(spine(Sex.MALE, Phase.CUT, worse.withRecovery(recovery), "80.0", "79.5", "79.0")).isEqualTo(asked);
+        }
+    }
+
+    @Test
+    void lookingBetterOrTheSameNeverReadsTrainingSoNoTrainingChangesNothing() {
+        assertThat(spine(Sex.MALE, Phase.CUT, ON_PLAN.withLook(Look.BETTER).withTraining(Training.NOT_TRAINED), "80.0", "79.5", "79.0"))
+                .isEqualTo(spine(Sex.MALE, Phase.CUT, ON_PLAN.withLook(Look.BETTER), "80.0", "79.5", "79.0"));
+    }
+
+    @Test
+    void noTrainingIsAnAnswerNotAMissingOne() {
+        // NOT_TRAINED never asks again this week for training (it is not UNKNOWN).
+        assertThat(WeeklySpine.missingAnswer(decided(spine(Sex.MALE, Phase.CUT, ON_PLAN.withTraining(Training.NOT_TRAINED), "80.0", "80.0", "80.0"))))
+                .isNotEqualTo(java.util.Optional.of(WeeklySpine.Missing.TRAINING));
+    }
+
+    @Property
+    boolean aCutWithNoTrainingNeverMovesCaloriesWhateverTheScaleDoes(@ForAll("weekOfKgs") List<String> kgs, @ForAll Look look,
+            @ForAll Recovery recovery, @ForAll Waist waist) {
+        // G7 K-98: the criterion for cutting calories is that training still comes out.
+        CheckIn checkIn = ON_PLAN.withTraining(Training.NOT_TRAINED).withLook(look).withRecovery(recovery).withWaist(waist);
+        return !(spine(Sex.MALE, Phase.CUT, checkIn, kgs.toArray(String[]::new)) instanceof SpineResult.CaloriesNeeded);
+    }
+
     // ── one flat week is not a plateau (G2 K-64); two are (G2 decision table, G3 K-10) ───────────────────────
 
     @Test
@@ -449,7 +536,8 @@ class WeeklySpineTests {
                 "decision.fix_training.performance_red_flag", "decision.fix_recovery.recovery_poor",
                 "decision.fix_adherence.adherence_low", "decision.fix_adherence.adherence_partial",
                 "decision.no_decision_yet.wait_one_more_week", "decision.no_decision_yet.check_in_needed_training",
-                "decision.no_decision_yet.check_in_needed_recovery", "decision.no_decision_yet.check_in_needed_adherence")) {
+                "decision.no_decision_yet.check_in_needed_recovery", "decision.no_decision_yet.check_in_needed_adherence",
+                "decision.no_decision_yet.no_training_this_week")) {
             assertThat(EngineFixtures.copyGroup(new CopyKey(key))).as(key)
                     .hasEntrySatisfying("title", title -> assertThat(title).isInstanceOf(String.class))
                     .hasEntrySatisfying("body", body -> assertThat(body).isInstanceOf(String.class));

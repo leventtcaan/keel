@@ -96,7 +96,7 @@ class QuestionBudgetTests {
     void aQuestionSaysWhyItIsAsked() {
         // U9: every question comes with the reason it is asked.
         assertThat(CheckInQuestions.describe(Answers.Kind.TRAINING)).isEqualTo(new CheckInQuestions.Question(Answers.Kind.TRAINING, "CHOICE",
-                List.of("IMPROVING", "STABLE", "DECLINING"), "checkIn.question.training", "checkIn.reason.training"));
+                List.of("IMPROVING", "STABLE", "DECLINING", "NOT_TRAINED"), "checkIn.question.training", "checkIn.reason.training"));
         assertThat(CheckInQuestions.describe(Answers.Kind.RECOVERY).choices()).containsExactly("GOOD", "POOR");
     }
 

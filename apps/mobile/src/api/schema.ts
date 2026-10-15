@@ -1234,7 +1234,8 @@ export interface paths {
          *     the engine does not run twice; answers for a week that is not the current one, a second call this week, a user
          *     without a profile yet, or answers before the first call's day (K-990) are 409 CONFLICT. A goal of DECIDE_FOR_ME starts where the phase gate puts the fat estimate,
          *     a cut without one. Health data: CONSENT_REQUIRED without the HEALTH_DATA consent, as for every /v1/decisions route.
-         *     Taken: TRAINING and RECOVERY, the questions the engine can wait for — also when the data has changed since they
+         *     Taken: TRAINING (IMPROVING, STABLE, DECLINING, or NOT_TRAINED: "Haven't trained", a week without training whether or
+         *     not it was logged, K-1031, ADR-077 Ek 12) and RECOVERY, the questions the engine can wait for — also when the data has changed since they
          *     were asked, so a question shown is never refused —, APPETITE (NORMAL/GONE: asked on a long bulk when GONE would
          *     change the call, inside the week's budget; a gone appetite is the mini cut's reason) and CYCLE_STOPPED (YES/NO)
          *     from a woman: asked in the low energy band or when the call would wait for it after a hard stop, never kept, a
@@ -3348,8 +3349,12 @@ export interface components {
             answers: {
                 /** @enum {string} */
                 look?: "BETTER" | "SAME" | "WORSE";
-                /** @enum {string} */
-                training?: "IMPROVING" | "STABLE" | "DECLINING";
+                /**
+                 * @description NOT_TRAINED ("Haven't trained", K-1031, ADR-077 Ek 12): a fact, not a trend. The user did not train this week,
+                 *     here or elsewhere; the engine has no performance to read and the call waits (NO_DECISION_YET) where it needed one.
+                 * @enum {string}
+                 */
+                training?: "IMPROVING" | "STABLE" | "DECLINING" | "NOT_TRAINED";
                 /** @enum {string} */
                 recovery?: "GOOD" | "POOR";
                 /** @enum {string} */

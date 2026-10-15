@@ -19,12 +19,14 @@ import java.util.Optional;
  * Weight moving toward the goal?
  * ├─ no  → adherence under adherence_fix_below → fix adherence; under on_track_min_ratio → fix adherence, softer
  * │        (G2 K-60, ADR-020 L-6/L-9) → cut: training declining → fix training, no calorie cut (G7 K-98)
+ * │                                         no training this week → no call yet: the gate cannot pass (K-98, Ek 12)
  * │        → held for only one week, or moved the week before (cut, waist not up; ADR-027 #0) / under
  * │          bulk_stall_weeks (bulk) → wait (G2 K-64, G3 K-10)
  * │        → calories toward the goal (cut down, bulk up; the amount is K-107's)
  * └─ yes → looks better, the same or not photographed → continue
  *          looks worse → training declining → fix training
  *                        → recovery poor → fix recovery
+ *                        → no training this week → no call yet: neither answer of the tree (ADR-077 Ek 12)
  *                        → plan followed (as above) → genetic limit → pull calories back (bulk down, cut up; L-5)
  * </pre>
  *
@@ -47,6 +49,7 @@ public final class WeeklySpine {
     static final RuleId TRAINING_FIRST = new RuleId("training_first");
     static final RuleId RECOVERY_POOR = new RuleId("recovery_poor");
     static final RuleId GENETIC_LIMIT = new RuleId("genetic_limit");
+    static final RuleId NO_TRAINING_THIS_WEEK = new RuleId("no_training_this_week");
     static final RuleId CHECK_IN_NEEDED_TRAINING = new RuleId("check_in_needed_training");
     static final RuleId CHECK_IN_NEEDED_RECOVERY = new RuleId("check_in_needed_recovery");
     static final RuleId CHECK_IN_NEEDED_ADHERENCE = new RuleId("check_in_needed_adherence");
@@ -87,6 +90,12 @@ public final class WeeklySpine {
         if (checkIn.training() == Training.DECLINING) {
             return decided(snapshot, new Action.FixTraining(), TRAINING_FIRST, TREE);
         }
+        // "Haven't trained" (K-1031, ADR-077 Ek 12): the tree's two answers are about how training went; with none, there is
+        // neither "fix training" nor "training fine", and recovery (the branch under "fine") is not reached. The call that
+        // would follow (calories back) needs both to be fine, so: no call yet, and nothing further is asked.
+        if (checkIn.training() == Training.NOT_TRAINED) {
+            return decided(snapshot, new Action.NoDecisionYet(), NO_TRAINING_THIS_WEEK, TREE);
+        }
         if (checkIn.recovery() == Recovery.UNKNOWN) {
             return checkInNeeded(snapshot, CHECK_IN_NEEDED_RECOVERY);
         }
@@ -118,6 +127,12 @@ public final class WeeklySpine {
         }
         if (cut && checkIn.training() == Training.DECLINING) {
             return decided(snapshot, new Action.FixTraining(), PERFORMANCE_RED_FLAG, TRAINING_IS_THE_GAUGE);
+        }
+        // Calories go down while training still comes out (K-98); in a week with none, the gate cannot pass. No source says
+        // what else to do (ADR-077 Ek 12), so the call waits, with its own reason. Raising them is no answer either: K-98 raises
+        // them where training stopped coming out, and that was not read.
+        if (cut && checkIn.training() == Training.NOT_TRAINED) {
+            return decided(snapshot, new Action.NoDecisionYet(), NO_TRAINING_THIS_WEEK, TRAINING_IS_THE_GAUGE);
         }
         // One flat week is not a plateau (G2 K-64, cut: weight and waist flat); a bulk waits until bulk_stall_weeks
         // without gain (G3 K-10). Going the wrong way is not a pause and does not wait.

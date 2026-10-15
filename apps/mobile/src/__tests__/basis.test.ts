@@ -94,7 +94,7 @@ test('every answer, every state and both phases have their words: none falls bac
   const missing = /^\[missing/;
   const answers: Basis['answers'][] = [
     ...(['BETTER', 'SAME', 'WORSE'] as const).map((look) => ({ look })),
-    ...(['IMPROVING', 'STABLE', 'DECLINING'] as const).map((training) => ({ training })),
+    ...(['IMPROVING', 'STABLE', 'DECLINING', 'NOT_TRAINED'] as const).map((training) => ({ training })),
     ...(['GOOD', 'POOR'] as const).map((recovery) => ({ recovery })),
     ...(['DOWN', 'FLAT', 'UP'] as const).map((waist) => ({ waist })),
     ...(['NORMAL', 'GONE'] as const).map((appetite) => ({ appetite })),

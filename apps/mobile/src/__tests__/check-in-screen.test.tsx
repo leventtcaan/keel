@@ -19,7 +19,7 @@ const refused = (status: number, code: string): Answer => ({ error: { code, mess
 const TRAINING: Schemas['Question'] = {
   kind: 'TRAINING',
   format: 'CHOICE',
-  choices: ['IMPROVING', 'STABLE', 'DECLINING'],
+  choices: ['IMPROVING', 'STABLE', 'DECLINING', 'NOT_TRAINED'],
   copyKey: 'checkIn.question.training',
   reasonCopyKey: 'checkIn.reason.training',
 };
@@ -109,6 +109,19 @@ test('a choice can be changed before sending: the last one goes', async () => {
   await press(t('checkIn.choice.cycle_stopped.no'));
   await press(t('checkIn.screen.send'));
   expect(sent()[0].answers[0]).toEqual({ kind: 'TRAINING', choice: 'DECLINING' });
+});
+
+test('"Haven\'t trained" (K-1031): the fourth choice is the server\'s, a full touch target, and goes as the plain fact NOT_TRAINED', async () => {
+  mockCheckIn = async () => ok({ weekOf: '2026-10-05', answered: false, questions: [TRAINING] });
+  await show();
+  const chip = screen.getByRole('button', { name: t('checkIn.choice.training.not_trained') });
+  expect(chip).toHaveStyle({ minHeight: tokens.size.touch, minWidth: tokens.size.touch });
+  expect(t('checkIn.choice.training.not_trained')).toBe("Haven't trained");
+  await press(t('checkIn.choice.training.not_trained'));
+  expect(chip).toBeSelected();
+  await press(t('checkIn.screen.send'));
+  // The phone sends what was picked; what it means for the call is the engine's (U1).
+  expect(sent()).toEqual([{ clientId: expect.any(String), weekOf: '2026-10-05', answers: [{ kind: 'TRAINING', choice: 'NOT_TRAINED' }] }]);
 });
 
 test('nothing to ask: it says so, and the call is one tap away', async () => {
