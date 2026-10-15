@@ -159,7 +159,7 @@ describe('the health data consent (ADR-077 Ek 6, K-1021): only Sick and In pain 
     await choose(kind);
     await press(t('state.screen.pause'));
     expect(consentTitle()).toBeOnTheScreen();
-    expect(screen.getByText(t('consent.health_data.body'))).toBeOnTheScreen();
+    expect(screen.getByText(t('consent.health_data.points.collected'))).toBeOnTheScreen();
     expect(screen.getByText(t('state.consent.why'))).toBeOnTheScreen();
     expect(screen.queryByText(t('state.screen.refused'))).toBeNull();
     expect(mockDeclare).not.toHaveBeenCalled();

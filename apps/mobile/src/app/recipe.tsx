@@ -8,6 +8,7 @@ import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { TextField } from '@/components/TextField';
+import { ConsentText } from '@/consent/ConsentText';
 import { grantConsent } from '@/consent/consents';
 import { t } from '@/copy';
 import { type DraftItem, type KnownFoods, addFood, requestsOf } from '@/food/draft';
@@ -130,7 +131,7 @@ export default function RecipeScreen() {
     step === 'consent' ? (
       <View style={styles.part}>
         <Text style={[styles.heading, { color: color.text }]}>{t('consent.health_data.title')}</Text>
-        <Text style={[styles.text, { color: color.textSecondary }]}>{t('consent.health_data.body')}</Text>
+        <ConsentText kind="HEALTH_DATA" />
         {problem !== null && <ProblemText style={[styles.text, { color: color.text }]}>{problem}</ProblemText>}
         <Button label={t('meal.consent.allow')} onPress={() => void allow()} disabled={busy} />
         <Button label={t('meal.consent.notNow')} variant="ghost" onPress={() => router.back()} disabled={busy} />

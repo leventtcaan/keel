@@ -7,6 +7,7 @@ import app.keel.shared.ApiException;
 import app.keel.shared.ErrorCode;
 import app.keel.subscription.Entitlements;
 import app.keel.subscription.Quota;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
@@ -20,7 +21,8 @@ import tools.jackson.databind.json.JsonMapper;
 /**
  * A question about a call, answered (K-505, K-529, ADR-043 #76; U1, U2): the model only classifies — what the message is
  * about ({@link Topic}) and which of the call's rules answers it — and the app says it in its own copy: the topic's
- * sentence, the rule's sentence and that the call stands until new data. The model's reply is used only when
+ * sentence, the rule's sentence and that the call stands until the day the next call opens (the Decision's nextCallOn; without
+ * it, no date). The model's reply is used only when
  * {@link TopicReply} reads it as exactly that. The call itself goes with every answer as it stands; the coach never
  * changes it. When the model's reply cannot be used, or is not asked for, the answer is the engine's own words (the
  * deterministic mode).
@@ -40,8 +42,12 @@ class Explanation {
 
     enum Mode { MODEL, DETERMINISTIC }
 
-    /** What the answer says about the call: which, its words, and when it is looked at again (the data that changes it). */
-    record Call(UUID decisionId, String copyKey, java.time.LocalDate nextReview) {
+    /**
+     * What the answer says about the call: which, its words, when it is looked at again (the data that changes it) and the day
+     * the next call opens (Decision.nextCallOn, K-1032: the day "the call stands until" names; absent, the sentence has none).
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    record Call(UUID decisionId, String copyKey, java.time.LocalDate nextReview, java.time.LocalDate nextCallOn) {
     }
 
     /**
@@ -77,7 +83,7 @@ class Explanation {
             return decisionId.isPresent() ? Optional.empty() : Optional.of(new Answer(Mode.DETERMINISTIC, null, null, NO_CALL_WORDS, null));
         }
         CallFacts call = found.get();
-        Call told = new Call(call.id(), call.copyKey(), call.nextReview());
+        Call told = new Call(call.id(), call.copyKey(), call.nextReview(), call.nextCallOn());
         if (!call.tellable()) {
             return Optional.of(new Answer(Mode.DETERMINISTIC, null, null, CALL_WORDS, told));
         }

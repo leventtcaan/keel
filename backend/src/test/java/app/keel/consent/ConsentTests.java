@@ -98,6 +98,7 @@ class ConsentTests {
     void aYesToTheHealthTextThatCalledAwayAHealthStateIsAskedAgain() throws Exception {
         // Version 4 (Levent, 15 Oct; K-1021, ADR-077 Ek 6): traveling, a busy week and a new gym are no health data and stay on a
         // withdrawal. A yes to version 3, which listed "away" among the health data and deleted everything, is not a yes to that.
+        // Version 5 (K-1032) is the same meaning in points; 4 is asked again in its own test below.
         AccountId account = TestSessions.newAccount();
         insert(account, "HEALTH_DATA", "3", null, null);
 
@@ -105,8 +106,26 @@ class ConsentTests {
         assertThat(list(account)).filteredOn(c -> "HEALTH_DATA".equals(c.get("kind"))).singleElement()
                 .satisfies(c -> assertThat(c).containsEntry("status", "GRANTED").containsEntry("textVersion", "3"));
         assertThat(put(account, "HEALTH_DATA", Map.of("textVersion", "3"))).hasStatus(400);
-        assertThat(put(account, "HEALTH_DATA", Map.of("textVersion", "4"))).hasStatusOk();
+        assertThat(put(account, "HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA))).hasStatusOk();
         assertThat(gate.granted(account, ConsentKind.HEALTH_DATA)).isTrue();
+    }
+
+    @Test
+    void aYesToVersion4OfTheHealthTextIsOutdatedAndAskedAgain() throws Exception {
+        // Version 5 (Levent, 15 Oct; K-1032): the text is 3-4 short points, same meaning. A new text is a new version
+        // (GDPR Art. 7(1)): a yes to the paragraph of version 4 is a yes to another text, so it reads as given to "4" (the phone
+        // shows it OUTDATED), the gate refuses it, and only the current version is taken again.
+        AccountId account = TestSessions.newAccount();
+        insert(account, "HEALTH_DATA", "4", null, null);
+
+        assertThat(gate.granted(account, ConsentKind.HEALTH_DATA)).isFalse();
+        assertThat(list(account)).filteredOn(c -> "HEALTH_DATA".equals(c.get("kind"))).singleElement()
+                .satisfies(c -> assertThat(c).containsEntry("status", "GRANTED").containsEntry("textVersion", "4"));
+        assertThat(put(account, "HEALTH_DATA", Map.of("textVersion", "4"))).hasStatus(400);
+        assertThat(put(account, "HEALTH_DATA", Map.of("textVersion", "5"))).hasStatusOk();
+        assertThat(gate.granted(account, ConsentKind.HEALTH_DATA)).isTrue();
+        assertThat(list(account)).filteredOn(c -> "HEALTH_DATA".equals(c.get("kind"))).singleElement()
+                .satisfies(c -> assertThat(c).containsEntry("textVersion", "5"));
     }
 
     @Test
@@ -237,11 +256,20 @@ class ConsentTests {
     @SuppressWarnings("unchecked")
     void eachConsentHasATextOfTheVersionTheServerAccepts() throws IOException {
         // ADR-020: the agent drafts, the product owner approves; until then the version says "draft".
+        // The text is one paragraph ("body") or, since the health data text became a list (K-1032), a map of points.
         Map<String, Object> copy = JSON.readValue(Files.readString(Path.of("../data/copy/en.json")), Map.class);
-        Map<String, Map<String, String>> texts = (Map<String, Map<String, String>>) copy.get("consent");
+        Map<String, Map<String, Object>> texts = (Map<String, Map<String, Object>>) copy.get("consent");
         for (ConsentKind kind : ConsentKind.values()) {
-            Map<String, String> text = texts.get(kind.name().toLowerCase(java.util.Locale.ROOT));
-            assertThat(text).as(kind.name()).containsKeys("title", "body").containsEntry("version", properties.versions().get(kind));
+            Map<String, Object> text = texts.get(kind.name().toLowerCase(java.util.Locale.ROOT));
+            assertThat(text).as(kind.name()).containsKey("title").containsEntry("version", properties.versions().get(kind));
+            if (text.get("body") != null) {
+                assertThat((String) text.get("body")).as(kind.name() + " body").isNotBlank();
+            } else {
+                assertThat(text.get("points")).as(kind.name() + " points").isInstanceOf(Map.class);
+                Map<String, Object> points = (Map<String, Object>) text.get("points");
+                assertThat(points).as(kind.name() + " points").isNotEmpty();
+                assertThat(points.values()).as(kind.name() + " points").allSatisfy(point -> assertThat((String) point).isNotBlank());
+            }
         }
     }
 

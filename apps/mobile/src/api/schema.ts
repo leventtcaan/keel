@@ -3794,6 +3794,12 @@ export interface components {
             copyKey: string;
             /** Format: date */
             nextReview: string;
+            /**
+             * Format: date
+             * @description The day the next call opens (Decision.nextCallOn of this call, K-1032): the day the coach names when it says the
+             *     call stands. The phone never works a date out; absent, the coach's sentence has no date.
+             */
+            nextCallOn?: string;
         };
     };
     responses: {

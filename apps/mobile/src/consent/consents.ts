@@ -16,6 +16,13 @@ export const CONSENT_COPY: Record<ConsentKind, string> = {
   THIRD_PARTY_AI: 'consent.third_party_ai',
 };
 
+/**
+ * The points of the health data text, in the order the screens show them (K-1032): what is kept, what for, how to
+ * withdraw, and what the consent reaches at its edges (imports in, calendar facts out). Each is a copy key under
+ * consent.health_data.points. The other consents are one paragraph (`body`).
+ */
+export const HEALTH_POINTS = ['collected', 'purpose', 'withdraw', 'scope'] as const;
+
 export function consentVersion(kind: ConsentKind): string {
   return t(`${CONSENT_COPY[kind]}.version`);
 }

@@ -7,8 +7,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import { createApiClient } from '@/api/client';
-import { consentVersion, grantConsent, withdrawConsent } from '@/consent/consents';
-import { t } from '@/copy';
+import { consentVersion, grantConsent, HEALTH_POINTS, loadConsents, withdrawConsent } from '@/consent/consents';
+import { has, t } from '@/copy';
 
 const ROOT = path.resolve(__dirname, '../../../..');
 const BASE = 'https://api.example.test';
@@ -29,34 +29,70 @@ test.each(['HEALTH_DATA', 'APPLE_HEALTH', 'THIRD_PARTY_AI'] as const)('%s: the t
   expect(consentVersion(kind)).toBe(serverVersions()[kind]);
 });
 
+/** The health data text as the consent screen reads it: its points, one after the other (version 5: a list, not a paragraph). */
+const points = () => HEALTH_POINTS.map((point) => t(`consent.health_data.points.${point}`));
+const whole = () => points().join(' ');
+
+test('the health data text is 3 to 4 short points: what is kept, what for, how to withdraw (version 5, Levent 15 Oct)', () => {
+  expect(HEALTH_POINTS).toEqual(['collected', 'purpose', 'withdraw', 'scope']);
+  for (const text of points()) {
+    expect(text).not.toMatch(/^\[missing/);
+    // Short: a point is read at a glance, not a paragraph of its own.
+    expect(text.split(/\s+/).length).toBeLessThanOrEqual(60);
+  }
+  // The old paragraph is gone: the screens ask for the points, never for one block.
+  expect(has('consent.health_data.body')).toBe(false);
+});
+
 test('the health data text says a withdrawal deletes the data it covers (K-429, ADR-037 #36)', () => {
   // K-231: withdrawing deletes for good; the text the consent is given to must say so, not only that the calls stop.
-  expect(t('consent.health_data.body')).toMatch(/withdraw[^.]*delet/i);
+  expect(t('consent.health_data.points.withdraw')).toMatch(/withdraw[^.]*delet/i);
   // Training is not deleted (ADR-007, ConsentWithdrawalDeletionTests): the text must not promise it is.
-  expect(t('consent.health_data.body')).toMatch(/withdraw[^.]*except your training/i);
+  expect(t('consent.health_data.points.withdraw')).toMatch(/withdraw[^.]*except your training/i);
+  expect(t('consent.health_data.points.withdraw')).toMatch(/calls stop[^.]*allow it again/i);
   expect(consentVersion('HEALTH_DATA')).not.toBe('1-draft');
 });
 
 test('the health data text classes data as the code does: the training log is not health data (K-808, ADR-059 #2)', () => {
   // ADR-007/ADR-026: training needs no consent and stays when it is withdrawn, so the opening sentence, which says what
   // the health data is, must not name it (question 57); the privacy policy uses the same classing.
-  const [opening] = t('consent.health_data.body').split('.');
+  const [opening] = t('consent.health_data.points.collected').split('.');
   expect(opening).toMatch(/health data/i);
   expect(opening).not.toMatch(/training/i);
-  expect(t('consent.health_data.body')).toMatch(/training log[^.]*(isn't|is not) health data/i);
-  // A new text is a new version (GDPR Art. 7(1)); no longer a draft (ADR-059 #1).
-  expect(consentVersion('HEALTH_DATA')).toBe('4');
+  expect(t('consent.health_data.points.withdraw')).toMatch(/training log[^.]*(isn't|is not) health data/i);
 });
 
-test('the health data text: sick and pain are health data, traveling, a busy week and a new gym are not and stay (K-1021, version 4)', () => {
-  const body = t('consent.health_data.body');
+test('the health data text: sick and pain are health data, traveling, a busy week and a new gym are not and stay (K-1021)', () => {
   // Version 3 listed "away" among the health data and said everything above is deleted; neither is true any more.
-  expect(body).not.toMatch(/\baway\b/i);
-  expect(body).toMatch(/sick or in pain/i);
-  expect(body).toMatch(/traveling[^.]*busy week[^.]*new gym[^.]*(isn't|aren't|is not|are not) health data/i);
-  expect(body).toMatch(/if you withdraw[^.]*stays[^.]*account/i);
-  // A new text is a new version (GDPR Art. 7(1)): a yes to version 3 is asked again.
-  expect(consentVersion('HEALTH_DATA')).toBe('4');
+  expect(whole()).not.toMatch(/\baway\b/i);
+  expect(t('consent.health_data.points.collected')).toMatch(/sick or in pain/i);
+  expect(t('consent.health_data.points.scope')).toMatch(/traveling[^.]*busy week[^.]*new gym[^.]*(isn't|aren't|is not|are not) health data/i);
+  expect(t('consent.health_data.points.scope')).toMatch(/if you withdraw[^.]*stays[^.]*account/i);
+});
+
+test('nothing of the paragraph is dropped: what is kept, what for, never sold, export and delete, imports, withdrawal (K-1032)', () => {
+  const kept = t('consent.health_data.points.collected');
+  for (const what of ['weight', 'waist', 'steps', 'sleep', 'active energy', 'progress photos', 'the look you pick', 'meals and recipes', 'plan', 'check-in answers', 'foods you avoid']) {
+    expect(kept).toContain(what);
+  }
+  expect(t('consent.health_data.points.scope')).toMatch(/importing past workouts[^.]*another app[^.]*consent[^.]*weight/i);
+  const purpose = t('consent.health_data.points.purpose');
+  expect(purpose).toMatch(/weekly calls/i);
+  expect(purpose).toMatch(/progress/i);
+  expect(purpose).toMatch(/nothing else/i);
+  expect(purpose).toMatch(/never sell[^.]*ads/i);
+  expect(purpose).toMatch(/export or delete[^.]*any time/i);
+});
+
+test('a new text is a new version (GDPR Art. 7(1)): version 5, so a yes to version 4 is asked again', () => {
+  expect(consentVersion('HEALTH_DATA')).toBe('5');
+});
+
+test('a grant the server holds to version 4 reads OUTDATED: not given, asked again, to the text shown now', async () => {
+  const answer = { data: [{ kind: 'HEALTH_DATA', status: 'GRANTED', textVersion: '4' }], response: new Response(null, { status: 200 }) };
+  expect(await loadConsents({ GET: async () => answer } as never)).toEqual({ HEALTH_DATA: 'OUTDATED' });
+  const current = { data: [{ kind: 'HEALTH_DATA', status: 'GRANTED', textVersion: '5' }], response: new Response(null, { status: 200 }) };
+  expect(await loadConsents({ GET: async () => current } as never)).toEqual({ HEALTH_DATA: 'GRANTED' });
 });
 
 function server(status = 200) {

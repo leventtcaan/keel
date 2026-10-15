@@ -196,7 +196,7 @@
         "onboarding.healthData.allow",
         "onboarding.healthData.notNow"
       ],
-      "notFirstView": ["onboarding.consent.fullText", "consent.health_data.body", "onboarding.consent.continueWithout", "onboarding.continue", "onboarding.healthData.withdraw", "onboarding.healthData.allowed", "onboarding.healthData.declinedNote", "onboarding.healthData.failed", "onboarding.serverError"]
+      "notFirstView": ["onboarding.consent.fullText", "consent.health_data.points.collected", "consent.health_data.points.purpose", "consent.health_data.points.withdraw", "consent.health_data.points.scope", "onboarding.consent.continueWithout", "onboarding.continue", "onboarding.healthData.withdraw", "onboarding.healthData.allowed", "onboarding.healthData.declinedNote", "onboarding.healthData.failed", "onboarding.serverError"]
     },
     {
       "screen": "ob-about",
@@ -1056,7 +1056,10 @@
         "weighIn.undoOffline",
         "weighIn.consent.failed",
         "consent.health_data.title",
-        "consent.health_data.body"
+        "consent.health_data.points.collected",
+        "consent.health_data.points.purpose",
+        "consent.health_data.points.withdraw",
+        "consent.health_data.points.scope"
       ],
       "faces": [
         {
@@ -1127,7 +1130,10 @@
       ],
       "notFirstView": [
         "consent.health_data.title",
-        "consent.health_data.body",
+        "consent.health_data.points.collected",
+        "consent.health_data.points.purpose",
+        "consent.health_data.points.withdraw",
+        "consent.health_data.points.scope",
         "meal.consent.allow",
         "meal.consent.notNow",
         "meal.consent.failed",
@@ -1602,7 +1608,7 @@
         "state.screen.pause"
       ],
       "uncounted": ["settings.backMark"],
-      "notFirstView": ["state.consent.why", "state.consent.allow", "state.consent.notNow", "consent.health_data.title", "consent.health_data.body"]
+      "notFirstView": ["state.consent.why", "state.consent.allow", "state.consent.notNow", "consent.health_data.title", "consent.health_data.points.collected", "consent.health_data.points.purpose", "consent.health_data.points.withdraw", "consent.health_data.points.scope"]
     }
   ]
 }

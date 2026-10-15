@@ -24,11 +24,13 @@ public class CallReader {
 
     /** The call with this id, or the latest when none is given. */
     public Optional<CallFacts> call(AccountId account, Optional<UUID> id) {
-        return id.map(given -> decisions.find(account, given)).orElseGet(() -> decisions.current(account)).map(CallReader::facts);
+        Optional<CallStore.Call> found = id.map(given -> decisions.find(account, given)).orElseGet(() -> decisions.current(account));
+        // The day the next call opens is the Decision's own (K-1024, K-1032): the coach names it, the phone works out no date.
+        return found.map(call -> facts(call, decisions.nextCallDay(account).apply(call)));
     }
 
     @SuppressWarnings("unchecked")
-    private static CallFacts facts(CallStore.Call call) {
+    private static CallFacts facts(CallStore.Call call, LocalDate nextCallOn) {
         Map<String, Object> sent = SourceView.sent(call.decision());
         List<CallFacts.Rule> reasons = ((List<Map<String, Object>>) sent.get("reasons")).stream()
                 .map(reason -> new CallFacts.Rule((String) reason.get("rule"), (String) ((Map<String, Object>) reason.get("source")).get("tag")))
@@ -37,6 +39,6 @@ public class CallReader {
         boolean untellable = SafetyCalls.restsOnTheSafetyNet(call.decision())
                 || reasons.stream().anyMatch(reason -> SafetyHold.CYCLE_CHECK_NEEDED.value().equals(reason.rule()));
         return new CallFacts(call.id(), call.madeOn(), (Map<String, Object>) sent.get("action"), reasons, (String) sent.get("confidence"),
-                LocalDate.parse((String) sent.get("nextReview")), (String) sent.get("copyKey"), !untellable);
+                LocalDate.parse((String) sent.get("nextReview")), nextCallOn, (String) sent.get("copyKey"), !untellable);
     }
 }

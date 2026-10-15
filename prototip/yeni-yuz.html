@@ -1707,7 +1707,7 @@ function shareScreen() {
     <div class="canvas916 ${bg === 'dark' ? 'dark' : ''}" aria-label="Story preview">
       ${bgHtml}<div class="ov ${S.share.anim ? 'anim' : ''}" id="ov">${ov}<span class="owm">keel</span></div>
     </div>
-    <div class="tplrow" role="group" aria-label="Sticker">${[['workout', 'Workout'], ['pr', 'PR'], ['weeks', 'Streak'], ['progress', 'Progress']].map(([v, l]) => `<button type="button" data-act="tpl" data-val="${v}" aria-pressed="${tpl === v}">${l}</button>`).join('')}</div>
+    <div class="tplrow" role="group" aria-label="Sticker">${[['workout', 'Workout'], ['pr', 'PR'], ['weeks', 'Weeks on track'], ['progress', 'Progress']].map(([v, l]) => `<button type="button" data-act="tpl" data-val="${v}" aria-pressed="${tpl === v}">${l}</button>`).join('')}</div>
     <div class="tplrow" role="group" aria-label="Background">${[['media', 'Photo or video'], ['ig', 'In Instagram'], ['dark', 'Dark']].map(([v, l]) => `<button type="button" data-act="bg" data-val="${v}" aria-pressed="${bg === v || (v === 'media' && bg === 'sample')}">${l}</button>`).join('')}<button type="button" data-act="anim" aria-pressed="${!!S.share.anim}">Animate</button></div>
     <button class="btn primary wide" type="button" data-act="dest" data-val="story">${I.share(20)} Share to Story</button>
     <div class="dests"><button type="button" data-act="dest" data-val="tiktok">${I.video(18)} TikTok</button><button type="button" data-act="dest" data-val="save">${I.dl(18)} Save</button><button type="button" data-act="dest" data-val="more">${I.more(18)} More</button></div>

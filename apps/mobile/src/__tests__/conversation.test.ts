@@ -9,7 +9,8 @@ import type { TodayData } from '@/today/today';
 import { has } from '@/copy';
 
 type Schemas = components['schemas'];
-const CALL = { decisionId: 'd1', copyKey: 'decision.adjust_calories.not_toward_goal', nextReview: '2026-10-12' };
+// nextReview (the engine's window for the data) and nextCallOn (the day the next call opens, U1) differ on purpose: the sentence names the second.
+const CALL = { decisionId: 'd1', copyKey: 'decision.adjust_calories.not_toward_goal', nextReview: '2026-10-12', nextCallOn: '2026-10-19' };
 const date = (day: string) => `on ${day}`;
 
 test("why this call, when the server answered the subscription's 403 (it never should — the call needs none): one more call not read", () => {
@@ -22,7 +23,16 @@ describe('linesOf', () => {
     expect(linesOf(answer, date)).toEqual([
       { key: 'coach.topic.hunger' },
       { key: 'decision.rule.cut_step' },
-      { key: 'coach.answer.stands', values: { date: 'on 2026-10-12' } },
+      { key: 'coach.answer.stands', values: { date: 'on 2026-10-19' } },
+    ]);
+  });
+
+  test("a call the server gave no next-call day for: the sentence drops the date, it does not borrow nextReview (U1)", () => {
+    const { nextCallOn: _none, ...bare } = CALL;
+    expect(linesOf({ mode: 'MODEL', topic: 'HUNGER', rule: 'cut_step', call: bare }, date)).toEqual([
+      { key: 'coach.topic.hunger' },
+      { key: 'decision.rule.cut_step' },
+      { key: 'coach.answer.standsNoDate' },
     ]);
   });
 
@@ -33,7 +43,7 @@ describe('linesOf', () => {
   test("a rule the copy has no sentence for is not said; the call still stands", () => {
     expect(linesOf({ mode: 'MODEL', topic: 'WHY', rule: 'no_such_rule', call: CALL }, date)).toEqual([
       { key: 'coach.topic.why' },
-      { key: 'coach.answer.stands', values: { date: 'on 2026-10-12' } },
+      { key: 'coach.answer.stands', values: { date: 'on 2026-10-19' } },
     ]);
   });
 
@@ -67,7 +77,7 @@ describe('chipAnswer', () => {
     ],
     confidence: 'HIGH',
     nextReview: '2026-10-12',
-    nextCallOn: '2026-10-12',
+    nextCallOn: '2026-10-19',
     copyKey: 'decision.continue.toward_goal',
     application: { state: 'NOT_NEEDED' },
     declinable: false,
@@ -76,14 +86,26 @@ describe('chipAnswer', () => {
 
   test("'Why this call?': every rule's sentence and that the call stands, with the call", () => {
     expect(chipAnswer('today.chips.why', { state: 'ready', value: decision }, date)).toEqual({
-      lines: [{ key: 'decision.rule.toward_goal' }, { key: 'decision.rule.energy_floor' }, { key: 'coach.answer.stands', values: { date: 'on 2026-10-12' } }],
-      call: { decisionId: 'd1', copyKey: 'decision.continue.toward_goal', nextReview: '2026-10-12' },
+      lines: [{ key: 'decision.rule.toward_goal' }, { key: 'decision.rule.energy_floor' }, { key: 'coach.answer.stands', values: { date: 'on 2026-10-19' } }],
+      call: { decisionId: 'd1', copyKey: 'decision.continue.toward_goal', nextReview: '2026-10-12', nextCallOn: '2026-10-19' },
     });
+  });
+
+  test("'Why this call?' names the day the next call opens (nextCallOn), never the engine's nextReview (U1)", () => {
+    const said = chipAnswer('today.chips.why', { state: 'ready', value: { ...decision, nextReview: '2026-10-13', nextCallOn: '2026-10-19' } }, date);
+    expect(said.lines.at(-1)).toEqual({ key: 'coach.answer.stands', values: { date: 'on 2026-10-19' } });
+  });
+
+  test('a call without nextCallOn: the sentence has no date', () => {
+    const { nextCallOn: _none, ...bare } = decision;
+    const said = chipAnswer('today.chips.why', { state: 'ready', value: bare as Schemas['Decision'] }, date);
+    expect(said.lines.at(-1)).toEqual({ key: 'coach.answer.standsNoDate' });
+    expect(has('coach.answer.standsNoDate')).toBe(true);
   });
 
   test('a safety call says nothing of why: its general change only (ADR-028 #24)', () => {
     const safety = { ...decision, safety: true, reasons: [{ rule: 'low_energy_safety', source: { tag: 'LITERATURE' as const } }] };
-    expect(chipAnswer('today.chips.why', { state: 'ready', value: safety }, date).lines).toEqual([{ key: 'coach.answer.stands', values: { date: 'on 2026-10-12' } }]);
+    expect(chipAnswer('today.chips.why', { state: 'ready', value: safety }, date).lines).toEqual([{ key: 'coach.answer.stands', values: { date: 'on 2026-10-19' } }]);
   });
 
   test("without a call, 'Why this call?' says there is none yet", () => {

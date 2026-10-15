@@ -7,6 +7,7 @@ import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
 import { ProblemText } from '@/components/ProblemText';
 import { ScreenTitle } from '@/components/ScreenTitle';
+import { ConsentText } from '@/consent/ConsentText';
 import { grantConsent } from '@/consent/consents';
 import { t } from '@/copy';
 import { useAppServices } from '@/services/ServicesProvider';
@@ -109,7 +110,7 @@ export default function StateScreen() {
             {t('consent.health_data.title')}
           </Text>
           <Text style={[styles.text, { color: color.textSecondary }]}>{t('state.consent.why')}</Text>
-          <Text style={[styles.text, { color: color.textSecondary }]}>{t('consent.health_data.body')}</Text>
+          <ConsentText kind="HEALTH_DATA" />
           {said}
         </ScrollView>
         <View style={styles.footer}>
