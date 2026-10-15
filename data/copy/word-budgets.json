@@ -389,8 +389,8 @@
         { "what": "the next call's weekday (Monday)", "words": 1 }
       ],
       "uncounted": ["thisWeek.strip.letter.MONDAY", "thisWeek.strip.letter.TUESDAY", "thisWeek.strip.letter.WEDNESDAY", "thisWeek.strip.letter.THURSDAY", "thisWeek.strip.letter.FRIDAY", "thisWeek.strip.letter.SATURDAY", "thisWeek.strip.letter.SUNDAY"],
-      "notFirstView": ["today.failed", "today.retry", "thisWeek.settings", "thisWeek.strip.label", "thisWeek.strip.mark", "thisWeek.hero.settingsLabel", "thisWeek.hero.openCall", "thisWeek.hero.monday.openLabel", "thisWeek.today.label", "thisWeek.today.changeLabel", "thisWeek.today.startLabel", "thisWeek.today.doneLabel", "thisWeek.food.allowLabel", "thisWeek.food.lineLabel", "thisWeek.food.lineLabelAround", "food.budget.single", "format.range", "today.state.declare", "thisWeek.hero.monday.readyNoWeek", "thisWeek.hero.monday.ready", "thisWeek.hero.monday.one", "thisWeek.hero.monday.other", "thisWeek.hero.monday.open", "thisWeek.hero.monday.yourCall"],
-      "parts": ["src/today/Hero.tsx", "src/today/WeekStrip.tsx", "src/today/TodayCard.tsx", "src/today/FoodLine.tsx", "src/today/StateCard.tsx"],
+      "notFirstView": ["today.failed", "today.retry", "thisWeek.settings", "thisWeek.strip.label", "thisWeek.strip.mark", "thisWeek.hero.settingsLabel", "thisWeek.hero.openCall", "thisWeek.hero.monday.openLabel", "thisWeek.today.label", "thisWeek.today.changeLabel", "thisWeek.today.startLabel", "thisWeek.today.doneLabel", "thisWeek.food.allowLabel", "thisWeek.food.lineLabel", "thisWeek.food.lineLabelAround", "food.budget.single", "format.range", "today.state.declare", "thisWeek.hero.monday.readyNoWeek", "thisWeek.hero.monday.ready", "thisWeek.hero.monday.one", "thisWeek.hero.monday.other", "thisWeek.hero.monday.open", "thisWeek.hero.monday.yourCall", "openElsewhere.continue", "openElsewhere.continueLabel", "openElsewhere.later", "openElsewhere.laterLabel", "openElsewhere.laterSaid", "openElsewhere.discard", "openElsewhere.discardLabel", "openElsewhere.discarded", "openElsewhere.discardOffline", "openElsewhere.offline", "openElsewhere.failed", "openElsewhere.closed", "openElsewhere.gone", "workout.ending.discardAsk", "workout.ending.discardNote", "workout.ending.confirm", "workout.ending.keep", "workout.ending.failed"],
+      "parts": ["src/today/Hero.tsx", "src/today/WeekStrip.tsx", "src/today/TodayCard.tsx", "src/today/FoodLine.tsx", "src/today/StateCard.tsx", "src/train/OpenElsewhere.tsx"],
       "faces": [
         {
           "face": "the short version",
@@ -677,8 +677,27 @@
         "train.startThis",
         "train.startDay",
         "editProgram.editLabel",
-        "editProgram.appliedUndo"
-      ]
+        "editProgram.appliedUndo",
+        "openElsewhere.continue",
+        "openElsewhere.continueLabel",
+        "openElsewhere.later",
+        "openElsewhere.laterLabel",
+        "openElsewhere.laterSaid",
+        "openElsewhere.discard",
+        "openElsewhere.discardLabel",
+        "openElsewhere.discarded",
+        "openElsewhere.discardOffline",
+        "openElsewhere.offline",
+        "openElsewhere.failed",
+        "openElsewhere.closed",
+        "openElsewhere.gone",
+        "workout.ending.discardAsk",
+        "workout.ending.discardNote",
+        "workout.ending.confirm",
+        "workout.ending.keep",
+        "workout.ending.failed"
+      ],
+      "parts": ["src/train/OpenElsewhere.tsx"]
     },
     {
       "screen": "summary",

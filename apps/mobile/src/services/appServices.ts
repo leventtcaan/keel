@@ -4,6 +4,7 @@
  * database, keychain, fetch — is passed in, so this runs in tests on node:sqlite and a fake server.
  */
 import { type ApiClient, createApiClient } from '@/api/client';
+import type { components } from '@/api/schema';
 import { type ConsentState, createConsentState } from '@/consent/consentState';
 import { withdrawConsent } from '@/consent/consents';
 import { forgetSentActivityDays } from '@/health/activitySync';
@@ -24,6 +25,7 @@ import { type SubscriptionStore, storeUnavailable } from '@/subscription/store';
 import { localDay } from '@/today/today';
 import { type Opens, createOpens } from '@/today/opens';
 import { type SessionPause, createSessionPause } from '@/train/pause';
+import { createAdopt } from '@/train/openSession';
 import { type SetEdits, createSetEdits } from '@/train/setEdits';
 import { type SessionSkips, createSessionSkips } from '@/train/skips';
 import { type SessionSwaps, createSessionSwaps } from '@/train/sessionSwaps';
@@ -116,6 +118,8 @@ export type AppServices = {
   workoutRecords(): Promise<LocalRecord[]>;
   /** A set of the session corrected or deleted, on the phone and on the server, never two versions of it (K-972). */
   workoutEdits: SetEdits;
+  /** The server's open workout, with its sets, kept as the phone's own (K-999): its sets are never sent again. */
+  adoptWorkout(workout: components['schemas']['Workout']): Promise<void>;
   /** The phone's meals, sent or not (K-407): today's list shows a meal saved offline at once. */
   mealRecords(): Promise<LocalRecord[]>;
   /** Forgets the phone's copy of a record the server no longer has (a meal corrected or deleted, K-407). */
@@ -347,6 +351,7 @@ export async function createAppServices({
     },
     pendingCount: store.pendingCount,
     workoutRecords: async () => (await store.all()).filter((record) => WORKOUT_KINDS.includes(record.kind)),
+    adoptWorkout: createAdopt({ store, queue }),
     workoutEdits: createSetEdits({
       store,
       queue,

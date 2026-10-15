@@ -292,3 +292,23 @@ koşulsuz kıyaslıyordu. Yarım seans ile tam seans aynı şey değildir; sayı
   artırsa da yüzdeyi artırmaz. Mevcut iki API testinin beklentisi (+16 → 0, +127 → 13) bu yüzden değişti (K-1014 kararından doğan düzeltme).
 - **Reddedilen:** yüzdeyi toplam kiloda tutup yalnız kapı koymak (swap/eklenen hareket yüzdeyi şişirir); planlanan sete oranı (seansa planlı set sayısı
   yazılmaz, program sonradan değişir, kısa sürüm bayrağı yok); eşiği telefonda uygulamak (telefon kural işletmez, ADR-075 #3).
+
+## Ek 11 · Sunucuda açık, bu telefonda olmayan seans: Continue telefonda yerel kayıt kurar (K-999, 2026-10-15, agent kararı, teknik)
+- **Continue** `GET /v1/workouts/{id}` ile seansı ve setlerini okur; telefon bunları **kendi kaydı** yapar: seans ve her set sunucunun clientId'leriyle
+  (yanıtta var: `Workout.clientId`, `LoggedSet.clientId`), `SYNCED` ve sunucu kimlikleriyle yazılır. Sonrası her seans gibidir: yeni set kuyruğa
+  (K-961) sunucunun seans kimliğiyle gider; sunucuda olan set **bir daha gönderilmez** (kuyruk yalnız `PENDING` yollar). Kayıtlar kuyruk tutulurken
+  yazılır (`SyncQueue.exclusive`): yazma ile `SYNCED` işareti arasında gönderim başlayamaz. İki kez Continue ya da yarıda kalmış deneme eksik olanı
+  ekler, ikilemez. Seans ekranı yeni bir yol değildir: `/workout` (gün yok) yerel kayıttaki açık seansı açar.
+- **Duraklama sunucunun bilmediği şeydir** (`pausedSeconds` yalnız bitişte gider, Ek 4/6): benimsenen seans duraklamasız açılır; başka telefonda geçen
+  uzak saatler sayaca girer (bilinen sınır; bitirirken kullanıcı süreyi göremez, özet dakikası `endedAt − startedAt`). Sunucu açık seansın duraklamasını
+  taşırsa ayrı iş.
+- **Karttaki üç yol:** Continue (yukarısı) · **Fill in later**: seans zaten sunucuda açık ve sayılıyor, gönderilecek bir şey yok; kart bunu söyler
+  (`unfinished_session_close_hours` içinde devam) ve Continue kalır · **Discard**: bir kez daha sorar, `DELETE /v1/workouts/{id}` (K-998; 404 de
+  "gitti" sayılır). Karttaki Discard'ın **Undo'su yoktur**: telefon seansın setlerini tutmuyor (seans ekranındaki Discard'da tutuyor), geri getirmek
+  için önce okumak gerekirdi. Onay sorusu ve "Nothing is saved." bunun karşılığıdır. Kardiyo (Ek 9) başka telefonda kaydedildiyse zaten kendi
+  kaydıdır, Discard'dan etkilenmez.
+- **Hata:** okuma ya da silme başarısızsa kart söyler (bağlantı yok / sunucu yanıtı) ve aynı düğme tekrar dener; seans bu arada bitmiş (`endedAt`)
+  ya da silinmişse (404) kart bunu söyler, hiçbir şey kaydedilmez ve hafta yeniden okunur. Telefonda başka bir seans açıkken (`activeWorkout`) kartta
+  var olan "Continue workout" o seansı açar; sunucudaki açık seans ancak o bitince/atılınca önerilir (bilinen sınır).
+- **Reddedilen:** Continue'da seansı yalnız bellekte tutmak (yeniden başlatmada kaybolur, ilk setten önce ikinci seans doğardı); setleri `PENDING` yazıp
+  sunucunun idempotansına bırakmak (her Continue'da sunucuya gereksiz yük ve `attempted` karışıklığı).

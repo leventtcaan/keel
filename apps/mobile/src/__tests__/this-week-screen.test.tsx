@@ -89,6 +89,12 @@ const mockGET = jest.fn(async (path: string, _init?: unknown) => {
   return answer;
 });
 let mockPost: Answer = ok({});
+let mockDeleteAnswer: Answer | 'offline' = { response: new Response(null, { status: 204 }) };
+const mockDELETE = jest.fn(async (_path: string, _init?: unknown) => {
+  if (mockDeleteAnswer === 'offline') throw new TypeError('Network request failed');
+  return mockDeleteAnswer;
+});
+const mockAdopt = jest.fn(async (_workout: Schemas['Workout']) => {});
 const mockPOST = jest.fn(async (_path: string, _init?: unknown) => mockPost);
 const mockPush = jest.fn();
 const mockNavigate = jest.fn();
@@ -106,7 +112,8 @@ jest.mock('expo-router', () => ({
   },
 }));
 const mockServices = {
-  api: { GET: mockGET, POST: mockPOST },
+  api: { GET: mockGET, POST: mockPOST, DELETE: mockDELETE },
+  adoptWorkout: (workout: Schemas['Workout']) => mockAdopt(workout),
   syncHealth: jest.fn(async () => 0),
   queue: { drain: jest.fn(async () => {}) },
   report: () => {},
@@ -170,6 +177,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockServices.training.keptProgram.mockImplementation(async () => null);
   mockPost = ok({});
+  mockDeleteAnswer = { response: new Response(null, { status: 204 }) };
   ordinaryWeek();
 });
 
@@ -700,6 +708,69 @@ describe("today's workout (#home)", () => {
     expect(screen.getByText(t('thisWeek.today.openElsewhere'))).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: t('thisWeek.today.continue') })).toBeNull();
     expect(screen.queryByRole('button', { name: startFullBodyA() })).toBeNull();
+  });
+
+  describe('under way on the server, not on this phone (K-999)', () => {
+    const OPEN: Schemas['Workout'] = {
+      id: 'w4',
+      clientId: 'other-phone-w',
+      startedAt: '2026-12-25T07:30:00Z',
+      programDayId: 'c',
+      pausedSeconds: 0,
+      sets: [{ id: 's-1', clientId: 'other-phone-s1', exerciseId: 'squat', setType: 'WORKING', loadKg: 80, reps: 8, rir: 2, side: 'BOTH' }],
+    };
+    const elsewhere = async () => {
+      mockAnswers['/v1/program'] = fridayAs({ workout: { id: 'w4', state: 'OPEN' } });
+      mockAnswers['/v1/workouts/{id}'] = ok(OPEN);
+      await show();
+    };
+
+    test('Continue, Fill in later and Discard on the card', async () => {
+      await elsewhere();
+      expect(screen.getByRole('button', { name: t('openElsewhere.continueLabel') })).toBeOnTheScreen();
+      expect(screen.getByRole('button', { name: t('openElsewhere.laterLabel') })).toBeOnTheScreen();
+      expect(screen.getByRole('button', { name: t('openElsewhere.discardLabel') })).toBeOnTheScreen();
+      expect(screen.queryByRole('button', { name: startFullBodyA() })).toBeNull();
+    });
+
+    test("Continue reads the server's workout, keeps it on the phone and opens the session on it", async () => {
+      await elsewhere();
+      await press(t('openElsewhere.continueLabel'));
+      expect(mockGET).toHaveBeenCalledWith('/v1/workouts/{id}', { params: { path: { id: 'w4' } } });
+      expect(mockAdopt).toHaveBeenCalledWith(OPEN);
+      expect(mockPush).toHaveBeenCalledWith('/workout');
+    });
+
+    test('no connection: the card says so; trying again opens it', async () => {
+      await elsewhere();
+      mockAnswers['/v1/workouts/{id}'] = 'offline';
+      await press(t('openElsewhere.continueLabel'));
+      expect(screen.getByText(t('openElsewhere.offline'))).toBeOnTheScreen();
+      expect(mockAdopt).not.toHaveBeenCalled();
+      expect(mockPush).not.toHaveBeenCalled();
+      mockAnswers['/v1/workouts/{id}'] = ok(OPEN);
+      await press(t('openElsewhere.continueLabel'));
+      expect(mockPush).toHaveBeenCalledWith('/workout');
+    });
+
+    test('Discard asks once more, then deletes the workout on the server and reads the week again', async () => {
+      await elsewhere();
+      await press(t('openElsewhere.discardLabel'));
+      expect(screen.getByText(t('workout.ending.discardAsk'))).toBeOnTheScreen();
+      expect(mockDELETE).not.toHaveBeenCalled();
+      const reads = mockGET.mock.calls.filter(([path]) => path === '/v1/program').length;
+      await press(t('workout.ending.confirm'));
+      expect(mockDELETE).toHaveBeenCalledWith('/v1/workouts/{id}', { params: { path: { id: 'w4' } } });
+      expect(mockGET.mock.calls.filter(([path]) => path === '/v1/program')).toHaveLength(reads + 1);
+    });
+
+    test('Fill in later leaves it open and says it counts; nothing is sent', async () => {
+      await elsewhere();
+      await press(t('openElsewhere.laterLabel'));
+      expect(screen.getByText(t('openElsewhere.laterSaid', { hours: workoutParams.unfinishedSessionCloseHours }))).toBeOnTheScreen();
+      expect(mockDELETE).not.toHaveBeenCalled();
+      expect(mockAdopt).not.toHaveBeenCalled();
+    });
   });
 
   test('finished offline (its finish still waiting on the phone): done, no Start again', async () => {
