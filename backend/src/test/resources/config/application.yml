@@ -68,3 +68,12 @@ keel:
       meal-photo:
         burst: 100000
         refill-every: 1ms
+# The main file silences the dispatcher's own log of an exception's message (V3) for the one Tomcat service a server has,
+# "Tomcat". Every extra real server a test class starts in the same JVM is another service ("Tomcat-1", "Tomcat-2"...) with
+# a logger of its own, so RealServerErrorTests' check of the log would meet them (K-817 added real-server tests).
+logging:
+  level:
+    "[org.apache.catalina.core.ContainerBase.[Tomcat-1].[localhost].[/].[dispatcherServlet]]": off
+    "[org.apache.catalina.core.ContainerBase.[Tomcat-2].[localhost].[/].[dispatcherServlet]]": off
+    "[org.apache.catalina.core.ContainerBase.[Tomcat-3].[localhost].[/].[dispatcherServlet]]": off
+    "[org.apache.catalina.core.ContainerBase.[Tomcat-4].[localhost].[/].[dispatcherServlet]]": off
