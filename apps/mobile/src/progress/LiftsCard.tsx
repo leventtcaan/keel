@@ -30,7 +30,8 @@ const setText = (set: BestSet, units: UnitSystem) => t('progress.strength.set', 
 export function LiftsCard({ lifts, moves, units }: { lifts: Lift[]; moves: ReadonlyMap<string, Move>; units: UnitSystem }) {
   const { color } = useTheme();
   const [picked, setPicked] = useState<string | null>(null);
-  const lift = lifts.find((l) => l.exerciseId === picked) ?? lifts[0];
+  // Opens on the first lift that has a chart to show, else the first.
+  const lift = lifts.find((l) => l.exerciseId === picked) ?? lifts.find((l) => l.weeks.length >= 2) ?? lifts[0];
   const move = exerciseName(lift.exerciseId, moves);
 
   const points: ChartPoint[] = lift.weeks.map((w) => ({ day: w.weekOf, value: loadValue(w.loadKg, units), label: formatLoad(w.loadKg, units), marked: w.held }));

@@ -15,6 +15,8 @@ import { exerciseName } from '@/train/program';
 import type { Move } from '@/train/trainData';
 import { type UnitSystem, formatLoad } from '@/units/units';
 
+import type { DotsNote } from './sections';
+
 type Schemas = components['schemas'];
 
 /** A card's heading with a quiet line at its right end. */
@@ -137,8 +139,9 @@ export function StrengthCard({ part, lifts, moves, units }: { part: 'locked' | '
 }
 
 /** The weigh-ins toward the trend (ADR-078 #1, U8): which of the 7 are in; the trend itself shows only when it is ready. */
-export function WeighInDots({ count, min, stale = false }: { count: number; min: number; stale?: boolean }) {
+export function WeighInDots({ count, min, note }: { count: number; min: number; note: DotsNote }) {
   const { color } = useTheme();
+  const line = note === null ? null : t(note === 'stale' ? 'progress.weight.stale' : 'progress.weight.after', { min });
   const dots = Array.from({ length: min }, (_, i) => (
     <View key={i} testID={i < count ? 'weight-dot-filled' : 'weight-dot-empty'} style={[styles.dot, { backgroundColor: i < count ? color.accent : color.track }]} />
   ));
@@ -148,7 +151,7 @@ export function WeighInDots({ count, min, stale = false }: { count: number; min:
       <View testID="weight-dots" accessible accessibilityLabel={t('progress.weight.spoken', { count, min })} style={styles.dots}>
         {dots}
       </View>
-      <Text style={[styles.fine, { color: color.muted }]}>{stale ? t('progress.weight.stale') : t('progress.weight.after', { min })}</Text>
+      {line === null ? null : <Text style={[styles.fine, { color: color.muted }]}>{line}</Text>}
     </Card>
   );
 }

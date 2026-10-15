@@ -227,19 +227,21 @@ describe('strength once there are weeks to draw', () => {
 
 describe('the weight part', () => {
   test('before the trend is ready: the weigh-ins so far', () => {
-    expect(weightOf(FIRST_DAY)).toEqual({ kind: 'dots', count: 3, min: 7, stale: false });
+    expect(weightOf(FIRST_DAY)).toEqual({ kind: 'dots', count: 3, min: 7, note: 'after' });
   });
 
   test('ready, with the days the server has in the window: the chart from those points', () => {
     expect(weightOf(WEEK_12)).toEqual({ kind: 'chart', points: trendPoints([84, 83.5, 83]) });
   });
 
-  test('ready but no point in the window (or none read): the dots stay, saying the average needs a new weigh-in', () => {
-    const stale = { kind: 'dots', count: 7, min: 7, stale: true };
-    expect(weightOf(with_(WEEK_12, { trend: ready([]) }))).toEqual(stale);
-    expect(weightOf(with_(WEEK_12, { trend: none }))).toEqual(stale);
-    expect(weightOf(with_(WEEK_12, { trend: failed }))).toEqual(stale);
-    expect(weightOf(with_(WEEK_12, { trend: null }))).toEqual(stale);
+  test('ready and read, but no point in the window: the dots stay, saying the average needs a new weigh-in', () => {
+    expect(weightOf(with_(WEEK_12, { trend: ready([]) }))).toEqual({ kind: 'dots', count: 7, min: 7, note: 'stale' });
+  });
+
+  test('the trend not read (failed, no consent, not found, not asked): the dots stay and say nothing of the user (U7, no blame)', () => {
+    for (const trend of [failed, consent, none, null]) {
+      expect(weightOf(with_(WEEK_12, { trend }))).toEqual({ kind: 'dots', count: 7, min: 7, note: null });
+    }
   });
 
   test('no consent, or the summary not read: no weight part', () => {

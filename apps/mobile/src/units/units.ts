@@ -67,6 +67,12 @@ export function weightInput(kg: number, system: UnitSystem): string {
   return fixed(system === 'METRIC' ? kg : kg / KG_PER_LB, P.weightDecimals);
 }
 
+/** One step of the shown weight, in kg: what the last shown decimal moves (a tenth of a kilo, a tenth of a pound). */
+export function weightStepKg(system: UnitSystem): number {
+  const step = 10 ** -P.weightDecimals;
+  return system === 'METRIC' ? step : step * KG_PER_LB;
+}
+
 export function formatWeight(kg: number, system: UnitSystem): string {
   return t(system === 'METRIC' ? 'units.kg' : 'units.lb', { value: weightInput(kg, system) });
 }

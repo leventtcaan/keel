@@ -193,3 +193,37 @@ describe('the starting weights ask about moves every built program has (K-967, A
     for (const move of moves) expect(fs.readFileSync(path.join(ROOT, `data/exercises/${move}.yaml`), 'utf8')).toMatch(/^kind: compound$/m);
   });
 });
+
+describe('Progress reads the period of the 12 weeks grid, within what the contract takes (K-979, ADR-078 Ek 3)', () => {
+  const progress = (JSON.parse(fs.readFileSync(path.join(DIR, 'progress.json'), 'utf8')) as { parameters: Parameter[] }).parameters;
+  const value = (key: string) => progress.find((p) => p.key === key)?.value as number;
+  const windows = fs.readFileSync(path.join(DIR, 'windows.yaml'), 'utf8').split('\n');
+  const at = windows.findIndex((line) => line.trim() === '- key: progress_grid_weeks');
+  const gridWeeks = Number(/value:\s*(\d+)/.exec(windows[at + 1])?.[1]);
+  const contract = fs.readFileSync(path.join(ROOT, 'contracts/openapi.yaml'), 'utf8');
+
+  test('the grid is read from windows.yaml', () => {
+    expect(gridWeeks).toBeGreaterThan(0);
+  });
+
+  test("the weight chart is the grid's weeks, in days", () => {
+    expect(value('weight_chart_days')).toBe(7 * gridWeeks);
+  });
+
+  test("the calls listed are a call a week over the grid's weeks", () => {
+    expect(value('calls_shown')).toBe(gridWeeks);
+  });
+
+  test('the weight trend is asked for no more days than the contract allows in one request', () => {
+    const days = Number(/At most\s+(\d+)\s+days per request/.exec(contract.slice(contract.indexOf('/v1/weight-trend:')))?.[1]);
+    expect(days).toBeGreaterThan(0);
+    expect(value('weight_chart_days')).toBeLessThanOrEqual(days);
+  });
+
+  test('the calls are asked for no more than the page limit the contract allows', () => {
+    const from = contract.indexOf('    Limit:\n      name: limit');
+    const maximum = Number(/maximum:\s*(\d+)/.exec(contract.slice(from, from + 200))?.[1]);
+    expect(maximum).toBeGreaterThan(0);
+    expect(value('calls_shown')).toBeLessThanOrEqual(maximum);
+  });
+});

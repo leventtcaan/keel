@@ -608,6 +608,15 @@ describe('strength: the lifts, the best set, the effort (ADR-078 #2, Ek 3)', () 
     expect(within(chart()).getAllByTestId('strength-tick').map(svgText)).toEqual(['220.5 lb', '231.5 lb']);
   });
 
+  test('opens on the first lift that has a chart, the first lift when none has', async () => {
+    const squat = lift('squat', false, { weeks: liftWeeks([100]) });
+    const bench = lift('bench_press', true, { weeks: liftWeeks([60, 62.5]) });
+    answers['/v1/training-progress'] = ok({ ...training(1, 2), lifts: [squat, bench] });
+    await show();
+    expect(screen.getByRole('button', { name: t('exercises.bench_press.name') }).props.accessibilityState.selected).toBe(true);
+    expect(screen.getByTestId('strength-chart')).toBeOnTheScreen();
+  });
+
   test('one lift: no chips to pick from', async () => {
     answers['/v1/training-progress'] = ok({ ...training(1, 1), lifts: [lift('squat', true, { weeks: liftWeeks([100, 105]) })] });
     await show();
@@ -687,11 +696,54 @@ describe('weight: the 7-day average (ADR-078 #2, Ek 3)', () => {
     expect(screen.queryByTestId('weight-chart')).toBeNull();
   });
 
-  test('the trend failing to read: the dots stay, no chart', async () => {
+  test('the trend failing to read: the dots stay, no chart, no line that blames the user, and a retry', async () => {
     answers['/v1/weight-trend'] = 'offline';
     await show();
     expect(screen.getByTestId('weight-dots')).toBeOnTheScreen();
     expect(screen.queryByTestId('weight-chart')).toBeNull();
+    expect(screen.queryByText(t('progress.weight.stale'))).toBeNull();
+    expect(screen.queryByText('Shows after 7 weigh-ins.')).toBeNull();
+    expect(screen.getByText(t('progress.failed'))).toBeOnTheScreen();
+    answers['/v1/weight-trend'] = ok(trendPoints([81, 80.5, 80]));
+    await fireEvent.press(screen.getByRole('button', { name: t('progress.retry') }));
+    await act(async () => {});
+    expect(screen.getByTestId('weight-chart')).toBeOnTheScreen();
+  });
+
+  test('a trend with nothing to read for this account (not found): the dots, no stale line', async () => {
+    answers['/v1/weight-trend'] = { status: 404 };
+    await show();
+    expect(screen.getByTestId('weight-dots')).toBeOnTheScreen();
+    expect(screen.queryByText(t('progress.weight.stale'))).toBeNull();
+  });
+
+  test('a range narrower than one shown step is a flat line at half height with one label: noise is not a trend', async () => {
+    answers['/v1/weight-trend'] = ok(trendPoints([80.21, 80.24, 80.22, 80.26, 80.23]));
+    await show();
+    const weightChart = screen.getByTestId('weight-chart');
+    expect(within(weightChart).getAllByTestId('weight-tick')).toHaveLength(1);
+    const ys = within(weightChart).getAllByTestId(/^weight-point-/).map((p) => (p.props as { cy: number }).cy);
+    expect(new Set(ys).size).toBe(1);
+    expect(ys[0]).toBe(66); // half way between the chart's top (14) and bottom (118)
+  });
+
+  test('a range of a step or more is drawn as it is', async () => {
+    answers['/v1/weight-trend'] = ok(trendPoints([80.2, 80.3, 80.5]));
+    await show();
+    const ys = within(screen.getByTestId('weight-chart')).getAllByTestId(/^weight-point-/).map((p) => (p.props as { cy: number }).cy);
+    expect(new Set(ys).size).toBe(3);
+    expect(within(screen.getByTestId('weight-chart')).getAllByTestId('weight-tick')).toHaveLength(2);
+  });
+
+  test('one point: its day, as the server gave it', async () => {
+    answers['/v1/weight-trend'] = ok(trendPoints([80.2]));
+    await show();
+    expect(screen.getByTestId('weight-latest-day')).toHaveTextContent('Oct 15');
+  });
+
+  test('a chart has no extra day line (its last date is under the chart)', async () => {
+    await show();
+    expect(screen.queryByTestId('weight-latest-day')).toBeNull();
   });
 });
 

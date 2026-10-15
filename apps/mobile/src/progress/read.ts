@@ -43,9 +43,13 @@ export async function loadProgress(api: ApiClient, day: string): Promise<Omit<Pr
     load(() => api.GET('/v1/decisions', { params: { query: { limit: progressParams.callsShown } } })),
   ]);
   // The starting numbers are the first days' only: once a first call exists the server refuses them (CONFLICT).
-  const starting = consistency.state === 'ready' ? null : await load(() => api.GET('/v1/targets/starting'));
+  const asksStarting = consistency.state !== 'ready';
   // The weight chart is drawn from the server's points in its window, and only when the server says the trend is ready.
   const from = localDay(new Date(Date.parse(`${day}T12:00:00`) - (progressParams.weightChartDays - 1) * DAY_MS));
-  const trend = summary.state === 'ready' && summary.value.trendReady ? await load(() => api.GET('/v1/weight-trend', { params: { query: { from, to: day } } })) : null;
+  const asksTrend = summary.state === 'ready' && summary.value.trendReady;
+  const [starting, trend] = await Promise.all([
+    asksStarting ? load(() => api.GET('/v1/targets/starting')) : null,
+    asksTrend ? load(() => api.GET('/v1/weight-trend', { params: { query: { from, to: day } } })) : null,
+  ]);
   return { training, consistency, summary, budget, program, starting, calls, trend };
 }

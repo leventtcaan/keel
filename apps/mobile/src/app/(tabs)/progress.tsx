@@ -77,7 +77,7 @@ export default function ProgressScreen() {
     const lifts = progress.training.state === 'ready' ? progress.training.value.lifts : [];
     const muscles = progress.training.state === 'ready' ? progress.training.value.muscles : [];
     const weeks = progress.consistency.state === 'ready' ? progress.consistency.value.weeks : [];
-    const failed = [progress.training, progress.consistency, progress.summary, progress.budget, progress.program, progress.calls].some((part) => part.state === 'failed');
+    const failed = [progress.training, progress.consistency, progress.summary, progress.budget, progress.program, progress.calls, progress.trend].some((part) => part?.state === 'failed');
 
     // Built outside the JSX below (the raw-text guard reads JSX children).
     const running = phase === 'running';

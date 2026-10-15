@@ -107,20 +107,24 @@ export function weighInDots(read: ProgressRead): { count: number; min: number } 
   return { count: Math.min(weighInCount, trendMinWeighIns), min: trendMinWeighIns };
 }
 
-export type WeightPart = { kind: 'chart'; points: Schemas['TrendPoint'][] } | { kind: 'dots'; count: number; min: number; stale: boolean };
+/** `note` under the dots: 'after' (the trend shows after 7 weigh-ins), 'stale' (ready, but no day in the window), none. */
+export type DotsNote = 'after' | 'stale' | null;
+export type WeightPart = { kind: 'chart'; points: Schemas['TrendPoint'][] } | { kind: 'dots'; count: number; min: number; note: DotsNote };
 
 /**
  * The weight part (ADR-078 Ek 2, Ek 3): the 7-day average chart once the server says the trend is ready and has points in the
- * window; otherwise the weigh-ins toward it. Ready with no point to draw keeps the dots and says the average needs a new weigh-in.
+ * window; otherwise the weigh-ins toward it. Ready and read with no day in the window keeps the dots and says the average needs a
+ * new weigh-in; a trend that could not be read (failed, no consent, not found) says nothing of the user (U7).
  */
 export function weightOf(read: ProgressRead): WeightPart | null {
   const waiting = weighInDots(read);
-  if (waiting !== null) return { kind: 'dots', ...waiting, stale: false };
+  if (waiting !== null) return { kind: 'dots', ...waiting, note: 'after' };
   if (read.summary.state !== 'ready') return null;
   const { weighInCount, trendMinWeighIns } = read.summary.value;
   const dots = { kind: 'dots' as const, count: Math.min(weighInCount, trendMinWeighIns), min: trendMinWeighIns };
-  const points = read.trend?.state === 'ready' ? read.trend.value : [];
-  return points.length > 0 ? { kind: 'chart', points } : { ...dots, stale: true };
+  if (read.trend?.state !== 'ready') return { ...dots, note: null };
+  const points = read.trend.value;
+  return points.length > 0 ? { kind: 'chart', points } : { ...dots, note: 'stale' };
 }
 
 /** The latest calls the server listed, newest first; none, no consent or not read: no card. */
