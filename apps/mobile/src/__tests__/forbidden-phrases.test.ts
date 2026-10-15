@@ -129,11 +129,26 @@ describe('legal texts (K-801, ADR-060)', () => {
   });
 });
 
-describe('store texts (K-804, ADR-061)', () => {
+describe('store texts (K-804, K-1002, K-1003, ADR-061, ADR-080)', () => {
   // The App Store listing is product text too: the same rules as en.json, no exception for negations (a listing has no
-  // reason to name what the app is not), no person, and Apple's lengths.
-  const fields = ['subtitle', 'promotionalText', 'description', 'keywords'] as const;
-  const texts = fields.map((field) => [field, store[field]] as const);
+  // reason to name what the app is not), no person, and Apple's lengths. Its settings (addresses, categories, product ids)
+  // are checked for what they must equal, not scanned as words.
+  const sub = (period: 'monthly' | 'yearly') => store.subscriptions[period];
+  const texts: (readonly [string, string])[] = [
+    ['name', store.name],
+    ['subtitle', store.subtitle],
+    ['promotionalText', store.promotionalText],
+    ['description', store.description],
+    ['keywords', store.keywords],
+    ['subscriptionGroup.name', store.subscriptionGroup.name],
+    ['subscriptions.monthly.name', sub('monthly').name],
+    ['subscriptions.monthly.description', sub('monthly').description],
+    ['subscriptions.yearly.name', sub('yearly').name],
+    ['subscriptions.yearly.description', sub('yearly').description],
+  ];
+  const settings = ['supportUrl', 'privacyUrl', 'termsUrl', 'primaryCategory', 'secondaryCategory', 'copyright'];
+  const chars = (text: string) => [...text].length;
+  const words = (text: string) => text.toLowerCase().match(/[a-z0-9]+/g) ?? [];
 
   test.each(texts)('%s is written', (_, text) => {
     expect(text.trim().length).toBeGreaterThan(0);
@@ -151,7 +166,16 @@ describe('store texts (K-804, ADR-061)', () => {
 
   test("the limits are Apple's, not numbers to tune", () => {
     // External facts (limits._source); a limit raised in the file would let any text through.
-    expect(store.limits).toEqual({ _source: store.limits._source, subtitle: 30, promotionalText: 170, description: 4000, keywordsBytes: 100 });
+    expect(store.limits).toEqual({
+      _source: store.limits._source,
+      name: 30,
+      subtitle: 30,
+      promotionalText: 170,
+      description: 4000,
+      keywordsBytes: 100,
+      subscriptionName: 30,
+      subscriptionDescription: 45,
+    });
   });
 
   test.each(texts)('%s puts no currency on the daily limit (ADR-012)', (_, text) => {
@@ -159,15 +183,133 @@ describe('store texts (K-804, ADR-061)', () => {
   });
 
   test("each fits Apple's limit: characters, and bytes for the keywords", () => {
-    expect([...store.subtitle].length).toBeLessThanOrEqual(store.limits.subtitle);
-    expect([...store.promotionalText].length).toBeLessThanOrEqual(store.limits.promotionalText);
-    expect([...store.description].length).toBeLessThanOrEqual(store.limits.description);
+    expect(chars(store.name)).toBeGreaterThanOrEqual(2);
+    expect(chars(store.name)).toBeLessThanOrEqual(store.limits.name);
+    expect(chars(store.subtitle)).toBeLessThanOrEqual(store.limits.subtitle);
+    expect(chars(store.promotionalText)).toBeLessThanOrEqual(store.limits.promotionalText);
+    expect(chars(store.description)).toBeLessThanOrEqual(store.limits.description);
     expect(Buffer.byteLength(store.keywords, 'utf8')).toBeLessThanOrEqual(store.limits.keywordsBytes);
+    expect(chars(store.subscriptionGroup.name)).toBeLessThanOrEqual(store.limits.subscriptionName);
+    for (const period of ['monthly', 'yearly'] as const) {
+      expect(chars(sub(period).name)).toBeLessThanOrEqual(store.limits.subscriptionName);
+      expect(chars(sub(period).description)).toBeLessThanOrEqual(store.limits.subscriptionDescription);
+    }
   });
 
-  test('every field of the file is scanned', () => {
-    // A field added to the listing (whatsNew, a name) is scanned too, or this fails.
-    expect(Object.keys(store).filter((key) => !key.startsWith('_') && key !== 'limits').sort()).toEqual([...fields].sort());
+  test('every field of the file is scanned or checked', () => {
+    // A field added to the listing (whatsNew, a keyword list) is scanned too, or this fails.
+    const scanned = ['name', 'subtitle', 'promotionalText', 'description', 'keywords', 'subscriptionGroup', 'subscriptions'];
+    expect(Object.keys(store).filter((key) => !key.startsWith('_') && key !== 'limits').sort()).toEqual([...scanned, ...settings].sort());
+    expect(Object.keys(store.subscriptions).sort()).toEqual(['monthly', 'yearly']);
+  });
+
+  test('the name is the product name with the two words that say what it is (ADR-080 Ek 2, 05 §6.6)', () => {
+    expect(store.name).toBe('Next Call: Lift & Diet Coach');
+  });
+
+  describe('keywords (05 §3.2: no space after a comma, no repeats, one word each)', () => {
+    const list = store.keywords.split(',');
+
+    test('comma separated, no space around a comma, none empty', () => {
+      expect(store.keywords).not.toMatch(/\s/);
+      expect(list.every((word) => word.length > 0)).toBe(true);
+    });
+
+    test("each is longer than two characters (Apple's rule) and is a single word", () => {
+      expect(list.filter((word) => word.length <= 2 || !/^[a-z0-9]+$/.test(word))).toEqual([]);
+    });
+
+    test('none repeats another, or a word of the name or the subtitle', () => {
+      expect(new Set(list).size).toBe(list.length);
+      const indexed = new Set([...words(store.name), ...words(store.subtitle)]);
+      expect(list.filter((word) => indexed.has(word))).toEqual([]);
+    });
+  });
+
+  describe('the listing says only what is in the launch build (ADR-080 #4: the AI layer is off)', () => {
+    // The coach explains from the rules and the meal photo read is not offered at launch: neither is advertised until
+    // the build has it (App Review 2.3.1, no hidden or dormant features; accurate metadata). Edited with the ADR that turns AI on.
+    const notYet = /\b(ai|a\.i\.|artificial intelligence|chat ?bots?|gpt|llm|language model)\b|photo (estimate|analysis|scan)|meal photos?|snap a (meal|photo)/i;
+
+    test.each(texts)('%s does not advertise what is switched off', (_, text) => {
+      expect(text.match(notYet)).toBeNull();
+    });
+
+    test.each(['AI coach', 'Chatbot answers', 'Photo estimates of a meal', 'a language model decides'])('catches "%s"', (example) => {
+      expect(example).toMatch(notYet);
+    });
+
+    test.each(['Said the same way', 'Ask why', 'Hair, air and a chair'])('lets "%s" through', (text) => {
+      expect(text).not.toMatch(notYet);
+    });
+  });
+
+  describe('no promise about results or about health (05 §6.7, U6)', () => {
+    const promise = /\b(guarantee\w*|proven|clinically|cures?|cured|treat(s|ment)?|diagnos\w*|prevent\w*|miracle|effortless|lose \d+|burn fat)\b/i;
+
+    test.each(texts)('%s promises nothing', (_, text) => {
+      expect(text.match(promise)).toBeNull();
+    });
+
+    test.each(['Guaranteed results', 'Lose 10 pounds', 'it can cure', 'burn fat fast'])('catches "%s"', (example) => {
+      expect(example).toMatch(promise);
+    });
+  });
+
+  describe('the subscription terms an auto-renewing subscription must show (App Review 3.1.2)', () => {
+    const description = store.description;
+
+    test('it renews by itself, unless cancelled 24 hours before the period ends', () => {
+      expect(description).toMatch(/renews automatically/i);
+      expect(description).toMatch(/at least 24 hours before/i);
+    });
+
+    test('how it is charged, where to manage or cancel, and that the price is in the app', () => {
+      expect(description).toMatch(/Subscriptions/);
+      expect(description).toMatch(/charged to your Apple Account/i);
+      expect(description).toMatch(/shown in the app before you subscribe/i);
+    });
+
+    test('the free trial is named, as App Store Connect has it (ADR-071: 2 weeks)', () => {
+      expect(description).toMatch(/2-week free trial/i);
+    });
+
+    test('it links the Terms of Use and the Privacy Policy, the same pages the paywall opens', () => {
+      const eas = JSON.parse(fs.readFileSync(path.join(ROOT, 'apps/mobile/eas.json'), 'utf8')).build.production.env;
+      expect(store.termsUrl).toBe(eas.EXPO_PUBLIC_TERMS_URL);
+      expect(store.privacyUrl).toBe(eas.EXPO_PUBLIC_PRIVACY_URL);
+      expect(description).toContain(store.termsUrl);
+      expect(description).toContain(store.privacyUrl);
+    });
+
+    test('the plans have the names and ids of ADR-080 Ek 2', () => {
+      expect(store.subscriptionGroup.name).toBe('Next Call');
+      expect(sub('monthly').productId).toBe('nextcall.premium.monthly');
+      expect(sub('yearly').productId).toBe('nextcall.premium.yearly');
+    });
+
+    test('a plan says what it is, not a price (ADR-012: prices live in App Store Connect, K2)', () => {
+      for (const period of ['monthly', 'yearly'] as const) {
+        expect(`${sub(period).name} ${sub(period).description}`).not.toMatch(/[$€£]|\d/);
+      }
+    });
+  });
+
+  describe('settings', () => {
+    test('the addresses are the published legal site', () => {
+      for (const url of [store.supportUrl, store.privacyUrl, store.termsUrl]) expect(url).toMatch(/^https:\/\/leventtcaan\.github\.io\/keel\//);
+    });
+
+    test("the categories are Apple's", () => {
+      expect(store.primaryCategory).toBe('Health & Fitness');
+      expect(['Food & Drink', 'Sports', 'Lifestyle']).toContain(store.secondaryCategory);
+    });
+
+    test('the copyright holder is the controller of the legal config, not a name typed here (ADR-059 Ek 1)', () => {
+      expect(store.copyright).toBe('2026 {controller_name}');
+      const config = fs.readFileSync(path.join(ROOT, 'docs/yasal/site/_config.yml'), 'utf8');
+      expect(config).toMatch(/^controller_name: ".+"$/m);
+    });
   });
 });
 

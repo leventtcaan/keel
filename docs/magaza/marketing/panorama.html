@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Next Call store panorama</title>
+<link rel="stylesheet" href="panorama.css"></head>
+<body><div class="pano">
+<svg class="bg" viewBox="0 0 7920 2868" xmlns="http://www.w3.org/2000/svg">
+ <defs>
+  <radialGradient id="g"><stop offset="0" stop-color="#2EE6D6" stop-opacity=".55"/><stop offset="1" stop-color="#2EE6D6" stop-opacity="0"/></radialGradient>
+  <linearGradient id="rib" x1="0" x2="1"><stop offset="0" stop-color="#2EE6D6" stop-opacity=".0"/><stop offset=".12" stop-color="#2EE6D6" stop-opacity=".30"/><stop offset=".6" stop-color="#2EE6D6" stop-opacity=".30"/><stop offset="1" stop-color="#2EE6D6" stop-opacity=".18"/></linearGradient>
+ </defs>
+ <!-- glows behind phones; the one behind the dark workout screen is the strongest -->
+ <circle cx="660" cy="1700" r="900" fill="url(#g)" opacity=".5"/>
+ <circle cx="1980" cy="1900" r="900" fill="url(#g)" opacity=".5"/>
+ <circle cx="3300" cy="1750" r="1250" fill="url(#g)" opacity=".95"/>
+ <circle cx="4620" cy="1900" r="900" fill="url(#g)" opacity=".5"/>
+ <circle cx="5940" cy="1750" r="900" fill="url(#g)" opacity=".45"/>
+ <circle cx="7260" cy="1900" r="1000" fill="url(#g)" opacity=".6"/>
+ <!-- rings that cross the frame edges (x=1320, 2640 ... ) -->
+ <g fill="none" stroke="#fff" stroke-opacity=".10" stroke-width="4">
+  <circle cx="1320" cy="1500" r="640"/><circle cx="1320" cy="1500" r="900"/><circle cx="1320" cy="1500" r="1180"/>
+  <circle cx="3960" cy="1300" r="700"/><circle cx="3960" cy="1300" r="980"/>
+  <circle cx="6600" cy="1500" r="620"/><circle cx="6600" cy="1500" r="880"/><circle cx="6600" cy="1500" r="1160"/>
+ </g>
+ <!-- one flowing band: the weekly call line, one unbroken shape from frame 1 to frame 6 -->
+ <path d="M-100 2330 C 900 2330, 1500 1980, 2640 2040 S 4300 2600, 5280 1900 S 6700 1000, 8020 1150 L 8020 1450 C 6800 1300, 6000 2230, 5280 2300 S 3700 2900, 2640 2380 S 1000 2650, -100 2630 Z" fill="url(#rib)"/>
+ <path d="M-100 2330 C 900 2330, 1500 1980, 2640 2040 S 4300 2600, 5280 1900 S 6700 1000, 8020 1150" fill="none" stroke="#2EE6D6" stroke-opacity=".55" stroke-width="7"/>
+ <g fill="#2EE6D6" fill-opacity=".8"><circle cx="2640" cy="2040" r="17"/><circle cx="5280" cy="1900" r="17"/><circle cx="1320" cy="2118" r="0"/></g>
+ <!-- high arc over the headlines, crossing 2/3 and 4/5 -->
+ <path d="M1500 -60 C 2400 420, 3300 420, 4000 -60" fill="none" stroke="#fff" stroke-opacity=".08" stroke-width="5"/>
+ <path d="M4300 -60 C 5200 420, 6100 420, 6800 -60" fill="none" stroke="#fff" stroke-opacity=".08" stroke-width="5"/>
+</svg>
+
+<!-- 1 · the core promise -->
+<section class="frame f1">
+ <div class="mark small">Next Call</div>
+ <div class="cap" style="top:188px"><h1>Your plan,<br><em>decided every week</em></h1><p>Calories, steps or training loads.</p></div>
+ <div class="phone" style="left:136px;top:720px;--sw:1000px;transform:rotate(0deg);z-index:1">
+  <div class="body"></div><i class="btn b1"></i><i class="btn b2"></i><i class="btn b3"></i><i class="btn b4"></i>
+  <div class="screen"><img src="../screenshots/01-this-week.png" alt=""><i class="island"></i></div></div>
+ <div class="card" style="left:90px;top:2330px;width:1140px">
+   <div class="k">Calories</div>
+   <div class="steps"><span class="old">2,050</span><span class="arrow">&rsaquo;</span><span class="new">1,800<small>kcal</small></span></div>
+ </div>
+</section>
+
+<!-- 2 · the call, old to new, with the reason -->
+<section class="frame f2" style="left:1320px">
+ <div class="cap"><h1>Every change<br><em>comes with a why</em></h1><p>Old target, new target, and the reason.</p></div>
+ <div class="phone" style="left:136px;top:760px;--sw:1000px;transform:rotate(0deg);z-index:1">
+  <div class="body"></div><i class="btn b1"></i><i class="btn b2"></i><i class="btn b3"></i><i class="btn b4"></i>
+  <div class="screen"><img src="../screenshots/02-the-call.png" alt=""><i class="island"></i></div></div>
+ <div class="card" style="left:90px;top:1895px;width:1140px">
+   <div class="k">Calories</div>
+   <div class="steps"><span class="old">2,050</span><span class="arrow">&rsaquo;</span><span class="new">1,800<small>kcal</small></span></div>
+ </div>
+ <div class="card dark" style="left:150px;top:2290px;width:1080px;padding:34px 54px">
+   <div class="why" style="font-size:46px">-0.3 kg a week over 3 weeks, not toward your goal.</div>
+   <div class="why" style="font-size:46px;margin-top:12px;color:#2EE6D6">One step: 250 kcal a day less.</div>
+ </div>
+</section>
+
+<!-- 3 · workout targets -->
+<section class="frame f3">
+ <div class="cap"><h1>Beat last time,<br><em>set by set</em></h1><p>Targets come from your last session.</p></div>
+ <div class="phone" style="left:136px;top:700px;--sw:1000px;transform:rotate(0deg);z-index:1">
+  <div class="body"></div><i class="btn b1"></i><i class="btn b2"></i><i class="btn b3"></i><i class="btn b4"></i>
+  <div class="screen"><img src="../screenshots/03-workout.png" alt=""><i class="island"></i></div></div>
+ <div class="chip" style="left:60px;top:1850px"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#0B0C0C" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-10px;margin-right:22px"><path d="M4 12.5l5 5L20 6.5"/></svg>+1 rep vs last time</div>
+</section>
+
+<!-- 4 · progress -->
+<section class="frame f4">
+ <div class="cap"><h1>See every<br><em>lift climb</em></h1><p>Strength trends, move by move.</p></div>
+ <div class="phone" style="left:136px;top:740px;--sw:1000px;transform:rotate(0deg);z-index:1">
+  <div class="body"></div><i class="btn b1"></i><i class="btn b2"></i><i class="btn b3"></i><i class="btn b4"></i>
+  <div class="screen"><img src="../screenshots/04-progress.png" alt=""><i class="island"></i></div></div>
+ <div class="card" style="left:70px;top:2300px;width:900px;padding:40px 54px"><div class="k">Bench press</div><div class="steps"><span class="old" style="text-decoration:none;color:#0B0C0C">72.5</span><span class="arrow">&rsaquo;</span><span class="new">80.5<small>kg</small></span></div></div>
+</section>
+
+<!-- 5 · the plan -->
+<section class="frame f5">
+ <div class="cap"><h1>Log a meal<br><em>in seconds</em></h1><p>Search, scan a barcode, or reuse Recent.</p></div>
+ <div class="phone" style="left:136px;top:700px;--sw:1000px;transform:rotate(0deg);z-index:1">
+  <div class="body"></div><i class="btn b1"></i><i class="btn b2"></i><i class="btn b3"></i><i class="btn b4"></i>
+  <div class="screen"><img src="../screenshots/05-log-meal.png" alt=""><i class="island"></i></div></div>
+ <div class="card" style="left:90px;top:2060px;width:1140px">
+   <div class="k">Food left</div>
+   <div class="steps"><span class="new">1,800<small>kcal</small></span></div>
+ </div>
+ <div class="chip" style="left:150px;top:2400px">Estimates come as <b>ranges</b></div>
+</section>
+
+<!-- 6 · closing -->
+<section class="frame f6">
+ <div class="mark" style="top:130px">Next Call</div>
+ <div class="mark-sub" style="top:262px">Lift &amp; Diet Coach</div>
+ <div class="cap" style="top:420px"><h1>Try it free<br><em>for 2 weeks</em></h1><p>Then a subscription. Cancel any time.</p></div>
+ <div class="phone" style="left:20px;top:1250px;--sw:640px;transform:rotate(-6deg);z-index:1">
+  <div class="body"></div><i class="btn b1"></i><i class="btn b2"></i><i class="btn b3"></i><i class="btn b4"></i>
+  <div class="screen"><img src="../screenshots/01-this-week.png" alt=""><i class="island"></i></div></div>
+ <div class="phone" style="left:620px;top:1210px;--sw:640px;transform:rotate(5deg);z-index:2">
+  <div class="body"></div><i class="btn b1"></i><i class="btn b2"></i><i class="btn b3"></i><i class="btn b4"></i>
+  <div class="screen"><img src="../screenshots/03-workout.png" alt=""><i class="island"></i></div></div>
+</section>
+</div></body></html>

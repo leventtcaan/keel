@@ -1,0 +1,71 @@
+/* Next Call App Store panorama: 6 frames of 1320x2868 laid side by side = 7920x2868, sliced afterwards.
+   Colours come from apps/mobile/src/theme/tokens.ts (ADR-070): ink #0B0C0C, accent #007684, accentInk #2EE6D6. */
+@font-face{font-family:"Barlow Condensed";font-weight:900;src:url("BarlowCondensed_900Black.ttf")}
+@font-face{font-family:"Barlow Condensed";font-weight:700;src:url("BarlowCondensed_700Bold.ttf")}
+
+:root{
+  --ink:#0B0C0C; --teal:#007684; --teal-deep:#00323B; --mint:#2EE6D6; --soft:#DDF3F4;
+  --display:"Barlow Condensed","Arial Narrow",sans-serif;
+  --body:-apple-system,"SF Pro Display","Helvetica Neue",Arial,sans-serif;
+  --bz:24px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:7920px;height:2868px;background:#00323B;overflow:hidden}
+.pano{position:relative;width:7920px;height:2868px;overflow:hidden;
+  background:linear-gradient(90deg,#00323B 0%,#005A68 14%,#007684 28%,#0A8E92 41.6%,#007684 55%,#005663 70%,#00323B 84%,#0B1416 100%)}
+.bg{position:absolute;inset:0;width:7920px;height:2868px}
+
+/* ---------- frame boxes (only for positioning; nothing is clipped per frame) ---------- */
+.frame{position:absolute;top:0;width:1320px;height:2868px}
+.f1{left:0}.f2{left:1320px}.f3{left:2640px}.f4{left:3960px}.f5{left:5280px}.f6{left:6600px}
+
+/* ---------- captions ---------- */
+.cap{position:absolute;left:0;top:132px;width:1320px;text-align:center;color:#fff}
+.cap h1{font:900 176px/0.92 var(--display);text-transform:uppercase;letter-spacing:-1px;
+  text-shadow:0 6px 40px rgba(0,30,36,.35)}
+.cap h1 em{font-style:normal;color:var(--mint)}
+.cap p{margin-top:34px;font:600 58px/1.15 var(--body);color:rgba(255,255,255,.92);letter-spacing:-.4px}
+
+/* ---------- phone mockup (drawn, no Apple art) ---------- */
+.phone{position:absolute;width:calc(var(--sw) + 2*var(--bz));height:calc(var(--sw)*2868/1320 + 2*var(--bz));
+  transform-origin:50% 50%}
+.phone .body{position:absolute;inset:0;border-radius:calc(var(--sw)*.14 + var(--bz));
+  background:linear-gradient(145deg,#4a5252 0%,#171a1a 30%,#0b0d0d 70%,#3a4141 100%);
+  box-shadow:0 0 0 3px #232828 inset,0 90px 160px rgba(0,22,28,.55),0 30px 60px rgba(0,22,28,.4)}
+.phone .body::after{content:"";position:absolute;inset:7px;border-radius:calc(var(--sw)*.14 + var(--bz) - 7px);
+  border:2px solid rgba(255,255,255,.07)}
+.phone .btn{position:absolute;width:9px;background:#272c2c;border-radius:4px}
+.phone .b1{left:-8px;top:17%;height:3.2%}
+.phone .b2{left:-8px;top:22%;height:6%}
+.phone .b3{left:-8px;top:29.5%;height:6%}
+.phone .b4{right:-8px;top:25%;height:9.5%}
+.phone .screen{position:absolute;left:var(--bz);top:var(--bz);width:var(--sw);height:calc(var(--sw)*2868/1320);
+  border-radius:calc(var(--sw)*.14);overflow:hidden;background:#fff}
+.phone .screen img{display:block;width:100%;height:100%}
+.phone .island{position:absolute;left:35.8%;top:1.5%;width:28.4%;height:3.8%;background:#000;border-radius:999px}
+
+/* ---------- callouts (redrawn from real app text) ---------- */
+.card{z-index:5;position:absolute;background:#fff;color:var(--ink);border-radius:56px;padding:46px 54px;
+  box-shadow:0 40px 90px rgba(0,22,28,.38),0 8px 20px rgba(0,22,28,.2);font-family:var(--body)}
+.card.dark{background:var(--ink);color:#fff}
+.card .k{font:600 40px/1.1 var(--body);color:#586061}
+.card.dark .k{color:#A9B1B1}
+.card .steps{display:flex;align-items:baseline;gap:34px;margin-top:10px;white-space:nowrap}
+.card .old{font:700 104px/1 var(--display);color:#586061;text-decoration:line-through;text-decoration-thickness:6px}
+.card .arrow{font:700 84px/1 var(--display);color:#586061}
+.card .new{font:900 148px/1 var(--display);color:var(--teal)}
+.card .new small{font:700 70px/1 var(--display);margin-left:12px;letter-spacing:.5px}
+.card .why{font:600 48px/1.25 var(--body);letter-spacing:-.3px}
+.chip{z-index:5;position:absolute;background:var(--mint);color:var(--ink);border-radius:999px;padding:30px 56px;
+  font:700 64px/1 var(--body);letter-spacing:-.5px;box-shadow:0 30px 70px rgba(0,22,28,.4);white-space:nowrap}
+.chip.w{background:#fff}
+.chip b{font:900 76px/1 var(--display);letter-spacing:.5px;text-transform:uppercase}
+
+/* closing frame */
+.mark{position:absolute;left:0;width:1320px;text-align:center;color:var(--mint);
+  font:900 120px/1 var(--display);letter-spacing:14px;text-transform:uppercase}
+.mark-sub{position:absolute;left:0;width:1320px;text-align:center;color:rgba(255,255,255,.9);
+  font:700 54px/1 var(--display);letter-spacing:12px;text-transform:uppercase}
+
+.f1 .cap h1,.f2 .cap h1{font-size:146px}
+.mark.small{top:84px;font-size:60px;letter-spacing:12px}

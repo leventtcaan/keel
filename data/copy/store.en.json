@@ -1,14 +1,39 @@
 {
-  "_about": "App Store listing text, draft (K-804, ADR-061). The listing name is Next Call (ADR-080 Ek 2), set in App Store Connect; keyword choice and localisation are M10's (ASO). Scanned like en.json: U4, U6, person names, and Apple's limits below.",
+  "_about": "App Store listing text, EN-US only (K-804, K-1002, K-1003, ADR-061, ADR-080). Scanned like en.json: U4, U6, person names, dashes, and Apple's limits below; also that nothing switched off at launch is advertised (the AI layer, ADR-080 #4) and that the subscription terms of App Review 3.1.2 stand in the description. The AI keyword idea of 05 §6.4 waits for the build that has AI. The copyright line takes its holder from docs/yasal/site/_config.yml controller_name (one place for the name, ADR-059 Ek 1). Entered by hand in App Store Connect: docs/magaza/asc-kurulum.md.",
   "limits": {
-    "_source": "developer.apple.com/help/app-store-connect/reference/app-information/app-information (name, subtitle) and .../platform-version-information (promotional text, description, keywords), checked 2026-10-05",
+    "_source": "developer.apple.com/help/app-store-connect/reference/app-information/app-information (name 2 to 30, subtitle 30) and .../platform-version-information (promotional text 170, description 4000, keywords 100 bytes, each over two characters), checked 2026-10-16. subscriptionName 30 and subscriptionDescription 45 are the App Store Connect field counters, not found in Apple's help pages [unverified: the App Store Connect field shows its counter]",
+    "name": 30,
     "subtitle": 30,
     "promotionalText": 170,
     "description": 4000,
-    "keywordsBytes": 100
+    "keywordsBytes": 100,
+    "subscriptionName": 30,
+    "subscriptionDescription": 45
   },
-  "subtitle": "The coach that makes the call",
-  "promotionalText": "Log your training, food and weight. Each week your plan is checked against what you logged, and every call shows its reason.",
-  "description": "Everything else shows you the data. This one makes the call.\n\nLog your workouts, meals and weigh-ins. Once a week you get one decision: keep the plan, or change calories, steps or training loads. Each call says what it looked at, which rule it followed, how sure it is, and when it will look again. When there isn't enough data yet, it says so instead of guessing.\n\nTRAINING\n• Sets, reps and reps in reserve, logged in seconds, offline too.\n• Next session's targets set from your last one: reps climb within the range, then the weight goes up a step.\n• A lighter week when the numbers say you need one.\n• Your gyms and their equipment, so every target is a weight you can actually load.\n• Bring in past workouts from another app's export.\n\nFOOD\n• Search foods, scan a barcode, or reuse your own recipes.\n• Estimates come as ranges, never a single made-up number.\n• Photo estimates of a meal are optional, and only after you say yes to the provider by name.\n\nPROGRESS\n• Weight as a trend over weeks, not day-to-day noise.\n• Strength over time, move by move.\n• Progress photos stay on your phone; this app never uploads them.\n\nTHE COACH\n• Ask why. The coach explains the call in plain words.\n• Push back if you like: a call changes when your data changes, not when you insist.\n\nYOUR DATA\n• Reads steps, sleep, weight and active energy from Apple Health, only if you allow it.\n• Export everything we hold about you, or delete your account and everything with it, from Settings.\n• No streaks to keep, no guilt for a missed day.\n\nSubscription required. The price, and any free trial you're eligible for, are shown in the app before you subscribe. Manage or cancel any time in your Apple ID settings.",
-  "keywords": "workout log,training plan,calorie counter,macros,weight tracker,progressive overload,gym coach"
+  "name": "Next Call: Lift & Diet Coach",
+  "subtitle": "Weekly Workout & Calorie Plan",
+  "promotionalText": "Log training, food and weight. Once a week you get one call: keep the plan or change it. Every call shows its reason, and says so when the data isn't enough.",
+  "description": "Next Call is a weekly coach for people who lift and track what they eat, and want one clear decision each week instead of a pile of charts.\n\nEverything else shows you the data. This one makes the call.\n\nLog your workouts, meals and weigh-ins. Once a week, Next Call looks at what you logged and makes one decision: keep the plan, or change your calories, steps or training loads. Every call shows what it looked at, the rule it followed, how sure it is, and when it will look again. When there isn't enough data yet, it says so instead of guessing.\n\nHOW PEOPLE USE IT\n• You lift three or four days a week and wonder when to add weight. Log sets with reps in reserve, and the next session's targets follow from your last one.\n• You are cutting, and the scale jumps around. Weigh in, and the app reads the trend over weeks, not the swing from one morning to the next.\n• You missed a week and don't know where to restart. Log what you can. There is no streak to lose and no guilt for a missed day.\n• You train in two gyms with different equipment. Save each gym, so every target is a weight you can actually load.\n• You are switching from another app. Bring in your past workouts from its export file.\n\nTRAINING\n• Sets, reps and reps in reserve, logged in seconds, offline too.\n• Reps climb within a range, then the weight goes up a step.\n• A lighter week when the numbers say you need one.\n• Swap a move, or build your own program.\n\nFOOD\n• Search foods, scan a barcode, or save your own recipes.\n• Estimates come as ranges, never one made-up number.\n\nPROGRESS\n• Body weight as a trend over weeks.\n• Strength over time, move by move.\n• Progress photos stay on your phone. The app never uploads them.\n\nQUESTIONS\nWho makes the call? Fixed rules do. Each rule is drawn from coaching practice or published sports science, and each call names the rule it used.\nWhat if I disagree? A call changes when your data changes, not when you push back. You choose whether to apply it, and you can undo most calls.\nIs it medical advice? No. It is a general wellness coach for adults. Check with your doctor before you change how you train or eat, and stop if something hurts.\nWhere does my data go? Apple Health data is read only if you allow it. You can export everything we hold about you, or delete your account and all of it, in Settings.\n\nSUBSCRIPTION\nNext Call needs a subscription, monthly or yearly. The price in your currency, and the 2-week free trial for new subscribers, are shown in the app before you subscribe. Payment is charged to your Apple Account at confirmation of purchase, or when the free trial ends. The subscription renews automatically unless you cancel at least 24 hours before the end of the current period, and your account is charged for the renewal within 24 hours before the period ends. Manage or cancel any time: open Settings on your iPhone, tap your name, then Subscriptions.\n\nTerms of Use: https://leventtcaan.github.io/keel/terms/\nPrivacy Policy: https://leventtcaan.github.io/keel/privacy/",
+  "keywords": "gym,training,strength,macro,nutrition,weight,tracker,log,food,progressive,overload,deload,rpe,reps",
+  "supportUrl": "https://leventtcaan.github.io/keel/",
+  "privacyUrl": "https://leventtcaan.github.io/keel/privacy/",
+  "termsUrl": "https://leventtcaan.github.io/keel/terms/",
+  "primaryCategory": "Health & Fitness",
+  "secondaryCategory": "Food & Drink",
+  "copyright": "2026 {controller_name}",
+  "subscriptionGroup": {
+    "name": "Next Call"
+  },
+  "subscriptions": {
+    "monthly": {
+      "productId": "nextcall.premium.monthly",
+      "name": "Next Call Monthly",
+      "description": "Weekly calls and full tracking, monthly"
+    },
+    "yearly": {
+      "productId": "nextcall.premium.yearly",
+      "name": "Next Call Yearly",
+      "description": "Weekly calls and full tracking, yearly"
+    }
+  }
 }
