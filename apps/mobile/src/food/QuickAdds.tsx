@@ -23,13 +23,24 @@ const kcalOf = (range: Schemas['KcalRange']) => `${t('format.range', { low: rang
 const spoken = (meal: Schemas['Meal']) => meal.items.map((item) => item.name).join('; ');
 
 /**
- * The meal screen's one-tap part (K-980, ADR-018 Ek 1, prototype `#meal`): "Same as yesterday" for the slot being logged,
- * and the user's usual foods, each with its range (U5) in the text colour — the number is not judged. A tap keeps the meal
- * on the phone (sent when it can be, K-304) and leaves the screen: "+", Meal, one tap. "Same as yesterday" logs yesterday's
- * meal again as it was (`repeatOf`); a usual food logs that food in its usual amount. Nothing here estimates: the ranges are
- * the server's (U1). Both lists empty (the first day), nothing is drawn.
+ * The meal screen's one-tap part (K-980, ADR-018 Ek 1 and 3, prototype `#meal`): "Same as yesterday" for the slot being logged,
+ * and the foods eaten lately ("Recent", `GET /v1/foods/recent`, K-1025), each with its range (U5) in the text colour — the
+ * number is not judged. A tap keeps the meal on the phone (sent when it can be, K-304) and leaves the screen: "+", Meal, one
+ * tap. "Same as yesterday" logs yesterday's meal again as it was (`repeatOf`); a recent food logs that food in the amount of its
+ * last time. The server orders them (the slot's own first): the phone only shows the first few that fit. Nothing here estimates:
+ * the ranges are the server's (U1). Both lists empty (the first day), nothing is drawn.
  */
-export function QuickAdds({ slot, start, onLogged }: { slot: Schemas['MealSlot']; start: MealStart; onLogged: () => void }) {
+export function QuickAdds({
+  slot,
+  start,
+  recent: foods,
+  onLogged,
+}: {
+  slot: Schemas['MealSlot'];
+  start: MealStart;
+  recent: Schemas['Suggestion'][];
+  onLogged: () => void;
+}) {
   const { queue, report } = useAppServices();
   const { color } = useTheme();
   const [problem, setProblem, occurrence] = useProblem();
@@ -39,8 +50,8 @@ export function QuickAdds({ slot, start, onLogged }: { slot: Schemas['MealSlot']
   const attempt = useRef<{ what: string; clientId: string } | null>(null);
 
   const offers = start.offers.filter((meal) => meal.slot === slot);
-  const usual = start.usual.slice(0, foodParams.quickUsualMax);
-  if (offers.length === 0 && usual.length === 0) return null;
+  const recent = foods.slice(0, foodParams.quickRecentMax);
+  if (offers.length === 0 && recent.length === 0) return null;
 
   const log = async (what: string, body: Pick<Schemas['NewMeal'], 'repeatOf' | 'items'>) => {
     if (working.current) return;
@@ -81,10 +92,10 @@ export function QuickAdds({ slot, start, onLogged }: { slot: Schemas['MealSlot']
           </View>
         </Card>
       ))}
-      {usual.length > 0 && (
+      {recent.length > 0 && (
         <View style={styles.part}>
-          <Text style={[styles.label, { color: color.muted }]}>{t('meal.quick.usual')}</Text>
-          {usual.map((food) => (
+          <Text style={[styles.label, { color: color.muted }]}>{t('meal.quick.recent')}</Text>
+          {recent.map((food) => (
             <Pressable
               key={food.foodId}
               accessibilityRole="button"

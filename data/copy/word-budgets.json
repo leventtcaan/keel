@@ -1068,7 +1068,7 @@
       "budget": 25,
       "source": "prototip/yeni-yuz.html",
       "task": "K-980",
-      "note": "The first view is the first day's: the title, the four slots, the search with its Search and Scan buttons, Log it; nothing is offered when there is no yesterday and no usual food. The face with the quick adds is the ordinary day: 'Same as yesterday' with Add, 'Usual foods' (at most quick_usual_max, data/parameters/food.json). Food names are the person's and the database's own words, as the prototype leaves them out of its count; the unit of an amount (g) and the kcal after each range are counted as listed. The plus on a usual food and the barcode button are spoken, not read.",
+      "note": "The first view is the first day's: the title, the four slots, the search with its Search and Scan buttons, Log it; nothing is offered when there is no yesterday and no recent food. The face with the quick adds is the ordinary day: 'Same as yesterday' with Add, 'Recent' (at most quick_recent_max, data/parameters/food.json). Food names are the person's and the database's own words, as the prototype leaves them out of its count; the unit of an amount (g) and the kcal after each range are counted as listed. The plus on a recent food and the barcode button are spoken, not read.",
       "file": "src/app/meal.tsx",
       "parts": ["src/food/QuickAdds.tsx", "src/food/FoodPicker.tsx"],
       "keys": [
@@ -1124,7 +1124,7 @@
             "food.slot.SNACK",
             "food.repeat.title",
             "meal.quick.add",
-            "meal.quick.usual",
+            "meal.quick.recent",
             "meal.search.label",
             "meal.search.go",
             "meal.barcode.scanShort",
@@ -1132,7 +1132,7 @@
           ],
           "dynamic": [
             { "what": "kcal after the range of Same as yesterday", "words": 1 },
-            { "what": "the unit (g) and kcal of each of two usual foods", "words": 4 }
+            { "what": "the unit (g) and kcal of each of two recent foods", "words": 4 }
           ]
         }
       ]
