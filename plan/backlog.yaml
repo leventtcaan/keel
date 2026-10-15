@@ -4113,7 +4113,7 @@ tasks:
 
   - id: K-904
     title: "Kısa dış TestFlight: 2 hafta, küçük grup, mağaza hazırlığıyla paralel (ADR-080)"
-    milestone: M9
+    milestone: M11
     module: product
     type: human
     size: S
@@ -4243,7 +4243,7 @@ tasks:
     why: "ADR-080: önce sessiz mağaza yayını. Gizlilik etiketi, yaş, erişilebilirlik beyanları docs/yasal/app-store-beyanlari.md'de; SANDBOX yalnız beta boyunca (ADR-056 #4); yayında AI sağlayıcı yok"
     acceptance:
       - "ASC: gizlilik etiketi, yaş derecelendirmesi, erişilebilirlik beyanları app-store-beyanlari.md ile birebir (agent hazırlar, Levent girer)"
-      - "Üretim ortamında SANDBOX kabulü kapalı; RevenueCat üretim anahtarları ortam değişkeninde (V5)"
+      - "SANDBOX kabulü App Review boyunca AÇIK kalır (Apple incelemecisi sandbox'ta satın alır; kapatmak reddettirir); RevenueCat anahtarları ortam değişkeninde (V5)"
       - "AI'a bağlı yüzeyler (koç serbest metin, öğün fotoğraf analizi) sağlayıcı yokken çökmez ve dürüst durum gösterir; test"
       - "Review notları (demo hesap yolu, sağlık feragatnamesi, abonelik) hazır; gönderim ve 'Release' Levent'te (mağaza yayını, ADR-019)"
     tests: ["Anayasa denetimi, ortam testi, jest AI kapalı yüzeyler"]

@@ -34,3 +34,10 @@ var olmak için değil.
   K-983, K-805 (mali müşavir), K-1001, dış TestFlight grubu, App Review gönderim onayı (mağaza yayını Levent'te, ADR-019).
 - 8 haftalık retention verisi yayından önce olmayacak; öncü göstergeler yayın gününden itibaren gerçek kullanıcıdan ölçülür.
 - Pazarlama planı ayrı konuşma: yayından sonra, ilk gerçek kullanım verisiyle.
+
+## Ek 1 (16 Eki, Levent): daha da kısa
+- Dış TestFlight yok (K-904 M11'e). Tek derleme: Levent iç TestFlight'ta telefonda 15 dk bakar, **aynı derleme** incelemeye gider.
+- K-805 ikiye ayrılır: **ASC'de banka + vergi formu (W-8BEN) şimdi** — Apple'ın şartı: Paid Applications Agreement aktif değilse abonelik satılamaz
+  (vergi ödemek değil, Apple'ın ödeme yapabilmesi için form); **mali müşavir (GVK 20/B) gelir gelince** (M11).
+- SANDBOX kabulü inceleme boyunca açık kalır: Apple incelemecisi satın almayı sandbox'ta dener (ADR-056 #4'ün "mağaza yayınında çıkar" kısmı
+  incelemeden sonraya kalır).
