@@ -83,7 +83,7 @@ export function weekHead(consistency: Loaded<Schemas['Consistency']>, firstWeeks
 
 export type Hero =
   | { kind: 'paused' }
-  | { kind: 'monday'; week: number | null; questions: number; weekday: Weekday }
+  | { kind: 'monday'; week: number | null; questions: number }
   | { kind: 'call'; decision: Schemas['Decision']; declined: boolean }
   | { kind: 'firstWeek'; firstCallOn: string | null }
   | { kind: 'callsOff' }
@@ -99,7 +99,8 @@ export function heroOf(data: TodayData): Hero {
   const checkIn = data.checkIn;
   if (checkIn?.state === 'ready' && !checkIn.value.answered) {
     const week = data.firstWeeks?.state === 'ready' ? data.firstWeeks.value.week : null;
-    return { kind: 'monday', week, questions: checkIn.value.questions.length, weekday: weekdayOf(checkIn.value.weekOf) };
+    // The server says the call is open (due now): the hero says Today, never a weekday (the check-in week is named by an earlier day when back after a gap).
+    return { kind: 'monday', week, questions: checkIn.value.questions.length };
   }
   if (data.state?.state === 'ready') return { kind: 'paused' };
   const { decision } = data;
