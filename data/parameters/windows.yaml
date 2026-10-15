@@ -118,3 +118,9 @@ parameters:
     tag: urun
     source: "arastirma/06-faz5-yuz.md#7"
     note: "SEÇİM, ürün kararı (ADR-078 #2, K-1016): İlerleme'nin tutarlılık ızgarası son bu kadar biten haftayı hücre hücre gösterir (eskiden yeniye); af haftası 'spare week' diye görünür (U7; 06 §7 B2 af gösterimi sorusu). Sayının araştırmada doğrudan karşılığı yok: ADR-078'in sonuç cümlesindeki '12 weeks · 11 on track' ile aynı pencere. Yalnız sunumu keser: kayıt (record.onTrackWeeks, countedWeeks, forgivenWeeks) bütün zamandır ve bu sayıdan etkilenmez; hiçbir karar kuralına girmez."
+  - key: return_prompt_days
+    value: 7
+    unit: days
+    tag: urun
+    source: "arastirma/ham/H9-donus-minimum-doz.md#§1.3"
+    note: "SEÇİM, ürün kararı (ADR-077 #5, Ek 6 ve Ek 8, K-1020); sayının araştırmada doğrudan karşılığı yok. Son kayıttan (tartı, öğün, seans, kardiyo) bugüne bu kadar gün geçtiyse dönüş ekranı sorulur. Dayanak: H9 §1.3 kısa araya (2-6 gün) kayıp yok, hatta hafif artış diyor; bir hafta bu kısa aranın bittiği yerdir, ekran ancak ondan sonra bir şey sorar. 6 gün sormaz, 7 sorar. return_step_back_after_weeks (3 hafta, training.yaml) ile karıştırılmaz: o yükün ne zaman hafifletildiğini (seans bazlı, G7 K-72), bu yalnız ekranın ne zaman sorulduğunu belirler; hiçbir karar kuralına girmez. Öneri (EASE_BACK/PICK_UP) bu eşiğe değil ReturnLoad'a bağlıdır."

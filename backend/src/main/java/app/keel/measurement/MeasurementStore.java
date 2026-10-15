@@ -81,6 +81,13 @@ class MeasurementStore {
                 .param("account", account.value()).query(BigDecimal.class).optional();
     }
 
+    /** When the latest weigh-in was made, not an imported one (ADR-053): the last log of the weight (K-1020). */
+    Optional<Instant> latestMeasuredAt(AccountId account) {
+        return jdbc.sql("select max(measured_at) from measurement.weigh_in where account_id = :account and source <> 'IMPORT'")
+                .param("account", account.value())
+                .query((row, n) -> Optional.ofNullable(row.getObject(1, OffsetDateTime.class)).map(OffsetDateTime::toInstant)).single();
+    }
+
     /** Every weigh-in of the account, oldest first (the export: whatever date it was stored with, K-214). */
     List<WeighIn> weighIns(AccountId account) {
         return jdbc.sql("select * from measurement.weigh_in where account_id = :account order by measured_at, id")

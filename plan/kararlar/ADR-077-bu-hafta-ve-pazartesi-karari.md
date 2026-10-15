@@ -213,3 +213,33 @@ Ek 4'ün "hareket hedefi satırı antrenman modülünden gelir" sözü şöyle y
 - **Reddedilen:** (a) satırı okuma anında programdan hesaplamak ve yalnız son kararda göstermek (ilk sürüm): karar kaydı sonradan değişen programa bağlı olurdu,
   eski karar satırsız kalırdı; (b) birden çok hareket satırı (ekran ≤45 kelime, başlık "en çok takılan hareket"); (c) telefonun hedefi `Program`'dan hesaplaması
   (kural işletir, U1); (d) hold'un hedefi değiştirmediği hareket için eşit `before`/`after` satırı (değişiklik yok).
+
+## Ek 8 · Dönüş ucu: GET/POST /v1/return (K-1020, 2026-10-15, agent, teknik; KABUL)
+Ek 6'nın "tetik kayıt boşluğu, cevap sunucuda, aynı boşlukta yeniden sorulmaz" sözü şöyle yerine gelir:
+- **Boşluk:** son kayıt = tartı (IMPORT hariç, ADR-053), öğün, seans (çalışma seti olan, K-431), kardiyo seansı; adım ve uygulama açılışı kayıt değil
+  (ADR-041 #66). `awayDays` = kullanıcının günlüğünde son kayıt gününden bugüne gün (kayıt yoksa 0). `shouldPrompt` = `awayDays ≥ return_prompt_days` (7,
+  `windows.yaml`, urun; 6 gün sormaz, 7 sorar) ve bu boşluk cevaplanmamış. Kaydı olmayan yeni kullanıcı dönen değil: sorulmaz. Tartı ve öğün yalnız
+  HEALTH_DATA rızası varken okunur (rızasız sayılmaz; uç 403 vermez, çünkü seans ve kardiyo rızasız kayıttır).
+- **Öneri:** program ile aynı tek fonksiyon `ReturnLoad.afterBreak`, son **seans** gününe uygulanır (boşluğa değil): son seans `return_step_back_after_weeks`
+  hafta geride ise EASE_BACK, değilse (ya da hiç seans yoksa) PICK_UP. Böylece ekranın "Ease back in" önerisi ile programın gerçekten bir basamak hafif
+  gösterdiği an aynı kuraldan çıkar; öğün/tartıyla sürdürülen ama 3 haftadır antrenmansız hesap da EASE_BACK görür.
+- **Cevabın izi:** `training.return_answer` (hesap başına bir satır: seçim, `gap_from` = cevap anındaki son kayıt günü, zaman). Tablo training'dedir, çünkü
+  PICK_UP bastırmasını programın okuyan taraf training'dir ve training → decision bağımlılığı yok (decision zaten training'e bağlı: uç decision'da,
+  kayıt training'de, `ReturnAnswers`). Aynı boşluk = son kayıt günü cevaptaki `gap_from`'dan sonra değil. Yeni bir kayıt son kayıt gününü ilerletir: bir
+  sonraki ≥7 günlük boşluk yeniden sorulur; ama cevaptan sonra `return_prompt_days` gün boyunca (cevap gününden) yeniden sorulmaz: geriye tarihli bir kayıt
+  (unutulan öğün, geç girilen tartı) cevaplanan soruyu hemen geri getirmez. Aynı boşluğa ikinci POST cevabı değiştirir (çift dokunuş, vazgeçme); boşluk yokken POST CONFLICT (boşluğa
+  bağlanmamış cevap, sonradan gelen boşluğu sessizce susturamaz).
+- **PICK_UP bastırması:** `BackAfterBreak` PICK_UP cevabı varken ve molanın ölçüldüğü son seans günü `gap_from`'u geçmemişken uzun mola saymaz
+  (`Program.backAfterBreak` yok, `nextLoadKg` hafifletilmemiş; çağrının hareket satırı da aynı okumadan). Yalnız dönüşteki ilk seans içindir: cevaptan sonra
+  `return_step_back_after_weeks` (`ReturnLoad`'un kendi haftaları, yeni sayı yok) seanssız geçerse bastırma düşer ve `ReturnLoad` normal işler (süresiz geçerli
+  bir PICK_UP kullanıcının aylar sonraki molasını da sessizce susturan bir kalıcı bastırma olurdu). Yeni bir seans da bastırmayı bitirir (son seans günü `gap_from`'dan sonra); sonraki
+  uzun mola yeniden hafifletilir. EASE_BACK varsayılanı (basamak) olduğu gibi bırakır; REBUILD programa
+  dokunmaz (telefon `POST /v1/program/generate` çağırır).
+- **nextCallOn (Hero ile aynı gün):** Today'deki Hero en son kararın `nextReview`'unu gösterir; iki ekran farklı gün demesin diye tek fonksiyon
+  (`ReturnGap.nextCallOn`): HEALTH_DATA rızası yoksa alan yok (nullable; "rıza yokken çağrı yok", uç 403 vermez); ilk çağrıdan önce ilk çağrının günü
+  (`FirstWeekFacts.firstCallOn`); bu check-in haftasının çağrısı açıksa bugün; değilse en son kararın `nextReview`'u gelecekteyse o (geç yapılmış bir çağrı
+  kendi gününde gözden geçirilir); o da yoksa sonraki check-in günü. `nextReview` ile check-in günü arasındaki genel tutarsızlık bu kararın konusu değildir
+  (ayrı kart).
+- **Reddedilen:** (a) cevabı decision'da tutup training'e `ObjectProvider` ile okutmak (CurrentPhase kalıbı): iki tablo ya da ters bağımlılık, tek satırlık
+  bir iz için fazla; (b) öneriyi `awayDays`'e bağlamak: ekran EASE_BACK deyip program hafifletmezdi (ya da tersi); (c) cevabı zaman damgasına bağlamak
+  (son kayıt gününe değil): yeni kayıtla yeniden sorma kuralı tarihten çıkarılamazdı.

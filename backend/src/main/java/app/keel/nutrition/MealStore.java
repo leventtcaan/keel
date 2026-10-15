@@ -79,6 +79,12 @@ class MealStore {
         return meals("m.account_id = :account and m.day between :from and :to", Map.of("account", account.value(), "from", from, "to", to));
     }
 
+    /** The latest day with a meal, on the user's calendar: the meals' last log (K-1020). */
+    Optional<LocalDate> lastDay(AccountId account) {
+        return jdbc.sql("select max(day) from nutrition.meal where account_id = :account").param("account", account.value())
+                .query((row, n) -> Optional.ofNullable(row.getObject(1, LocalDate.class))).single();
+    }
+
     /** Every meal of the account (the export, K-214). */
     List<Meal> all(AccountId account) {
         return meals("m.account_id = :account", Map.of("account", account.value()));
