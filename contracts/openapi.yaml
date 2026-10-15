@@ -2071,7 +2071,7 @@ components:
             $ref: "#/components/schemas/Error"
     RateLimited:
       description: |
-        Too many requests (K-817, ADR-081): the code is RATE_LIMITED. `Retry-After` is the whole seconds to wait before the
+        Too many requests (K-817, ADR-082): the code is RATE_LIMITED. `Retry-After` is the whole seconds to wait before the
         next try. Counted per account, and per address on sign-in (no account yet); the phone treats it like any other
         failure that may pass, and the app's own daily limits (coach_messages_per_day, photo_analyses_per_day) are a
         separate thing, answered as a DETERMINISTIC draft or answer.

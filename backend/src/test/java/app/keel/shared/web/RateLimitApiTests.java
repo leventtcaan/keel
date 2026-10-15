@@ -17,7 +17,7 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
 /**
- * The request limits on the real endpoints (K-817, ADR-081): sign-in, Apple revocation, the coach and the meal photo each
+ * The request limits on the real endpoints (K-817, ADR-082): sign-in, Apple revocation, the coach and the meal photo each
  * answer 429 RATE_LIMITED with Retry-After once a client is past its burst, before the request's body is looked at. A
  * burst of two here (the server's own numbers are application.yml's); the refill is an hour, so nothing comes back
  * during a test.

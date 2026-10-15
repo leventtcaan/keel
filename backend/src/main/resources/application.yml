@@ -67,7 +67,7 @@ keel:
     max-range-days: 400
     earliest-year: 1900
     latest-year: 2200
-  # How often a client may call the routes that cost something (K-817, ADR-081): a burst, then one request every refill-every,
+  # How often a client may call the routes that cost something (K-817, ADR-082): a burst, then one request every refill-every,
   # counted per account (per address at sign-in, where there is no account yet). Past it: 429 RATE_LIMITED with Retry-After.
   # The numbers are for a person, not a script: sign-in happens once per install (a shared address may see a few dozen at
   # once), revocation once per deletion (a closed Apple sheet may retry twice), the coach and the meal photo sit under their

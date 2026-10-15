@@ -1,4 +1,4 @@
-# ADR-081 · API hız sınırı: süreç içi token bucket, hesap başına (girişte adres başına), 429 RATE_LIMITED + Retry-After (K-817)
+# ADR-082 · API hız sınırı: süreç içi token bucket, hesap başına (girişte adres başına), 429 RATE_LIMITED + Retry-After (K-817)
 - **Durum:** KABUL (agent, teknik — ADR-019)
 - **Tarih:** 2026-10-15 · **Karar veren:** agent
 
