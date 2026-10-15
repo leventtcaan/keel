@@ -4136,7 +4136,7 @@ tasks:
     type: feature
     size: M
     status: done
-    depends_on: [K-903]
+    depends_on: []
     why: "8 hafta beklemeden öğrenmek"
     acceptance:
       - "İlk değere kadar süre, 2. hafta retention, 'plan değişti' anını gören kullanıcı %'si"
