@@ -85,3 +85,35 @@ export const starting = (): Schemas['StartingTarget'] => ({
 });
 
 export const summary = (weighInCount: number, trendReady = false): Schemas['WeighInSummary'] => ({ weighInCount, trendMinWeighIns: 7, trendReady });
+
+/** A lift's weekly best sets: `loads` per Monday week from 2026-09-07 on. */
+export const liftWeeks = (loads: number[], held: number[] = []): Schemas['LiftProgress']['weeks'] =>
+  loads.map((loadKg, i) => ({
+    weekOf: new Date(Date.UTC(2026, 8, 7) + i * 7 * 86_400_000).toISOString().slice(0, 10),
+    loadKg,
+    reps: 8,
+    rir: 1,
+    held: held.includes(i),
+  }));
+
+/** The weight trend: `kg` per day ending 2026-10-15, one point a day. */
+export const trendPoints = (kg: number[]): Schemas['TrendPoint'][] =>
+  kg.map((value, i) => ({ day: new Date(Date.UTC(2026, 9, 15) - (kg.length - 1 - i) * 86_400_000).toISOString().slice(0, 10), kg: value }));
+
+export const decision = (id: string, madeOn: string, over: Partial<Schemas['Decision']> = {}): Schemas['Decision'] =>
+  ({
+    id,
+    madeOn,
+    action: { type: 'CONTINUE' },
+    reasons: [{ rule: 'toward_goal', source: { tag: 'EXPERIENCE' } }],
+    confidence: 'HIGH',
+    nextReview: '2026-10-19',
+    nextCallOn: '2026-10-19',
+    copyKey: 'decision.continue.toward_goal',
+    application: { state: 'APPLIED' },
+    declinable: false,
+    changes: [],
+    ...over,
+  }) as Schemas['Decision'];
+
+export const decisionPage = (items: Schemas['Decision'][], next?: string): Schemas['DecisionPage'] => ({ items, ...(next === undefined ? {} : { next }) });

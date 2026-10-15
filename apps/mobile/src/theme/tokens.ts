@@ -135,6 +135,8 @@ export const tokens = {
     regular: '400',
     semibold: '600',
     bold: '700',
+    /** The heaviest system weight (UIFontWeightBlack); FitText sizes a label's box with a hidden copy in it (K-910). */
+    black: '900',
   },
   border: {
     hairline: 1,
@@ -155,6 +157,9 @@ export const tokens = {
     weekCell: 24,
     dot: 14,
     swatch: 10,
+    /** Sets per muscle: the muscle's name column and the count column beside its bar. */
+    barName: 92,
+    barCount: 44,
   },
   opacity: {
     /** Pressed and disabled controls. */

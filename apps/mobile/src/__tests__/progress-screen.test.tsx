@@ -12,7 +12,7 @@ import { t } from '@/copy';
 import { ThemeProvider } from '@/theme/theme';
 import { palettes, tokens } from '@/theme/tokens';
 
-import { budget, consistency, muscle, program, starting, summary, training, weeks } from './support/progressFixtures';
+import { budget, consistency, decision, decisionPage, lift, liftWeeks, muscle, program, starting, summary, trendPoints, training, weeks } from './support/progressFixtures';
 
 const mockPush = jest.fn();
 const mockFocusEffects = new Set<() => void>();
@@ -36,10 +36,13 @@ jest.mock('@/components/MuscleMap', () => ({ MuscleMap: (props: unknown) => mock
 type Answer = { data: unknown } | { status: number; code?: string } | 'offline';
 let answers: Record<string, Answer>;
 const mockApiCalls: string[] = [];
+/** The query each path was last asked with. */
+const mockQueries: Record<string, unknown> = {};
 const mockApi = new Proxy(
   {},
   {
-    get: (_target, method: string) => async (path: string, options?: { params?: { path?: { day?: string } } }) => {
+    get: (_target, method: string) => async (path: string, options?: { params?: { path?: { day?: string }; query?: unknown } }) => {
+      mockQueries[path] = options?.params?.query;
       mockApiCalls.push(`${method} ${path}${options?.params?.path?.day === undefined ? '' : ` ${options.params.path.day}`}`);
       const answer = answers[path] ?? { status: 404, code: 'NOT_FOUND' };
       if (answer === 'offline') throw new TypeError('Network request failed');
@@ -93,6 +96,8 @@ const weekTwelve = (): Record<string, Answer> => ({
   '/v1/weigh-ins/summary': ok(summary(80, true)),
   '/v1/days/{day}/budget': ok(budget()),
   '/v1/program': ok(program({ doneThisWeek: 1 })),
+  '/v1/weight-trend': ok(trendPoints([84.1, 83.6, 83.1, 82.5, 81.9, 81.2, 80.2])),
+  '/v1/decisions': ok(decisionPage([decision('c2', '2026-10-12'), decision('c1', '2026-10-05', { application: { state: 'DECLINED' } })])),
 });
 
 beforeEach(() => {
@@ -182,10 +187,11 @@ describe('the first days (ADR-078 #1)', () => {
     expect(mockPush).toHaveBeenLastCalledWith('/settings');
   });
 
-  test("cardio opens the '+' sheet where the cardio log is (ADR-078 Ek 2), not the Train tab", async () => {
+  test("cardio opens the cardio log itself, the screen the '+' sheet's Cardio row opens (ADR-078 Ek 2), not the sheet or the Train tab", async () => {
     await show();
     await fireEvent.press(box('cardio'));
-    expect(mockPush).toHaveBeenCalledWith('/plus');
+    expect(mockPush).toHaveBeenCalledWith('/cardio');
+    expect(mockPush).not.toHaveBeenCalledWith('/plus');
     expect(mockPush).not.toHaveBeenCalledWith('/train');
   });
 
@@ -355,9 +361,12 @@ describe('the 12th week (ADR-078 #2)', () => {
     expect(screen.getByTestId('consistency-grid').props.accessibilityLabel).toBe(t('progress.consistency.spoken', { count: 2, onTrack: 1, spare: 1, paused: 0, other: 0 }));
   });
 
-  test('the muscles still show (the sets-per-muscle bars come next)', async () => {
+  test('sets per muscle: a bar each, this week against the target, in place of the map', async () => {
     await show();
-    expect(screen.getByText(t('progress.muscles.title'))).toBeOnTheScreen();
+    expect(screen.getByText(t('progress.muscles.setsTitle'))).toBeOnTheScreen();
+    expect(screen.getByTestId('muscle-bar-quads').props.accessibilityLabel).toBe(t('progress.muscles.barLabel', { muscle: t('demo.muscle.quads'), done: 6, target: 10 }));
+    expect(screen.queryByText(t('progress.muscles.title'))).toBeNull();
+    expect(mockMap).not.toHaveBeenCalled();
   });
 
   test('the trend ready: the 3 of 7 card is gone', async () => {
@@ -464,6 +473,18 @@ describe.each(['light', 'dark'] as const)('in the %s theme', (scheme) => {
     expect(flat(screen.getByTestId('progress-hero')).backgroundColor).toBe(palettes[scheme].decisionBackground);
   });
 
+  test("the charts draw on the theme: the latest point on the accent, the held ring on the accent, the line in the text colour", async () => {
+    withLifts();
+    await show(scheme);
+    // react-native-svg keeps a colour as its processed value: opaque ARGB of the hex.
+    const colour = (hex: string) => ({ payload: 0xff000000 + parseInt(hex.slice(1), 16), type: 0 });
+    const props = (id: string) => screen.getByTestId(id).props as { fill?: unknown; stroke?: unknown };
+    expect(props('strength-point-2026-09-21').fill).toEqual(colour(palettes[scheme].accent));
+    expect(props('strength-held-2026-09-14').stroke).toEqual(colour(palettes[scheme].accent));
+    expect(props('strength-line').stroke).toEqual(colour(palettes[scheme].text));
+    expect(props('weight-point-2026-10-15').fill).toEqual(colour(palettes[scheme].accent));
+  });
+
   test('the 12 weeks draw on the theme\'s accent, spare and missed apart', async () => {
     answers = weekTwelve();
     await show(scheme);
@@ -493,6 +514,316 @@ describe('the tab keeps its other ways in', () => {
   });
 });
 
+/** The 12th week with two lifts to draw: squat has three weeks (one held, an effort line), bench has one. */
+const withLifts = () => {
+  answers = weekTwelve();
+  const squat = lift('squat', true, {
+    best: { loadKg: 105, reps: 8, rir: 1, day: '2026-09-21' },
+    baseline: { loadKg: 100, reps: 8, rir: 1, day: '2026-09-07' },
+    weeks: liftWeeks([100, 102.5, 105], [1]),
+    effort: { kind: 'STUCK', loadKg: 105, sessions: 3, held: true },
+  });
+  const bench = lift('bench_press', false, {
+    best: { loadKg: 60, reps: 10, rir: 2, day: '2026-09-07' },
+    baseline: { loadKg: 60, reps: 10, rir: 2, day: '2026-09-07' },
+    weeks: liftWeeks([60]),
+  });
+  answers['/v1/training-progress'] = ok({ ...training(1, 2, [muscle('quads', 10, 6)]), lifts: [squat, bench] });
+};
+const chart = () => screen.getByTestId('strength-chart');
+const svgText = (el: Node): string => el.children.map((child) => (typeof child === 'string' ? child : ((child.props.content as string | undefined) ?? svgText(child)))).join('');
+
+describe('strength: the lifts, the best set, the effort (ADR-078 #2, Ek 3)', () => {
+  beforeEach(withLifts);
+
+  test("a chip for each lift in the program's order; the first is picked", async () => {
+    await show();
+    const chips = within(screen.getByTestId('strength-chips')).getAllByRole('button');
+    expect(chips.map((c) => c.props.accessibilityState.selected)).toEqual([true, false]);
+    expect(screen.getByRole('button', { name: t('exercises.squat.name') })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: t('exercises.bench_press.name') })).toBeOnTheScreen();
+  });
+
+  test('the real best set large, where it started (nothing worked out), and no estimated max', async () => {
+    await show();
+    expect(screen.getByTestId('strength-best')).toHaveTextContent('105 kg × 8');
+    expect(screen.getByText('Started at 100 kg × 8')).toBeOnTheScreen();
+    expect(screen.queryByText(/estimated|1RM/i)).toBeNull();
+  });
+
+  test('the chart: a point for each week, joined in order, labelled with the lowest and highest week', async () => {
+    await show();
+    const points = within(chart()).getAllByTestId(/^strength-point-/);
+    expect(points).toHaveLength(3);
+    expect(within(chart()).getAllByTestId('strength-tick').map(svgText)).toEqual(['100 kg', '105 kg']);
+    const xs = points.map((p) => (p.props as { cx: number }).cx);
+    expect(xs[0]).toBeLessThan(xs[1]);
+    expect(xs[1]).toBeLessThan(xs[2]);
+  });
+
+  test('the weeks the call held the load are ringed, and said', async () => {
+    await show();
+    expect(within(chart()).getAllByTestId(/^strength-held-/).map((r) => r.props.testID)).toEqual(['strength-held-2026-09-14']);
+    expect(screen.getByText(t('progress.strength.legendHeld'))).toBeOnTheScreen();
+    expect(chart().props.accessibilityLabel).toContain(t('progress.strength.spokenHeld', { weeks: 'Sep 14' }));
+  });
+
+  test('VoiceOver gets the chart as one image, with its first and last week and its extremes', async () => {
+    await show();
+    expect(chart().props.accessibilityRole).toBe('image');
+    expect(chart().props.accessibilityLabel).toContain(
+      t('progress.strength.spoken', { move: t('exercises.squat.name'), first: '100 kg', firstDate: 'Sep 7', last: '105 kg', lastDate: 'Sep 21', low: '100 kg', high: '105 kg' }),
+    );
+  });
+
+  test("the effort line, from the server's facts", async () => {
+    await show();
+    expect(screen.getByTestId('strength-effort')).toHaveTextContent('Stuck at 105 kg for 3 sessions. Held this week.');
+  });
+
+  test("a lift with no effort has no line (the prototype's extra sentences are not here)", async () => {
+    await show();
+    await fireEvent.press(screen.getByRole('button', { name: t('exercises.bench_press.name') }));
+    expect(screen.queryByTestId('strength-effort')).toBeNull();
+  });
+
+  test('picking another lift changes the set and the pick (flow D)', async () => {
+    await show();
+    await fireEvent.press(screen.getByRole('button', { name: t('exercises.bench_press.name') }));
+    expect(screen.getByTestId('strength-best')).toHaveTextContent('60 kg × 10');
+    expect(screen.getByRole('button', { name: t('exercises.bench_press.name') }).props.accessibilityState.selected).toBe(true);
+    expect(screen.getByRole('button', { name: t('exercises.squat.name') }).props.accessibilityState.selected).toBe(false);
+  });
+
+  test('a lift with one week is not drawn as a chart (a point is not a line)', async () => {
+    await show();
+    await fireEvent.press(screen.getByRole('button', { name: t('exercises.bench_press.name') }));
+    expect(screen.queryByTestId('strength-chart')).toBeNull();
+    expect(screen.getByTestId('strength-best')).toBeOnTheScreen();
+  });
+
+  test('in pounds', async () => {
+    mockUnits = 'IMPERIAL';
+    await show();
+    expect(screen.getByTestId('strength-best')).toHaveTextContent('231.5 lb × 8');
+    expect(within(chart()).getAllByTestId('strength-tick').map(svgText)).toEqual(['220.5 lb', '231.5 lb']);
+  });
+
+  test('opens on the first lift that has a chart, the first lift when none has', async () => {
+    const squat = lift('squat', false, { weeks: liftWeeks([100]) });
+    const bench = lift('bench_press', true, { weeks: liftWeeks([60, 62.5]) });
+    answers['/v1/training-progress'] = ok({ ...training(1, 2), lifts: [squat, bench] });
+    await show();
+    expect(screen.getByRole('button', { name: t('exercises.bench_press.name') }).props.accessibilityState.selected).toBe(true);
+    expect(screen.getByTestId('strength-chart')).toBeOnTheScreen();
+  });
+
+  test('one lift: no chips to pick from', async () => {
+    answers['/v1/training-progress'] = ok({ ...training(1, 1), lifts: [lift('squat', true, { weeks: liftWeeks([100, 105]) })] });
+    await show();
+    expect(screen.queryByTestId('strength-chips')).toBeNull();
+    expect(chart()).toBeOnTheScreen();
+  });
+
+  test('a picked lift gone from the next read: the first lift shown, no crash', async () => {
+    await show();
+    await fireEvent.press(screen.getByRole('button', { name: t('exercises.bench_press.name') }));
+    answers['/v1/training-progress'] = ok({ ...training(1, 1), lifts: [lift('squat', true, { weeks: liftWeeks([100, 105]) })] });
+    await act(async () => mockFocus());
+    expect(chart()).toBeOnTheScreen();
+  });
+
+  test("the first workout's form stays while no lift has two weeks and no effort: the baseline list, no chart", async () => {
+    answers['/v1/training-progress'] = ok({ ...training(0, 2), lifts: [lift('squat', false, { weeks: liftWeeks([100]) }), lift('bench_press', false, { weeks: liftWeeks([60]) })] });
+    await show();
+    expect(screen.getAllByTestId(/^strength-row-/)).toHaveLength(2);
+    expect(screen.queryByTestId('strength-chart')).toBeNull();
+    expect(screen.queryByTestId('strength-chips')).toBeNull();
+  });
+});
+
+describe('weight: the 7-day average (ADR-078 #2, Ek 3)', () => {
+  beforeEach(() => {
+    answers = weekTwelve();
+  });
+
+  test('the average of the days the server has: the latest large, a chart, nothing of the dots', async () => {
+    await show();
+    expect(screen.getByText(t('progress.weight.chartTitle'))).toBeOnTheScreen();
+    expect(screen.getByText(t('progress.weight.average'))).toBeOnTheScreen();
+    expect(screen.getByTestId('weight-latest')).toHaveTextContent('80.2 kg');
+    expect(within(screen.getByTestId('weight-chart')).getAllByTestId(/^weight-point-/)).toHaveLength(7);
+    expect(screen.queryByTestId('weight-dots')).toBeNull();
+  });
+
+  test('labels are the lowest and highest day, and VoiceOver gets the chart as one image', async () => {
+    await show();
+    const weightChart = screen.getByTestId('weight-chart');
+    expect(within(weightChart).getAllByTestId('weight-tick').map(svgText)).toEqual(['80.2 kg', '84.1 kg']);
+    expect(weightChart.props.accessibilityRole).toBe('image');
+    expect(weightChart.props.accessibilityLabel).toBe(
+      t('progress.weight.chartSpoken', { first: '84.1 kg', firstDate: 'Oct 9', last: '80.2 kg', lastDate: 'Oct 15', low: '80.2 kg', high: '84.1 kg' }),
+    );
+  });
+
+  test('asked for the twelve weeks ending today, and only once the trend is ready', async () => {
+    await show();
+    expect(mockQueries['/v1/weight-trend']).toEqual({ from: '2026-07-24', to: '2026-10-15' });
+    answers = firstDay();
+    mockApiCalls.length = 0;
+    await act(async () => mockFocus());
+    expect(mockApiCalls.some((c) => c.includes('weight-trend'))).toBe(false);
+  });
+
+  test('in pounds', async () => {
+    mockUnits = 'IMPERIAL';
+    await show();
+    expect(screen.getByTestId('weight-latest')).toHaveTextContent('176.8 lb');
+  });
+
+  test('one point: the value, no chart', async () => {
+    answers['/v1/weight-trend'] = ok(trendPoints([80.2]));
+    await show();
+    expect(screen.getByTestId('weight-latest')).toHaveTextContent('80.2 kg');
+    expect(screen.queryByTestId('weight-chart')).toBeNull();
+  });
+
+  test('ready but no day in the window: the dots stay, with the line that says what brings the average back', async () => {
+    answers['/v1/weight-trend'] = ok([]);
+    await show();
+    expect(screen.getByTestId('weight-dots')).toBeOnTheScreen();
+    expect(screen.getByText(t('progress.weight.stale'))).toBeOnTheScreen();
+    expect(screen.queryByText('Shows after 7 weigh-ins.')).toBeNull();
+    expect(screen.queryByTestId('weight-chart')).toBeNull();
+  });
+
+  test('the trend failing to read: the dots stay, no chart, no line that blames the user, and a retry', async () => {
+    answers['/v1/weight-trend'] = 'offline';
+    await show();
+    expect(screen.getByTestId('weight-dots')).toBeOnTheScreen();
+    expect(screen.queryByTestId('weight-chart')).toBeNull();
+    expect(screen.queryByText(t('progress.weight.stale'))).toBeNull();
+    expect(screen.queryByText('Shows after 7 weigh-ins.')).toBeNull();
+    expect(screen.getByText(t('progress.failed'))).toBeOnTheScreen();
+    answers['/v1/weight-trend'] = ok(trendPoints([81, 80.5, 80]));
+    await fireEvent.press(screen.getByRole('button', { name: t('progress.retry') }));
+    await act(async () => {});
+    expect(screen.getByTestId('weight-chart')).toBeOnTheScreen();
+  });
+
+  test('a trend with nothing to read for this account (not found): the dots, no stale line', async () => {
+    answers['/v1/weight-trend'] = { status: 404 };
+    await show();
+    expect(screen.getByTestId('weight-dots')).toBeOnTheScreen();
+    expect(screen.queryByText(t('progress.weight.stale'))).toBeNull();
+  });
+
+  test('a range narrower than one shown step is a flat line at half height with one label: noise is not a trend', async () => {
+    answers['/v1/weight-trend'] = ok(trendPoints([80.21, 80.24, 80.22, 80.26, 80.23]));
+    await show();
+    const weightChart = screen.getByTestId('weight-chart');
+    expect(within(weightChart).getAllByTestId('weight-tick')).toHaveLength(1);
+    const ys = within(weightChart).getAllByTestId(/^weight-point-/).map((p) => (p.props as { cy: number }).cy);
+    expect(new Set(ys).size).toBe(1);
+    expect(ys[0]).toBe(66); // half way between the chart's top (14) and bottom (118)
+  });
+
+  test('a range of a step or more is drawn as it is', async () => {
+    answers['/v1/weight-trend'] = ok(trendPoints([80.2, 80.3, 80.5]));
+    await show();
+    const ys = within(screen.getByTestId('weight-chart')).getAllByTestId(/^weight-point-/).map((p) => (p.props as { cy: number }).cy);
+    expect(new Set(ys).size).toBe(3);
+    expect(within(screen.getByTestId('weight-chart')).getAllByTestId('weight-tick')).toHaveLength(2);
+  });
+
+  test('one point: its day, as the server gave it', async () => {
+    answers['/v1/weight-trend'] = ok(trendPoints([80.2]));
+    await show();
+    expect(screen.getByTestId('weight-latest-day')).toHaveTextContent('Oct 15');
+  });
+
+  test('a chart has no extra day line (its last date is under the chart)', async () => {
+    await show();
+    expect(screen.queryByTestId('weight-latest-day')).toBeNull();
+  });
+});
+
+describe('sets per muscle (ADR-078 #4)', () => {
+  test("a bar for each muscle the server lists, with this week's sets of the target", async () => {
+    answers = weekTwelve();
+    answers['/v1/training-progress'] = ok(training(4, 5, [muscle('quads', 10, 6), muscle('chest', 8, 12)]));
+    await show();
+    expect(screen.getAllByTestId(/^muscle-bar-/).map((b) => b.props.testID)).toEqual(['muscle-bar-quads', 'muscle-bar-chest']);
+    expect(within(screen.getByTestId('muscle-bar-quads')).getByText('6/10')).toBeOnTheScreen();
+    expect(within(screen.getByTestId('muscle-bar-chest')).getByText('12/10')).toBeOnTheScreen();
+  });
+
+  test("before the first call the map stays (the first days' form)", async () => {
+    await show();
+    expect(screen.queryByText(t('progress.muscles.setsTitle'))).toBeNull();
+    expect(mockMap).toHaveBeenCalled();
+  });
+});
+
+describe('calls (ADR-078 #2, Ek 3)', () => {
+  beforeEach(() => {
+    answers = weekTwelve();
+  });
+
+  test('the latest calls, each a button with its date and what the call was', async () => {
+    await show();
+    expect(screen.getByText(t('progress.calls.title'))).toBeOnTheScreen();
+    expect(within(screen.getByTestId('call-c2')).getByText(t('decision.continue.toward_goal.title'))).toBeOnTheScreen();
+    expect(within(screen.getByTestId('call-c2')).getByText('Oct 12')).toBeOnTheScreen();
+    expect(screen.getByTestId('call-c2').props.accessibilityRole).toBe('button');
+  });
+
+  test('asked for as many as progress.json shows', async () => {
+    await show();
+    expect(mockQueries['/v1/decisions']).toEqual({ limit: 12 });
+  });
+
+  test('a call that was not applied says so, in words and for VoiceOver', async () => {
+    await show();
+    expect(within(screen.getByTestId('call-c1')).getByText(t('progress.calls.notApplied'))).toBeOnTheScreen();
+    expect(screen.getByTestId('call-c1').props.accessibilityLabel).toBe(
+      t('progress.calls.rowLabelNotApplied', { title: t('decision.continue.toward_goal.title'), date: 'Oct 5' }),
+    );
+    expect(within(screen.getByTestId('call-c2')).queryByText(t('progress.calls.notApplied'))).toBeNull();
+  });
+
+  test('a call opens the call screen, read only, coming back to Progress', async () => {
+    await show();
+    await fireEvent.press(screen.getByTestId('call-c1'));
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/call', params: { id: 'c1', from: 'progress' } });
+  });
+
+  test('44 pt to touch', async () => {
+    await show();
+    const flat = Object.assign({}, ...[screen.getByTestId('call-c2').props.style].flat(2).filter(Boolean)) as { minHeight?: number };
+    expect(flat.minHeight).toBeGreaterThanOrEqual(tokens.size.touch);
+  });
+
+  test('no way leads to the ledger screen, which is off the surface (ADR-069 #3)', async () => {
+    answers['/v1/decisions'] = ok(decisionPage([decision('c2', '2026-10-12')], 'cursor'));
+    await show();
+    for (const button of screen.getAllByRole('button')) await fireEvent.press(button);
+    expect(mockPush).not.toHaveBeenCalledWith('/ledger');
+  });
+
+  test('no call yet: no card', async () => {
+    answers['/v1/decisions'] = ok(decisionPage([]));
+    await show();
+    expect(screen.queryByText(t('progress.calls.title'))).toBeNull();
+  });
+
+  test('before the first call there are none to list', async () => {
+    answers = firstDay();
+    await show();
+    expect(screen.queryByText(t('progress.calls.title'))).toBeNull();
+  });
+});
+
 describe('privacy (V1): nothing written, nothing about a photo, leaves the phone from this tab', () => {
   const KNOWN = [
     'GET /v1/training-progress',
@@ -502,6 +833,8 @@ describe('privacy (V1): nothing written, nothing about a photo, leaves the phone
     'GET /v1/program',
     'GET /v1/targets/starting',
     'GET /v1/first-weeks',
+    'GET /v1/decisions',
+    'GET /v1/weight-trend',
   ];
 
   test.each([

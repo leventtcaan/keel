@@ -104,10 +104,10 @@ export function CallCard({ decision, onChanged }: { decision: Decision | null; o
   return (
     <DecisionBlock testID="call" eyebrow={t(labelKey(decision.copyKey))} title={t(titleKey)}>
       <View style={styles.row}>
-        <Text style={[styles.small, { color: color.decisionMuted }]}>{t('today.call.eyebrow')}</Text>
+        <Text style={[styles.small, styles.grows, { color: color.decisionMuted }]}>{t('today.call.eyebrow')}</Text>
         {/* Waiting has no confidence to give: its label says "Wait" already. */}
         {waits ? null : (
-          <Text style={[styles.small, { color: color.decisionMuted }]}>{t(`today.call.confidence.${decision.confidence}`)}</Text>
+          <Text style={[styles.small, styles.grows, styles.end, { color: color.decisionMuted }]}>{t(`today.call.confidence.${decision.confidence}`)}</Text>
         )}
       </View>
       <Text style={[styles.text, { color: color.decisionTextSecondary }]}>{t(`${decision.copyKey}.body`)}</Text>
@@ -132,6 +132,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: tokens.space.sm,
   },
+  /** Both texts of the line take the room the line has, so neither box is as wide as its text (Bold Text, K-910). */
+  grows: { flexGrow: 1, flexShrink: 1 },
+  end: { textAlign: 'right' },
   reasons: { gap: tokens.space.sm },
   reason: { gap: tokens.space.xs },
 });

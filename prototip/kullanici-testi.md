@@ -168,3 +168,27 @@ Tur 1'dekiler aynen. Ek olarak: tam rıza metni taslaktır (kayıtlı sürüm `d
 | Başka cihazda açık seans devralınamıyor | K-999 |
 | Dönen kullanıcıya dönüş akışı yok, "Getting stronger/weaker" soruluyor | K-981 |
 | Küçükler: pull-up'ta "Pick a weight"/ısınma, "Skipped" bandı kardiyoya taşıyor, atma sonrası eski "Paused", Food today/left etiketi, Add a move boş liste | K-1013 |
+
+## Tur 4 (kod, simülatör · 15 Eki, M9a Part 4 sonu)
+
+- **Yöntem:** 23 fikstür senaryosu (sözleşmeye karşı 1353 yanıt, 0 hata; 9 yeni: progress-day1/w12, return-8d/22d/rızasız,
+  cardio-logged-today, first-call-2days, beginner-w1-2days, call-held-move), iPhone 16 Pro Max, `origin/main` `ed2ae3e0`. İki tema;
+  Kalın Metin açık ve koyu temada Home, Progress, Return, Log, Life, Settings, workout, çağrı.
+- **Sonuç:** engelleyici yok, çökme yok, U4-U8 ihlali yok; 3 önemli, 26 küçük. Çalışan: İlerleme bölümleri tek tek, kardiyo kutusu →
+  kardiyo kaydı, kardiyo Undo, tartı + Health kartı, dönüş üç senaryoda suçlamasız, Sick → rıza (sürüm 4) → kayıt, Busy rızasız, K-1013
+  (hero gövdesi, Edit uyarısı üstte, held move Keep/Use this call, gün ekleme, süperset satırı Kalın'da da), K-999 Continue here, K-910
+  (son harf kaybı ve taşma yok).
+- **Yapılamayan:** kamera arka planı, Story (#582 main'de değil), Apple Health kardiyo Undo'suz görünümü, In pain ayrıca, silme akışları,
+  iPhone SE, canlı Pause → K-984 cihaz turu.
+
+### Bulgular → kartlar
+
+| Bulgu | Kart |
+|---|---|
+| Button size='sm' 35-38 pt ('I'm back', hero 'Settings', Settings 'Save') · Share ~4 sn sessiz · SHARE ekranında çıkış yok | K-1027 |
+| Strength kartı 25 harekette ~2 ekran çip, grafik görünmüyor · ızgarada kaçan hafta açıklaması yok · Pull-up '0 kg × 6' · rızasız hero metni | K-1028 |
+| Recent '+' sessiz kayıt, Undo yok · '1 1 medium' · This week kardiyo satırı kaydı göstermiyor | K-1029 |
+| Dönüşte 'How did training go this week?' · hero 'Tuesday' (çağrı bugün) · Pull-up ısınma · '0 of 9' / 8 parça · gün eklendikten sonra eski bant | K-1030 |
+| Held move "47.5 kg x 10" (50'den düşüş gibi) | tasarım gereği: son yük tutulur, hedef kesintisi değil (ADR-077 Ek 4, `CallChanges.move held`) |
+| Rıza metni tek paragraf · 'Streak' sekme adı | Levent'e soru |
+| Weigh-in nokta grafiği eksensiz, iki birincil düğme, Food left kartı FAB altında, egzersiz simgeleri, Settings başlık hiyerarşisi, sticker ön izleme boşluğu | düşük güven / kozmetik → K-984 cihazda yeniden bakılır |

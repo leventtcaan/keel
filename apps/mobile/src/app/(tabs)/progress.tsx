@@ -11,10 +11,13 @@ import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
 import { PhotoCard } from '@/photos/PhotoCard';
 import { ConsistencyGrid } from '@/progress/ConsistencyGrid';
-import { LockLine, MusclesCard, StrengthCard, WeighInDots } from '@/progress/Parts';
+import { CallsCard } from '@/progress/CallsCard';
+import { LiftsCard } from '@/progress/LiftsCard';
+import { LockLine, MuscleBars, MusclesCard, StrengthCard } from '@/progress/Parts';
+import { WeightCard } from '@/progress/WeightCard';
 import { TargetsGrid } from '@/progress/TargetsGrid';
 import { type ProgressRead, loadProgress } from '@/progress/read';
-import { heroOf, phaseOf, strengthOf, targetsOf, weighInDots } from '@/progress/sections';
+import { callsOf, heroOf, phaseOf, strengthOf, targetsOf, weightOf } from '@/progress/sections';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
@@ -69,18 +72,23 @@ export default function ProgressScreen() {
     const hero = heroOf(progress, units);
     const targets = targetsOf(progress);
     const strength = strengthOf(progress);
-    const dots = weighInDots(progress);
+    const weight = weightOf(progress);
+    const calls = callsOf(progress);
     const lifts = progress.training.state === 'ready' ? progress.training.value.lifts : [];
     const muscles = progress.training.state === 'ready' ? progress.training.value.muscles : [];
     const weeks = progress.consistency.state === 'ready' ? progress.consistency.value.weeks : [];
-    const failed = [progress.training, progress.consistency, progress.summary, progress.budget, progress.program].some((part) => part.state === 'failed');
+    const failed = [progress.training, progress.consistency, progress.summary, progress.budget, progress.program, progress.calls, progress.trend].some((part) => part?.state === 'failed');
 
-    const strengthCard = strength === null ? null : <StrengthCard part={strength} lifts={lifts} moves={progress.moves} units={units} />;
-    // The weigh-ins toward the trend stay until it is ready, before the first call and after it.
-    const weighIns = dots === null ? null : <WeighInDots count={dots.count} min={dots.min} />;
-    const musclesCard = <MusclesCard muscles={muscles} figure={figure} />;
     // Built outside the JSX below (the raw-text guard reads JSX children).
     const running = phase === 'running';
+    let strengthCard = null;
+    if (strength === 'lifts') strengthCard = <LiftsCard lifts={lifts} moves={progress.moves} units={units} />;
+    else if (strength !== null) strengthCard = <StrengthCard part={strength} lifts={lifts} moves={progress.moves} units={units} />;
+    // The weigh-ins toward the trend, or the average once the server says it is ready (before the first call and after it).
+    const weightCard = weight === null ? null : <WeightCard part={weight} units={units} />;
+    // The map fills as the user trains in the first days; after the first call, the sets of each muscle against its target.
+    const musclesCard = running ? <MuscleBars muscles={muscles} /> : <MusclesCard muscles={muscles} figure={figure} />;
+    const callsCard = calls === null ? null : <CallsCard items={calls.items} />;
     // The first days' targets only while there is no first call (or no consent to read one); not while it is unknown.
     const first = phase === 'first' || phase === 'locked';
     const targetsGrid = first && targets.length > 0 ? <TargetsGrid targets={targets} /> : null;
@@ -101,14 +109,16 @@ export default function ProgressScreen() {
       <>
         {strengthCard}
         {musclesCard}
-        {weighIns}
+        {weightCard}
         <ConsistencyGrid weeks={weeks} />
+        {callsCard}
       </>
     ) : (
       <>
         {musclesCard}
         {strengthCard}
-        {weighIns}
+        {weightCard}
+        {callsCard}
       </>
     );
     body = (

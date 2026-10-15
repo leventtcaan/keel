@@ -5,8 +5,10 @@ guncelleme: 2026-10-10
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (14 Eki — M9a Part 4 SÜRÜYOR)
-Tablo: DURUM › M9a ilerleme › Part 4 başı. Prompt: `plan/oturum-promptlari/YENI-YUZ-kod.md` › Part 4.
+## ▶ DEVAM NOKTASI (15 Eki akşam — M9a Part 4 devam-2, Tur 4 bitti)
+**Devam:** `plan/oturum-promptlari/YENI-YUZ-part4-devam.md` (#582 birleştir → K-1027 dalı (WIP testler) + K-1028 + K-1030 → K-1029 → K-984 hazırlığı → ÇIKIŞ). Tablo: DURUM › M9a ilerleme › Part 4 başı.
+
+## (önceki) DEVAM NOKTASI (15 Eki — M9a Part 4 token sınırında durdu)
 
 ## (önceki) DEVAM NOKTASI (10 Eki gece — M9a Part 3 BİTTİ)
 **Sıradaki session: M9a Part 4 · Kalan + kapanış** → `plan/oturum-promptlari/YENI-YUZ-kod.md` › "Part 4 prompt'u"; ayrıntı DURUM › M9a ilerleme › Part 3 ÇIKIŞ.
@@ -932,16 +934,18 @@ K-1014 · K-1013 iki PR'a bölündü (A karar/Bu hafta, B oturum/Edit).
 | K-1021 durum bildirimi | ✅ | #562 | rıza yalnız Sick/Pain; **onay metni sürüm 4** (Levent 15 Eki); privacy.md yayımlandı |
 | K-1022 mola haftası PAUSED | ✅ | #565 | ADR-040 Ek 1 |
 | K-1023 uyum penceresi molayı saymaz | ✅ | #568 | |
-| K-1024 sonraki çağrı günü tek kaynak | 🔍 düzeltme | #574 | `Decision.nextCallOn`; nextReview değişmedi; ADR-077 Ek 9; koç metni 'stands until' ayrı not |
-| K-1025 son yenenler | 🔍 | #576 (arka uç) | telefon PR'ı K-980 B'den sonra |
+| K-1024 sonraki çağrı günü tek kaynak | ✅ | #574 | `Decision.nextCallOn`; nextReview değişmedi; ADR-077 Ek 9; koç metni 'stands until' ayrı not |
+| K-1025 son yenenler | ✅ | #576 · #580 | 'Recent', `quick_recent_max` |
 | K-982 Ayarlar | ✅ | #569 | Health yazma rızadan bağımsız; Units Appearance içinde |
-| K-980 Kayıt ekranları | 🔍 düzeltme | #570 · #572 | takeBack servisi; 'Usual foods' geçici (K-1025) |
-| K-979 İlerleme | 🔍/🛠 | #571 (A, rebase) · B 🛠 | ADR-078 Ek 2; MISSED nötr token |
-| K-981 Dönüş + Life | 🛠 | | |
-| K-975 Paylaşım A | 🔍 | #573 · #575 | ADR-054 kartı kalktı |
-| K-976 Paylaşım B | ⏳ | | App ID yok → sistem sayfası |
+| K-980 Kayıt ekranları | ✅ | #570 · #572 | takeBack; çevrimdışı Undo yok (ADR-018 Ek 2); IMPORT ön dolum yok |
+| K-979 İlerleme | 🔍 | #571 ✅ · #577 (auto-merge) · kardiyo kutusu PR'ı | ADR-078 Ek 2/3; `progress.json` |
+| K-981 Dönüş + Life | ✅ | #578 | her durumda 'Not now'; ADR-077 Ek 10; K-1026 #579 (Ek 11) |
+| K-975 Paylaşım A | ✅ | #573 · #575 | ADR-054 kartı kalktı; panel cihazda bakılacak |
+| K-976 Paylaşım B | ✔ birleşmeye hazır | #582 | lazy require + koruma testi (`virtual` mock); doğrulama PASS |
 | K-977 Paylaşım C | ↪ M11 | | Levent 14 Eki |
-| K-910 Kalın Metin | ⏳ | | |
+| K-910 Kalın Metin | 🛠 cihaz | #581 ✅ (Refs) | `useBoldText` + gizli kopya; cihazda doğrulama Tur 4/K-984 |
+| Tur 4 yürüyüşü | ✅ | | 23 senaryo; engelleyici yok; 3 önemli + 26 küçük → K-1027..K-1030 |
+| K-1027..K-1030 Tur 4 düzeltmeleri | ⏳ | #589 dal (WIP) | K-1028/29/30 başlamadı |
 | K-984 TestFlight + cihaz turu | ⏳ | | K-983 (Levent) bekler |
 
 ## M9 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)

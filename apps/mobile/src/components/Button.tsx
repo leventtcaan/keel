@@ -1,5 +1,6 @@
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 
+import { FitText } from '@/components/FitText';
 import { useTheme } from '@/theme/theme';
 import { type Palette, tokens } from '@/theme/tokens';
 
@@ -35,12 +36,12 @@ export function Button({ label, onPress, variant = 'primary', size = 'md', disab
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel}
+      accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [styles.base, size !== 'md' && styles.small, size === 'touch' && styles.touch, fill, (pressed || disabled) && styles.dim]}>
-      <Text style={[styles.label, size !== 'md' && styles.labelSmall, { color: ink }]}>{label}</Text>
+      <FitText style={[styles.label, size !== 'md' && styles.labelSmall, { color: ink }]}>{label}</FitText>
     </Pressable>
   );
 }
@@ -55,6 +56,6 @@ const styles = StyleSheet.create({
   small: { paddingVertical: tokens.space.sm, paddingHorizontal: tokens.space.md, alignSelf: 'flex-start' },
   touch: { minHeight: tokens.size.touch, justifyContent: 'center' },
   dim: { opacity: tokens.opacity.dim },
-  label: { fontSize: tokens.type.button, fontWeight: tokens.weight.semibold },
+  label: { fontSize: tokens.type.button, fontWeight: tokens.weight.semibold, textAlign: 'center' },
   labelSmall: { fontSize: tokens.type.buttonSmall },
 });
