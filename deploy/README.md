@@ -16,6 +16,7 @@ backend (`prod` profile, K-907) and Caddy (HTTPS, the only open ports). Everythi
 | `backup.sh`, `keel-backup.*` | Daily encrypted backup on the server (02:30 UTC) |
 | `mac/pull-backups.sh`, `mac/install-pull.sh` | The Mac pulls the encrypted backups hourly while awake (out of Time Machine); a notification when the newest is over 26 h old |
 | `restore-drill.sh` | Restores the newest backup into a throwaway database and compares every table's row count with the counts the backup took |
+| `weekly-report.sh`, `weekly-report.sql` | The weekly leading indicators (K-905, ADR-081): time to first value, week-2 retention, share who saw their plan change; read-only, aggregates only |
 | `fetch-fdc.sh` | Downloads FoodData Central's releases (ADR-008) for the backend to import |
 | `ci-deploy.sh`, `authorize-ci.sh` | The CI key's only command on the server, installed root's (K-902); letting that key in |
 
@@ -54,6 +55,10 @@ Once, on the Mac, after the first deploy:
   (no rsyslog), kept 14 days (`retention.env`).
 - **Backups:** `ssh keel-vps 'ls -l /var/backups/keel'` · `systemctl list-timers keel-backup.timer` · on the Mac
   `~/KeelBackups`, `~/Library/Logs/keel-backup-pull.log`.
+
+- **Leading indicators:** `ssh keel-vps /opt/keel/deploy/weekly-report.sh` (Mondays; `--as-of YYYY-MM-DD`, `--weeks N`). One table, a row per
+  sign-up week and a total. It reads the tables the server already keeps, in a read-only session; it opens nothing and sends
+  nothing. Definitions: the header of `weekly-report.sql`, ADR-081.
 
 ## Secrets
 `/opt/keel/.env`, owner `keel`, mode 600. To change one, edit it on the server and `ssh keel-vps '/opt/keel/deploy/kc up -d'`.

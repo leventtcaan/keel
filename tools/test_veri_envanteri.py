@@ -429,6 +429,17 @@ class OperationsMatchTheServer(unittest.TestCase):
         self.assertIn("keeps no access log", section)
 
 
+    def test_the_weekly_counts_are_derived_stored_nowhere_and_said_in_the_policy(self):
+        # K-905, ADR-081: leading indicators come from the tables above, so no table of events exists to list or to delete.
+        counts = self.operations["weekly usage counts"]
+        self.assertTrue(counts["kept_for"].startswith("not stored"))
+        self.assertEqual(counts["policy"], "data-technical")
+        section = " ".join(_section(self.policy, "data-technical").split())
+        self.assertIn("are never listed per person and are stored nowhere", section)
+        self.assertIn("no analytics service and no tracking in the app", section)
+        self.assertEqual([t for t in migration_tables() if re.search(r"analytic|telemetry|metric|tracking|usage_event", t)], [])
+
+
 class PermissionsMatchTheApp(unittest.TestCase):
     def test_every_permission_text_both_ways(self):
         asked = set(re.findall(r"en\.permissions\.(\w+)", APP_CONFIG.read_text(encoding="utf-8")))

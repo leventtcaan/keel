@@ -1427,6 +1427,18 @@
     "deploy/retention.env"
    ],
    "policy": "data-technical"
+  },
+  {
+   "name": "weekly usage counts",
+   "data": "Counts for all users together, worked out when the controller runs the report (K-905, ADR-081): sign-ups, days to the first weekly call, share active in the second week, share who saw their plan change. Read from the tables above (when something was logged, never what); no account in the output.",
+   "where": "our server (Contabo, Germany); printed to the controller's terminal over SSH",
+   "kept_for": "not stored: worked out each time it runs, from tables that go with the account",
+   "basis": "legitimate interest (Art. 6(1)(f)): learning whether the service works for people",
+   "source": [
+    "deploy/weekly-report.sh",
+    "deploy/weekly-report.sql"
+   ],
+   "policy": "data-technical"
   }
  ]
 }

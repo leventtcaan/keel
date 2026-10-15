@@ -107,8 +107,12 @@ the import can carry body weight; imported sessions then stay in the training lo
 - Our server's logs record each request's route, status and timing. They never record your account, what you sent, or any
   health data. The web server in front of it keeps no access log; its error messages can include an IP address. Logs are
   deleted after 14 days.
+- Once a week the controller counts, for all users together, how many people started, how soon they got their first
+  weekly call, how many were still using the app in their second week and how many saw their plan change. The counts are
+  worked out on our own server from the records above (only when something was logged, never what it was), are never
+  listed per person and are stored nowhere. There is no analytics service and no tracking in the app.
 
-*Why:* to make deletions reliable and keep the service running (legitimate interest, GDPR Art. 6(1)(f)).
+*Why:* to make deletions reliable, keep the service running and learn whether it works for people (legitimate interest, GDPR Art. 6(1)(f)).
 
 ### Backups {#data-backups}
 
