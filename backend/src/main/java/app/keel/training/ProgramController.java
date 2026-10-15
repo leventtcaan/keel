@@ -489,9 +489,10 @@ class ProgramController {
         // The break is the account's, from its training log (ADR-043 #75): the last session done before today, any day of the
         // program or none. Before today, so the session back itself — and a program read during it — stays a step lighter.
         // Unless the user picked up where they left off (K-1020): then no break is eased until the next session.
+        Parameters forAccount = parametersFor(account);
         Optional<LocalDate> lastSession = returns.breakFrom(account, log.lastSessionBefore(account, today.atStartOfDay(zone).toInstant())
-                .map(started -> started.atZone(zone).toLocalDate()));
-        Back back = new Back(today, zone, parametersFor(account), gyms.current(account), lastSession);
+                .map(started -> started.atZone(zone).toLocalDate()), today, zone, forAccount);
+        Back back = new Back(today, zone, forAccount, gyms.current(account), lastSession);
         // "Beat last time" is the last session before today's, as the break is (a session under way is not its own last time).
         Map<String, List<TrainingLog.WorkSet>> lastSessions = log.lastSessions(account, today.atStartOfDay(zone).toInstant());
         BiFunction<ProgramStore.PlannedExercise, List<String>, PlannedExercise> asShown = (planned, onTheDay) -> {

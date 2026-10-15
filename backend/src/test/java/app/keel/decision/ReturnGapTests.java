@@ -7,8 +7,9 @@ import app.keel.engine.ParameterKey;
 import app.keel.engine.Parameters;
 import app.keel.engine.Sex;
 import app.keel.training.ReturnAnswers;
-import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,7 @@ class ReturnGapTests {
     private static final Parameters P = RepositoryParameters.set().forSex(Sex.MALE);
     private static final int PROMPT_DAYS = P.wholeNumber(ParameterKey.RETURN_PROMPT_DAYS);
     private static final int STEP_BACK_DAYS = 7 * P.wholeNumber(ParameterKey.RETURN_STEP_BACK_AFTER_WEEKS);
+    private static final ZoneId UTC = ZoneOffset.UTC;
     private static final LocalDate TODAY = LocalDate.of(2026, 10, 15);
 
     private static Optional<LocalDate> daysAgo(int days) {
@@ -33,7 +35,11 @@ class ReturnGapTests {
     }
 
     private static Optional<ReturnAnswers.Answer> answered(ReturnAnswers.Choice choice, LocalDate gapFrom) {
-        return Optional.of(new ReturnAnswers.Answer(choice, gapFrom, Instant.parse("2026-10-14T08:00:00Z")));
+        return answered(choice, gapFrom, 1);
+    }
+
+    private static Optional<ReturnAnswers.Answer> answered(ReturnAnswers.Choice choice, LocalDate gapFrom, int daysAgo) {
+        return Optional.of(new ReturnAnswers.Answer(choice, gapFrom, TODAY.minusDays(daysAgo).atTime(8, 0).toInstant(ZoneOffset.UTC)));
     }
 
     @Test
@@ -45,7 +51,7 @@ class ReturnGapTests {
     @ParameterizedTest(name = "{0}: {1} days away is asked: {2}")
     @MethodSource("limit")
     void sixDaysAwayIsNotAskedAndSevenIs(String name, int away, boolean asked) {
-        assertThat(ReturnGap.shouldPrompt(daysAgo(away), TODAY, Optional.empty(), P)).isEqualTo(asked);
+        assertThat(ReturnGap.shouldPrompt(daysAgo(away), TODAY, Optional.empty(), UTC, P)).isEqualTo(asked);
         assertThat(ReturnGap.hasGap(daysAgo(away), TODAY, P)).isEqualTo(asked);
         assertThat(ReturnGap.awayDays(daysAgo(away), TODAY)).isEqualTo(away);
     }
@@ -62,7 +68,7 @@ class ReturnGapTests {
 
     @Test
     void aUserWithNoLogIsNewNotReturning() {
-        assertThat(ReturnGap.shouldPrompt(Optional.empty(), TODAY, Optional.empty(), P)).isFalse();
+        assertThat(ReturnGap.shouldPrompt(Optional.empty(), TODAY, Optional.empty(), UTC, P)).isFalse();
         assertThat(ReturnGap.hasGap(Optional.empty(), TODAY, P)).isFalse();
         assertThat(ReturnGap.awayDays(Optional.empty(), TODAY)).isZero();
     }
@@ -71,7 +77,7 @@ class ReturnGapTests {
     void aLogOnADayAfterTodayIsNoGap() {
         // The user's calendar moved west since the log: the gap is not negative.
         assertThat(ReturnGap.awayDays(Optional.of(TODAY.plusDays(1)), TODAY)).isZero();
-        assertThat(ReturnGap.shouldPrompt(Optional.of(TODAY.plusDays(1)), TODAY, Optional.empty(), P)).isFalse();
+        assertThat(ReturnGap.shouldPrompt(Optional.of(TODAY.plusDays(1)), TODAY, Optional.empty(), UTC, P)).isFalse();
     }
 
     @Test
@@ -85,21 +91,32 @@ class ReturnGapTests {
         LocalDate lastLog = TODAY.minusDays(PROMPT_DAYS + 3);
 
         for (ReturnAnswers.Choice choice : ReturnAnswers.Choice.values()) {
-            assertThat(ReturnGap.shouldPrompt(Optional.of(lastLog), TODAY, answered(choice, lastLog), P)).as(choice.name()).isFalse();
+            assertThat(ReturnGap.shouldPrompt(Optional.of(lastLog), TODAY, answered(choice, lastLog), UTC, P)).as(choice.name()).isFalse();
         }
         // The same gap, a day older (a log deleted since): still the one answered.
-        assertThat(ReturnGap.shouldPrompt(Optional.of(lastLog.minusDays(1)), TODAY, answered(ReturnAnswers.Choice.PICK_UP, lastLog), P)).isFalse();
+        assertThat(ReturnGap.shouldPrompt(Optional.of(lastLog.minusDays(1)), TODAY, answered(ReturnAnswers.Choice.PICK_UP, lastLog), UTC, P)).isFalse();
     }
 
     @Test
-    void aNewLogAndANewGapAreAskedAgain() {
+    void aNewLogAndANewGapAreAskedAgainOnceTheAnswerIsAWeekOld() {
         LocalDate answeredFrom = TODAY.minusDays(40);
         LocalDate newLog = TODAY.minusDays(PROMPT_DAYS);
 
-        assertThat(ReturnGap.shouldPrompt(Optional.of(newLog), TODAY, answered(ReturnAnswers.Choice.EASE_BACK, answeredFrom), P)).isTrue();
+        assertThat(ReturnGap.shouldPrompt(Optional.of(newLog), TODAY, answered(ReturnAnswers.Choice.EASE_BACK, answeredFrom, PROMPT_DAYS), UTC, P)).isTrue();
         // A new log with a short gap since: nothing to ask yet.
-        assertThat(ReturnGap.shouldPrompt(Optional.of(TODAY.minusDays(PROMPT_DAYS - 1)), TODAY, answered(ReturnAnswers.Choice.EASE_BACK, answeredFrom), P))
-                .isFalse();
+        assertThat(ReturnGap.shouldPrompt(Optional.of(TODAY.minusDays(PROMPT_DAYS - 1)), TODAY,
+                answered(ReturnAnswers.Choice.EASE_BACK, answeredFrom, PROMPT_DAYS), UTC, P)).isFalse();
+    }
+
+    @Test
+    void aLogDatedBackAfterTheAnswerDoesNotAskAgainForAWeekFromTheAnswer() {
+        // A gap of 10 days answered today, then a meal dated 8 days ago: a new log, a gap of 8 days, but the question was just answered.
+        LocalDate gapFrom = TODAY.minusDays(PROMPT_DAYS + 3);
+        Optional<LocalDate> backdated = Optional.of(TODAY.minusDays(PROMPT_DAYS + 1));
+
+        assertThat(ReturnGap.shouldPrompt(backdated, TODAY, answered(ReturnAnswers.Choice.PICK_UP, gapFrom, 0), UTC, P)).isFalse();
+        assertThat(ReturnGap.shouldPrompt(backdated, TODAY, answered(ReturnAnswers.Choice.PICK_UP, gapFrom, PROMPT_DAYS - 1), UTC, P)).isFalse();
+        assertThat(ReturnGap.shouldPrompt(backdated, TODAY, answered(ReturnAnswers.Choice.PICK_UP, gapFrom, PROMPT_DAYS), UTC, P)).isTrue();
     }
 
     @ParameterizedTest(name = "last session {0} days ago offers {1}")
@@ -122,18 +139,37 @@ class ReturnGapTests {
     }
 
     @Test
-    void theNextCallIsTodayWhileThisWeeksIsNotMadeAndTheNextCheckInDayOnceItIs() {
+    void theNextCallIsTodayWhileThisWeeksIsOpen() {
         LocalDate weekOf = LocalDate.of(2026, 10, 12);
 
-        assertThat(ReturnGap.nextCallOn(Optional.empty(), weekOf, false, TODAY)).isEqualTo(TODAY);
-        assertThat(ReturnGap.nextCallOn(Optional.empty(), weekOf, true, TODAY)).isEqualTo(LocalDate.of(2026, 10, 19));
+        assertThat(ReturnGap.nextCallOn(Optional.empty(), weekOf, true, TODAY, Optional.of(LocalDate.of(2026, 10, 19)))).isEqualTo(TODAY);
+        assertThat(ReturnGap.nextCallOn(Optional.empty(), weekOf, true, TODAY, Optional.empty())).isEqualTo(TODAY);
+    }
+
+    @Test
+    void onceThisWeeksIsMadeTheNextCallIsTheLatestCallsNextReviewWhileItIsAhead() {
+        LocalDate weekOf = LocalDate.of(2026, 10, 12);
+
+        // A call made late (Thursday the 15th) reviews on its own day, not the check-in day: the Hero says that day.
+        assertThat(ReturnGap.nextCallOn(Optional.empty(), weekOf, false, TODAY, Optional.of(LocalDate.of(2026, 10, 22)))).isEqualTo(LocalDate.of(2026, 10, 22));
+        assertThat(ReturnGap.nextCallOn(Optional.empty(), weekOf, false, TODAY, Optional.of(LocalDate.of(2026, 10, 19)))).isEqualTo(LocalDate.of(2026, 10, 19));
+    }
+
+    @Test
+    void aNextReviewThatIsNotAheadFallsBackToTheNextCheckInDay() {
+        LocalDate weekOf = LocalDate.of(2026, 10, 12);
+
+        assertThat(ReturnGap.nextCallOn(Optional.empty(), weekOf, false, TODAY, Optional.of(TODAY))).isEqualTo(LocalDate.of(2026, 10, 19));
+        assertThat(ReturnGap.nextCallOn(Optional.empty(), weekOf, false, TODAY, Optional.of(LocalDate.of(2026, 10, 5)))).isEqualTo(LocalDate.of(2026, 10, 19));
+        assertThat(ReturnGap.nextCallOn(Optional.empty(), weekOf, false, TODAY, Optional.empty())).isEqualTo(LocalDate.of(2026, 10, 19));
     }
 
     @Test
     void beforeTheFirstCallTheNextCallIsTheFirstCallsDay() {
         LocalDate first = LocalDate.of(2026, 10, 19);
+        LocalDate weekOf = LocalDate.of(2026, 10, 12);
 
-        assertThat(ReturnGap.nextCallOn(Optional.of(first), LocalDate.of(2026, 10, 12), false, TODAY)).isEqualTo(first);
-        assertThat(ReturnGap.nextCallOn(Optional.of(first), LocalDate.of(2026, 10, 12), true, TODAY)).isEqualTo(first);
+        assertThat(ReturnGap.nextCallOn(Optional.of(first), weekOf, false, TODAY, Optional.empty())).isEqualTo(first);
+        assertThat(ReturnGap.nextCallOn(Optional.of(first), weekOf, true, TODAY, Optional.empty())).isEqualTo(first);
     }
 }

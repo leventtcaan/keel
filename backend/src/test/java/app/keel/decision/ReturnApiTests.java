@@ -127,12 +127,27 @@ class ReturnApiTests {
         assertThat(send(account, "POST", "/v1/return", Map.of("choice", "REBUILD"))).hasStatusOk();
         assertThat(jdbc.sql("select choice from training.return_answer where account_id = :a").param("a", account.value()).query(String.class).single())
                 .isEqualTo("REBUILD");
-        // A log since (on her calendar eight days ago) and a gap of eight days from it: asked again.
+        // A log since, dated eight days back, and a gap of eight days from it: the question was just answered, so not asked yet.
         weighIn(account, 8);
+        assertThat(read(send(account, "GET", "/v1/return", null))).containsEntry("awayDays", 8).containsEntry("shouldPrompt", false);
+        // A week after the answer the same gap is a new one: asked again.
+        jdbc.sql("update training.return_answer set answered_at = answered_at - interval '7 days' where account_id = :a").param("a", account.value()).update();
         assertThat(read(send(account, "GET", "/v1/return", null))).containsEntry("awayDays", 8).containsEntry("shouldPrompt", true);
         // A log today ends the gap altogether.
         weighIn(account, 0);
         assertThat(read(send(account, "GET", "/v1/return", null))).containsEntry("awayDays", 0).containsEntry("shouldPrompt", false);
+    }
+
+    @Test
+    void aMealDatedBackAfterTheAnswerDoesNotAskAgain() throws Exception {
+        AccountId account = account(true);
+        session(account, 10);
+        assertThat(read(send(account, "GET", "/v1/return", null))).containsEntry("awayDays", 10).containsEntry("shouldPrompt", true);
+
+        assertThat(send(account, "POST", "/v1/return", Map.of("choice", "PICK_UP"))).hasStatusOk();
+        meal(account, 8);
+
+        assertThat(read(send(account, "GET", "/v1/return", null))).containsEntry("awayDays", 8).containsEntry("shouldPrompt", false);
     }
 
     @Test
@@ -193,7 +208,7 @@ class ReturnApiTests {
     }
 
     @Test
-    void theNextCallIsTheFirstCallsDayThenTodayWhileThisWeeksIsOpenAndTheNextCheckInDayOnceMade() throws Exception {
+    void theNextCallIsTheFirstCallsDayThenTodayWhileThisWeeksIsOpenAndTheHeroDayOnceMade() throws Exception {
         LocalDate today = LocalDate.now(ZoneOffset.UTC);
         AccountId account = account(true);
         session(account, 10);
@@ -202,10 +217,58 @@ class ReturnApiTests {
         // Finished a week ago: the first call's day has come, and its check-in is open today.
         jdbc.sql("update profile.profile set onboarded_at = now() - make_interval(hours => 168) where account_id = :a").param("a", account.value()).update();
         assertThat(read(send(account, "GET", "/v1/return", null))).containsEntry("nextCallOn", today.toString());
-        // Made this week: the next one is the check-in day a week on (the check-in day is today's weekday here).
+        // Made this week: the day the Hero names, the call's own next review.
         assertThat(send(account, "POST", "/v1/check-ins/current/answers",
                 Map.of("clientId", UUID.randomUUID(), "weekOf", today.toString(), "answers", List.of()))).hasStatusOk();
-        assertThat(read(send(account, "GET", "/v1/return", null))).containsEntry("nextCallOn", today.plusWeeks(1).toString());
+        assertThat(read(send(account, "GET", "/v1/return", null))).containsEntry("nextCallOn", heroDay(account, today));
+    }
+
+    @Test
+    void aCallMadeLateInTheWeekNamesTheSameDayAsTheHero() throws Exception {
+        // Checks in on the weekday three days back, so today is "Thursday" of a Monday week: the call is made late.
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        LocalDate weekOf = today.minusDays(3);
+        AccountId account = account(true, weekOf.getDayOfWeek().name());
+        jdbc.sql("update profile.profile set onboarded_at = now() - make_interval(hours => 720) where account_id = :a").param("a", account.value()).update();
+        assertThat(send(account, "POST", "/v1/check-ins/current/answers",
+                Map.of("clientId", UUID.randomUUID(), "weekOf", weekOf.toString(), "answers", List.of()))).hasStatusOk();
+
+        Map<String, Object> hero = read(send(account, "GET", "/v1/decisions/current", null));
+        Map<String, Object> summary = read(send(account, "GET", "/v1/return", null));
+
+        assertThat(LocalDate.parse((String) hero.get("nextReview"))).as("the call reviews ahead of today").isAfter(today);
+        assertThat(summary.get("nextCallOn")).isEqualTo(hero.get("nextReview"));
+    }
+
+    @Test
+    void withoutTheHealthDataConsentThereIsNoCallToName() throws Exception {
+        AccountId account = account(false);
+        session(account, 30);
+
+        Map<String, Object> summary = read(send(account, "GET", "/v1/return", null));
+
+        assertThat(summary).doesNotContainKey("nextCallOn").containsEntry("awayDays", 30);
+    }
+
+    @Test
+    void aPickUpFallsWhenThreeWeeksPassWithoutASession() throws Exception {
+        BigDecimal step = BigDecimal.valueOf(parameters.forSex(Sex.MALE).number(ParameterKey.LOAD_INCREMENT_UPPER_KG));
+        AccountId account = withAProgramDoneAMonthAgo();
+        assertThat(send(account, "POST", "/v1/return", Map.of("choice", "PICK_UP"))).hasStatusOk();
+        assertThat(program(account)).doesNotContainKey("backAfterBreak");
+
+        // The answer is three weeks old and no session since: the usual step back applies again.
+        jdbc.sql("update training.return_answer set answered_at = answered_at - interval '21 days' where account_id = :a").param("a", account.value()).update();
+
+        assertThat(program(account)).containsEntry("backAfterBreak", true);
+        assertThat(kg(planned(account).get("nextLoadKg"))).isEqualByComparingTo(new BigDecimal("60").subtract(step));
+    }
+
+    /** The next review of the latest call: the day the Hero names. */
+    private String heroDay(AccountId account, LocalDate today) throws Exception {
+        String review = (String) read(send(account, "GET", "/v1/decisions/current", null)).get("nextReview");
+        assertThat(LocalDate.parse(review)).isAfter(today);
+        return review;
     }
 
     @Test
@@ -224,13 +287,17 @@ class ReturnApiTests {
 
     /** A man in UTC checking in on today's weekday, with the health data consent or without it. */
     private AccountId account(boolean healthData) {
+        return account(healthData, LocalDate.now(ZoneOffset.UTC).getDayOfWeek().name());
+    }
+
+    private AccountId account(boolean healthData, String checkInDay) {
         AccountId account = TestSessions.newAccount();
         if (healthData) {
             assertThat(send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA))).hasStatusOk();
         }
         assertThat(send(account, "PUT", "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "MALE", "heightCm", 180, "birthYear", 1996,
                 "programChoice", "BUILD_ONE_FOR_ME", "units", "METRIC",
-                "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", LocalDate.now(ZoneOffset.UTC).getDayOfWeek().name(), "timeZone", "UTC"))))
+                "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", checkInDay, "timeZone", "UTC"))))
                 .hasStatusOk();
         return account;
     }

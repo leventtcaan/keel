@@ -5,6 +5,7 @@ import app.keel.engine.Parameters;
 import app.keel.engine.ReturnLoad;
 import app.keel.training.ReturnAnswers;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Optional;
@@ -40,9 +41,14 @@ final class ReturnGap {
         return lastLog.isPresent() && awayDays(lastLog, today) >= parameters.wholeNumber(ParameterKey.RETURN_PROMPT_DAYS);
     }
 
-    /** Asked: a gap, not answered yet. A newer log than the answer's has begun another gap. */
-    static boolean shouldPrompt(Optional<LocalDate> lastLog, LocalDate today, Optional<ReturnAnswers.Answer> answer, Parameters parameters) {
-        return hasGap(lastLog, today, parameters) && answer.filter(given -> given.coversGapFrom(lastLog.orElseThrow())).isEmpty();
+    /**
+     * Asked: a gap, not answered yet. A newer log than the answer's has begun another gap, but not until a week has passed
+     * since the answer: a log dated back after it (a meal forgotten, a weigh-in entered late) leaves the question answered.
+     */
+    static boolean shouldPrompt(Optional<LocalDate> lastLog, LocalDate today, Optional<ReturnAnswers.Answer> answer, ZoneId zone, Parameters parameters) {
+        int promptDays = parameters.wholeNumber(ParameterKey.RETURN_PROMPT_DAYS);
+        return hasGap(lastLog, today, parameters) && answer.filter(given -> given.coversGapFrom(lastLog.orElseThrow())
+                || ChronoUnit.DAYS.between(given.answeredOn(zone), today) < promptDays).isEmpty();
     }
 
     /** Ease back in when the program would show a step lighter (K-531), else pick up; nothing to ease back into with no session. */
@@ -51,10 +57,13 @@ final class ReturnGap {
     }
 
     /**
-     * The day the next call can be made: the first call's day before the first call; else today while this check-in week's
-     * call is not made (it is open), else the next check-in day.
+     * The day the next call is: the first call's day before the first call; else today while this check-in week's call is
+     * open; else the day the latest call itself says to review (the Hero's: a call made late reviews on its own day) while that is
+     * ahead; else the next check-in day.
      */
-    static LocalDate nextCallOn(Optional<LocalDate> firstCallOn, LocalDate weekOf, boolean callMadeThisWeek, LocalDate today) {
-        return firstCallOn.orElseGet(() -> callMadeThisWeek ? weekOf.plusWeeks(1) : today);
+    static LocalDate nextCallOn(Optional<LocalDate> firstCallOn, LocalDate weekOf, boolean openThisWeek, LocalDate today,
+            Optional<LocalDate> latestNextReview) {
+        return firstCallOn.orElseGet(() -> openThisWeek ? today
+                : latestNextReview.filter(review -> review.isAfter(today)).orElseGet(() -> weekOf.plusWeeks(1)));
     }
 }

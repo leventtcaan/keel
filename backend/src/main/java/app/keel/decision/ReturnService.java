@@ -14,6 +14,7 @@ import app.keel.shared.ApiException;
 import app.keel.shared.ErrorCode;
 import app.keel.training.ReturnAnswers;
 import app.keel.training.TrainingLog;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -31,7 +32,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 class ReturnService {
 
-    /** Contract ReturnSummary. */
+    /** Contract ReturnSummary; {@code nextCallOn} absent without the HEALTH_DATA consent. */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     record View(int awayDays, boolean shouldPrompt, ReturnGap.Suggestion suggested, LocalDate nextCallOn) {
     }
 
@@ -80,8 +82,8 @@ class ReturnService {
 
     private View view(AccountId account, Reading now) {
         return new View(ReturnGap.awayDays(now.lastLog(), now.today()),
-                ReturnGap.shouldPrompt(now.lastLog(), now.today(), answers.of(account), now.parameters()),
-                ReturnGap.suggested(now.lastSession(), now.today(), now.parameters()), decisions.nextCallOn(account, now.profile(), now.today()));
+                ReturnGap.shouldPrompt(now.lastLog(), now.today(), answers.of(account), now.profile().timeZone(), now.parameters()),
+                ReturnGap.suggested(now.lastSession(), now.today(), now.parameters()), decisions.nextCallOn(account, now.profile(), now.today()).orElse(null));
     }
 
     private Reading read(AccountId account) {

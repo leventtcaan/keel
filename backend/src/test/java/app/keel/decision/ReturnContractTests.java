@@ -24,8 +24,8 @@ class ReturnContractTests {
 
         assertThat(map(schema.get("properties")).keySet()).containsExactlyInAnyOrderElementsOf(
                 Arrays.stream(ReturnService.View.class.getRecordComponents()).map(RecordComponent::getName).toList());
-        // Nothing here is absent: no log is zero days and not asked, and a day for the next call is always named.
-        assertThat((List<String>) schema.get("required")).containsExactlyInAnyOrder("awayDays", "shouldPrompt", "suggested", "nextCallOn");
+        // Only the next call's day can be absent: with no HEALTH_DATA consent there is no call to name. No log is zero days and not asked.
+        assertThat((List<String>) schema.get("required")).containsExactlyInAnyOrder("awayDays", "shouldPrompt", "suggested");
     }
 
     @Test

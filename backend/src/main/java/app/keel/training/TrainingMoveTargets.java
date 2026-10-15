@@ -1,6 +1,7 @@
 package app.keel.training;
 
 import app.keel.engine.ParameterSet;
+import app.keel.engine.Parameters;
 import app.keel.engine.Sex;
 import app.keel.profile.ProfileFacts;
 import app.keel.profile.Profiles;
@@ -54,9 +55,10 @@ public class TrainingMoveTargets {
         Optional<ProfileFacts> facts = profiles.of(account);
         ZoneId zone = facts.map(ProfileFacts::timeZone).orElse(ZoneOffset.UTC);
         LocalDate today = LocalDate.now(clock.withZone(zone));
+        Parameters forAccount = parameters.forSex(facts.map(profile -> Sex.valueOf(profile.sex().name())).orElse(Sex.MALE));
         Optional<LocalDate> lastSession = returns.breakFrom(account,
-                log.lastSessionBefore(account, today.atStartOfDay(zone).toInstant()).map(started -> started.atZone(zone).toLocalDate()));
-        BackAfterBreak back = BackAfterBreak.of(lastSession, today, zone, parameters.forSex(facts.map(profile -> Sex.valueOf(profile.sex().name())).orElse(Sex.MALE)));
+                log.lastSessionBefore(account, today.atStartOfDay(zone).toInstant()).map(started -> started.atZone(zone).toLocalDate()), today, zone, forAccount);
+        BackAfterBreak back = BackAfterBreak.of(lastSession, today, zone, forAccount);
         List<ProgramStore.PlannedExercise> planned = program.get().days().stream().flatMap(day -> day.exercises().stream()).toList();
         return HeldTargets.of(planned, statuses.compoundLifts(account, today, zone), back::steppedBack, today);
     }

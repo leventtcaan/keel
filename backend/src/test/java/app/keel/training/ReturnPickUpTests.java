@@ -2,6 +2,7 @@ package app.keel.training;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import app.keel.engine.ParameterKey;
 import app.keel.engine.Parameters;
 import app.keel.engine.RepositoryParameters;
 import app.keel.engine.Sex;
@@ -30,7 +31,7 @@ class ReturnPickUpTests {
     }
 
     private static boolean longBreak(Optional<LocalDate> lastSession, Optional<Answer> answer) {
-        return BackAfterBreak.of(ReturnAnswers.breakFrom(lastSession, answer), TODAY, ZoneOffset.UTC, P).longBreak();
+        return BackAfterBreak.of(ReturnAnswers.breakFrom(lastSession, answer, TODAY, ZoneOffset.UTC, P), TODAY, ZoneOffset.UTC, P).longBreak();
     }
 
     @Test
@@ -53,9 +54,10 @@ class ReturnPickUpTests {
 
     @Test
     void aSessionDoneAfterTheAnswerEndsThePickUp() {
-        // Picked up from a gap that began 30 days ago... then a session 22 days ago, not one since: that new break is eased as any other.
+        // Picked up yesterday from a gap that began 30 days ago; a session is logged for 22 days ago (after that gap), none since:
+        // the answer was for the gap before it, so that break is eased as any other.
         LocalDate newSession = TODAY.minusDays(22);
-        Answer pickedUpBefore = new Answer(Choice.PICK_UP, TODAY.minusDays(30), Instant.parse("2026-09-20T08:00:00Z"));
+        Answer pickedUpBefore = new Answer(Choice.PICK_UP, TODAY.minusDays(30), Instant.parse("2026-10-14T08:00:00Z"));
 
         assertThat(longBreak(Optional.of(newSession), Optional.of(pickedUpBefore))).isTrue();
     }
@@ -64,5 +66,21 @@ class ReturnPickUpTests {
     void withNoSessionThereIsNoBreakEitherWay() {
         assertThat(longBreak(Optional.empty(), answer(Choice.PICK_UP))).isFalse();
         assertThat(longBreak(Optional.empty(), Optional.empty())).isFalse();
+    }
+
+    @Test
+    void aPickUpHoldsForAsLongAsTheStepBackWaitsForASession() {
+        // The answer is kept for the first session back, within return_step_back_after_weeks of it; without one in that time it falls
+        // and the usual step back applies (no new number: the same weeks ReturnLoad breaks on).
+        int window = 7 * P.wholeNumber(ParameterKey.RETURN_STEP_BACK_AFTER_WEEKS);
+
+        assertThat(longBreak(Optional.of(LAST_SESSION), pickedUp(window - 1))).as("a day inside the window").isFalse();
+        assertThat(longBreak(Optional.of(LAST_SESSION), pickedUp(window))).as("the window is out").isTrue();
+        assertThat(longBreak(Optional.of(LAST_SESSION), pickedUp(window + 30))).as("long out").isTrue();
+        assertThat(longBreak(Optional.of(LAST_SESSION), pickedUp(0))).as("picked up today").isFalse();
+    }
+
+    private static Optional<Answer> pickedUp(int daysAgo) {
+        return Optional.of(new Answer(Choice.PICK_UP, LAST_LOG, TODAY.minusDays(daysAgo).atTime(9, 0).toInstant(ZoneOffset.UTC)));
     }
 }

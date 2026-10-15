@@ -1,9 +1,12 @@
 package app.keel.training;
 
+import app.keel.engine.Parameters;
+import app.keel.engine.ReturnLoad;
 import app.keel.shared.AccountId;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.Optional;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -30,9 +33,18 @@ public class ReturnAnswers {
             return !lastLog.isAfter(gapFrom);
         }
 
-        /** Whether the answer keeps the break measured from this session from being eased: PICK_UP, until a session is done after it. */
-        boolean picksUpFrom(LocalDate lastSession) {
-            return choice == Choice.PICK_UP && coversGapFrom(lastSession);
+        /** The user's day the answer was given. */
+        public LocalDate answeredOn(ZoneId zone) {
+            return answeredAt.atZone(zone).toLocalDate();
+        }
+
+        /**
+         * Whether the answer keeps the break measured from this session from being eased: PICK_UP, for the first session back
+         * only. It falls when a session was done after the gap, and when return_step_back_after_weeks pass after the answer
+         * with no session (ReturnLoad's own weeks: no new number), so a pick up given once is not kept for good.
+         */
+        boolean picksUpFrom(LocalDate lastSession, LocalDate today, ZoneId zone, Parameters parameters) {
+            return choice == Choice.PICK_UP && coversGapFrom(lastSession) && !ReturnLoad.afterBreak(answeredOn(zone), today, parameters);
         }
     }
 
@@ -64,11 +76,11 @@ public class ReturnAnswers {
      * The day of the last session a break is measured from (K-531), unless the user picked up from it: then none, so the
      * program shows its targets as they were. Read before any program or call that shows a target after a break.
      */
-    public Optional<LocalDate> breakFrom(AccountId account, Optional<LocalDate> lastSession) {
-        return breakFrom(lastSession, lastSession.isPresent() ? of(account) : Optional.empty());
+    public Optional<LocalDate> breakFrom(AccountId account, Optional<LocalDate> lastSession, LocalDate today, ZoneId zone, Parameters parameters) {
+        return breakFrom(lastSession, lastSession.isPresent() ? of(account) : Optional.empty(), today, zone, parameters);
     }
 
-    static Optional<LocalDate> breakFrom(Optional<LocalDate> lastSession, Optional<Answer> answer) {
-        return lastSession.filter(day -> answer.filter(given -> given.picksUpFrom(day)).isEmpty());
+    static Optional<LocalDate> breakFrom(Optional<LocalDate> lastSession, Optional<Answer> answer, LocalDate today, ZoneId zone, Parameters parameters) {
+        return lastSession.filter(day -> answer.filter(given -> given.picksUpFrom(day, today, zone, parameters)).isEmpty());
     }
 }
