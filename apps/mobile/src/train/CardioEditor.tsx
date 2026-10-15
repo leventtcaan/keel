@@ -1,15 +1,15 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
-import { announce } from '@/components/ProblemText';
 import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
-import { type CardioDraft, canStepMinutes, cardioDraft, steppedMinutes, toggledDay } from './cardio';
+import { type CardioDraft, cardioDraft, toggledDay } from './cardio';
+import { MinutesStepper } from './MinutesStepper';
 import { WEEKDAYS } from './programEdit';
 
 type Schemas = components['schemas'];
@@ -47,26 +47,6 @@ export function CardioEditor({ program, lifts, busy, onSave, onCoach }: Props) {
   const change = (next: CardioDraft) => setEdited({ draft: next, of: key });
   const own = program.cardio?.source === 'USER';
   const on = program.cardio !== undefined && program.cardio.sessionsPerWeek > 0;
-  const minutes = t('train.cardioMinutes', { minutes: draft.minutes });
-  const stepTo = (by: number) => {
-    const next = steppedMinutes(draft, by);
-    change(next);
-    announce(t('train.cardioMinutes', { minutes: next.minutes }));
-  };
-  const step = (by: number, which: 'less' | 'more') => {
-    const can = canStepMinutes(draft, by);
-    return (
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={t(`programEditor.${which}Label`, { what: t('editProgram.cardio.minutesLabel') })}
-        accessibilityState={{ disabled: !can }}
-        disabled={!can}
-        onPress={() => stepTo(by)}
-        style={[styles.step, !can && styles.dim]}>
-        <Text style={[styles.text, styles.bold, { color: color.text }]}>{t(`programEditor.${which}`)}</Text>
-      </Pressable>
-    );
-  };
   const turnOff = on ? (
     <Button label={t('editProgram.cardio.turnOff')} variant="ghost" disabled={busy} onPress={() => onSave({ minutes: draft.minutes, sessions: [] })} />
   ) : null;
@@ -74,22 +54,7 @@ export function CardioEditor({ program, lifts, busy, onSave, onCoach }: Props) {
   return (
     <View style={styles.rows}>
       <Text style={[styles.text, { color: color.textSecondary }]}>{t(own ? 'editProgram.cardio.own' : 'editProgram.cardio.coach')}</Text>
-      <View style={[styles.minutes, { backgroundColor: color.surface }]}>
-        {step(-1, 'less')}
-        <View
-          accessible
-          accessibilityRole="adjustable"
-          accessibilityLabel={t('editProgram.cardio.minutesLabel')}
-          accessibilityValue={{ text: minutes }}
-          accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
-          onAccessibilityAction={(event) => {
-            const by = event.nativeEvent.actionName === 'increment' ? 1 : -1;
-            if (canStepMinutes(draft, by)) stepTo(by);
-          }}>
-          <Text style={[styles.text, styles.bold, { color: color.text }]}>{minutes}</Text>
-        </View>
-        {step(1, 'more')}
-      </View>
+      <MinutesStepper minutes={draft.minutes} onChange={(minutes) => change({ ...draft, minutes })} />
       <View style={styles.chips}>
         {WEEKDAYS.map((w) => (
           <Chip
@@ -119,11 +84,7 @@ export function CardioEditor({ program, lifts, busy, onSave, onCoach }: Props) {
 
 const styles = StyleSheet.create({
   rows: { gap: tokens.space.sm },
-  minutes: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: tokens.radius.button },
-  step: { minWidth: tokens.size.touch, minHeight: tokens.size.touch, alignItems: 'center', justifyContent: 'center' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm },
   text: { fontSize: tokens.type.body },
-  bold: { fontWeight: tokens.weight.semibold },
   small: { fontSize: tokens.type.bodySmall },
-  dim: { opacity: tokens.opacity.dim },
 });

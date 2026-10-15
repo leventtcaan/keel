@@ -25,7 +25,17 @@
     "weighIn": "Weigh-in",
     "meal": "Meal",
     "workout": "Workout",
+    "cardio": "Cardio",
     "life": "Life got in the way"
+  },
+  "cardioLog": {
+    "title": "Cardio",
+    "log": "Log cardio",
+    "fromHealth": "From Apple Health",
+    "watch": "Apple Watch measured {kcal} kcal.",
+    "undo": "Undo",
+    "undoFailed": "Couldn't take it back. Check your connection and try again.",
+    "done": "Done"
   },
   "tabs": {
     "today": "This week",
@@ -1021,6 +1031,10 @@
   },
   "meal": {
     "title": "Log a meal",
+    "quick": {
+      "usual": "Usual foods",
+      "add": "Add"
+    },
     "editTitle": "Correct a meal",
     "consent": {
       "allow": "Allow and continue",
@@ -1083,6 +1097,7 @@
     },
     "barcode": {
       "scan": "Scan a barcode",
+      "scanShort": "Scan",
       "title": "Scan a barcode",
       "denied": "Camera access is off. Allow it in Settings, or type the number.",
       "type": "Or type the number",

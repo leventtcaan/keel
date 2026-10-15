@@ -64,3 +64,15 @@ antrenman okuması eklenir. Yazma ayrı anahtarla sürer.
   (test: `health-jit-card.test.tsx`).
 - **"Last" ve ön dolum:** "Last: 80.4 kg" yanına sunucunun `measuredAt`'ı telefonun takviminde kısa tarih olarak yazılır (bugünse yazılmaz); eşik yok,
   yalnız biçim. `source === 'IMPORT'` olan son kayıt gösterilir ama alan doldurulmaz (geçmiş veridir, bu sabahın tartısı değil).
+
+## Ek 3 · Öğün ekranı: iki üç dokunuş (K-980, #443, 2026-10-15, agent, teknik)
+- **"+" › Meal › Add** (3 dokunuş): yeni öğün ekranı, forma girmeden iki yol sunar. **"Same as yesterday"**: dünün, **seçili öğünün** (kahvaltı, öğle, ...)
+  öğünü; `repeatOffers` (bugün o öğün yoksa) ile aynı kural, `repeatOf` ile dünkü gibi yazılır. **"Usual foods"**: `GET /v1/days/{day}/suggestions`
+  (kullanıcının sık yedikleri, bugünkü kalana sığanlar); bir dokunuş o yiyeceği olağan miktarıyla seçili öğüne yazar. En çok `quick_usual_max` (2) satır:
+  kelime bütçesi (25) ve "ilk bakışta az" ilkesi; gerisi aramadadır. Kalori aralıktır (U5), metin renginde (yargılayan renk yok, U7).
+- **Önceki ve yeni uçlar yeterli:** yeni sunucu alanı gerekmedi. "Recent" sözü yerine "Usual foods": uç "son yenenler"i değil, sık yenenlerden bugüne
+  sığanları verir; ad veriyi dürüst söyler. İlk günde ikisi de boş, ekran hiçbir şey çizmez (kullanıcı testi: ilk gün "Same as yesterday/Recent" olmasın).
+- **Geçici:** "Usual foods" kabul kriterindeki "son yiyecekler" değildir (uç hedef aşılınca ya da hedef yokken boş döner, K-507). K-1025 ile (son yenenler
+  ucu) ekran "son yenenler"e geçer; o zamana kadar bu hâli kalır.
+- **Form olduğu gibi:** arama, barkod (`Scan`, VoiceOver'a "Scan a barcode"), porsiyon, çok kalem, tahmin. Elle bir yiyecek eklenince hızlı yollar çekilir; düzeltme
+  ekranında hiç yoktur. Okumalar `AppServices.mealStart` içindedir (ekran `api`yi doğrudan çağırmaz); okunamazsa hızlı yol yoktur, form çalışır.

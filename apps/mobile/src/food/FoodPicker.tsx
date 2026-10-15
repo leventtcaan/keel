@@ -117,7 +117,10 @@ export function FoodPicker({ full, onFood, recipes, onRecipe }: Props) {
                 ? t('meal.search.none')
                 : null;
   // A full list takes no more, from a barcode either.
-  const scanButton = full ? null : <Button label={t('meal.barcode.scan')} variant="ghost" size="sm" onPress={() => setScanning(true)} />;
+  // "Scan" on the screen (the meal's words are few, K-980); VoiceOver says all of it.
+  const scanButton = full ? null : (
+    <Button label={t('meal.barcode.scanShort')} accessibilityLabel={t('meal.barcode.scan')} variant="ghost" size="sm" onPress={() => setScanning(true)} />
+  );
 
   return (
     <View style={styles.search}>

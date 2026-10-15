@@ -983,6 +983,7 @@
         "plus.weighIn",
         "plus.meal",
         "plus.workout",
+        "plus.cardio",
         "plus.life"
       ],
       "notFirstView": []
@@ -1067,18 +1068,84 @@
       "budget": 25,
       "source": "prototip/yeni-yuz.html",
       "task": "K-980",
-      "file": null,
-      "keys": [],
-      "notFirstView": []
+      "note": "The first view is the first day's: the title, the four slots, the search with its Search and Scan buttons, Log it; nothing is offered when there is no yesterday and no usual food. The face with the quick adds is the ordinary day: 'Same as yesterday' with Add, 'Usual foods' (at most quick_usual_max, data/parameters/food.json). Food names are the person's and the database's own words, as the prototype leaves them out of its count; the unit of an amount (g) and the kcal after each range are counted as listed. The plus on a usual food and the barcode button are spoken, not read.",
+      "file": "src/app/meal.tsx",
+      "parts": ["src/food/QuickAdds.tsx", "src/food/FoodPicker.tsx"],
+      "keys": [
+        "meal.title",
+        "food.slot.BREAKFAST",
+        "food.slot.LUNCH",
+        "food.slot.DINNER",
+        "food.slot.SNACK",
+        "meal.search.label",
+        "meal.search.go",
+        "meal.barcode.scanShort",
+        "meal.save"
+      ],
+      "notFirstView": [
+        "consent.health_data.title",
+        "consent.health_data.body",
+        "meal.consent.allow",
+        "meal.consent.notNow",
+        "meal.consent.failed",
+        "meal.edit.delete",
+        "meal.edit.confirmDelete",
+        "meal.edit.needsConnection",
+        "meal.estimate.question",
+        "meal.photo.why",
+        "meal.saveFailed",
+        "meal.full",
+        "meal.search.add",
+        "meal.search.tooShort",
+        "meal.search.failed",
+        "meal.search.none",
+        "meal.recipes.heading",
+        "meal.recipes.add",
+        "meal.recipes.unavailable",
+        "meal.barcode.scan",
+        "meal.barcode.notFound",
+        "meal.barcode.badNumber",
+        "meal.barcode.failed",
+        "food.repeat.spoken",
+        "food.repeat.failed",
+        "food.suggestions.item",
+        "food.suggestions.log",
+        "food.budget.kcalUnit",
+        "format.range"
+      ],
+      "faces": [
+        {
+          "face": "quick adds",
+          "keys": [
+            "meal.title",
+            "food.slot.BREAKFAST",
+            "food.slot.LUNCH",
+            "food.slot.DINNER",
+            "food.slot.SNACK",
+            "food.repeat.title",
+            "meal.quick.add",
+            "meal.quick.usual",
+            "meal.search.label",
+            "meal.search.go",
+            "meal.barcode.scanShort",
+            "meal.save"
+          ],
+          "dynamic": [
+            { "what": "kcal after the range of Same as yesterday", "words": 1 },
+            { "what": "the unit (g) and kcal of each of two usual foods", "words": 4 }
+          ]
+        }
+      ]
     },
     {
       "screen": "barcode",
       "budget": 10,
       "source": "prototip/yeni-yuz.html",
       "task": "K-980",
-      "file": null,
-      "keys": [],
-      "notFirstView": []
+      "note": "The reader as the person meets it: its title, the typed number, Look up, Close. Why the camera is off and what a wrong number says are other states, off the first view.",
+      "file": "src/food/BarcodeScanner.tsx",
+      "keys": ["meal.barcode.title", "meal.barcode.type", "meal.barcode.lookUp", "meal.barcode.close"],
+      "notFirstView": ["meal.barcode.denied", "meal.barcode.invalid", "meal.barcode.askAgain"]
     },
     {
       "screen": "checkin",

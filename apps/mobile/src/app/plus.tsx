@@ -18,9 +18,9 @@ type Schemas = components['schemas'];
 type Tile = { key: string; detail: string | null; onPress: () => void; waiting?: boolean };
 
 /**
- * The "+" sheet (K-953, ADR-069 #4, prototype #plus): log a weigh-in, a meal, today's workout, or say life got in the way.
+ * The "+" sheet (K-953, K-980, ADR-069 #4, prototype #plus): log a weigh-in, a meal, today's workout, a cardio session, or say life got in the way.
  * Each choice takes the sheet's place. The workout is today's session by name, a workout under way is continued, and with
- * nothing planned today the Train tab opens to pick a day. Cardio joins with its log (K-980).
+ * nothing planned today the Train tab opens to pick a day. Cardio and life are rows under the tiles.
  */
 export default function PlusScreen() {
   const { api, training, workoutRecords } = useAppServices();
@@ -50,6 +50,11 @@ export default function PlusScreen() {
     { key: 'plus.workout', detail: shown === null ? null : dayName(shown), onPress: workout, waiting: data === null },
   ];
 
+  const rows = [
+    { key: 'plus.cardio', route: '/cardio' },
+    { key: 'plus.life', route: '/state' },
+  ] as const;
+
   return (
     <SafeAreaView edges={['bottom']} style={[styles.sheet, { backgroundColor: color.background }]}>
       <ScreenTitle>{t('plus.title')}</ScreenTitle>
@@ -70,13 +75,16 @@ export default function PlusScreen() {
           </Pressable>
         ))}
       </View>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={t('plus.life')}
-        onPress={() => router.replace('/state')}
-        style={({ pressed }) => [styles.row, { borderColor: color.line }, pressed && styles.pressed]}>
-        <Text style={[styles.rowLabel, { color: color.text }]}>{t('plus.life')}</Text>
-      </Pressable>
+      {rows.map((row) => (
+        <Pressable
+          key={row.key}
+          accessibilityRole="button"
+          accessibilityLabel={t(row.key)}
+          onPress={() => router.replace(row.route)}
+          style={({ pressed }) => [styles.row, { borderColor: color.line }, pressed && styles.pressed]}>
+          <Text style={[styles.rowLabel, { color: color.text }]}>{t(row.key)}</Text>
+        </Pressable>
+      ))}
     </SafeAreaView>
   );
 }

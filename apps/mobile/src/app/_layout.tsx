@@ -44,6 +44,7 @@ function AppStack() {
         <Stack.Screen name="settings" />
         <Stack.Screen name="weigh-in" options={{ presentation: 'modal' }} />
         <Stack.Screen name="meal" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="cardio" options={{ presentation: 'modal' }} />
         <Stack.Screen name="workout" />
         <Stack.Screen name="workout-end" />
         <Stack.Screen name="exercise-history" />
