@@ -132,6 +132,8 @@ export const tokens = {
     regular: '400',
     semibold: '600',
     bold: '700',
+    /** Only the hidden copy FitText sizes its box with: heavier than anything Bold Text draws a label in (K-910). */
+    black: '900',
   },
   border: {
     hairline: 1,

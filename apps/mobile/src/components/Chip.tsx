@@ -1,5 +1,6 @@
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 
+import { FitText } from '@/components/FitText';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
@@ -28,12 +29,12 @@ export function Chip({ label, selected = false, disabled = false, accessibilityL
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel}
+      accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ selected, disabled }}
       disabled={disabled}
       onPress={onPress}
       style={[styles.chip, fill, touch && styles.touch, disabled && styles.dim]}>
-      <Text style={[styles.label, { color: selected ? color.background : color.text }]}>{label}</Text>
+      <FitText style={[styles.label, { color: selected ? color.background : color.text }]}>{label}</FitText>
     </Pressable>
   );
 }
@@ -47,5 +48,5 @@ const styles = StyleSheet.create({
   },
   touch: { minHeight: tokens.size.touch, minWidth: tokens.size.touch, alignItems: 'center', justifyContent: 'center' },
   dim: { opacity: tokens.opacity.dim },
-  label: { fontSize: tokens.type.bodySmall },
+  label: { fontSize: tokens.type.bodySmall, textAlign: 'center' },
 });
