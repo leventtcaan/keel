@@ -75,9 +75,31 @@ const mockApplied = jest.fn();
 const mockChanged = jest.fn();
 let mockChangeAnswer: () => unknown = () => ({ data: PROGRAM, response: { status: 200 } });
 let mockApplyStatus = 200;
+// The server's open workout that is not on this phone (K-999): what GET /v1/workouts/{id} answers, and the delete.
+const OPEN_ELSEWHERE: Schemas['Workout'] = {
+  id: 'w9',
+  clientId: 'other-phone-w',
+  startedAt: '2026-09-29T07:30:00Z',
+  programDayId: 'a',
+  pausedSeconds: 0,
+  sets: [{ id: 's-1', clientId: 'other-phone-s1', exerciseId: 'bench_press', setType: 'WORKING', loadKg: 62.5, reps: 8, rir: 2, side: 'BOTH' }],
+};
+let mockWorkout: () => unknown = () => ({ data: OPEN_ELSEWHERE, response: { status: 200 } });
+let mockDelete: () => unknown = () => ({ response: { status: 204, ok: true } });
+const mockAdopt = jest.fn(async (_workout: Schemas['Workout']) => {});
+const mockWorkoutCalls = jest.fn();
 const mockServices = {
+  adoptWorkout: (workout: Schemas['Workout']) => mockAdopt(workout),
   api: {
-    GET: async (path: string) => {
+    DELETE: async (path: string, init?: unknown) => {
+      mockWorkoutCalls('DELETE', path, init);
+      return mockDelete();
+    },
+    GET: async (path: string, init?: unknown) => {
+      if (path === '/v1/workouts/{id}') {
+        mockWorkoutCalls('GET', path, init);
+        return mockWorkout();
+      }
       if (path === '/v1/decisions/current' && mockDecision !== null) return { data: mockDecision, response: { status: 200 } };
       // The user's check-in day: the day "reads what happened" after a skip (user test 10 Oct).
       if (path === '/v1/profile' && mockCheckInDay !== null) return { data: { schedule: { checkInDay: mockCheckInDay } }, response: { status: 200 } };
@@ -131,6 +153,8 @@ beforeEach(() => {
   mockCheckInDay = 'MONDAY';
   mockChangeAnswer = () => ({ data: PROGRAM, response: { status: 200 } });
   mockApplyStatus = 200;
+  mockWorkout = () => ({ data: OPEN_ELSEWHERE, response: { status: 200 } });
+  mockDelete = () => ({ response: { status: 204, ok: true } });
 });
 
 const DECISION = {
@@ -737,6 +761,134 @@ test('the server says OPEN, nothing of it on this phone: open elsewhere; no Cont
   expect(await screen.findByText(t('train.openElsewhere'))).toBeTruthy();
   expect(screen.queryByText('Continue workout')).toBeNull();
   expect(screen.queryByText('Start workout')).toBeNull();
+});
+
+describe('open on the server, not on this phone (K-999)', () => {
+  const open = () => {
+    mockData = withProgram({ week: [{ ...PROGRAM.week![0], workout: { id: 'w9', state: 'OPEN' } }, THURSDAY] });
+  };
+  const reads = () => mockRead.mock.calls.length;
+
+  test('Continue, Fill in later and Discard on the card; still no Start', async () => {
+    open();
+    await show();
+    expect(await screen.findByRole('button', { name: t('openElsewhere.continueLabel') })).toBeTruthy();
+    expect(screen.getByRole('button', { name: t('openElsewhere.laterLabel') })).toBeTruthy();
+    expect(screen.getByRole('button', { name: t('openElsewhere.discardLabel') })).toBeTruthy();
+    expect(screen.queryByText('Start workout')).toBeNull();
+  });
+
+  test("Continue reads the server's workout, keeps it on the phone and opens the session on it", async () => {
+    open();
+    await show();
+    await fireEvent.press(await screen.findByText(t('openElsewhere.continue')));
+    expect(mockWorkoutCalls).toHaveBeenCalledWith('GET', '/v1/workouts/{id}', { params: { path: { id: 'w9' } } });
+    expect(mockAdopt).toHaveBeenCalledWith(OPEN_ELSEWHERE);
+    // The session screen without a day: it continues the workout the phone now keeps (not a new one on a day).
+    expect(mockPush).toHaveBeenCalledWith('/workout');
+  });
+
+  test('no connection: the card says so and the same button tries again, and then opens it', async () => {
+    open();
+    mockWorkout = () => Promise.reject(new TypeError('Network request failed'));
+    await show();
+    await fireEvent.press(await screen.findByText(t('openElsewhere.continue')));
+    expect(await screen.findByText(t('openElsewhere.offline'))).toBeTruthy();
+    expect(mockAdopt).not.toHaveBeenCalled();
+    expect(mockPush).not.toHaveBeenCalled();
+    mockWorkout = () => ({ data: OPEN_ELSEWHERE, response: { status: 200 } });
+    await fireEvent.press(screen.getByText(t('openElsewhere.continue')));
+    await act(async () => {});
+    expect(mockPush).toHaveBeenCalledWith('/workout');
+    expect(screen.queryByText(t('openElsewhere.offline'))).toBeNull();
+  });
+
+  test('a refusal from the server is said as a failure, nothing kept', async () => {
+    open();
+    mockWorkout = () => ({ error: { code: 'X' }, response: { status: 500 } });
+    await show();
+    await fireEvent.press(await screen.findByText(t('openElsewhere.continue')));
+    expect(await screen.findByText(t('openElsewhere.failed'))).toBeTruthy();
+    expect(mockAdopt).not.toHaveBeenCalled();
+  });
+
+  test('ended meanwhile: said, nothing kept, and the tab reads the week again', async () => {
+    open();
+    mockWorkout = () => ({ data: { ...OPEN_ELSEWHERE, endedAt: '2026-09-29T08:30:00Z' }, response: { status: 200 } });
+    await show();
+    await screen.findByText(t('openElsewhere.continue'));
+    const before = reads();
+    await fireEvent.press(screen.getByText(t('openElsewhere.continue')));
+    expect(await screen.findByText(t('openElsewhere.closed'))).toBeTruthy();
+    expect(mockAdopt).not.toHaveBeenCalled();
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(reads()).toBe(before + 1);
+  });
+
+  test('Fill in later leaves it open and says it counts; nothing is sent', async () => {
+    open();
+    await show();
+    await fireEvent.press(await screen.findByText(t('openElsewhere.later')));
+    expect(screen.getByText(t('openElsewhere.laterSaid', { hours: workoutParams.unfinishedSessionCloseHours }))).toBeTruthy();
+    expect(mockWorkoutCalls).not.toHaveBeenCalled();
+    expect(mockAdopt).not.toHaveBeenCalled();
+    // Continue stays.
+    expect(screen.getByText(t('openElsewhere.continue'))).toBeTruthy();
+  });
+
+  test('Discard asks once more; Keep it goes back and deletes nothing', async () => {
+    open();
+    await show();
+    await fireEvent.press(await screen.findByText(t('openElsewhere.discard')));
+    expect(screen.getByText(t('workout.ending.discardAsk'))).toBeTruthy();
+    expect(mockWorkoutCalls).not.toHaveBeenCalled();
+    await fireEvent.press(screen.getByText(t('workout.ending.keep')));
+    expect(screen.getByText(t('openElsewhere.continue'))).toBeTruthy();
+    expect(mockWorkoutCalls).not.toHaveBeenCalled();
+  });
+
+  test("Discard confirmed deletes the server's workout and the tab reads the week again", async () => {
+    open();
+    await show();
+    await fireEvent.press(await screen.findByText(t('openElsewhere.discard')));
+    const before = reads();
+    await fireEvent.press(screen.getByText(t('workout.ending.confirm')));
+    await act(async () => {});
+    expect(mockWorkoutCalls).toHaveBeenCalledWith('DELETE', '/v1/workouts/{id}', { params: { path: { id: 'w9' } } });
+    expect(reads()).toBe(before + 1);
+  });
+
+  test('Discard from a card that is out of date (the server has it ended): nothing is deleted, it says so, the tab reads again', async () => {
+    open();
+    mockWorkout = () => ({ data: { ...OPEN_ELSEWHERE, endedAt: '2026-09-29T08:30:00Z' }, response: { status: 200 } });
+    await show();
+    await fireEvent.press(await screen.findByText(t('openElsewhere.discard')));
+    const before = reads();
+    await fireEvent.press(screen.getByText(t('workout.ending.confirm')));
+    expect(await screen.findByText(t('openElsewhere.closed'))).toBeTruthy();
+    expect(mockWorkoutCalls.mock.calls.filter(([method]) => method === 'DELETE')).toHaveLength(0);
+    expect(reads()).toBe(before + 1);
+  });
+
+  test('Discard with no connection says so, deletes nothing here, and can be tried again', async () => {
+    open();
+    mockDelete = () => Promise.reject(new TypeError('Network request failed'));
+    await show();
+    await fireEvent.press(await screen.findByText(t('openElsewhere.discard')));
+    const before = reads();
+    await fireEvent.press(screen.getByText(t('workout.ending.confirm')));
+    expect(await screen.findByText(t('openElsewhere.discardOffline'))).toBeTruthy();
+    expect(reads()).toBe(before);
+    expect(screen.getByText(t('workout.ending.confirm'))).toBeTruthy();
+  });
+
+  test('a workout under way on this phone is continued as before: no choice of the other kind', async () => {
+    open();
+    mockRecords = [{ seq: 1, clientId: 'wo', kind: 'workout', parentClientId: null, body: { clientId: 'wo', startedAt: '2026-09-29T08:00:00Z', programDayId: 'a' }, state: 'SYNCED', serverId: 'w9', serverBody: null, errorCode: null }];
+    await show();
+    expect(await screen.findByText(t('train.continueWorkout'))).toBeTruthy();
+    expect(screen.queryByText(t('openElsewhere.continue'))).toBeNull();
+  });
 });
 
 test("another day's session OPEN on the server is not today's: today's starts as usual", async () => {

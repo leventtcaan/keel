@@ -1,6 +1,7 @@
 package app.keel.training;
 
 import app.keel.engine.ParameterSet;
+import app.keel.engine.Parameters;
 import app.keel.engine.Sex;
 import app.keel.profile.ProfileFacts;
 import app.keel.profile.Profiles;
@@ -27,8 +28,11 @@ public class TrainingMoveTargets {
     private final Profiles profiles;
     private final ParameterSet parameters;
     private final Clock clock;
+    private final ReturnAnswers returns;
 
-    TrainingMoveTargets(ProgramStore programs, TrainingStatusReader statuses, TrainingLog log, Profiles profiles, ParameterSet parameters, Clock clock) {
+    TrainingMoveTargets(ProgramStore programs, TrainingStatusReader statuses, TrainingLog log, Profiles profiles, ParameterSet parameters, Clock clock,
+            ReturnAnswers returns) {
+        this.returns = returns;
         this.programs = programs;
         this.statuses = statuses;
         this.log = log;
@@ -51,8 +55,10 @@ public class TrainingMoveTargets {
         Optional<ProfileFacts> facts = profiles.of(account);
         ZoneId zone = facts.map(ProfileFacts::timeZone).orElse(ZoneOffset.UTC);
         LocalDate today = LocalDate.now(clock.withZone(zone));
-        Optional<LocalDate> lastSession = log.lastSessionBefore(account, today.atStartOfDay(zone).toInstant()).map(started -> started.atZone(zone).toLocalDate());
-        BackAfterBreak back = BackAfterBreak.of(lastSession, today, zone, parameters.forSex(facts.map(profile -> Sex.valueOf(profile.sex().name())).orElse(Sex.MALE)));
+        Parameters forAccount = parameters.forSex(facts.map(profile -> Sex.valueOf(profile.sex().name())).orElse(Sex.MALE));
+        Optional<LocalDate> lastSession = returns.breakFrom(account,
+                log.lastSessionBefore(account, today.atStartOfDay(zone).toInstant()).map(started -> started.atZone(zone).toLocalDate()), today, zone, forAccount);
+        BackAfterBreak back = BackAfterBreak.of(lastSession, today, zone, forAccount);
         List<ProgramStore.PlannedExercise> planned = program.get().days().stream().flatMap(day -> day.exercises().stream()).toList();
         return HeldTargets.of(planned, statuses.compoundLifts(account, today, zone), back::steppedBack, today);
     }

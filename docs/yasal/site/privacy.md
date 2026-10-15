@@ -79,8 +79,9 @@ Your workouts and sets (move, set type, load, reps, reps in reserve, side, super
 history, lighter weeks and weeks off applied by a call, your gyms and their equipment, moves you added yourself, your own
 cardio if you changed the default (days, minutes, after the weights or on a day off), and the cardio sessions you did
 (the day, how long, typed or from Apple Health). It also holds what you told the app about your life that isn't about
-your health (travelling, a busy week, a new gym), with dates. If you withdraw the health data consent, it stays; it goes
-with your account.
+your health (travelling, a busy week, a new gym), with dates, and what you picked when you came back after a break (ease
+back in, pick up where you left off, or rebuild) with the day of your last log it was for. If you withdraw the health data
+consent, it stays; it goes with your account.
 
 *Why:* to coach your training (contract). The training log doesn't count as health data and doesn't need the health data
 consent, so withdrawing that consent leaves it in place. Importing past sessions from another app does need it, because

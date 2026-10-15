@@ -731,6 +731,30 @@
    "note": "The active energy needs HEALTH_DATA and is cleared when it is withdrawn; the session itself is training data (CardioController.java, TrainingAccountData.java)."
   },
   {
+   "table": "training.return_answer",
+   "module": "training",
+   "class": "training",
+   "purpose": "What you picked when you came back after a break (ease back in, pick up where you left off, rebuild), and the day of your last log it was for.",
+   "columns": [
+    "account_id",
+    "choice",
+    "gap_from",
+    "answered_at"
+   ],
+   "basis": "contract (Art. 6(1)(b))",
+   "gated_by": null,
+   "erased_by": [
+    "account_deletion"
+   ],
+   "exported": true,
+   "export_key": "returnAnswer",
+   "policy": "data-training",
+   "app_privacy": [
+    "Health & Fitness › Fitness"
+   ],
+   "note": "One row per account, the newest answer. Not health data: it holds a choice and a date, no weight, meal or state (ReturnService.java, ReturnAnswers.java, TrainingAccountData.java)."
+  },
+  {
    "table": "privacy.deletion",
    "module": "privacy",
    "class": "technical",

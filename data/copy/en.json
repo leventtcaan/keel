@@ -553,6 +553,21 @@
     "failed": "Something went wrong on our side. Try again in a moment.",
     "close": "Close"
   },
+  "openElsewhere": {
+    "continue": "Continue here",
+    "continueLabel": "Continue the workout on this phone",
+    "later": "Fill in later",
+    "laterLabel": "Fill in the workout later",
+    "laterSaid": "Left open. It counts, and you can continue it within {hours} hours.",
+    "discard": "Discard",
+    "discardLabel": "Discard the workout started on another phone",
+    "discarded": "Workout discarded.",
+    "offline": "Couldn't reach the server. Check your connection and try again.",
+    "discardOffline": "Discarding needs a connection. Check yours and try again.",
+    "failed": "Couldn't open the workout. Try again in a moment.",
+    "closed": "That workout has ended already.",
+    "gone": "That workout was discarded."
+  },
   "workout": {
     "title": "Workout",
     "progress": "{done} of {count} exercises",
@@ -2604,7 +2619,7 @@
       "title": "Units",
       "metric": "Metric (kg, cm)",
       "imperial": "Imperial (lb, ft, in)",
-      "note": "Your history stays as logged; everything shows in the units you pick.",
+      "note": "Your history stays as logged.",
       "failed": "Couldn't change units. Check your connection and try again."
     },
     "reminders": {
@@ -2715,10 +2730,36 @@
     },
     "back": "Today",
     "backMark": "‹",
+    "forwardMark": "›",
     "account": {
-      "title": "Your account"
+      "title": "Account"
     },
-    "gyms": "Gyms"
+    "gyms": "Gyms",
+    "training": {
+      "title": "Training",
+      "days": "Training days",
+      "import": "Import workouts",
+      "importFrom": "Strong, Hevy",
+      "noGym": "None yet",
+      "none": "None yet",
+      "unread": "Couldn't load"
+    },
+    "food": {
+      "title": "Food",
+      "avoid": "Foods you avoid",
+      "none": "None",
+      "locked": "Needs your OK for health data",
+      "unread": "Couldn't load",
+      "label": "Foods you don't or can't eat",
+      "hint": "Separate them with commas.",
+      "save": "Save",
+      "cancel": "Cancel",
+      "failed": "Couldn't save that. Try again."
+    },
+    "health": {
+      "title": "Health and data",
+      "locked": "Bringing in Apple Health history needs your OK for health data."
+    }
   },
   "permissions": {
     "healthRead": "keel reads your steps, sleep, weight, active energy and workouts to make your weekly calls. It never reads heart data, cycle data, medications, health records or location.",
@@ -2918,6 +2959,81 @@
         "OUTSIDE_MODEL": "The model behind the projection doesn't reach your measurements, so it isn't shown.",
         "NO_SAFE_SCENARIO": "None of the scenarios stays within the plan's pace and range, so none is shown."
       }
+    }
+  },
+  "progress": {
+    "failed": "Some of this didn't load.",
+    "retry": "Try again",
+    "hero": {
+      "targets": "Today's targets.",
+      "firstWorkout": "First workout in. Today's targets.",
+      "tap": "Tap one to log it.",
+      "early": "Your numbers build week by week.",
+      "record": "{counted} weeks · {onTrack} on track",
+      "recordOne": "1 week · {onTrack} on track"
+    },
+    "result": {
+      "stronger": "Stronger on {stronger} of {tracked} lifts.",
+      "strongerOne": "Stronger on your lift.",
+      "down": "Down {amount}.",
+      "up": "Up {amount}.",
+      "steady": "Weight steady."
+    },
+    "targets": {
+      "calories": "Calories",
+      "protein": "Protein",
+      "steps": "Steps",
+      "cardio": "Cardio",
+      "ofKcal": "/ {target}",
+      "ofGrams": "/ {target} g",
+      "ofSteps": "/ {target}",
+      "ofCardio": "/ {count} this week",
+      "fromMeals": "From your meals",
+      "appleHealth": "Apple Health",
+      "connect": "Connect Apple Health",
+      "each": "{minutes} min each",
+      "label": {
+        "calories": "Calories, {eaten} of {target} kilocalories",
+        "protein": "Protein, {eaten} of {target} grams",
+        "steps": "Steps, {steps} of {target}",
+        "stepsOff": "Steps, Apple Health not connected, target {target}",
+        "cardio": "Cardio, {done} of {count} this week, {minutes} minutes each"
+      },
+      "hint": {
+        "meal": "Opens the meal log",
+        "health": "Opens Apple Health",
+        "connect": "Opens Settings to connect Apple Health",
+        "cardio": "Opens the log"
+      }
+    },
+    "muscles": {
+      "title": "This week's muscles",
+      "planned": "planned",
+      "thisWeek": "this week",
+      "legendPlanned": "Planned",
+      "legendDone": "Done"
+    },
+    "strength": {
+      "title": "Strength",
+      "baseline": "your baseline",
+      "next": "Next time every set has a target to beat.",
+      "locked": "After your first workout",
+      "set": "{load} × {reps}",
+      "rowLabel": "{move}, {load} for {reps} reps"
+    },
+    "weight": {
+      "title": "Weight trend",
+      "count": "{count} of {min}",
+      "after": "Shows after {min} weigh-ins.",
+      "spoken": "{count} of {min} weigh-ins so far"
+    },
+    "consistency": {
+      "title": "Consistency",
+      "onTrack": "On track",
+      "spare": "Spare week",
+      "paused": "Paused",
+      "note": "A missed week never resets your record.",
+      "spoken": "Last {count} weeks, oldest first: {onTrack} on track, {spare} spare, {paused} paused, {other} other weeks."
     }
   },
   "strength": {

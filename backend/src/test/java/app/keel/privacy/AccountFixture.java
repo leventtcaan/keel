@@ -78,6 +78,9 @@ final class AccountFixture {
                 insert into training.session_change (account_id, program_day_id, week_of, on_date, skipped, short_version, swaps)
                 select :account, id, date '2026-09-28', null, true, false, '{"squat": "leg_press"}'::jsonb from training.program_day
                 where account_id = :account order by seq limit 1""").param("account", account.value()).update();
+        // What the user picked on coming back (K-1020): stored as POST /v1/return stores it, for a gap the clock does not pick.
+        context.getBean(app.keel.training.ReturnAnswers.class).save(account, app.keel.training.ReturnAnswers.Choice.PICK_UP,
+                LocalDate.of(2026, 9, 30), java.time.Instant.parse("2026-10-08T08:00:00Z"));
         // A gym with every part of its equipment (K-414): its plates, dumbbells and machines are rows too.
         send(account, "PUT", "/v1/gyms/" + UUID.randomUUID(), Map.of("name", "Downtown", "current", true, "barKg", 20, "platesKg", List.of(20, 10),
                 "dumbbellsKg", List.of(10, 12), "stackStepKg", 5, "machines", List.of(Map.of("exerciseId", "pec_deck", "stepKg", 7))));

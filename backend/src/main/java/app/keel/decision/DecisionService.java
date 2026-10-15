@@ -754,6 +754,25 @@ class DecisionService {
         return Optional.of(FirstWeekFacts.firstCallOn(firstDay(account, profile.timeZone()), profile.checkInDay(), today));
     }
 
+    /**
+     * The day of the next call on the user's calendar (K-1020, ADR-077 Ek 8), the one the Hero names: none without the
+     * HEALTH_DATA consent (there is no call to name); the first call's day until it is made; today while this check-in week's
+     * call is open; else the latest call's own {@code nextReview} while ahead; else the next check-in day. Not a refusal
+     * without the consent: the caller still answers what needs none.
+     */
+    @Transactional(readOnly = true)
+    Optional<LocalDate> nextCallOn(AccountId account, ProfileFacts profile, LocalDate today) {
+        if (!consent.granted(account, ConsentKind.HEALTH_DATA)) {
+            return Optional.empty();
+        }
+        Optional<LocalDate> first = calls.firstMadeOn(account).isPresent() ? Optional.empty()
+                : Optional.of(FirstWeekFacts.firstCallOn(firstDay(account, profile.timeZone()), profile.checkInDay(), today));
+        LocalDate weekOf = CheckInWeek.weekOf(today, profile.checkInDay());
+        Optional<LocalDate> latestReview = calls.newestFirst(account, Optional.empty(), 1).stream().findFirst()
+                .map(call -> LocalDate.parse((String) call.decision().get("nextReview")));
+        return Optional.of(ReturnGap.nextCallOn(first, weekOf, !taken(account, weekOf), today, latestReview));
+    }
+
     /** The first eight weeks (K-513, ADR-040): this week of the flow; empty before the first day and once it is over. */
     @Transactional(readOnly = true)
     Optional<FirstWeeks.Week> firstWeeks(AccountId account) {

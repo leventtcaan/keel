@@ -54,6 +54,12 @@ final class WeekTallies {
     private WeekTallies() {
     }
 
+    /** The weeks with a day among {@code days} paused (K-516 declared states; K-1022 the ladder's week off): neither on track nor missed. */
+    static List<WeekTally> pausedOn(List<WeekTally> weeks, Set<LocalDate> days) {
+        return weeks.stream().map(week -> week.weekStart().datesUntil(week.weekStart().plusWeeks(1)).anyMatch(days::contains) ? week.asPaused() : week)
+                .toList();
+    }
+
     /** The weeks inside the {@code windowDays} days before today (today is not over), oldest first. */
     static List<LocalDate> weeks(LocalDate today, int windowDays) {
         List<LocalDate> weeks = new ArrayList<>();

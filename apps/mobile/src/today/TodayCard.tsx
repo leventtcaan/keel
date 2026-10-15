@@ -12,6 +12,7 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { type Changed, changeToday } from '@/train/changes';
 import { MoveThumb } from '@/train/MoveThumb';
+import { OpenElsewhere } from '@/train/OpenElsewhere';
 import { workoutParams } from '@/train/params';
 import { dayName, exerciseName } from '@/train/program';
 import { repCount } from '@/train/reps';
@@ -162,6 +163,7 @@ export function TodayCard({ card, program, today, parts, onChanged }: Props) {
         <>
           {head(t('thisWeek.today.open'), name(card.day), resume)}
           {fine(sets)}
+          {card.onPhone || card.workoutId === null ? null : <OpenElsewhere workoutId={card.workoutId} onChanged={() => onChanged(null)} />}
         </>
       );
       break;

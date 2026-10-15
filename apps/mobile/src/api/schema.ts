@@ -1341,6 +1341,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/return": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The gap since the last log, and what to offer on coming back (K-1020, ADR-077
+         * @description `awayDays` is the days from the user's last log (a weigh-in, a meal, a session or a cardio session; steps and the
+         *     app being opened are not logs, ADR-041 #66) to today on the profile's calendar; 0 with no log at all. `shouldPrompt`:
+         *     the gap has reached `return_prompt_days` and this gap was not answered yet (POST /v1/return). A user with no log
+         *     is new, not returning: never prompted. `suggested` is the one reading the program shows (`ReturnLoad`,
+         *     `return_step_back_after_weeks`): EASE_BACK when the last session is that many weeks back (the first targets are a step
+         *     lighter), else PICK_UP. `nextCallOn` is the day of the next call, the one the Hero names: the first call's day before
+         *     the first call (as `GET /v1/first-weeks`); today while this check-in week's call is open; else the latest call's own
+         *     `nextReview` while that is ahead (a call made late reviews on its own day); else the next check-in day. Absent without
+         *     the HEALTH_DATA consent (no call without it). The phone shows all of it and works none out. Meals and weigh-ins are
+         *     read only with the HEALTH_DATA consent (without it they are not counted); CONFLICT without a profile.
+         */
+        get: operations["getReturn"];
+        put?: never;
+        /**
+         * Answer the return question once for this gap
+         * @description Kept with the last log the gap began from: the question is not asked again for this gap (`shouldPrompt` false),
+         *     and asked again only when a new log is followed by a new gap of `return_prompt_days`, and not within `return_prompt_days`
+         *     days of the answer (a log dated back after it leaves the question answered). Sent again for the same gap, the
+         *     newer answer replaces the older. PICK_UP keeps the program's targets as they were (`Program.backAfterBreak` absent,
+         *     `nextLoadKg` not eased) for the first session back, within `return_step_back_after_weeks` of the answer: without a
+         *     session in that time it falls and the usual step back applies; EASE_BACK leaves the usual step back as it is; REBUILD changes
+         *     nothing here (the phone calls POST /v1/program/generate). CONFLICT when there is no gap to answer (no log, or fewer
+         *     days than `return_prompt_days`) or no profile. Answers the summary as it is after the answer.
+         */
+        post: operations["answerReturn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/decisions": {
         parameters: {
             query?: never;
@@ -3093,7 +3133,7 @@ export interface components {
             /** @description done over planned, rounded down; absent while nothing is planned. */
             percent?: number;
             /**
-             * @description Present (true) when a state was declared on a day of this week (K-516, ADR-038): the week is neither on track
+             * @description Present (true) when a state was declared on a day of this week (K-516, ADR-038) or the deload ladder set it off (K-1022): the week is neither on track
              *     nor missed, and the record leaves it out.
              */
             paused?: boolean;
@@ -3133,7 +3173,7 @@ export interface components {
              * @description ON_TRACK: at on_track_min_ratio of the plan or above. SPARE: a lone missed week after a week on track, which the
              *     run forgave (shown as "spare week", ADR-078 #2); it is still counted in the record, never taken back. MISSED: a
              *     miss that was not forgiven (the second in a row, or one with no run before it). PAUSED: neither a success nor a
-             *     miss, the record leaves it out: a day of it under a state the user declared (K-516).
+             *     miss, the record leaves it out: a day of it under a state the user declared (K-516), or the week off the deload ladder set (K-1022, ADR-040; a lighter week still counts).
              * @enum {string}
              */
             state: "ON_TRACK" | "SPARE" | "MISSED" | "PAUSED";
@@ -3410,6 +3450,32 @@ export interface components {
              */
             firstCallOn?: string;
             risk: components["schemas"]["Reason"][];
+        };
+        /**
+         * @description What the user picked on coming back (K-1020, ADR-077
+         * @enum {string}
+         */
+        ReturnChoice: "EASE_BACK" | "PICK_UP" | "REBUILD";
+        /**
+         * @description The one of the first two the server offers first; REBUILD is always the third.
+         * @enum {string}
+         */
+        ReturnSuggestion: "EASE_BACK" | "PICK_UP";
+        ReturnAnswer: {
+            choice: components["schemas"]["ReturnChoice"];
+        };
+        ReturnSummary: {
+            /** @description Days from the last log to today on the user's calendar; 0 with no log. */
+            awayDays: number;
+            /** @description The gap has reached `return_prompt_days` and was not answered yet. */
+            shouldPrompt: boolean;
+            suggested: components["schemas"]["ReturnSuggestion"];
+            /**
+             * Format: date
+             * @description The day of the next call on the user's calendar, as the Hero names it (the latest call's `nextReview`). Absent
+             *     without the HEALTH_DATA consent: there is no call.
+             */
+            nextCallOn?: string;
         };
         Reason: {
             rule: string;
@@ -5473,6 +5539,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FirstWeeks"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getReturn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The gap and the offer */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReturnSummary"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    answerReturn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReturnAnswer"];
+            };
+        };
+        responses: {
+            /** @description The summary after the answer */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReturnSummary"];
                 };
             };
             default: components["responses"]["Error"];

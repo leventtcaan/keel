@@ -75,6 +75,12 @@ public class Measurements {
         return store.latestKg(account);
     }
 
+    /** The user's day of the latest weigh-in they made (not an imported one, ADR-053), whenever it was: the weight's last log (K-1020). */
+    public Optional<LocalDate> lastWeighInDay(AccountId account) {
+        ZoneId zone = zoneOf(account);
+        return store.latestMeasuredAt(account).map(at -> at.atZone(zone).toLocalDate());
+    }
+
     /** The step count of each day that has one, from {@code from} to {@code to}, both included (K-220). */
     public Map<LocalDate, Integer> stepsByDay(AccountId account, LocalDate from, LocalDate to) {
         Map<LocalDate, Integer> steps = new LinkedHashMap<>();

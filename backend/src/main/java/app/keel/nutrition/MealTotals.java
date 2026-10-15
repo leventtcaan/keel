@@ -4,6 +4,7 @@ import app.keel.shared.AccountId;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,11 @@ public class MealTotals {
 
     MealTotals(MealStore store) {
         this.store = store;
+    }
+
+    /** The latest day a meal was logged on, whenever it was (K-1020: the gap since the last log). */
+    public Optional<LocalDate> lastMealDay(AccountId account) {
+        return store.lastDay(account);
     }
 
     /** Each day with a meal logged, from {@code from} to {@code to}, both included; a day without one is absent. */

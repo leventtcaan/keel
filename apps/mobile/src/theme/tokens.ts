@@ -17,6 +17,8 @@ const light = {
   textSecondary: '#2B2F2F',
   muted: '#586061',
   track: '#E4E8E8',
+  /** A week the 12 weeks grid draws plainly (Progress): neutral, not the warning colour (U7), 3:1 against the card (WCAG 1.4.11). */
+  weekMissed: '#7E8888',
   /** Filled controls, selection and the decision's number. Text on it uses onAccent (5.35:1). */
   accent: '#007684',
   onAccent: '#FFFFFF',
@@ -49,6 +51,7 @@ const dark: Record<keyof typeof light, string> = {
   textSecondary: '#D3D9D9',
   muted: '#9AA4A4',
   track: '#262A2A',
+  weekMissed: '#6B7575',
   accent: '#35D7CF',
   onAccent: '#061212',
   accentSoft: '#113030',
@@ -144,6 +147,11 @@ export const tokens = {
     touch: 44,
     /** The screen's one primary button (ADR-070 #6). */
     primaryButton: 54,
+    /** Progress (ADR-078, prototype `.tgt`): a target box's least height; a week of the 12 weeks grid; a weigh-in dot; a legend swatch. */
+    targetBox: 104,
+    weekCell: 24,
+    dot: 14,
+    swatch: 10,
   },
   opacity: {
     /** Pressed and disabled controls. */

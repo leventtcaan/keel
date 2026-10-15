@@ -31,9 +31,9 @@ const WORDS = { NoConnection: 'settings.consents.failed', HealthSheetFailed: 'se
  * Each consent: its state, the text it was given to (View), and Allow or Withdraw (ADR-007: separately, at any time).
  * Withdrawing asks first; withdrawing the health data consent deletes the health entries for good (K-231), so its
  * question says so and offers the export before. Apple Health brings in health data, so it needs the health data consent, and HealthKit in the
- * build. After every change the states are read again from the server, the truth.
+ * build. After every change the states are read again from the server, the truth; `onChanged` then tells the screen it holds (K-982).
  */
-export function ConsentsSection() {
+export function ConsentsSection({ onChanged }: { onChanged?: () => void } = {}) {
   const { api, health, consents, withdrawHealthData, exportData } = useAppServices();
   const { color } = useTheme();
   const [states, setStates] = useState<Partial<Record<Kind, PhoneConsentStatus>> | null>(null);
@@ -66,6 +66,7 @@ export function ConsentsSection() {
     await consents.remember(kind, to).catch(() => undefined);
     setStates((current) => ({ ...current, [kind]: to }));
     await load();
+    onChanged?.(); // Settings' other groups follow the consent (K-982)
   };
 
   if (states === null) {

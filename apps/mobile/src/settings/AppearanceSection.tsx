@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Chip } from '@/components/Chip';
@@ -13,8 +14,11 @@ import { useAction } from './useAction';
 
 const CHOICES: Appearance[] = ['light', 'dark', 'system'];
 
-/** Light, Dark or System, Light until the person picks (ADR-070 #3); kept on the phone, the whole app follows at once. */
-export function AppearanceSection() {
+/**
+ * Light, Dark or System, Light until the person picks (ADR-070 #3); kept on the phone, the whole app follows at once. The
+ * group's other rows (the units, K-982) go in as `children`.
+ */
+export function AppearanceSection({ children }: { children?: ReactNode } = {}) {
   const { appearance } = useAppServices();
   const chosen = useAppearance();
   const { color } = useTheme();
@@ -28,6 +32,7 @@ export function AppearanceSection() {
         ))}
       </View>
       {problem !== null && <ProblemText style={[styles.note, { color: color.text }]}>{problem}</ProblemText>}
+      {children}
     </Section>
   );
 }

@@ -12,14 +12,14 @@ import { Section } from './Section';
 import { useAction } from './useAction';
 
 /** The unit system, stored on the profile (K-310): a choice that does not reach the server is not half-made. */
-export function UnitsSection() {
+export function UnitsSection({ inGroup = false }: { inGroup?: boolean } = {}) {
   const { units } = useAppServices();
   const system = useUnits();
   const { color } = useTheme();
   const { problem, run } = useAction();
   const choose = (next: UnitSystem) => void run(() => units.set(next).then(() => undefined), {}, 'settings.units.failed');
-  return (
-    <Section title={t('settings.units.title')}>
+  const body = (
+    <>
       <View style={styles.row}>
         <Chip label={t('settings.units.metric')} selected={system === 'METRIC'} onPress={() => choose('METRIC')} />
         <Chip label={t('settings.units.imperial')} selected={system === 'IMPERIAL'} onPress={() => choose('IMPERIAL')} />
@@ -29,11 +29,23 @@ export function UnitsSection() {
       ) : (
         <ProblemText style={[styles.note, { color: color.text }]}>{problem}</ProblemText>
       )}
-    </Section>
+    </>
   );
+  // In a group (Settings › Appearance, K-982) the units are a row of it, named but not a heading of their own.
+  if (inGroup) {
+    return (
+      <View style={styles.block}>
+        <Text style={[styles.label, { color: color.text }]}>{t('settings.units.title')}</Text>
+        {body}
+      </View>
+    );
+  }
+  return <Section title={t('settings.units.title')}>{body}</Section>;
 }
 
 const styles = StyleSheet.create({
+  block: { gap: tokens.space.sm },
+  label: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm },
   note: { fontSize: tokens.type.bodySmall },
 });

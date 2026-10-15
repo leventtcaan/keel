@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 /**
  * Training's part of the user's data (K-214): every workout with its sets, the program (K-211), what each program asked
  * (K-535) and its calls (K-217), the review's changes to it (K-956), the week's changes to its sessions (K-964), the gyms (K-414), the user's own moves (K-424), the
- * user's own cardio and the cardio sessions done (K-959).
+ * user's own cardio and the cardio sessions done (K-959), the answer to the return question (K-1020).
  */
 @Component
 class TrainingAccountData implements AccountDataExport {
@@ -29,9 +29,11 @@ class TrainingAccountData implements AccountDataExport {
     private final ReviewChangeStore reviewChanges;
     private final SessionChangeStore sessionChanges;
     private final CardioStore cardio;
+    private final ReturnAnswers returnAnswers;
 
     TrainingAccountData(JdbcClient jdbc, WorkoutStore store, ProgramStore programs, TrainingCalls calls, GymStore gyms, CustomExerciseStore customs,
-            ReviewChangeStore reviewChanges, CardioStore cardio, SessionChangeStore sessionChanges) {
+            ReviewChangeStore reviewChanges, CardioStore cardio, SessionChangeStore sessionChanges, ReturnAnswers returnAnswers) {
+        this.returnAnswers = returnAnswers;
         this.sessionChanges = sessionChanges;
         this.reviewChanges = reviewChanges;
         this.customs = customs;
@@ -51,7 +53,7 @@ class TrainingAccountData implements AccountDataExport {
         // The program's days and moves go with it (on delete cascade); by account too, as for sets.
         // A gym's weights and machines go with it (on delete cascade); by account too.
         for (String table : new String[] {"program_change", "program_review_change", "session_change", "program_history", "planned_exercise", "program_day", "program", "gym_weight", "gym_machine", "gym",
-            "custom_exercise", "cardio_plan_session", "cardio_plan", "cardio_session"}) {
+            "custom_exercise", "cardio_plan_session", "cardio_plan", "cardio_session", "return_answer"}) {
             jdbc.sql("delete from training." + table + " where account_id = :account").param("account", deletion.account().value()).update();
         }
     }
@@ -85,6 +87,7 @@ class TrainingAccountData implements AccountDataExport {
         cardio.userPlan(account).ifPresent(own -> training.put("cardioPlan", Map.of("minutes", own.minutes(), "sessions", own.sessions().stream()
                 .map(session -> Map.of("weekday", session.day(), "place", session.placement())).toList())));
         training.put("cardioSessions", cardio.all(account));
+        returnAnswers.of(account).ifPresent(answer -> training.put("returnAnswer", answer));
         return training;
     }
 }

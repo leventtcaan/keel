@@ -129,6 +129,43 @@ class AdherenceApiTests {
     }
 
     @Test
+    void aWeekOffTheEngineCalledIsLeftOutOfTheWindow() throws Exception {
+        // K-1023 (ADR-040 Ek 1): every week but the last is done in full (one session, four weigh-ins); the last is the
+        // ladder's week off, with nothing done. Counted it would drag the adherence under 1; a planned rest is not a miss.
+        LocalDate today = LocalDate.now(ISTANBUL);
+        List<LocalDate> weeks = weeksInTheWindow(today);
+        AccountId account = inIstanbul();
+        for (LocalDate week : weeks.subList(0, weeks.size() - 1)) {
+            for (int day = 0; day < 4; day++) {
+                post(account, "/v1/weigh-ins", Map.of("clientId", UUID.randomUUID(), "measuredAt", at(week.plusDays(day), 7).toString(),
+                        "kg", 82.0, "source", "MANUAL"));
+            }
+            session(account, week);
+        }
+        weighToday(account, today);
+        restWeek(account, weeks.getLast(), weeks.getLast().plusDays(6));
+
+        keepCall(account, today);
+
+        assertThat(adherence(account)).isEqualByComparingTo(BigDecimal.ONE);
+    }
+
+    @Test
+    void aWindowOfWeeksAllOffHasNoAdherence() throws Exception {
+        // K-1023: as for the declared states (K-516), a window with nothing left asked is the empty one, not a zero.
+        LocalDate today = LocalDate.now(ISTANBUL);
+        List<LocalDate> weeks = weeksInTheWindow(today);
+        AccountId account = inIstanbul();
+        session(account, weeks.getFirst());
+        weighToday(account, today);
+        restWeek(account, weeks.getFirst(), weeks.getLast().plusDays(6));
+
+        keepCall(account, today);
+
+        assertThat(adherence(account)).isNull();
+    }
+
+    @Test
     void aPlanBegunThisWeekHasNoWeeksToJudgeYet() throws Exception {
         LocalDate today = LocalDate.now(ISTANBUL);
         AccountId account = inIstanbul();
@@ -143,6 +180,51 @@ class AdherenceApiTests {
         String snapshot = jdbc.sql("select snapshot::text from decision.weekly_call where account_id = :a").param("a", account.value())
                 .query(String.class).single();
         assertThat(JSON.readValue(snapshot, StoredSnapshot.class).checkIn().adherence()).isNull();
+    }
+
+    /** The Monday weeks inside the 21 days before today (male window), over by today — worked out here, not by the code. */
+    private static List<LocalDate> weeksInTheWindow(LocalDate today) {
+        List<LocalDate> weeks = new ArrayList<>();
+        for (LocalDate monday = today.minusDays(21); monday.plusDays(6).isBefore(today); monday = monday.plusDays(1)) {
+            if (monday.getDayOfWeek() == DayOfWeek.MONDAY) {
+                weeks.add(monday);
+            }
+        }
+        assertThat(weeks).hasSizeGreaterThanOrEqualTo(2);
+        return weeks;
+    }
+
+    /** The Monday's session, done: a workout with a working set (K-431). */
+    private void session(AccountId account, LocalDate monday) throws Exception {
+        MvcTestResult workout = send(account, "POST", "/v1/workouts", Map.of("clientId", UUID.randomUUID(), "startedAt", at(monday, 12).toString()));
+        post(account, "/v1/workouts/" + JSON.readValue(workout.getResponse().getContentAsString(), Map.class).get("id") + "/sets",
+                Map.of("clientId", UUID.randomUUID(), "exerciseId", "bench_press", "setType", "WORKING", "loadKg", 60, "reps", 8, "rir", 2));
+    }
+
+    /** A weigh-in at today's start, in no week over: the call has a weight to go by. */
+    private void weighToday(AccountId account, LocalDate today) {
+        post(account, "/v1/weigh-ins", Map.of("clientId", UUID.randomUUID(), "measuredAt", today.atStartOfDay(ISTANBUL).toInstant().toString(),
+                "kg", 82.0, "source", "MANUAL"));
+    }
+
+    /** The ladder's week off applied (as the deload ladder's call records it), from one day to another. */
+    private void restWeek(AccountId account, LocalDate from, LocalDate to) {
+        jdbc.sql("""
+                insert into training.program_change (id, account_id, call_id, kind, starts_on, ends_on)
+                values (:id, :a, :call, 'REST_WEEK', :from, :to)""").param("id", UUID.randomUUID()).param("a", account.value())
+                .param("call", UUID.randomUUID()).param("from", from).param("to", to).update();
+    }
+
+    private void keepCall(AccountId account, LocalDate today) {
+        assertThat(send(account, "POST", "/v1/check-ins/current/answers", Map.of("clientId", UUID.randomUUID(),
+                "weekOf", CheckInWeek.weekOf(today, DayOfWeek.MONDAY).toString(), "answers", List.of()))).hasStatusOk();
+    }
+
+    /** The adherence the kept call went by; null when the window had none. */
+    private BigDecimal adherence(AccountId account) throws Exception {
+        String snapshot = jdbc.sql("select snapshot::text from decision.weekly_call where account_id = :a").param("a", account.value())
+                .query(String.class).single();
+        return JSON.readValue(snapshot, StoredSnapshot.class).checkIn().adherence();
     }
 
     /** A man in Istanbul training on Mondays, on a cut begun two months ago. */

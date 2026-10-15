@@ -21,8 +21,11 @@ type Schemas = components['schemas'];
 type Day = Schemas['ProgramDay'];
 
 export type TodayCard =
-  /** `onPhone`: the workout is on this phone and can be continued here; `sets` its sets so far (unknown when it is not). */
-  | { kind: 'open'; day: Day | null; sets: number | null; onPhone: boolean }
+  /**
+   * `onPhone`: the workout is on this phone and can be continued here; `sets` its sets so far (unknown when it is not).
+   * `workoutId`: the server's id of one open that is not on this phone (K-999): the way to continue it here.
+   */
+  | { kind: 'open'; day: Day | null; sets: number | null; onPhone: boolean; workoutId: string | null }
   /** `day`: the program day of the workout done (none: a free workout, or the program is not known). */
   | { kind: 'done'; day: Day | null; workoutId: string | null }
   | { kind: 'session'; day: Day; session: Schemas['WeekSession'] }
@@ -45,18 +48,18 @@ type Input = {
 export function todayCardOf({ program, kept, records, now }: Input): TodayCard {
   if (program === null) {
     const active = activeWorkout(records);
-    if (active !== null) return { kind: 'open', day: null, sets: active.sets.length, onPhone: true };
+    if (active !== null) return { kind: 'open', day: null, sets: active.sets.length, onPhone: true, workoutId: null };
     const done = finishedOnPhone(records, localDay(now));
     return done === null ? { kind: 'none' } : { kind: 'done', day: null, workoutId: done.workoutId };
   }
   const state = sessionState({ program, kept, records, now });
   const dayOf = (id: string | null | undefined) => program.days.find((d) => d.id === id) ?? null;
-  if (state.onPhone !== null) return { kind: 'open', day: dayOf(state.onPhone.programDayId), sets: state.onPhone.sets.length, onPhone: true };
+  if (state.onPhone !== null) return { kind: 'open', day: dayOf(state.onPhone.programDayId), sets: state.onPhone.sets.length, onPhone: true, workoutId: null };
   const { found, finished } = state;
   const kind = todayKind(program, state);
   if (kind === 'restWeek') return { kind };
   if (kind === 'done') return { kind, day: finishedDay(program, state), workoutId: finished?.workoutId ?? null };
-  if (kind === 'openElsewhere') return { kind: 'open', day: found?.day ?? null, sets: null, onPhone: false };
+  if (kind === 'openElsewhere') return { kind: 'open', day: found?.day ?? null, sets: null, onPhone: false, workoutId: found?.session.workout?.id ?? null };
   if (found !== null) {
     const { session, day } = found;
     return session.skipped === true ? { kind: 'skipped', day, undoable: !state.stale && session.undoable === true } : { kind: 'session', day, session };

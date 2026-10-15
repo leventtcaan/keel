@@ -4,6 +4,7 @@ import app.keel.shared.AccountId;
 import app.keel.shared.Decimals;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.LinkedHashMap;
@@ -68,6 +69,12 @@ public class TrainingLog {
                   and exists (select 1 from training.workout_set s where s.workout_id = w.id and s.set_type <> 'WARM_UP')""")
                 .param("account", account.value()).param("before", before.atOffset(ZoneOffset.UTC))
                 .query((row, n) -> Optional.ofNullable(row.getObject("last", OffsetDateTime.class)).map(OffsetDateTime::toInstant)).single();
+    }
+
+    /** The day of the last cardio session the user logged, whenever it was (K-1020: the gap since the last log). */
+    public Optional<LocalDate> lastCardioDay(AccountId account) {
+        return jdbc.sql("select max(day) from training.cardio_session where account_id = :account").param("account", account.value())
+                .query((row, n) -> Optional.ofNullable(row.getObject(1, LocalDate.class))).single();
     }
 
     /**

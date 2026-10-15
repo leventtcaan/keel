@@ -19,9 +19,9 @@ type Outcome = { found: number } | 'consent' | null;
  * Bring in your history (K-616, K-609, ADR-018 §3, ADR-053): Apple Health's older weigh-ins, read once when the user
  * asks — never on its own — and workouts from a Strong or Hevy export, on their own screen. What is brought in is seen
  * in the history and never changes a call; the note says so before the tap. Where HealthKit is not in the build (Expo
- * Go), the weigh-ins say so; a file needs no HealthKit.
+ * Go), the weigh-ins say so; a file needs no HealthKit. `workouts` false leaves the file row out where the screen has its own (K-982).
  */
-export function ImportSection() {
+export function ImportSection({ workouts = true }: { workouts?: boolean } = {}) {
   const { health, importHealthWeights } = useAppServices();
   const { color } = useTheme();
   const { busy, problem, run } = useAction();
@@ -46,21 +46,19 @@ export function ImportSection() {
   ) : (
     <Text style={[styles.note, { color: color.muted }]}>{t('settings.import.unavailable')}</Text>
   );
+  // A file needs no HealthKit: workouts can be brought in in any build (K-609). Settings has them as a Training row (K-982).
+  const workoutsRow = workouts ? (
+    <Row label={t('settings.import.workouts')} hint={t('settings.import.workoutsHint')}>
+      <Button label={t('settings.import.open')} accessibilityLabel={t('settings.import.workoutsLabel')} size="sm" onPress={() => router.push('/import')} />
+    </Row>
+  ) : null;
   return (
     <Section title={t('settings.import.title')}>
       <Text style={[styles.note, { color: color.muted }]}>{t('settings.import.note')}</Text>
       {weighIns}
       {outcome !== null && <Said text={said(outcome)} />}
       {problem !== null && <ProblemText style={[styles.note, { color: color.text }]}>{problem}</ProblemText>}
-      {/* A file needs no HealthKit: workouts can be brought in in any build (K-609). */}
-      <Row label={t('settings.import.workouts')} hint={t('settings.import.workoutsHint')}>
-        <Button
-          label={t('settings.import.open')}
-          accessibilityLabel={t('settings.import.workoutsLabel')}
-          size="sm"
-          onPress={() => router.push('/import')}
-        />
-      </Row>
+      {workoutsRow}
     </Section>
   );
 }

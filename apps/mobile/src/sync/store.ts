@@ -164,6 +164,24 @@ export async function openRecordStore(db: SqlDatabase, now: () => Date = () => n
       await db.runAsync('DELETE FROM records WHERE client_id = ?', [clientId]);
     },
 
+    /**
+     * Records the server already has, kept as the phone's own (K-999: a workout open on another phone, with its sets), in
+     * the order given, already SYNCED with the server's ids. ONE statement, so all or none are kept (a failure half way
+     * leaves no workout without its sets); a clientId already here stays as it is and is marked as the server's. `attempted`:
+     * the server has it, so its body never changes in place.
+     */
+    keepFromServer: async (records: { clientId: string; kind: string; parentClientId: string | null; body: unknown; serverId: string; serverBody: unknown }[]): Promise<void> => {
+      if (records.length === 0) return;
+      const created = now().toISOString();
+      await db.runAsync(
+        `INSERT INTO records (client_id, kind, parent_client_id, body, state, server_id, server_body, attempted, created_at)
+         VALUES ${records.map(() => `(?, ?, ?, ?, 'SYNCED', ?, ?, 1, ?)`).join(', ')}
+         ON CONFLICT (client_id) DO UPDATE SET state = 'SYNCED', server_id = excluded.server_id, server_body = excluded.server_body,
+           error_code = NULL, attempted = 1`,
+        records.flatMap((r) => [r.clientId, r.kind, r.parentClientId, JSON.stringify(r.body), r.serverId, JSON.stringify(r.serverBody), created]),
+      );
+    },
+
     /** A send of this record is about to be tried: from now on the server may have it (ADR-024), whatever comes back. */
     markAttempted: async (clientId: string): Promise<void> => {
       await db.runAsync(`UPDATE records SET attempted = 1 WHERE client_id = ?`, [clientId]);

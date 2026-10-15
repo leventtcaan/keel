@@ -22,6 +22,7 @@ import { type EditedDay, WEEKDAYS, draftFits, editedDays, newDay, programEditOf,
 import { ProgramEditor } from '@/train/ProgramEditor';
 import { suggestionWords } from '@/train/review';
 import { type Move, movesOf, ownMove } from '@/train/trainData';
+import { cardioLine, daysLine } from '@/train/programLines';
 import { splitName } from '@/train/week';
 import { activeWorkout } from '@/train/workout';
 
@@ -31,8 +32,6 @@ const PARTS: readonly Part[] = ['days', 'moves', 'changes', 'cardio', 'split', '
 
 const plural = (key: string, count: number, vars: Record<string, string | number> = {}) =>
   t(`${key}.${count === 1 ? 'one' : 'other'}`, { count, ...vars });
-const weekdayOf = (day: Schemas['ProgramDay']) =>
-  day.weekday === undefined ? t('editProgram.anyDay') : t(`programEditor.weekdayShort.${day.weekday}`);
 /** Why a 409 came: the workout's day (edits kept), the program changed under the edit (cleared), or not known. */
 type Fit = 'kept' | 'cleared' | 'unknown';
 const CONFLICT: Record<Fit, string> = {
@@ -282,7 +281,7 @@ export default function EditProgramScreen() {
     body = (
       <View style={styles.rows}>
         {applied > 0 && <Row title={plural('editProgram.applied', applied)} detail={t('editProgram.appliedUndo')} onPress={() => open('changes')} />}
-        <Row title={t('editProgram.days')} detail={program.days.map(weekdayOf).join(t('editProgram.dayList'))} onPress={() => open('days')} />
+        <Row title={t('editProgram.days')} detail={daysLine(program)} onPress={() => open('days')} />
         <Row title={t('editProgram.moves')} detail={flags === 0 ? movesLine : plural('editProgram.flags', flags, { moves: movesLine })} onPress={() => open('moves')} />
         <Row title={t('editProgram.cardio.title')} detail={cardioLine(program)} onPress={() => open('cardio')} />
         <Row title={t('editProgram.split')} detail={splitName(program)} onPress={() => open('split')} />
@@ -421,13 +420,6 @@ export default function EditProgramScreen() {
       </ScrollView>
     </SafeAreaView>
   );
-}
-
-/** The week's cardio as the server set it: "2 × 30 min", or off (none, or turned off). */
-function cardioLine(program: Schemas['Program']): string {
-  const cardio = program.cardio;
-  if (cardio === undefined || cardio.sessionsPerWeek === 0) return t('editProgram.cardio.off');
-  return t('editProgram.cardio.row', { sessions: cardio.sessionsPerWeek, minutes: cardio.minutes });
 }
 
 const open = (part: Part) => router.push({ pathname: '/edit-program', params: { part } });

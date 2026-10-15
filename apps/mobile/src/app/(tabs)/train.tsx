@@ -178,6 +178,8 @@ export default function TrainScreen() {
         canPick={pick && rows.some((row) => startable(program, row, data?.records ?? []))}
         checkInDay={data?.checkInDay ?? null}
         onStart={start}
+        openWorkoutId={today?.session.workout?.state === 'OPEN' ? today.session.workout.id : null}
+        onReload={reload}
         onChange={changing ? null : (id, change) => void changeToday_(id, change)}
         notice={
           notice === null ? null : (
