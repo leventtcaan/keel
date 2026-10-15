@@ -43,8 +43,6 @@ jest.mock('expo-crypto', () => ({
   digestStringAsync: async (_algorithm: string, text: string) =>
     jest.requireActual<typeof import('node:crypto')>('node:crypto').createHash('sha256').update(text).digest('hex'),
 }));
-// Instagram's hand-over is native (react-native-share): a test one that only records.
-jest.mock('react-native-share', () => ({ __esModule: true, default: { shareSingle: jest.fn() }, Social: { InstagramStories: 'instagramstories' } }));
 jest.mock('@/api/config', () => ({ apiBaseUrl: () => 'https://api.example.test' }));
 jest.mock('@/sync/autoSync', () => ({ startAutoSync: () => () => {}, deviceTriggers: {} }));
 // Apple Health as a test one: available, its weigh-in read recorded (K-616).
