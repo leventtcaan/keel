@@ -1341,6 +1341,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/return": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The gap since the last log, and what to offer on coming back (K-1020, ADR-077
+         * @description `awayDays` is the days from the user's last log (a weigh-in, a meal, a session or a cardio session; steps and the
+         *     app being opened are not logs, ADR-041 #66) to today on the profile's calendar; 0 with no log at all. `shouldPrompt`:
+         *     the gap has reached `return_prompt_days` and this gap was not answered yet (POST /v1/return). A user with no log
+         *     is new, not returning: never prompted. `suggested` is the one reading the program shows (`ReturnLoad`,
+         *     `return_step_back_after_weeks`): EASE_BACK when the last session is that many weeks back (the first targets are a step
+         *     lighter), else PICK_UP. `nextCallOn` is the day the next call can be made: today while this check-in week's call is
+         *     not made, else the next check-in day (the first call's day before the first call, as `GET /v1/first-weeks`). The phone
+         *     shows all of it and works none out. Meals and weigh-ins are read only with the HEALTH_DATA consent (without it they
+         *     are not counted); CONFLICT without a profile.
+         */
+        get: operations["getReturn"];
+        put?: never;
+        /**
+         * Answer the return question once for this gap
+         * @description Kept with the last log the gap began from: the question is not asked again for this gap (`shouldPrompt` false),
+         *     and asked again only when a new log is followed by a new gap of `return_prompt_days`. Sent again for the same gap, the
+         *     newer answer replaces the older. PICK_UP keeps the program's targets as they were (`Program.backAfterBreak` absent,
+         *     `nextLoadKg` not eased) until the next session is done; EASE_BACK leaves the usual step back as it is; REBUILD changes
+         *     nothing here (the phone calls POST /v1/program/generate). CONFLICT when there is no gap to answer (no log, or fewer
+         *     days than `return_prompt_days`) or no profile. Answers the summary as it is after the answer.
+         */
+        post: operations["answerReturn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/decisions": {
         parameters: {
             query?: never;
@@ -3411,6 +3448,31 @@ export interface components {
             firstCallOn?: string;
             risk: components["schemas"]["Reason"][];
         };
+        /**
+         * @description What the user picked on coming back (K-1020, ADR-077
+         * @enum {string}
+         */
+        ReturnChoice: "EASE_BACK" | "PICK_UP" | "REBUILD";
+        /**
+         * @description The one of the first two the server offers first; REBUILD is always the third.
+         * @enum {string}
+         */
+        ReturnSuggestion: "EASE_BACK" | "PICK_UP";
+        ReturnAnswer: {
+            choice: components["schemas"]["ReturnChoice"];
+        };
+        ReturnSummary: {
+            /** @description Days from the last log to today on the user's calendar; 0 with no log. */
+            awayDays: number;
+            /** @description The gap has reached `return_prompt_days` and was not answered yet. */
+            shouldPrompt: boolean;
+            suggested: components["schemas"]["ReturnSuggestion"];
+            /**
+             * Format: date
+             * @description The day the next call can be made, on the user's calendar.
+             */
+            nextCallOn: string;
+        };
         Reason: {
             rule: string;
             source: components["schemas"]["Source"];
@@ -5473,6 +5535,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FirstWeeks"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getReturn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The gap and the offer */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReturnSummary"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    answerReturn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReturnAnswer"];
+            };
+        };
+        responses: {
+            /** @description The summary after the answer */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReturnSummary"];
                 };
             };
             default: components["responses"]["Error"];

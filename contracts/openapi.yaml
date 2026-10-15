@@ -1575,6 +1575,57 @@ paths:
         default:
           $ref: "#/components/responses/Error"
 
+  /v1/return:
+    get:
+      tags: [check-in]
+      operationId: getReturn
+      summary: The gap since the last log, and what to offer on coming back (K-1020, ADR-077 #5 and Ek 6)
+      description: |
+        `awayDays` is the days from the user's last log (a weigh-in, a meal, a session or a cardio session; steps and the
+        app being opened are not logs, ADR-041 #66) to today on the profile's calendar; 0 with no log at all. `shouldPrompt`:
+        the gap has reached `return_prompt_days` and this gap was not answered yet (POST /v1/return). A user with no log
+        is new, not returning: never prompted. `suggested` is the one reading the program shows (`ReturnLoad`,
+        `return_step_back_after_weeks`): EASE_BACK when the last session is that many weeks back (the first targets are a step
+        lighter), else PICK_UP. `nextCallOn` is the day the next call can be made: today while this check-in week's call is
+        not made, else the next check-in day (the first call's day before the first call, as `GET /v1/first-weeks`). The phone
+        shows all of it and works none out. Meals and weigh-ins are read only with the HEALTH_DATA consent (without it they
+        are not counted); CONFLICT without a profile.
+      responses:
+        "200":
+          description: The gap and the offer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReturnSummary"
+        default:
+          $ref: "#/components/responses/Error"
+    post:
+      tags: [check-in]
+      operationId: answerReturn
+      summary: Answer the return question once for this gap
+      description: |
+        Kept with the last log the gap began from: the question is not asked again for this gap (`shouldPrompt` false),
+        and asked again only when a new log is followed by a new gap of `return_prompt_days`. Sent again for the same gap, the
+        newer answer replaces the older. PICK_UP keeps the program's targets as they were (`Program.backAfterBreak` absent,
+        `nextLoadKg` not eased) until the next session is done; EASE_BACK leaves the usual step back as it is; REBUILD changes
+        nothing here (the phone calls POST /v1/program/generate). CONFLICT when there is no gap to answer (no log, or fewer
+        days than `return_prompt_days`) or no profile. Answers the summary as it is after the answer.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReturnAnswer"
+      responses:
+        "200":
+          description: The summary after the answer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReturnSummary"
+        default:
+          $ref: "#/components/responses/Error"
+
   # ── decision (K-212, K-216, K-217, ADR-003) ────────────────────────────────────────────────────────────────
   /v1/decisions:
     get:
@@ -4764,6 +4815,37 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Reason"
+    ReturnChoice:
+      type: string
+      description: What the user picked on coming back (K-1020, ADR-077 #5). Words in the phone's copy.
+      enum: [EASE_BACK, PICK_UP, REBUILD]
+    ReturnSuggestion:
+      type: string
+      description: The one of the first two the server offers first; REBUILD is always the third.
+      enum: [EASE_BACK, PICK_UP]
+    ReturnAnswer:
+      type: object
+      required: [choice]
+      properties:
+        choice:
+          $ref: "#/components/schemas/ReturnChoice"
+    ReturnSummary:
+      type: object
+      required: [awayDays, shouldPrompt, suggested, nextCallOn]
+      properties:
+        awayDays:
+          type: integer
+          minimum: 0
+          description: Days from the last log to today on the user's calendar; 0 with no log.
+        shouldPrompt:
+          type: boolean
+          description: The gap has reached `return_prompt_days` and was not answered yet.
+        suggested:
+          $ref: "#/components/schemas/ReturnSuggestion"
+        nextCallOn:
+          type: string
+          format: date
+          description: The day the next call can be made, on the user's calendar.
     Reason:
       type: object
       required: [rule, source]
