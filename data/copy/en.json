@@ -3081,21 +3081,48 @@
       "planned": "planned",
       "thisWeek": "this week",
       "legendPlanned": "Planned",
-      "legendDone": "Done"
+      "legendDone": "Done",
+      "setsTitle": "Sets per muscle",
+      "legendTarget": "Target",
+      "barLabel": "{muscle}, {done} of {target} sets"
     },
     "strength": {
       "title": "Strength",
       "baseline": "your baseline",
+      "bestSet": "best set",
       "next": "Next time every set has a target to beat.",
       "locked": "After your first workout",
       "set": "{load} × {reps}",
-      "rowLabel": "{move}, {load} for {reps} reps"
+      "rowLabel": "{move}, {load} for {reps} reps",
+      "started": "Started at {set}",
+      "legendHeld": "Ring: the call held the load",
+      "spoken": "{move}, best set by week: {first} in the week of {firstDate}, {last} in the week of {lastDate}. Lowest {low}, highest {high}.",
+      "spokenHeld": "The call held the load in the weeks of {weeks}.",
+      "effort": {
+        "stuck": "Stuck at {load} for {sessions} sessions.",
+        "stuckHeld": "Stuck at {load} for {sessions} sessions. Held this week.",
+        "easierOne": "Same {load}, now with 1 rep left.",
+        "easierMany": "Same {load}, now with {repsLeft} reps left.",
+        "rising": "Up {gained} at {load} since {date}.",
+        "repOne": "1 rep",
+        "repMany": "{count} reps"
+      }
     },
     "weight": {
       "title": "Weight trend",
       "count": "{count} of {min}",
       "after": "Shows after {min} weigh-ins.",
-      "spoken": "{count} of {min} weigh-ins so far"
+      "stale": "Weigh in again and the average shows here.",
+      "spoken": "{count} of {min} weigh-ins so far",
+      "chartTitle": "Weight",
+      "average": "7-day average",
+      "chartSpoken": "Weight, 7-day average: {first} on {firstDate}, {last} on {lastDate}. Lowest {low}, highest {high}."
+    },
+    "calls": {
+      "title": "Calls",
+      "notApplied": "Not applied",
+      "rowLabel": "{title}, {date}",
+      "rowLabelNotApplied": "{title}, {date}, not applied"
     },
     "consistency": {
       "title": "Consistency",

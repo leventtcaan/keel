@@ -71,6 +71,35 @@ export function MusclesCard({ muscles, figure }: { muscles: Schemas['MuscleSets'
   );
 }
 
+/**
+ * Sets per muscle (ADR-078 #4, prototype `.bars`): this week's working sets against the week's target, a bar each, the target
+ * a line on it. The sets and the target are the server's; past the target the bar is full and the line is where it was.
+ */
+export function MuscleBars({ muscles }: { muscles: Schemas['MuscleSets'][] }) {
+  const { color } = useTheme();
+  if (muscles.length === 0) return null;
+  return (
+    <Card>
+      <CardHead title={t('progress.muscles.setsTitle')} aside={t('progress.muscles.thisWeek')} />
+      {muscles.map((m) => {
+        const scale = Math.max(m.doneSets, m.targetSets);
+        const name = t(`demo.muscle.${m.muscle}`);
+        return (
+          <View key={m.muscle} testID={`muscle-bar-${m.muscle}`} accessible accessibilityLabel={t('progress.muscles.barLabel', { muscle: name, done: m.doneSets, target: m.targetSets })} style={styles.barRow}>
+            <Text style={[styles.barName, styles.fine, { color: color.text }]}>{name}</Text>
+            <View style={[styles.barTrack, { backgroundColor: color.track }]}>
+              <View style={[styles.barFill, { width: `${(m.doneSets / scale) * 100}%`, backgroundColor: color.accent }]} />
+              <View style={[styles.barTarget, { left: `${(m.targetSets / scale) * 100}%`, backgroundColor: color.text }]} />
+            </View>
+            <Text style={[styles.barCount, styles.fine, { color: color.muted }]}>{`${m.doneSets}/${m.targetSets}`}</Text>
+          </View>
+        );
+      })}
+      <Text style={[styles.fine, { color: color.muted }]}>{t('progress.muscles.legendTarget')}</Text>
+    </Card>
+  );
+}
+
 /** Strength before the first workout (a lock, no chart) and after it (each lift's best set, the baseline to beat). */
 export function StrengthCard({ part, lifts, moves, units }: { part: 'locked' | 'baseline'; lifts: Schemas['LiftProgress'][]; moves: ReadonlyMap<string, Move>; units: UnitSystem }) {
   const { color } = useTheme();
@@ -108,7 +137,7 @@ export function StrengthCard({ part, lifts, moves, units }: { part: 'locked' | '
 }
 
 /** The weigh-ins toward the trend (ADR-078 #1, U8): which of the 7 are in; the trend itself shows only when it is ready. */
-export function WeighInDots({ count, min }: { count: number; min: number }) {
+export function WeighInDots({ count, min, stale = false }: { count: number; min: number; stale?: boolean }) {
   const { color } = useTheme();
   const dots = Array.from({ length: min }, (_, i) => (
     <View key={i} testID={i < count ? 'weight-dot-filled' : 'weight-dot-empty'} style={[styles.dot, { backgroundColor: i < count ? color.accent : color.track }]} />
@@ -119,7 +148,7 @@ export function WeighInDots({ count, min }: { count: number; min: number }) {
       <View testID="weight-dots" accessible accessibilityLabel={t('progress.weight.spoken', { count, min })} style={styles.dots}>
         {dots}
       </View>
-      <Text style={[styles.fine, { color: color.muted }]}>{t('progress.weight.after', { min })}</Text>
+      <Text style={[styles.fine, { color: color.muted }]}>{stale ? t('progress.weight.stale') : t('progress.weight.after', { min })}</Text>
     </Card>
   );
 }
@@ -138,6 +167,12 @@ const styles = StyleSheet.create({
   legend: { flexDirection: 'row', justifyContent: 'center', gap: tokens.space.md },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.xs },
   swatch: { width: tokens.size.swatch, height: tokens.size.swatch, borderRadius: tokens.radius.track },
+  barRow: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, minHeight: tokens.size.touch },
+  barName: { width: tokens.size.barName },
+  barTrack: { flex: 1, height: tokens.size.dot, borderRadius: tokens.radius.track, justifyContent: 'center' },
+  barFill: { position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: tokens.radius.track },
+  barTarget: { position: 'absolute', top: -tokens.space.xs, bottom: -tokens.space.xs, width: tokens.border.outline },
+  barCount: { width: tokens.size.barCount, textAlign: 'right', fontVariant: ['tabular-nums'] },
   dots: { flexDirection: 'row', gap: tokens.space.sm },
   dot: { width: tokens.size.dot, height: tokens.size.dot, borderRadius: tokens.size.dot / 2 },
 });

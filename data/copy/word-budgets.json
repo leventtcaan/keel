@@ -841,7 +841,7 @@
       "source": "ADR-078 #5",
       "task": "K-979",
       "file": "src/app/(tabs)/progress.tsx",
-      "parts": ["src/progress/sections.ts", "src/progress/TargetsGrid.tsx", "src/progress/Parts.tsx", "src/progress/ConsistencyGrid.tsx"],
+      "parts": ["src/progress/sections.ts", "src/progress/TargetsGrid.tsx", "src/progress/Parts.tsx", "src/progress/ConsistencyGrid.tsx", "src/progress/LiftsCard.tsx", "src/progress/effort.ts", "src/progress/WeightCard.tsx", "src/progress/CallsCard.tsx"],
       "keys": [
         "screens.progress.title",
         "progress.hero.targets",
@@ -903,6 +903,29 @@
         "progress.consistency.paused",
         "progress.consistency.note",
         "progress.consistency.spoken",
+        "progress.muscles.setsTitle",
+        "progress.muscles.legendTarget",
+        "progress.muscles.barLabel",
+        "progress.strength.bestSet",
+        "progress.strength.started",
+        "progress.strength.legendHeld",
+        "progress.strength.spoken",
+        "progress.strength.spokenHeld",
+        "progress.strength.effort.stuck",
+        "progress.strength.effort.stuckHeld",
+        "progress.strength.effort.easierOne",
+        "progress.strength.effort.easierMany",
+        "progress.strength.effort.rising",
+        "progress.strength.effort.repOne",
+        "progress.strength.effort.repMany",
+        "progress.weight.stale",
+        "progress.weight.chartTitle",
+        "progress.weight.average",
+        "progress.weight.chartSpoken",
+        "progress.calls.title",
+        "progress.calls.notApplied",
+        "progress.calls.rowLabel",
+        "progress.calls.rowLabelNotApplied",
         "thisWeek.food.locked",
         "thisWeek.food.allow",
         "thisWeek.food.allowLabel"
@@ -950,7 +973,27 @@
           ]
         },
         {
-          "face": "after the first call",
+          "face": "after the first call, a lift with weeks to draw",
+          "keys": [
+            "screens.progress.title",
+            "progress.result.stronger",
+            "progress.result.down",
+            "progress.hero.record",
+            "progress.strength.title",
+            "progress.strength.bestSet",
+            "progress.strength.started",
+            "progress.strength.legendHeld",
+            "progress.strength.effort.stuckHeld"
+          ],
+          "dynamic": [
+            { "what": "the weight change's unit (Down 3.8 kg)", "words": 1 },
+            { "what": "the lift chips (Squat, Bench press, Deadlift)", "words": 5 },
+            { "what": "the best set and where it started (105 kg x 8, 100 kg x 8)", "words": 2 },
+            { "what": "the chart's labels and dates (100 kg, 105 kg, Sep 7, Oct 5)", "words": 6 }
+          ]
+        },
+        {
+          "face": "after the first call, no lift has weeks to draw yet",
           "keys": [
             "screens.progress.title",
             "progress.result.stronger",
@@ -959,10 +1002,9 @@
             "progress.strength.title",
             "progress.strength.baseline",
             "progress.strength.next",
-            "progress.muscles.title",
+            "progress.muscles.setsTitle",
             "progress.muscles.thisWeek",
-            "progress.muscles.legendPlanned",
-            "progress.muscles.legendDone"
+            "progress.muscles.legendTarget"
           ],
           "dynamic": [
             { "what": "the weight change's unit (Down 3.8 kg)", "words": 1 },

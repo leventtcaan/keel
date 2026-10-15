@@ -86,12 +86,18 @@ export function heroOf(read: ProgressRead, units: UnitSystem): { title: string; 
   return { title: t(worked ? 'progress.hero.firstWorkout' : 'progress.hero.targets'), sub: targetsOf(read).length === 0 ? null : t('progress.hero.tap') };
 }
 
-export type StrengthPart = 'locked' | 'baseline' | null;
+/**
+ * 'baseline': the first workout's form (each lift's best set, the target to beat); 'lifts': the chips, the chart and the effort
+ * line, once a lift has two weeks to draw or an effort to tell (ADR-078 Ek 2, Ek 3: no chart of one point).
+ */
+export type StrengthPart = 'locked' | 'baseline' | 'lifts' | null;
 
-/** Strength opens with the first workout (ADR-078 Ek 2): a lock before, the baseline after; nothing when it is not read. */
+/** Strength opens with the first workout (ADR-078 Ek 2): a lock before, then its baseline, then the lifts; nothing when it is not read. */
 export function strengthOf(read: ProgressRead): StrengthPart {
   if (read.training.state !== 'ready') return null;
-  return read.training.value.lifts.length === 0 ? 'locked' : 'baseline';
+  const { lifts } = read.training.value;
+  if (lifts.length === 0) return 'locked';
+  return lifts.some((lift) => lift.weeks.length >= 2 || lift.effort !== undefined) ? 'lifts' : 'baseline';
 }
 
 /** The weigh-ins so far, while the trend is not ready; null once it is, or when it is not known. */
@@ -99,4 +105,26 @@ export function weighInDots(read: ProgressRead): { count: number; min: number } 
   if (read.summary.state !== 'ready' || read.summary.value.trendReady) return null;
   const { weighInCount, trendMinWeighIns } = read.summary.value;
   return { count: Math.min(weighInCount, trendMinWeighIns), min: trendMinWeighIns };
+}
+
+export type WeightPart = { kind: 'chart'; points: Schemas['TrendPoint'][] } | { kind: 'dots'; count: number; min: number; stale: boolean };
+
+/**
+ * The weight part (ADR-078 Ek 2, Ek 3): the 7-day average chart once the server says the trend is ready and has points in the
+ * window; otherwise the weigh-ins toward it. Ready with no point to draw keeps the dots and says the average needs a new weigh-in.
+ */
+export function weightOf(read: ProgressRead): WeightPart | null {
+  const waiting = weighInDots(read);
+  if (waiting !== null) return { kind: 'dots', ...waiting, stale: false };
+  if (read.summary.state !== 'ready') return null;
+  const { weighInCount, trendMinWeighIns } = read.summary.value;
+  const dots = { kind: 'dots' as const, count: Math.min(weighInCount, trendMinWeighIns), min: trendMinWeighIns };
+  const points = read.trend?.state === 'ready' ? read.trend.value : [];
+  return points.length > 0 ? { kind: 'chart', points } : { ...dots, stale: true };
+}
+
+/** The latest calls the server listed, newest first; none, no consent or not read: no card. */
+export function callsOf(read: ProgressRead): { items: Schemas['Decision'][] } | null {
+  if (read.calls.state !== 'ready' || read.calls.value.items.length === 0) return null;
+  return { items: read.calls.value.items };
 }

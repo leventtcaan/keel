@@ -155,6 +155,9 @@ export const tokens = {
     weekCell: 24,
     dot: 14,
     swatch: 10,
+    /** Sets per muscle: the muscle's name column and the count column beside its bar. */
+    barName: 92,
+    barCount: 44,
   },
   opacity: {
     /** Pressed and disabled controls. */

@@ -1,0 +1,20 @@
+{
+  "parameters": [
+    {
+      "key": "weight_chart_days",
+      "value": 84,
+      "unit": "days",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-078-ilerleme.md#Ek 3",
+      "note": "How far back Progress's weight chart reads the 7-day average (K-979): twelve weeks, the same period as the 12 weeks grid (progress_grid_weeks, windows.yaml). The chart is drawn only from the points the server has in this window."
+    },
+    {
+      "key": "calls_shown",
+      "value": 12,
+      "unit": "count",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-078-ilerleme.md#Ek 3",
+      "note": "How many of the latest calls Progress's Calls card lists (K-979): twelve, the same period as the 12 weeks grid (one call a week). The ledger screen is off the surface (ADR-069 #3), so Progress is where calls are read."
+    }
+  ]
+}
