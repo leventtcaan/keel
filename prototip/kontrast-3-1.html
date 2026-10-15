@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kontrast 3:1 · önce / sonra</title>
+<style>
+:root{color-scheme:light dark}
+body{margin:0;font:15px/1.4 -apple-system,system-ui,sans-serif;background:#E9ECEC;color:#0B0C0C;padding:24px 16px 60px}
+@media (prefers-color-scheme:dark){body{background:#080909;color:#F1F4F4}}
+.wrap{max-width:1100px;margin:0 auto}
+h1{font-size:24px;margin:0 0 6px}
+.lead{max-width:760px;margin:0 0 20px}
+.lead code{background:rgba(127,127,127,.2);padding:1px 5px;border-radius:4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(480px,1fr));gap:20px}
+.panel{background:var(--bg);color:var(--text);border-radius:20px;padding:20px;border:1px solid rgba(127,127,127,.35)}
+.panel h2{margin:0 0 12px;font-size:18px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}
+.row h3{grid-column:1/-1;margin:0;font-size:14px;color:var(--muted)}
+.cell{min-width:0}
+.tag{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:6px}
+.tag.after{color:var(--accent)}
+ul{list-style:none;margin:8px 0 0;padding:0;font-size:12.5px}
+li{display:flex;justify-content:space-between;gap:8px;padding:2px 0}
+li b{font-variant-numeric:tabular-nums}
+li.ok b{color:var(--accent)}
+li.bad b{color:#D12F1F}
+.dark li.bad b{color:#FF6B5A}
+.field{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1.5px solid;border-radius:12px;padding:10px 14px;font-size:22px}
+.ph{color:var(--muted)}.sfx{color:var(--muted);font-size:17px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{background:var(--surface);border:1px solid;border-radius:8px;padding:8px 14px;font-weight:600}
+.chip.sel{background:var(--text);color:var(--bg);border-color:var(--text)}
+.mrow{display:flex;gap:10px;align-items:center;background:var(--soft);border:1.5px solid transparent;border-radius:16px;padding:12px;min-height:44px}
+.mrow small{display:block;color:var(--muted)}
+.thumb{width:36px;height:36px;border-radius:10px;background:var(--surface);flex:none}
+.tg{display:flex;justify-content:space-between;align-items:center;gap:10px;font-weight:600}
+.sw{width:52px;height:32px;border-radius:16px;position:relative;display:inline-block}
+.sw i{position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:var(--bg);box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.bar{height:6px;border-radius:3px;background:var(--track);border:1px solid transparent;overflow:hidden}
+.bar i{display:block;height:100%;width:40%;background:var(--accent)}
+.dots{display:flex;gap:10px;padding:8px 0}
+.dots i{width:14px;height:14px;border-radius:50%}
+.note{max-width:760px;margin-top:22px;font-size:13.5px}
+.note li{display:list-item;list-style:disc;margin-left:18px;padding:3px 0}
+@media (max-width:560px){.grid{grid-template-columns:1fr}.row{grid-template-columns:1fr}}
+</style></head><body><div class="wrap">
+<h1>Kontrast 3:1: önce / sonra</h1>
+<p class="lead">K-816 (WCAG 1.4.11 Non-text Contrast; Apple Sufficient Contrast). Bir kontrolü ya da durumunu gösteren çizgi ve dolgu, yanındaki renge göre en az 3:1 olmalı. Marka (turkuaz) ve metin renkleri aynı; yalnız yeni bir <code>edge</code> belirteci geliyor: açıkta <code>#7E8888</code>, koyuda <code>#727D7D</code>. <code>line</code> sessiz ayraç olarak kalıyor. Seçili durumlar turkuaz halkayla (zaten 3:1 üstü) taşınıyor. Oranlar WCAG formülüyle ölçüldü; kırmızı 3:1 altı, turkuaz geçiyor.</p>
+<div class="grid"><section class="panel light" style="--bg:#FFFFFF;--surface:#F1F3F3;--line:#DCE0E0;--edge:#7E8888;--text:#0B0C0C;--muted:#586061;--track:#E4E8E8;--accent:#007684;--soft:#DDF3F4">
+ <h2>Açık tema</h2>
+ <div class="row"><h3>Metin alanı kutusu</h3>
+  <div class="cell"><div class="tag">Önce</div><div class="field" style="border-color:#F1F3F3"><span class="ph">-</span><span class="sfx">kg</span></div><ul><li class="bad"><span>kutu / sayfa</span><b>1.11:1</b></li></ul></div>
+  <div class="cell"><div class="tag after">Sonra</div><div class="field" style="border-color:#7E8888"><span class="ph">-</span><span class="sfx">kg</span></div><ul><li class="ok"><span>kenar / sayfa</span><b>3.64:1</b></li><li class="ok"><span>kenar / yüzey</span><b>3.27:1</b></li></ul></div>
+ </div>
+ <div class="row"><h3>Çip (normal + seçili)</h3>
+  <div class="cell"><div class="tag">Önce</div><div class="chips"><span class="chip" style="border-color:#DCE0E0">RIR 2</span><span class="chip sel">RIR 1</span></div><ul><li class="bad"><span>kenar / sayfa</span><b>1.33:1</b></li><li class="bad"><span>kenar / yüzey</span><b>1.19:1</b></li></ul></div>
+  <div class="cell"><div class="tag after">Sonra</div><div class="chips"><span class="chip" style="border-color:#7E8888">RIR 2</span><span class="chip sel">RIR 1</span></div><ul><li class="ok"><span>kenar / sayfa</span><b>3.64:1</b></li><li class="ok"><span>kenar / yüzey</span><b>3.27:1</b></li><li class="ok"><span>seçili dolgu / sayfa</span><b>19.59:1</b></li></ul></div>
+ </div>
+ <div class="row"><h3>Seçili hareket satırı</h3>
+  <div class="cell"><div class="tag">Önce</div><div class="mrow" style=""><span class="thumb"></span><div><b>Bench press</b><small>Seçili hareket</small></div></div><ul><li class="bad"><span>satır / sayfa</span><b>1.15:1</b></li></ul></div>
+  <div class="cell"><div class="tag after">Sonra</div><div class="mrow" style="border-color:#007684"><span class="thumb"></span><div><b>Bench press</b><small>Seçili hareket</small></div></div><ul><li class="ok"><span>halka / sayfa</span><b>5.35:1</b></li><li class="ok"><span>halka / satır</span><b>4.64:1</b></li></ul></div>
+ </div>
+ <div class="row"><h3>Anahtar (kapalı)</h3>
+  <div class="cell"><div class="tag">Önce</div><div class="tg"><span>Projection</span><span class="sw" style="background:#DCE0E0"><i></i></span></div><ul><li class="bad"><span>iz / sayfa</span><b>1.33:1</b></li></ul></div>
+  <div class="cell"><div class="tag after">Sonra</div><div class="tg"><span>Projection</span><span class="sw" style="background:#7E8888"><i></i></span></div><ul><li class="ok"><span>iz / sayfa</span><b>3.64:1</b></li></ul></div>
+ </div>
+ <div class="row"><h3>İlerleme çubuğu</h3>
+  <div class="cell"><div class="tag">Önce</div><div class="bar" style=""><i></i></div><ul><li class="bad"><span>boş iz / sayfa</span><b>1.23:1</b></li></ul></div>
+  <div class="cell"><div class="tag after">Sonra</div><div class="bar" style="border-color:#7E8888"><i></i></div><ul><li class="ok"><span>çerçeve / sayfa</span><b>3.64:1</b></li><li class="ok"><span>dolu / boş iz</span><b>4.33:1</b></li></ul></div>
+ </div>
+ <div class="row"><h3>Hareket noktaları (şimdi, bitti, bekleyen)</h3>
+  <div class="cell"><div class="tag">Önce</div><div class="dots"><i style="background:#007684"></i><i style="background:#0B0C0C"></i><i style="background:#DCE0E0"></i><i style="background:#DCE0E0"></i></div><ul><li class="bad"><span>bekleyen / sayfa</span><b>1.33:1</b></li></ul></div>
+  <div class="cell"><div class="tag after">Sonra</div><div class="dots"><i style="background:#007684"></i><i style="background:#0B0C0C"></i><i style="background:#7E8888"></i><i style="background:#7E8888"></i></div><ul><li class="ok"><span>bekleyen / sayfa</span><b>3.64:1</b></li><li class="ok"><span>bitti / sayfa</span><b>19.59:1</b></li></ul></div>
+ </div></section><section class="panel dark" style="--bg:#0E1010;--surface:#191C1C;--line:#2A2F2F;--edge:#727D7D;--text:#F1F4F4;--muted:#9AA4A4;--track:#262A2A;--accent:#35D7CF;--soft:#113030">
+ <h2>Koyu tema (ve antrenman odak modu)</h2>
+ <div class="row"><h3>Metin alanı kutusu</h3>
+  <div class="cell"><div class="tag">Önce</div><div class="field" style="border-color:#191C1C"><span class="ph">-</span><span class="sfx">kg</span></div><ul><li class="bad"><span>kutu / sayfa</span><b>1.11:1</b></li></ul></div>
+  <div class="cell"><div class="tag after">Sonra</div><div class="field" style="border-color:#727D7D"><span class="ph">-</span><span class="sfx">kg</span></div><ul><li class="ok"><span>kenar / sayfa</span><b>4.49:1</b></li><li class="ok"><span>kenar / yüzey</span><b>4.04:1</b></li></ul></div>
+ </div>
+ <div class="row"><h3>Çip (normal + seçili)</h3>
+  <div class="cell"><div class="tag">Önce</div><div class="chips"><span class="chip" style="border-color:#2A2F2F">RIR 2</span><span class="chip sel">RIR 1</span></div><ul><li class="bad"><span>kenar / sayfa</span><b>1.41:1</b></li><li class="bad"><span>kenar / yüzey</span><b>1.26:1</b></li></ul></div>
+  <div class="cell"><div class="tag after">Sonra</div><div class="chips"><span class="chip" style="border-color:#727D7D">RIR 2</span><span class="chip sel">RIR 1</span></div><ul><li class="ok"><span>kenar / sayfa</span><b>4.49:1</b></li><li class="ok"><span>kenar / yüzey</span><b>4.04:1</b></li><li class="ok"><span>seçili dolgu / sayfa</span><b>17.26:1</b></li></ul></div>
+ </div>
+ <div class="row"><h3>Seçili hareket satırı</h3>
+  <div class="cell"><div class="tag">Önce</div><div class="mrow" style=""><span class="thumb"></span><div><b>Bench press</b><small>Seçili hareket</small></div></div><ul><li class="bad"><span>satır / sayfa</span><b>1.35:1</b></li></ul></div>
+  <div class="cell"><div class="tag after">Sonra</div><div class="mrow" style="border-color:#35D7CF"><span class="thumb"></span><div><b>Bench press</b><small>Seçili hareket</small></div></div><ul><li class="ok"><span>halka / sayfa</span><b>10.70:1</b></li><li class="ok"><span>halka / satır</span><b>7.90:1</b></li></ul></div>
+ </div>
+ <div class="row"><h3>Anahtar (kapalı)</h3>
+  <div class="cell"><div class="tag">Önce</div><div class="tg"><span>Projection</span><span class="sw" style="background:#2A2F2F"><i></i></span></div><ul><li class="bad"><span>iz / sayfa</span><b>1.41:1</b></li></ul></div>
+  <div class="cell"><div class="tag after">Sonra</div><div class="tg"><span>Projection</span><span class="sw" style="background:#727D7D"><i></i></span></div><ul><li class="ok"><span>iz / sayfa</span><b>4.49:1</b></li></ul></div>
+ </div>
+ <div class="row"><h3>İlerleme çubuğu</h3>
+  <div class="cell"><div class="tag">Önce</div><div class="bar" style=""><i></i></div><ul><li class="bad"><span>boş iz / sayfa</span><b>1.32:1</b></li></ul></div>
+  <div class="cell"><div class="tag after">Sonra</div><div class="bar" style="border-color:#727D7D"><i></i></div><ul><li class="ok"><span>çerçeve / sayfa</span><b>4.49:1</b></li><li class="ok"><span>dolu / boş iz</span><b>8.14:1</b></li></ul></div>
+ </div>
+ <div class="row"><h3>Hareket noktaları (şimdi, bitti, bekleyen)</h3>
+  <div class="cell"><div class="tag">Önce</div><div class="dots"><i style="background:#35D7CF"></i><i style="background:#F1F4F4"></i><i style="background:#2A2F2F"></i><i style="background:#2A2F2F"></i></div><ul><li class="bad"><span>bekleyen / sayfa</span><b>1.41:1</b></li></ul></div>
+  <div class="cell"><div class="tag after">Sonra</div><div class="dots"><i style="background:#35D7CF"></i><i style="background:#F1F4F4"></i><i style="background:#727D7D"></i><i style="background:#727D7D"></i></div><ul><li class="ok"><span>bekleyen / sayfa</span><b>4.49:1</b></li><li class="ok"><span>bitti / sayfa</span><b>17.26:1</b></li></ul></div>
+ </div></section></div>
+<div class="note"><b>Bilerek dokunulmayanlar</b><ul>
+<li>Dolu kartlar ve yalnız metinli seçenekler (ADR-070 #6: ince çizgili kart yok): kartı kelimeleri tanıtıyor; seçili hali zaten metin renginde ya da turkuaz halka.</li>
+<li>Liste ayraçları ve grafik ızgarası: kontrol sınırı değil, sessiz kalıyor.</li>
+<li>Sistem anahtarı (UISwitch): iOS çiziyor; yukarıdaki anahtar prototipin kendi çizimi. Cihazda Increase Contrast turunda bakılacak (K-815).</li>
+</ul></div>
+</div></body></html>

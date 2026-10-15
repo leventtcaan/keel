@@ -93,7 +93,7 @@ function Preparing() {
             const ticked = i < done;
             return (
               <View key={line} style={styles.line} accessible accessibilityLabel={ticked ? t('onboarding.preparing.done', { line }) : line}>
-                <View style={[styles.tick, { backgroundColor: ticked ? color.accent : color.track }]}>
+                <View style={[styles.tick, { backgroundColor: ticked ? color.accent : color.track, borderColor: ticked ? color.accent : color.edge }]}>
                   {ticked && tick}
                 </View>
                 <Text style={[styles.text, { color: ticked ? color.text : color.muted }]}>{line}</Text>
@@ -116,6 +116,7 @@ const styles = StyleSheet.create({
     width: tokens.space.xl,
     height: tokens.space.xl,
     borderRadius: tokens.space.xl / 2,
+    borderWidth: tokens.border.hairline,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -34,7 +34,7 @@ export default function DaysStep() {
                 styles.tile,
                 selected
                   ? { backgroundColor: color.decisionBackground, borderColor: color.decisionBackground }
-                  : { backgroundColor: color.background, borderColor: color.line },
+                  : { backgroundColor: color.background, borderColor: color.edge },
               ]}>
               <Text style={[styles.count, { color: ink }]}>{count}</Text>
               <Text style={[styles.unit, { color: selected ? color.decisionMuted : color.muted }]}>{t('onboarding.days.unit')}</Text>

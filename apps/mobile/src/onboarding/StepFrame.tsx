@@ -129,7 +129,7 @@ export function StepFrame({ step, title, why, children, chosen = false, continue
           accessibilityLabel={t('onboarding.progress', { step: index + 1, total: steps.length })}
           style={styles.steps}>
           {steps.map((s, i) => (
-            <View key={s} style={[styles.segment, { backgroundColor: i <= index ? color.text : color.line }]} />
+            <View key={s} style={[styles.segment, { backgroundColor: i <= index ? color.text : color.edge }]} />
           ))}
         </View>
       </View>

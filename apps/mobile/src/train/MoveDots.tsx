@@ -40,7 +40,7 @@ export function MoveDots({ dots, selected, onPick }: { dots: Dot[]; selected: nu
           accessibilityState={{ selected: index === selected }}
           onPress={() => onPick(dot.id)}
           style={[styles.touch, even]}>
-          <View style={[styles.dot, { backgroundColor: index === selected ? color.accent : dot.done ? color.text : color.line }]} />
+          <View style={[styles.dot, { backgroundColor: index === selected ? color.accent : dot.done ? color.text : color.edge }]} />
         </Pressable>
       ))}
     </View>

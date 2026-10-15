@@ -90,7 +90,7 @@ export function MuscleBars({ muscles }: { muscles: Schemas['MuscleSets'][] }) {
         return (
           <View key={m.muscle} testID={`muscle-bar-${m.muscle}`} accessible accessibilityLabel={t('progress.muscles.barLabel', { muscle: name, done: m.doneSets, target: m.targetSets })} style={styles.barRow}>
             <Text style={[styles.barName, styles.fine, { color: color.text }]}>{name}</Text>
-            <View style={[styles.barTrack, { backgroundColor: color.track }]}>
+            <View style={[styles.barTrack, { backgroundColor: color.track, borderColor: color.edge }]}>
               <View style={[styles.barFill, { width: `${(m.doneSets / scale) * 100}%`, backgroundColor: color.accent }]} />
               <View style={[styles.barTarget, { left: `${(m.targetSets / scale) * 100}%`, backgroundColor: color.text }]} />
             </View>
@@ -157,7 +157,7 @@ export function WeighInDots({ count, min, note }: { count: number; min: number; 
   const { color } = useTheme();
   const line = note === null ? null : t(note === 'stale' ? 'progress.weight.stale' : 'progress.weight.after', { min });
   const dots = Array.from({ length: min }, (_, i) => (
-    <View key={i} testID={i < count ? 'weight-dot-filled' : 'weight-dot-empty'} style={[styles.dot, { backgroundColor: i < count ? color.accent : color.track }]} />
+    <View key={i} testID={i < count ? 'weight-dot-filled' : 'weight-dot-empty'} style={[styles.dot, i < count ? { backgroundColor: color.accent } : { backgroundColor: color.track, borderColor: color.edge, borderWidth: tokens.border.hairline }]} />
   ));
   return (
     <Card>
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
   swatch: { width: tokens.size.swatch, height: tokens.size.swatch, borderRadius: tokens.radius.track },
   barRow: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, minHeight: tokens.size.touch },
   barName: { width: tokens.size.barName },
-  barTrack: { flex: 1, height: tokens.size.dot, borderRadius: tokens.radius.track, justifyContent: 'center' },
+  barTrack: { flex: 1, height: tokens.size.dot, borderRadius: tokens.radius.track, borderWidth: tokens.border.hairline, justifyContent: 'center' },
   barFill: { position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: tokens.radius.track },
   barTarget: { position: 'absolute', top: -tokens.space.xs, bottom: -tokens.space.xs, width: tokens.border.outline },
   barCount: { width: tokens.size.barCount, textAlign: 'right', fontVariant: ['tabular-nums'] },
