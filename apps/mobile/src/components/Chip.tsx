@@ -25,7 +25,7 @@ export function Chip({ label, selected = false, disabled = false, accessibilityL
   const { color } = useTheme();
   const fill = selected
     ? { backgroundColor: color.text, borderColor: color.text }
-    : { backgroundColor: color.surface, borderColor: color.line };
+    : { backgroundColor: color.surface, borderColor: color.edge };
   return (
     <Pressable
       accessibilityRole="button"

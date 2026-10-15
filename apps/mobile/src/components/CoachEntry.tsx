@@ -16,7 +16,7 @@ export function CoachEntry() {
     <Pressable
       accessibilityRole="button"
       onPress={() => router.push('/coach')}
-      style={[styles.bar, { backgroundColor: color.surface, borderColor: color.line }]}>
+      style={[styles.bar, { backgroundColor: color.surface, borderColor: color.edge }]}>
       <Text style={[styles.label, { color: color.muted }]}>{t('coach.entry')}</Text>
     </Pressable>
   );

@@ -13,6 +13,8 @@ const light = {
   /** Buttons that sit on a surface (RIR and scale pickers). */
   raise: '#FFFFFF',
   line: '#DCE0E0',
+  /** What shows a control or its state: a field's box, an unselected chip, a pending dot. 3:1 on the page and a surface (WCAG 1.4.11, K-816). `line` stays the quiet divider. */
+  edge: '#7E8888',
   text: '#0B0C0C',
   textSecondary: '#2B2F2F',
   muted: '#586061',
@@ -40,6 +42,8 @@ const light = {
   decisionTextSecondary: '#D3D9D9',
   decisionMuted: '#A9B1B1',
   decisionLine: '#2A2F2F',
+  /** `edge` inside the block. */
+  decisionEdge: '#7E8888',
 } as const;
 
 const dark: Record<keyof typeof light, string> = {
@@ -47,6 +51,7 @@ const dark: Record<keyof typeof light, string> = {
   surface: '#191C1C',
   raise: '#262A2A',
   line: '#2A2F2F',
+  edge: '#727D7D',
   text: '#F1F4F4',
   textSecondary: '#D3D9D9',
   muted: '#9AA4A4',
@@ -70,6 +75,7 @@ const dark: Record<keyof typeof light, string> = {
   decisionTextSecondary: '#2B2F2F',
   decisionMuted: '#4C5555',
   decisionLine: '#C9D0D0',
+  decisionEdge: '#727D7D',
 };
 
 export const palettes = { light, dark } as const;

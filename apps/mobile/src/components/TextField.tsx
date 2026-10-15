@@ -40,7 +40,7 @@ export function TextField({ label, value, onChangeText, suffix, hint, problem, p
   return (
     <View style={styles.field}>
       <Text style={[styles.label, { color: color.muted }]}>{label}</Text>
-      <View style={[styles.box, { backgroundColor: color.surface, borderColor: problem ? color.text : color.surface }]}>
+      <View style={[styles.box, { backgroundColor: color.surface, borderColor: problem ? color.text : color.edge }]}>
         <TextInput
           accessibilityLabel={label}
           accessibilityHint={note ?? undefined}

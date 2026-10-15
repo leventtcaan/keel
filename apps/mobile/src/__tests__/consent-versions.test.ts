@@ -79,7 +79,9 @@ test('nothing of the paragraph is dropped: what is kept, what for, never sold, e
   const purpose = t('consent.health_data.points.purpose');
   expect(purpose).toMatch(/weekly calls/i);
   expect(purpose).toMatch(/progress/i);
-  expect(purpose).toMatch(/nothing else/i);
+  // ADR-081 (Levent 15 Oct): the totals we count to learn whether the coaching works are said in the text, in version 5 (not yet shipped).
+  expect(purpose).toMatch(/also count[^.]*totals across all users[^.]*never per person or by value[^.]*coaching works/i);
+  expect(purpose).not.toMatch(/nothing else/i);
   expect(purpose).toMatch(/never sell[^.]*ads/i);
   expect(purpose).toMatch(/export or delete[^.]*any time/i);
 });

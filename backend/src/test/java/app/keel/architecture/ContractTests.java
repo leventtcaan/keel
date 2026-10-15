@@ -408,6 +408,19 @@ class ContractTests {
     }
 
     @Test
+    void healthIsReadinessSo503IsInTheContractAndAnswersTheSameShape() throws IOException {
+        // K-908: 200 once the application takes traffic, 503 (STARTING) before; both answer the Health schema.
+        Map<String, Object> responses = map(map(map(map(contract().get("paths")).get("/health")).get("get")).get("responses"));
+        for (String code : List.of("200", "503")) {
+            Object schema = map(map(map(map(responses.get(code)).get("content")).get("application/json")).get("schema")).get("$ref");
+            assertThat(schema).as("/health " + code).isEqualTo("#/components/schemas/Health");
+        }
+        Map<String, Object> health = map(map(map(contract().get("components")).get("schemas")).get("Health"));
+        Map<String, Object> status = map(map(health.get("properties")).get("status"));
+        assertThat(status.get("enum")).isEqualTo(List.of("UP", "STARTING"));
+    }
+
+    @Test
     void everyOperationIsNamedAnswersErrorsAndOutsideSignInNeedsASession() throws IOException {
         Map<String, Object> contract = contract();
         assertThat(contract.get("security")).as("a session is the default").isEqualTo(List.of(Map.of("session", List.of())));

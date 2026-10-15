@@ -24,13 +24,14 @@ export function ProgressBar({ value, label }: Props) {
       accessibilityRole="progressbar"
       accessibilityLabel={label}
       accessibilityValue={{ min: 0, max: 100, now }}
-      style={[styles.track, { backgroundColor: color.track }]}>
+      style={[styles.track, { backgroundColor: color.track, borderColor: color.edge }]}>
       <View testID="progress-fill" style={[styles.fill, { width: `${now}%`, backgroundColor: color.accent }]} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  track: { height: tokens.size.track, borderRadius: tokens.radius.track, overflow: 'hidden' },
+  // The outline tells the bar's extent at 3:1 (WCAG 1.4.11): the track's own fill is 1.2:1 on the page.
+  track: { height: tokens.size.track, borderRadius: tokens.radius.track, borderWidth: tokens.border.hairline, overflow: 'hidden' },
   fill: { height: '100%', borderRadius: tokens.radius.track },
 });

@@ -11,7 +11,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Liveness check */
+        /**
+         * Readiness check
+         * @description 200 once the application accepts traffic: the web server is up and the start's own work (the FoodData Central
+         *     import) has finished. 503 until then, and again while the application shuts down (K-908).
+         */
         get: operations["getHealth"];
         put?: never;
         post?: never;
@@ -1778,8 +1782,11 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         Health: {
-            /** @enum {string} */
-            status: "UP";
+            /**
+             * @description UP with 200; STARTING with 503
+             * @enum {string}
+             */
+            status: "UP" | "STARTING";
         };
         /** @description Shared error body. Messages never contain health data (anayasa V3). */
         Error: {
@@ -3945,8 +3952,17 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The service is up */
+            /** @description The service is up and ready */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Health"];
+                };
+            };
+            /** @description The service is starting (or stopping) and does not take traffic yet */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

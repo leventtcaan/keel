@@ -2,17 +2,18 @@
 # Puts an image in service on the VPS, or puts the previous one back (K-901, ADR-065; K-902 calls it after CI built the
 # image). As keel on the VPS:  release.sh <image>   |   release.sh --rollback
 # The image becomes keel-backend:current (compose.yaml); what was current becomes :previous (not when it is the same
-# image). If the backend does not answer /health over HTTPS, then stay up without restarting for the settle time, the
-# release fails and current and previous are put back as they were. A rollback swaps the two, so it can be undone.
-# /health answers once the web server is up, before the start's own work (the FoodData Central import) has finished:
-# a failure there later than the settle time is not caught here (K-908: readiness in /health).
+# image). /health answers 200 only when the backend is ready (K-908: after the start's own work, the FoodData Central
+# import, has finished; 503 until then, which curl -f counts as no answer). If the backend does not answer 200 within
+# the wait, or its container exits and restarts while we wait (a start that failed), the release fails and current and
+# previous are put back as they were. After the 200 it stays up without restarting for the short settle time, which
+# only catches a crash after readiness. A rollback swaps the two, so it can be undone.
 set -euo pipefail
 home=${KEEL_HOME:-/opt/keel}
 etc=${KEEL_ETC:-/etc}
 lib=${KEEL_LIB:-/usr/local/lib/keel}
 kc="$home/deploy/kc"
 wait_seconds=${KEEL_RELEASE_WAIT:-300} # the first start imports FoodData Central (minutes); later ones take seconds
-settle_seconds=${KEEL_RELEASE_SETTLE:-30}
+settle_seconds=${KEEL_RELEASE_SETTLE:-10} # only a crash after /health said ready; the start itself is behind the 200 now (K-908)
 poll_seconds=${KEEL_RELEASE_POLL:-5}
 # One release at a time (CI and a deploy by hand could meet).
 exec 9>"$home/.release.lock"
@@ -26,11 +27,14 @@ answers() { curl -fsS --max-time 5 "https://$domain/health" >/dev/null 2>&1; }
 
 healthy() {
   local tries=$((wait_seconds / (poll_seconds > 0 ? poll_seconds : 1)))
+  local before after
+  before=$(docker inspect -f '{{.State.Status}} {{.RestartCount}}' keel-backend-1 2>/dev/null || true)
   until answers; do
     ((tries-- > 0)) || return 1
+    # A runner that throws ends the start (the process exits) and Docker starts it again: that is no reason to wait out the clock.
+    [[ $(docker inspect -f '{{.State.Status}} {{.RestartCount}}' keel-backend-1 2>/dev/null || true) == "$before" ]] || return 1
     sleep "$poll_seconds"
   done
-  local before after
   before=$(docker inspect -f '{{.State.Status}} {{.RestartCount}}' keel-backend-1)
   sleep "$settle_seconds"
   after=$(docker inspect -f '{{.State.Status}} {{.RestartCount}}' keel-backend-1)

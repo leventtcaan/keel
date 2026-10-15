@@ -145,7 +145,7 @@ export default function TrainScreen() {
       <Pressable
         accessibilityRole="button"
         onPress={() => router.push({ pathname: '/edit-program', params: { part: 'changes' } })}
-        style={({ pressed }) => [styles.applied, { backgroundColor: color.accentSoft }, pressed && styles.dim]}>
+        style={({ pressed }) => [styles.applied, { backgroundColor: color.accentSoft, borderColor: color.accent }, pressed && styles.dim]}>
         <Text style={[styles.text, styles.bold, styles.grow, { color: color.text }]}>
           {t(appliedCount === 1 ? 'editProgram.applied.one' : 'editProgram.applied.other', { count: appliedCount })}
         </Text>
@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
   loading: { alignSelf: 'flex-start', minHeight: tokens.size.touch },
   top: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
   edit: { minHeight: tokens.size.touch, minWidth: tokens.size.touch, alignItems: 'center', justifyContent: 'center' },
-  applied: { minHeight: tokens.size.touch, borderRadius: tokens.radius.card, padding: tokens.space.md, flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
+  applied: { minHeight: tokens.size.touch, borderRadius: tokens.radius.card, borderWidth: tokens.border.outline, padding: tokens.space.md, flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
   bold: { fontWeight: tokens.weight.semibold },
   dim: { opacity: tokens.opacity.dim },
   heading: { fontSize: tokens.type.heading, fontWeight: tokens.weight.bold },
