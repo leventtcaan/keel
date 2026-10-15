@@ -19,7 +19,7 @@ const refused = (status: number, code: string): Answer => ({ error: { code, mess
 const TRAINING: Schemas['Question'] = {
   kind: 'TRAINING',
   format: 'CHOICE',
-  choices: ['IMPROVING', 'STABLE', 'DECLINING'],
+  choices: ['IMPROVING', 'STABLE', 'DECLINING', 'NOT_TRAINED'],
   copyKey: 'checkIn.question.training',
   reasonCopyKey: 'checkIn.reason.training',
 };
@@ -109,6 +109,67 @@ test('a choice can be changed before sending: the last one goes', async () => {
   await press(t('checkIn.choice.cycle_stopped.no'));
   await press(t('checkIn.screen.send'));
   expect(sent()[0].answers[0]).toEqual({ kind: 'TRAINING', choice: 'DECLINING' });
+});
+
+test('"Haven\'t trained" (K-1031): the fourth choice is the server\'s, a full touch target, and goes as the plain fact NOT_TRAINED', async () => {
+  mockCheckIn = async () => ok({ weekOf: '2026-10-05', answered: false, questions: [TRAINING] });
+  await show();
+  const chip = screen.getByRole('button', { name: t('checkIn.choice.training.not_trained') });
+  expect(chip).toHaveStyle({ minHeight: tokens.size.touch, minWidth: tokens.size.touch });
+  expect(t('checkIn.choice.training.not_trained')).toBe("Haven't trained");
+  await press(t('checkIn.choice.training.not_trained'));
+  expect(chip).toBeSelected();
+  await press(t('checkIn.screen.send'));
+  // The phone sends what was picked; what it means for the call is the engine's (U1).
+  expect(sent()).toEqual([{ clientId: expect.any(String), weekOf: '2026-10-05', answers: [{ kind: 'TRAINING', choice: 'NOT_TRAINED' }] }]);
+});
+
+test('a question the server reads only after some answers (onlyAfter): hidden, not required and not sent after the others', async () => {
+  const RECOVERY: Schemas['Question'] = {
+    kind: 'RECOVERY',
+    format: 'CHOICE',
+    choices: ['GOOD', 'POOR'],
+    copyKey: 'checkIn.question.recovery',
+    reasonCopyKey: 'checkIn.reason.recovery',
+    onlyAfter: { kind: 'TRAINING', choices: ['IMPROVING', 'STABLE'] },
+  };
+  mockCheckIn = async () => ok({ weekOf: '2026-10-05', answered: false, questions: [TRAINING, RECOVERY] });
+  await show();
+  // Not answered yet: both show, and the call waits for both.
+  expect(screen.getByText(t('checkIn.question.recovery'))).toBeOnTheScreen();
+  await press(t('checkIn.choice.training.not_trained'));
+  expect(screen.queryByText(t('checkIn.question.recovery'))).toBeNull();
+  expect(sendButton()).toBeEnabled();
+  await press(t('checkIn.screen.send'));
+  expect(sent()[0].answers).toEqual([{ kind: 'TRAINING', choice: 'NOT_TRAINED' }]);
+});
+
+test('onlyAfter: another training answer brings the question back, and an answer given before is dropped when it goes', async () => {
+  const RECOVERY: Schemas['Question'] = {
+    kind: 'RECOVERY',
+    format: 'CHOICE',
+    choices: ['GOOD', 'POOR'],
+    copyKey: 'checkIn.question.recovery',
+    reasonCopyKey: 'checkIn.reason.recovery',
+    onlyAfter: { kind: 'TRAINING', choices: ['IMPROVING', 'STABLE'] },
+  };
+  mockCheckIn = async () => ok({ weekOf: '2026-10-05', answered: false, questions: [TRAINING, RECOVERY] });
+  await show();
+  await press(t('checkIn.choice.training.stable'));
+  expect(screen.getByText(t('checkIn.question.recovery'))).toBeOnTheScreen();
+  expect(sendButton()).toBeDisabled();
+  await press(t('checkIn.choice.recovery.good'));
+  await press(t('checkIn.choice.training.declining'));
+  expect(screen.queryByText(t('checkIn.question.recovery'))).toBeNull();
+  expect(sendButton()).toBeEnabled();
+  // With a choice that leaves it needed, it is back, and what was picked is sent with it.
+  await press(t('checkIn.choice.training.improving'));
+  expect(screen.getByText(t('checkIn.question.recovery'))).toBeOnTheScreen();
+  await press(t('checkIn.screen.send'));
+  expect(sent()[0].answers).toEqual([
+    { kind: 'TRAINING', choice: 'IMPROVING' },
+    { kind: 'RECOVERY', choice: 'GOOD' },
+  ]);
 });
 
 test('nothing to ask: it says so, and the call is one tap away', async () => {

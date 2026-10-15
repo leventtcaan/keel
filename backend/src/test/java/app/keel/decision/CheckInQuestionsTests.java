@@ -66,6 +66,54 @@ class CheckInQuestionsTests {
     };
 
     @Test
+    void havingNotTrainedIsOneOfTheTrainingChoicesAndAsksNothingFurther() {
+        // K-1031, ADR-077 Ek 12: the fourth choice is offered with the question; picking it makes a call that waits for no answer
+        // (its own reason), so it adds no question, and a week already answered "Haven't trained" asks nothing.
+        Function<CheckIn, Decision> spine = checkIn -> switch (checkIn.training()) {
+            case UNKNOWN -> call(new Action.NoDecisionYet(), "check_in_needed_training");
+            case NOT_TRAINED -> call(new Action.NoDecisionYet(), "no_training_this_week");
+            default -> checkIn.recovery() == CheckIn.Recovery.UNKNOWN ? call(new Action.NoDecisionYet(), "check_in_needed_recovery")
+                    : call(new Action.Continue(), "toward_goal");
+        };
+
+        assertThat(CheckInQuestions.needed(spine, CheckIn.NONE, 5)).containsExactly(Answers.Kind.TRAINING, Answers.Kind.RECOVERY);
+        assertThat(CheckInQuestions.needed(spine, CheckIn.NONE.withTraining(CheckIn.Training.NOT_TRAINED), 5)).isEmpty();
+        assertThat(CheckInQuestions.describe(Answers.Kind.TRAINING).choices()).containsExactly("IMPROVING", "STABLE", "DECLINING", "NOT_TRAINED");
+        assertThat(CheckInQuestions.answerable(Answers.Kind.TRAINING)).isTrue();
+    }
+
+    @Test
+    void recoveryIsOnlyAfterTheTrainingChoicesThatLeaveItNeeded() {
+        // K-1031 review: after "Haven't trained" or "Getting weaker" the engine does not read recovery, so the question says it is
+        // only for the other answers (U1: the phone reads this, it does not know the tree).
+        Function<CheckIn, Decision> spine = checkIn -> switch (checkIn.training()) {
+            case UNKNOWN -> call(new Action.NoDecisionYet(), "check_in_needed_training");
+            case NOT_TRAINED -> call(new Action.NoDecisionYet(), "no_training_this_week");
+            case DECLINING -> call(new Action.FixTraining(), "training_first");
+            default -> checkIn.recovery() == CheckIn.Recovery.UNKNOWN ? call(new Action.NoDecisionYet(), "check_in_needed_recovery")
+                    : call(new Action.Continue(), "toward_goal");
+        };
+        List<Answers.Kind> asked = CheckInQuestions.needed(spine, CheckIn.NONE, 5);
+
+        assertThat(asked).containsExactly(Answers.Kind.TRAINING, Answers.Kind.RECOVERY);
+        assertThat(CheckInQuestions.onlyAfter(spine, CheckIn.NONE, asked, 5)).containsOnlyKeys(Answers.Kind.RECOVERY)
+                .containsEntry(Answers.Kind.RECOVERY, new CheckInQuestions.OnlyAfter(Answers.Kind.TRAINING, List.of("IMPROVING", "STABLE")));
+    }
+
+    @Test
+    void aQuestionEveryAnswerLeavesNeededCarriesNoCondition() {
+        Function<CheckIn, Decision> everyAnswerAsksRecovery = checkIn -> checkIn.training() == CheckIn.Training.UNKNOWN
+                ? call(new Action.NoDecisionYet(), "check_in_needed_training")
+                : checkIn.recovery() == CheckIn.Recovery.UNKNOWN ? call(new Action.NoDecisionYet(), "check_in_needed_recovery")
+                        : call(new Action.Continue(), "toward_goal");
+        List<Answers.Kind> asked = CheckInQuestions.needed(everyAnswerAsksRecovery, CheckIn.NONE, 5);
+
+        assertThat(asked).containsExactly(Answers.Kind.TRAINING, Answers.Kind.RECOVERY);
+        assertThat(CheckInQuestions.onlyAfter(everyAnswerAsksRecovery, CheckIn.NONE, asked, 5)).isEmpty();
+        assertThat(CheckInQuestions.describe(Answers.Kind.RECOVERY).onlyAfter()).isNull();
+    }
+
+    @Test
     void theFeelIsAskedWhenAnAnswerWouldChangeTheCall() {
         Function<CheckIn, Decision> firstWeek = checkIn -> checkIn.week1Feel() == CheckIn.Week1Feel.COULD_DO_MORE
                 ? call(new Action.AddTrainingDay(4, 4), "first_week_add_day") : call(new Action.Continue(), "first_week_on_track");

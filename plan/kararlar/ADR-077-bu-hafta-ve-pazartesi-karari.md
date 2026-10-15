@@ -290,3 +290,47 @@ Ek 8, EASE_BACK cevabını "program zaten yapıyor" diye hiçbir şeye bağlamam
   Seans yapılınca (son seans boşluğun başladığı günden yeni) ya da cevaptan `return_step_back_after_weeks` sonra seanssız geçerse zorlama biter; o süre dolunca mola zaten uzundur ve `ReturnLoad` kendiliğinden hafifletir. İkinci bir basamak yoktur (uzun molada seçim hiçbir şey eklemez).
 - Okuma noktaları tek: `BackAfterBreak.of(.., easedBack, ..)` programı (`ProgramController`) ve kararın tutulan hareketini (`TrainingMoveTargets`, K-1009) aynı karara getirir. REBUILD ve PICK_UP davranışı değişmez.
 
+
+## Ek 12 · Check-in antrenman sorusuna "Haven't trained" (K-1031, 2026-10-15; ürün kararı: **Levent KABUL, 2026-10-15**; kural çıktıları ve kaynaklar agent, teknik)
+- **Karar (Levent, 15 Eki):** antrenman sorusu ("How did training go this week?") dördüncü seçenek alır: **"Haven't trained"** (sözleşmede `NOT_TRAINED`). Kullanıcı başka yerde
+  çalışsa ve kayıt tutmasa da cevaplayabilir; veri dürüst kalır. Motor bunu bir *eğilim* değil **olgu** olarak okur: "bu hafta antrenman yok". Tur 4 B14 (8 gün kayıtsız dönüşte
+  "Getting weaker" sorulması) bununla kapanır. "Seans yoksa soruyu sorma" yolu (#595) geri alınmıştı: soru kalkınca motor `check_in_needed_training` kaydediyor, hafta
+  "cevap bekleyen" bir metinle harcanıyordu. Soru kalır; sorulduğu yerde dürüst bir cevabı vardır.
+- **Motor kuralı.** Antrenman cevabını okuyan tek yer `WeeklySpine` (iki nokta); `NOT_TRAINED` ikisinde de kaynaklı sonuç verir. Yeni karar kuralı eklenmedi, yalnız kaynaktaki
+  kapının "geçilemez" durumu ve "hangi cevabı bekliyorduk" sorusunun dürüst cevabı yazıldı. Sonuç ortak: `NoDecisionYet`, kural `no_training_this_week`
+  (`decision.no_decision_yet.no_training_this_week`), **bir cevap beklemez** (`WeeklySpine.missingAnswer` boş döner; soru sorulmaz).
+
+  | Durum | `NOT_TRAINED` ile motor | Kaynak |
+  |---|---|---|
+  | Cut, kilo hedef yönde değil (sabit ya da ters), uyum ≥ `on_track_min_ratio` | `NoDecisionYet / no_training_this_week`; **kalori inmez** (ve çıkmaz) | G7 K-98 (kalori ancak antrenman hâlâ çıkıyorsa iner, çıkmadığı noktada yükselir; antrenman yoksa kapı geçilemez, "çıkmadı" da okunmadı) |
+  | Cut, uyum < `on_track_min_ratio` | `FixAdherence` (değişmedi: uyum kapısı antrenmandan önce) | G2 K-60 |
+  | Bulk, kilo hedef yönde değil | `CaloriesNeeded` yukarı (değişmedi; antrenman koşulu yok) | G3 K-10, ADR-021 #3 |
+  | Kilo hedef yönde, görünüş WORSE (cut ya da bulk) | `NoDecisionYet / no_training_this_week`; recovery sorulmaz, okunmaz; "genetik limit → kaloriyi geri çek" dalı açılmaz | 03 §2.4 (ağaç: antrenman KÖTÜ → antrenmanı düzelt; İYİ → iyileşme → genetik limit; olgu "antrenman yok" ikisi de değil) |
+  | Kilo hedef yönde, görünüş BETTER / SAME / fotoğraf yok | `Continue` (antrenman okunmaz, soru sorulmaz; değişmedi) | 03 §2.4, ADR-021 #4 |
+  | Veri yetersiz, bildirilen durum, güvenlik, 1. hafta (spine'dan önceki kapılar) | antrenman cevabı okunmaz (değişmedi) | ilgili kapının kendi kaynağı |
+
+  Bu satırlardan "NoDecisionYet" olanlar kaynakta bir *eylem* bulunmadığı yerlerdir (U14: kaynaksız kural yok; U3: yetmeyen veriyle karar yok). Tek kaynaklı olgu şudur: kalori kararı
+  antrenman performansına bağlı (K-98), performans bu hafta ölçülemez. Kaynak "antrenman yoksa şunu yap" demiyor; ürün de demez.
+  Kaynak etiketi: cut kapısında K-98 `[tecrübe]`, görünüş-WORSE dalında 03 §2.4 `[tecrübe]`.
+- **RECOVERY `NOT_TRAINED`'dan sonra gelmez (motor okumaz).** Ağacın iyileşme dalı "antrenman İYİ" dalının altındadır (03 §2.4: antrenman KÖTÜ → antrenmanı düzelt; İYİ → iyileşme). Antrenman yokken
+  `FixRecovery` ya da "genetik limit" için kaynak yok, yani cevap sonucu değiştirmez; motor cevap aramaz. `DECLINING`'de de motor iyileşmeyi okumaz (`FixTraining` önce gelir): aynı kalıp.
+  Soru listesi tek ekranda ve cevaplar bilinmeden gelir, bu yüzden sözleşmeye `Question.onlyAfter {kind, choices}` eklendi: sunucu, sonraki soruyu yalnız öncekinin hangi seçeneklerinden sonra
+  hâlâ gerektiğini söyler (`CheckInQuestions.onlyAfter`: her seçenek için motor yeniden koşulur; soru o seçenekten sonra hâlâ soruluyorsa seçenek listede kalır; alan yalnız liste tüm
+  seçeneklerden kısaysa yazılır). `RECOVERY` bugün `onlyAfter: {TRAINING, [IMPROVING, STABLE]}` taşır. Telefon yalnız bu koşulu okur (U1): cevap listenin dışındaysa soruyu göstermez,
+  zorunlu tutmaz, göndermez; önceki cevap verilmeden soru görünür kalır. Böylece "Haven't trained" ya da "Getting weaker" seçen kullanıcıdan alakasız bir iyileşme cevabı istenmez.
+- **Kullanıcı ne görür.** *Bu hafta:* "Haven't trained" seçip gönderince çağrı kaydedilir (her çağrı gibi): ekran **"No call this week."**, tek neden satırı ("No training this week,
+  so no lifts to read."), "Next call: <sunucunun `nextCallOn`'u>" gösterir. Plan, kalori ve program **değişmez**. Check-in bu hafta için kapanır (K-212: haftada bir çağrı);
+  yani hafta, kullanıcının kendi cevabıyla "kaydedilmiş, karar yok" olarak harcanır; metin bunu söyler, bir soru ya da kayıt bekliyormuş gibi davranmaz ("answer ... and the call follows" yok).
+  *Gelecek hafta:* check-in bir sonraki check-in gününde (`nextCallOn`) yeniden açılır, aynı sorular o günkü veriye göre sorulur; o hafta antrenman yapıldıysa gerçek cevap verilir ve
+  motor olağan yolundan karar verir. Önceki hafta bir şey taşınmaz (K-98'in "performans" ölçütü haftalıktır; cevap geçmişe yazılan bir borç değildir, U7).
+- **Reddedilen:** (a) `NOT_TRAINED` → `FixTraining`: antrenmanı "düzelt" demek eylem uydurur ve antrenmansız haftayı suçlar gibi okunur (U7); K-98'in "performans düştü" koşulu okunmadı.
+  (b) `NOT_TRAINED` → kalori inişi / çıkışı: K-98 ikisini de performansa bağlar. (c) `NOT_TRAINED`'ı `STABLE` saymak: olmayan veriyi "iyi" yapar (U1/U3). (d) Soruyu seans yokken
+  hiç sormamak (#595): kararı sessizce `check_in_needed_training` ile harcar. (e) `NOT_TRAINED`'a özel sonraki hafta bayrağı: kaynaksız durum taşır.
+- **Sınır / risk (Levent'e not):** uyum karar penceresi (21/28 gün) üzerinden sayılır; tek antrenmansız hafta uyumu genelde `on_track_min_ratio` altına indirmez, yani o hafta
+  "No call this week." çıkar. Antrenman haftalarca yoksa planlanan seanslar uyumu düşürür ve `FixAdherence` (K-60) önce gelir; ama kayıt tutmadan başka yerde çalışan kullanıcıda
+  uyum düşük görünüp aynı yola girebilir. Kaynak bu durumda ek bir eylem vermiyor; kaynak/ürün kararı çıkarsa (ör. "N hafta antrenmansızsa şunu öner") ayrı ADR.
+- **Kod:** `CheckIn.Training.NOT_TRAINED`, `WeeklySpine` (`NO_TRAINING_THIS_WEEK`, iki yer), sözleşme `DecisionBasis.answers.training` ve `Question.onlyAfter` (`CheckInQuestions.onlyAfter`, `shownQuestions` telefonda), `data/copy/en.json`
+  (`checkIn.choice.training.not_trained`, `decision.rule` / `ruleShort` / `no_decision_yet.no_training_this_week`), `word-budgets.json`. Soru listesi `CheckInQuestions.choices` zaten
+  enum'dan türer (yeni seçenek kendiliğinden gelir). Telefon yalnız gönderir; seçeneğin metni `checkIn.choice.training.<seçenek>`.
+- **K1 notu:** iki testin beklentisi bu karardan değişti, hiçbiri gevşemedi: `QuestionBudgetTests.aQuestionSaysWhyItIsAsked` ve `CheckInQuestionsApiTests` (antrenman sorusunun seçenek listesine
+  dördüncü seçenek eklendi).

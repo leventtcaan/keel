@@ -73,8 +73,11 @@ class CheckInQuestionsApiTests {
         List<Map<String, Object>> questions = (List<Map<String, Object>>) map(send(account, "GET", "/v1/check-ins/current", null)).get("questions");
 
         assertThat(questions).extracting(question -> question.get("kind")).containsExactly("TRAINING", "RECOVERY");
-        assertThat(questions.getFirst()).containsEntry("format", "CHOICE").containsEntry("choices", List.of("IMPROVING", "STABLE", "DECLINING"))
+        assertThat(questions.getFirst()).containsEntry("format", "CHOICE").containsEntry("choices", List.of("IMPROVING", "STABLE", "DECLINING", "NOT_TRAINED"))
                 .containsEntry("copyKey", "checkIn.question.training").containsEntry("reasonCopyKey", "checkIn.reason.training");
+        // Recovery is read only after the training answers that leave it needed; training, the first question, has no condition.
+        assertThat(questions.getFirst()).doesNotContainKey("onlyAfter");
+        assertThat(questions.get(1)).containsEntry("onlyAfter", Map.of("kind", "TRAINING", "choices", List.of("IMPROVING", "STABLE")));
     }
 
     @Test
@@ -87,6 +90,23 @@ class CheckInQuestionsApiTests {
 
         assertThat(call).hasStatusOk();
         assertThat((Map<String, Object>) map(call).get("action")).containsEntry("type", "FIX_TRAINING");
+        assertThat(map(send(account, "GET", "/v1/check-ins/current", null))).containsEntry("answered", true).containsEntry("questions", List.of());
+    }
+
+    @Test
+    void havingNotTrainedMakesNoCallThatPromisesAQuestionAndTheWeekIsTaken() throws Exception {
+        // K-1031, ADR-077 Ek 12: "Haven't trained" is a fact. The cut cannot pass K-98's gate, so the call waits with its own reason.
+        // The answer is a call like any other: this week's check-in is taken, the next one opens on the next check-in day.
+        AccountId account = losingButLookingWorse();
+
+        MvcTestResult call = answer(account, List.of(Map.of("kind", "TRAINING", "choice", "NOT_TRAINED"), Map.of("kind", "RECOVERY", "choice", "GOOD")));
+
+        assertThat(call).hasStatusOk();
+        Map<String, Object> decision = map(call);
+        assertThat((Map<String, Object>) decision.get("action")).containsEntry("type", "NO_DECISION_YET");
+        assertThat(decision).containsEntry("copyKey", "decision.no_decision_yet.no_training_this_week");
+        assertThat(((List<Map<String, Object>>) decision.get("reasons")).getFirst()).containsEntry("rule", "no_training_this_week");
+        assertThat(decision.get("nextCallOn")).as("the next call is dated, not promised by a question").isNotNull();
         assertThat(map(send(account, "GET", "/v1/check-ins/current", null))).containsEntry("answered", true).containsEntry("questions", List.of());
     }
 

@@ -37,8 +37,11 @@ public record CheckIn(Look look, Training training, Recovery recovery, Waist wai
     /** Compared with the last photo check: better, the same, worse. */
     public enum Look { BETTER, SAME, WORSE, UNKNOWN }
 
-    /** Loads and reps over recent weeks (G2 decision table: "weights going backwards" is declining). */
-    public enum Training { IMPROVING, STABLE, DECLINING, UNKNOWN }
+    /**
+     * Loads and reps over recent weeks (G2 decision table: "weights going backwards" is declining). NOT_TRAINED is a fact, not a
+     * trend (K-1031, ADR-077 Ek 12): the user did not train this week, here or elsewhere — there is no performance to read.
+     */
+    public enum Training { IMPROVING, STABLE, DECLINING, NOT_TRAINED, UNKNOWN }
 
     /** Sleep, energy, soreness (G2 K-87 signs). */
     public enum Recovery { GOOD, POOR, UNKNOWN }

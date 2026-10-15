@@ -8,13 +8,16 @@ import app.keel.engine.Phase;
 import app.keel.engine.SafetyHold;
 import app.keel.engine.Sex;
 import app.keel.engine.WeeklySpine;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.LocalDate;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
@@ -29,8 +32,20 @@ import java.util.stream.Stream;
  */
 final class CheckInQuestions {
 
-    /** Contract Question. */
-    record Question(Answers.Kind kind, String format, List<String> choices, String copyKey, String reasonCopyKey) {
+    /**
+     * Contract Question. {@code onlyAfter}: the question is read only after an earlier one answered with one of these choices (the
+     * phone skips it otherwise: not shown, not required, not sent); absent when every answer to the earlier one leaves it needed.
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    record Question(Answers.Kind kind, String format, List<String> choices, String copyKey, String reasonCopyKey, OnlyAfter onlyAfter) {
+
+        Question(Answers.Kind kind, String format, List<String> choices, String copyKey, String reasonCopyKey) {
+            this(kind, format, choices, copyKey, reasonCopyKey, null);
+        }
+    }
+
+    /** Contract Question.onlyAfter: the earlier question and the choices of it that leave this one needed. */
+    record OnlyAfter(Answers.Kind kind, List<String> choices) {
     }
 
     private CheckInQuestions() {
@@ -137,8 +152,32 @@ final class CheckInQuestions {
     }
 
     static Question describe(Answers.Kind kind) {
+        return describe(kind, null);
+    }
+
+    static Question describe(Answers.Kind kind, OnlyAfter onlyAfter) {
         String name = kind.name().toLowerCase(Locale.ROOT);
-        return new Question(kind, "CHOICE", choices(kind), "checkIn.question." + name, "checkIn.reason." + name);
+        return new Question(kind, "CHOICE", choices(kind), "checkIn.question." + name, "checkIn.reason." + name, onlyAfter);
+    }
+
+    /**
+     * Which of the asked questions the engine stops needing after an earlier one is answered some way (U1: the phone does not
+     * know the tree). For each question and each earlier one, the earlier one's choices after which the engine, run again, still
+     * asks it; named only when that is fewer than all of them. The first earlier question that narrows it names it.
+     */
+    static Map<Answers.Kind, OnlyAfter> onlyAfter(Function<CheckIn, Decision> engine, CheckIn dataSays, List<Answers.Kind> asked, int budget) {
+        Map<Answers.Kind, OnlyAfter> conditions = new EnumMap<>(Answers.Kind.class);
+        for (int later = 1; later < asked.size(); later++) {
+            for (int earlier = 0; earlier < later && !conditions.containsKey(asked.get(later)); earlier++) {
+                Answers.Kind parent = asked.get(earlier);
+                Answers.Kind kind = asked.get(later);
+                List<String> still = choices(parent).stream().filter(choice -> needed(engine, answered(dataSays, parent, choice), budget).contains(kind)).toList();
+                if (!still.isEmpty() && still.size() < choices(parent).size()) {
+                    conditions.put(kind, new OnlyAfter(parent, still));
+                }
+            }
+        }
+        return conditions;
     }
 
     /** The engine's answers for a question, without UNKNOWN (that is "not answered"). */
