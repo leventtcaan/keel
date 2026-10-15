@@ -89,7 +89,7 @@ final class AccountFixture {
         // A recipe and its ingredients (K-413): health data, as meals are.
         send(account, "POST", "/v1/recipes", Map.of("clientId", UUID.randomUUID(), "name", "Chicken bowl", "portions", 2,
                 "items", List.of(Map.of("foodId", "fdc:171477", "amount", Map.of("quantity", 300, "unit", "g")))));
-        // A state declared (K-516): sickness and pain are health data, so every state is (ADR-038).
+        // A state declared (K-516): sickness is health data (traveling, a busy week and a new gym are not, K-1021).
         send(account, "PUT", "/v1/state", Map.of("kind", "SICK"));
         // A day's use of the coach (K-508): a count, the account's.
         assertThat(context.getBean(app.keel.subscription.Quota.class).take(account, app.keel.subscription.Quota.Use.COACH_MESSAGE)).isPresent();

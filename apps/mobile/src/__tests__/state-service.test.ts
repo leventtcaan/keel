@@ -34,13 +34,14 @@ test('a declared state is sent, kept on the phone, and quiets the reminders', as
   expect(changed).toHaveBeenCalledTimes(1);
 });
 
-test('a last day is sent when given; past it, the state is not in force on the phone either', async () => {
-  const PUT = jest.fn(async () => ok({ kind: 'TRAVELING', since: '2026-10-01', until: '2026-10-06' }));
+test('a count of days is sent when given, never a date; past the last day the server wrote, it is not in force on the phone either', async () => {
+  // K-1021: the phone adds no dates; the server counts the days with today on the user's calendar.
+  const PUT = jest.fn(async () => ok({ kind: 'TRAVELING', since: '2026-10-01', until: '2026-10-03' }));
   const { state } = service({ PUT });
 
-  await state.declare('TRAVELING', '2026-10-06');
+  await state.declare('TRAVELING', 3);
 
-  expect(PUT).toHaveBeenCalledWith('/v1/state', { body: { kind: 'TRAVELING', until: '2026-10-06' } });
+  expect(PUT).toHaveBeenCalledWith('/v1/state', { body: { kind: 'TRAVELING', days: 3 } });
   expect(await state.inForce()).toBe(false);
 });
 

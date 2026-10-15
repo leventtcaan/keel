@@ -201,7 +201,7 @@ keel:
   # The consent texts the app shows now (data/copy/en.json › consent.*, K-204); "-draft" until the product owner approves (HEALTH_DATA: ADR-059).
   consent:
     versions:
-      HEALTH_DATA: 3
+      HEALTH_DATA: 4
       APPLE_HEALTH: 1-draft
       THIRD_PARTY_AI: 1-draft
 # V3 (K-215): failures are logged by SafeLog, by type and code location only. The container's and Spring MVC's own

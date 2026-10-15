@@ -1237,22 +1237,28 @@ export interface paths {
         /**
          * The state the user declared, in force today (K-516, ADR-038)
          * @description What life brought, declared by the user — never asked for (U9). NOT_FOUND when none is in force today. Sickness and
-         *     pain are health data: CONSENT_REQUIRED without the HEALTH_DATA consent, as every /v1/decisions route; CONFLICT
-         *     without a profile (no calendar to read today on).
+         *     pain are health data (K-1021, ADR-077 Ek 6): one in force is read out only with the HEALTH_DATA consent
+         *     (CONSENT_REQUIRED); traveling, a busy week and a new gym are calendar facts, read without it. CONFLICT without a
+         *     profile (no calendar to read today on).
          */
         get: operations["getState"];
         /**
          * Declare a state from today
-         * @description From today on the user's calendar, until `until` (included) or until they are back. A state in force ends
-         *     yesterday; one begun today is replaced whole. `until` before today, or more than max-range-days on, is
-         *     VALIDATION_FAILED. While a week holds a declared day the week is paused — neither on track nor missed — and the
-         *     week's call waits (NO_DECISION_YET); safety calls never wait (ADR-038).
+         * @description From today on the user's calendar, for `days` days counted with today (3 or 7, data/parameters/state.json ›
+         *     state_until_choices_days; the server writes the last day on the user's calendar), until `until` (included) or,
+         *     with neither, until they are back. A state in force ends yesterday; one begun today is replaced whole. `days` and
+         *     `until` together, a `days` that is not offered, `until` before today, or more than max-range-days on, is
+         *     VALIDATION_FAILED. Sickness and pain are health data (K-1021, ADR-077 Ek 6): CONSENT_REQUIRED without the
+         *     HEALTH_DATA consent; traveling, a busy week and a new gym are saved without it. While a week holds a declared day
+         *     the week is paused — neither on track nor missed — and the week's call waits (NO_DECISION_YET); safety calls never
+         *     wait (ADR-038).
          */
         put: operations["declareState"];
         post?: never;
         /**
          * Back — the state in force ends yesterday
-         * @description A state begun today is taken back. Nothing in force is nothing to do (204 all the same).
+         * @description A state begun today is taken back. Nothing in force is nothing to do (204 all the same). Asked without the
+         *     consent too: ending a state needs none.
          */
         delete: operations["endState"];
         options?: never;
@@ -3061,7 +3067,15 @@ export interface components {
         };
         NewDeclaredState: {
             kind: components["schemas"]["StateKind"];
-            /** Format: date */
+            /**
+             * @description How many days, counted with today (K-1021): one of the offered lengths (state_until_choices_days). The server
+             *     writes the last day on the user's calendar; the phone adds no dates. Not with `until`.
+             */
+            days?: number;
+            /**
+             * Format: date
+             * @description The last day, on the user's calendar. Not with `days`.
+             */
             until?: string;
         };
         Consistency: {
