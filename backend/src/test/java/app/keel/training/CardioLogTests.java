@@ -55,7 +55,7 @@ class CardioLogTests {
         AccountId account = withAProgram("LOSE_FAT", "INACTIVE", MON_WED_FRI);
 
         assertThat(cardio(account)).isEqualTo(Map.of("source", "GENERATED", "minutes", 30, "sessionsPerWeek", 3, "doneThisWeek", 0,
-                "sessions", List.of(after("MONDAY"), after("WEDNESDAY"), after("FRIDAY")), "afterLiftOverLine", false));
+                "loggedDays", List.of(), "sessions", List.of(after("MONDAY"), after("WEDNESDAY"), after("FRIDAY")), "afterLiftOverLine", false));
     }
 
     @Test
@@ -101,7 +101,7 @@ class CardioLogTests {
         MvcTestResult answer = send("PUT", account, "/v1/program/cardio", own);
 
         Map<String, Object> expected = Map.of("source", "USER", "minutes", 40, "sessionsPerWeek", 2, "doneThisWeek", 0,
-                "sessions", List.of(place("TUESDAY", "OFF_DAY_LOW_INTENSITY"), after("FRIDAY")), "afterLiftOverLine", true);
+                "loggedDays", List.of(), "sessions", List.of(place("TUESDAY", "OFF_DAY_LOW_INTENSITY"), after("FRIDAY")), "afterLiftOverLine", true);
         assertThat(answer).hasStatusOk();
         assertThat(map(answer).get("cardio")).isEqualTo(expected);
         assertThat(send("POST", account, "/v1/program/generate", Map.of("trainingDays", List.of("TUESDAY", "THURSDAY")))).hasStatusOk();
@@ -121,7 +121,7 @@ class CardioLogTests {
 
         assertThat(back).hasStatusOk();
         assertThat(map(back).get("cardio")).isEqualTo(Map.of("source", "GENERATED", "minutes", 20, "sessionsPerWeek", 2, "doneThisWeek", 0,
-                "sessions", List.of(after("MONDAY"), after("WEDNESDAY")), "afterLiftOverLine", false));
+                "loggedDays", List.of(), "sessions", List.of(after("MONDAY"), after("WEDNESDAY")), "afterLiftOverLine", false));
         assertThat(again).as("harmless twice").hasStatusOk();
         assertThat(map(again)).isEqualTo(map(back));
         profile(account, "LOSE_FAT", "INACTIVE");
@@ -184,6 +184,114 @@ class CardioLogTests {
         assertThat(log(account, UUID.randomUUID(), lastSunday, "MANUAL", null)).hasStatus(201);
 
         assertThat(cardio(account)).containsEntry("doneThisWeek", 1);
+    }
+
+    @Test
+    void theLoggedDaysAreTheDaysOfThisWeekAndDoneThisWeekIsTheirCount() throws Exception {
+        // K-1019: both from one walk. Two sessions on one day (a typed one and the watch's) are that day; last Sunday is last week's.
+        AccountId account = withAProgram("LOSE_FAT", "INACTIVE", MON_WED_FRI);
+        LocalDate monday = CardioWeek.weekOf(TODAY);
+        LocalDate lastSunday = monday.minusDays(1);
+
+        assertThat(log(account, UUID.randomUUID(), TODAY, "MANUAL", null)).hasStatus(201);
+        assertThat(log(account, UUID.randomUUID(), TODAY, "APPLE_HEALTH", null)).hasStatus(201);
+        assertThat(log(account, UUID.randomUUID(), monday, "APPLE_HEALTH", null)).hasStatus(201);
+        assertThat(log(account, UUID.randomUUID(), lastSunday, "MANUAL", null)).hasStatus(201);
+
+        Map<String, Object> week = cardio(account);
+        List<String> days = TODAY.equals(monday) ? List.of(TODAY.toString()) : List.of(monday.toString(), TODAY.toString());
+        assertThat(week.get("loggedDays")).isEqualTo(days);
+        assertThat(week.get("doneThisWeek")).isEqualTo(days.size());
+    }
+
+    @Test
+    void todaysRecordIsTheTypedSessionWithTheIdThatTakesItBack() throws Exception {
+        AccountId account = withAProgram("LOSE_FAT", "INACTIVE", MON_WED_FRI);
+        assertThat(cardio(account)).as("nothing logged: no record").doesNotContainKey("loggedToday");
+        UUID watchClient = UUID.randomUUID();
+        UUID typedClient = UUID.randomUUID();
+        assertThat(log(account, watchClient, TODAY, "APPLE_HEALTH", null)).hasStatus(201);
+        assertThat(cardio(account)).as("only the watch's").extracting(week -> map(week.get("loggedToday")))
+                .satisfies(record -> assertThat(record).containsEntry("source", "APPLE_HEALTH").containsEntry("clientId", watchClient.toString()));
+
+        MvcTestResult typed = log(account, typedClient, TODAY, "MANUAL", null);
+
+        assertThat(typed).hasStatus(201);
+        assertThat(cardio(account).get("loggedToday")).as("the typed one, which can be taken back").isEqualTo(map(typed));
+    }
+
+    @Test
+    void aTypedSessionIsTakenBackAndTheDayIsOpenAgain() throws Exception {
+        AccountId account = withAProgram("LOSE_FAT", "INACTIVE", MON_WED_FRI);
+        MvcTestResult typed = log(account, UUID.randomUUID(), TODAY, "MANUAL", null);
+        assertThat(cardio(account)).containsEntry("doneThisWeek", 1);
+
+        MvcTestResult taken = send("DELETE", account, "/v1/cardio-sessions/" + map(typed).get("id"), null);
+
+        assertThat(taken).hasStatus(204);
+        assertThat(cardio(account)).containsEntry("doneThisWeek", 0).containsEntry("loggedDays", List.of()).doesNotContainKey("loggedToday");
+        assertThat(send("DELETE", account, "/v1/cardio-sessions/" + map(typed).get("id"), null)).as("already gone").hasStatus(404)
+                .bodyJson().extractingPath("$.code").isEqualTo("NOT_FOUND");
+    }
+
+    @Test
+    void takingASessionBackDeletesItForGoodAndTheSameClientIdWritesItAgain() throws Exception {
+        // The undo is a delete, not a mark: a POST of the same clientId arriving afterwards is a new session (the app drops it from its queue).
+        AccountId account = withAProgram("LOSE_FAT", "INACTIVE", MON_WED_FRI);
+        UUID clientId = UUID.randomUUID();
+        MvcTestResult first = log(account, clientId, TODAY, "MANUAL", null);
+        assertThat(first).hasStatus(201);
+        assertThat(send("DELETE", account, "/v1/cardio-sessions/" + map(first).get("id"), null)).hasStatus(204);
+        assertThat(send("DELETE", account, "/v1/cardio-sessions/" + map(first).get("id"), null)).as("a second delete: already gone").hasStatus(404);
+
+        MvcTestResult again = log(account, clientId, TODAY, "MANUAL", null);
+
+        assertThat(again).hasStatus(201);
+        assertThat(map(again).get("id")).isNotEqualTo(map(first).get("id"));
+        assertThat(map(again)).containsEntry("clientId", clientId.toString());
+        assertThat(cardio(account)).containsEntry("doneThisWeek", 1).containsEntry("loggedToday", map(again));
+    }
+
+    @Test
+    void takingTheTypedSessionBackLeavesTheDayLoggedWhenTheWatchHasOneToo() throws Exception {
+        AccountId account = withAProgram("LOSE_FAT", "INACTIVE", MON_WED_FRI);
+        MvcTestResult typed = log(account, UUID.randomUUID(), TODAY, "MANUAL", null);
+        MvcTestResult watch = log(account, UUID.randomUUID(), TODAY, "APPLE_HEALTH", null);
+
+        assertThat(send("DELETE", account, "/v1/cardio-sessions/" + map(typed).get("id"), null)).hasStatus(204);
+
+        assertThat(cardio(account)).containsEntry("loggedDays", List.of(TODAY.toString())).containsEntry("doneThisWeek", 1)
+                .containsEntry("loggedToday", map(watch));
+    }
+
+    @Test
+    void aSessionReadFromAppleHealthIsNotTakenBack() throws Exception {
+        AccountId account = withAProgram("LOSE_FAT", "INACTIVE", MON_WED_FRI);
+        MvcTestResult watch = log(account, UUID.randomUUID(), TODAY, "APPLE_HEALTH", null);
+
+        assertThat(send("DELETE", account, "/v1/cardio-sessions/" + map(watch).get("id"), null)).hasStatus(409).bodyJson().extractingPath("$.code")
+                .isEqualTo("CONFLICT");
+
+        assertThat(cardio(account)).containsEntry("doneThisWeek", 1).containsEntry("loggedToday", map(watch));
+    }
+
+    @Test
+    void anotherAccountsSessionIsNotFoundAndStays() throws Exception {
+        AccountId mine = withAProgram("LOSE_FAT", "INACTIVE", MON_WED_FRI);
+        AccountId theirs = withAProgram("LOSE_FAT", "INACTIVE", MON_WED_FRI);
+        MvcTestResult typed = log(theirs, UUID.randomUUID(), TODAY, "MANUAL", null);
+        MvcTestResult watch = log(theirs, UUID.randomUUID(), TODAY.minusDays(1), "APPLE_HEALTH", null);
+
+        assertThat(send("DELETE", mine, "/v1/cardio-sessions/" + map(typed).get("id"), null)).hasStatus(404);
+        assertThat(send("DELETE", mine, "/v1/cardio-sessions/" + map(watch).get("id"), null)).as("not even to say it is the watch's").hasStatus(404);
+        assertThat(send("DELETE", mine, "/v1/cardio-sessions/" + UUID.randomUUID(), null)).hasStatus(404);
+
+        assertThat(cardio(theirs)).containsEntry("loggedToday", map(typed));
+    }
+
+    @Test
+    void takingASessionBackNeedsASession() {
+        assertThat(mvc.delete().uri("/v1/cardio-sessions/" + UUID.randomUUID()).exchange()).hasStatus(401);
     }
 
     @Test
@@ -328,6 +436,11 @@ class CardioLogTests {
             request = request.contentType(MediaType.APPLICATION_JSON).content(JSON.writeValueAsString(body));
         }
         return request.exchange();
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> map(Object json) {
+        return (Map<String, Object>) json;
     }
 
     @SuppressWarnings("unchecked")

@@ -1014,6 +1014,26 @@ paths:
           $ref: "#/components/responses/CardioSessionCreated"
         default:
           $ref: "#/components/responses/Error"
+  /v1/cardio-sessions/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    delete:
+      tags: [training]
+      operationId: deleteCardioSession
+      summary: Take back a cardio session the user typed (K-1019)
+      description: |
+        The undo of a typed "Done" (`source` MANUAL); the id is `Program.cardio.loggedToday.id`. A session read from Apple
+        Health is the watch's record and stays: CONFLICT (409), and the app offers no undo for it (`loggedToday.source`
+        says which it is). A session that is gone, or is not this account's, is NOT_FOUND (404); so a second DELETE of the
+        same id answers 404, which means it is already gone. The row is deleted for good, not marked: a POST with the same
+        `clientId` writes the session again (201, a new `id`), so the app drops the pending POST of that `clientId` from its
+        queue when it takes a session back. The week's `loggedDays` and `doneThisWeek` read the log again, so a day the
+        watch also logged stays logged.
+      responses:
+        "204":
+          description: Taken back
+        default:
+          $ref: "#/components/responses/Error"
   /v1/program/today:
     post:
       tags: [training]
@@ -2975,8 +2995,9 @@ components:
         when there is neither: very active work, a gaining phase without training days, no profile yet. Each session is
         after the weights on a training day or at a very low pace on an off day, never before the weights (G2 K-35).
         `doneThisWeek` is the days of this week (Monday to Sunday, the user's calendar) with a cardio session logged: the
-        "1 of 3 this week". Cardio is not in the food budget and not in the weekly consistency, which counts weight
-        sessions (ADR-074 #5, #6).
+        "1 of 3 this week"; `loggedDays` are those days themselves, so `doneThisWeek` is always their count (K-1019). Two
+        sessions on one day, a typed one and the watch's, are that day. Cardio is not in the food budget and not in the
+        weekly consistency, which counts weight sessions (ADR-074 #5, #6).
       required: [source, minutes, sessionsPerWeek, sessions, doneThisWeek, afterLiftOverLine]
       properties:
         afterLiftOverLine:
@@ -3002,6 +3023,23 @@ components:
         doneThisWeek:
           type: integer
           minimum: 0
+        loggedDays:
+          type: array
+          description: |
+            The days of this week with a cardio session logged, oldest first (K-1019); the server always sends it. Not
+            `required` because a new app talking to an older server finds the field missing (read it as `loggedDays ?? []`).
+            When today is among them the app does not
+            ask for cardio again ("+ > Cardio"), it shows `loggedToday`.
+          items:
+            type: string
+            format: date
+        loggedToday:
+          description: |
+            Today's cardio record (K-1019); absent when today has none. The typed session if there is one, since that is the one
+            that can be taken back (DELETE /v1/cardio-sessions/{id}); a session read from Apple Health only when that is all
+            there is (`source` APPLE_HEALTH: show it, offer no undo). Of several typed ones the same one every time, so taking
+            them back goes one by one.
+          $ref: "#/components/schemas/CardioSession"
     CardioSource:
       type: string
       description: GENERATED is the engine's default; USER the user's own, never overwritten by the engine (ADR-074 #4).

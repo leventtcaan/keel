@@ -89,6 +89,9 @@ class CardioWeekZoneTests {
         AccountId account = withThreeSessions("Pacific/Auckland");
 
         assertThat(doneThisWeek(account)).isEqualTo(1);
+        // K-1019: the days come from the same week, and today (Monday 12 Oct there) is the one with a record.
+        assertThat(cardio(account).get("loggedDays")).isEqualTo(List.of("2026-10-12"));
+        assertThat(((Map<?, ?>) cardio(account).get("loggedToday")).get("day")).isEqualTo("2026-10-12");
     }
 
     @Test
@@ -98,6 +101,9 @@ class CardioWeekZoneTests {
         AccountId account = withThreeSessions("America/Los_Angeles");
 
         assertThat(doneThisWeek(account)).isEqualTo(2);
+        // The user's today there is Sunday 11 Oct: Saturday and Sunday are the week's days, Monday's session is next week's.
+        assertThat(cardio(account).get("loggedDays")).isEqualTo(List.of("2026-10-10", "2026-10-11"));
+        assertThat(((Map<?, ?>) cardio(account).get("loggedToday")).get("day")).isEqualTo("2026-10-11");
     }
 
     private AccountId withThreeSessions(String zone) {
@@ -113,12 +119,15 @@ class CardioWeekZoneTests {
         return account;
     }
 
-    @SuppressWarnings("unchecked")
     private int doneThisWeek(AccountId account) throws Exception {
+        return (Integer) cardio(account).get("doneThisWeek");
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> cardio(AccountId account) throws Exception {
         MvcTestResult program = send("GET", account, "/v1/program", null);
         assertThat(program).hasStatusOk();
-        Map<String, Object> cardio = (Map<String, Object>) JSON.readValue(program.getResponse().getContentAsString(), Map.class).get("cardio");
-        return (Integer) cardio.get("doneThisWeek");
+        return (Map<String, Object>) JSON.readValue(program.getResponse().getContentAsString(), Map.class).get("cardio");
     }
 
     private MvcTestResult send(String method, AccountId account, String uri, Object body) {
