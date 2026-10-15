@@ -9,7 +9,7 @@ Kart: done K-1013 K-1014 K-1009 K-978 K-999 K-1016..K-1026 K-982 K-980 K-981 K-9
 ## Açık iş (önce bunları bitir)
 1. **#577 K-979 İlerleme B** — inceleme + düzeltmeler tamam, auto-merge açık; CI bekliyordu. Birleşmediyse `gh pr checks 577`, kırmızıysa log → düzelt.
 2. **K-979 kardiyo kutusu takip PR'ı** — #577 birleşince: `mobile/442-progress-cardio-box`, İlerleme Cardio kutusu `/plus` → `/cardio` (tek satır + test). Açılmadıysa sen aç.
-3. **#582 K-976 Instagram Story** — inceleme bitti: engelleyici bulgu (modül seviyesinde import → native modülsüz dev build açılışta çöker) + `parseAppId` sayısal değil → undefined; düzeltme ajana gönderildi (lazy require, `ShareModuleMissing` → sistem sayfası). Push edilmiş mi bak (`gh pr view 582`); edilmediyse sen yap ve kısa doğrula. **Tur 4 bitmeden birleştirme** (simülatördeki dev build'de modül yok). Worktree `.claude/worktrees/agent-ac625ad58e6a98c17` içinde 838 MB gerçek node_modules var → iş bitince worktree'yi sil.
+3. **#582 K-976 Instagram Story** — engelleyici düzeltildi (`8a058d65`: lazy require + `ShareModuleMissing` → sistem sayfası, `parseAppId` yalnız sayısal, mock'suz başlangıç testi; worktree node_modules sembolik bağa döndü). Kalan: kısa doğrulama + Tur 4'ten sonra birleştir. Gizlilik sorusu: iOS pasteboard 5 dk, localOnly yok (Universal Clipboard).
 4. **K-910 (#581 birleşti, `Refs #412`)** — kart açık kalır; Kalın Metin'de doğrulama Tur 4 + K-984.
 5. Dependabot #547 (setup-node ara sürüm) beklemede (ADR-019 #6).
 
