@@ -9,6 +9,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiFunction;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
@@ -66,15 +67,15 @@ class Subscriptions {
     }
 
     /**
-     * RevenueCat's REST answer for an account that still exists, weighed as an event is (K-704): by its moment, so an answer
-     * older than the state never takes it back. Not an event: no id is recorded, and asking twice is the same as asking once.
+     * RevenueCat's REST answer for an account that still exists (K-704): weighed by its moment as an event is, and only ever
+     * extending access (SubscriptionState.afterAnswer). Not an event: no id is recorded, and asking twice is the same as once.
      */
     @Transactional
     void answered(AccountId account, SubscriptionState answer) {
         // The account may have been deleted since the ask began (the second deletion pass would remove a state written now, but
         // not writing it is simpler): only an account that is still ours is written.
         if (accounts.of(account.value().toString()).isPresent()) {
-            keep(account, answer);
+            keep(account, answer, SubscriptionState::afterAnswer);
         }
     }
 
@@ -86,11 +87,11 @@ class Subscriptions {
         if (first == 0) {
             return; // sent again: applied the first time
         }
-        keep(account, implied);
+        keep(account, implied, SubscriptionState::next);
     }
 
-    /** The account's state after {@code implied}: the first state, or the later of the two (SubscriptionState.next). */
-    private void keep(AccountId account, SubscriptionState implied) {
+    /** The account's state after {@code implied}: the first state, or what {@code order} makes of it and the state kept. */
+    private void keep(AccountId account, SubscriptionState implied, BiFunction<Optional<SubscriptionState>, SubscriptionState, SubscriptionState> order) {
         Optional<SubscriptionState> current = locked(account);
         if (current.isEmpty()) {
             // The account's first state; an event for it at the same moment may have made it first — then it is weighed below.
@@ -104,7 +105,7 @@ class Subscriptions {
             }
             current = locked(account);
         }
-        SubscriptionState next = SubscriptionState.next(current, implied);
+        SubscriptionState next = order.apply(current, implied);
         jdbc.sql("""
                         update subscription.subscription set status = :status, access_until = :until, last_event_at = :at
                         where account_id = :account""")

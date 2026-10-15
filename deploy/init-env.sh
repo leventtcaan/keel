@@ -13,7 +13,7 @@ read -rp "Sign in with Apple key ID: " key_id
 read -rp "Path to the Sign in with Apple .p8 file: " p8
 [[ -f $p8 ]] || { echo "no file at $p8" >&2; exit 1; }
 read -rsp "RevenueCat webhook secret (Enter: a random one until RevenueCat is set up): " revenuecat; echo
-read -rsp "RevenueCat secret API key, sk_... (Enter: none yet; the REST refresh and the customer's deletion stay off): " revenuecat_api; echo
+read -rsp "RevenueCat secret API key, sk_... (Enter: none yet; the REST refresh stays off and account deletions wait for it): " revenuecat_api; echo
 
 # Compose's .env reader cuts an unquoted value at " #" and expands "$": refuse what it would change, instead of a server
 # that quietly rejects every webhook (security review I8).

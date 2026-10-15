@@ -48,9 +48,13 @@ class RevenueCatRestTests {
     }
 
     private RevenueCatRest rest(String key) {
+        return rest(key, false);
+    }
+
+    private RevenueCatRest rest(String key, boolean production) {
         EgressGate egress = new EgressGate(null, new PrivacyProperties(Duration.ofMinutes(10), Duration.ofMinutes(1), Duration.ofMinutes(1),
                 Duration.ofMinutes(5), TIMEOUT));
-        return new RevenueCatRest(egress, new RevenueCatRestProperties(key, URI.create(revenueCat.uri() + "/v1/")));
+        return new RevenueCatRest(egress, new RevenueCatRestProperties(key, URI.create(revenueCat.uri() + "/v1/")), production);
     }
 
     @Test
@@ -170,6 +174,68 @@ class RevenueCatRestTests {
 
         assertThat(log.getAll()).contains("failure").doesNotContain(KEY).doesNotContain("Bearer");
         assertThat(properties.toString()).doesNotContain(KEY);
+    }
+
+    @Test
+    void aKeyPastedWithWhitespaceAroundItIsTrimmed() {
+        rest("  " + KEY + "\r\n").fetch(ACCOUNT);
+
+        assertThat(revenueCat.requests).singleElement().satisfies(request -> assertThat(request.authorization()).isEqualTo("Bearer " + KEY));
+    }
+
+    @Test
+    void aKeyWithANewlineInsideIsOurSetupErrorAndNothingOfItIsInAMessageOrTheLog(CapturedOutput log) {
+        String broken = "sk_part_one\nsk_part_two";
+        Throwable fetched = org.assertj.core.api.Assertions.catchThrowable(() -> rest(broken).fetch(ACCOUNT));
+        Throwable deleted = org.assertj.core.api.Assertions.catchThrowable(() -> rest(broken).delete(ACCOUNT));
+
+        for (Throwable failure : new Throwable[] {fetched, deleted}) {
+            assertThat(failure).isInstanceOfSatisfying(ApiException.class, e -> assertThat(e.code()).isEqualTo(ErrorCode.INTERNAL));
+            for (Throwable link = failure; link != null; link = link.getCause()) {
+                assertThat(String.valueOf(link.getMessage())).doesNotContain("sk_part").doesNotContain("Bearer");
+                assertThat(link.toString()).doesNotContain("sk_part");
+            }
+            SafeLog.failure(UUID.randomUUID(), ErrorCode.INTERNAL, failure);
+        }
+        assertThat(log.getAll()).contains("failure").doesNotContain("sk_part");
+        assertThat(revenueCat.requests).isEmpty();
+    }
+
+    @Test
+    void withNoKeyInProductionTheCustomersDeletionWaitsForOneNotCompletesAndReadingStaysOff() {
+        RevenueCatRest production = rest(null, true);
+
+        assertThatThrownBy(() -> production.delete(ACCOUNT)).isInstanceOfSatisfying(ApiException.class,
+                e -> assertThat(e.code()).isEqualTo(ErrorCode.SERVICE_UNAVAILABLE));
+        assertThat(production.fetch(ACCOUNT)).isEmpty();
+        assertThat(revenueCat.requests).isEmpty();
+    }
+
+    @Test
+    void withNoKeyOutsideProductionTheDeletionCompletesAsThereIsNothingToWaitFor() {
+        rest(null, false).delete(ACCOUNT);
+
+        assertThat(revenueCat.requests).isEmpty();
+    }
+
+    @Test
+    void withAKeyInProductionTheCustomerIsDeletedAsEverywhere() {
+        rest(KEY, true).delete(ACCOUNT);
+
+        assertThat(revenueCat.requests).singleElement().satisfies(request -> assertThat(request.method()).isEqualTo("DELETE"));
+    }
+
+    @Test
+    void theKeyTravelsOnlyOverHttpsOrToThisMachine() {
+        for (String refused : new String[] {"http://api.revenuecat.com/v1/", "ftp://api.revenuecat.com/v1/", "http://localhost.example.com/v1/",
+                "//api.revenuecat.com/v1/", "api.revenuecat.com/v1/"}) {
+            assertThatThrownBy(() -> new RevenueCatRestProperties(KEY, URI.create(refused))).as(refused).isInstanceOf(IllegalStateException.class)
+                    .hasMessageNotContaining(KEY);
+        }
+        for (String allowed : new String[] {"https://api.revenuecat.com/v1/", "http://localhost:8080/v1/", "http://127.0.0.1:8080/v1/",
+                "http://[::1]:8080/v1/"}) {
+            assertThat(new RevenueCatRestProperties(KEY, URI.create(allowed)).configured()).as(allowed).isTrue();
+        }
     }
 
     private static int count(String text, String part) {

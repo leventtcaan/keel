@@ -4,18 +4,25 @@ import app.keel.shared.AccountId;
 import app.keel.shared.RevenueCatSubscribers;
 import app.keel.shared.SafeLog;
 import java.lang.reflect.Method;
+import java.time.Clock;
+import java.time.Instant;
+import java.util.List;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 /**
  * After a webhook, the account's entitlement is read again from RevenueCat's REST API (K-704, ADR-056 Ek 3): what its webhook docs
  * recommend after every webhook, and the only way a TRANSFER's receiver gets an end date. The answer is weighed by its moment
- * (RevenueCatSubscriber, Subscriptions.answered), so it never takes the state back.
+ * and may only extend access (RevenueCatSubscriber, SubscriptionState.afterAnswer).
  *
- * <p>The refresh only adds to what the webhook did: whatever goes wrong with it (no key, RevenueCat not answering, an answer that
- * is not usable) leaves the webhook's result, and the webhook is answered 200 all the same — RevenueCat would only send the
- * event again for a state already applied. A failure is logged by type and place, never its message (V3, V5).
+ * <p>The refresh only adds to what the webhook did, and runs after the webhook has been answered, on its own thread: RevenueCat
+ * waits 60 seconds for a 200 and sends the event again otherwise, and a slow REST API must not turn into retries. Whatever goes
+ * wrong (no key, RevenueCat not answering, an answer that is not usable) leaves the webhook's result. A failure is logged by type
+ * and place, never its message (V3, V5).
  */
 @Service
+@EnableConfigurationProperties(RevenueCatRefreshProperties.class)
 class RevenueCatRefresh {
 
     /** The task a failure is logged under: SafeLog names a background task by its method. */
@@ -32,11 +39,31 @@ class RevenueCatRefresh {
     private final RevenueCatSubscribers revenueCat;
     private final Subscriptions subscriptions;
     private final RevenueCatProperties properties;
+    private final RevenueCatRefreshProperties budget;
+    private final Clock clock;
 
-    RevenueCatRefresh(RevenueCatSubscribers revenueCat, Subscriptions subscriptions, RevenueCatProperties properties) {
+    RevenueCatRefresh(RevenueCatSubscribers revenueCat, Subscriptions subscriptions, RevenueCatProperties properties,
+            RevenueCatRefreshProperties budget, Clock clock) {
         this.revenueCat = revenueCat;
         this.subscriptions = subscriptions;
         this.properties = properties;
+        this.budget = budget;
+        this.clock = clock;
+    }
+
+    /**
+     * The accounts one webhook concerned, asked about one after the other on a thread of their own (the caller does not wait):
+     * the first {@code maxAccounts} of them, and none once the deadline since the first ask has passed.
+     */
+    @Async
+    void afterWebhook(List<AccountId> accounts) {
+        Instant started = clock.instant();
+        for (AccountId account : accounts.stream().limit(budget.maxAccounts()).toList()) {
+            if (clock.instant().isAfter(started.plus(budget.deadline()))) {
+                return;
+            }
+            refresh(account);
+        }
     }
 
     /** Not in a transaction: the call out may take its timeout, and holds no lock while it does. */

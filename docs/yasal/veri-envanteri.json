@@ -1336,7 +1336,7 @@
   },
   {
    "recipient": "RevenueCat",
-   "data": "Your account's random id; the RevenueCat SDK also receives the App Store purchase record, store country and currency, device and iOS version, and IP address. [SDK data list from ADR-012 Ek 1; RevenueCat's privacy guide (4 Oct 2026) says it collects purchase history]. Our server also calls RevenueCat's REST API with only the account's random id and our secret key: it reads the subscriber after a subscription event, and when you delete your account it deletes your customer record there (K-704, ADR-056 Ek 3; closes M8 inventory gap 4). Nothing RevenueCat answers is kept beyond the subscription state. Both calls are off while no secret key is set.",
+   "data": "Your account's random id; the RevenueCat SDK also receives the App Store purchase record, store country and currency, device and iOS version, and IP address. [SDK data list from ADR-012 Ek 1; RevenueCat's privacy guide (4 Oct 2026) says it collects purchase history]. Our server also calls RevenueCat's REST API with only the account's random id and our secret key: it reads the subscriber after a subscription event, and when you delete your account it deletes your customer record there (K-704, ADR-056 Ek 3; M8 inventory gap 4, closed once the key is set). Nothing RevenueCat answers is kept beyond the subscription state. While no secret key is set the read is off and, in production, the customer's deletion stays pending and is retried until the key is set: the gap closes when the key is set, not before.",
    "when": "when the plans are shown (every new account after onboarding — K-706 gate), on restore and on manage subscription; after a subscription event (server); account deletion (server)",
    "basis": "contract",
    "active": true,

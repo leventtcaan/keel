@@ -26,5 +26,5 @@ Spring Boot 4.1 + Spring Modulith 2.1 modüler monolit, Java 25, Gradle 9 (Kotli
 - **Yerel çalıştırma** ayrıca oturum anahtarı ve RevenueCat imza sırrı ister (V5): `export KEEL_SESSION_SECRET=$(openssl rand -base64 32)`,
   `export KEEL_REVENUECAT_WEBHOOK_SECRET=$(openssl rand -hex 32)` (gerçeği RevenueCat panelinden, repoya girmez — ADR-056).
   Test değerleri `src/test/resources/config/application.yml`'da (gerçek sır değil).
-  RevenueCat **gizli API anahtarı** `KEEL_REVENUECAT_API_KEY` isteğe bağlı (K-704, ADR-056 Ek 3): yoksa REST tazelemesi ve hesap silinirken müşterinin silinmesi kapalı, başlangıçta tek uyarı.
+  RevenueCat **gizli API anahtarı** `KEEL_REVENUECAT_API_KEY` isteğe bağlı (K-704, ADR-056 Ek 3): yoksa REST tazelemesi kapalı (başlangıçta tek uyarı); hesap silinirken RevenueCat müşterisinin silinmesi üretimde anahtar girilene dek bekler (DeletionRetry yeniden dener), yerelde/testte tamamlanır. `base-uri` https olmalı.
 - Spesifikasyon testi `@Tag("pending")` ile başlar; görevi başlatan ilk iş etiketi kaldırmaktır. Satır silerek yeşile çevirmek yasak.

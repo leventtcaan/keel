@@ -122,6 +122,25 @@ class RevenueCatCustomerDeletionTests {
         await(() -> customerDeletionsPending(account), 0);
     }
 
+    @Test
+    void aCustomerALateRefreshMadeAfterTheDeletionIsDeletedByTheSecondPass() throws Exception {
+        AccountId account = subscribed();
+        delete(account);
+        await(() -> (int) deletesFor(account), 1);
+        REVENUECAT.requests.clear();
+        // A refresh already under way asks RevenueCat about the account once more; its GET makes a customer when there is none
+        // (docs: 201 "customer created"), which nothing would delete.
+        REVENUECAT.status = 201;
+        context.getBean(RevenueCatRest.class).fetch(account);
+        REVENUECAT.status = 200;
+
+        context.getBean(DeletionSweep.class).sweep(Instant.now().plus(Duration.ofDays(1)));
+
+        await(() -> (int) deletesFor(account), 1);
+        assertThat(REVENUECAT.requests.stream().filter(request -> request.path().equals("/v1/subscribers/" + account.value()))
+                .map(RevenueCatRestTests.Request::method).toList()).as("the late ask, then the second pass's delete").containsExactly("GET", "DELETE");
+    }
+
     private static void await(IntSupplier count, int expected) throws InterruptedException {
         Instant deadline = Instant.now().plus(PATIENCE);
         while (count.getAsInt() != expected && Instant.now().isBefore(deadline)) {

@@ -160,6 +160,11 @@ keel:
       entitlement: premium
       environments: [PRODUCTION, SANDBOX]
       max-body-bytes: 65536
+      # What one webhook may cause in REST asks (K-704): at most 10 accounts (a TRANSFER names a list), none started 30 seconds
+      # after the first (each ask is also cut off by keel.privacy.egress-timeout). The asks run after the webhook is answered.
+      refresh:
+        max-accounts: 10
+        deadline: 30s
   # Deletion (K-214, V6): failed module deletions are resent once a minute old, every 5 minutes; every module deletes
   # again 10 minutes after the DELETE, for a write already in flight (a request runs seconds, never minutes).
   privacy:
@@ -170,8 +175,8 @@ keel:
     # A call out through EgressGate (K-812: Apple's /auth/token and /auth/revoke) gives up after this long, connecting or answering.
     egress-timeout: 10s
     # RevenueCat's REST API v1 (K-704, ADR-056 Ek 3): read the subscriber after a webhook, delete the customer at account
-    # deletion. The secret API key from the environment (V5); not set (development, CI, beta before it is made) and both are off,
-    # with one warning at start. base-uri ends in a slash.
+    # deletion. The secret API key from the environment (V5); not set (development, CI, beta before it is made) and the read is
+    # off, with one warning at start; the delete waits for the key in production (RevenueCatRest). base-uri is https, ends in a slash.
     revenuecat:
       api-key: ${KEEL_REVENUECAT_API_KEY}
       base-uri: https://api.revenuecat.com/v1/

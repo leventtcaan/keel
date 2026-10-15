@@ -58,8 +58,9 @@ Once, on the Mac, after the first deploy:
 ## Secrets
 `/opt/keel/.env`, owner `keel`, mode 600. To change one, edit it on the server and `ssh keel-vps '/opt/keel/deploy/kc up -d'`.
 `KEEL_REVENUECAT_API_KEY` (K-704) is RevenueCat's **secret** API key (`sk_…`, dashboard: project, API keys; never the public SDK key).
-Empty or missing is allowed: the server then skips RevenueCat's REST API (the entitlement refresh after a webhook, and deleting the
-customer at account deletion) and writes one warning at start. Set it, restart, and both begin; `init-env.sh` writes it empty
+Empty or missing is allowed: the server then skips the entitlement refresh after a webhook and writes one warning at start. Deleting an
+account's RevenueCat customer **waits** for the key: each deletion keeps failing (an error line every 5 minutes) and is sent when the key is
+set and the server restarted, so set it before real users can delete accounts. Set it, restart, and both begin; `init-env.sh` writes it empty
 when it is not given, and it refuses to replace an existing file, so on a running server edit the line by hand.
 `KEEL_DB_PASSWORD` is the exception: PostgreSQL keeps the password it was created with — change it with
 `ALTER USER keel PASSWORD …` first, then in the file.

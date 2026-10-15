@@ -162,5 +162,32 @@ class RevenueCatSubscriberTests {
     @Test
     void anAnswerWithNoStateBeforeItIsTheFirstState() {
         assertThat(SubscriptionState.next(Optional.empty(), REST)).isEqualTo(REST);
+        assertThat(SubscriptionState.afterAnswer(Optional.empty(), REST)).isEqualTo(REST);
+    }
+
+    // ---- An answer only extends: ending or shortening access comes only from webhooks (ADR-056 Ek 3). ----
+
+    @Test
+    void anAnswerThatSaysEndedNeverShortensAccessAJustReceivedRenewalGave() {
+        SubscriptionState renewed = new SubscriptionState(Status.ACTIVE, MONTH, NOW.minusSeconds(1)); // the webhook's, REST lags behind it
+        SubscriptionState laggingEnded = new SubscriptionState(Status.EXPIRED, NOW.minus(Duration.ofDays(1)), NOW);
+        SubscriptionState laggingRefund = new SubscriptionState(Status.REFUNDED, NOW.minusSeconds(60), NOW);
+        SubscriptionState laggingShorter = new SubscriptionState(Status.ACTIVE, MONTH.minusSeconds(1), NOW);
+
+        for (SubscriptionState answer : new SubscriptionState[] {laggingEnded, laggingRefund, laggingShorter}) {
+            assertThat(SubscriptionState.afterAnswer(Optional.of(renewed), answer)).as(answer.status().name()).isEqualTo(renewed);
+        }
+    }
+
+    @Test
+    void anAnswerThatExtendsOrKeepsTheEndIsKeptByItsMoment() {
+        SubscriptionState current = new SubscriptionState(Status.ACTIVE, MONTH, NOW.minusSeconds(5));
+        SubscriptionState longer = new SubscriptionState(Status.ACTIVE, MONTH.plus(Duration.ofDays(30)), NOW);
+        SubscriptionState cancelledSameEnd = new SubscriptionState(Status.CANCELLED, MONTH, NOW);
+        SubscriptionState longerButOlder = new SubscriptionState(Status.ACTIVE, MONTH.plus(Duration.ofDays(30)), NOW.minusSeconds(60));
+
+        assertThat(SubscriptionState.afterAnswer(Optional.of(current), longer)).isEqualTo(longer);
+        assertThat(SubscriptionState.afterAnswer(Optional.of(current), cancelledSameEnd)).as("same end: the kind of state may change").isEqualTo(cancelledSameEnd);
+        assertThat(SubscriptionState.afterAnswer(Optional.of(current), longerButOlder)).as("still never from before the state").isEqualTo(current);
     }
 }

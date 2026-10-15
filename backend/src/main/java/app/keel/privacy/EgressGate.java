@@ -79,7 +79,13 @@ public class EgressGate {
         }
         HttpRequest.Builder request = HttpRequest.newBuilder(uri).timeout(timeout).header("Accept", "application/json")
                 .method(method, HttpRequest.BodyPublishers.noBody());
-        headers.forEach(request::header);
+        try {
+            headers.forEach(request::header);
+        } catch (IllegalArgumentException invalidHeader) {
+            // A header value the HTTP client refuses (a key with a newline in it): the JDK's message may quote the value, so it is
+            // dropped. This is our setup, not the other side's answer (V5).
+            throw new ApiException(ErrorCode.INTERNAL);
+        }
         return exchange(request.build());
     }
 

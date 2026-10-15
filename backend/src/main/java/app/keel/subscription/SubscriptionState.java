@@ -61,6 +61,18 @@ record SubscriptionState(Status status, Instant accessUntil, Instant lastEventAt
         return new SubscriptionState(Status.EXPIRED, at, at);
     }
 
+    /**
+     * The state after a REST answer (K-704, ADR-056 Ek 3): as after an event (by its moment), but an answer may only extend access,
+     * never shorten or end it. A REST answer can lag a webhook it was asked after (RevenueCat promises no consistency), and a
+     * lagging "ended" must not lock out a user who has just paid; ending access comes only from webhooks.
+     */
+    static SubscriptionState afterAnswer(Optional<SubscriptionState> current, SubscriptionState answer) {
+        if (current.isPresent() && answer.accessUntil().isBefore(current.get().accessUntil())) {
+            return current.get();
+        }
+        return next(current, answer);
+    }
+
     /** The state after an event's: the event's, unless it is older than the current state's (it never takes it back). */
     static SubscriptionState next(Optional<SubscriptionState> current, SubscriptionState implied) {
         return current.filter(state -> implied.lastEventAt().isBefore(state.lastEventAt())).orElse(implied);

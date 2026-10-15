@@ -128,16 +128,21 @@ Webhook sayfası her webhook'tan sonra `GET /subscribers` öneriyor (`.../integr
    (allowedDependencies değişmez); köprü `shared.RevenueCatSubscribers` (tek yöntem `fetch`). Dışarı yalnız hesabın opak UUID'si + gizli anahtar gider (V1/V2: sağlık verisi yok);
    privacy.md'nin RevenueCat'in aldığı veri listesi değişmez. Yeni bağımlılık yok (JDK `HttpClient`, Apple kalıbı).
 2. **Anahtar** `KEEL_REVENUECAT_API_KEY` → `keel.privacy.revenuecat.api-key` (V5; `deploy/env.example`, `init-env.sh`). **Yoksa ya da boşsa** tazeleme ve silme kapalı;
-   başlangıçta **tek** uyarı (`SafeLog.degraded`), çağrı başına yok. Üretimde zorunlu **değil** (Apple'ın tersine): Levent anahtarı girene kadar beta webhook'la çalışır.
-   Anahtar `toString`'de, istisnada, logda yok (SafeLog yalnız tür ve yer yazar; test).
+   başlangıçta **tek** uyarı (`SafeLog.degraded`), çağrı başına yok. Üretimde zorunlu **değil** (Apple'ın tersine): Levent anahtarı girene kadar beta webhook'la çalışır
+   (silme için bkz. #8). Anahtar `strip()` edilir; içinde satır sonu gibi başlıkta geçersiz karakter varsa çağrı INTERNAL ile düşer (JDK'nın değeri alıntılayan mesajı atılır).
+   Anahtar `toString`'de, istisnada, logda yok (SafeLog yalnız tür ve yer yazar; test). `base-uri` **https** olmalı (düz http yalnız localhost/127.0.0.1/[::1]); değilse sunucu başlamaz.
 3. **Zaman aşımı** `keel.privacy.egress-timeout` (10 sn, bağlanma + cevap), yönlendirme izlenmez (anahtar başka yere gitmez).
-4. **Tazeleme:** webhook işlendi ve **işlem kesinleşti**, sonra (işlem dışı, kilit tutmadan) `GET`; hesabın olayı yetkiyle ilgiliyse (`SubscriptionState.of` dolu, hesap bizim)
-   ya da TRANSFER'in `transferred_to`'su bizim hesapsa. Tazeleme yalnız **ekler**: her hata (anahtar yok, RevenueCat cevap vermiyor, cevap kullanılamaz) webhook sonucunu
-   bozmaz, cevap yine 200 (RevenueCat uygulanmış olayı boşuna yeniden gönderirdi); hata `SafeLog.backgroundFailure` ile (tür + yer, mesaj yok).
+4. **Tazeleme:** webhook işlendi ve **işlem kesinleşti**, sonra `GET`; hesabın olayı yetkiyle ilgiliyse (`SubscriptionState.of` dolu, hesap bizim)
+   ya da TRANSFER'in `transferred_to`'su bizim hesapsa. **İstek iş parçacığında koşmaz:** webhook 200 ile hemen cevaplanır (RevenueCat 60 sn bekler, aksi halde yeniden gönderir; yavaş bir REST
+   yeniden denemeye dönüşmesin), tazeleme `@Async` ayrı iş parçacığında, hesaplar sırayla. Bütçe `keel.subscription.revenuecat.refresh`: en çok `max-accounts: 10` hesap (TRANSFER liste taşır),
+   ilk soru başladıktan `deadline: 30s` sonra yeni soru başlamaz (her soru ayrıca egress zaman aşımıyla kesilir); dışarıda kalan hesap sonraki olayında yetişir.
+   Tazeleme yalnız **ekler**: her hata (anahtar yok, RevenueCat cevap vermiyor, cevap kullanılamaz) webhook sonucunu bozmaz; hata `SafeLog.backgroundFailure` ile (tür + yer, mesaj yok).
 5. **Sıra kuralı:** REST cevabının anı = `request_date_ms` (RevenueCat'in saati; webhook'un `event_timestamp_ms`'i ile aynı saat — bizim saatimiz değil). Cevap bir durum olarak
-   (`lastEventAt = request_date_ms`) **aynı `SubscriptionState.next`'ten** geçer (#7): durumdan kesinlikle eskiyse yok sayılır, eşit/yeniyse uygulanır. Yani REST durumu
-   geri götürmez; iki cevap ve olay hangi sırada gelirse gelsin en yeni an kazanır. Cevap anı yoksa/bozuksa hata (sıra bilinmeyen tahmin edilmez). Olay kimliği yazılmaz (cevap olay değil;
-   iki kez sormak bir kez sormaktır).
+   (`lastEventAt = request_date_ms`) **aynı `SubscriptionState.next`'ten** geçer (#7): durumdan kesinlikle eskiyse yok sayılır, eşit/yeniyse uygulanır. **Ayrıca yalnız uzatır
+   (`SubscriptionState.afterAnswer`):** cevabın `accessUntil`'i kayıtlı durumunkinden kısaysa cevap yok sayılır. Neden: REST bir webhook'tan sonra sorulsa da onu henüz yansıtmamış olabilir
+   (tutarlılık garantisi yazmıyor, #9 eski hali); damgası olaydan yeni ama içeriği geride bir "bitti" cevabı, az önce RENEWAL ile ödeyen kullanıcıyı dışarıda bırakırdı. Erişimi bitiren/kısaltan
+   yol yalnız webhook'tur (EXPIRATION, iade, TRANSFER). Aynı bitişle durum türü (örn. CANCELLED) değişebilir. Kaybı: kaçan bir bitiş webhook'u (RevenueCat 5 kez dener) REST'le düzelmez;
+   bitiş zaten `accessUntil` ile kendiliğinden gelir. Cevap anı yoksa/bozuksa hata (sıra bilinmeyen tahmin edilmez). Olay kimliği yazılmaz (cevap olay değil; iki kez sormak bir kez sormaktır).
 6. **Cevap → durum:** yapılandırılmış yetki yoksa, `expires_date` null ise, ya da yetkinin ürünü `subscriptions`'ta yoksa/`is_sandbox` yoksa/ortamı `environments`'ta değilse
    **hiçbir şey değişmez** (yetki yokluğu erişimi **almaz**: yanlış yetki adı herkesin erişimini bitirirdi; webhook'taki "ortam yoksa izinsiz" ile aynı). Varsa `accessUntil` =
    `expires_date` (ya da daha geç `grace_period_expires_date`); durum: `refunded_at` → REFUNDED (erişim o ana kadar), bitiş ≤ cevap anı → EXPIRED, `billing_issues_detected_at` → BILLING_ISSUE,
@@ -148,9 +153,15 @@ Webhook sayfası her webhook'tan sonra `GET /subscribers` öneriyor (`.../integr
    Düşen yayın olay kaydında kalır ve `DeletionRetry` (5 dk) başarana dek yeniden gönderir; silme tekrarı zararsız (200 ve 404 = silindi); `DeletionSweep` ikinci geçişi (10 dk) bir webhook
    tazelemesinin silmeden sonra yeniden yarattığı (GET 201 yaratır) müşteriyi de siler. 401 (anahtar reddedildi) kurulum hatası sayılır: INTERNAL, ERROR log, yine yeniden denenir.
    Alternatif — hata yut, logla geç: RevenueCat'te kişisel kayıt sessizce kalırdı; reddedildi. Alternatif — silmeyi RevenueCat'e bağlı kılmak: reddedildi (V6, verimizin silinmesi başkasına bağlı olamaz).
-9. **Kalan risk:** (c) maddesi. REST bir webhook'tan sonra henüz yansıtmamışsa ve cevabın anı olay anından yeniyse, cevap erişimi kısaltabilir; bir sonraki olay/cevap düzeltir. Beta'da
-   izlenir; sorun görülürse "cevap erişimi yalnız `request_date_ms` ile durumun anı arası X saniyeden uzaksa kısaltır" korkuluğu eklenir.
+   **Anahtar yokken:** telefonun RevenueCat SDK'sı müşteriyi sunucudaki anahtardan bağımsız yaratır; sessizce tamamlamak onu sonsuza dek bırakırdı. Bu yüzden **üretimde**
+   (`keel.production`) anahtar yoksa dinleyici **düşer** (SERVICE_UNAVAILABLE): silme "bekliyor" kalır, `DeletionRetry` her 5 dk yeniden gönderir (ERROR log = Levent'e anahtarı gir sinyali),
+   anahtar girilip sunucu yeniden başlayınca biter. Üretim dışında (yerel, CI) tamamlanır: beklenecek şey yok. Seçilmeyenler: ayrı "bekleyen silme" tablosu (şema + süpürücü, olay kaydı zaten
+   bunu yapıyor); üretimde anahtarı zorunlu tutup başlamamak (beta'da anahtarsız çalışma kabulünü bozar, Apple anahtarı gibi bir kapı daha). Bedel: anahtarsız betada her silme için 5 dk'da bir hata satırı.
+   Envanterdeki açık 4 bu yüzden **anahtar girilince** kapanır; o zamana dek üretimde bekleyen silmeler olarak izlenir.
+9. **Kalan risk:** (c) maddesi artık erişimi kısaltamaz (#5, yalnız uzatır); en kötü durum, geride kalan bir cevabın erişimi **uzatmaması** ve bir sonraki olaya kadar webhook'un sonucunun kalmasıdır.
 
 **Doğrulama:** `RevenueCatRestTests` (sahte HTTP: yol, Bearer, 200/201/404/401/429/5xx, zaman aşımı, yönlendirme, anahtar yok = istek yok + tek uyarı, anahtar logda yok),
-`RevenueCatSubscriberTests` (cevap → durum, sıra), `RevenueCatRefreshTests` (DB: webhook sonrası tazeleme, eski cevap geri götürmez, TRANSFER alıcısı, hata/anahtar yok = webhook sonucu + 200,
-silinmiş hesaba yazılmaz), `RevenueCatCustomerDeletionTests` (DB: müşteri silinir; RevenueCat çökükken kendi verimiz silinir, yayın kalır, yeniden denemeyle silinir), `SafeLogTests`, `tools/test_deploy.py`.
+`RevenueCatSubscriberTests` (cevap → durum, sıra, yalnız uzatma), `RevenueCatRefreshBudgetTests` (hesap sınırı, süre sınırı), `RevenueCatRefreshTests` (DB: webhook yavaş REST'i beklemeden cevaplanır,
+tazeleme sonradan iner, eski ya da "bitti" diyen cevap geri götürmez/kısaltmaz, TRANSFER alıcısı, hata/anahtar yok = webhook sonucu + 200, silinmiş hesaba yazılmaz),
+`RevenueCatCustomerDeletionTests` (DB: müşteri silinir; RevenueCat çökükken kendi verimiz silinir, yayın kalır, yeniden denemeyle silinir; silmeden sonra tazelemenin yarattığı müşteriyi ikinci geçiş siler),
+`RevenueCatRestTests` (anahtar yok: üretimde silme bekler, değilse tamamlanır; anahtar kırpılır, satır sonlu anahtar mesajda/logda yok; https şartı), `SafeLogTests`, `tools/test_deploy.py`.
