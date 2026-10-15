@@ -50,3 +50,12 @@ dosya. Kaynak 5. haftanın sinyallerini sayar ama birleştirme ağırlığı ver
 ## Sonuçlar
 - Kimlik modülü hesabın açılış anını dışarı açar (`Accounts`/okuyucu); decision bütçesi riskle büyür.
 - Açık: uygulama açılmaması sinyali (K-521), içerik metinlerinin son hâli (taslak, Levent onayı).
+
+## Ek 1 · Mola haftası tutarlılıkta duraklatılmış sayılır (K-1022, 2026-10-15, agent, teknik)
+Karar #4 ("merdivenin mola haftası da duraklatır", K-435) yalnız 1-8. haftanın riskini ve proaktif soruları kapsıyordu; tutarlılık yürüyüşü (`Consistency.walk`, K-111) mola haftasını
+hâlâ "planlı seanslar yapılmadı" diye kaçmış sayıyor, af hakkını yakıyor ya da seriyi bölüyordu. K-1016 ızgarası hücre hücre gösterince görünür oldu. Aynı kararın uygulanışı:
+- Motorun uyguladığı `REST_WEEK` (FullRestWeek → `training.program_change`) günü olan hafta, bildirilmiş durum (ADR-038) gibi duraklatılır: ne tutmuş ne kaçmış, seriyi bölmez, af hakkını yakmaz, `countedWeeks`e girmez.
+  Izgarada PAUSED. `record` ve `weeks[]` aynı yürüyüşten (`WeekLogs.restWeeks` haftayı `asPaused` yapar, yürüyüş değişmez).
+- Kaynak `TrainingStatusReader.breaks(...).rest()` (decision → training okuma yönü, ADR-015 değişmez); çağrı geri alınınca değişiklik satırı silindiği için o hafta mola sayılmaz (`TrainingCalls.undo`).
+- `LIGHTER_WEEK` değişmez: hafta yine istenmiştir, hafif de olsa sayılır.
+- Kapsam: yalnız tutarlılık (`/v1/consistency`, bu haftanın `paused` alanı, FirstWeeks takvimi). Kararın uyum penceresi (`WeekLogs.adherence`) bu Ek ile değişmez; mola haftasının orada nasıl sayıldığı ayrı bir soru.

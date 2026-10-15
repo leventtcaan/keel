@@ -3079,7 +3079,7 @@ export interface components {
             /** @description done over planned, rounded down; absent while nothing is planned. */
             percent?: number;
             /**
-             * @description Present (true) when a state was declared on a day of this week (K-516, ADR-038): the week is neither on track
+             * @description Present (true) when a state was declared on a day of this week (K-516, ADR-038) or the deload ladder set it off (K-1022): the week is neither on track
              *     nor missed, and the record leaves it out.
              */
             paused?: boolean;
@@ -3119,7 +3119,7 @@ export interface components {
              * @description ON_TRACK: at on_track_min_ratio of the plan or above. SPARE: a lone missed week after a week on track, which the
              *     run forgave (shown as "spare week", ADR-078 #2); it is still counted in the record, never taken back. MISSED: a
              *     miss that was not forgiven (the second in a row, or one with no run before it). PAUSED: neither a success nor a
-             *     miss, the record leaves it out: a day of it under a state the user declared (K-516).
+             *     miss, the record leaves it out: a day of it under a state the user declared (K-516), or the week off the deload ladder set (K-1022, ADR-040; a lighter week still counts).
              * @enum {string}
              */
             state: "ON_TRACK" | "SPARE" | "MISSED" | "PAUSED";

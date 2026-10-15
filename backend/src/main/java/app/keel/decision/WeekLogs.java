@@ -15,6 +15,7 @@ import app.keel.nutrition.MealTotals;
 import app.keel.profile.ProfileFacts;
 import app.keel.shared.AccountId;
 import app.keel.training.TrainingLog;
+import app.keel.training.TrainingStatusReader;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -46,8 +47,11 @@ class WeekLogs {
     private final CallStore calls;
     private final StateStore states;
     private final PlannedSessions planned;
+    private final TrainingStatusReader statuses;
 
-    WeekLogs(TrainingLog training, Measurements measurements, MealTotals meals, CallStore calls, StateStore states, PlannedSessions planned) {
+    WeekLogs(TrainingLog training, Measurements measurements, MealTotals meals, CallStore calls, StateStore states, PlannedSessions planned,
+            TrainingStatusReader statuses) {
+        this.statuses = statuses;
         this.planned = planned;
         this.states = states;
         this.calls = calls;
@@ -86,10 +90,10 @@ class WeekLogs {
         LocalDate monday = today.with(TemporalAdjusters.previousOrSame(Consistency.WEEK_STARTS_ON));
         WeekTallies.Logs logs = logs(account, profile, over.isEmpty() ? monday : over.getFirst(), today, bodyweight);
         WeekTallies.Plan asked = asked(account, profile, plan, bodyweight, ageYears, parameters);
-        List<WeekTally> weeksOver = paused(account, WeekTallies.of(over, logs, asked), today);
+        List<WeekTally> weeksOver = restWeeks(account, paused(account, WeekTallies.of(over, logs, asked), today));
         Consistency.Walked walked = Consistency.walked(weeksOver, parameters);
-        return new Now(paused(account, List.of(WeekTallies.thisWeek(today, logs, asked)), today).getFirst(), walked.record(), walked.weeks(),
-                weeksOver);
+        WeekTally thisWeek = restWeeks(account, paused(account, List.of(WeekTallies.thisWeek(today, logs, asked)), today)).getFirst();
+        return new Now(thisWeek, walked.record(), walked.weeks(), weeksOver);
     }
 
     /**
@@ -119,9 +123,21 @@ class WeekLogs {
         if (weeks.isEmpty()) {
             return weeks;
         }
-        Set<LocalDate> declared = states.days(account, weeks.getFirst().weekStart(), today);
-        return weeks.stream().map(week -> week.weekStart().datesUntil(week.weekStart().plusWeeks(1)).anyMatch(declared::contains) ? week.asPaused() : week)
-                .toList();
+        return WeekTallies.pausedOn(weeks, states.days(account, weeks.getFirst().weekStart(), today));
+    }
+
+    /**
+     * The weeks the deload ladder set a week off in, paused too (K-1022, ADR-040, K-435: a week of rest is part of the plan,
+     * neither a success nor a miss; it splits no run and uses no spare week). Read from the applied changes, so a week off the
+     * user undid is not one. A lighter week is still a week asked, and counts as it did. Consistency only: the call's
+     * adherence window reads {@link #paused} as before.
+     */
+    private List<WeekTally> restWeeks(AccountId account, List<WeekTally> weeks) {
+        if (weeks.isEmpty()) {
+            return weeks;
+        }
+        LocalDate last = weeks.getLast().weekStart().plusDays(DAYS_PER_WEEK - 1L);
+        return WeekTallies.pausedOn(weeks, statuses.breaks(account, weeks.getFirst().weekStart(), last).rest());
     }
 
     // The modules' logs from one day to another, on the user's calendar. Protein is judged only against a bodyweight.
