@@ -34,16 +34,16 @@ test('written as a PNG, handed to the sheet, then removed', async () => {
 
   await shareCardImage('iVBORw0KGgo=', d);
 
-  expect(d.saved).toEqual([['keel-sticker.png', 'iVBORw0KGgo=']]);
-  expect(d.share).toHaveBeenCalledWith('file:///cache/keel-sticker.png');
-  expect(d.removed).toEqual(['keel-sticker.png']);
+  expect(d.saved).toEqual([['next-call-sticker.png', 'iVBORw0KGgo=']]);
+  expect(d.share).toHaveBeenCalledWith('file:///cache/next-call-sticker.png');
+  expect(d.removed).toEqual(['next-call-sticker.png']);
 });
 
 test('removed even when the sheet fails; the failure still reaches the screen', async () => {
   const d = deps(true);
 
   await expect(shareCardImage('iVBORw0KGgo=', d)).rejects.toMatchObject({ name: 'ShareFailed' });
-  expect(d.removed).toEqual(['keel-sticker.png']);
+  expect(d.removed).toEqual(['next-call-sticker.png']);
 });
 
 test('a file that cannot be removed is reported by name; the share is not a failure', async () => {
@@ -79,7 +79,7 @@ test('removed even when the file could not be written whole; the failure still r
 
   await expect(shareCardImage('iVBORw0KGgo=', d)).rejects.toMatchObject({ name: 'WriteFailed' });
   expect(d.share).not.toHaveBeenCalled();
-  expect(d.removed).toEqual(['keel-sticker.png']);
+  expect(d.removed).toEqual(['next-call-sticker.png']);
 });
 
 test('a sheet closed without sharing is not a failure, and the file goes all the same', async () => {
@@ -87,6 +87,6 @@ test('a sheet closed without sharing is not a failure, and the file goes all the
   d.share.mockResolvedValueOnce(undefined);
 
   await expect(shareCardImage('iVBORw0KGgo=', d)).resolves.toBeUndefined();
-  expect(d.removed).toEqual(['keel-sticker.png']);
+  expect(d.removed).toEqual(['next-call-sticker.png']);
   expect(d.report).not.toHaveBeenCalled();
 });

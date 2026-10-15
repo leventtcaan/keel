@@ -31,7 +31,7 @@ type Deps = {
   report?(problem: { name: string }): void;
 };
 
-const FILE = 'keel-story-sticker.png';
+const FILE = 'next-call-story-sticker.png';
 /** The library rejects with this text when the user closes the share without finishing (react-native-share, index.tsx). */
 const CLOSED = /user did not share/i;
 

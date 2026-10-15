@@ -32,9 +32,9 @@ test('the export is written as a dated JSON file, shared, then removed from the 
   const { deps, files, shared } = setup(json(200, EXPORT));
   await exportAccount(deps);
   expect(files).toHaveLength(1);
-  expect(files[0].name).toBe('keel-export-2026-09-30.json');
+  expect(files[0].name).toBe('next-call-export-2026-09-30.json');
   expect(JSON.parse(files[0].content)).toEqual(EXPORT);
-  expect(shared).toEqual(['file:///cache/keel-export-2026-09-30.json']);
+  expect(shared).toEqual(['file:///cache/next-call-export-2026-09-30.json']);
   expect(files[0].removed).toBe(true);
 });
 

@@ -19,7 +19,7 @@ type Deps = {
   report?(problem: { name: string }): void;
 };
 
-const FILE = 'keel-sticker.png';
+const FILE = 'next-call-sticker.png';
 
 /**
  * Writes the image to a cache file, runs `job` with the file's uri, and removes the file whatever happened (done, closed

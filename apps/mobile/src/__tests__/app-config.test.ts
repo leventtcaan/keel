@@ -55,8 +55,33 @@ test('Instagram Stories (K-976): the app may ask whether Instagram is there, by 
 });
 
 test('everything else in app.json is kept', () => {
-  expect(config.name).toBe(base.expo.name);
+  expect(config.slug).toBe(base.expo.slug);
   expect(config.ios?.usesAppleSignIn).toBe(true);
+});
+
+describe('release identity (K-1033, ADR-080 Ek 2)', () => {
+  test("the name under the icon is the copy file's product name; the slug and the bundle id stay (they are identifiers, not the name)", () => {
+    expect(config.name).toBe(t('app.name'));
+    expect(config.name).toBe('Next Call');
+    expect(config.slug).toBe('keel');
+    expect(config.ios?.bundleIdentifier).toBe('dev.leventtcaan.keel');
+  });
+
+  test('the first release is 1.0.0, and the app uses only standard encryption (HTTPS, hashing): export compliance is answered in the build', () => {
+    expect(config.version).toBe('1.0.0');
+    // expo's config plugin writes this as ITSAppUsesNonExemptEncryption in Info.plist.
+    expect(config.ios?.config?.usesNonExemptEncryption).toBe(false);
+  });
+
+  test('a store build carries no developer tools: only the development profiles are dev clients', () => {
+    const eas = require('../../eas.json') as { build: Record<string, { developmentClient?: boolean; extends?: string }> };
+    expect(eas.build.production.developmentClient).toBeUndefined();
+    expect(eas.build.production.extends).toBeUndefined();
+  });
+
+  test('no copy text names the product by its old working name', () => {
+    expect(JSON.stringify(require('../../../../data/copy/en.json'))).not.toMatch(/\bkeel\b/i);
+  });
 });
 
 describe('builds (K-308)', () => {
