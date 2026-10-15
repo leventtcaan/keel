@@ -137,12 +137,106 @@ class StateModeTests {
 
     @Test
     void sicknessAndPainAreHealthDataSoTheStateNeedsTheConsent() {
-        AccountId account = TestSessions.newAccount();
-        profile(account);
-        for (String method : List.of("GET", "PUT", "DELETE")) {
-            assertThat(send(account, method, "PUT".equals(method) ? Map.of("kind", "SICK") : null)).as(method).hasStatus(403)
+        // K-1021 (ADR-077 Ek 6; Levent 14 Oct): the consent is by what the state is. Nothing is kept, and the refusal says why.
+        for (String kind : List.of("SICK", "PAIN")) {
+            AccountId account = unconsented();
+            assertThat(send(account, "PUT", Map.of("kind", kind))).as(kind).hasStatus(403)
                     .bodyJson().extractingPath("$.code").isEqualTo("CONSENT_REQUIRED");
+            assertThat(states(account)).as(kind + " kept nothing").isEmpty();
+            assertThat(send(account, "PUT", Map.of("kind", kind, "days", 3))).as(kind + " with days").hasStatus(403);
         }
+    }
+
+    @Test
+    void travelingABusyWeekAndANewGymAreCalendarFactsSavedWithoutTheConsent() throws Exception {
+        for (String kind : List.of("TRAVELING", "BUSY", "NEW_GYM")) {
+            AccountId account = unconsented();
+
+            MvcTestResult declared = send(account, "PUT", Map.of("kind", kind));
+            assertThat(declared).as(kind).hasStatusOk();
+            assertThat(read(declared)).as(kind).containsEntry("kind", kind).containsEntry("since", today().toString());
+            assertThat(states(account)).as(kind).containsExactly(List.of(kind, today().toString(), "open"));
+
+            // The user reads and ends their own: no consent is asked for what needed none to be saved.
+            assertThat(read(send(account, "GET", null))).as(kind).containsEntry("kind", kind);
+            assertThat(send(account, "DELETE", null)).as(kind).hasStatus(204);
+            assertThat(send(account, "GET", null)).as(kind).hasStatus(404);
+        }
+    }
+
+    @Test
+    void withoutTheConsentNothingHealthIsReadAndNothingIsToEndWhenNothingIsKept() {
+        AccountId account = unconsented();
+        assertThat(send(account, "GET", null)).hasStatus(404);
+        assertThat(send(account, "DELETE", null)).hasStatus(204);
+    }
+
+    @Test
+    void aHealthStateKeptWithoutTheConsentIsNotShown() {
+        // Not a state the API makes (the withdrawal deletes it); if one is found all the same, it is not read out.
+        AccountId account = unconsented();
+        jdbc.sql("""
+                insert into decision.declared_state (id, account_id, kind, starts_on, ends_on, created_at)
+                values (:id, :account, 'SICK', :today, null, now())""")
+                .param("id", UUID.randomUUID()).param("account", account.value()).param("today", today()).update();
+
+        assertThat(send(account, "GET", null)).hasStatus(403).bodyJson().extractingPath("$.code").isEqualTo("CONSENT_REQUIRED");
+    }
+
+    @Test
+    void daysCountedWithTodayGiveTheLastDayOnTheUsersCalendar() throws Exception {
+        // 3 days from today are today, tomorrow and the day after: the last day is today + 2. Kiritimati is a day ahead of UTC.
+        for (int days : List.of(3, 7)) {
+            AccountId account = unconsented();
+
+            Map<String, Object> declared = read(send(account, "PUT", Map.of("kind", "TRAVELING", "days", days)));
+
+            assertThat(declared).as(days + " days").containsEntry("since", today().toString()).containsEntry("until", today().plusDays(days - 1).toString());
+            assertThat(states(account)).containsExactly(List.of("TRAVELING", today().toString(), today().plusDays(days - 1).toString()));
+        }
+    }
+
+    @Test
+    void daysAndALastDayTogetherAreRefusedAndSoIsALengthNotOffered() {
+        AccountId account = ready();
+        String until = today().plusDays(2).toString();
+        assertThat(send(account, "PUT", Map.of("kind", "TRAVELING", "days", 3, "until", until))).as("days and until").hasStatus(400);
+        for (int days : List.of(14, 0, -3, 1, 4, 30)) {
+            assertThat(send(account, "PUT", Map.of("kind", "TRAVELING", "days", days))).as("days " + days).hasStatus(400);
+        }
+        assertThat(states(account)).as("a refusal changes nothing").isEmpty();
+    }
+
+    @Test
+    void withdrawingTheConsentDeletesSicknessAndPainAndLeavesTheCalendarFacts() throws Exception {
+        AccountId sick = ready();
+        send(sick, "PUT", Map.of("kind", "SICK"));
+        AccountId traveling = ready();
+        send(traveling, "PUT", Map.of("kind", "TRAVELING", "days", 7));
+
+        withdrawHealthData(sick);
+        withdrawHealthData(traveling);
+
+        assertThat(states(sick)).as("sickness is health data: gone with the consent").isEmpty();
+        assertThat(send(sick, "GET", null)).hasStatus(404);
+        assertThat(states(traveling)).as("a trip is not health data: it stays").hasSize(1);
+        assertThat(read(send(traveling, "GET", null))).containsEntry("kind", "TRAVELING");
+    }
+
+    @Test
+    void anAccountDeletedTakesEveryStateWithIt() throws Exception {
+        // What the withdrawal leaves (a trip) is the account's all the same: the deletion removes it too.
+        AccountId account = unconsented();
+        send(account, "PUT", Map.of("kind", "BUSY"));
+        assertThat(states(account)).hasSize(1);
+
+        assertThat(mvc.delete().uri("/v1/account").header("Authorization", TestSessions.bearer(context, account)).exchange()).hasStatus(202);
+
+        long deadline = System.currentTimeMillis() + 30_000;
+        while (!states(account).isEmpty() && System.currentTimeMillis() < deadline) {
+            Thread.sleep(100);
+        }
+        assertThat(states(account)).isEmpty();
     }
 
     @Test
@@ -388,6 +482,18 @@ class StateModeTests {
                 .param("a", account.value()).param("kind", kind)
                 // A null day is the answer here: read as a row, not as a required value.
                 .query((row, n) -> java.util.Optional.ofNullable(row.getObject(1, LocalDate.class))).single().orElse(null);
+    }
+
+    /** A user in Kiritimati with a profile and no consent. */
+    private AccountId unconsented() {
+        AccountId account = TestSessions.newAccount();
+        profile(account);
+        return account;
+    }
+
+    private void withdrawHealthData(AccountId account) {
+        assertThat(mvc.delete().uri("/v1/consents/HEALTH_DATA?confirmDataDeletion=true").header("Authorization", TestSessions.bearer(context, account))
+                .exchange()).hasStatusOk();
     }
 
     /** A user in Kiritimati, with the consent and a profile. */

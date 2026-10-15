@@ -3,9 +3,11 @@ package app.keel.decision;
 import app.keel.shared.AccountDataExport;
 import app.keel.consent.ConsentKind;
 import app.keel.consent.ConsentWithdrawn;
+import app.keel.engine.DeclaredContext;
 import app.keel.shared.AccountDeletionRequested;
 import app.keel.shared.AccountId;
 import app.keel.training.TrainingCalls;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.context.event.EventListener;
@@ -39,7 +41,8 @@ class DecisionAccountData implements AccountDataExport {
 
     @ApplicationModuleListener
     void on(AccountDeletionRequested deletion) {
-        delete(deletion.account());
+        deleteHealthData(deletion.account());
+        deleteCalendarFacts(deletion.account());
     }
 
     /**
@@ -47,20 +50,29 @@ class DecisionAccountData implements AccountDataExport {
      * transaction. A safety hold goes with the calls it was read from, as on account deletion; the engine starts again
      * from no data (its own observation and questions). A load the calls held on the program is no longer held: no call
      * is left to end it (K-428, ADR-037 #34); the rest of the program is training data and stays (ADR-007).
+     *
+     * <p>Of the states the user declared, sickness and pain go (health data); traveling, a busy week and a new gym are calendar
+     * facts, saved without the consent (K-1021, ADR-077 Ek 6), and stay.
      */
     @EventListener
     void on(ConsentWithdrawn withdrawn) {
         if (withdrawn.kind() == ConsentKind.HEALTH_DATA) {
-            delete(withdrawn.account());
+            deleteHealthData(withdrawn.account());
             training.endHold(withdrawn.account());
         }
     }
 
-    private void delete(AccountId account) {
+    private void deleteHealthData(AccountId account) {
         jdbc.sql("delete from decision.weekly_call where account_id = :account").param("account", account.value()).update();
         jdbc.sql("delete from decision.plan where account_id = :account").param("account", account.value()).update();
-        jdbc.sql("delete from decision.declared_state where account_id = :account").param("account", account.value()).update();
+        jdbc.sql("delete from decision.declared_state where account_id = :account and kind in (:health)").param("account", account.value())
+                .param("health", Arrays.stream(DeclaredContext.values()).filter(DeclaredContext::isHealthData).map(Enum::name).toList()).update();
         jdbc.sql("delete from decision.prompt_answer where account_id = :account").param("account", account.value()).update();
+    }
+
+    /** What a withdrawal leaves (the states that are no health data) goes with the account all the same. */
+    private void deleteCalendarFacts(AccountId account) {
+        jdbc.sql("delete from decision.declared_state where account_id = :account").param("account", account.value()).update();
     }
 
     @Override

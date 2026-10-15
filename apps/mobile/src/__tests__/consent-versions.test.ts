@@ -45,7 +45,18 @@ test('the health data text classes data as the code does: the training log is no
   expect(opening).not.toMatch(/training/i);
   expect(t('consent.health_data.body')).toMatch(/training log[^.]*(isn't|is not) health data/i);
   // A new text is a new version (GDPR Art. 7(1)); no longer a draft (ADR-059 #1).
-  expect(consentVersion('HEALTH_DATA')).toBe('3');
+  expect(consentVersion('HEALTH_DATA')).toBe('4');
+});
+
+test('the health data text: sick and pain are health data, traveling, a busy week and a new gym are not and stay (K-1021, version 4)', () => {
+  const body = t('consent.health_data.body');
+  // Version 3 listed "away" among the health data and said everything above is deleted; neither is true any more.
+  expect(body).not.toMatch(/\baway\b/i);
+  expect(body).toMatch(/sick or in pain/i);
+  expect(body).toMatch(/traveling[^.]*busy week[^.]*new gym[^.]*(isn't|aren't|is not|are not) health data/i);
+  expect(body).toMatch(/if you withdraw[^.]*stays[^.]*account/i);
+  // A new text is a new version (GDPR Art. 7(1)): a yes to version 3 is asked again.
+  expect(consentVersion('HEALTH_DATA')).toBe('4');
 });
 
 function server(status = 200) {

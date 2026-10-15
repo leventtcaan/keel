@@ -1042,7 +1042,8 @@
    "policy": "data-health",
    "app_privacy": [
     "Health & Fitness › Health"
-   ]
+   ],
+   "note": "Only sick and pain rows are health data (K-1021, ADR-077 Ek 6): they need the HEALTH_DATA consent and go with its withdrawal. Traveling, busy and new gym rows are saved without the consent and stay when it is withdrawn; they go with the account."
   },
   {
    "table": "decision.prompt_answer",
