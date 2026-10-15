@@ -115,3 +115,12 @@ test('the consent text is there to read before anything is given', async () => {
   await press(t('health.jit.read'));
   expect(screen.getByText(t('consent.apple_health.body'))).toBeOnTheScreen();
 });
+
+test.each(['steps', 'sleep', 'weight', 'active energy', 'workouts'])(
+  'the card names what the consent reads, in the consent\'s words: %s (review of K-980)',
+  async (what) => {
+    expect(t('consent.apple_health.body').toLowerCase()).toContain(what);
+    await show();
+    expect(screen.getByText(t('health.jit.reads')).props.children.toLowerCase()).toContain(what);
+  },
+);

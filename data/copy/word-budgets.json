@@ -764,10 +764,11 @@
       "note": "The first view is the entry before the trend is ready (the user's first seven weigh-ins): the number with its unit, 'Last: 80.4 kg', when the trend starts, Save. The faces are the entry with the trend drawn (its title, the two range chips, the short early note), the weigh-in just saved (what was kept, when the trend starts, Undo, Done) and the consent (its title and text are legal lines, off the first view, ADR-072 #9). The unit after the number and in 'Last' is the one word the phone writes (kg or lb); the plus and minus buttons are spoken, not read. Apple Health under the first weigh-in is its own screen, health-jit.",
       "file": "src/app/weigh-in.tsx",
       "parts": ["src/weighIn/ScaleRow.tsx"],
-      "keys": ["weighIn.title", "weighIn.last", "weighIn.trendSoon", "weighIn.save"],
+      "keys": ["weighIn.title", ["weighIn.last", "weighIn.lastOn"], "weighIn.trendSoon", "weighIn.save"],
       "dynamic": [
         { "what": "the unit after the number (kg or lb)", "words": 1 },
-        { "what": "the unit in the last weight (80.4 kg)", "words": 1 }
+        { "what": "the unit in the last weight (80.4 kg)", "words": 1 },
+        { "what": "the month in the date of the last weigh-in (Oct 14), left out for today's", "words": 1 }
       ],
       "notFirstView": [
         "weighIn.label",
@@ -777,6 +778,7 @@
         "weighIn.undoLabel",
         "weighIn.undoneSaid",
         "weighIn.undoFailed",
+        "weighIn.undoOffline",
         "weighIn.consent.failed",
         "consent.health_data.title",
         "consent.health_data.body"
@@ -786,7 +788,7 @@
           "face": "trend ready",
           "keys": [
             "weighIn.title",
-            "weighIn.last",
+            ["weighIn.last", "weighIn.lastOn"],
             ["weighIn.chart.title", "weighIn.chart.yearTitle"],
             "weighIn.chart.weeks",
             "weighIn.chart.year",
@@ -795,7 +797,17 @@
           ],
           "dynamic": [
             { "what": "the unit after the number (kg or lb)", "words": 1 },
-            { "what": "the unit in the last weight (80.4 kg)", "words": 1 }
+            { "what": "the unit in the last weight (80.4 kg)", "words": 1 },
+            { "what": "the month in the date of the last weigh-in (Oct 14)", "words": 1 }
+          ]
+        },
+        {
+          "face": "taken back, Apple Health copy stays",
+          "keys": ["weighIn.title", ["weighIn.last", "weighIn.lastOn"], "weighIn.undoneHealth", "weighIn.save"],
+          "dynamic": [
+            { "what": "the unit after the number (kg or lb)", "words": 1 },
+            { "what": "the unit in the last weight (80.4 kg)", "words": 1 },
+            { "what": "the month in the date of the last weigh-in (Oct 14)", "words": 1 }
           ]
         },
         {

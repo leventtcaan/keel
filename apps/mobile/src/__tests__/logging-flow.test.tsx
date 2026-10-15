@@ -64,7 +64,7 @@ const mockServices = {
       removeItemAsync: async (key: string) => void kept.delete(key),
     },
   }),
-  healthWriting: { weighInSaved: jest.fn(async () => {}) },
+  healthWriting: { weighInSaved: jest.fn(async () => {}), shown: jest.fn(() => 'off') },
   report: jest.fn(),
 };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => 'METRIC' }));

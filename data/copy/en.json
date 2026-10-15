@@ -1186,7 +1186,7 @@
   "health": {
     "jit": {
       "title": "Use Apple Health?",
-      "reads": "Reads weight, steps and workouts",
+      "reads": "Reads steps, sleep, weight, active energy and workouts",
       "writes": "Writes weigh-ins back, if you allow",
       "continue": "Continue",
       "notNow": "Not now",
@@ -1199,6 +1199,7 @@
     "title": "Weigh-in",
     "label": "Weight ({unit})",
     "last": "Last: {value}",
+    "lastOn": "Last: {value}, {date}",
     "trendSoon": "Trend starts after {count} weigh-ins.",
     "minus": "Lower by {step} {unit}",
     "plus": "Raise by {step} {unit}",
@@ -1208,7 +1209,9 @@
     "undo": "Undo",
     "undoLabel": "Take back this weigh-in",
     "undoneSaid": "Weigh-in taken back.",
-    "undoFailed": "Couldn't take it back. Check your connection and try again.",
+    "undoFailed": "Couldn't take it back. Try again.",
+    "undoOffline": "You're offline. Take it back once you're online.",
+    "undoneHealth": "Taken back. Your Apple Health copy stays.",
     "done": "Done",
     "invalid": "That doesn't look like a weight. Check the number.",
     "saveFailed": "Couldn't save it on this phone. Try again.",
@@ -1224,7 +1227,7 @@
       "year": "Year",
       "spoken": "Weigh-ins faint, the 7-day trend in bold"
     },
-    "earlyNote": "Early days; the line settles."
+    "earlyNote": "The line is settling."
   },
   "ledger": {
     "title": "Your calls",

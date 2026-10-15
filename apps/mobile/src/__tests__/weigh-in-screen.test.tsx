@@ -12,7 +12,12 @@ import type { components } from '@/api/schema';
 import WeighInScreen from '@/app/weigh-in';
 import { t } from '@/copy';
 import { createHealthAsk } from '@/health/justInTime';
+import { NoAnswer, type SendResult, createSyncQueue } from '@/sync/queue';
+import { openRecordStore } from '@/sync/store';
+import { createTakeBack } from '@/sync/takeBack';
 import { ThemeProvider } from '@/theme/theme';
+
+import { nodeSqlite } from './support/nodeSqlite';
 
 type Schemas = components['schemas'];
 type Answer = { data?: unknown; error?: { code: string; message: string }; response: Response };
@@ -22,6 +27,7 @@ let mockGranted = true;
 let mockUnits: 'METRIC' | 'IMPERIAL' = 'METRIC';
 let mockAnswers: Record<string, Answer> = {};
 let mockHealthAvailable = false;
+let mockHealthWrite: 'off' | 'on' | 'refused' = 'off';
 const mockBack = jest.fn();
 const mockKept = new Map<string, string>();
 const mockRequestRead = jest.fn(async () => {});
@@ -46,7 +52,7 @@ const mockServices = {
   },
   report: jest.fn(),
   // Apple Health writing (K-412): the switch decides inside; the screen only says a weigh-in was typed.
-  healthWriting: { weighInSaved: jest.fn(async (_weighIn: unknown) => {}) },
+  healthWriting: { weighInSaved: jest.fn(async (_weighIn: unknown) => {}), shown: jest.fn((_which: string) => mockHealthWrite) },
   // Apple Health asked under the first weigh-in (K-980): off in the tests that are not about it.
   get health() {
     return { available: mockHealthAvailable, requestRead: mockRequestRead };
@@ -92,10 +98,13 @@ beforeEach(() => {
   mockUnits = 'METRIC';
   mockAnswers = {};
   mockHealthAvailable = false;
+  mockHealthWrite = 'off';
   mockKept.clear();
 });
 
-const LAST: Schemas['WeighIn'] = { id: 'w0', clientId: 'w0', measuredAt: '2026-09-30T05:00:00Z', kg: 80.4, source: 'MANUAL' };
+// The day before the fake today (1 Oct 2026, 05:30Z), at midday so the phone's calendar agrees in any zone.
+const LAST: Schemas['WeighIn'] = { id: 'w0', clientId: 'w0', measuredAt: '2026-09-30T12:00:00Z', kg: 80.4, source: 'MANUAL' };
+const lastLine = (value = '80.4') => t('weighIn.lastOn', { value: t('units.kg', { value }), date: 'Sep 30' });
 /** The server's word on the weigh screen's "Last" and on whether the trend is shown (K-1018). */
 const summary = (over: Partial<Schemas['WeighInSummary']> = {}): Answer =>
   ok({ last: LAST, weighInCount: 3, trendMinWeighIns: 7, trendReady: false, ...over });
@@ -153,7 +162,21 @@ describe('the last weight filled in, and a tenth at a time (K-980, ADR-018 Ek 1:
     mockAnswers = { '/v1/weigh-ins/summary': summary() };
     await show();
     expect(field()).toBe('80.4');
+    expect(screen.getByText(lastLine())).toBeOnTheScreen();
+  });
+
+  test('today\'s weigh-in is "Last" without a date', async () => {
+    mockAnswers = { '/v1/weigh-ins/summary': summary({ last: { ...LAST, measuredAt: '2026-10-01T05:00:00Z' } }) };
+    await show();
     expect(screen.getByText(t('weighIn.last', { value: t('units.kg', { value: '80.4' }) }))).toBeOnTheScreen();
+  });
+
+  test('a weigh-in brought in from before is shown, with its date, and nothing is filled in', async () => {
+    mockAnswers = { '/v1/weigh-ins/summary': summary({ last: { ...LAST, source: 'IMPORT' } }) };
+    await show();
+    expect(screen.getByText(lastLine())).toBeOnTheScreen();
+    expect(field()).toBe('');
+    expect(screen.getByRole('button', { name: t('weighIn.plus', { step: '0.1', unit: t('units.kgSpoken') }) })).toBeDisabled();
   });
 
   test('in pounds: the last weigh-in in the user\'s unit', async () => {
@@ -312,14 +335,89 @@ describe('taken back from the screen it was saved on (K-980)', () => {
     expect(ids[0]).not.toBe(ids[1]);
   });
 
-  test('Undo with no way to reach the server says so, and the weigh-in stays saved', async () => {
+  test('Undo with no way to reach the server says it is the connection, and the weigh-in stays saved', async () => {
     mockAnswers = { '/v1/weigh-ins/summary': summary() };
     mockServices.takeBack.mockResolvedValueOnce('offline');
     await show();
     await press(t('weighIn.save'));
     await press(t('weighIn.undoLabel'));
-    expect(screen.getByText(t('weighIn.undoFailed'))).toBeOnTheScreen();
+    expect(screen.getByText(t('weighIn.undoOffline'))).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: t('weighIn.undoLabel') })).toBeOnTheScreen();
+  });
+
+  test('a refusal that is not the connection keeps the general words', async () => {
+    mockAnswers = { '/v1/weigh-ins/summary': summary() };
+    mockServices.takeBack.mockResolvedValueOnce('conflict');
+    await show();
+    await press(t('weighIn.save'));
+    await press(t('weighIn.undoLabel'));
+    expect(screen.getByText(t('weighIn.undoFailed'))).toBeOnTheScreen();
+  });
+
+  describe('with the real queue and the real take-back (the drain starts the moment it is saved)', () => {
+    const original = { queue: mockServices.queue, takeBack: mockServices.takeBack };
+    afterEach(() => Object.assign(mockServices, original));
+
+    async function realServices() {
+      const store = await openRecordStore(nodeSqlite());
+      let offline = true;
+      const send = jest.fn(async (): Promise<SendResult> => {
+        if (offline) throw new NoAnswer();
+        return { status: 201, id: 'srv-7', body: {} };
+      });
+      const queue = createSyncQueue({ store, send, report: jest.fn() });
+      Object.assign(mockServices, { queue, takeBack: createTakeBack({ store, queue }) });
+      return { store, goOnline: () => (offline = false) };
+    }
+
+    test('offline: Undo says the connection, keeps the weigh-in, and works once it is back', async () => {
+      const { store, goOnline } = await realServices();
+      mockAnswers = { '/v1/weigh-ins/summary': summary() };
+      await show();
+      await press(t('weighIn.save'));
+
+      await press(t('weighIn.undoLabel'));
+      expect(screen.getByText(t('weighIn.undoOffline'))).toBeOnTheScreen();
+      expect(mockServices.api.DELETE).not.toHaveBeenCalled();
+      expect((await store.all()).filter((r) => r.kind === 'weighIn')).toHaveLength(1);
+
+      goOnline();
+      await press(t('weighIn.undoLabel'));
+      expect(mockServices.api.DELETE).toHaveBeenCalledWith('/v1/weigh-ins/{id}', { params: { path: { id: 'srv-7' } } });
+      expect(screen.getByRole('button', { name: t('weighIn.save') })).toBeOnTheScreen();
+      expect((await store.all()).filter((r) => r.kind === 'weighIn')).toHaveLength(0);
+    });
+
+    test('online, the very moment it was saved: stored, then deleted by its id', async () => {
+      const { store, goOnline } = await realServices();
+      goOnline();
+      mockAnswers = { '/v1/weigh-ins/summary': summary() };
+      await show();
+      await press(t('weighIn.save'));
+      await press(t('weighIn.undoLabel'));
+      expect(mockServices.api.DELETE).toHaveBeenCalledWith('/v1/weigh-ins/{id}', { params: { path: { id: 'srv-7' } } });
+      expect((await store.all()).filter((r) => r.kind === 'weighIn')).toHaveLength(0);
+    });
+  });
+
+  test('taken back while Apple Health was written to: it says the Health copy stays (ADR-018 Ek 2)', async () => {
+    const announced = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
+    mockHealthWrite = 'on';
+    mockAnswers = { '/v1/weigh-ins/summary': summary() };
+    await show();
+    await press(t('weighIn.save'));
+    await press(t('weighIn.undoLabel'));
+    expect(screen.getByText(t('weighIn.undoneHealth'))).toBeOnTheScreen();
+    expect(announced).toHaveBeenCalledWith(t('weighIn.undoneHealth'));
+  });
+
+  test.each(['off', 'refused'] as const)('Apple Health writing %s: no word of a Health copy', async (shown) => {
+    mockHealthWrite = shown;
+    mockAnswers = { '/v1/weigh-ins/summary': summary() };
+    await show();
+    await press(t('weighIn.save'));
+    await press(t('weighIn.undoLabel'));
+    expect(screen.queryByText(t('weighIn.undoneHealth'))).toBeNull();
   });
 
   test('saved and taken back are said to VoiceOver (K-815)', async () => {

@@ -107,3 +107,30 @@ test('tried but unconfirmed, then online: it is sent first so its id is known, t
   expect(remove).toHaveBeenCalledWith('srv-1');
   expect(await store.find(C)).toBeNull();
 });
+
+describe('the moment it was saved (the drain starts at once, so an offline record has been tried)', () => {
+  test('online: the drain under way ends first, the record is stored, then deleted by its id', async () => {
+    const { store, queue, takeBack } = await setup();
+    await queue.record(cardio); // no wait for the drain
+    const remove = jest.fn(async () => 204);
+    expect(await takeBack(C, remove)).toBe('taken');
+    expect(remove).toHaveBeenCalledWith('srv-1');
+    expect(await store.find(C)).toBeNull();
+  });
+
+  test('offline: it cannot be said whether the server has it, so it says offline and keeps everything; online, trying again deletes it', async () => {
+    const { store, queue, takeBack, goOffline, goOnline } = await setup();
+    goOffline();
+    await queue.record(cardio);
+    const remove = jest.fn(async () => 204);
+
+    expect(await takeBack(C, remove)).toBe('offline');
+    expect(remove).not.toHaveBeenCalled();
+    expect(await store.find(C)).not.toBeNull();
+
+    goOnline();
+    expect(await takeBack(C, remove)).toBe('taken');
+    expect(remove).toHaveBeenCalledWith('srv-1');
+    expect(await store.find(C)).toBeNull();
+  });
+});

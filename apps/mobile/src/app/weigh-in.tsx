@@ -19,6 +19,7 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { type Loaded, load, localDay } from '@/today/today';
 import { formatWeight, parseWeightKg, weightDecimals, weightInput } from '@/units/units';
+import { lastWeighInDate, prefillKg } from '@/weighIn/last';
 import { ScaleRow } from '@/weighIn/ScaleRow';
 import { canStepWeight, stepWeightText } from '@/weighIn/step';
 import { WeightChart } from '@/weighIn/WeightChart';
@@ -47,8 +48,10 @@ export default function WeighInScreen() {
   const [busy, setBusy] = useState(false);
   const [summary, setSummary] = useState<Loaded<Schemas['WeighInSummary']> | null>(null);
   const [history, setHistory] = useState<{ weighIns: Schemas['WeighIn'][]; trend: Schemas['TrendPoint'][] } | null>(null);
-  // The weigh-in just kept, while the screen offers to take it back.
-  const [saved, setSaved] = useState<{ clientId: string; kg: number } | null>(null);
+  // The weigh-in just kept, while the screen offers to take it back; `health`: a copy was written to Apple Health (it stays).
+  const [saved, setSaved] = useState<{ clientId: string; kg: number; health: boolean } | null>(null);
+  // After a take-back with a copy in Apple Health: said in place of the trend line until the next save.
+  const [healthStays, setHealthStays] = useState(false);
   const saving = useRef(false); // two taps at once must not save twice
 
   // The window is fixed when the screen opens: the chart's days and "the first 14 days" are counted from that moment.
@@ -72,8 +75,9 @@ export default function WeighInScreen() {
     void load(() => api.GET('/v1/weigh-ins/summary')).then((read) => {
       if (!live) return;
       setSummary(read);
-      if (read.state !== 'ready' || read.value.last === undefined) return;
-      const filled = weightInput(read.value.last.kg, units);
+      const kg = read.state === 'ready' ? prefillKg(read.value.last) : null;
+      if (kg === null) return;
+      const filled = weightInput(kg, units);
       // What was typed while the answer was coming stays.
       setText((typed) => (typed === '' ? filled : typed));
     });
@@ -117,12 +121,14 @@ export default function WeighInScreen() {
     saving.current = true;
     setBusy(true);
     setProblem(null);
+    setHealthStays(false);
     try {
       const weighIn = { clientId: newClientId(), measuredAt: new Date().toISOString(), kg, source: 'MANUAL' as const };
       await queue.record({ kind: 'weighIn', body: weighIn });
       // To Apple Health too, if that switch is on (K-412); not waited for — it reports its own failure.
       void healthWriting.weighInSaved({ id: weighIn.clientId, kg, at: new Date(weighIn.measuredAt) });
-      setSaved({ clientId: weighIn.clientId, kg });
+      // Whether the Health switch is on and iOS allows it now: that copy is Health's, and Undo leaves it.
+      setSaved({ clientId: weighIn.clientId, kg, health: healthWriting.shown('weighIns') === 'on' });
       announce(t('weighIn.savedSaid', { value: formatWeight(kg, units) }));
     } catch (error) {
       report({ name: error instanceof Error ? error.name : 'Unknown' });
@@ -142,9 +148,11 @@ export default function WeighInScreen() {
       const result = await takeBack(saved.clientId, async (id) => (await api.DELETE('/v1/weigh-ins/{id}', { params: { path: { id } } })).response.status);
       if (result === 'taken') {
         setSaved(null);
-        announce(t('weighIn.undoneSaid'));
+        setHealthStays(saved.health);
+        announce(t(saved.health ? 'weighIn.undoneHealth' : 'weighIn.undoneSaid'));
       } else {
-        setProblem(t('weighIn.undoFailed'));
+        // Offline is the connection, said as that; the button stays and is tried again when it is back.
+        setProblem(t(result === 'offline' ? 'weighIn.undoOffline' : 'weighIn.undoFailed'));
       }
     } catch (error) {
       report({ name: error instanceof Error ? error.name : 'Unknown' });
@@ -162,10 +170,14 @@ export default function WeighInScreen() {
     .reduce<string | null>((first, w) => (first === null || w.measuredAt < first ? w.measuredAt : first), null);
   const early = firstDay != null && now - Date.parse(firstDay) < onboardingParams.noInterpretationDays * DAY_MS;
   const last = summary?.state === 'ready' ? summary.value.last : undefined;
-  const trendLine =
+  const lastDate = last === undefined ? null : lastWeighInDate(last.measuredAt, new Date(now));
+  const trendLine = healthStays ? (
+    <Text style={[styles.small, { color: color.muted }]}>{t('weighIn.undoneHealth')}</Text>
+  ) : (
     summary?.state === 'ready' && !summary.value.trendReady ? (
       <Text style={[styles.small, { color: color.muted }]}>{t('weighIn.trendSoon', { count: summary.value.trendMinWeighIns })}</Text>
-    ) : null;
+    ) : null
+  );
 
   const consentStep =
     step === 'consent' ? (
@@ -208,7 +220,11 @@ export default function WeighInScreen() {
           onRaise={() => setText(stepWeightText(text, 1, units))}
         />
         {last !== undefined && (
-          <Text style={[styles.last, { color: color.muted }]}>{t('weighIn.last', { value: formatWeight(last.kg, units) })}</Text>
+          <Text style={[styles.last, { color: color.muted }]}>
+            {lastDate === null
+              ? t('weighIn.last', { value: formatWeight(last.kg, units) })
+              : t('weighIn.lastOn', { value: formatWeight(last.kg, units), date: lastDate })}
+          </Text>
         )}
         {problemLine}
         {trendLine}
