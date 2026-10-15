@@ -1,34 +1,30 @@
-import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { router } from 'expo-router';
+import { useCallback } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
+import { DecisionBlock } from '@/components/DecisionBlock';
 import { PlusEntry } from '@/components/PlusEntry';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
 import { PhotoCard } from '@/photos/PhotoCard';
-import { StrengthSection } from '@/progress/StrengthSection';
+import { ConsistencyGrid } from '@/progress/ConsistencyGrid';
+import { LockLine, MusclesCard, StrengthCard, WeighInDots } from '@/progress/Parts';
+import { TargetsGrid } from '@/progress/TargetsGrid';
+import { type ProgressRead, loadProgress } from '@/progress/read';
+import { heroOf, phaseOf, strengthOf, targetsOf, weighInDots } from '@/progress/sections';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
-import type { LocalRecord } from '@/sync/store';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
-import { type Loaded, load, localDay } from '@/today/today';
-import { sessionsOf } from '@/train/history';
-import { type Move, type TrainData, historyFrom, movesOf } from '@/train/trainData';
+import { type Loaded, load } from '@/today/today';
+import { useReadOnFocus } from '@/today/useReadOnFocus';
+import type { Figure } from '@/train/demo';
+import { movesOf } from '@/train/trainData';
 
 type Schemas = components['schemas'];
-type Read = {
-  data: TrainData;
-  own: Move[];
-  history: Loaded<Schemas['Workout'][]>;
-  records: LocalRecord[];
-  from: string;
-  today: string;
-  /** The week of the first eight (K-513), for the first photo's week (K-614). */
-  firstWeeks: Loaded<Schemas['FirstWeeks']>;
-};
+type Read = { progress: ProgressRead; figure: Figure; firstWeeks: Loaded<Schemas['FirstWeeks']> };
 
 /** The flow's week as the photo window reads it: over once the server has none (404); unknown without consent or offline. */
 function flowWeek(read: Loaded<Schemas['FirstWeeks']>): number | 'over' | null {
@@ -37,57 +33,103 @@ function flowWeek(read: Loaded<Schemas['FirstWeeks']>): number | 'over' | null {
 }
 
 /**
- * Progress (prototype section 4): the evidence beside the scale. Strength first (K-604): a compound lift's estimated 1RM
- * week by week, read from the same history as a move's records (ADR-033: the server's list kept on the phone, joined with
- * what is not sent yet); then progress photos — on this phone only, the window for the next one (K-614); then the way to
- * the shape projection (K-606).
+ * Progress (K-979, ADR-078, prototype `#progress`): the first days are four tappable targets, this week's planned muscles, a
+ * locked strength and the weigh-ins toward the trend; after the first call, one sentence of results and the 12 weeks. Each part
+ * opens when its own data arrives (the first workout, 7 weigh-ins, the first call); no chart is drawn empty. Every number is
+ * the server's, every condition a field it sent; the phone counts nothing and works out no week. Photos stay on this phone
+ * and the way to share is the user's.
  */
 export default function ProgressScreen() {
-  const { api, training, workoutRecords, report } = useAppServices();
+  const { api, training, syncHealth, bodyFigure, report } = useAppServices();
   const units = useUnits();
   const { color } = useTheme();
-  const [read, setRead] = useState<Read | null>(null);
-
-  // Read whenever the tab comes into view: a session just finished shows at once.
-  useFocusEffect(
-    useCallback(() => {
-      const now = new Date();
-      void Promise.all([
-        training.read(api),
-        training.own(api),
-        training.history(api, now),
-        workoutRecords(),
-        load(() => api.GET('/v1/first-weeks')),
-      ])
-        .then(([data, own, history, records, firstWeeks]) =>
-          setRead({ data, own, history, records, from: historyFrom(now), today: localDay(now), firstWeeks }),
-        )
-        .catch((error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' }));
-    }, [api, training, workoutRecords, report]),
+  const { day, data, reload } = useReadOnFocus(
+    useCallback(
+      async (day: string): Promise<Read> => {
+        const named = (error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' });
+        // The Health read runs beside the server's, never before it; a Health that fails is reported by name and shows no steps.
+        const [parts, trainData, own, stepsToday, firstWeeks, figure] = await Promise.all([
+          loadProgress(api, day),
+          training.read(api),
+          training.own(api),
+          syncHealth().then((health) => health.stepsToday, (error: unknown) => (named(error), null)),
+          load(() => api.GET('/v1/first-weeks')),
+          bodyFigure().catch((error: unknown) => (named(error), 'male' as Figure)),
+        ]);
+        return { progress: { ...parts, stepsToday, moves: movesOf(trainData, own) }, figure, firstWeeks };
+      },
+      [api, training, syncHealth, bodyFigure, report],
+    ),
   );
 
-  const server = read?.history.state === 'ready' ? read.history.value : null;
-  const strength =
-    read === null ? null : (
-      <StrengthSection
-        moves={movesOf(read.data, read.own)}
-        catalogRead={read.data.exercises.state === 'ready'}
-        sessions={sessionsOf(server, read.records, read.from)}
-        today={read.today}
-        units={units}
-      />
+  let body = null;
+  if (data !== null) {
+    const { progress, figure, firstWeeks } = data;
+    const phase = phaseOf(progress);
+    const hero = heroOf(progress, units);
+    const targets = targetsOf(progress);
+    const strength = strengthOf(progress);
+    const dots = weighInDots(progress);
+    const lifts = progress.training.state === 'ready' ? progress.training.value.lifts : [];
+    const muscles = progress.training.state === 'ready' ? progress.training.value.muscles : [];
+    const weeks = progress.consistency.state === 'ready' ? progress.consistency.value.weeks : [];
+    const failed = [progress.training, progress.consistency, progress.summary, progress.budget, progress.program].some((part) => part.state === 'failed');
+
+    const strengthCard = strength === null ? null : <StrengthCard part={strength} lifts={lifts} moves={progress.moves} units={units} />;
+    // The weigh-ins toward the trend stay until it is ready, before the first call and after it.
+    const weighIns = dots === null ? null : <WeighInDots count={dots.count} min={dots.min} />;
+    const musclesCard = <MusclesCard muscles={muscles} figure={figure} />;
+    // Built outside the JSX below (the raw-text guard reads JSX children).
+    const running = phase === 'running';
+    // The first days' targets only while there is no first call (or no consent to read one); not while it is unknown.
+    const first = phase === 'first' || phase === 'locked';
+    const targetsGrid = first && targets.length > 0 ? <TargetsGrid targets={targets} /> : null;
+    const lock = phase === 'locked' ? <LockLine /> : null;
+    const problem = failed ? (
+      <View style={styles.note}>
+        <Text style={[styles.text, { color: color.textSecondary }]}>{t('progress.failed')}</Text>
+        <Button label={t('progress.retry')} variant="ghost" size="sm" onPress={reload} />
+      </View>
+    ) : null;
+    const top =
+      hero === null ? null : (
+        <DecisionBlock testID="progress-hero" title={hero.title}>
+          {hero.sub === null ? null : <Text style={[styles.sub, { color: color.decisionMuted }]}>{hero.sub}</Text>}
+        </DecisionBlock>
+      );
+    const parts = running ? (
+      <>
+        {strengthCard}
+        {musclesCard}
+        {weighIns}
+        <ConsistencyGrid weeks={weeks} />
+      </>
+    ) : (
+      <>
+        {musclesCard}
+        {strengthCard}
+        {weighIns}
+      </>
     );
-  const phoneOnly = read !== null && server === null ? <Text style={[styles.small, { color: color.muted }]}>{t('history.phoneOnly')}</Text> : null;
+    body = (
+      <>
+        {problem}
+        {top}
+        {lock}
+        {targetsGrid}
+        {parts}
+        <PhotoCard today={day} flowWeek={flowWeek(firstWeeks)} />
+        <ShareEntry />
+      </>
+    );
+  }
 
   return (
     // Bottom edge too: inside native tabs the bottom inset includes the tab bar, so the "+" sits above it.
     <SafeAreaView testID="screen" style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.body}>
         <ScreenTitle>{t('screens.progress.title')}</ScreenTitle>
-        {phoneOnly}
-        {strength}
-        {read !== null && <PhotoCard today={read.today} flowWeek={flowWeek(read.firstWeeks)} />}
-        <ShareEntry />
+        {body}
       </ScrollView>
       <View style={styles.plus}>
         <PlusEntry />
@@ -111,6 +153,9 @@ const styles = StyleSheet.create({
   share: { gap: tokens.space.xs },
   safe: { flex: 1 },
   body: { paddingHorizontal: tokens.space.lg, paddingTop: tokens.space.md, paddingBottom: tokens.space.lg, gap: tokens.space.md },
+  note: { gap: tokens.space.sm },
+  text: { fontSize: tokens.type.body },
+  sub: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.bold },
   small: { fontSize: tokens.type.bodySmall },
   plus: { paddingHorizontal: tokens.space.lg, paddingBottom: tokens.space.md },
 });

@@ -907,7 +907,9 @@ Simülatör düzeneği (repoya girmez): `../keel-sim` worktree + scratchpad `sim
 
 -----
 **Levent (14 Eki, boşluk taraması):** İlerleme bölüm bölüm açılır · Life: rıza yalnız Sick/In pain · Cardio kutusu kardiyo kaydına · dönüş metni dürüst ('Nothing lost' yok) → ADR-078 Ek 2, ADR-077 Ek 6.
-**K1 listesi (part sonunda toplu):** #548 iki API beklentisi (+16→0, +127→13) · #549 Food today→Food left (3 beklenti), bodyweight ısınma yok · #550 callFace PENDING foot, Keep/Got it testleri, yer tutuculu metinler.
+**K1 listesi (part sonunda toplu):** #548 iki API beklentisi (+16→0, +127→13) · #549 Food today→Food left (3 beklenti), bodyweight ısınma yok · #550 callFace PENDING foot, Keep/Got it testleri, yer tutuculu metinler, kept'te DONE gösterilir · #559 call-changes yardımcı · #562 GET 403→404, DELETE 403→204, consent-versions '3'→'4' · #563 tam harita + loggedDays · #566 today-workout workoutId · #569 settings/navigation donanımı, healthWrite kilit beklentisi · #570 router.back kalktı, trendReady kurulumu, earlyNote metni · #571 progress-screen yeniden yazıldı (e1RM grafiği ADR-078) · #573 share-card testleri silindi (ADR-076) · #574 ReturnGap/ReturnApi nextCallOn, fikstür tarihleri.
+**Levent'e part sonu soruları (biriken):** İlerleme hero 'Day 1.' yerine 'Today's targets.' (ADR-078 #1; telefon gün sayamaz) · koç 'The call stands until its next look' nextReview'u söylüyor (Hero nextCallOn) · privacy.md'ye eklenen iki satır (K-1021, K-1020) yayında.
+**Ders (Part 4):** paralel mobil ajan sayısı 3'ü aşınca yük 400'e çıktı ve jest zaman aşımları arttı; sınır gerçekten 3.
 **Part 4 başı (14 Eki):** senkron — ana checkout ayrık HEAD = `origin/main` `26df54a0`, temiz (yalnız `.claude/launch.json`); açık PR yalnız Dependabot
 (#546 shell-quote güvenlik düzeltmesi, kilit dosyası, CI yeşil → auto-merge; #547 actions/setup-node 7.0 → 7.1 ara sürüm, yama değil → beklemede, ADR-019 #6);
 Part 3 ÇIKIŞ git ile tutarlı; disk 7 GB; Dependabot 4 açık uyarı (shell-quote #546 ile kapanır; braces, node-forge, decode-uri-component aynı).
@@ -917,24 +919,28 @@ K-1014 · K-1013 iki PR'a bölündü (A karar/Bu hafta, B oturum/Edit).
 
 | Görev | Durum | PR | Not |
 |---|---|---|---|
-| K-1013 A karar/Bu hafta | 🔍 son düzeltme | #550 · #557 | `Program.canAddDay` (#557, tek kural `ProgramDayAdds.canAdd`); DECLINED'da 'Use this call' ikincil (U2); biten gün program günü kimliğiyle |
-| K-1013 B oturum/Edit | ✅ | #549 | ısınma: BODYWEIGHT yok, +ek yük biliniyorsa var; 'Food left' tek ad; Add a move yazmadan katalog |
-| K-1014 karşılaştırılabilir seans | ✅ | #548 | ADR-075 Ek 10: ortak hareketler; set payı ≥0.6 VE (ortak hareket ≥ short_session_moves YA DA ortak set payı ≥0.5) |
-| K-1009 hareket hedefi satırı | 🔍 | #559 | ADR-077 Ek 7; `what: MOVE`; okuma anında türetiliyor (incelemede) |
-| K-999 başka cihazda açık seans | ⏳ | | |
-| K-979 İlerleme | ⏳ | | boşluk taraması |
-| K-980 Kayıt ekranları | ⏳ | | boşluk taraması |
-| K-981 Dönüş + Life | ⏳ | | boşluk taraması |
-| K-982 Ayarlar | ⏳ | | boşluk taraması |
-| K-975 Paylaşım A | ⏳ | | |
+| K-1013 A karar/Bu hafta | ✅ | #550 · #557 | `Program.canAddDay`; DECLINED'da 'Use this call' ikincil (U2) |
+| K-1013 B oturum/Edit | ✅ | #549 | ısınma kuralı `warmup.ts`; 'Food left' |
+| K-1014 karşılaştırılabilir seans | ✅ | #548 | ADR-075 Ek 10 |
+| K-1009 hareket hedefi satırı | ✅ | #559 (V48) | `held_move` karar anında saklanır; ADR-077 Ek 7 → K-978 done |
+| K-999 başka cihazda açık seans | ✅ | #566 | tek ifadeyle atomik benimseme; Discard önce GET; ADR-075 Ek 11 |
+| K-1016 tutarlılık hafta hafta | ✅ | #564 | `Consistency.weeks[]`, `progress_grid_weeks` 12 |
+| K-1017 ilk gün protein + adım | ✅ | #561 | `StartingTarget.proteinG/stepsPerDay`, `DayBudget.targetProteinG` |
+| K-1018 kilo özeti | ✅ | #558 | `GET /v1/weigh-ins/summary`; trendReady yalnız kapı |
+| K-1019 kardiyo kayıtlı günler | ✅ | #563 | `loggedDays`, `loggedToday`, DELETE yalnız MANUAL; ADR-074 Ek 2 |
+| K-1020 dönüş özeti | ✅ | #567 (V49) | GET/POST /v1/return; PICK_UP süreli; ADR-077 Ek 8 |
+| K-1021 durum bildirimi | ✅ | #562 | rıza yalnız Sick/Pain; **onay metni sürüm 4** (Levent 15 Eki); privacy.md yayımlandı |
+| K-1022 mola haftası PAUSED | ✅ | #565 | ADR-040 Ek 1 |
+| K-1023 uyum penceresi molayı saymaz | ✅ | #568 | |
+| K-1024 sonraki çağrı günü tek kaynak | 🔍 düzeltme | #574 | `Decision.nextCallOn`; nextReview değişmedi; ADR-077 Ek 9; koç metni 'stands until' ayrı not |
+| K-1025 son yenenler | 🔍 | #576 (arka uç) | telefon PR'ı K-980 B'den sonra |
+| K-982 Ayarlar | ✅ | #569 | Health yazma rızadan bağımsız; Units Appearance içinde |
+| K-980 Kayıt ekranları | 🔍 düzeltme | #570 · #572 | takeBack servisi; 'Usual foods' geçici (K-1025) |
+| K-979 İlerleme | 🔍/🛠 | #571 (A, rebase) · B 🛠 | ADR-078 Ek 2; MISSED nötr token |
+| K-981 Dönüş + Life | 🛠 | | |
+| K-975 Paylaşım A | 🔍 | #573 · #575 | ADR-054 kartı kalktı |
 | K-976 Paylaşım B | ⏳ | | App ID yok → sistem sayfası |
 | K-977 Paylaşım C | ↪ M11 | | Levent 14 Eki |
-| K-1016 tutarlılık hafta hafta | ⏳ | | boşluk taraması → K-979 |
-| K-1017 ilk gün protein + adım | 🛠 | | → K-979 |
-| K-1018 kilo özeti | ✅ | #558 | `GET /v1/weigh-ins/summary`; `trend_min_weighins` 7; trendReady yalnız kapı |
-| K-1019 kardiyo kayıtlı günler | 🛠 | | → K-980 |
-| K-1020 dönüş özeti | ⏳ | | K-1021 sonrası; göç |
-| K-1021 durum bildirimi | 🛠 | | rıza yalnız Sick/In pain (Levent) |
 | K-910 Kalın Metin | ⏳ | | |
 | K-984 TestFlight + cihaz turu | ⏳ | | K-983 (Levent) bekler |
 
