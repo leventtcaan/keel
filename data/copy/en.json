@@ -68,17 +68,44 @@
       "busy": { "title": "A busy week", "name": "a busy week", "body": "Exams, deadlines, a move. Do what you can; the week won't count against you." },
       "new_gym": { "title": "A new gym", "name": "at a new gym", "body": "New machines and weights: loads won't compare with your old gym for a while." }
     },
+    "tile": { "traveling": "Traveling", "sick": "Sick", "pain": "In pain", "busy": "Busy week", "new_gym": "New gym" },
     "screen": {
-      "title": "Life got in the way?",
-      "intro": "Tell us, and this week pauses: your call waits, your number counts it neither way, and the reminders go quiet. Safety checks still run.",
-      "until": "For how long",
+      "title": "Pause this week",
+      "intro": "Nothing counts against you. Safety checks still run.",
+      "until": "How long?",
       "untilBack": "Until I'm back",
-      "forDays": "For {days} days",
+      "forDays": "{days} days",
       "pause": "Pause my week",
       "back": "Today",
       "noConnection": "Couldn't send this. Check your connection and try again.",
       "refused": "Something went wrong on our side. Try again in a moment."
+    },
+    "consent": {
+      "why": "Sick and In pain are health data, so they need your OK first.",
+      "allow": "Allow and continue",
+      "notNow": "Not now",
+      "failed": "Couldn't record your choice. Check your connection and try again."
     }
+  },
+  "return": {
+    "title": "Welcome back",
+    "away": {
+      "one": "{days} day away. Plan, logs and goals kept.",
+      "other": "{days} days away. Plan, logs and goals kept."
+    },
+    "suggested": "Suggested",
+    "ease": { "title": "Ease back in", "body": "One step lighter: {moves}.", "plain": "One step lighter." },
+    "pickUp": { "title": "Pick up where I left off", "body": "Targets unchanged." },
+    "rebuild": { "title": "Rebuild my plan", "body": "New days or a new program." },
+    "move": "{name} {load}",
+    "moveJoin": ", ",
+    "nextCall": "Next call: {date}",
+    "continue": "Continue",
+    "retry": "Try again",
+    "later": "Not now",
+    "loading": "Loading",
+    "noConnection": "Couldn't reach the server. Check your connection and try again.",
+    "refused": "Something went wrong on our side. Try again in a moment."
   },
   "first_weeks": {
     "risk": "Around now, weeks often get fuller. One session this week keeps the thread going, whatever shape it takes.",
