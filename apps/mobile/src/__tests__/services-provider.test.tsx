@@ -106,6 +106,18 @@ test('the unit system reaches the screen, and a change re-renders it', async () 
   expect(screen.getByText(new RegExp(` ${other}$`))).toBeOnTheScreen();
 });
 
+test('Stories are wired, and with no Facebook App ID in the environment they are unavailable (the share sheet takes over, K-976)', async () => {
+  global.fetch = jest.fn(async () => new Response('{"code":"NOT_FOUND","message":"x"}', { status: 404, headers: { 'Content-Type': 'application/json' } }));
+  await render(
+    <ServicesProvider>
+      <Probe />
+    </ServicesProvider>,
+  );
+  await act(async () => {});
+
+  expect(await services!.shareStory({ sticker: 'iVBORw0KGgo=', background: { kind: 'color', hex: '#000000' } })).toBe('unavailable');
+});
+
 test('the import reads Apple Health only with both consents, the year before the regular read (K-616)', async () => {
   // Offline: the consents are what the phone last knew (consentState), set here by remembering them.
   global.fetch = jest.fn(async () => {

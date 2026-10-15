@@ -11,5 +11,6 @@ function param<T>(key: string): T {
 export const shareParams = {
   storyWidth: param<number>('story_width_px'),
   storyHeight: param<number>('story_height_px'),
+  storyVideoSeconds: param<number>('story_video_max_seconds'),
   progressLifts: param<number>('progress_lifts'),
 };

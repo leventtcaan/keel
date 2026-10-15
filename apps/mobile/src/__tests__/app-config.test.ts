@@ -49,6 +49,11 @@ test('the level reads the accelerometer, which needs no permission (K-601): no m
   expect(sensors).toEqual([['expo-sensors', { motionPermission: false }]]);
 });
 
+test('Instagram Stories (K-976): the app may ask whether Instagram is there, by its Stories scheme; Apple Sign In is kept', () => {
+  expect(config.ios?.infoPlist?.LSApplicationQueriesSchemes).toEqual(['instagram-stories']);
+  expect(config.ios?.usesAppleSignIn).toBe(true);
+});
+
 test('everything else in app.json is kept', () => {
   expect(config.name).toBe(base.expo.name);
   expect(config.ios?.usesAppleSignIn).toBe(true);

@@ -7,16 +7,19 @@
 import { File, Paths } from 'expo-file-system';
 import { Share } from 'react-native';
 
-import { shareCardImage } from './shareImage';
+import { type OpenFile, shareCardImage } from './shareImage';
+
+/** A file in this app's cache for an image to be handed on; removing it when it was never written is not an error. */
+export const cacheFile: OpenFile = (name) => {
+  const file = new File(Paths.cache, name);
+  // A write that failed may have left nothing: only a file there is removed.
+  return { uri: file.uri, write: (data) => file.write(data, { encoding: 'base64' }), remove: () => (file.exists ? file.delete() : undefined) };
+};
 
 export function deviceShareImage(report: (problem: { name: string }) => void): (base64: string) => Promise<void> {
   return (base64) =>
     shareCardImage(base64, {
-      openFile: (name) => {
-        const file = new File(Paths.cache, name);
-        // A write that failed may have left nothing: only a file there is removed.
-        return { uri: file.uri, write: (data) => file.write(data, { encoding: 'base64' }), remove: () => (file.exists ? file.delete() : undefined) };
-      },
+      openFile: cacheFile,
       // Closed without sharing is not a failure: the sheet answers (shared or dismissed) and either way the file goes.
       share: async (uri) => void (await Share.share({ url: uri })),
       report,

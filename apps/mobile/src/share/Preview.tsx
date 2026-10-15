@@ -9,6 +9,9 @@ import { shareParams } from './params';
 import { type Backdrop, StickerImage } from './Sticker';
 import type { Sticker } from './stickers';
 
+/** The points an image is drawn at so its pixels come out at share.json's width on this screen's scale. */
+export const drawnWidth = () => shareParams.storyWidth / PixelRatio.get();
+
 type Props = { sticker: Sticker; backdrop?: Backdrop; width: number; imageRef: Ref<Svg> };
 
 /**
@@ -17,7 +20,7 @@ type Props = { sticker: Sticker; backdrop?: Backdrop; width: number; imageRef: R
  * backdrop ("In Instagram") the PNG is the sticker alone; it is shown where it would sit in a Story, on a dark ground.
  */
 export function Preview({ sticker, backdrop, width, imageRef }: Props) {
-  const drawn = shareParams.storyWidth / PixelRatio.get();
+  const drawn = drawnWidth();
   const scale = width / drawn;
   const frame = (width * shareParams.storyHeight) / shareParams.storyWidth;
   const canvas = backdrop === undefined ? layout(sticker).height : shareParams.storyHeight;

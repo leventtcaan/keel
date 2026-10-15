@@ -10,12 +10,14 @@ import { ProblemText } from '@/components/ProblemText';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
 import { type Source, discardBackground, pickBackground } from '@/share/background';
-import { Preview } from '@/share/Preview';
-import type { Backdrop } from '@/share/Sticker';
+import { Preview, drawnWidth } from '@/share/Preview';
+import { shareParams } from '@/share/params';
+import { type Backdrop, StickerImage } from '@/share/Sticker';
+import type { StoryBackground } from '@/share/story';
 import { type StickerFacts, stickersFor } from '@/share/stickers';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
-import { tokens } from '@/theme/tokens';
+import { palettes, tokens } from '@/theme/tokens';
 import { load } from '@/today/today';
 import { movesOf } from '@/train/trainData';
 import { type WorkoutSummaryRead, loadWorkoutSummary } from '@/train/workoutEnd';
@@ -37,7 +39,7 @@ type Facts = StickerFacts & { partial: boolean; waiting: boolean };
  */
 export default function ShareScreen() {
   const services = useAppServices();
-  const { api, training, shareImage, report } = services;
+  const { api, training, shareImage, shareStory, report } = services;
   const units = useUnits();
   const { color } = useTheme();
   const { width } = useWindowDimensions();
@@ -46,9 +48,13 @@ export default function ShareScreen() {
   const [picked, setPicked] = useState<string | null>(null);
   const [ground, setGround] = useState<Ground>('dark');
   const [photo, setPhoto] = useState<string | null>(null);
+  const [video, setVideo] = useState(false);
+  const [fellBack, setFellBack] = useState(false);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<Problem | null>(null);
   const image = useRef<Svg>(null);
+  // The sticker alone, drawn out of sight: what a Story takes as the sticker, whatever the preview sits on.
+  const bare = useRef<Svg>(null);
   // The picker's copy of the chosen photo, in this app's cache: removed when another ground replaces it and when the screen closes.
   const held = useRef<string | null>(null);
 
@@ -89,17 +95,21 @@ export default function ShareScreen() {
 
   const stickers = facts === null ? [] : stickersFor(facts, units);
   const sticker = stickers.find((s) => s.kind === picked) ?? stickers[0];
-  const backdrop: Backdrop | undefined = ground === 'instagram' ? undefined : photo !== null ? { kind: 'photo', uri: photo } : { kind: 'dark' };
+  // A video is only for Stories (Instagram puts it behind the sticker): everywhere else the sticker goes alone.
+  const backdrop: Backdrop | undefined = ground === 'instagram' || video ? undefined : photo !== null ? { kind: 'photo', uri: photo } : { kind: 'dark' };
+  // What a Story gets behind the sticker: the user's own file, else a dark colour (left to be changed in Instagram).
+  const behind: StoryBackground = photo !== null ? { kind: video ? 'video' : 'image', uri: photo } : { kind: 'color', hex: palettes.dark.background };
 
   const choose = async (source: Source) => {
     setProblem(null);
     try {
       const chosen = await pickBackground(source);
-      if (chosen === 'denied') return setProblem('denied');
+      if (chosen === 'denied' || chosen === 'tooLong') return setProblem(chosen);
       if (chosen === null) return;
       forget();
       held.current = chosen.uri;
       setPhoto(chosen.uri);
+      setVideo(chosen.video === true);
       setGround(source);
     } catch (error) {
       report({ name: error instanceof Error ? error.name : 'Unknown' });
@@ -110,31 +120,48 @@ export default function ShareScreen() {
     setProblem(null);
     forget();
     setPhoto(null);
+    setVideo(false);
     setGround(next);
   };
-  const share = () => {
-    if (busy || image.current === null) return;
+  /** A drawing's PNG in base64; null when it is not there or could not be made (the drawing can answer with nothing). */
+  const png = (drawing: typeof image) =>
+    new Promise<string | null>((resolve) => (drawing.current === null ? resolve(null) : drawing.current.toDataURL((base64?: string) => resolve(base64 ? base64 : null))));
+  /** One hand-over at a time; a failure is said by name only, an empty drawing too. */
+  const hand = async (job: () => Promise<void>) => {
+    if (busy) return;
     setBusy(true);
     setProblem(null);
-    image.current.toDataURL((base64?: string) => {
-      // The drawing can answer with nothing; that is a failure to say, not a share of an empty file.
-      if (!base64) {
-        report({ name: 'EmptyImage' });
-        setProblem('share');
-        setBusy(false);
-        return;
-      }
-      shareImage(base64)
-        .catch((error: unknown) => {
-          report({ name: error instanceof Error ? error.name : 'Unknown' });
-          setProblem('share');
-        })
-        .finally(() => setBusy(false));
-    });
+    setFellBack(false);
+    try {
+      await job();
+    } catch (error) {
+      report({ name: error instanceof Error ? error.name : 'Unknown' });
+      setProblem('share');
+    } finally {
+      setBusy(false);
+    }
   };
+  const sheet = async () => {
+    const base64 = await png(image);
+    if (base64 === null) throw Object.assign(new Error('empty'), { name: 'EmptyImage' });
+    await shareImage(base64);
+  };
+  const share = () => void hand(sheet);
+  const toStory = () =>
+    void hand(async () => {
+      const alone = await png(bare);
+      if (alone === null) throw Object.assign(new Error('empty'), { name: 'EmptyImage' });
+      // Without the App ID or Instagram the share sheet takes over, with the image as previewed.
+      if ((await shareStory({ sticker: alone, background: behind })) === 'unavailable') {
+        setFellBack(true);
+        await sheet();
+      }
+    });
 
   // Built before the JSX: a literal inside a JSX child is read as text by the copy guard (copy-literals.test.ts).
   const instagramNote = ground === 'instagram' ? <Text style={[styles.small, { color: color.muted }]}>{t('share.instagramNote')}</Text> : null;
+  const videoNote = video ? <Text style={[styles.small, { color: color.muted }]}>{t('share.videoNote')}</Text> : null;
+  const fallbackNote = fellBack ? <Text style={[styles.small, { color: color.muted }]}>{t('share.storyFallback')}</Text> : null;
   const choice =
     sticker === undefined ? (
       facts !== null && <Text style={[styles.text, { color: color.textSecondary }]}>{t('share.nothing')}</Text>
@@ -153,9 +180,15 @@ export default function ShareScreen() {
           <Chip touch label={t('share.background.instagram')} selected={ground === 'instagram'} onPress={() => plain('instagram')} />
         </View>
         {instagramNote}
+        {videoNote}
         {problem !== null && <Failed problem={problem} />}
-        <Button label={t('share.share')} disabled={busy} onPress={share} />
+        {fallbackNote}
+        <Button label={t('share.story')} disabled={busy} onPress={toStory} />
+        <Button label={t('share.share')} variant="ghost" disabled={busy} onPress={share} />
         <Text style={[styles.small, { color: color.muted }]}>{t('share.note')}</Text>
+        <View style={styles.hidden} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          <StickerImage ref={bare} testID="bare" sticker={sticker} width={drawnWidth()} />
+        </View>
       </View>
     );
 
@@ -171,11 +204,16 @@ export default function ShareScreen() {
   );
 }
 
-type Problem = 'share' | 'denied' | 'photo';
+type Problem = 'share' | 'denied' | 'photo' | 'tooLong';
 
 function Failed({ problem }: { problem: Problem }) {
   const { color } = useTheme();
-  const words = { share: t('share.failed'), denied: t('share.denied'), photo: t('share.photoFailed') };
+  const words = {
+    share: t('share.failed'),
+    denied: t('share.denied'),
+    photo: t('share.photoFailed'),
+    tooLong: t('share.videoTooLong', { seconds: shareParams.storyVideoSeconds }),
+  };
   return <ProblemText style={[styles.text, { color: color.text }]}>{words[problem]}</ProblemText>;
 }
 
@@ -183,6 +221,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   body: { padding: tokens.space.lg, gap: tokens.space.lg },
   part: { gap: tokens.space.md, alignItems: 'stretch' },
+  hidden: { height: 0, overflow: 'hidden' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm, justifyContent: 'center' },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },
