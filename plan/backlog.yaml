@@ -3928,7 +3928,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: doing
+    status: done
     depends_on: [K-953, K-962, K-963]
     why: "ADR-077 #2-#4: ürünün ana anı tek akış; varsayılan uygulanır, 'Keep last week's plan'"
     acceptance:
@@ -4713,7 +4713,7 @@ tasks:
     module: training
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-1000]
     why: "K-1000 (9 Eki): Decision.changes kalori/adım/faz değişimini veriyor; 'Hold the weight' kararında hangi hareketin hedefinin değiştiği antrenman modülünde (decision bağlanamaz, K-965 notu)"
     acceptance:
@@ -4764,7 +4764,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-978, K-970, K-972, K-973]
     why: "10 Eki simülatör yürüyüşü (6 persona, 13 senaryo; prototip/kullanici-testi.md › Tur 3): çökme ve U ihlali yok, ama ana akışlarda orta bulgular"
     acceptance:
@@ -4789,7 +4789,7 @@ tasks:
     module: training
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-965]
     why: "10 Eki yürüyüşü: 2 setlik yarım seans özette '−81% vs last time' gösterdi; yarım seans tam seansla kıyaslanıyor (U7 tonu sınırda, sayı yanıltıcı)"
     acceptance:
@@ -4837,7 +4837,7 @@ tasks:
     module: nutrition
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-989]
     why: "Part 4 boşluk taraması (14 Eki): K-979 ilk gün 'Protein / 114 g' ve 'Steps / 7,000'; bütçede protein hedefi yok, gün-1 adım hedefi (`steps_target_start`) telefona gelmiyor; prototip 2 × kiloyu telefonda hesaplıyordu (U1)"
     acceptance:
@@ -4853,7 +4853,7 @@ tasks:
     module: measurement
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: []
     why: "Part 4 boşluk taraması (14 Eki): K-980 #weigh 'Last: 80.4' için son tartı ucu yok (weigh-ins tarih aralığı ister); K-979/K-980 'Trend starts after 7 weigh-ins' için parametre ve sayaç yok (telefonda 7 sabiti K2)"
     acceptance:
