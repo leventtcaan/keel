@@ -77,8 +77,8 @@ test('no session today: rest; a week off in force: the week off', () => {
 });
 
 test('a workout under way on this phone comes first: "Open workout · Continue", with the sets logged so far', () => {
-  expect(todayCardOf({ ...base, records: started('a', 2), program: program([onFriday]) })).toEqual({ kind: 'open', day: A, sets: 2, onPhone: true });
-  expect(todayCardOf({ ...base, records: started(null, 2), program: null })).toEqual({ kind: 'open', day: null, sets: 2, onPhone: true });
+  expect(todayCardOf({ ...base, records: started('a', 2), program: program([onFriday]) })).toEqual({ kind: 'open', day: A, sets: 2, onPhone: true, workoutId: null });
+  expect(todayCardOf({ ...base, records: started(null, 2), program: null })).toEqual({ kind: 'open', day: null, sets: 2, onPhone: true, workoutId: null });
 });
 
 describe("the server's word on today's session (K-995)", () => {
@@ -91,14 +91,14 @@ describe("the server's word on today's session (K-995)", () => {
     expect(todayCardOf({ ...base, program: program([done]) })).toEqual({ kind: 'done', day: A, workoutId: 'w7' });
   });
 
-  test("today's session under way (workout OPEN) but not on this phone: open, nothing to continue here", () => {
+  test("today's session under way (workout OPEN) but not on this phone: open, with the server's workout to continue here (K-999)", () => {
     const open = { ...onFriday, workout: { id: 'w8', state: 'OPEN' as const } };
-    expect(todayCardOf({ ...base, program: program([open]) })).toEqual({ kind: 'open', day: A, sets: null, onPhone: false });
+    expect(todayCardOf({ ...base, program: program([open]) })).toEqual({ kind: 'open', day: A, sets: null, onPhone: false, workoutId: 'w8' });
   });
 
   test('the phone still comes first: its open workout, then its finish waiting to be sent, even before the server says DONE', () => {
     const open = { ...onFriday, workout: { id: 'w8', state: 'OPEN' as const } };
-    expect(todayCardOf({ ...base, records: started('a', 1), program: program([open]) })).toEqual({ kind: 'open', day: A, sets: 1, onPhone: true });
+    expect(todayCardOf({ ...base, records: started('a', 1), program: program([open]) })).toEqual({ kind: 'open', day: A, sets: 1, onPhone: true, workoutId: null });
     expect(todayCardOf({ ...base, records: finished(), program: program([open]) })).toEqual({ kind: 'done', day: A, workoutId: null });
     expect(todayCardOf({ ...base, records: finished('w9'), program: program([onFriday]) })).toEqual({ kind: 'done', day: A, workoutId: 'w9' });
   });
@@ -189,7 +189,7 @@ describe("the server's today and the phone's day (travelling, past midnight ther
 
   test("a workout under way since the server's day is the one under way", () => {
     const records = [record(1, 'workout', 'wo', null, { clientId: 'wo', startedAt: new Date(2026, 11, 25, 23, 0).toISOString(), programDayId: 'a' })];
-    expect(todayCardOf({ ...base, now: saturday, records, program: program([onFriday]) })).toEqual({ kind: 'open', day: A, sets: 0, onPhone: true });
+    expect(todayCardOf({ ...base, now: saturday, records, program: program([onFriday]) })).toEqual({ kind: 'open', day: A, sets: 0, onPhone: true, workoutId: null });
   });
 });
 

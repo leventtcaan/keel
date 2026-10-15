@@ -553,6 +553,21 @@
     "failed": "Something went wrong on our side. Try again in a moment.",
     "close": "Close"
   },
+  "openElsewhere": {
+    "continue": "Continue here",
+    "continueLabel": "Continue the workout on this phone",
+    "later": "Fill in later",
+    "laterLabel": "Fill in the workout later",
+    "laterSaid": "Left open. It counts, and you can continue it within {hours} hours.",
+    "discard": "Discard",
+    "discardLabel": "Discard the workout started on another phone",
+    "discarded": "Workout discarded.",
+    "offline": "Couldn't reach the server. Check your connection and try again.",
+    "discardOffline": "Discarding needs a connection. Check yours and try again.",
+    "failed": "Couldn't open the workout. Try again in a moment.",
+    "closed": "That workout has ended already.",
+    "gone": "That workout was discarded."
+  },
   "workout": {
     "title": "Workout",
     "progress": "{done} of {count} exercises",
