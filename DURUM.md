@@ -5,8 +5,11 @@ guncelleme: 2026-10-10
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (15 Eki akşam — M9a Part 4 devam-2, Tur 4 bitti)
-**Devam:** `plan/oturum-promptlari/YENI-YUZ-part4-devam.md` (#582 birleştir → K-1027 dalı (WIP testler) + K-1028 + K-1030 → K-1029 → K-984 hazırlığı → ÇIKIŞ). Tablo: DURUM › M9a ilerleme › Part 4 başı.
+## ▶ DEVAM NOKTASI (15 Eki gece — M9a Part 4 BİTTİ: Part 4 ÇIKIŞ = M9a ÇIKIŞ (kod))
+**Levent'i bekleyen:** K-983 (App Store Connect 2 haftalık deneme) → sonra K-984 (TestFlight derlemesi + cihaz turu; prompt `YENI-YUZ-part4-devam.md` › "K-984 prompt'u"). K-976 Facebook App ID (`EXPO_PUBLIC_FACEBOOK_APP_ID`, EAS ortam değişkeni) cihaz turundan önce gelirse Story gerçek yoldan denenir.
+**Sonra:** M9 Part 3 (beta kohortu, K-904) → `plan/oturum-promptlari/M9-part3.md`. Ayrıntı DURUM › M9a ilerleme › Part 4 ÇIKIŞ.
+
+## (önceki) DEVAM NOKTASI (15 Eki akşam — M9a Part 4 devam-2, Tur 4 bitti)
 
 ## (önceki) DEVAM NOKTASI (15 Eki — M9a Part 4 token sınırında durdu)
 
@@ -949,10 +952,16 @@ K-1014 · K-1013 iki PR'a bölündü (A karar/Bu hafta, B oturum/Edit).
 | K-1028 İlerleme Strength tek satır, bodyweight, rızasız hero | ✅ | #594 | B2 (kaçan hafta açıklaması) geri alındı → Levent |
 | K-1029 öğün Undo, porsiyon yazımı, kardiyo satırı | ✅ | #596 | kayıttan sonra sayfa gizlenir; çift dokunuş testi mutasyonla kanıtlı |
 | K-1030 hero 'Today', nokta satırları | ✅ | #595 | B14 sunucu değişikliği geri alındı → K-1031 (Levent); B28, Pull-up ısınma ertelendi |
-| K-1031 'Haven't trained' seçeneği | ⏳ | | Levent 15 Eki (a) |
-| K-1032 rıza metni v5 · 'Weeks on track' · koç nextCallOn | ⏳ | | Levent 15 Eki |
+| K-1031 'Haven't trained' seçeneği | ✅ | #600 | ADR-077 Ek 12; `Question.onlyAfter` (RECOVERY yalnız IMPROVING/STABLE sonrası); kesimde kalori kıpırdamaz (G7 K-98) |
+| K-1032 rıza metni v5 · 'Weeks on track' · koç nextCallOn | ✅ | #599 | 4 madde `ConsentText`; sürüm 5 en.json + application.yml; `CoachCall.nextCallOn` |
 | privacy.md Story paylaşım satırı | ✅ | main | Levent 15 Eki; last_updated 15 October |
 | K-984 TestFlight + cihaz turu | ⏳ | | otomatik satır ✅ (anayasa denetimi passed; budget + copy-budget + contrast 199 test yeşil, main `6136e36f`); derleme + cihaz turu Levent |
+
+**Part 4 ÇIKIŞ = M9a ÇIKIŞ (kod) · 15 Eki akşam.** Main `7f1d006d`; anayasa denetimi passed; budget + copy-budget + contrast yeşil.
+- Birleşen (bu partın tamamı, 46 PR): #546-#583 (34'ü ilk yarıda) · #582 Story · #593 #594 #595 #596 (Tur 4 düzeltmeleri) · #599 #600 (Levent kararları). Açık PR yalnız Dependabot #547 (ara sürüm, ADR-019 #6 bekler).
+- Tur 4 (`prototip/kullanici-testi.md`): 23 senaryo, engelleyici yok; bulgular K-1027..K-1032'de kapandı; bilinçli bırakılanlar: kaçan hafta adlandırılmaz (Levent), held move 'load held' tasarım gereği, Calls 12, B28 bandı ve ağırlıklı Pull-up ısınması (K-1013 kararı).
+- **M9a'nın tam çıkışı K-984'ü bekler** (yol-haritası: "TestFlight'ta cihazda gezildi"): Levent K-983 (ASC 2 hafta deneme) → TestFlight derlemesi → Levent cihaz turu (akış testi A-D + SE, Pause, bayat/çevrimdışı, Story, Kalın Metin, kamera). Düşük güvenli Tur 4 bulguları cihazda yeniden bakılır (DURUM devam dosyası › Sonra). K-976 App ID ve K-910 son bakış da orada.
+- Ders: kart kabul kriterini yazmadan önce aynı alandaki son incelemenin bilinçli kararını ara (B2: "kaçan hafta adlandırılmaz" 8e373f36); sunucunun asla üretmeyeceği fikstürle yazılan test yeşil kalır ama bir şey kanıtlamaz (B15); inceleme ajanı korumayı silip testi koşturunca zayıf testler çıktı (#596). Backlog sync `fix` türü yüzünden K-1022'den beri sessizce duruyordu: `github-ids.yaml` değişmediyse senkron olmamıştır.
 
 ## M9 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)
 Ortak talimat `plan/oturum-promptlari/M9.md`. Part prompt'ları `M9-part1.md`, `M9-part2.md`, `M9-part3.md`.

@@ -233,3 +233,10 @@
 - takıldım: paralel mobil ajan 3'ü aşınca yük 400 (jest zaman aşımları); `as Schemas[...]` fikstürleri zorunlu alanı gizledi (iki CI kırmızısı); ADR ek numarası çakıştı; incelemeler gerçek hatalar yakaladı (karar kaydı okuma anında, bayat karttan bitmiş seans silme, atomik olmayan benimseme, mola haftası 'kaçtı', native modül açılışta çöker)
 - sıradaki: `plan/oturum-promptlari/YENI-YUZ-part4-devam.md` (#577, kardiyo kutusu, #582 → Tur 4 → K-984 → ÇIKIŞ)
 - AI: bütün kod, test, inceleme ve ek kararlar agent (Opus düzenleyici + ~60 Sonnet uygulayıcı/inceleme ajanı); Levent 8 ürün sorusunu cevapladı
+
+## 2026-10-15 · M9a Part 4 devam (Tur 4 + kapanış) — toplu mod; Opus düzenleyici, Sonnet ajanlar; PART 4 BİTTİ = M9a ÇIKIŞ (kod)
+- yaptım: #582 Story birleşti (koruma testi `virtual` mock); Tur 4 simülatör yürüyüşü (fikstür 23 senaryo, 1353 yanıt 0 hata; engelleyici yok, 3 önemli + 26 küçük); düzeltmeler #593 (44 pt hitSlop, Share geri/busy) #594 (Strength tek satır, bodyweight) #595 (hero 'Today', nokta satırları) #596 (öğün Undo, porsiyon, kardiyo satırı); #599 rıza metni 4 madde sürüm 5, 'Weeks on track', koç nextCallOn; #600 'Haven't trained' + `Question.onlyAfter`; privacy.md'ye Story satırı; backlog sync onarıldı (Project'e `fix` türü, id korunarak)
+- karar: Levent — B14 'Haven't trained' (a), kaçan hafta adlandırılmaz, rıza metni maddeler v5, 'Weeks on track', koç nextCallOn, Calls 12 yeter, privacy satırı, TestFlight K-983'ten sonra, K1 listesi onaylı. Agent — ADR-077 Ek 12, B26 tasarım gereği, B14 sunucu denemesi geri alındı
+- takıldım: kart kabulüne yazdığım 'her hücre adlandırılır' bugünkü bilinçli kararla çelişti (geri alındı); #595'in ilk hali imkânsız fikstürle no-op'tu; #596 çift dokunuş testi korumayı kanıtlamıyordu (mutasyonla bulundu); #599 DB testi yalnız CI'da kırmızı yandı; disk 3,2 GB'a indi (jest önbelleği temizlendi)
+- sıradaki: Levent K-983 → K-984 TestFlight + cihaz turu → M9 Part 3 (K-904, `M9-part3.md`)
+- AI: bütün kod, test, inceleme agent (Opus düzenleyici + ~20 Sonnet uygulayıcı/inceleme ajanı); Levent 9 ürün sorusunu cevapladı

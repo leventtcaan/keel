@@ -5073,7 +5073,7 @@ tasks:
     module: decision
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: []
     why: "Tur 4 B14 (Tur 3'ten kalan): 8 gün kayıtsız dönüşte check-in 'How did training go this week? Getting weaker' soruyor. Levent (15 Eki): soruya dördüncü seçenek 'Haven't trained'; kullanıcı başka yerde çalışsa bile cevap verebilir, veri dürüst. 'Seans yoksa sorma' denemesi (#595) geri alındı: kesimde kalori kararı antrenman cevabına bağlı (G7 K-98), soru kalkınca hafta 'henüz karar yok' ile harcanıyordu"
     acceptance:
@@ -5091,7 +5091,7 @@ tasks:
     module: mobile
     type: fix
     size: S
-    status: todo
+    status: done
     depends_on: []
     why: "Levent (15 Eki): Sick/In pain rıza metni ~19 satır tek paragraf → 3-4 kısa madde (ne toplanır / ne için / nasıl geri çekilir), metin sürümü 5, rıza yeniden sorulur; paylaşım sekmesi 'Streak' → 'Weeks on track' (U7, ürün dili); koç 'The call stands until its next look on {date}' nextReview yerine Decision.nextCallOn"
     acceptance:
