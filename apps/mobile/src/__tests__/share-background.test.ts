@@ -7,6 +7,7 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { t } from '@/copy';
 import { discardBackground, pickBackground } from '@/share/background';
+import { shareParams } from '@/share/params';
 
 const mockDeleted: string[] = [];
 let mockExisting: string[] = [];
@@ -41,11 +42,11 @@ beforeEach(() => {
 });
 
 describe('the gallery', () => {
-  test('the system picker, images only, without EXIF; the chosen photo is returned by its file', async () => {
+  test('the system picker, photos and videos, without EXIF; the chosen photo is returned by its file', async () => {
     picker.launchImageLibraryAsync.mockResolvedValue({ canceled: false, assets: [ASSET] } as never);
 
     await expect(pickBackground('gallery')).resolves.toEqual({ uri: ASSET.uri });
-    expect(picker.launchImageLibraryAsync).toHaveBeenCalledWith(expect.objectContaining({ mediaTypes: ['images'], exif: false, base64: false, allowsEditing: false }));
+    expect(picker.launchImageLibraryAsync).toHaveBeenCalledWith(expect.objectContaining({ mediaTypes: ['images', 'videos'], exif: false, base64: false, allowsEditing: false }));
     expect(picker.requestCameraPermissionsAsync).not.toHaveBeenCalled();
   });
 
@@ -54,6 +55,39 @@ describe('the gallery', () => {
     await expect(pickBackground('gallery')).resolves.toBeNull();
     picker.launchImageLibraryAsync.mockResolvedValue({ canceled: false, assets: [] } as never);
     await expect(pickBackground('gallery')).resolves.toBeNull();
+  });
+});
+
+describe('a video behind the sticker in a Story (K-976, ADR-076 #5)', () => {
+  const VIDEO = { uri: 'file:///cache/ImagePicker/v.mov', type: 'video', duration: 12000, width: 1080, height: 1920 };
+
+  test('a video of up to the limit in share.json is returned as a video, by its file', async () => {
+    picker.launchImageLibraryAsync.mockResolvedValue({ canceled: false, assets: [VIDEO] } as never);
+
+    await expect(pickBackground('gallery')).resolves.toEqual({ uri: VIDEO.uri, video: true });
+  });
+
+  test('exactly the limit still goes; one second over is said, not used, and its copy is removed', async () => {
+    picker.launchImageLibraryAsync.mockResolvedValue({ canceled: false, assets: [{ ...VIDEO, duration: shareParams.storyVideoSeconds * 1000 }] } as never);
+    await expect(pickBackground('gallery')).resolves.toEqual({ uri: VIDEO.uri, video: true });
+
+    mockExisting = [VIDEO.uri];
+    picker.launchImageLibraryAsync.mockResolvedValue({ canceled: false, assets: [{ ...VIDEO, duration: shareParams.storyVideoSeconds * 1000 + 1000 }] } as never);
+    await expect(pickBackground('gallery')).resolves.toBe('tooLong');
+    expect(mockDeleted).toEqual([VIDEO.uri]);
+  });
+
+  test('a video of no known length cannot be held to the limit: said as too long, never sent to Instagram', async () => {
+    picker.launchImageLibraryAsync.mockResolvedValue({ canceled: false, assets: [{ ...VIDEO, duration: null }] } as never);
+    await expect(pickBackground('gallery')).resolves.toBe('tooLong');
+  });
+
+  test('the camera takes photos only: a video would ask for the microphone, which the app does not have', async () => {
+    picker.requestCameraPermissionsAsync.mockResolvedValue({ granted: true } as never);
+    picker.launchCameraAsync.mockResolvedValue({ canceled: false, assets: [ASSET] } as never);
+
+    await pickBackground('camera');
+    expect(picker.launchCameraAsync).toHaveBeenCalledWith(expect.objectContaining({ mediaTypes: ['images'] }));
   });
 });
 
@@ -101,5 +135,6 @@ describe('what the system asks the user (the store review reads these)', () => {
 
   test('the photos text names the share background too', () => {
     expect(t('permissions.photos')).toMatch(/share sticker/i);
+    expect(t('permissions.photos')).toMatch(/video/i); // a video behind a Story sticker is chosen from the library too
   });
 });

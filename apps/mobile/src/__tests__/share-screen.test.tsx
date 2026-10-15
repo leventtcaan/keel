@@ -9,6 +9,8 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import ShareScreen from '@/app/share';
 import { t } from '@/copy';
 import { discardBackground, pickBackground } from '@/share/background';
+import { shareParams } from '@/share/params';
+import { palettes } from '@/theme/tokens';
 import type { Sticker } from '@/share/stickers';
 import { ThemeProvider } from '@/theme/theme';
 import type { WorkoutSummaryRead } from '@/train/workoutEnd';
@@ -36,6 +38,7 @@ const mockServices = {
     own: jest.fn(async () => []),
   },
   shareImage: jest.fn(async (_base64: string) => {}),
+  shareStory: jest.fn(async (_input: unknown): Promise<string> => 'opened'),
   // What the end screen also reads (the Watch's energy, K-974): the stickers use none of it, so none may be touched.
   queue: { drain: jest.fn(async () => undefined) },
   workoutRecords: jest.fn(async () => [
@@ -60,12 +63,15 @@ jest.mock('expo-router', () => ({
 }));
 // The sticker as text, with the image the ref would make: the real drawing is share-sticker-view.test.tsx.
 let mockDataUrl: string | undefined = 'iVBORw0KGgo=';
+// The second drawing, the sticker alone (what Stories take as the sticker), is told apart by its testID.
+let mockBareUrl: string | undefined = 'BARE0KGgo=';
 jest.mock('@/share/Sticker', () => {
   const { forwardRef: mockForwardRef, useImperativeHandle: mockHandle } = jest.requireActual<typeof import('react')>('react');
   const { Text: MockText } = jest.requireActual<typeof import('react-native')>('react-native');
   return {
-    StickerImage: mockForwardRef(function MockSticker({ sticker, backdrop }: { sticker: Sticker; backdrop?: { kind: string; uri?: string } }, ref) {
-      mockHandle(ref, () => ({ toDataURL: (done: (base64?: string) => void) => done(mockDataUrl) }));
+    StickerImage: mockForwardRef(function MockSticker({ sticker, backdrop, testID }: { sticker: Sticker; backdrop?: { kind: string; uri?: string }; testID?: string }, ref) {
+      mockHandle(ref, () => ({ toDataURL: (done: (base64?: string) => void) => done(testID === 'bare' ? mockBareUrl : mockDataUrl) }));
+      if (testID === 'bare') return <MockText testID="bare">{backdrop === undefined ? 'none' : backdrop.kind}</MockText>;
       return (
         <>
           <MockText testID="sticker">{[sticker.kicker, sticker.title, ...sticker.stats.flatMap((s) => [s.value, s.label]), ...sticker.lines].join('\n')}</MockText>
@@ -112,6 +118,7 @@ beforeEach(() => {
   mockUnits = 'METRIC';
   mockParams = { workout: 'w1' };
   mockDataUrl = 'iVBORw0KGgo=';
+  mockBareUrl = 'BARE0KGgo=';
   mockPick.mockResolvedValue(null);
   mockAnswers = { '/v1/consistency': ok(CONSISTENCY), '/v1/training-progress': ok(PROGRESS) };
 });
@@ -351,9 +358,9 @@ describe('the background', () => {
 
     expect(backdrop()).toBe('none');
     expect(screen.getByText(t('share.instagramNote'))).toBeOnTheScreen();
-    // Until Story sharing (K-976) the sticker goes to the system sheet: the note promises nothing more than the clear background.
-    expect(t('share.instagramNote')).toMatch(/clear background/i);
-    expect(t('share.instagramNote')).not.toMatch(/you pick|choose/i);
+    // With Stories (K-976) the note is the Story's: only the sticker goes, the background is added in Instagram.
+    expect(t('share.instagramNote')).toMatch(/only the sticker goes/i);
+    expect(t('share.instagramNote')).toMatch(/in Instagram/i);
   });
 
   test("a photo is shared like any ground: once, made on the phone", async () => {
@@ -408,5 +415,151 @@ describe('the background', () => {
     await unmount();
 
     expect(mockDiscard).toHaveBeenCalledWith('file:///cache/ImagePicker/a.jpg');
+  });
+});
+
+describe('Share to Story (K-976)', () => {
+  const story = () => screen.getByRole('button', { name: t('share.story') });
+  const press = async () => {
+    await fireEvent.press(story());
+    await act(async () => {});
+  };
+  const lastStory = () => mockServices.shareStory.mock.calls[mockServices.shareStory.mock.calls.length - 1][0];
+
+  test('the sticker alone as its own layer, over a dark colour for the dark ground; the share sheet is not opened', async () => {
+    await show();
+
+    await press();
+
+    expect(mockServices.shareStory).toHaveBeenCalledTimes(1);
+    expect(lastStory()).toEqual({ sticker: 'BARE0KGgo=', background: { kind: 'color', hex: palettes.dark.background } });
+    expect(mockServices.shareImage).not.toHaveBeenCalled();
+  });
+
+  test('"In Instagram": the same, the background left to Instagram', async () => {
+    await show();
+    await fireEvent.press(background('instagram'));
+
+    await press();
+
+    expect(lastStory()).toEqual({ sticker: 'BARE0KGgo=', background: { kind: 'color', hex: palettes.dark.background } });
+  });
+
+  test("a photo: the user's own file behind the sticker, not a picture with the sticker flattened into it", async () => {
+    mockPick.mockResolvedValueOnce({ uri: 'file:///cache/ImagePicker/a.jpg' });
+    await show();
+    await fireEvent.press(background('gallery'));
+    await act(async () => {});
+
+    await press();
+
+    expect(lastStory()).toEqual({ sticker: 'BARE0KGgo=', background: { kind: 'image', uri: 'file:///cache/ImagePicker/a.jpg' } });
+  });
+
+  test('a video: its file behind the sticker; the preview says what a video does and does not do', async () => {
+    mockPick.mockResolvedValueOnce({ uri: 'file:///cache/ImagePicker/v.mov', video: true });
+    await show();
+    await fireEvent.press(background('gallery'));
+    await act(async () => {});
+
+    expect(screen.getByText(t('share.videoNote'))).toBeOnTheScreen();
+    expect(backdrop()).toBe('none'); // elsewhere the sticker goes alone
+    await press();
+
+    expect(lastStory()).toEqual({ sticker: 'BARE0KGgo=', background: { kind: 'video', uri: 'file:///cache/ImagePicker/v.mov' } });
+  });
+
+  test('a video longer than the limit: said with the limit, and the ground stays', async () => {
+    mockPick.mockResolvedValueOnce('tooLong');
+    await show();
+
+    await fireEvent.press(background('gallery'));
+    await act(async () => {});
+
+    expect(screen.getByText(t('share.videoTooLong', { seconds: shareParams.storyVideoSeconds }))).toBeOnTheScreen();
+    expect(backdrop()).toBe('dark');
+  });
+
+  test('Instagram or the App ID missing: the share sheet takes over with the image as previewed, and it is said', async () => {
+    mockServices.shareStory.mockResolvedValueOnce('unavailable');
+    mockPick.mockResolvedValueOnce({ uri: 'file:///cache/ImagePicker/a.jpg' });
+    await show();
+    await fireEvent.press(background('gallery'));
+    await act(async () => {});
+
+    await press();
+
+    expect(mockServices.shareImage).toHaveBeenCalledTimes(1);
+    expect(mockServices.shareImage).toHaveBeenCalledWith('iVBORw0KGgo=');
+    expect(screen.getByText(t('share.storyFallback'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('share.failed'))).toBeNull();
+  });
+
+  test('left unfinished in Instagram: a choice, not a failure; no sheet, nothing said', async () => {
+    mockServices.shareStory.mockResolvedValueOnce('cancelled');
+    await show();
+
+    await press();
+
+    expect(mockServices.shareImage).not.toHaveBeenCalled();
+    expect(screen.queryByText(t('share.failed'))).toBeNull();
+    expect(screen.queryByText(t('share.storyFallback'))).toBeNull();
+  });
+
+  test('a failure: said by name only, the button free again; the next try clears it', async () => {
+    mockServices.shareStory.mockRejectedValueOnce(Object.assign(new Error('/private/var/x.png'), { name: 'ShareFailed' }));
+    await show();
+
+    await press();
+    expect(screen.getByText(t('share.failed'))).toBeOnTheScreen();
+    expect(mockServices.report).toHaveBeenCalledWith({ name: 'ShareFailed' });
+    expect(JSON.stringify(mockServices.report.mock.calls)).not.toContain('private');
+
+    await press();
+    expect(mockServices.shareStory).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText(t('share.failed'))).toBeNull();
+  });
+
+  test('a sticker the drawing could not make: said, Instagram never asked', async () => {
+    mockBareUrl = undefined;
+    await show();
+
+    await press();
+
+    expect(mockServices.shareStory).not.toHaveBeenCalled();
+    expect(screen.getByText(t('share.failed'))).toBeOnTheScreen();
+    expect(mockServices.report).toHaveBeenCalledWith({ name: 'EmptyImage' });
+  });
+
+  test('one hand-over at a time: both buttons wait while one is open', async () => {
+    let close: (result: string) => void = () => {};
+    mockServices.shareStory.mockImplementationOnce(() => new Promise<string>((resolve) => (close = resolve)));
+    await show();
+
+    await fireEvent.press(story());
+    await fireEvent.press(story());
+    await fireEvent.press(screen.getByRole('button', { name: t('share.share') }));
+
+    expect(mockServices.shareStory).toHaveBeenCalledTimes(1);
+    expect(mockServices.shareImage).not.toHaveBeenCalled();
+    expect(story().props.accessibilityState?.disabled).toBe(true);
+    await act(async () => close('opened'));
+    expect(story().props.accessibilityState?.disabled).toBe(false);
+  });
+
+  test("a picked video's copy is removed like a photo's", async () => {
+    mockPick.mockResolvedValueOnce({ uri: 'file:///cache/ImagePicker/v.mov', video: true });
+    const { unmount } = await render(
+      <ThemeProvider scheme="light">
+        <ShareScreen />
+      </ThemeProvider>,
+    );
+    await act(async () => {});
+    await fireEvent.press(background('gallery'));
+    await act(async () => {});
+
+    await unmount();
+
+    expect(mockDiscard).toHaveBeenCalledWith('file:///cache/ImagePicker/v.mov');
   });
 });

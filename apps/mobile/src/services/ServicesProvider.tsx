@@ -30,6 +30,9 @@ import { revenueCatStore } from '@/subscription/revenueCat';
 import { keychainStorage } from '@/session/keychain';
 import { exportAccount } from '@/settings/exportData';
 import { deviceShareImage } from '@/share/deviceShare';
+import { deviceShareStory } from '@/share/deviceStory';
+import { facebookAppId } from '@/share/storyConfig';
+import type { StoryInput, StoryResult } from '@/share/story';
 import { deviceTriggers, startAutoSync } from '@/sync/autoSync';
 import type { Appearance } from '@/theme/appearance';
 import type { UnitSystem } from '@/units/units';
@@ -52,6 +55,11 @@ export type PhoneServices = AppServices & {
   importHealthWeights(): Promise<number | 'consent'>;
   /** The share card made on this phone (K-612), as a PNG in base64, handed to the share sheet; the app sends it nowhere. */
   shareImage(base64: string): Promise<void>;
+  /**
+   * The sticker handed to Instagram Stories over the user's photo or video (K-976): 'unavailable' without the Facebook App
+   * ID or Instagram on the phone (the screen then opens the share sheet), 'cancelled' when left unfinished.
+   */
+  shareStory(input: StoryInput): Promise<StoryResult>;
   /**
    * The system's file picker for another app's export (K-609): the chosen file's text, read on the phone; null when none
    * was chosen. The file goes nowhere from here (import/formats.ts reads it).
@@ -118,6 +126,7 @@ async function build(): Promise<PhoneServices> {
         now: new Date(),
       }),
     shareImage: deviceShareImage(services.report),
+    shareStory: deviceShareStory(services.report, facebookAppId()),
     importFile: {
       pick: async () => {
         const picked = await File.pickFileAsync();

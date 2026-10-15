@@ -1317,11 +1317,12 @@
    "react-native-reanimated": null,
    "react-native-safe-area-context": null,
    "react-native-screens": null,
+   "react-native-share": null,
    "react-native-svg": null,
    "react-native-web": null,
    "react-native-worklets": null
   },
-  "dependencies_note": "Where each runtime dependency sends data off the phone, if anywhere; null = nowhere (on-device). expo-notifications is used for local notifications only (no push token)."
+  "dependencies_note": "Where each runtime dependency sends data off the phone, if anywhere; null = nowhere (on-device). expo-notifications is used for local notifications only (no push token). react-native-share only hands a sticker to the Instagram app on the phone when the user taps Share to Story (the system share sheet is the same kind of hand-over): the app sends nothing itself (K-976, ADR-076)."
  },
  "outbound": [
   {

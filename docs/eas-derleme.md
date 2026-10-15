@@ -43,6 +43,7 @@ Paket kimliği: `dev.leventtcaan.keel` (geçici, `app.config.ts`; `KEEL_IOS_BUND
    derlemede ihracat sorusu sormaz.
    Yasal adresler (`EXPO_PUBLIC_TERMS_URL`, `EXPO_PUBLIC_PRIVACY_URL`) gizli değil: `eas.json › build.production.env`'de (K-809, ADR-060; geliştirme istemcisi yerelde `.env`'den okur);
    ürün adı/alan adı gelince (M10) orada ve `docs/yasal/site/_config.yml`'de değişir.
+   Instagram Story için Facebook App ID (K-976, ADR-076 #5, ADR-071 #2): `EXPO_PUBLIC_FACEBOOK_APP_ID` (EAS ortamında ve yerel `.env`'de; değer repoda yok, Levent'in Meta geliştirici hesabından). Yoksa Story düğmesi sistem paylaşım sayfasına düşer. Yeni native modül (`react-native-share`) ve `LSApplicationQueriesSchemes` yeni bir development build ister; cihazda foto ve video ile Story testi K-984.
    Sunucu canlı (M9 Part 1, `https://keel-beta.duckdns.org/health`); `prod` profilinde koç AI kapalı, SANDBOX satın almaları sayılır.
    RevenueCat anahtarı (`EXPO_PUBLIC_REVENUECAT_APPLE_KEY`) yokken mağaza "kullanılamaz" olur ve abonelik kapısı kapanmaz (ADR-058 #107).
 

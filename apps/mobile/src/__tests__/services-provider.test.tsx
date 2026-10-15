@@ -43,6 +43,8 @@ jest.mock('expo-crypto', () => ({
   digestStringAsync: async (_algorithm: string, text: string) =>
     jest.requireActual<typeof import('node:crypto')>('node:crypto').createHash('sha256').update(text).digest('hex'),
 }));
+// Instagram's hand-over is native (react-native-share): a test one that only records.
+jest.mock('react-native-share', () => ({ __esModule: true, default: { shareSingle: jest.fn() }, Social: { InstagramStories: 'instagramstories' } }));
 jest.mock('@/api/config', () => ({ apiBaseUrl: () => 'https://api.example.test' }));
 jest.mock('@/sync/autoSync', () => ({ startAutoSync: () => () => {}, deviceTriggers: {} }));
 // Apple Health as a test one: available, its weigh-in read recorded (K-616).
@@ -104,6 +106,18 @@ test('the unit system reaches the screen, and a change re-renders it', async () 
     await services!.units.set(other);
   });
   expect(screen.getByText(new RegExp(` ${other}$`))).toBeOnTheScreen();
+});
+
+test('Stories are wired, and with no Facebook App ID in the environment they are unavailable (the share sheet takes over, K-976)', async () => {
+  global.fetch = jest.fn(async () => new Response('{"code":"NOT_FOUND","message":"x"}', { status: 404, headers: { 'Content-Type': 'application/json' } }));
+  await render(
+    <ServicesProvider>
+      <Probe />
+    </ServicesProvider>,
+  );
+  await act(async () => {});
+
+  expect(await services!.shareStory({ sticker: 'iVBORw0KGgo=', background: { kind: 'color', hex: '#000000' } })).toBe('unavailable');
 });
 
 test('the import reads Apple Health only with both consents, the year before the regular read (K-616)', async () => {

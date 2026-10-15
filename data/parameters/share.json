@@ -17,6 +17,14 @@
       "note": "The height of a Story-sized image (a photo or dark background, K-975 part B); a sticker alone is as tall as its words."
     },
     {
+      "key": "story_video_max_seconds",
+      "value": 20,
+      "unit": "s",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-076-paylasim-cikartma.md#D1",
+      "note": "The longest video that may sit behind a sticker in an Instagram Story: Instagram takes at most 20 seconds (Meta, Sharing to Stories, checked 7 Oct 2026, ADR-076 #5)."
+    },
+    {
       "key": "progress_lifts",
       "value": 3,
       "unit": "lifts",

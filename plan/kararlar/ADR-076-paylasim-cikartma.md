@@ -41,7 +41,7 @@ indirmeden reels ve story'lerden tanıyor (ADR-071 #6). Bugün paylaşım RN `Sh
 
 ## D1 · Sayılar ve listeler (K-975)
 Kararın sayıları `data/parameters/share.json`'da (telefonun okuduğu parametre; kod değil): görüntü genişliği 1080 ve Story yüksekliği 1920 (#8:
-`story_width_px`, `story_height_px`), Progress çıkartmasının andığı hareket sayısı 3 (#2: `progress_lifts`). `share_withheld_rules` kalktı: karar
+`story_width_px`, `story_height_px`), Progress çıkartmasının andığı hareket sayısı 3 (#2: `progress_lifts`), Story'de video arka planın en çok süresi 20 sn (#5: `story_video_max_seconds`). `share_withheld_rules` kalktı: karar
 hiç paylaşılmadığı için (#1) dışarıda tutulacak karar yok.
 
 ## Neden

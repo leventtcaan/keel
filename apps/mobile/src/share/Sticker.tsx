@@ -21,7 +21,7 @@ const COVER = 'xMidYMid slice';
 /** What the sticker sits on, drawn into the same image: the user's photo or a plain dark ground. None: the sticker alone. */
 export type Backdrop = { kind: 'dark' } | { kind: 'photo'; uri: string };
 
-type Props = { sticker: Sticker; width: number; backdrop?: Backdrop };
+type Props = { sticker: Sticker; width: number; backdrop?: Backdrop; testID?: string };
 
 /**
  * One sticker (K-975): its words on a see-through dark panel, the weeks as cells, the word mark. Drawn as SVG so the phone
@@ -31,7 +31,7 @@ type Props = { sticker: Sticker; width: number; backdrop?: Backdrop };
  * ground; without, only as tall as its words, see-through. Nothing is drawn by a server and no body or figure goes in
  * (U12); the photo is the user's file, read here and nowhere else (V1).
  */
-export const StickerImage = forwardRef<Svg, Props>(function StickerImage({ sticker, width, backdrop }, ref) {
+export const StickerImage = forwardRef<Svg, Props>(function StickerImage({ sticker, width, backdrop, testID }, ref) {
   const { items, height } = layout(sticker);
   const canvas = backdrop === undefined ? height : shareParams.storyHeight;
   // Under the words: the user's photo filling the image (never letterboxed), or a plain dark ground, or nothing.
@@ -45,6 +45,7 @@ export const StickerImage = forwardRef<Svg, Props>(function StickerImage({ stick
   return (
     <Svg
       ref={ref}
+      testID={testID}
       width={width}
       height={(width * canvas) / shareParams.storyWidth}
       viewBox={`0 0 ${shareParams.storyWidth} ${canvas}`}
