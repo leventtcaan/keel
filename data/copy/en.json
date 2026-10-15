@@ -1180,6 +1180,8 @@
     "denied": "The camera isn't allowed for this app. You can allow it in the iPhone's Settings, or choose a photo from the gallery.",
     "photoFailed": "That photo couldn't be opened. Try another.",
     "share": "Share",
+    "preparing": "Getting your sticker ready",
+    "back": "Back",
     "note": "Made on this phone. No body weight. Your photo stays yours. Save, TikTok and more are in the share sheet.",
     "nothing": "Nothing to share yet. A workout, a week on track or a stronger lift gives you a sticker.",
     "failed": "Couldn't make the sticker. Try again.",

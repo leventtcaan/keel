@@ -182,13 +182,47 @@ test('Share makes the PNG on the phone and hands it to the sheet once; the butto
   await show();
 
   await fireEvent.press(screen.getByRole('button', { name: t('share.share') }));
-  await fireEvent.press(screen.getByRole('button', { name: t('share.share') }));
+  // While it waits the button names what is happening (B22), so it is found by that name.
+  await fireEvent.press(screen.getByRole('button', { name: t('share.preparing') }));
   expect(mockServices.shareImage).toHaveBeenCalledTimes(1);
   expect(mockServices.shareImage).toHaveBeenCalledWith('iVBORw0KGgo=');
-  expect(screen.getByRole('button', { name: t('share.share') }).props.accessibilityState?.disabled).toBe(true);
+  expect(screen.getByRole('button', { name: t('share.preparing') }).props.accessibilityState?.disabled).toBe(true);
 
   await act(async () => close());
   expect(screen.getByRole('button', { name: t('share.share') }).props.accessibilityState?.disabled).toBe(false);
+});
+
+test('while the sticker is being prepared the button says so in words and is busy for a screen reader (B22)', async () => {
+  let close: () => void = () => {};
+  mockServices.shareImage.mockImplementationOnce(() => new Promise<void>((resolve) => (close = resolve)));
+  await show();
+  expect(screen.getByRole('button', { name: t('share.share') }).props.accessibilityState?.busy ?? false).toBe(false);
+  expect(screen.queryByText(t('share.preparing'))).toBeNull();
+
+  await fireEvent.press(screen.getByRole('button', { name: t('share.share') }));
+  const preparing = screen.getByRole('button', { name: t('share.preparing') });
+  expect(screen.getByText(t('share.preparing'))).toBeOnTheScreen();
+  expect(preparing.props.accessibilityState).toMatchObject({ busy: true, disabled: true });
+  expect(screen.queryByRole('button', { name: t('share.share') })).toBeNull();
+
+  await act(async () => close());
+  expect(screen.getByRole('button', { name: t('share.share') }).props.accessibilityState?.busy ?? false).toBe(false);
+  expect(screen.queryByText(t('share.preparing'))).toBeNull();
+});
+
+test('the screen has a visible way out at the top, which goes back (B25)', async () => {
+  await show();
+  const back = screen.getByRole('button', { name: t('share.back') });
+  expect(back).toBeOnTheScreen();
+  await fireEvent.press(back);
+  expect(jest.requireMock('expo-router').router.back).toHaveBeenCalledTimes(1);
+});
+
+test('the way out is there before the numbers are in, and a failed one still shows it', async () => {
+  mockAnswers = {};
+  mockServices.training.read.mockRejectedValueOnce(new Error('x'));
+  await show();
+  expect(screen.getByRole('button', { name: t('share.back') })).toBeOnTheScreen();
 });
 
 test('a share that fails says so by name only, and trying again clears it', async () => {
@@ -537,12 +571,14 @@ describe('Share to Story (K-976)', () => {
     await show();
 
     await fireEvent.press(story());
-    await fireEvent.press(story());
+    // The pressed one says it is working (B22); the other keeps its name and waits.
+    const working = () => screen.getByRole('button', { name: t('share.preparing') });
+    await fireEvent.press(working());
     await fireEvent.press(screen.getByRole('button', { name: t('share.share') }));
 
     expect(mockServices.shareStory).toHaveBeenCalledTimes(1);
     expect(mockServices.shareImage).not.toHaveBeenCalled();
-    expect(story().props.accessibilityState?.disabled).toBe(true);
+    expect(working().props.accessibilityState?.disabled).toBe(true);
     await act(async () => close('opened'));
     expect(story().props.accessibilityState?.disabled).toBe(false);
   });
