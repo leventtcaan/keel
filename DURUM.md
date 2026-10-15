@@ -5,8 +5,10 @@ guncelleme: 2026-10-10
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (15 Eki — M9a Part 4 token sınırında durdu)
-**Devam:** `plan/oturum-promptlari/YENI-YUZ-part4-devam.md` (açık iş: #577, kardiyo kutusu PR'ı, #582 düzeltmesi; sonra Tur 4 → K-984 → ÇIKIŞ). Tablo: DURUM › M9a ilerleme › Part 4 başı.
+## ▶ DEVAM NOKTASI (15 Eki akşam — M9a Part 4 devam-2, Tur 4 bitti)
+**Devam:** `plan/oturum-promptlari/YENI-YUZ-part4-devam.md` (#582 birleştir → K-1027 dalı (WIP testler) + K-1028 + K-1030 → K-1029 → K-984 hazırlığı → ÇIKIŞ). Tablo: DURUM › M9a ilerleme › Part 4 başı.
+
+## (önceki) DEVAM NOKTASI (15 Eki — M9a Part 4 token sınırında durdu)
 
 ## (önceki) DEVAM NOKTASI (10 Eki gece — M9a Part 3 BİTTİ)
 **Sıradaki session: M9a Part 4 · Kalan + kapanış** → `plan/oturum-promptlari/YENI-YUZ-kod.md` › "Part 4 prompt'u"; ayrıntı DURUM › M9a ilerleme › Part 3 ÇIKIŞ.
@@ -939,9 +941,11 @@ K-1014 · K-1013 iki PR'a bölündü (A karar/Bu hafta, B oturum/Edit).
 | K-979 İlerleme | 🔍 | #571 ✅ · #577 (auto-merge) · kardiyo kutusu PR'ı | ADR-078 Ek 2/3; `progress.json` |
 | K-981 Dönüş + Life | ✅ | #578 | her durumda 'Not now'; ADR-077 Ek 10; K-1026 #579 (Ek 11) |
 | K-975 Paylaşım A | ✅ | #573 · #575 | ADR-054 kartı kalktı; panel cihazda bakılacak |
-| K-976 Paylaşım B | 🔍 düzeltme | #582 | lazy require (engelleyici); Tur 4'ten sonra birleşir |
+| K-976 Paylaşım B | ✔ birleşmeye hazır | #582 | lazy require + koruma testi (`virtual` mock); doğrulama PASS |
 | K-977 Paylaşım C | ↪ M11 | | Levent 14 Eki |
 | K-910 Kalın Metin | 🛠 cihaz | #581 ✅ (Refs) | `useBoldText` + gizli kopya; cihazda doğrulama Tur 4/K-984 |
+| Tur 4 yürüyüşü | ✅ | | 23 senaryo; engelleyici yok; 3 önemli + 26 küçük → K-1027..K-1030 |
+| K-1027..K-1030 Tur 4 düzeltmeleri | ⏳ | #589 dal (WIP) | K-1028/29/30 başlamadı |
 | K-984 TestFlight + cihaz turu | ⏳ | | K-983 (Levent) bekler |
 
 ## M9 ilerleme (tek doğru kaynak — her part başında okunur, sonunda yazılır)

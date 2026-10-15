@@ -1,30 +1,34 @@
-# M9a Part 4 · devam (15 Eki — token sınırında durdu)
+# M9a Part 4 · devam-2 (15 Eki akşam — Levent yer değiştirdi, sağlıklı noktada durdu)
 
 > Hafıza: `DURUM.md › ## M9a ilerleme › Part 4 başı` (tablo + K1 listesi + Levent soruları). Ortak talimat `YENI-YUZ-kod.md`, ajan talimatı `ajan-brief.md`.
 
-## Durum (main `b2475301`+, son göç V49)
-Birleşen (14-15 Eki, 34 PR): #546 #548 #549 #550 #557 #558 #559(V48) #560 #561 #562 #563 #564 #565 #566 #567(V49) #568 #569 #570 #571 #572 #573 #574 #575 #576 #578 #579 #580 #581.
-Kart: done K-1013 K-1014 K-1009 K-978 K-999 K-1016..K-1026 K-982 K-980 K-981 K-975 K-1025; K-977 → M11 (Levent).
+## Durum (main `1898746d`, son göç V49)
+- Birleşti: #577 (K-979 İlerleme B), #583 (Cardio kutusu → `/cardio`). Arka planda çalışan ajan yok.
+- **#582 K-976 Story:** doğrulama PASS; koruma testi güçlendi (`1071c220`, `jest.mock(..., {virtual: true})` fırlatır; kırmızı/yeşil kanıtlı). CI yeşil, MERGEABLE. **Tur 4 bitti → artık birleştirilebilir** (`gh pr update-branch 582` → `gh pr merge 582 --squash`).
+- **Tur 4 bitti** (`prototip/kullanici-testi.md › Tur 4`): engelleyici/çökme/U4-U8 ihlali yok; 3 önemli + 26 küçük. Ham bulgular `../keel-sim/.sim/tur4-bulgular.md`, kanıt `../keel-sim/.sim/shots/tur4-*.png`. Fikstür 23 senaryo, 1353 yanıt 0 hata (yedek `fixture.p3.js`, `validate.p3.py`).
+- Backlog senkronu onarıldı: Project "Work type" alanına `fix` eklendi (id'ler korunarak); K-1022..K-1030 issue'ları açıldı (#584-#592).
 
-## Açık iş (önce bunları bitir)
-1. **#577 K-979 İlerleme B** — inceleme + düzeltmeler tamam, auto-merge açık; CI bekliyordu. Birleşmediyse `gh pr checks 577`, kırmızıysa log → düzelt.
-2. **K-979 kardiyo kutusu takip PR'ı** — #577 birleşince: `mobile/442-progress-cardio-box`, İlerleme Cardio kutusu `/plus` → `/cardio` (tek satır + test). Açılmadıysa sen aç.
-3. **#582 K-976 Instagram Story** — engelleyici düzeltildi (`8a058d65`: lazy require + `ShareModuleMissing` → sistem sayfası, `parseAppId` yalnız sayısal, mock'suz başlangıç testi; worktree node_modules sembolik bağa döndü). Kalan: kısa doğrulama + Tur 4'ten sonra birleştir. Gizlilik sorusu: iOS pasteboard 5 dk, localOnly yok (Universal Clipboard).
-4. **K-910 (#581 birleşti, `Refs #412`)** — kart açık kalır; Kalın Metin'de doğrulama Tur 4 + K-984.
-5. Dependabot #547 (setup-node ara sürüm) beklemede (ADR-019 #6).
+## Açık iş (sıra)
+1. #582 birleştir (yukarıda).
+2. **K-1027** (#589, dal `mobile/589-small-button-touch-share`, uzakta; WIP `9b318080`: yalnız testler + en.json, kod yok — testler kırmızı olmalı). Devam: Button sm dokunma alanı ≥ size.touch (hitSlop/minHeight), SHARE kapat + busy etiketi. Yeni ajan bu dalı alır, testleri okur, kodu yazar.
+3. **K-1028** (#590) İlerleme Strength grafik önce, ızgara açıklaması, bodyweight, rızasız hero — başlamadı.
+4. **K-1030** (#592) dönüş haftasında antrenman sorusu (B14, sunucu mu telefon mu: araştır; ADR-077 ile çelişirse dur), hero nextCallOn, bodyweight ısınma, sayaç = şerit, B28 bandı — başlamadı.
+5. **K-1029** (#591) Recent onay + Undo, porsiyon yazımı, This week kardiyo satırı — başlamadı.
+6. K-910 kartı: Tur 4'te Kalın Metin temiz → cihazda (K-984) son bakış, sonra done.
+7. Dependabot #547 beklemede; güvenlik uyarıları bilinen 4'lü (mobil lock, geliştirme bağımlılığı).
+Her PR'a inceleme ajanı; birleştirmeden önce `gh pr update-branch`; ajan brief'leri bu sohbette K-1027/28/30 için yazılmıştı: kart + Tur 4 bulgu kodları (B1..B29) + `ajan-brief.md` + `jest -w 1`.
 
-## Sıradaki büyük iş: kullanıcı-gözü yürüyüşü Tur 4
-Tek ajan (simülatörün tek kullanıcısı) ya da düzenleyici: `../keel-sim/.sim/` (run.sh, scenario.sh, fixture.js, validate.py). Önce fikstüre yeni alanlar: `Program.canAddDay`, `Decision.nextCallOn`, `changes[] MOVE` (held_move), `Consistency.weeks[]`, `GET /v1/weigh-ins/summary`, `StartingTarget.proteinG/stepsPerDay`, `DayBudget.targetProteinG`, `ProgramCardio.loggedDays/loggedToday`, `DELETE /v1/cardio-sessions/{id}`, `GET/POST /v1/return`, `PUT /v1/state {days}`, `GET /v1/foods/recent`; `validate.py` ile sözleşmeye karşı doğrula. Ekranlar: İlerleme (ilk gün / 12. hafta / rızasız), tartı + Health kartı, öğün Recent, '+ › Cardio' + Undo, Dönüş (8 gün / 22 gün / rızasız) + Life (rızasız Sick → rıza adımı), Ayarlar, paylaşım (Story hariç), K-1013 maddeleri (süperset, Edit uyarısı, 1. hafta gün ekle, hero), başka cihazda açık seans; iki tema; **Kalın Metin açık** (K-910). Bulgular `prototip/kullanici-testi.md › Tur 4` + kart.
-Sonra: #582 birleşir → K-984 (TestFlight derlemesi; Levent cihaz turu: SE, onboarding planı, Pause, bayat/çevrimdışı, Story, Kalın Metin). K-984 K-983'e (Levent ASC) bağlı.
+## Sonra
+K-984 hazırlığı (TestFlight; K-983 Levent ASC bekler). Cihaz turunda yeniden bakılacak düşük güvenli bulgular: weigh-in nokta grafiği eksensiz, iki birincil düğme, Food left kartı FAB altında, egzersiz simgeleri, Settings başlık hiyerarşisi, sticker ön izleme boşluğu, SE ölçüsü, canlı Pause, kamera arka planı, Story.
 
 ## Levent'e sorulacaklar (part sonunda, AskUserQuestion)
 - K1 listesi (DURUM › Part 4 başı) toplu onay.
-- İlerleme hero "Day 1." yerine "Today's targets." (ADR-078 #1; telefon gün sayamaz).
-- Koç "The call stands until its next look" nextReview'u söylüyor, Hero nextCallOn — koç metni nextCallOn'a geçsin mi.
-- İlerleme › Calls yalnız son 12 karar; daha eskisi için "Show older" gerekir mi.
-- Paylaşım çıkartmasında panel (prototipte gölge) — cihazda bakılacak.
-- Gizlilik metni: Story paylaşımında çıkartma ve seçilen foto/video kullanıcının dokunuşuyla Instagram uygulamasına gider — privacy.md'ye satır?
-- privacy.md'ye bu partta eklenen satırlar (K-1021 durum bildirimi, K-1020 dönüş cevabı) yayında; onay metni sürüm 4.
+- İlerleme hero "Day 1." yerine "Today's targets." (ADR-078 #1).
+- Koç "The call stands until its next look" → nextCallOn'a geçsin mi.
+- İlerleme › Calls yalnız son 12 karar; "Show older" gerekir mi.
+- Tur 4: rıza metni (Sick/In pain) tek paragraf ~19 satır — maddelere bölünsün mü (metin sürümü 4, değişirse 5 olur).
+- Tur 4: paylaşım sekmesi adı "Streak" (içerik haftalık "Weeks on track") — ad değişsin mi.
+- Story gizlilik satırı privacy.md'ye; iOS pasteboard 5 dk.
 - K-976 Facebook App ID (`EXPO_PUBLIC_FACEBOOK_APP_ID`, EAS ortam değişkeni) · K-983 ASC deneme.
 
 ## Bitiş
@@ -32,8 +36,8 @@ Sonra: #582 birleşir → K-984 (TestFlight derlemesi; Levent cihaz turu: SE, on
 
 ## Devam prompt'u
 ```
-oturum-baslat. Toplu mod. M9a PART 4 devam: plan/oturum-promptlari/YENI-YUZ-part4-devam.md (önce "Açık iş" 1-5, sonra Tur 4, sonra K-984 hazırlığı ve ÇIKIŞ).
+oturum-baslat. Toplu mod. M9a PART 4 devam-2: plan/oturum-promptlari/YENI-YUZ-part4-devam.md (önce #582 birleştir, sonra K-1027 dalı + K-1028 + K-1030, ardından K-1029; sonra K-984 hazırlığı ve ÇIKIŞ).
 Ortak talimat YENI-YUZ-kod.md, ajan talimatı ajan-brief.md. Opus düzenleyici; uygulayıcı ve inceleme ajanları Sonnet (model: sonnet).
-Paralel en çok 3 uygulayıcı (mobil jest ağır: yük 400'e çıktı, jest -w 1/2); her PR'a inceleme; birleştirmeden önce gh pr update-branch; göçlü PR'lar tek tek (sıradaki V50).
+Paralel en çok 3 uygulayıcı (mobil jest -w 1/2); her PR'a inceleme; birleştirmeden önce gh pr update-branch; göçlü PR'lar tek tek (sıradaki V50).
 Bitiş: "Part 4 ÇIKIŞ = M9a ÇIKIŞ" + özet + Levent'e biriken sorular + sıradaki: M9 Part 3 (beta kohortu, K-904) prompt'u.
 ```
