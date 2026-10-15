@@ -133,61 +133,69 @@ class RevenueCatSubscriberTests {
                 .isInstanceOf(ApiException.class);
     }
 
-    // ---- The order: the answer's moment against the state's (SubscriptionState.next), whatever came first. ----
+    // ---- The settle window: an answer counts only when made SETTLE or more after the state's own moment (ADR-056 Ek 3). ----
 
-    private static final SubscriptionState REST = new SubscriptionState(Status.ACTIVE, MONTH, NOW);
+    private static final Duration SETTLE = Duration.ofMinutes(5);
+    private static final Instant LATER = NOW.plus(SETTLE);
 
-    @Test
-    void anAnswerOlderThanTheStateNeverTakesItBack() {
-        SubscriptionState later = new SubscriptionState(Status.REFUNDED, NOW.plusSeconds(5), NOW.plusSeconds(5)); // a refund event after the ask
-
-        assertThat(SubscriptionState.next(Optional.of(later), REST)).isEqualTo(later);
+    private static SubscriptionState answer(Status status, Instant until, Instant madeAt) {
+        return new SubscriptionState(status, until, madeAt);
     }
 
     @Test
-    void anAnswerNewerThanTheStateReplacesIt() {
-        SubscriptionState earlier = new SubscriptionState(Status.ACTIVE, NOW.plusSeconds(60), NOW.minusSeconds(5));
+    void anAnswerWithNoStateBeforeItIsTheFirstStateWhateverItsMoment() {
+        SubscriptionState answer = answer(Status.ACTIVE, MONTH, NOW);
 
-        assertThat(SubscriptionState.next(Optional.of(earlier), REST)).isEqualTo(REST);
+        assertThat(SubscriptionState.afterAnswer(Optional.empty(), answer, SETTLE)).isEqualTo(answer);
     }
 
     @Test
-    void twoAnswersInEitherOrderLeaveTheNewerOne() {
-        SubscriptionState first = new SubscriptionState(Status.ACTIVE, MONTH, NOW.minusSeconds(30));
+    void aLaggingAnswerThatSaysEndedInsideTheWindowNeverLocksOutAJustReceivedRenewal() {
+        SubscriptionState renewed = answer(Status.ACTIVE, MONTH, NOW); // the webhook's
+        SubscriptionState laggingEnded = answer(Status.EXPIRED, NOW.minus(Duration.ofDays(1)), NOW.plusSeconds(1));
+        SubscriptionState laggingRefund = answer(Status.REFUNDED, NOW.minusSeconds(60), NOW.plusSeconds(30));
+        SubscriptionState laggingShorter = answer(Status.ACTIVE, MONTH.minusSeconds(1), LATER.minusMillis(1));
 
-        assertThat(SubscriptionState.next(Optional.of(first), REST)).isEqualTo(REST);
-        assertThat(SubscriptionState.next(Optional.of(REST), first)).isEqualTo(REST);
-    }
-
-    @Test
-    void anAnswerWithNoStateBeforeItIsTheFirstState() {
-        assertThat(SubscriptionState.next(Optional.empty(), REST)).isEqualTo(REST);
-        assertThat(SubscriptionState.afterAnswer(Optional.empty(), REST)).isEqualTo(REST);
-    }
-
-    // ---- An answer only extends: ending or shortening access comes only from webhooks (ADR-056 Ek 3). ----
-
-    @Test
-    void anAnswerThatSaysEndedNeverShortensAccessAJustReceivedRenewalGave() {
-        SubscriptionState renewed = new SubscriptionState(Status.ACTIVE, MONTH, NOW.minusSeconds(1)); // the webhook's, REST lags behind it
-        SubscriptionState laggingEnded = new SubscriptionState(Status.EXPIRED, NOW.minus(Duration.ofDays(1)), NOW);
-        SubscriptionState laggingRefund = new SubscriptionState(Status.REFUNDED, NOW.minusSeconds(60), NOW);
-        SubscriptionState laggingShorter = new SubscriptionState(Status.ACTIVE, MONTH.minusSeconds(1), NOW);
-
-        for (SubscriptionState answer : new SubscriptionState[] {laggingEnded, laggingRefund, laggingShorter}) {
-            assertThat(SubscriptionState.afterAnswer(Optional.of(renewed), answer)).as(answer.status().name()).isEqualTo(renewed);
+        for (SubscriptionState lagging : new SubscriptionState[] {laggingEnded, laggingRefund, laggingShorter}) {
+            assertThat(SubscriptionState.afterAnswer(Optional.of(renewed), lagging, SETTLE)).as(lagging.status().name()).isEqualTo(renewed);
         }
     }
 
     @Test
-    void anAnswerThatExtendsOrKeepsTheEndIsKeptByItsMoment() {
-        SubscriptionState current = new SubscriptionState(Status.ACTIVE, MONTH, NOW.minusSeconds(5));
-        SubscriptionState longer = new SubscriptionState(Status.ACTIVE, MONTH.plus(Duration.ofDays(30)), NOW);
-        SubscriptionState cancelledSameEnd = new SubscriptionState(Status.CANCELLED, MONTH, NOW);
-        SubscriptionState longerButOlder = new SubscriptionState(Status.ACTIVE, MONTH.plus(Duration.ofDays(30)), NOW.minusSeconds(60));
+    void aLaggingAnswerThatSaysActiveInsideTheWindowNeverGivesAccessBackAfterARefundOrExpiration() {
+        SubscriptionState refunded = answer(Status.REFUNDED, NOW, NOW);
+        SubscriptionState expired = answer(Status.EXPIRED, NOW, NOW);
+        SubscriptionState laggingActive = answer(Status.ACTIVE, MONTH, NOW.plusSeconds(5));
 
-        assertThat(SubscriptionState.afterAnswer(Optional.of(current), longer)).isEqualTo(longer);
-        assertThat(SubscriptionState.afterAnswer(Optional.of(current), cancelledSameEnd)).as("same end: the kind of state may change").isEqualTo(cancelledSameEnd);
-        assertThat(SubscriptionState.afterAnswer(Optional.of(current), longerButOlder)).as("still never from before the state").isEqualTo(current);
+        assertThat(SubscriptionState.afterAnswer(Optional.of(refunded), laggingActive, SETTLE)).isEqualTo(refunded);
+        assertThat(SubscriptionState.afterAnswer(Optional.of(expired), laggingActive, SETTLE)).isEqualTo(expired);
+        assertThat(SubscriptionState.afterAnswer(Optional.of(refunded), laggingActive, SETTLE).active(NOW.plusSeconds(6))).isFalse();
+    }
+
+    @Test
+    void afterTheWindowTheAnswerIsAuthoritativeBothWaysAndTheWindowsEdgeCounts() {
+        SubscriptionState renewed = answer(Status.ACTIVE, MONTH, NOW);
+        SubscriptionState expired = answer(Status.EXPIRED, NOW, NOW);
+        SubscriptionState nowEnded = answer(Status.EXPIRED, NOW.plus(Duration.ofMinutes(1)), LATER);
+        SubscriptionState nowActive = answer(Status.ACTIVE, MONTH, LATER.plusSeconds(1));
+
+        assertThat(SubscriptionState.afterAnswer(Optional.of(renewed), nowEnded, SETTLE)).as("a missed expiration").isEqualTo(nowEnded);
+        assertThat(SubscriptionState.afterAnswer(Optional.of(expired), nowActive, SETTLE)).as("a missed renewal").isEqualTo(nowActive);
+    }
+
+    @Test
+    void anAnswerFromBeforeTheStateNeverTakesItBack() {
+        SubscriptionState later = answer(Status.REFUNDED, NOW.plusSeconds(5), NOW.plusSeconds(5));
+
+        assertThat(SubscriptionState.afterAnswer(Optional.of(later), answer(Status.ACTIVE, MONTH, NOW.minus(Duration.ofHours(1))), SETTLE)).isEqualTo(later);
+    }
+
+    @Test
+    void noWindowAtAllMeansAnAnswerNotOlderThanTheStateCounts() {
+        SubscriptionState current = answer(Status.ACTIVE, MONTH, NOW);
+        SubscriptionState same = answer(Status.CANCELLED, MONTH, NOW);
+
+        assertThat(SubscriptionState.afterAnswer(Optional.of(current), same, Duration.ZERO)).isEqualTo(same);
+        assertThat(SubscriptionState.afterAnswer(Optional.of(current), answer(Status.ACTIVE, MONTH, NOW.minusMillis(1)), Duration.ZERO)).isEqualTo(current);
     }
 }

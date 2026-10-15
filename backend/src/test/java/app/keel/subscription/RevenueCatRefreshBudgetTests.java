@@ -59,7 +59,7 @@ class RevenueCatRefreshBudgetTests {
             clock.pass(perAsk);
             return Optional.empty();
         };
-        return new RevenueCatRefresh(rest, null, null, new RevenueCatRefreshProperties(max, deadline), clock);
+        return new RevenueCatRefresh(rest, null, null, new RevenueCatRefreshProperties(max, deadline, Duration.ofMinutes(5)), clock);
     }
 
     @Test
@@ -85,9 +85,10 @@ class RevenueCatRefreshBudgetTests {
 
     @Test
     void theBudgetMustBeSomething() {
-        assertThatThrownBy(() -> new RevenueCatRefreshProperties(0, Duration.ofSeconds(1))).isInstanceOf(IllegalStateException.class);
-        assertThatThrownBy(() -> new RevenueCatRefreshProperties(1, Duration.ZERO)).isInstanceOf(IllegalStateException.class);
-        assertThatThrownBy(() -> new RevenueCatRefreshProperties(null, null)).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> new RevenueCatRefreshProperties(0, Duration.ofSeconds(1), Duration.ZERO)).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> new RevenueCatRefreshProperties(1, Duration.ZERO, Duration.ZERO)).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> new RevenueCatRefreshProperties(null, null, null)).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> new RevenueCatRefreshProperties(1, Duration.ofSeconds(1), Duration.ofSeconds(-1))).isInstanceOf(IllegalStateException.class);
     }
 
     @Test
@@ -99,7 +100,7 @@ class RevenueCatRefreshBudgetTests {
             throw new IllegalStateException("down");
         };
 
-        new RevenueCatRefresh(rest, null, null, new RevenueCatRefreshProperties(10, Duration.ofSeconds(30)), clock).afterWebhook(accounts(3));
+        new RevenueCatRefresh(rest, null, null, new RevenueCatRefreshProperties(10, Duration.ofSeconds(30), Duration.ofMinutes(5)), clock).afterWebhook(accounts(3));
 
         assertThat(asked).hasSize(3);
         assertThat(Set.copyOf(asked)).hasSize(3);

@@ -2,8 +2,11 @@ package app.keel.subscription;
 
 import app.keel.identity.KnownAccounts;
 import app.keel.shared.AccountId;
+import app.keel.shared.SafeLog;
+import java.lang.reflect.Method;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -23,6 +26,17 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @EnableConfigurationProperties(RevenueCatProperties.class)
 class Subscriptions {
+
+    /** The task an answer set aside is logged under: SafeLog names a task by its method. */
+    private static final Method ANSWERED;
+
+    static {
+        try {
+            ANSWERED = Subscriptions.class.getDeclaredMethod("answered", AccountId.class, SubscriptionState.class, Duration.class);
+        } catch (NoSuchMethodException e) {
+            throw new IllegalStateException(e);
+        }
+    }
 
     private final JdbcClient jdbc;
     private final KnownAccounts accounts;
@@ -67,15 +81,21 @@ class Subscriptions {
     }
 
     /**
-     * RevenueCat's REST answer for an account that still exists (K-704): weighed by its moment as an event is, and only ever
-     * extending access (SubscriptionState.afterAnswer). Not an event: no id is recorded, and asking twice is the same as once.
+     * RevenueCat's REST answer for an account that still exists (K-704): it counts only when it was made at least {@code settle}
+     * after the state's own moment (SubscriptionState.afterAnswer). Not an event: no id is recorded, and asking twice is the same as once.
      */
     @Transactional
-    void answered(AccountId account, SubscriptionState answer) {
+    void answered(AccountId account, SubscriptionState answer, Duration settle) {
         // The account may have been deleted since the ask began (the second deletion pass would remove a state written now, but
         // not writing it is simpler): only an account that is still ours is written.
         if (accounts.of(account.value().toString()).isPresent()) {
-            keep(account, answer, SubscriptionState::afterAnswer);
+            keep(account, answer, (kept, weighed) -> {
+                SubscriptionState after = SubscriptionState.afterAnswer(kept, weighed, settle);
+                if (after != weighed) {
+                    SafeLog.ignored(ANSWERED); // inside the settle window, or older than the state: the webhook's state stands
+                }
+                return after;
+            });
         }
     }
 

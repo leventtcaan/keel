@@ -82,6 +82,13 @@ public final class SafeLog {
         write(LOG.atWarn(), "degraded", fields);
     }
 
+    /** A task that set something aside on purpose (a REST answer inside the settle window, K-704): which one, at debug, no values. */
+    public static void ignored(Method task) {
+        Map<LogField, Object> fields = new EnumMap<>(LogField.class);
+        fields.put(LogField.TASK, task.getDeclaringClass().getName() + "#" + task.getName());
+        write(LOG.atDebug(), "ignored", fields);
+    }
+
     private static void describe(Throwable failure, Map<LogField, Object> fields) {
         List<String> chain = new ArrayList<>();
         Throwable root = failure;

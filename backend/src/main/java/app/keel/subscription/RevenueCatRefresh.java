@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 /**
  * After a webhook, the account's entitlement is read again from RevenueCat's REST API (K-704, ADR-056 Ek 3): what its webhook docs
  * recommend after every webhook, and the only way a TRANSFER's receiver gets an end date. The answer is weighed by its moment
- * and may only extend access (RevenueCatSubscriber, SubscriptionState.afterAnswer).
+ * and counts only outside the settle window after the state's own moment (RevenueCatSubscriber, SubscriptionState.afterAnswer).
  *
  * <p>The refresh only adds to what the webhook did, and runs after the webhook has been answered, on its own thread: RevenueCat
  * waits 60 seconds for a 200 and sends the event again otherwise, and a slow REST API must not turn into retries. Whatever goes
@@ -71,7 +71,7 @@ class RevenueCatRefresh {
         try {
             revenueCat.fetch(account)
                     .flatMap(body -> RevenueCatSubscriber.read(body, properties.entitlement(), properties.environments()))
-                    .ifPresent(answer -> subscriptions.answered(account, answer));
+                    .ifPresent(answer -> subscriptions.answered(account, answer, budget.settle()));
         } catch (RuntimeException failure) {
             SafeLog.backgroundFailure(REFRESH, failure);
         }

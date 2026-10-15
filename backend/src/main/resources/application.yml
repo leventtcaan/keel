@@ -162,9 +162,12 @@ keel:
       max-body-bytes: 65536
       # What one webhook may cause in REST asks (K-704): at most 10 accounts (a TRANSFER names a list), none started 30 seconds
       # after the first (each ask is also cut off by keel.privacy.egress-timeout). The asks run after the webhook is answered.
+      # A REST answer counts only when made 5 minutes or more after the state's own moment (the last webhook event or answer):
+      # inside the window the webhook's state stands, so a lagging REST can neither lock out a renewal nor undo a refund.
       refresh:
         max-accounts: 10
         deadline: 30s
+        settle: 300s
   # Deletion (K-214, V6): failed module deletions are resent once a minute old, every 5 minutes; every module deletes
   # again 10 minutes after the DELETE, for a write already in flight (a request runs seconds, never minutes).
   privacy:

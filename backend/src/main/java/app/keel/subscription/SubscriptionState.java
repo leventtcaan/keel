@@ -1,5 +1,6 @@
 package app.keel.subscription;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.Set;
@@ -62,15 +63,18 @@ record SubscriptionState(Status status, Instant accessUntil, Instant lastEventAt
     }
 
     /**
-     * The state after a REST answer (K-704, ADR-056 Ek 3): as after an event (by its moment), but an answer may only extend access,
-     * never shorten or end it. A REST answer can lag a webhook it was asked after (RevenueCat promises no consistency), and a
-     * lagging "ended" must not lock out a user who has just paid; ending access comes only from webhooks.
+     * The state after a REST answer (K-704, ADR-056 Ek 3): the answer's only when its moment is at least {@code settle} after the
+     * state's own (the last webhook event, or the last answer applied). A REST answer can lag the webhook it was asked after
+     * (RevenueCat promises no consistency): inside the window a lagging "ended" would lock out a user who has just paid, and a lagging
+     * "active" would give access back after a refund or expiration, so the webhook's state stands both ways. Outside the window the
+     * answer is authoritative both ways: it fixes a missed webhook, and it gives a TRANSFER's receiver its access. No state yet:
+     * the answer is the first.
      */
-    static SubscriptionState afterAnswer(Optional<SubscriptionState> current, SubscriptionState answer) {
-        if (current.isPresent() && answer.accessUntil().isBefore(current.get().accessUntil())) {
+    static SubscriptionState afterAnswer(Optional<SubscriptionState> current, SubscriptionState answer, Duration settle) {
+        if (current.isPresent() && answer.lastEventAt().isBefore(current.get().lastEventAt().plus(settle))) {
             return current.get();
         }
-        return next(current, answer);
+        return answer;
     }
 
     /** The state after an event's: the event's, unless it is older than the current state's (it never takes it back). */
