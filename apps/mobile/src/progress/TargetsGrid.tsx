@@ -47,8 +47,8 @@ function Box({ kind, title, value, of, fill, source, label, hint, onPress }: Box
 
 /**
  * The first days' four targets (ADR-078 #1, prototype `.tgt`): each opens where it is logged: Calories and Protein the meal,
- * Steps Apple Health (or, not yet connected, Settings where it is connected), Cardio the "+" sheet (ADR-078 Ek 2: the cardio log
- * is there, not the Train tab). The numbers are the server's; what was eaten is a range against the one-number target (U5).
+ * Steps Apple Health (or, not yet connected, Settings where it is connected), Cardio the cardio log
+ * (ADR-078 Ek 2: the screen the "+" sheet's Cardio row opens, not the Train tab). The numbers are the server's; what was eaten is a range against the one-number target (U5).
  */
 export function TargetsGrid({ targets }: { targets: Target[] }) {
   const { report } = useAppServices();
@@ -89,7 +89,7 @@ export function TargetsGrid({ targets }: { targets: Target[] }) {
         return (
           <Box key="cardio" kind="cardio" title={t('progress.targets.cardio')} value={String(target.done)} of={t('progress.targets.ofCardio', { count: target.count })}
             fill={share(target.done, target.count)} source={t('progress.targets.each', { minutes: target.minutes })}
-            label={t('progress.targets.label.cardio', { done: target.done, count: target.count, minutes: target.minutes })} hint={t('progress.targets.hint.cardio')} onPress={() => router.push('/plus')} />
+            label={t('progress.targets.label.cardio', { done: target.done, count: target.count, minutes: target.minutes })} hint={t('progress.targets.hint.cardio')} onPress={() => router.push('/cardio')} />
         );
     }
   });
