@@ -108,6 +108,7 @@ export const decision = (id: string, madeOn: string, over: Partial<Schemas['Deci
     reasons: [{ rule: 'toward_goal', source: { tag: 'EXPERIENCE' } }],
     confidence: 'HIGH',
     nextReview: '2026-10-19',
+    nextCallOn: '2026-10-19',
     copyKey: 'decision.continue.toward_goal',
     application: { state: 'APPLIED' },
     declinable: false,
