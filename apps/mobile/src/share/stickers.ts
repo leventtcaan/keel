@@ -8,7 +8,6 @@ import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { dayName, exerciseName, shortDate } from '@/train/program';
 import type { Move } from '@/train/trainData';
-import type { WorkoutEnd } from '@/train/workoutEnd';
 import { type UnitSystem, formatLoad, loadValue } from '@/units/units';
 
 import { shareParams } from './params';
@@ -22,7 +21,8 @@ export type Stat = { value: string; label: string; accent?: boolean };
 export type Sticker = { kind: StickerKind; kicker: string; title: string; stats: Stat[]; lines: string[]; weeks: WeekCell[] };
 
 export type StickerFacts = {
-  workout: Extract<WorkoutEnd, { kind: 'ready' }> | null;
+  /** The workout's summary (the server's) and the program day it was done on; the program names the day. */
+  workout: { summary: Schemas['WorkoutSummary']; program: Schemas['Program'] | null; programDayId: string | null } | null;
   consistency: Schemas['Consistency'] | null;
   progress: Schemas['TrainingProgress'] | null;
   /** The catalog's moves and the user's own, by id. */

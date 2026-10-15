@@ -10,7 +10,7 @@ import ShareScreen from '@/app/share';
 import { t } from '@/copy';
 import type { Sticker } from '@/share/stickers';
 import { ThemeProvider } from '@/theme/theme';
-import type { WorkoutEnd } from '@/train/workoutEnd';
+import type { WorkoutSummaryRead } from '@/train/workoutEnd';
 
 type Answer = { data?: unknown; error?: { code: string; message: string }; response: Response };
 const ok = (data: unknown): Answer => ({ data, response: new Response(null, { status: 200 }) });
@@ -18,7 +18,8 @@ const none: Answer = { error: { code: 'NOT_FOUND', message: 'x' }, response: new
 const broken: Answer = { error: { code: 'INTERNAL', message: 'x' }, response: new Response(null, { status: 500 }) };
 
 let mockAnswers: Record<string, Answer> = {};
-let mockEnd: WorkoutEnd = { kind: 'pending' };
+let mockEnd: WorkoutSummaryRead = { kind: 'pending' };
+const PROGRAM = { days: [{ id: 'day-a', nameKey: 'programDays.full_body_a.name', exercises: [] }] };
 let mockUnits = 'METRIC';
 let mockParams: Record<string, string> = { workout: 'w1' };
 const mockServices = {
@@ -30,14 +31,22 @@ const mockServices = {
     DELETE: jest.fn(),
   },
   training: {
-    read: jest.fn(async () => ({ program: { state: 'none' }, exercises: { state: 'ready', value: [] }, kept: false })),
+    read: jest.fn(async () => ({ program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: [] }, kept: false })),
     own: jest.fn(async () => []),
   },
   shareImage: jest.fn(async (_base64: string) => {}),
+  // What the end screen also reads (the Watch's energy, K-974): the stickers use none of it, so none may be touched.
+  queue: { drain: jest.fn(async () => undefined) },
+  workoutRecords: jest.fn(async () => [
+    { seq: 1, clientId: 'w1', kind: 'workout', parentClientId: null, body: { clientId: 'w1', startedAt: '2026-10-13T08:00:00Z', programDayId: 'day-a' }, state: 'SYNCED', serverId: 'srv-w1', serverBody: null, errorCode: null },
+    { seq: 2, clientId: 'f1', kind: 'finish', parentClientId: 'w1', body: { endedAt: '2026-10-13T08:52:00Z' }, state: 'SYNCED', serverId: null, serverBody: null, errorCode: null },
+  ]),
+  health: { readWatchActiveEnergy: jest.fn(async () => 310) },
+  consents: { granted: jest.fn(async () => true) },
   report: jest.fn(),
 };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => mockUnits }));
-jest.mock('@/train/workoutEnd', () => ({ loadWorkoutEnd: jest.fn(async () => mockEnd) }));
+jest.mock('@/train/workoutEnd', () => ({ loadWorkoutSummary: jest.fn(async () => mockEnd) }));
 jest.mock('expo-router', () => ({
   router: { back: jest.fn() },
   useLocalSearchParams: () => mockParams,
@@ -56,7 +65,7 @@ jest.mock('@/share/Sticker', () => {
   };
 });
 
-const READY: WorkoutEnd = {
+const READY: WorkoutSummaryRead = {
   kind: 'ready',
   summary: {
     workoutId: 'w1',
@@ -68,11 +77,7 @@ const READY: WorkoutEnd = {
     weekOf: '2026-10-12',
     muscles: [],
   },
-  program: { days: [{ id: 'day-a', nameKey: 'programDays.full_body_a.name', exercises: [] }] } as never,
   programDayId: 'day-a',
-  week: { done: 3, planned: 3 },
-  kcal: undefined,
-  moves: new Map(),
 };
 const CONSISTENCY = {
   weekOf: '2026-10-12',
@@ -210,8 +215,8 @@ test('a part the server could not give (offline): said, the rest offered', async
 });
 
 test('a workout read that throws: said as a part missing, the rest still offered, nothing blank', async () => {
-  const { loadWorkoutEnd } = jest.requireMock('@/train/workoutEnd') as { loadWorkoutEnd: jest.Mock };
-  loadWorkoutEnd.mockRejectedValueOnce(Object.assign(new Error('boom'), { name: 'DbError' }));
+  const { loadWorkoutSummary } = jest.requireMock('@/train/workoutEnd') as { loadWorkoutSummary: jest.Mock };
+  loadWorkoutSummary.mockRejectedValueOnce(Object.assign(new Error('boom'), { name: 'DbError' }));
   await show();
 
   expect(screen.getByText(t('share.partial'))).toBeOnTheScreen();
@@ -236,10 +241,23 @@ test("in pounds when that is the user's unit", async () => {
 });
 
 test('the workout is read by the id it came with; the weeks and lifts from the server; the moves from the program', async () => {
-  const { loadWorkoutEnd } = jest.requireMock('@/train/workoutEnd') as { loadWorkoutEnd: jest.Mock };
+  const { loadWorkoutSummary } = jest.requireMock('@/train/workoutEnd') as { loadWorkoutSummary: jest.Mock };
   await show();
 
-  expect(loadWorkoutEnd).toHaveBeenCalledWith(mockServices, 'w1');
+  expect(loadWorkoutSummary).toHaveBeenCalledWith(mockServices, 'w1');
   expect(mockServices.api.GET.mock.calls.map(([path]) => path).sort()).toEqual(['/v1/consistency', '/v1/training-progress']);
   expect(mockServices.training.read).toHaveBeenCalled();
+});
+
+test("the stickers read no health data: with the real reading, the Watch's energy and the consents are never touched, and only what is needed is asked", async () => {
+  const { loadWorkoutSummary } = jest.requireMock('@/train/workoutEnd') as { loadWorkoutSummary: jest.Mock };
+  loadWorkoutSummary.mockImplementationOnce(jest.requireActual<typeof import('@/train/workoutEnd')>('@/train/workoutEnd').loadWorkoutSummary);
+  mockAnswers['/v1/workouts/{id}/summary'] = ok((READY as { summary: unknown }).summary);
+  await show();
+
+  expect(sticker()).toContain(t('programDays.full_body_a.name'));
+  expect(mockServices.health.readWatchActiveEnergy).not.toHaveBeenCalled();
+  expect(mockServices.consents.granted).not.toHaveBeenCalled();
+  // The summary once, the weeks once, the lifts once: nothing twice.
+  expect(mockServices.api.GET.mock.calls.map(([path]) => path).sort()).toEqual(['/v1/consistency', '/v1/training-progress', '/v1/workouts/{id}/summary']);
 });

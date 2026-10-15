@@ -7,7 +7,7 @@
 import type { components } from '@/api/schema';
 import type { LocalRecord } from '@/sync/store';
 import type { Move, TrainData } from '@/train/trainData';
-import { loadWorkoutEnd } from '@/train/workoutEnd';
+import { loadWorkoutEnd, loadWorkoutSummary } from '@/train/workoutEnd';
 
 type Schemas = components['schemas'];
 
@@ -198,4 +198,41 @@ test("the user's own moves not read: the end is still ready, with the catalog's 
   const end = await loadWorkoutEnd(value, 'w1');
   expect(end.kind).toBe('ready');
   expect(end.kind === 'ready' && end.moves.size).toBe(0);
+});
+
+describe('the summary alone (the share stickers, K-975)', () => {
+  test("sent: the server's summary and the program day, from one read; no health, no program, no week, no moves", async () => {
+    const { value, GET, readWatchActiveEnergy } = deps();
+    const granted = jest.fn(async () => true);
+    value.consents = { granted };
+
+    expect(await loadWorkoutSummary(value, 'w1')).toEqual({ kind: 'ready', summary: SUMMARY, programDayId: 'a' });
+
+    expect(GET.mock.calls.map(([path]) => path)).toEqual(['/v1/workouts/{id}/summary']);
+    expect(readWatchActiveEnergy).not.toHaveBeenCalled();
+    expect(granted).not.toHaveBeenCalled();
+    expect(value.training.read).not.toHaveBeenCalled();
+    expect(value.training.own).not.toHaveBeenCalled();
+    expect(value.queue.drain).toHaveBeenCalled();
+  });
+
+  test.each([
+    ['the workout not on the server yet', [{ ...WORKOUT, serverId: null, state: 'PENDING' as const }, FINISH], { kind: 'pending' }],
+    ['its finish not on the server yet', [WORKOUT, { ...FINISH, state: 'PENDING' as const }], { kind: 'pending' }],
+    ['the workout refused by the server', [{ ...WORKOUT, state: 'REJECTED' as const }, FINISH], { kind: 'failed', problem: 'ServerError' }],
+  ])('%s: as the end says it', async (_, records, expected) => {
+    const { value, GET } = deps({ workoutRecords: async () => records });
+    expect(await loadWorkoutSummary(value, 'w1')).toEqual(expected);
+    expect(GET).not.toHaveBeenCalled();
+  });
+
+  test('the summary not read (no connection): failed by name', async () => {
+    const { value } = deps();
+    value.api = {
+      GET: async () => {
+        throw new TypeError('Network request failed');
+      },
+    } as never;
+    expect(await loadWorkoutSummary(value, 'w1')).toEqual({ kind: 'failed', problem: 'NoConnection' });
+  });
 });

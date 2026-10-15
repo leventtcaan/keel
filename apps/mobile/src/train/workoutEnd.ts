@@ -41,18 +41,45 @@ export type EndDeps = {
   consents: { granted(kind: 'HEALTH_DATA' | 'APPLE_HEALTH'): Promise<boolean> };
 };
 
-export async function loadWorkoutEnd(deps: EndDeps, clientId: string): Promise<WorkoutEnd> {
+/** The workout on the server, found by the id it was started with: pending, failed, or its server id and the phone's record of it. */
+async function findWorkout(deps: Pick<EndDeps, 'queue' | 'workoutRecords'>, clientId: string) {
   // A drain that cannot reach the server leaves the records on the phone: then the end is pending.
   await deps.queue.drain().catch(() => undefined);
   const records = await deps.workoutRecords();
   const workout = records.find((r) => r.kind === 'workout' && r.clientId === clientId);
   const finish = records.find((r) => r.kind === 'finish' && r.parentClientId === clientId);
   // Not on this phone, or refused by the server: it will never be sent, so it is not waited for.
-  if (workout === undefined || workout.state === 'REJECTED' || finish?.state === 'REJECTED') return { kind: 'failed', problem: 'ServerError' };
-  if (workout.serverId === null || finish === undefined || finish.state !== 'SYNCED') return { kind: 'pending' };
-  const id = workout.serverId;
-  const body = workout.body as Schemas['NewWorkout'];
-  const ended = (finish.body as Schemas['WorkoutFinish']).endedAt;
+  if (workout === undefined || workout.state === 'REJECTED' || finish?.state === 'REJECTED') return { kind: 'failed', problem: 'ServerError' } as const;
+  if (workout.serverId === null || finish === undefined || finish.state !== 'SYNCED') return { kind: 'pending' } as const;
+  return {
+    kind: 'found',
+    id: workout.serverId,
+    body: workout.body as Schemas['NewWorkout'],
+    ended: (finish.body as Schemas['WorkoutFinish']).endedAt,
+  } as const;
+}
+
+export type WorkoutSummaryRead =
+  | { kind: 'pending' }
+  | { kind: 'failed'; problem: 'NoConnection' | 'ServerError' }
+  | { kind: 'ready'; summary: Schemas['WorkoutSummary']; programDayId: string | null };
+
+/**
+ * Only the workout's summary and its program day (the share stickers, K-975): found and read as the end screen does, and
+ * nothing more: no health data, no program, no week, no moves.
+ */
+export async function loadWorkoutSummary(deps: Pick<EndDeps, 'api' | 'queue' | 'workoutRecords'>, clientId: string): Promise<WorkoutSummaryRead> {
+  const found = await findWorkout(deps, clientId);
+  if (found.kind !== 'found') return found;
+  const summary = await load(() => deps.api.GET('/v1/workouts/{id}/summary', { params: { path: { id: found.id } } }));
+  if (summary.state !== 'ready') return { kind: 'failed', problem: summary.state === 'failed' ? summary.problem : 'ServerError' };
+  return { kind: 'ready', summary: summary.value, programDayId: found.body.programDayId ?? null };
+}
+
+export async function loadWorkoutEnd(deps: EndDeps, clientId: string): Promise<WorkoutEnd> {
+  const found = await findWorkout(deps, clientId);
+  if (found.kind !== 'found') return found;
+  const { id, body, ended } = found;
 
   const [summary, read, own, consistency, kcal] = await Promise.all([
     load(() => deps.api.GET('/v1/workouts/{id}/summary', { params: { path: { id } } })),

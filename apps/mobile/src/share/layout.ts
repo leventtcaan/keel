@@ -15,7 +15,8 @@ export type Item =
   | { kind: 'cell'; x: number; y: number; size: number; state: WeekCell };
 
 const WIDTH = shareParams.storyWidth;
-const MARGIN = 72;
+/** The margin round the words, and the room left under a sticker set in a Story-sized image. */
+export const MARGIN = 72;
 const INNER = WIDTH - 2 * MARGIN;
 const GAP = 44;
 const COLUMN_GAP = 40;
@@ -23,7 +24,7 @@ const COLUMN = (INNER - COLUMN_GAP) / 2;
 const CELL_GAP = 12;
 const CELL_MAX = 72;
 /** The width of an average character as a share of the text's size: the display face is narrow, the body face is not. */
-const EM = { display: 0.5, body: 0.6 };
+export const EM = { display: 0.5, body: 0.6 };
 /** Each step a text may shrink to when it does not fit, before it wraps. */
 const STEPS = [1, 0.8, 0.64, 0.5];
 

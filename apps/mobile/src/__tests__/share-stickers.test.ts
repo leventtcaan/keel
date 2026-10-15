@@ -193,9 +193,18 @@ test('a sticker with nothing to say is not offered', () => {
 });
 
 describe('what no sticker says', () => {
-  type Rule = { id: string; pattern: string };
+  type Rule = { id: string; pattern: string; examples: string[]; nonExamples: string[] };
   const rules = [...(forbidden.rules as Rule[]), ...(shareForbidden.rules as Rule[])];
   const caught = (text: string) => rules.filter((r) => new RegExp(r.pattern, 'i').test(text)).map((r) => r.id);
+  // Each pattern of the share list proves itself on its own examples before it is trusted (moved from the share card's tests, K-612).
+  test.each((shareForbidden.rules as Rule[]).flatMap((r) => r.examples.map((e) => [r.id, e])))('%s catches "%s"', (_, example) => {
+    expect(caught(example)).not.toEqual([]);
+  });
+
+  test.each((shareForbidden.rules as Rule[]).flatMap((r) => r.nonExamples.map((e) => [r.id, e])))('%s lets "%s" through', (id, text) => {
+    expect(caught(text)).not.toContain(id);
+  });
+
   // The sticker's own list (ADR-076 #2): no body weight, no energy, no body fat, no estimated max.
   const NEVER = /\bbody\s*weight\b|\bweigh(ed)?[\s-]*in\b|\bkcal\b|\bcalor\w*|\bbody[\s-]*fat\b|\bfat\b|\be1rm\b|\b1rm\b|\bestimated\b|\bmax\b/i;
   const all = (facts: StickerFacts) => (['METRIC', 'IMPERIAL'] as const).flatMap((units) => stickersFor(facts, units).flatMap(words));

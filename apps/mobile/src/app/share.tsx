@@ -18,7 +18,7 @@ import { useTheme } from '@/theme/theme';
 import { focusPalette, tokens } from '@/theme/tokens';
 import { load } from '@/today/today';
 import { movesOf } from '@/train/trainData';
-import { type WorkoutEnd, loadWorkoutEnd } from '@/train/workoutEnd';
+import { type WorkoutSummaryRead, loadWorkoutSummary } from '@/train/workoutEnd';
 
 /** The widest the preview is drawn, in points; narrower on a narrow screen. */
 const PREVIEW_MAX = 320;
@@ -47,7 +47,7 @@ export default function ShareScreen() {
   useFocusEffect(
     useCallback(() => {
       void Promise.all([
-        workout === undefined ? Promise.resolve(null) : loadWorkoutEnd(services, workout).catch((): WorkoutEnd => ({ kind: 'failed', problem: 'ServerError' })),
+        workout === undefined ? Promise.resolve(null) : loadWorkoutSummary(services, workout).catch((): WorkoutSummaryRead => ({ kind: 'failed', problem: 'ServerError' })),
         load(() => api.GET('/v1/consistency')),
         load(() => api.GET('/v1/training-progress')),
         training.read(api).catch(() => null),
@@ -55,7 +55,7 @@ export default function ShareScreen() {
       ])
         .then(([end, consistency, progress, data, own]) =>
           setFacts({
-            workout: end?.kind === 'ready' ? end : null,
+            workout: end?.kind === 'ready' ? { summary: end.summary, programDayId: end.programDayId, program: data?.program.state === 'ready' ? data.program.value : null } : null,
             consistency: consistency.state === 'ready' ? consistency.value : null,
             progress: progress.state === 'ready' ? progress.value : null,
             moves: movesOf(data, own),

@@ -2,7 +2,7 @@
  * Where a sticker's words sit in its image (K-975): top to bottom, each piece below the last, every line inside the
  * margins at the size that fits, the grid as wide as the weeks it has. The image is 1080 wide (share.json).
  */
-import { type Item, layout, wrap } from '@/share/layout';
+import { EM, type Item, MARGIN, layout, wrap } from '@/share/layout';
 import { shareParams } from '@/share/params';
 import type { Sticker } from '@/share/stickers';
 
@@ -108,4 +108,39 @@ test('a sticker with no grid draws no cell; the image is as tall as its words an
   const small = layout({ ...WORKOUT, stats: [] });
   expect(small.height).toBeLessThan(layout(WORKOUT).height);
   expect(layout(WORKOUT).height).toBeLessThan(shareParams.storyHeight);
+});
+
+describe('the right edge: nothing runs past the margin', () => {
+  const right = (i: Extract<Item, { kind: 'text' }>) => (i.anchor === 'end' ? i.x : i.x + i.text.length * i.size * EM[i.font]);
+  const LIMIT = shareParams.storyWidth - MARGIN;
+  const LONG: Sticker = {
+    ...WORKOUT,
+    title: 'Romanian deadlift with a long own name',
+    stats: [
+      { value: '1,000.5 lb × 12', label: 'a very long own move name PR' },
+      { value: '9,436', label: 'lb lifted', accent: true },
+      { value: '120', label: 'minutes' },
+      { value: '100 kg × 8', label: 'best set ever' },
+    ],
+    lines: ['Romanian deadlift +20 kg', 'Seated cable row with a long name +10 kg'],
+  };
+
+  test.each([
+    ['a workout', WORKOUT],
+    ['a long title, long values and long lines', LONG],
+    ['a streak', STREAK],
+    ['a short history', { ...STREAK, weeks: ['ON_TRACK'] as Sticker['weeks'] }],
+  ])('%s', (_, sticker) => {
+    const { items } = layout(sticker);
+
+    expect(text(items).filter((i) => right(i) > LIMIT).map((i) => i.text)).toEqual([]);
+    expect(cells(items).filter((c) => c.x + c.size > LIMIT).length).toBe(0);
+    // And the left: the word mark keeps its own width inside the margin too.
+    const mark = text(items).find((i) => i.anchor === 'end')!;
+    expect(mark.x - mark.text.length * mark.size * EM[mark.font]).toBeGreaterThan(MARGIN);
+  });
+
+  test('the check catches a text that overruns', () => {
+    expect(right({ kind: 'text', x: MARGIN, y: 100, text: 'x'.repeat(60), size: 150, font: 'display', tone: 'text' })).toBeGreaterThan(LIMIT);
+  });
 });
