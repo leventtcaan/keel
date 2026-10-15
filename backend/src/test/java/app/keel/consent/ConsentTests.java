@@ -256,11 +256,20 @@ class ConsentTests {
     @SuppressWarnings("unchecked")
     void eachConsentHasATextOfTheVersionTheServerAccepts() throws IOException {
         // ADR-020: the agent drafts, the product owner approves; until then the version says "draft".
+        // The text is one paragraph ("body") or, since the health data text became a list (K-1032), a map of points.
         Map<String, Object> copy = JSON.readValue(Files.readString(Path.of("../data/copy/en.json")), Map.class);
-        Map<String, Map<String, String>> texts = (Map<String, Map<String, String>>) copy.get("consent");
+        Map<String, Map<String, Object>> texts = (Map<String, Map<String, Object>>) copy.get("consent");
         for (ConsentKind kind : ConsentKind.values()) {
-            Map<String, String> text = texts.get(kind.name().toLowerCase(java.util.Locale.ROOT));
-            assertThat(text).as(kind.name()).containsKeys("title", "body").containsEntry("version", properties.versions().get(kind));
+            Map<String, Object> text = texts.get(kind.name().toLowerCase(java.util.Locale.ROOT));
+            assertThat(text).as(kind.name()).containsKey("title").containsEntry("version", properties.versions().get(kind));
+            if (text.get("body") != null) {
+                assertThat((String) text.get("body")).as(kind.name() + " body").isNotBlank();
+            } else {
+                assertThat(text.get("points")).as(kind.name() + " points").isInstanceOf(Map.class);
+                Map<String, Object> points = (Map<String, Object>) text.get("points");
+                assertThat(points).as(kind.name() + " points").isNotEmpty();
+                assertThat(points.values()).as(kind.name() + " points").allSatisfy(point -> assertThat((String) point).isNotBlank());
+            }
         }
     }
 
