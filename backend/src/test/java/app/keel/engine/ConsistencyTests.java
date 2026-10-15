@@ -470,7 +470,9 @@ class ConsistencyTests {
     }
 
     @Test
-    void aWeekWithNothingPlannedIsPausedForItIsNeitherASuccessNorAMiss() {
+    void aWeekWithNothingPlannedIsSkippedLikeAPausedOneThoughTheAppNeverMakesOne() {
+        // Unreachable from the app (a weigh-in is planned every week); the engine must still not call it a miss. If it ever
+        // becomes reachable it needs a state of its own (ADR first), not PAUSED, which is the declared state.
         assertThat(states(week(10, 9), week(0, 0), week(10, 9))).containsExactly(State.ON_TRACK, State.PAUSED, State.ON_TRACK);
     }
 
@@ -505,6 +507,22 @@ class ConsistencyTests {
         assertThat(walked.weeks().getLast()).isEqualTo(new ConsistencyWeek(MONDAY.plusWeeks(12), State.SPARE));
         assertThat(walked.record().countedWeeks()).as("the record is not cut by the grid").isEqualTo(13);
         assertThat(walked.record().forgivenWeeks()).as("the miss with no run forgave nothing").isOne();
+    }
+
+    @Test
+    void aForgivenWeekThatFellOffTheGridIsStillInTheRecordsForgivenWeeks() {
+        // The lone miss is the second week; a grid's worth on track after it. The grid is the last twelve of fourteen, so the
+        // spare week is not on it, yet the record still counts it: the cells are a part of the totals, not all of them.
+        int grid = P.wholeNumber(ParameterKey.PROGRESS_GRID_WEEKS);
+        List<int[]> history = new ArrayList<>(List.of(week(10, 9), week(10, 2)));
+        for (int i = 0; i < grid; i++) {
+            history.add(week(10, 9));
+        }
+
+        Consistency.Walked walked = Consistency.walked(dated(history), P);
+
+        assertThat(walked.weeks()).hasSize(grid).extracting(ConsistencyWeek::state).doesNotContain(State.SPARE);
+        assertThat(walked.record().forgivenWeeks()).isOne();
     }
 
     @Test

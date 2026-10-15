@@ -133,6 +133,9 @@ public final class Consistency {
         for (WeekTally week : weeks) {
             forgiven = false;
             if (week.planned() == 0 || week.paused()) {
+                // PAUSED is the declared state (K-516). A week with nothing planned is skipped the same way, but by construction
+                // it is not reached from the app: a weigh-in is planned every week (min_weighins_per_week). Should a week
+                // ever ask nothing, it needs a state of its own: an ADR first (K-1016 review).
                 states.add(ConsistencyWeek.State.PAUSED);
                 continue; // nothing planned, or paused by a declared state (K-516): neither a success nor a miss
             }

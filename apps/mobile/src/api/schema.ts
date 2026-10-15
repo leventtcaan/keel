@@ -3043,10 +3043,11 @@ export interface components {
              * @description The weeks over, one cell each, for the 12 weeks grid (K-1016, ADR-078 #2): the last progress_grid_weeks of the
              *     weeks the record counted from, OLDEST FIRST, so the newest cell is the last. This week is not in it (it is not
              *     over: the fields above are this week, and the record leaves it out too). A week before the first call is not
-             *     listed, so a short history is a short list (never padded; the phone draws the empty cells). The states come from
-             *     the same walk as `record`, not a second count: the SPARE cells over the whole record are `record.forgivenWeeks`,
-             *     the ON_TRACK cells `record.onTrackWeeks` (each of them in the last progress_grid_weeks only when the record is
-             *     longer than the grid).
+             *     listed, so a short history is a short list (never padded; the phone draws the empty cells). The first cell is the
+             *     first Monday on or after the first call: a first call made midway through a week starts the list the Monday after,
+             *     as the record starts. The states come from the same walk as `record`, not a second count. When the record is no
+             *     longer than the grid, the cell counts equal the totals (SPARE cells are `record.forgivenWeeks`, ON_TRACK cells
+             *     `record.onTrackWeeks`); when it is longer, they are a part of the totals (the phone assumes no equality).
              */
             weeks: components["schemas"]["ConsistencyWeek"][];
         };
@@ -3061,8 +3062,7 @@ export interface components {
              * @description ON_TRACK: at on_track_min_ratio of the plan or above. SPARE: a lone missed week after a week on track, which the
              *     run forgave (shown as "spare week", ADR-078 #2); it is still counted in the record, never taken back. MISSED: a
              *     miss that was not forgiven (the second in a row, or one with no run before it). PAUSED: neither a success nor a
-             *     miss, the record leaves it out: a day of it under a state the user declared (K-516), or a week with nothing
-             *     planned.
+             *     miss, the record leaves it out: a day of it under a state the user declared (K-516).
              * @enum {string}
              */
             state: "ON_TRACK" | "SPARE" | "MISSED" | "PAUSED";

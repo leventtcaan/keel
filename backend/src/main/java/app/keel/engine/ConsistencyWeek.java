@@ -5,7 +5,8 @@ import java.util.Objects;
 
 /**
  * One week of the consistency grid (K-1016, ADR-078 #2): the Monday it began and how the record read it. The state is
- * what the same walk that makes the record's totals decided, so the cells and the totals never disagree.
+ * what the same walk that makes the record's totals decided. The grid shows only the last weeks, so the cells add up to
+ * the totals when the record is no longer than the grid, and are a part of them when it is longer.
  */
 public record ConsistencyWeek(LocalDate weekOf, State state) {
 
@@ -22,7 +23,7 @@ public record ConsistencyWeek(LocalDate weekOf, State state) {
         SPARE,
         /** A miss that was not forgiven: the second in a row, or one with no run before it. */
         MISSED,
-        /** Neither a success nor a miss, left out of the record: a declared state (K-516), or nothing planned. */
+        /** Neither a success nor a miss, left out of the record: a day of the week under a declared state (K-516). */
         PAUSED
     }
 }
