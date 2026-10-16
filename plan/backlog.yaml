@@ -5122,6 +5122,21 @@ tasks:
     refs: ["data/copy/en.json", "docs/yasal/site/privacy.md", "plan/kararlar/ADR-077-bu-hafta-ve-pazartesi-karari.md"]
     learn: ["Rıza metni sürümü"]
 
+  - id: K-1034
+    title: "Paywall v2 cihaz düzeltmeleri: kaydırınca içerik durum çubuğunun altına giriyor, örnek kartta koyu zeminde koyu turkuaz"
+    milestone: M11
+    module: mobile
+    type: fix
+    size: S
+    status: todo
+    depends_on: []
+    why: "Levent'in build 4 ekran görüntüleri (16 Eki): (1) paywall kaydırılınca metin saat/sinyal çubuğunun altından akıyor (üst güvenli alan yalnız bandda); (2) örnek karar kartında '1,800' ve 'One step' satırı açık temanın accent'i, siyah kartta zor okunuyor (prototipte parlak turkuaz). Yayını engellemez (ADR-080), 1.0.1'e"
+    acceptance:
+      - "Paywall kaydırıldığında içerik durum çubuğunun altında görünmez (üstte sabit güvenli alan ya da bulanık şerit)"
+      - "Örnek kartın vurgu metni koyu kart üstünde koyu odak paletinin accent'ini kullanır; metin dışı 3:1 / metin 4.5:1 kontrast testi (K-816 düzeni)"
+    tests: ["jest kontrast + render testi"]
+    refs: ["apps/mobile/src/subscription/PaywallView.tsx", "apps/mobile/src/subscription/ExampleCard.tsx", "prototip/paywall-v2.html"]
+
   - id: K-1010
     title: "Sunucudaki ek siteler: Caddy /opt/sites altındaki *.caddy dosyalarını içeri alır"
     milestone: M9

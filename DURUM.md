@@ -5,11 +5,11 @@ guncelleme: 2026-10-10
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (16 Eki akşamüstü — build 4 sürümde, Submit Levent'te)
+## ▶ DEVAM NOKTASI (16 Eki akşamüstü — HER ŞEY HAZIR, yalnız Submit Levent'te)
 **Bitti bu oturumda:** ikon 6 · "N." (#609) ve paywall v2 (#610: örnek karar kartı, "Save %" mağaza fiyatından AŞAĞI yuvarlanır (61), faturalanan tutar kalın, Account sayfası sağ üstte) main'de.
 ASC: 6 kare 1320×2868 olarak **6.9" yuvasına** yüklendi (önceki 1206×2622'ler 6.3"e düşmüştü, zorunlu 6.5" boştu → Submit reddedilirdi; 6.5" artık "Using 6.9""). App Review notu: hesap silme
 "subscription screen › Account (top right) › Delete account". Abonelikler "Prepare for Submission", eksik yok; **ilk abonelik grubu sürümle aynı gönderimde** gider (grup sayfası › Add for Review).
-**Build 4** TestFlight'ta ve sürüme BAĞLI (yeni ikon görünüyor). **Kalan:** Levent telefonda 5 dk + paywall ekran görüntüsü → abonelik inceleme görselini (iki üründe) 1242×2688 ile değiştir →
+**Build 4** TestFlight'ta ve sürüme BAĞLI (yeni ikon görünüyor). Levent telefonda baktı; abonelik inceleme görseli iki üründe yeni paywall (build 4 ekranı, 1242×2688). Görsel kusurlar K-1034 (M11). **Kalan:**
 **Levent: abonelik grubu › Add for Review, sürüm › Add for Review, Submit.** Disk: takas dosyaları ~11 GB (tam jest yerelde koşturulmaz); Codex önbelleği silindi.
 
 ## (önceki) DEVAM NOKTASI (16 Eki öğleden sonra — mağazaya gönderim eşiğinde)
