@@ -2586,6 +2586,7 @@ tasks:
     depends_on: [K-511]
     why: "ADR-041/044: gerçek maliyet/kalite ölçümü yayına çıkarken, Levent'in anahtarı ve harcama limitiyle; ZDR onayı alınmış sağlayıcılarla"
     acceptance:
+      - "App Review 2.5.19 (16 Eki 2026, uykuda özellik yasağı): AI katmanı sunucudan sessizce AÇILMAZ; yeni uygulama sürümüyle gelir ve Notes for Review'da açıkça anlatılır (2.3.1(a))"
       - "ZDR onayı + eğitim ayarı kapalı (kanıt kayıtta) olan her aday için tools/llm_eval.py iki sette koşuldu; sonuç tablosu ADR-044'e"
       - "Kazanan: şema ≥ %99, konu doğruluğu en yüksekler arasında istek başı maliyeti en düşük; keel.coach yapılandırması + adaptör; rıza metni sürümü"
     tests:
