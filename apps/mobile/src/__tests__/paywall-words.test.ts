@@ -33,9 +33,9 @@ test("each plan: its name, how it is billed and the store's price; the annual on
 });
 
 test('a saving is a badge on the yearly plan, said in full to a screen reader; the monthly plan never has one', () => {
-  expect(planWords(ANNUAL, 62).badge).toBe('Save 62%');
-  expect(planWords(ANNUAL, 62).label).toBe('Yearly, Billed once a year, $59.99 a year, $5.00 a month, saves 62 percent compared with monthly');
-  expect(planWords(MONTHLY, 62).badge).toBeNull();
+  expect(planWords(ANNUAL, 61).badge).toBe('Save 61%');
+  expect(planWords(ANNUAL, 61).label).toBe('Yearly, Billed once a year, $59.99 a year, $5.00 a month, saves 61 percent compared with monthly');
+  expect(planWords(MONTHLY, 61).badge).toBeNull();
 });
 
 // ADR-058 > 105 (the product owner): a reminder can come before the trial ends, offered, never promised: the timeline says it.
@@ -46,7 +46,13 @@ test('with a trial: when it ends, what is charged then and that it renews until 
     accent: 'for 7 days',
     sub: { lead: 'Full access today. Nothing is charged until', date: 'Tue, Oct 20' },
     terms: ['When the trial ends: $59.99 a year, renewing every year until you cancel.', t('subscription.cancelNote')],
-    dock: { strong: 'No charge today.', rest: 'Then $59.99 a year, renewing every year until you cancel.' },
+    dock: {
+      strong: 'No charge today.',
+      lead: 'Then',
+      price: '$59.99 a year',
+      tail: ', renewing every year until you cancel.',
+      label: 'No charge today. Then $59.99 a year, renewing every year until you cancel.',
+    },
     action: 'Start 7-day free trial',
   });
 });
@@ -59,7 +65,13 @@ test('without one (none offered, or had already): the price and the renewal only
     accent: null,
     sub: null,
     terms: ['$12.99 a month, renewing every month until you cancel.', t('subscription.cancelNote')],
-    dock: { strong: null, rest: '$12.99 a month, renewing every month until you cancel.' },
+    dock: {
+      strong: null,
+      lead: null,
+      price: '$12.99 a month',
+      tail: ', renewing every month until you cancel.',
+      label: '$12.99 a month, renewing every month until you cancel.',
+    },
     action: t('subscription.subscribe'),
   });
   expect(JSON.stringify(words).toLowerCase()).not.toContain('trial');

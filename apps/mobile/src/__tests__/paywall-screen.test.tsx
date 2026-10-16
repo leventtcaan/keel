@@ -109,6 +109,7 @@ test('choosing the monthly plan (no trial for it): its renewal, no trial anywher
   await act(async () => fireEvent.press(screen.getByRole('radio', { name: 'Monthly, Billed every month, $12.99 a month' })));
   expect(screen.getByRole('header', { name: t('subscription.title') })).toBeOnTheScreen();
   // The renewal in the line at the bottom and in the full terms above.
+  expect(screen.getByLabelText('$12.99 a month, renewing every month until you cancel.')).toBeOnTheScreen();
   expect(screen.getAllByText('$12.99 a month, renewing every month until you cancel.')).toHaveLength(2);
   expect(screen.queryByText('No charge today.')).toBeNull();
   await press(t('subscription.subscribe'));

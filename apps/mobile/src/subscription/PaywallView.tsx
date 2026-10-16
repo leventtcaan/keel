@@ -217,10 +217,13 @@ export function Paywall({ required = false, onActive, preview = null }: Props) {
       <View style={[styles.dock, { backgroundColor: color.background, borderTopColor: color.line, paddingBottom: Math.max(insets?.bottom ?? 0, tokens.space.sm) }]}>
         {step.note !== null && text(t(`subscription.${step.note}`))}
         {buying ? text(t('subscription.buying'), 'muted') : <Button label={words.action} disabled={step.busy !== null} onPress={() => void buy(chosen.id)} />}
-        <Text style={[styles.line, { color: color.muted }]}>
-          {words.dock.strong !== null && <Text style={[styles.bold, { color: color.textSecondary }]}>{words.dock.strong}</Text>}
+        {/* The billed amount is as prominent as the trial claim (Apple 3.1.2): bold, in the text colour, not the muted one. */}
+        <Text accessibilityLabel={words.dock.label} style={[styles.line, { color: color.muted }]}>
+          {words.dock.strong !== null && <Text style={[styles.bold, { color: color.text }]}>{words.dock.strong}</Text>}
           {words.dock.strong !== null && ' '}
-          <Text>{words.dock.rest}</Text>
+          {words.dock.lead !== null && `${words.dock.lead} `}
+          <Text style={[styles.bold, { color: color.text }]}>{words.dock.price}</Text>
+          {words.dock.tail}
         </Text>
         <View style={styles.links}>
           <QuietLink label={t('subscription.restore')} disabled={step.busy !== null} onPress={() => void restore()} />

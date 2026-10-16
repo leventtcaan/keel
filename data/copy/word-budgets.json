@@ -375,6 +375,8 @@
         "subscription.example.set.spoken",
         "subscription.plan.savesSpoken",
         "subscription.dock.noCharge",
+        "subscription.dock.then",
+        "subscription.dock.tail.annual",
         "subscription.after.annual",
         "subscription.cancelNote",
         "subscription.restore",

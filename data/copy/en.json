@@ -2678,9 +2678,10 @@
     },
     "dock": {
       "noCharge": "No charge today.",
-      "then": {
-        "annual": "Then {price} a year, renewing every year until you cancel.",
-        "monthly": "Then {price} a month, renewing every month until you cancel."
+      "then": "Then",
+      "tail": {
+        "annual": ", renewing every year until you cancel.",
+        "monthly": ", renewing every month until you cancel."
       }
     },
     "after": {

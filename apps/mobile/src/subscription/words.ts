@@ -49,11 +49,22 @@ export type PaywallWords = {
   sub: { lead: string; date: string } | null;
   /** The renewal in full, in the scroll (Apple 3.1.2). */
   terms: string[];
-  /** The line above the bottom links: what today costs (the trial only), then what it renews at. */
-  dock: { strong: string | null; rest: string };
+  /**
+   * The line above the bottom links: what today costs (the trial only), then what it renews at. The billed amount is its own part
+   * (`price`), so the screen can set it at least as prominent as the trial claim (Apple 3.1.2); `label` is the whole line.
+   */
+  dock: { strong: string | null; lead: string | null; price: string; tail: string; label: string };
   /** The button. */
   action: string;
 };
+
+/** The line at the bottom: "No charge today." (the trial only), "Then" (the same), the price as the store gives it, and how it renews. */
+function dockWords(plan: Plan, strong: string | null): PaywallWords['dock'] {
+  const lead = strong === null ? null : t('subscription.dock.then');
+  const price = t(plan.period === 'annual' ? 'subscription.plan.annualPrice' : 'subscription.plan.monthlyPrice', { price: plan.price });
+  const tail = t(`subscription.dock.tail.${plan.period}`);
+  return { strong, lead, price, tail, label: [strong, lead, `${price}${tail}`].filter((part) => part !== null).join(' ') };
+}
 
 /**
  * The page for the chosen plan: its headline, the day the trial ends (`today` is a day on the user's calendar), the terms in
@@ -66,7 +77,7 @@ export function paywallWords(plan: Plan, today: string): PaywallWords {
   if (plan.trial === null) {
     const renews = t(`subscription.renews.${plan.period}`, price);
     const title = t('subscription.title');
-    return { title, lead: title, accent: null, sub: null, terms: [renews, cancel], dock: { strong: null, rest: renews }, action: t('subscription.subscribe') };
+    return { title, lead: title, accent: null, sub: null, terms: [renews, cancel], dock: dockWords(plan, null), action: t('subscription.subscribe') };
   }
   const trial = span(plan.trial);
   return {
@@ -75,7 +86,7 @@ export function paywallWords(plan: Plan, today: string): PaywallWords {
     accent: t('subscription.titleFor', { trial }),
     sub: { lead: t('subscription.sub.lead'), date: weekdayDate(after(today, plan.trial.count, plan.trial.unit)) },
     terms: [t(`subscription.after.${plan.period}`, price), cancel],
-    dock: { strong: t('subscription.dock.noCharge'), rest: t(`subscription.dock.then.${plan.period}`, price) },
+    dock: dockWords(plan, t('subscription.dock.noCharge')),
     action: t('subscription.startTrial', { trial: t(`subscription.trial.${plan.trial.unit}`, { count: String(plan.trial.count) }) }),
   };
 }

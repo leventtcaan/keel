@@ -12,6 +12,7 @@ import { t } from '@/copy';
 import type { PlanPreview } from '@/subscription/planPreview';
 import type { Plan, SubscriptionStore } from '@/subscription/store';
 import { ThemeProvider } from '@/theme/theme';
+import { palettes, tokens } from '@/theme/tokens';
 
 // The button names the trial's length, as the store gives it (paywall v2, ADR-072 Ek 3).
 const START = 'Start 2-week free trial';
@@ -105,9 +106,9 @@ describe('the hero: the app\'s own call card, an example', () => {
 describe('"Save X%" on the yearly plan', () => {
   const yearly = () => screen.getByRole('radio', { name: /^Yearly/ });
 
-  test('from the store\'s numbers: 62% for 59.99 a year against 12.99 a month', async () => {
+  test('from the store\'s numbers: 61% (61.5 rounded down) for 59.99 a year against 12.99 a month', async () => {
     await show();
-    expect(within(yearly()).getByText('Save 62%')).toBeOnTheScreen();
+    expect(within(yearly()).getByText('Save 61%')).toBeOnTheScreen();
     expect(screen.getByRole('radio', { name: /^Monthly/ })).not.toHaveTextContent(/Save/);
   });
 
@@ -150,15 +151,24 @@ describe('the bottom that stays', () => {
     for (const name of [START, t('subscription.restore'), t('subscription.terms'), t('subscription.privacy')]) {
       expect(screen.getByRole('button', { name })).toBeOnTheScreen();
     }
-    expect(screen.getByText('Then $59.99 a year, renewing every year until you cancel.')).toBeOnTheScreen();
+    expect(screen.getByLabelText('No charge today. Then $59.99 a year, renewing every year until you cancel.')).toBeOnTheScreen();
     expect(screen.getByText('When the trial ends: $59.99 a year, renewing every year until you cancel.')).toBeOnTheScreen();
     expect(screen.getByText(t('subscription.cancelNote'))).toBeOnTheScreen();
+  });
+
+  test('the billed amount is as prominent as the trial claim: bold, in the text colour, not the muted one (Apple 3.1.2)', async () => {
+    await show();
+    const line = within(screen.getByLabelText('No charge today. Then $59.99 a year, renewing every year until you cancel.'));
+    const bold = { fontWeight: tokens.weight.bold, color: palettes.light.text };
+    expect(line.getByText('No charge today.')).toHaveStyle(bold);
+    expect(line.getByText('$59.99 a year')).toHaveStyle(bold);
   });
 
   test('the plan chosen changes the line, the full terms and the plan the button buys', async () => {
     await show();
     await act(async () => fireEvent.press(screen.getByRole('radio', { name: /^Monthly/ })));
     // The renewal in the line at the bottom and in the full terms above.
+    expect(screen.getByLabelText('$12.99 a month, renewing every month until you cancel.')).toBeOnTheScreen();
     expect(screen.getAllByText('$12.99 a month, renewing every month until you cancel.')).toHaveLength(2);
     await press(t('subscription.subscribe'));
     expect(mockStore.buy).toHaveBeenCalledWith('$rc_monthly');
