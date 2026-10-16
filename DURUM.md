@@ -5,7 +5,14 @@ guncelleme: 2026-10-10
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (16 Eki akşamüstü — HER ŞEY HAZIR, yalnız Submit Levent'te)
+## ▶ DEVAM NOKTASI (16 Eki 16:05 — 1.0 (build 4) APP REVIEW'DA: "Waiting for Review")
+**Gönderildi:** iOS 1.0 build 4 + abonelik grubu "Next Call" + 2 abonelik tek gönderimde (Levent Submit etti). Yayın şekli otomatik: onayda mağazaya çıkar.
+**Beklerken / sonra (sırayla):** (1) Red gelirse Resolution Center mesajı → 3.1.2/5.1.1 kontrol listesi, düzeltme, build 5. (2) Onaydan sonra: RevenueCat webhook
+(https://keel-beta.duckdns.org/webhooks/revenuecat, `KEEL_REVENUECAT_WEBHOOK_SECRET`) + VPS `KEEL_REVENUECAT_API_KEY` (Levent, sır); SANDBOX kabulünü kapat (ADR-080 Ek 1);
+RevenueCat e-posta doğrulaması; Small Business Program tarihi. (3) 1.0.1: K-1034 (paywall durum çubuğu + örnek kart kontrastı). (4) 4 Dependabot uyarısı (2 high) main'de.
+(5) Pazarlama konuşması (M11, ADR-080 #1b) ilk kullanım verisiyle. Marka riski: "NextCall: Call Reminders".
+
+## (önceki) DEVAM NOKTASI (16 Eki akşamüstü — HER ŞEY HAZIR, yalnız Submit Levent'te)
 **Bitti bu oturumda:** ikon 6 · "N." (#609) ve paywall v2 (#610: örnek karar kartı, "Save %" mağaza fiyatından AŞAĞI yuvarlanır (61), faturalanan tutar kalın, Account sayfası sağ üstte) main'de.
 ASC: 6 kare 1320×2868 olarak **6.9" yuvasına** yüklendi (önceki 1206×2622'ler 6.3"e düşmüştü, zorunlu 6.5" boştu → Submit reddedilirdi; 6.5" artık "Using 6.9""). App Review notu: hesap silme
 "subscription screen › Account (top right) › Delete account". Abonelikler "Prepare for Submission", eksik yok; **ilk abonelik grubu sürümle aynı gönderimde** gider (grup sayfası › Add for Review).

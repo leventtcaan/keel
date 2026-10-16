@@ -247,3 +247,11 @@
 - takıldım: iki ajan aynı ADR numarasını aldı (082'ye taşındı); ajanlar yerelde Docker/Postgres koştu, disk 3 GB'a indi (durduruldu, volume temizlendi); RevenueCat kuralı üç inceleme turunda oturdu (kilitlenme → iadeden sonra açılma → gecikmeli webhook düşmesi)
 - sıradaki: Levent K-983 + RevenueCat anahtarı → YAYIN Oturum 2 (K-984); K-1001 ad + K-805 → Oturum 3
 - AI: bütün kod, test, inceleme agent (Opus düzenleyici + ~15 Sonnet uygulayıcı/inceleme ajanı); Levent 2 karar verdi
+
+## 16 Eki 2026 — YAYIN: App Review'a gönderildi
+- İkon 6 · "N." (#609) ve paywall v2 (#610; Save % aşağı yuvarlanır, faturalanan tutar kalın, Account sayfası) birleşti; inceleme 3.1.2 fiyat belirginliği bulgusu düzeltildi.
+- ASC: kareler 6.9" yuvasına (zorunlu 6.5" boştu), review notu Account yolu, abonelik inceleme görseli yeni paywall; build 4 sürüme bağlandı.
+- Gönderim: sürüm + grup + 2 abonelik tek taslakta; Levent Submit etti → "Waiting for Review".
+- Disk: takas ~11 GB + Codex önbelleği; yerelde tam jest koşturmak takası büyütüyor (ajanlara yalnız dokunulan testler).
+- Sıradaki: inceleme sonucu; onayda webhook + REST anahtarı + SANDBOX kapanışı; 1.0.1 K-1034.
+
