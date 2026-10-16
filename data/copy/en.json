@@ -2586,11 +2586,21 @@
     "seePlans": "See plans",
     "title": "Subscribe",
     "titleTrial": "Try it free for {trial}",
+    "titleLead": "Try it free",
+    "titleFor": "for {trial}",
+    "sub": {
+      "lead": "Full access today. Nothing is charged until"
+    },
+    "account": "Account",
+    "accountDone": "Done",
     "plan": {
       "annual": "Yearly",
       "monthly": "Monthly",
       "annualPrice": "{price} a year",
-      "annualPerMonth": "{perMonth} a month, billed once a year",
+      "annualBilled": "Billed once a year",
+      "perMonth": "{perMonth} a month",
+      "save": "Save {percent}%",
+      "savesSpoken": "saves {percent} percent compared with monthly",
       "monthlyPrice": "{price} a month",
       "monthlyBilled": "Billed every month",
       "selectLabel": "{plan}, {price}"
@@ -2613,9 +2623,9 @@
       "month": "1 month",
       "year": "1 year"
     },
-    "today": "Today: full access, nothing charged.",
     "timeline": {
       "label": "What happens when",
+      "heading": "What happens, and when",
       "today": "Today",
       "free": "No charge.",
       "firstCall": "Your first call.",
@@ -2638,10 +2648,40 @@
       "cardio": "Cardio planned around your lifting",
       "swap": "Swap any move, any time"
     },
-    "preview": {
-      "label": "Your plan",
-      "program": "{count} days a week",
-      "firstWorkout": "First workout {day}"
+    "example": {
+      "tag": "Example",
+      "arrow": "→",
+      "call": {
+        "label": "Example of a weekly call",
+        "eyebrow": "This week's call",
+        "title": "New calorie target",
+        "row": "Calories",
+        "from": "2,050",
+        "to": "1,800",
+        "unit": "kcal",
+        "spoken": "Calories, from 2,050 to 1,800 kcal.",
+        "why": "-0.3 kg a week over 3 weeks, not toward your goal.",
+        "step": "One step: 250 kcal a day less."
+      },
+      "set": {
+        "label": "Example of a set target",
+        "eyebrow": "Leg press",
+        "title": "Beat last time",
+        "row": "Set 2 of 3",
+        "from": "180 × 7",
+        "to": "180 × 8",
+        "unit": "kg",
+        "spoken": "Set 2 of 3, from 180 × 7 to 180 × 8 kg.",
+        "why": "Your last session: 180 kg × 7.",
+        "step": "Aim for one more rep."
+      }
+    },
+    "dock": {
+      "noCharge": "No charge today.",
+      "then": {
+        "annual": "Then {price} a year, renewing every year until you cancel.",
+        "monthly": "Then {price} a month, renewing every month until you cancel."
+      }
     },
     "after": {
       "annual": "When the trial ends: {price} a year, renewing every year until you cancel.",
@@ -2652,7 +2692,7 @@
       "monthly": "{price} a month, renewing every month until you cancel."
     },
     "cancelNote": "Charged to your Apple ID. Cancel anytime in Settings, then Subscription, at least 24 hours before it renews, and you won't be charged again. What you've paid for stays yours until its end.",
-    "startTrial": "Start free trial",
+    "startTrial": "Start {trial}",
     "subscribe": "Subscribe",
     "restore": "Restore purchases",
     "terms": "Terms of Use",
@@ -2665,7 +2705,6 @@
     "checking": "Checking your subscription…",
     "checkFailed": "Couldn't check your subscription. Try again in a moment.",
     "continue": "Continue",
-    "reminderOffer": "{days} days before it ends: a reminder on this phone, if you'd like one.",
     "reminder": {
       "title": "Your free trial ends on {date}",
       "body": "It renews then unless you cancel. To cancel: Settings, then Subscription.",

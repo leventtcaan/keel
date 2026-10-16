@@ -31,6 +31,14 @@
       "tag": "urun",
       "source": "plan/kararlar/ADR-058-m7-part2-cevaplari.md#105",
       "note": "The trial reminder rings at this hour of the phone's own day (K-707 review): never at the hour the trial happened to start — a purchase at 01:30 would ring at 01:30. Mid-morning, when a billing choice can be made."
+    },
+    {
+      "key": "saving_badge_min_percent",
+      "value": 10,
+      "unit": "percent",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-072-teklif-ve-onboarding.md#Ek 3",
+      "note": "The yearly plan shows \"Save X%\" only when it is at least this much cheaper than twelve months of the monthly plan, in the same currency (K-1033, paywall v2): a small saving is not worth a badge."
     }
   ]
 }

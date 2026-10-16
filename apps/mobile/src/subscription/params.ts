@@ -13,4 +13,6 @@ export const subscriptionParams = {
   confirmIntervalMs: param<number>('subscription_confirm_interval_ms'),
   trialReminderDaysBefore: param<number>('trial_reminder_days_before'),
   trialReminderHour: param<number>('trial_reminder_hour'),
+  /** "Save X%" shows only from this saving up (saving.ts, ADR-072 Ek 3). */
+  savingBadgeMinPercent: param<number>('saving_badge_min_percent'),
 };

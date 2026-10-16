@@ -10,7 +10,7 @@ import type { Plan } from '@/subscription/store';
 import { paywallTimeline } from '@/subscription/words';
 import { weekdayDate } from '@/today/today';
 
-const ANNUAL: Plan = { id: '$rc_annual', period: 'annual', price: '$59.99', pricePerMonth: '$5.00', trial: { count: 2, unit: 'week' } };
+const ANNUAL: Plan = { id: '$rc_annual', period: 'annual', price: '$59.99', amount: 59.99, currency: 'USD', pricePerMonth: '$5.00', trial: { count: 2, unit: 'week' } };
 const TODAY = '2026-10-12'; // a Monday
 const FIRST_CALL = '2026-10-19';
 const DAYS_BEFORE = subscriptionParams.trialReminderDaysBefore;
@@ -56,7 +56,7 @@ test.each([
 });
 
 test('the charge is the chosen plan\'s, in the store\'s price', () => {
-  const monthly: Plan = { id: '$rc_monthly', period: 'monthly', price: '$12.99', pricePerMonth: null, trial: { count: 2, unit: 'week' } };
+  const monthly: Plan = { id: '$rc_monthly', period: 'monthly', price: '$12.99', amount: 12.99, currency: 'USD', pricePerMonth: null, trial: { count: 2, unit: 'week' } };
   expect(rows(monthly).at(-1)?.words).toBe(t('subscription.timeline.charge.monthly', { price: '$12.99' }));
 });
 

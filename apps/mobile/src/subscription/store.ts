@@ -11,6 +11,9 @@ export type Plan = {
   period: 'annual' | 'monthly';
   /** The price as the store formats it for the user's storefront ("$59.99"). */
   price: string;
+  /** The same price as a number and its currency (ISO 4217), only to work out the saving of one plan over the other (saving.ts): never shown. */
+  amount: number;
+  currency: string;
   /** An annual plan's price a month, as the store works it out; none for a monthly plan. */
   pricePerMonth: string | null;
   /** A free trial this user can still have (ADR-057 D3); none when there is none, or when they had it already. */

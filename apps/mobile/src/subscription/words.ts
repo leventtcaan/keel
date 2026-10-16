@@ -22,34 +22,61 @@ function span(trial: NonNullable<Plan['trial']>): string {
   return trial.count === 1 ? t(`subscription.trialSpanOne.${trial.unit}`) : t(`subscription.trialSpan.${trial.unit}`, { count: String(trial.count) });
 }
 
-/** One plan to choose: its name, and its price as the store gives it. */
-export function planWords(plan: Plan): { title: string; body: string } {
-  if (plan.period === 'annual') {
-    const price = t('subscription.plan.annualPrice', { price: plan.price });
-    return {
-      title: t('subscription.plan.annual'),
-      body: plan.pricePerMonth === null ? price : `${price} · ${t('subscription.plan.annualPerMonth', { perMonth: plan.pricePerMonth })}`,
-    };
-  }
-  return { title: t('subscription.plan.monthly'), body: `${t('subscription.plan.monthlyPrice', { price: plan.price })} · ${t('subscription.plan.monthlyBilled')}` };
+/** One plan to choose: its name, how it is billed, the store's price, and (yearly only) the saving over twelve months of monthly. */
+export type PlanLine = { title: string; note: string; price: string; perMonth: string | null; badge: string | null; label: string };
+
+/** `saving` is the yearly plan's percentage (saving.ts), or null when none is to be said; the monthly plan never carries it. */
+export function planWords(plan: Plan, saving: number | null): PlanLine {
+  const annual = plan.period === 'annual';
+  const title = t(annual ? 'subscription.plan.annual' : 'subscription.plan.monthly');
+  const note = t(annual ? 'subscription.plan.annualBilled' : 'subscription.plan.monthlyBilled');
+  const price = t(annual ? 'subscription.plan.annualPrice' : 'subscription.plan.monthlyPrice', { price: plan.price });
+  const perMonth = annual && plan.pricePerMonth !== null ? t('subscription.plan.perMonth', { perMonth: plan.pricePerMonth }) : null;
+  const percent = annual ? saving : null;
+  const badge = percent === null ? null : t('subscription.plan.save', { percent });
+  const spoken = percent === null ? [] : [t('subscription.plan.savesSpoken', { percent })];
+  return { title, note, price, perMonth, badge, label: [title, note, price, ...(perMonth === null ? [] : [perMonth]), ...spoken].join(', ') };
 }
 
-/** The page for the chosen plan: its title, the terms in order, and what its button says. */
-export function paywallWords(plan: Plan): { title: string; terms: string[]; action: string } {
+/** What the paywall's page says for the chosen plan, in the order it shows it. */
+export type PaywallWords = {
+  /** The whole headline, for a screen reader. */
+  title: string;
+  /** Its first line, and its second (the trial's length, in the accent colour); none without a trial. */
+  lead: string;
+  accent: string | null;
+  /** Under the headline: until when nothing is charged (the trial only). */
+  sub: { lead: string; date: string } | null;
+  /** The renewal in full, in the scroll (Apple 3.1.2). */
+  terms: string[];
+  /** The line above the bottom links: what today costs (the trial only), then what it renews at. */
+  dock: { strong: string | null; rest: string };
+  /** The button. */
+  action: string;
+};
+
+/**
+ * The page for the chosen plan: its headline, the day the trial ends (`today` is a day on the user's calendar), the terms in
+ * order, the line under the button and what the button says. The reminder before the trial ends is the timeline's: offered,
+ * never promised (K-707, ADR-058 › 105).
+ */
+export function paywallWords(plan: Plan, today: string): PaywallWords {
   const cancel = t('subscription.cancelNote');
+  const price = { price: plan.price };
   if (plan.trial === null) {
-    return { title: t('subscription.title'), terms: [t(`subscription.renews.${plan.period}`, { price: plan.price }), cancel], action: t('subscription.subscribe') };
+    const renews = t(`subscription.renews.${plan.period}`, price);
+    const title = t('subscription.title');
+    return { title, lead: title, accent: null, sub: null, terms: [renews, cancel], dock: { strong: null, rest: renews }, action: t('subscription.subscribe') };
   }
+  const trial = span(plan.trial);
   return {
-    title: t('subscription.titleTrial', { trial: span(plan.trial) }),
-    // The reminder is offered, never promised: it needs the user's tap and iOS's yes (K-707, ADR-058 › 105).
-    terms: [
-      t('subscription.today'),
-      t('subscription.reminderOffer', { days: String(subscriptionParams.trialReminderDaysBefore) }),
-      t(`subscription.after.${plan.period}`, { price: plan.price }),
-      cancel,
-    ],
-    action: t('subscription.startTrial'),
+    title: t('subscription.titleTrial', { trial }),
+    lead: t('subscription.titleLead'),
+    accent: t('subscription.titleFor', { trial }),
+    sub: { lead: t('subscription.sub.lead'), date: weekdayDate(after(today, plan.trial.count, plan.trial.unit)) },
+    terms: [t(`subscription.after.${plan.period}`, price), cancel],
+    dock: { strong: t('subscription.dock.noCharge'), rest: t(`subscription.dock.then.${plan.period}`, price) },
+    action: t('subscription.startTrial', { trial: t(`subscription.trial.${plan.trial.unit}`, { count: String(plan.trial.count) }) }),
   };
 }
 

@@ -3,7 +3,7 @@
  * values, the reminder moves and the line says so.
  */
 import { createTrialReminder } from '@/subscription/trialReminder';
-import { paywallWords } from '@/subscription/words';
+import { paywallTimeline } from '@/subscription/words';
 
 import { memoryKv } from './support/profileServer';
 
@@ -24,7 +24,8 @@ test('three days before, at 18:00 on the phone', async () => {
   expect(set).toEqual([expected]);
 });
 
-test("the paywall's line says the parameter's days", () => {
-  const words = paywallWords({ id: 'a', period: 'annual', price: '$59.99', pricePerMonth: null, trial: { count: 7, unit: 'day' } });
-  expect(words.terms).toContain("3 days before it ends: a reminder on this phone, if you'd like one.");
+test("the paywall's timeline says the parameter's days: the reminder three days before the trial ends", () => {
+  const plan = { id: 'a', period: 'annual', price: '$59.99', amount: 59.99, currency: 'USD', pricePerMonth: null, trial: { count: 7, unit: 'day' } } as const;
+  const rows = paywallTimeline(plan, { today: '2026-10-13', firstCall: null });
+  expect(rows.map((row) => row.day)).toEqual(['2026-10-13', '2026-10-17', '2026-10-20']);
 });

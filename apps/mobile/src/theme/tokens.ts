@@ -116,6 +116,9 @@ export const tokens = {
     decisionTitle: 30,
     heading: 24,
     number: 22,
+    /** The paywall's headline and the example call's number (prototype paywall-v2 `h1`, `.hnums b`), and the number it replaces (`.hnums s`). */
+    display: 44,
+    displaySmall: 24,
     /** The number on an onboarding day box (prototype `.numtile b`). */
     tile: 56,
     button: 16,
@@ -163,6 +166,11 @@ export const tokens = {
     weekCell: 24,
     dot: 14,
     swatch: 10,
+    /** The paywall (ADR-072 Ek 3, prototype paywall-v2): the app icon in its header, a value's icon tile, a timeline's dot, a plan's radio. */
+    brandMark: 30,
+    valueTile: 36,
+    timelineDot: 16,
+    planRadio: 24,
     /** Sets per muscle: the muscle's name column and the count column beside its bar. */
     barName: 92,
     barCount: 44,

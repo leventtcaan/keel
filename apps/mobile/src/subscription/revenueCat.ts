@@ -17,7 +17,7 @@ type IntroPrice = { price: number; periodUnit: string; periodNumberOfUnits: numb
 type Package = {
   identifier: string;
   packageType: string;
-  product: { identifier: string; priceString: string; pricePerMonthString: string | null; introPrice: IntroPrice | null };
+  product: { identifier: string; priceString: string; price: number; currencyCode: string; pricePerMonthString: string | null; introPrice: IntroPrice | null };
 };
 type Sdk = {
   configure(configuration: { apiKey: string; appUserID?: string | null }): void;
@@ -132,6 +132,8 @@ export function revenueCatStore({
         id: pkg.identifier,
         period,
         price: pkg.product.priceString,
+        amount: pkg.product.price,
+        currency: pkg.product.currencyCode,
         pricePerMonth: period === 'annual' ? pkg.product.pricePerMonthString : null,
         trial: trialOf(pkg, eligibility),
       }));

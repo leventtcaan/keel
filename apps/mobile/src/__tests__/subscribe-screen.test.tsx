@@ -15,12 +15,15 @@ import { paywallTimeline } from '@/subscription/words';
 import { weekdayDate } from '@/today/today';
 import { ThemeProvider } from '@/theme/theme';
 
+// The button names the trial's length, as the store gives it (paywall v2, ADR-072 Ek 3).
+const START = 'Start 7-day free trial';
+
 type Subscription = components['schemas']['Subscription'];
 const ok = (data: unknown) => ({ data, response: new Response(null, { status: 200 }) });
 const ID = '0b6f2a8e-1c3d-4e5f-8a9b-0c1d2e3f4a5b';
 const NONE: Subscription = { active: false, appUserId: ID };
 const TRIAL: Subscription = { active: true, appUserId: ID, status: 'TRIAL', accessUntil: '2026-10-11T12:00:00Z' };
-const PLANS: Plan[] = [{ id: '$rc_annual', period: 'annual', price: '$59.99', pricePerMonth: '$5.00', trial: { count: 7, unit: 'day' } }];
+const PLANS: Plan[] = [{ id: '$rc_annual', period: 'annual', price: '$59.99', amount: 59.99, currency: 'USD', pricePerMonth: '$5.00', trial: { count: 7, unit: 'day' } }];
 
 let mockAnswers: unknown[] = [];
 const mockGET = jest.fn(async () => (mockAnswers.length > 1 ? mockAnswers.shift() : mockAnswers[0]));
@@ -87,12 +90,13 @@ const press = async (name: string) => act(async () => fireEvent.press(screen.get
 
 test('the plans with no way to close them', async () => {
   await show();
-  expect(screen.getByRole('button', { name: t('subscription.startTrial') })).toBeOnTheScreen();
+  expect(screen.getByRole('button', { name: START })).toBeOnTheScreen();
   expect(screen.queryByRole('button', { name: t('subscription.close') })).toBeNull();
 });
 
-test('the account is reachable without paying: export, delete, sign out (App Review 5.1.1(v))', async () => {
+test('the account is reachable without paying, behind its button: export, delete, sign out (App Review 5.1.1(v))', async () => {
   await show();
+  await press(t('subscription.account'));
   expect(screen.getByRole('button', { name: t('settings.delete.title') })).toBeOnTheScreen();
   expect(screen.getByRole('button', { name: t('settings.signOut.title') })).toBeOnTheScreen();
 });
@@ -100,7 +104,7 @@ test('the account is reachable without paying: export, delete, sign out (App Rev
 test('bought and seen on the server: said, and Continue lets the gate ask again (the tabs open) — not before', async () => {
   mockAnswers = [ok(NONE), ok(TRIAL)];
   await show();
-  await press(t('subscription.startTrial'));
+  await press(START);
   expect(screen.getByText(t('subscription.active'))).toBeOnTheScreen();
   expect(mockGate.refresh).not.toHaveBeenCalled();
   await press(t('subscription.continue'));
@@ -126,7 +130,7 @@ test('already subscribed on the server (bought on another phone): Continue', asy
 test('bought, seen only on looking again: Continue', async () => {
   mockAnswers = [ok(NONE)];
   await show();
-  await press(t('subscription.startTrial'));
+  await press(START);
   expect(screen.getByText(t('subscription.waiting'))).toBeOnTheScreen();
   mockAnswers = [ok(TRIAL)];
   await press(t('subscription.lookAgain'));
@@ -159,7 +163,7 @@ test('not known yet: it asks the gate, says it is checking, and shows no plans',
   await show();
   expect(mockGate.refresh).toHaveBeenCalledTimes(1);
   expect(screen.getByText(t('subscription.checking'))).toBeOnTheScreen();
-  expect(screen.queryByRole('button', { name: t('subscription.startTrial') })).toBeNull();
+  expect(screen.queryByRole('button', { name: START })).toBeNull();
 });
 
 test('not known, and no answer: says so, and asks again on request — the gate never opens by failing', async () => {
@@ -184,11 +188,11 @@ describe('#paywall after the plan (ADR-072 #7)', () => {
   const FIRST_CALL = '2026-10-19';
   const PREVIEW: PlanPreview = { own: false, days: 3, firstWorkout: 'MONDAY', firstCall: FIRST_CALL, checkInDay: 'MONDAY', hasCardio: true };
 
-  test('the plan just shown, in brief: how many days, the first workout (the first call is on the timeline, once)', async () => {
+  test('the plan just shown is not repeated (the hero is the example call, ADR-072 Ek 3); the first call is on the timeline, once', async () => {
     mockPreview = PREVIEW;
     await show();
-    expect(screen.getByText(t('subscription.preview.program', { count: 3 }))).toBeOnTheScreen();
-    expect(screen.getByText(t('subscription.preview.firstWorkout', { day: t('onboarding.schedule.dayName.MONDAY') }))).toBeOnTheScreen();
+    expect(screen.queryByText('3 days a week')).toBeNull();
+    expect(screen.queryByLabelText('Your plan')).toBeNull();
     expect(screen.getAllByText(weekdayDate(FIRST_CALL))).toHaveLength(1);
   });
 
@@ -221,9 +225,8 @@ describe('#paywall after the plan (ADR-072 #7)', () => {
     }
   });
 
-  test('met later, with no plan just shown: no preview, no first call on the timeline, the call named without a day', async () => {
+  test('met later, with no plan just shown: no first call on the timeline, the call named without a day', async () => {
     await show();
-    expect(screen.queryByText(t('subscription.preview.program', { count: 3 }))).toBeNull();
     expect(screen.queryByText(t('subscription.timeline.firstCall'))).toBeNull();
     expect(screen.getByText(t('subscription.values.weeklyCall'))).toBeOnTheScreen();
   });
@@ -247,7 +250,7 @@ describe('#paywall after the plan (ADR-072 #7)', () => {
     mockPreview = PREVIEW;
     mockAnswers = [ok(NONE), ok(TRIAL)];
     await show();
-    await press(t('subscription.startTrial'));
+    await press(START);
     await press(t('subscription.continue'));
     expect(mockServices.planPreviews.forget).toHaveBeenCalledTimes(1);
     expect(mockServices.planPreviews.forget.mock.invocationCallOrder[0]).toBeLessThan(mockGate.refresh.mock.invocationCallOrder[0]);
