@@ -8,34 +8,70 @@ import { legalLinks } from '@/subscription/links';
 import type { Plan } from '@/subscription/store';
 import { paywallWords, planWords } from '@/subscription/words';
 
-const ANNUAL: Plan = { id: '$rc_annual', period: 'annual', price: '$59.99', pricePerMonth: '$5.00', trial: { count: 7, unit: 'day' } };
-const MONTHLY: Plan = { id: '$rc_monthly', period: 'monthly', price: '$12.99', pricePerMonth: null, trial: null };
+const ANNUAL: Plan = { id: '$rc_annual', period: 'annual', price: '$59.99', amount: 59.99, currency: 'USD', pricePerMonth: '$5.00', trial: { count: 7, unit: 'day' } };
+const TODAY = '2026-10-13';
+const MONTHLY: Plan = { id: '$rc_monthly', period: 'monthly', price: '$12.99', amount: 12.99, currency: 'USD', pricePerMonth: null, trial: null };
 
-test("each plan: its name and the store's price, the annual one's monthly share as the store works it out", () => {
-  expect(planWords(ANNUAL)).toEqual({ title: t('subscription.plan.annual'), body: '$59.99 a year · $5.00 a month, billed once a year' });
-  expect(planWords(MONTHLY)).toEqual({ title: t('subscription.plan.monthly'), body: '$12.99 a month · Billed every month' });
-  expect(planWords({ ...ANNUAL, pricePerMonth: null }).body).toBe('$59.99 a year');
+test("each plan: its name, how it is billed and the store's price; the annual one's monthly share as the store works it out", () => {
+  expect(planWords(ANNUAL, null)).toEqual({
+    title: t('subscription.plan.annual'),
+    note: 'Billed once a year',
+    price: '$59.99 a year',
+    perMonth: '$5.00 a month',
+    badge: null,
+    label: 'Yearly, Billed once a year, $59.99 a year, $5.00 a month',
+  });
+  expect(planWords(MONTHLY, null)).toEqual({
+    title: t('subscription.plan.monthly'),
+    note: 'Billed every month',
+    price: '$12.99 a month',
+    perMonth: null,
+    badge: null,
+    label: 'Monthly, Billed every month, $12.99 a month',
+  });
+  expect(planWords({ ...ANNUAL, pricePerMonth: null }, null).perMonth).toBeNull();
 });
 
-// ADR-058 › 105 (the product owner): the trial's terms say a reminder can come before it ends — offered, never promised.
-test('with a trial: what today costs, the reminder on offer, what is charged when it ends and that it renews until cancelled; the button starts the trial', () => {
-  expect(paywallWords(ANNUAL)).toEqual({
+test('a saving is a badge on the yearly plan, said in full to a screen reader; the monthly plan never has one', () => {
+  expect(planWords(ANNUAL, 61).badge).toBe('Save 61%');
+  expect(planWords(ANNUAL, 61).label).toBe('Yearly, Billed once a year, $59.99 a year, $5.00 a month, saves 61 percent compared with monthly');
+  expect(planWords(MONTHLY, 61).badge).toBeNull();
+});
+
+// ADR-058 > 105 (the product owner): a reminder can come before the trial ends, offered, never promised: the timeline says it.
+test('with a trial: when it ends, what is charged then and that it renews until cancelled; the button starts it', () => {
+  expect(paywallWords(ANNUAL, TODAY)).toEqual({
     title: 'Try it free for 7 days',
-    terms: [
-      'Today: full access, nothing charged.',
-      "2 days before it ends: a reminder on this phone, if you'd like one.",
-      'When the trial ends: $59.99 a year, renewing every year until you cancel.',
-      t('subscription.cancelNote'),
-    ],
-    action: t('subscription.startTrial'),
+    lead: 'Try it free',
+    accent: 'for 7 days',
+    sub: { lead: 'Full access today. Nothing is charged until', date: 'Tue, Oct 20' },
+    terms: ['When the trial ends: $59.99 a year, renewing every year until you cancel.', t('subscription.cancelNote')],
+    dock: {
+      strong: 'No charge today.',
+      lead: 'Then',
+      price: '$59.99 a year',
+      tail: ', renewing every year until you cancel.',
+      label: 'No charge today. Then $59.99 a year, renewing every year until you cancel.',
+    },
+    action: 'Start 7-day free trial',
   });
 });
 
 test('without one (none offered, or had already): the price and the renewal only; no word of a trial anywhere', () => {
-  const words = paywallWords(MONTHLY);
+  const words = paywallWords(MONTHLY, TODAY);
   expect(words).toEqual({
     title: t('subscription.title'),
+    lead: t('subscription.title'),
+    accent: null,
+    sub: null,
     terms: ['$12.99 a month, renewing every month until you cancel.', t('subscription.cancelNote')],
+    dock: {
+      strong: null,
+      lead: null,
+      price: '$12.99 a month',
+      tail: ', renewing every month until you cancel.',
+      label: '$12.99 a month, renewing every month until you cancel.',
+    },
     action: t('subscription.subscribe'),
   });
   expect(JSON.stringify(words).toLowerCase()).not.toContain('trial');
@@ -46,7 +82,7 @@ test.each([
   [{ count: 2, unit: 'week' } as const, 'Try it free for 2 weeks'],
   [{ count: 1, unit: 'month' } as const, 'Try it free for 1 month'],
 ])('the trial is said in the store’s own unit (%j)', (trial, title) => {
-  expect(paywallWords({ ...ANNUAL, trial }).title).toBe(title);
+  expect(paywallWords({ ...ANNUAL, trial }, TODAY).title).toBe(title);
 });
 
 test('the cancel note says how, when, and that what was paid for stays', () => {

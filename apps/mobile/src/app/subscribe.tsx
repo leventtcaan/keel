@@ -1,20 +1,20 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
 import { t } from '@/copy';
 import { useAppServices, useSubscriptionGate } from '@/services/ServicesProvider';
-import { AccountSection } from '@/settings/AccountSection';
 import { Paywall } from '@/subscription/PaywallView';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
 /**
  * The gate after onboarding (K-706, ADR-058 › 107): an account that never subscribed sees the plans, with no way to close them.
- * Its account stays reachable — export, delete (App Review 5.1.1(v): deletion in the app, without paying), sign out. Once the
- * server sees a purchase or a restore the gate asks again and the root layout opens the tabs. Not known yet (nothing kept on
- * this phone): it asks, and waits. Right after onboarding it opens on the plan just shown (#paywall, ADR-072 #7, K-967).
+ * Its account stays reachable behind the header's Account button — export, delete (App Review 5.1.1(v): deletion in the app,
+ * without paying), sign out (paywall v2, ADR-072 Ek 3). Once the server sees a purchase or a restore the gate asks again and the
+ * root layout opens the tabs. Not known yet (nothing kept on this phone): it asks, and waits. Right after onboarding it opens
+ * knowing the plan just shown (#paywall, ADR-072 #7, K-967).
  */
 export default function SubscribeScreen() {
   const { gate, planPreviews } = useAppServices();
@@ -47,19 +47,10 @@ export default function SubscribeScreen() {
       </SafeAreaView>
     );
   }
-  return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['bottom']}>
-      <Paywall required onActive={active} preview={planPreviews.current()} />
-      <ScrollView style={styles.account} contentContainerStyle={styles.accountBody}>
-        <AccountSection />
-      </ScrollView>
-    </SafeAreaView>
-  );
+  return <Paywall required onActive={active} preview={planPreviews.current()} />;
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   text: { fontSize: tokens.type.body, padding: tokens.space.lg },
-  account: { flexGrow: 0 },
-  accountBody: { paddingHorizontal: tokens.space.lg, paddingBottom: tokens.space.md },
 });

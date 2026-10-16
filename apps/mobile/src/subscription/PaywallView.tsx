@@ -1,25 +1,28 @@
 import { router } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
-import { OptionCard } from '@/components/OptionCard';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
 import { useAppServices } from '@/services/ServicesProvider';
+import { AccountButton, AccountSheet } from '@/subscription/AccountSheet';
+import { BrandMark } from '@/subscription/BrandMark';
+import { ExampleCard } from '@/subscription/ExampleCard';
 import { configuredLegalLinks } from '@/subscription/links';
 import { type Opened, confirmActive, openPaywall, restorePurchases, subscribe, wait } from '@/subscription/paywall';
+import { PlanOption, TimelineCard, type ValueRow, Values } from '@/subscription/PaywallParts';
+import type { PlanPreview } from '@/subscription/planPreview';
+import { savingPercent } from '@/subscription/saving';
 import type { Plan } from '@/subscription/store';
 import { TrialReminderOffer } from '@/subscription/TrialReminderOffer';
-import { type PlanPreview } from '@/subscription/planPreview';
-import { PlanPreviewCard } from '@/subscription/PlanPreviewCard';
 import { paywallTimeline, paywallWords, planWords } from '@/subscription/words';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { localDay } from '@/today/today';
 
-/** A line under the plans: what came of the last thing tried. */
+/** A line above the button: what came of the last thing tried. */
 type Note = 'pending' | 'purchaseFailed' | 'restoreWaiting' | 'restoreFailed';
 type Step =
   | { at: 'loading' }
@@ -37,28 +40,31 @@ function stepOf(opened: Opened): Step {
 
 type Props = {
   /**
-   * The gate after onboarding (K-706, ADR-058 › 107): no way to close it; once the server sees the subscription, "Continue" calls
-   * `onActive` and the gate asks again (the tabs open) — on a tap, never by itself, so the moment is said first.
+   * The gate after onboarding (K-706, ADR-058 › 107): no way to close it, and the account behind a button instead (App Review
+   * 5.1.1(v)); once the server sees the subscription, "Continue" calls `onActive` and the gate asks again (the tabs open) — on a
+   * tap, never by itself, so the moment is said first.
    */
   required?: boolean;
   onActive?: () => void;
-  /** The plan just shown at the end of onboarding (#ob-plan): its preview, and the first call on the timeline (K-967). */
+  /** The plan just shown at the end of onboarding (#ob-plan): what its program has (the values), and whether it has calls (K-967). */
   preview?: PlanPreview | null;
 };
 
 /**
- * The paywall (K-702, prototype #paywall, ADR-057, ADR-072 #7). The plan just shown, when there is one; three values; the
- * timeline — today, the first call, the reminder, the charge — for the chosen plan, the trial as long as the store's offer;
- * the store's plans, annual chosen first, each with the store's price (K2); the chosen plan's terms in full — the trial only
- * for someone who can have it (Apple 3.1.2) — and its button. Bought, the server is
- * asked until it sees it (D2): subscribed, or "it can take a minute" with a way to look again — never a second purchase.
- * Restore is always offered; so are the legal links set in the build and a way out. Opened only when the user asks
- * (D5): from a feature that needs it, or Settings.
+ * The paywall (K-702, K-1033; prototype paywall-v2, ADR-057, ADR-072 #7 and Ek 3). The example call as the hero, marked as one;
+ * the headline, three values; the store's plans, annual chosen first, each with the store's price (K2) and, when it is real, the
+ * saving; the timeline — today, the first call, the reminder, the charge — for the chosen plan, the trial as long as the store's
+ * offer; the chosen plan's terms in full, the trial only for someone who can have it (Apple 3.1.2). The button, the price in a
+ * line and Restore, Terms, Privacy stay at the bottom. Bought, the server is asked until it sees it (D2): subscribed, or "it can
+ * take a minute" with a way to look again — never a second purchase. Opened only when the user asks (D5): from a feature that
+ * needs it, or Settings.
  */
 export function Paywall({ required = false, onActive, preview = null }: Props) {
   const { api, purchases, report } = useAppServices();
   const { color } = useTheme();
+  const insets = useContext(SafeAreaInsetsContext);
   const [step, setStep] = useState<Step>({ at: 'loading' });
+  const [account, setAccount] = useState(false);
   const [links] = useState(configuredLegalLinks);
   // One purchase or restore at a time: a second tap while Apple's sheet is up does nothing (a ref both taps share).
   const running = useRef(false);
@@ -123,10 +129,16 @@ export function Paywall({ required = false, onActive, preview = null }: Props) {
   const text = (words: string, tone: 'text' | 'textSecondary' | 'muted' = 'text') => (
     <Text style={[styles.text, { color: color[tone] }]}>{words}</Text>
   );
-  // The gate has no way out but the plans (and the account, on its own screen): ADR-058 › 107.
-  const close = required ? null : <Button label={t('subscription.close')} variant="ghost" size="sm" onPress={() => router.back()} />;
+  // The gate has no way out but the plans and, behind a button, the account: ADR-058 › 107, App Review 5.1.1(v).
+  const corner = required ? (
+    <AccountButton onPress={() => setAccount(true)} />
+  ) : (
+    <Button label={t('subscription.close')} variant="ghost" size="sm" onPress={() => router.back()} />
+  );
 
+  let hero: React.ReactNode = null;
   let body: React.ReactNode;
+  let dock: React.ReactNode = null;
   if (step.at === 'loading') {
     body = text(t('subscription.loading'), 'muted');
   } else if (step.at === 'closed') {
@@ -157,91 +169,122 @@ export function Paywall({ required = false, onActive, preview = null }: Props) {
       </View>
     );
   } else {
+    const today = localDay(new Date());
     const chosen = step.plans.find((plan) => plan.id === step.chosen) ?? step.plans[0];
-    const words = paywallWords(chosen);
+    const words = paywallWords(chosen, today);
+    const saving = savingPercent(step.plans);
     const buying = step.busy === 'buying';
-    const legal =
-      links.length === 0 ? null : (
-        <View style={styles.links}>
-          {links.map((link) => linkButton(link.key, link.url, report))}
-        </View>
-      );
-    const timeline = paywallTimeline(chosen, { today: localDay(new Date()), firstCall: preview?.firstCall ?? null });
-    // The weekly call on the profile's own day; met later, with no plan just shown, without a day; without the health
-    // data consent there are no calls, so another value takes its place: the cardio only when the program sets some.
+    const timeline = paywallTimeline(chosen, { today, firstCall: preview?.firstCall ?? null });
+    // Without the health data consent there are no calls (ADR-074): the example is a set's target, and another value takes the call's place.
+    const calls = preview === null || preview.firstCall !== null;
+    hero = <ExampleCard kind={calls ? 'call' : 'set'} />;
+    // The weekly call on the profile's own day; met later, with no plan just shown, without a day; the cardio only when the program sets some.
     let call: string;
     if (preview === null) call = t('subscription.values.weeklyCall');
     else if (preview.firstCall === null) call = t(preview.hasCardio ? 'subscription.values.cardio' : 'subscription.values.swap');
     else call = t('subscription.values.call', { day: t(`onboarding.schedule.dayName.${preview.checkInDay}`) });
+    const values: ValueRow[] = [
+      { icon: 'program', words: t(preview?.own === true ? 'subscription.values.own' : 'subscription.values.built') },
+      { icon: 'sets', words: t('subscription.values.sets') },
+      { icon: 'call', words: call },
+    ];
+    const choose = (id: string) => setStep((now) => (now.at === 'plans' && now.busy === null ? { ...now, chosen: id, note: null } : now));
     body = (
       <View style={styles.part}>
-        {preview !== null && <PlanPreviewCard preview={preview} />}
-        <ScreenTitle>{words.title}</ScreenTitle>
-        <View style={styles.values}>
-          {text(t(preview?.own === true ? 'subscription.values.own' : 'subscription.values.built'))}
-          {text(t('subscription.values.sets'))}
-          {text(call)}
+        <View style={styles.part}>
+          <ScreenTitle accent={words.accent ?? undefined} label={words.title}>
+            {words.lead}
+          </ScreenTitle>
+          {words.sub !== null && (
+            <Text style={[styles.text, { color: color.textSecondary }]}>
+              {words.sub.lead} <Text style={styles.bold}>{words.sub.date}</Text>
+              {'.'}
+            </Text>
+          )}
         </View>
-        <View accessibilityLabel={t('subscription.timeline.label')} style={styles.timeline}>
-          {timeline.map((row) => (
-            <View key={`${row.day}-${row.words}`} style={[styles.row, { borderLeftColor: color.accent }]}>
-              <Text style={[styles.when, { color: color.text }]}>{row.when}</Text>
-              <Text style={[styles.small, { color: color.textSecondary }]}>{row.words}</Text>
-            </View>
+        <Values rows={values} />
+        <View accessibilityRole="radiogroup" style={styles.plans}>
+          {step.plans.map((plan) => (
+            <PlanOption key={plan.id} line={planWords(plan, saving)} selected={plan.id === chosen.id} disabled={step.busy !== null} onPress={() => choose(plan.id)} />
           ))}
         </View>
-        <View accessibilityRole="radiogroup" style={styles.plans}>
-          {step.plans.map((plan) => {
-            const { title, body: price } = planWords(plan);
-            return (
-              <OptionCard
-                key={plan.id}
-                title={title}
-                body={price}
-                selected={plan.id === chosen.id}
-                onPress={() => setStep((now) => (now.at === 'plans' && now.busy === null ? { ...now, chosen: plan.id, note: null } : now))}
-              />
-            );
-          })}
-        </View>
+        <TimelineCard rows={timeline} />
+        {/* The full terms (Apple 3.1.2): the line at the bottom says them in short. */}
+        <View style={styles.terms}>{words.terms.map((line) => <Text key={line} style={[styles.fine, { color: color.muted }]}>{line}</Text>)}</View>
+      </View>
+    );
+    dock = (
+      <View style={[styles.dock, { backgroundColor: color.background, borderTopColor: color.line, paddingBottom: Math.max(insets?.bottom ?? 0, tokens.space.sm) }]}>
         {step.note !== null && text(t(`subscription.${step.note}`))}
         {buying ? text(t('subscription.buying'), 'muted') : <Button label={words.action} disabled={step.busy !== null} onPress={() => void buy(chosen.id)} />}
-        {/* The full terms under the button (Apple 3.1.2): the timeline above says them in short. */}
-        <View style={styles.terms}>{words.terms.map((line) => <Text key={line} style={[styles.small, { color: color.textSecondary }]}>{line}</Text>)}</View>
-        <Button label={t('subscription.restore')} variant="ghost" disabled={step.busy !== null} onPress={() => void restore()} />
-        {legal}
+        {/* The billed amount is as prominent as the trial claim (Apple 3.1.2): bold, in the text colour, not the muted one. */}
+        <Text accessibilityLabel={words.dock.label} style={[styles.line, { color: color.muted }]}>
+          {words.dock.strong !== null && <Text style={[styles.bold, { color: color.text }]}>{words.dock.strong}</Text>}
+          {words.dock.strong !== null && ' '}
+          {words.dock.lead !== null && `${words.dock.lead} `}
+          <Text style={[styles.bold, { color: color.text }]}>{words.dock.price}</Text>
+          {words.dock.tail}
+        </Text>
+        <View style={styles.links}>
+          <QuietLink label={t('subscription.restore')} disabled={step.busy !== null} onPress={() => void restore()} />
+          {links.map((link) => (
+            <QuietLink key={link.key} label={t(link.key)} onPress={() => void Linking.openURL(link.url).catch((error: unknown) => report({ name: nameOf(error) }))} />
+          ))}
+        </View>
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
-      <View style={styles.head}>{close}</View>
-      <ScrollView contentContainerStyle={styles.body}>{body}</ScrollView>
-    </SafeAreaView>
+    <View style={[styles.safe, { backgroundColor: color.background }]}>
+      <ScrollView contentContainerStyle={styles.scroll}>
+        <View style={[styles.band, { backgroundColor: color.accentSoft, paddingTop: (insets?.top ?? 0) + tokens.space.sm }]}>
+          <View style={styles.head}>
+            <View style={styles.brand}>
+              <BrandMark />
+              <Text style={[styles.brandName, { color: color.text }]}>{t('app.name')}</Text>
+            </View>
+            {corner}
+          </View>
+          {hero}
+        </View>
+        <View style={styles.body}>{body}</View>
+      </ScrollView>
+      {dock}
+      {required && <AccountSheet visible={account} onClose={() => setAccount(false)} />}
+    </View>
   );
 }
 
-/** A legal link set in the build (links.ts): opened in the browser; one that cannot be opened is reported by name. */
-function linkButton(key: string, url: string, report: (problem: { name: string }) => void) {
-  const open = () => void Linking.openURL(url).catch((error: unknown) => report({ name: nameOf(error) }));
-  return <Button key={key} label={t(key)} variant="ghost" size="sm" onPress={open} />;
+/** Restore, Terms, Privacy: quiet, underlined, a touch target of their own. */
+function QuietLink({ label, onPress, disabled = false }: { label: string; onPress: () => void; disabled?: boolean }) {
+  const { color } = useTheme();
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled }} disabled={disabled} onPress={onPress} hitSlop={tokens.space.sm}>
+      <Text style={[styles.link, { color: color.muted }, disabled && styles.dim]}>{label}</Text>
+    </Pressable>
+  );
 }
 
 const nameOf = (error: unknown) => (error instanceof Error ? error.name : 'Unknown');
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  head: { paddingHorizontal: tokens.space.lg, alignItems: 'flex-end' },
+  scroll: { flexGrow: 1 },
+  band: { borderBottomLeftRadius: tokens.radius.card * 2, borderBottomRightRadius: tokens.radius.card * 2, paddingHorizontal: tokens.space.lg, paddingBottom: tokens.space.lg, gap: tokens.space.sm },
+  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: tokens.size.touch },
+  brand: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
+  brandName: { fontFamily: tokens.font.display, fontSize: tokens.type.heading },
   body: { padding: tokens.space.lg, gap: tokens.space.md },
   part: { gap: tokens.space.md },
   plans: { gap: tokens.space.sm },
-  terms: { gap: tokens.space.xs },
-  values: { gap: tokens.space.xs },
-  timeline: { gap: tokens.space.sm },
-  row: { borderLeftWidth: tokens.border.ring, paddingLeft: tokens.space.sm, gap: tokens.space.xs },
-  when: { fontSize: tokens.type.body, fontWeight: tokens.weight.bold },
-  links: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm },
+  terms: { gap: tokens.space.sm },
   text: { fontSize: tokens.type.body },
-  small: { fontSize: tokens.type.bodySmall },
+  bold: { fontWeight: tokens.weight.bold },
+  fine: { fontSize: tokens.type.label },
+  dock: { paddingHorizontal: tokens.space.lg, paddingTop: tokens.space.md, gap: tokens.space.sm, borderTopWidth: tokens.border.hairline },
+  line: { fontSize: tokens.type.label, textAlign: 'center' },
+  links: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', columnGap: tokens.space.lg },
+  link: { fontSize: tokens.type.label, fontWeight: tokens.weight.semibold, textDecorationLine: 'underline', paddingVertical: tokens.space.sm },
+  dim: { opacity: tokens.opacity.dim },
 });

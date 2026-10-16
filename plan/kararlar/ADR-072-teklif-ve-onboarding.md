@@ -96,3 +96,22 @@ girilmeyende hedef kilo yok · copy testi: onboarding anahtarlarında kelime bü
   yazılırken geçici 404 yok); nutrition yine yalnız arayüzünü bilir (bağımlılık tek yönlü). Başlangıç hedefini `/v1/targets/starting` ile
   aynı özel yöntem hesaplar (`starting`). Motorun okuyamadığı profil (yok ya da bu yıl doğmuş) bütçede çatışma değil, belgelenen 404.
 - Reddedilen: telefonun başlangıç hedefinden kalanı çıkarması (telefon kural işletmez) · ilk hafta için ayrı uç (bütçe zaten günün hedefi).
+
+## Ek 3 · Paywall v2 (K-1033 kapsamında, #601, 2026-10-16, Levent prototipi onayladı, agent uyguladı)
+- **Düzen** (`prototip/paywall-v2.html`, `.png`, `-sheet.png`, `-dark.png`): üstte marka (uygulama simgesi + ad) ve **Account** düğmesi; altında
+  uygulamanın kendi karar kartı **EXAMPLE** etiketiyle (sağlık verisi izni varsa haftalık karar örneği; yoksa set kartı örneği, çünkü izinsiz karar
+  yok); başlık, üç değer satırı, iki plan, zaman çizelgesi, tam yenilenme koşulları. Alt sabit kutuda tek düğme, bir satır koşul ve
+  Restore · Terms · Privacy. Sahte sosyal kanıt, geri sayım, suçlama yok (U7).
+- **Account** zorunlu paywall'da (ADR-058 #107) bir sayfa açar: Export / Delete account / Sign out (`AccountSection` aynen). Ödemeden önce
+  hesap silinebilir kalır (App Review 5.1.1(v)); Ayarlar'dan açılan paywall'da Account yok, Close var.
+- **"Save X%" rozeti** telefonda mağazanın sayılarından hesaplanır: `1 - yıllık / (12 × aylık)`, **aynı ve adı olan para biriminde**
+  (para birimi yoksa ya da farklıysa rozet yok), **aşağı yuvarlanır** (59,99 / 12,99 için %61,5 → 61). Gerekçe: tasarruf asla olduğundan
+  büyük söylenmez (Apple 3.1.2; ekranda gösterilen sayı, mağazada ödenenle çelişmemeli). Kayan nokta tam sınırı (örn. tam %10) bir
+  tık altına düşürmesin diye floor'dan önce 1e-9 eklenir. Yalnız `saving_badge_min_percent` (`data/parameters/subscription.json`, 10) ve
+  üstündeyse görünür. Sayılar mağazadan (RevenueCat `product.price`, `currencyCode`), kodda fiyat yok (K2). `prototip/paywall-v2.png` %62
+  gösterir (prototip en yakına yuvarlıyordu); **kod doğru kaynaktır**, ekranda %61 görünür.
+- **Kelime hedefi** ADR-072 #9'daki ≤70 bu düzenle tutmaz (örnek kart tek başına ~25 kelime). Yeni hedef prototipte ölçüldüğü gibi
+  `prototip/yeni-yuz.html` `paywall.t` ve `data/copy/word-budgets.json`'da aynı sayıya çekildi. Örnek kart Levent'in onayladığı prototipte olduğundan bu artış onun sonucudur.
+- Alttaki tek satırda faturalanan tutar kalın ve metin renginde (loş değil): deneme iddiası kadar belirgin (Apple 3.1.2).
+- Reddedilen: yüzdeyi sunucudan almak (fiyat mağazanın, sunucu bilmez) · yüzdeyi koda sabit yazmak (K2) · Account'u sayfa altında bırakmak (ilk bakışta
+  yok, düzeni boğuyordu).

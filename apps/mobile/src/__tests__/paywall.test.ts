@@ -18,8 +18,8 @@ const ID = '0b6f2a8e-1c3d-4e5f-8a9b-0c1d2e3f4a5b';
 const NONE: Subscription = { active: false, appUserId: ID };
 const TRIAL: Subscription = { active: true, appUserId: ID, status: 'TRIAL', accessUntil: '2026-10-11T12:00:00Z' };
 const PLANS: Plan[] = [
-  { id: '$rc_annual', period: 'annual', price: '$59.99', pricePerMonth: '$5.00', trial: { count: 7, unit: 'day' } },
-  { id: '$rc_monthly', period: 'monthly', price: '$12.99', pricePerMonth: null, trial: null },
+  { id: '$rc_annual', period: 'annual', price: '$59.99', amount: 59.99, currency: 'USD', pricePerMonth: '$5.00', trial: { count: 7, unit: 'day' } },
+  { id: '$rc_monthly', period: 'monthly', price: '$12.99', amount: 12.99, currency: 'USD', pricePerMonth: null, trial: null },
 ];
 
 const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -205,6 +205,7 @@ test('the wait is the parameter file\'s, read as written', () => {
     confirmIntervalMs: value('subscription_confirm_interval_ms'),
     trialReminderDaysBefore: value('trial_reminder_days_before'),
     trialReminderHour: value('trial_reminder_hour'),
+    savingBadgeMinPercent: value('saving_badge_min_percent'),
   });
 });
 

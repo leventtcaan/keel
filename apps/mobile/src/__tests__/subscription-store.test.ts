@@ -9,6 +9,8 @@ import { revenueCatStore } from '@/subscription/revenueCat';
 type Product = {
   identifier: string;
   priceString: string;
+  price: number;
+  currencyCode: string;
   pricePerMonthString: string | null;
   introPrice: { price: number; periodUnit: string; periodNumberOfUnits: number; cycles: number } | null;
 };
@@ -20,6 +22,8 @@ const ANNUAL: Package = {
   product: {
     identifier: 'keel_annual',
     priceString: '$59.99',
+    price: 59.99,
+    currencyCode: 'USD',
     pricePerMonthString: '$5.00',
     introPrice: { price: 0, periodUnit: 'DAY', periodNumberOfUnits: 7, cycles: 1 },
   },
@@ -27,7 +31,7 @@ const ANNUAL: Package = {
 const MONTHLY: Package = {
   identifier: '$rc_monthly',
   packageType: 'MONTHLY',
-  product: { identifier: 'keel_monthly', priceString: '$12.99', pricePerMonthString: '$12.99', introPrice: null },
+  product: { identifier: 'keel_monthly', priceString: '$12.99', price: 12.99, currencyCode: 'USD', pricePerMonthString: '$12.99', introPrice: null },
 };
 
 function sdk(options: { annual?: Package | null; monthly?: Package | null; eligibility?: Record<string, number> | Error; buy?: unknown } = {}) {
@@ -136,8 +140,8 @@ test("the plans are the store's, annual first, with the store's prices and the t
   const store = make();
   await store.identify(ID);
   expect(await store.plans()).toEqual([
-    { id: '$rc_annual', period: 'annual', price: '$59.99', pricePerMonth: '$5.00', trial: { count: 7, unit: 'day' } },
-    { id: '$rc_monthly', period: 'monthly', price: '$12.99', pricePerMonth: null, trial: null },
+    { id: '$rc_annual', period: 'annual', price: '$59.99', amount: 59.99, currency: 'USD', pricePerMonth: '$5.00', trial: { count: 7, unit: 'day' } },
+    { id: '$rc_monthly', period: 'monthly', price: '$12.99', amount: 12.99, currency: 'USD', pricePerMonth: null, trial: null },
   ]);
 });
 
