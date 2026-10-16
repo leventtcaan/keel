@@ -36,3 +36,11 @@ Gönderim ve Release Levent'te (ADR-019). Bitiş: "Uygulama App Review'da / mağ
 
 ## Sonra
 Pazarlama planı (M11): ayrı konuşma, yayından sonra ilk gerçek veriyle. Güncellemeler: klipler (K-419, K-425), Live Activity, AI katmanı (K-533) vb.
+
+## Durum (16 Eki öğleden sonra)
+Oturum 2 ve 3 tek oturumda birleşti: App Store Connect + RevenueCat kuruldu, build 3 TestFlight'ta. Kalan: ikon (6 · N.) + paywall v2 PR'ları → build 4 → telefon kontrolü → Submit (Levent).
+Ayrıntı ve sıra: DURUM › DEVAM NOKTASI. Devam prompt'u:
+```
+oturum-baslat. YAYIN son adım: DURUM › DEVAM NOKTASI (16 Eki öğleden sonra). İkon ve paywall v2 PR'larını incele/birleştir, build 4 al, App Store Connect'te bağla,
+inceleme notu + abonelik görselini güncelle, Levent'e telefon kontrolü ve Submit'i bırak. Yeni büyük iş açma.
+```

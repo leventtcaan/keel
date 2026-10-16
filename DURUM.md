@@ -5,7 +5,23 @@ guncelleme: 2026-10-10
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (16 Eki — YAYIN Oturum 1 BİTTİ: yayın öncesi kod)
+## ▶ DEVAM NOKTASI (16 Eki öğleden sonra — mağazaya gönderim eşiğinde)
+**Bitti (App Store Connect, Chrome'dan):** ad "Next Call: Lift & Diet Coach", alt başlık, kategori Health & Fitness / Food & Drink, içerik hakları, yaş 18+ (Medical = Infrequent),
+tıbbi cihaz değil beyanı, gizlilik etiketi YAYINDA (Health/Fitness: App Functionality + Analytics; User ID, Product Interaction: App Functionality; Purchases: + Analytics; takip yok),
+açıklama/tanıtım/anahtar kelime/destek URL/telif, 6 mağaza karesi v3 (1206×2622, `docs/magaza/marketing/out/medium`), fiyat Free + 175 ülke (Mac/Vision Pro kapalı),
+abonelik grubu "Next Call": `nextcall.premium.monthly` $12,99 + `nextcall.premium.yearly` $59,99, ikisinde 2 hafta ücretsiz teklif + inceleme görseli (`docs/magaza/review/paywall-review-1242.jpg`),
+App Review notları + iletişim, yayın şekli OTOMATİK. Business: Paid Apps yeni sözleşme + vergi formu (Levent), Small Business Program başvurusu (Levent).
+**Bitti (RevenueCat):** proje "Next Call" (4ae6de16), App Store uygulaması + .p8 (Key UP255KFAQJ; dosya `~/.secrets/nextcall/`, 600), ürünler, entitlement `premium`, offering `default` (current, $rc_monthly/$rc_annual);
+EAS production env `EXPO_PUBLIC_REVENUECAT_APPLE_KEY` girildi. Webhook + gizli REST anahtarı (VPS) yayından sonra.
+**Build 3** (1.0.0) TestFlight'ta, sürüme bağlı; Levent telefonda paywall'ı gördü (fiyatlar ve deneme doğru, Restore + Terms/Privacy kaydırınca görünüyor).
+**Sürüyor (iki ajan, PR açacaklar):** (1) ikon: Levent seçti **6 · "N." koyu odak** (`docs/magaza/icon/options/opt6.*`) + açılış görseli, Expo şablon görselleri temizlenir;
+(2) **paywall v2** (Levent onayladı, `prototip/paywall-v2.*`): hero karar kartı, "SAVE %" mağaza fiyatından, yapışkan CTA, hesap işlemleri "Account" sayfasında.
+**Sıradaki (sırayla):** iki PR'a inceleme → birleştir → `cd apps/mobile && npx eas build -p ios --profile production --auto-submit --non-interactive` (build 4) → App Store Connect'te sürüme build 4'ü bağla →
+App Review notunda hesap silme yolunu "Account (paywall üstü) / Settings › Delete account" diye güncelle → abonelik inceleme görselini yeni paywall'la değiştir → Levent telefonda 5 dk →
+**Add for Review → Submit (Levent)**. Not: App Store'da "NextCall: Call Reminders" adlı başka bir uygulama var (farklı kategori) — marka riski, yayından sonra bakılır.
+**Disk dar** (~1,7 GB): jest/Docker koşturma yok; `~/Library/Caches` (Codex 2,3 GB vb.) Levent'in.
+
+## (önceki) DEVAM NOKTASI (16 Eki — YAYIN Oturum 1 BİTTİ: yayın öncesi kod)
 **Oturum 1 ÇIKIŞ (main `6b6946d6`, anayasa denetimi passed):** #602 K-908 `/health` 503 → 200 (release.sh bekler) · #603 K-905 öncü göstergeler
 (mevcut tablolardan, `ssh keel-vps /opt/keel/deploy/weekly-report.sh`; 5 kişiden küçük grupta oran yok; ADR-081; rıza amacı ve politika güncellendi, sürüm 5) ·
 #604 K-817 hız sınırı (hesap/adres ayrı tablo, dolunca en erken dolan atılır; `edge` ağı 172.30.250.0/24 sabit; ADR-082) · #605 K-704 RevenueCat REST tazeleme
