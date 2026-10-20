@@ -5148,7 +5148,7 @@ tasks:
     depends_on: []
     why: "20 Eki ölçüm: Levent'in Turkcell hattında keel-beta.duckdns.org ve www.duckdns.org TLS'te takılıyor (ClientHello sunucuya varmıyor, enjekte RST), aynı IP'ye dilmac.getlure.xyz adıyla anında 200. check-host: ABD, Kanada, Almanya, TR veri merkezleri 200 (App Review etkilenmez). Turkcell mobil/ev kullanıcısı uygulamayı kullanamaz; API adresi derlemeye gömülü (EXPO_PUBLIC), değişiklik yeni build ister"
     acceptance:
-      - "API kendi alan adında (ör. api.<alan>; Caddy + ACME), eski duckdns adı geçiş süresince ikisi de çalışır"
+      - "API api.getlure.xyz'de (Levent 20 Eki: para yok, alan zaten onun, DNS hazır; Caddy + ACME), eski duckdns adı geçiş süresince ikisi de çalışır. getlure.xyz bitişi 2027-07-04, auto-renew kapalı: yenileme Levent'te"
       - "Mobil derleme yeni adresi kullanır; 1.0.1 ile gider; Turkcell hattından /health 200 (komut çıktısı)"
       - "RevenueCat webhook URL'si ve DURUM/doküman adresleri güncel"
     tests: ["curl Turkcell hattından + check-host çok düğüm"]
