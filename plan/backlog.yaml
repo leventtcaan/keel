@@ -5138,6 +5138,22 @@ tasks:
     tests: ["jest kontrast + render testi"]
     refs: ["apps/mobile/src/subscription/PaywallView.tsx", "apps/mobile/src/subscription/ExampleCard.tsx", "prototip/paywall-v2.html"]
 
+  - id: K-1035
+    title: "API kendi alan adına: duckdns.org Turkcell'de SNI ile engelli, Türk kullanıcı sunucuya ulaşamıyor"
+    milestone: M11
+    module: infra
+    type: fix
+    size: S
+    status: todo
+    depends_on: []
+    why: "20 Eki ölçüm: Levent'in Turkcell hattında keel-beta.duckdns.org ve www.duckdns.org TLS'te takılıyor (ClientHello sunucuya varmıyor, enjekte RST), aynı IP'ye dilmac.getlure.xyz adıyla anında 200. check-host: ABD, Kanada, Almanya, TR veri merkezleri 200 (App Review etkilenmez). Turkcell mobil/ev kullanıcısı uygulamayı kullanamaz; API adresi derlemeye gömülü (EXPO_PUBLIC), değişiklik yeni build ister"
+    acceptance:
+      - "API kendi alan adında (ör. api.<alan>; Caddy + ACME), eski duckdns adı geçiş süresince ikisi de çalışır"
+      - "Mobil derleme yeni adresi kullanır; 1.0.1 ile gider; Turkcell hattından /health 200 (komut çıktısı)"
+      - "RevenueCat webhook URL'si ve DURUM/doküman adresleri güncel"
+    tests: ["curl Turkcell hattından + check-host çok düğüm"]
+    refs: ["apps/mobile/eas.json", "deploy/"]
+
   - id: K-1010
     title: "Sunucudaki ek siteler: Caddy /opt/sites altındaki *.caddy dosyalarını içeri alır"
     milestone: M9
