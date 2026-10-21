@@ -24,7 +24,7 @@ Levent paralelde başka iş yaparken agent bir kilometre taşını baştan sona 
 - Ön aktarım **yazılı** hazırlanır: her görev için `docs/aktarim/<M>/<K-ID>.md` (basamak merdiveni, satır satır
   anlatılacak yerler, canlı kanıt, soru bankası). Koda geçmek için Levent'in "devam"ı beklenmez.
 - Her görev kapanınca aktarım dosyası **gerçek `dosya:satır` referanslarıyla** güncellenir (birleşen koddan).
-- Aktarım oturumu: Levent döner → merdiven sıfırdan, 2-3 basamak/mesaj, kendi cümleleri → Apple Notes (son adım).
+- Aktarım oturumu: Levent döner → merdiven sıfırdan, 2-3 basamak/mesaj, kendi cümleleri → öğrenme sitesi.
 - Hakimiyet ölçütü değişmez: birleşmiş kod, Levent anlatabilene kadar "aktarılmamış" sayılır (DURUM'da işaretli).
 
 ## Seviye merdiveni
@@ -44,9 +44,9 @@ Hedef seviyeye gelince: (a) tek paragraf bütün resim (b) soru bankası ve ceva
 (c) projenin geri kalanıyla bağlantılar. Sonra **Levent kendi cümleleriyle anlatır**; ölçüt "karşıdaki anladı mı".
 Kuramıyorsa eksik basamak aranır, aynı seviyeden yeniden anlatılmaz.
 
-## Apple Notes — son adım
-Merdivenin tamamı (basamaklar, şema, soru bankası) `ders-notu` standardıyla Apple Notes **Keel** klasörüne işlenir.
-Aktarım bitmeden yazılan not merdivenle yeniden yazılır.
+## Tek kaynak: öğrenme sitesi (21 Eki 2026, Levent kararı)
+Merdivenin tamamı (basamaklar, şema, soru bankası, Levent'in kendi cümleleri) özel öğrenme sitesinde tutulur. Apple Notes'a ayrıca
+yazılmaz; iki yerde tutmak tekrar demekti.
 
 ## Her mimari karar için üç cevap hazır
 Neden bu · alternatifi neydi · neden o değil (ADR ile aynı).

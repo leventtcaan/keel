@@ -18,7 +18,7 @@ isterse; asıl kullanım proje sonunda bitmiş kodun modül modül analizi.
 - [ ] İş mantığı **satır satır** anlatıldı mı?
 - [ ] Mümkünse canlı kanıt (kuralı boz → test yakalasın) gösterildi mi?
 - [ ] Kapanış: bütün resim + soru bankası + Levent'in kendi cümleleri.
-- [ ] Apple Notes (Keel klasörü) — **en son**.
+- [ ] Öğrenme sitesine işlendi mi (tek kaynak; Apple Notes yok, 21 Eki 2026)?
 
 ## Yapma
 Uzun tablo ve terim yığını · "bunu biliyorsundur" · Levent geçirmeden sonraki basamağa geçmek.
