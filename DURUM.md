@@ -7,8 +7,11 @@ guncelleme: 2026-10-10
 
 ## ▶ DEVAM NOKTASI (16 Eki 16:05 — 1.0 (build 4) APP REVIEW'DA: "Waiting for Review")
 **Gönderildi:** iOS 1.0 build 4 + abonelik grubu "Next Call" + 2 abonelik tek gönderimde (Levent Submit etti). Yayın şekli otomatik: onayda mağazaya çıkar.
-**Beklerken / sonra (sırayla):** (1) Red gelirse Resolution Center mesajı → 3.1.2/5.1.1 kontrol listesi, düzeltme, build 5. (2) Onaydan sonra: RevenueCat webhook
-(https://keel-beta.duckdns.org/webhooks/revenuecat, `KEEL_REVENUECAT_WEBHOOK_SECRET`) + VPS `KEEL_REVENUECAT_API_KEY` (Levent, sır); SANDBOX kabulünü kapat (ADR-080 Ek 1);
+**Beklerken / sonra (sırayla):** (1) Red gelirse Resolution Center mesajı → 3.1.2/5.1.1 kontrol listesi, düzeltme, build 5. (2) **22 Eki: RevenueCat webhook bağlandı** (onaydan ÖNCE: telefon erişimi
+yalnız sunucu "aktif" deyince açıyor, `paywall.ts` confirmActive; webhook yokken App Review'un test satın alması "waiting"de kalırdı).
+`keel-backend` webhook'u: Production + Sandbox, yalnız Next Call (App Store), HMAC imzalı, Authorization başlığı boş. VPS'te
+`KEEL_REVENUECAT_WEBHOOK_SECRET` + `KEEL_REVENUECAT_API_KEY` (Levent girdi). Test olayı: RevenueCat yanıtı 200, logda
+`POST /webhooks/revenuecat status=200`. Onaydan sonra kalan: SANDBOX kabulünü kapat (ADR-080 Ek 1);
 RevenueCat e-posta doğrulaması; Small Business Program tarihi. (3) 1.0.1: K-1034 (paywall durum çubuğu + örnek kart kontrastı). (4) 4 Dependabot uyarısı (2 high) main'de.
 (5) Pazarlama konuşması başladı (17 Eki): persona önce. (8) **21 Eki:** App Review hâlâ "Waiting for Review" (16 Eki'den beri, durum e-postası yok); 23 Eki'de değişmezse ASC › Contact Us ile durum sorusu (metni agent hazırlar, Levent gönderir). Pazarlama çalışması yerelde `.icerik/` (git dışı, DEVAM.md) + hafızada; repo public olduğu için buraya yazılmıyor. (7) **20 Eki: Turkcell duckdns.org'u SNI ile engelliyor** → Levent'in hattından sunucuya ulaşılamıyor; ABD/TR veri merkezleri 200, inceleme etkilenmez; çözüm api.getlure.xyz (K-1035, 1.0.1; getlure.xyz 2027-07-04'te biter, auto-renew kapalı). Contabo 'CVE yaması, host reboot olabilir' maili: tüm konteynerler restart=unless-stopped, docker enabled → kendiliğinden açılır. (6) Apple rehber güncellemesi 16 Eki: 2.5.19 uykuda özellik → AI katmanı yalnız yeni sürümle (K-533); 2.3.14 creative assets (ürün sayfası başlığı) kullanmıyoruz. Marka riski: "NextCall: Call Reminders".
 
