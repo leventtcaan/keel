@@ -41,7 +41,8 @@ def segments(cmd: str) -> list[list[str]]:
     A newline, ;, & and | end a command, and a backslash-newline continues it, as in the shell. ( ) and backticks are
     dropped without ending anything: a command inside a command is read where it stands, and the outer one keeps its
     later words, so both are seen."""
-    cmd = re.sub(r"\\\r?\n", "", cmd).replace("`", " ( ")
+    # Only an unescaped backslash continues the line (an even run before it is escaped backslashes, kept as they are).
+    cmd = re.sub(r"(?<!\\)((?:\\\\)*)\\\r?\n", r"\1", cmd).replace("`", " ( ")
     lexer = shlex.shlex(cmd, posix=True, punctuation_chars=SEPARATORS + "()")
     lexer.whitespace = " \t\r"
     lexer.whitespace_split = True

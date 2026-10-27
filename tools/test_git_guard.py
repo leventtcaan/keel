@@ -64,6 +64,8 @@ ROWS = [
     # a backslash-newline continues the command; a $( ) inside the arguments does not end the outer git
     ("git commit \\\n-n -m 'x'", "main", 2),
     ("git commit -m $(echo x) -n", "main", 2),
+    # an escaped backslash before the newline is a backslash, not a continuation: the next line is its own command
+    ("echo a\\\\\ngit commit -n -m x", "main", 2),
     # AI attribution in commit and PR text
     ("git commit -m \"feat: x\n\nCo-Authored-By: Claude <noreply@anthropic.com>\"", "main", 2),
     ("gh pr create --title t --body 'Generated with [Claude Code](https://claude.com/claude-code)'", "x/1-y", 2),
