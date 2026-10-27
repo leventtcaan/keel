@@ -44,6 +44,16 @@ ROWS = [
     ("git config core.hooksPath .githooks", "main", 0),
     ("git config --get core.hooksPath", "main", 0),
     ("git config core.hooksPath", "main", 0),
+    # read the way the shell reads them: quotes do not hide a key, and only real options and subcommands count
+    ("git -c \"core.hooksPath=/tmp\" commit -m 'x'", "main", 2),
+    ("git config unset core.hooksPath", "main", 2),
+    ("git config core.hooksPath /tmp/--get", "main", 2),
+    ("git config --remove-section core", "main", 2),
+    ("GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.hooksPath GIT_CONFIG_VALUE_0=/tmp git commit -m 'x'", "main", 2),
+    ("git config get core.hooksPath", "main", 0),
+    ("git config core.hooksPath get", "main", 2),
+    ("git commit -nm 'x'", "main", 2),
+    ("git commit -mn", "main", 0),
     # AI attribution in commit and PR text
     ("git commit -m \"feat: x\n\nCo-Authored-By: Claude <noreply@anthropic.com>\"", "main", 2),
     ("gh pr create --title t --body 'Generated with [Claude Code](https://claude.com/claude-code)'", "x/1-y", 2),

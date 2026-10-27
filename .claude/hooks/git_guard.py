@@ -15,6 +15,7 @@ an alias is not seen (#612). Branch protection and CI on GitHub are the guard th
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 
@@ -25,8 +26,96 @@ ATTRIBUTION = re.compile(r"Co-Authored-By:\s*Claude|noreply@anthropic\.com|Gener
 
 
 DIRECTORY = r"(\"[^\"]+\"|'[^']+'|[^\s;&|]+)"
-# Quoted text (a commit message, a PR body): flags are read with it blanked, so "-n" in a message is not a flag.
-QUOTED = re.compile(r"\"(?:\\.|[^\"\\])*\"|'[^']*'")
+# Options of git itself that take the next word, and commit's short options that do (a cluster ends at one of them).
+GIT_VALUE_OPTIONS = {"-C", "-c", "--config-env", "--git-dir", "--work-tree", "--namespace", "--exec-path"}
+COMMIT_VALUE_LETTERS = set("mFcCt")
+HOOKS_KEY = "core.hookspath"
+CONFIG_READS = {"--get", "--get-all", "--get-regexp", "--get-urlmatch", "-l", "--list", "get", "list"}
+CONFIG_REMOVES = {"--unset", "--unset-all", "unset", "--remove-section", "--rename-section", "remove-section",
+                  "rename-section", "--edit", "-e", "edit"}
+
+
+def segments(cmd: str) -> list[list[str]]:
+    """The command as the shell splits it: words per simple command, quotes removed the way the shell removes them."""
+    lexer = shlex.shlex(cmd, posix=True, punctuation_chars=";&|")
+    lexer.whitespace_split = True
+    lexer.commenters = ""
+    found, current = [], []
+    for word in lexer:
+        if word and set(word) <= set(";&|"):
+            found.append(current)
+            current = []
+        else:
+            current.append(word)
+    return [*found, current]
+
+
+def hook_bypasses(cmd: str) -> list[str]:
+    """Ways to run git without .githooks: commit -n, and core.hooksPath set away from .githooks (#612)."""
+    if re.search(r"GIT_CONFIG_(KEY_\d+=\s*core\.hookspath|PARAMETERS=.*hookspath)", cmd, re.IGNORECASE):
+        return ["core.hooksPath set through the environment skips the commit-msg check"]
+    try:
+        commands = segments(cmd)
+    except ValueError:
+        # Quotes the shell would not close either: read the raw text, the stricter way.
+        return ["a git command pointing core.hooksPath elsewhere skips the commit-msg check"] \
+            if re.search(HOOKS_KEY, cmd, re.IGNORECASE) else []
+    found = []
+    for words in commands:
+        at = next((i for i, w in enumerate(words) if w.rsplit("/", 1)[-1] == "git"), None)
+        if at is None:
+            continue
+        rest, sub, i = words[at + 1:], None, 0
+        while i < len(rest):
+            word = rest[i]
+            if word in ("-c", "--config-env"):
+                setting, i = (rest[i + 1] if i + 1 < len(rest) else ""), i + 2
+            elif word.startswith("--config-env="):
+                setting, i = word.split("=", 1)[1], i + 1
+            elif word.startswith("-c"):
+                setting, i = word[2:], i + 1
+            elif word in GIT_VALUE_OPTIONS:
+                setting, i = "", i + 2
+            elif word.startswith("-"):
+                setting, i = "", i + 1
+            else:
+                sub = i
+                break
+            if setting.split("=", 1)[0].lower() == HOOKS_KEY:
+                found.append("pointing core.hooksPath elsewhere skips the commit-msg check")
+        if sub is None:
+            continue
+        name, args = rest[sub], rest[sub + 1:]
+        if name == "commit":
+            skip = False
+            for arg in args:
+                if skip:
+                    skip = False
+                    continue
+                if arg.startswith("-") and not arg.startswith("--") and len(arg) > 1:
+                    for n, letter in enumerate(arg[1:]):
+                        if letter in COMMIT_VALUE_LETTERS:
+                            skip = n == len(arg) - 2
+                            break
+                        if letter == "n":
+                            found.append("git commit -n is --no-verify: it skips the commit-msg check")
+                            break
+                elif arg in ("--message", "--file", "--reuse-message", "--reedit-message", "--template", "--author",
+                             "--date", "--fixup", "--squash"):
+                    skip = True
+        elif name == "config":
+            lowered = [a.lower() for a in args]
+            removes = any(a in CONFIG_REMOVES for a in lowered)
+            if removes and ("core" in lowered or HOOKS_KEY in lowered):
+                found.append("core.hooksPath stays .githooks (the commit-msg check lives there)")
+                continue
+            if HOOKS_KEY not in lowered:
+                continue
+            after = [a for a in args[lowered.index(HOOKS_KEY) + 1:] if not a.startswith("-")]
+            reads = any(a in CONFIG_READS for a in lowered[:lowered.index(HOOKS_KEY)])
+            if not reads and after and after[0].rstrip("/") != ".githooks":
+                found.append("core.hooksPath stays .githooks (the commit-msg check lives there)")
+    return found
 
 
 def branch_in(directory: str) -> str:
@@ -71,20 +160,7 @@ def reasons(cmd: str) -> list[str]:
         found.append("git branch -D drops unmerged work; use -d (merged branches only)")
     if re.search(rf"\bgit\b{SEG}--no-verify", cmd):
         found.append("--no-verify skips the commit-msg check")
-    flags = QUOTED.sub('""', cmd)
-    for commit in re.finditer(rf"\bgit\b{SEG}\bcommit\b{SEG}", flags):
-        if re.search(r"\s-[a-zA-Z]*n[a-zA-Z]*\b", commit.group(0)):
-            found.append("git commit -n is --no-verify: it skips the commit-msg check")
-    if re.search(rf"\bgit\b{SEG}(-c\s*|--config-env[=\s])core\.hookspath", flags, re.IGNORECASE):
-        found.append("pointing core.hooksPath elsewhere skips the commit-msg check")
-    for config in re.finditer(rf"\bgit\b{SEG}\bconfig\b{SEG}", flags):
-        hooks = re.search(r"core\.hookspath(?:\s+(\S+))?", config.group(0), re.IGNORECASE)
-        if not hooks:
-            continue
-        unset = re.search(r"--unset", config.group(0))
-        other = hooks.group(1) and not re.search(r"--get", config.group(0)) and hooks.group(1).rstrip("/") != ".githooks"
-        if unset or other:
-            found.append("core.hooksPath stays .githooks (the commit-msg check lives there)")
+    found += hook_bypasses(cmd)
     if re.search(r"\b(git\s+commit|gh\s+(pr|issue))\b", cmd) and ATTRIBUTION.search(cmd):
         found.append("AI attribution in commit/PR text is not allowed (CLAUDE.md Git, G3)")
     if re.search(rf"\bgh\b{SEG}-X\s*DELETE{SEG}/protection", cmd):
