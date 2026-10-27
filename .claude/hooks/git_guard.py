@@ -3,10 +3,14 @@
 
 Blocks, with exit code 2 and a reason on stderr (Claude Code shows it to the agent):
 - force push that touches main (own task branches may be force-pushed after a rebase)
-- git reset --hard, git clean -f, git branch -D, --no-verify
+- git reset --hard, git clean -f, git branch -D, --no-verify and its short form git commit -n
+- pointing hooks away from .githooks (git -c / --config-env core.hooksPath, git config core.hooksPath <other>)
 - AI attribution in commit or PR/issue text (G3: no signature, no tool name)
 - deleting branch protection or the repository
+- a payload it cannot read (it fails closed: an unread command does not go through)
 Everything else exits 0. Tests: tools/test_git_guard.py
+It reads the command's text, so it stops mistakes, not someone set on getting around it: git called through a variable or
+an alias is not seen (#612). Branch protection and CI on GitHub are the guard that cannot be talked past.
 """
 import json
 import os
@@ -21,6 +25,8 @@ ATTRIBUTION = re.compile(r"Co-Authored-By:\s*Claude|noreply@anthropic\.com|Gener
 
 
 DIRECTORY = r"(\"[^\"]+\"|'[^']+'|[^\s;&|]+)"
+# Quoted text (a commit message, a PR body): flags are read with it blanked, so "-n" in a message is not a flag.
+QUOTED = re.compile(r"\"(?:\\.|[^\"\\])*\"|'[^']*'")
 
 
 def branch_in(directory: str) -> str:
@@ -65,6 +71,20 @@ def reasons(cmd: str) -> list[str]:
         found.append("git branch -D drops unmerged work; use -d (merged branches only)")
     if re.search(rf"\bgit\b{SEG}--no-verify", cmd):
         found.append("--no-verify skips the commit-msg check")
+    flags = QUOTED.sub('""', cmd)
+    for commit in re.finditer(rf"\bgit\b{SEG}\bcommit\b{SEG}", flags):
+        if re.search(r"\s-[a-zA-Z]*n[a-zA-Z]*\b", commit.group(0)):
+            found.append("git commit -n is --no-verify: it skips the commit-msg check")
+    if re.search(rf"\bgit\b{SEG}(-c\s*|--config-env[=\s])core\.hookspath", flags, re.IGNORECASE):
+        found.append("pointing core.hooksPath elsewhere skips the commit-msg check")
+    for config in re.finditer(rf"\bgit\b{SEG}\bconfig\b{SEG}", flags):
+        hooks = re.search(r"core\.hookspath(?:\s+(\S+))?", config.group(0), re.IGNORECASE)
+        if not hooks:
+            continue
+        unset = re.search(r"--unset", config.group(0))
+        other = hooks.group(1) and not re.search(r"--get", config.group(0)) and hooks.group(1).rstrip("/") != ".githooks"
+        if unset or other:
+            found.append("core.hooksPath stays .githooks (the commit-msg check lives there)")
     if re.search(r"\b(git\s+commit|gh\s+(pr|issue))\b", cmd) and ATTRIBUTION.search(cmd):
         found.append("AI attribution in commit/PR text is not allowed (CLAUDE.md Git, G3)")
     if re.search(rf"\bgh\b{SEG}-X\s*DELETE{SEG}/protection", cmd):
@@ -77,9 +97,13 @@ def reasons(cmd: str) -> list[str]:
 def main() -> int:
     try:
         payload = json.load(sys.stdin)
-    except json.JSONDecodeError:
-        return 0
-    cmd = (payload.get("tool_input") or {}).get("command") or ""
+        cmd = payload["tool_input"].get("command") or ""
+        if not isinstance(cmd, str):
+            raise TypeError("command is not text")
+    except (ValueError, KeyError, TypeError, AttributeError):
+        # Claude Code always sends this shape; anything else is a fault, and a fault does not let a command through.
+        print("Blocked by .claude/hooks/git_guard.py:\n- could not read the command; nothing was run", file=sys.stderr)
+        return 2
     found = reasons(cmd)
     if not found:
         return 0
