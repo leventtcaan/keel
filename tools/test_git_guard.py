@@ -54,6 +54,13 @@ ROWS = [
     ("git config core.hooksPath get", "main", 2),
     ("git commit -nm 'x'", "main", 2),
     ("git commit -mn", "main", 0),
+    # every git the shell would run: after a newline, inside ( ) or $( ) or backticks, a second git in one line
+    ("git status\ngit commit -n -m 'x'", "main", 2),
+    ("(git commit -n -m 'x')", "main", 2),
+    ("echo $(git -c core.hooksPath=/tmp commit -m 'x')", "main", 2),
+    ("echo `git commit -n -m x`", "main", 2),
+    # quotes the shell cannot close: a git command is blocked rather than read half-way
+    ("git commit -n -m 'x", "main", 2),
     # AI attribution in commit and PR text
     ("git commit -m \"feat: x\n\nCo-Authored-By: Claude <noreply@anthropic.com>\"", "main", 2),
     ("gh pr create --title t --body 'Generated with [Claude Code](https://claude.com/claude-code)'", "x/1-y", 2),

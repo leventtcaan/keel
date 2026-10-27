@@ -27,6 +27,7 @@ ATTRIBUTION = re.compile(r"Co-Authored-By:\s*Claude|noreply@anthropic\.com|Gener
 
 DIRECTORY = r"(\"[^\"]+\"|'[^']+'|[^\s;&|]+)"
 # Options of git itself that take the next word, and commit's short options that do (a cluster ends at one of them).
+SEPARATORS = ";&|()\n"
 GIT_VALUE_OPTIONS = {"-C", "-c", "--config-env", "--git-dir", "--work-tree", "--namespace", "--exec-path"}
 COMMIT_VALUE_LETTERS = set("mFcCt")
 HOOKS_KEY = "core.hookspath"
@@ -36,13 +37,15 @@ CONFIG_REMOVES = {"--unset", "--unset-all", "unset", "--remove-section", "--rena
 
 
 def segments(cmd: str) -> list[list[str]]:
-    """The command as the shell splits it: words per simple command, quotes removed the way the shell removes them."""
-    lexer = shlex.shlex(cmd, posix=True, punctuation_chars=";&|")
+    """The command as the shell splits it: words per simple command, quotes removed the way the shell removes them.
+    A newline, ;, &, |, ( and ) end a command; backticks are read as parentheses (a command inside a command)."""
+    lexer = shlex.shlex(cmd.replace("`", " ( "), posix=True, punctuation_chars=SEPARATORS)
+    lexer.whitespace = " \t\r"
     lexer.whitespace_split = True
     lexer.commenters = ""
     found, current = [], []
     for word in lexer:
-        if word and set(word) <= set(";&|"):
+        if word and set(word) <= set(SEPARATORS):
             found.append(current)
             current = []
         else:
@@ -57,15 +60,14 @@ def hook_bypasses(cmd: str) -> list[str]:
     try:
         commands = segments(cmd)
     except ValueError:
-        # Quotes the shell would not close either: read the raw text, the stricter way.
-        return ["a git command pointing core.hooksPath elsewhere skips the commit-msg check"] \
-            if re.search(HOOKS_KEY, cmd, re.IGNORECASE) else []
+        # Quotes the shell would not close either: a git command that cannot be read is not let through.
+        return ["could not read this git command (unclosed quotes); nothing was run"] if re.search(r"\bgit\b", cmd) else []
     found = []
-    for words in commands:
-        at = next((i for i, w in enumerate(words) if w.rsplit("/", 1)[-1] == "git"), None)
-        if at is None:
-            continue
-        rest, sub, i = words[at + 1:], None, 0
+    # Every git the shell would run, not only the first word: `x=1 git …`, `$(git …)`, `env git …`.
+    calls = [words[at + 1:] for words in commands for at, word in enumerate(words)
+             if word.strip("${}").rsplit("/", 1)[-1] == "git"]
+    for rest in calls:
+        sub, i = None, 0
         while i < len(rest):
             word = rest[i]
             if word in ("-c", "--config-env"):
