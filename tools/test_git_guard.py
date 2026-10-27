@@ -30,6 +30,42 @@ ROWS = [
     ("git branch -D engine/41-types", "main", 2),
     ("git branch -d engine/41-types", "main", 0),
     ("git commit --no-verify -m 'x'", "main", 2),
+    # the short form skips the same hook (#612), alone or in a cluster; a "-n" inside the message is text
+    ("git commit -n -m 'x'", "main", 2),
+    ("git commit -anm 'x'", "main", 2),
+    ("git commit -m 'run it with -n first'", "main", 0),
+    ("git log -n 5", "main", 0),
+    # pointing hooks elsewhere skips commit-msg (#612); setting them to the repository's own folder is the setup step
+    ("git -c core.hooksPath=/dev/null commit -m 'x'", "main", 2),
+    ("git -c core.hookspath /tmp commit -m 'x'", "main", 2),
+    ("git --config-env=core.hooksPath=HOOKS commit -m 'x'", "main", 2),
+    ("git config core.hooksPath /tmp/none", "main", 2),
+    ("git config --unset core.hooksPath", "main", 2),
+    ("git config core.hooksPath .githooks", "main", 0),
+    ("git config --get core.hooksPath", "main", 0),
+    ("git config core.hooksPath", "main", 0),
+    # read the way the shell reads them: quotes do not hide a key, and only real options and subcommands count
+    ("git -c \"core.hooksPath=/tmp\" commit -m 'x'", "main", 2),
+    ("git config unset core.hooksPath", "main", 2),
+    ("git config core.hooksPath /tmp/--get", "main", 2),
+    ("git config --remove-section core", "main", 2),
+    ("GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.hooksPath GIT_CONFIG_VALUE_0=/tmp git commit -m 'x'", "main", 2),
+    ("git config get core.hooksPath", "main", 0),
+    ("git config core.hooksPath get", "main", 2),
+    ("git commit -nm 'x'", "main", 2),
+    ("git commit -mn", "main", 0),
+    # every git the shell would run: after a newline, inside ( ) or $( ) or backticks, a second git in one line
+    ("git status\ngit commit -n -m 'x'", "main", 2),
+    ("(git commit -n -m 'x')", "main", 2),
+    ("echo $(git -c core.hooksPath=/tmp commit -m 'x')", "main", 2),
+    ("echo `git commit -n -m x`", "main", 2),
+    # quotes the shell cannot close: a git command is blocked rather than read half-way
+    ("git commit -n -m 'x", "main", 2),
+    # a backslash-newline continues the command; a $( ) inside the arguments does not end the outer git
+    ("git commit \\\n-n -m 'x'", "main", 2),
+    ("git commit -m $(echo x) -n", "main", 2),
+    # an escaped backslash before the newline is a backslash, not a continuation: the next line is its own command
+    ("echo a\\\\\ngit commit -n -m x", "main", 2),
     # AI attribution in commit and PR text
     ("git commit -m \"feat: x\n\nCo-Authored-By: Claude <noreply@anthropic.com>\"", "main", 2),
     ("gh pr create --title t --body 'Generated with [Claude Code](https://claude.com/claude-code)'", "x/1-y", 2),
@@ -55,8 +91,8 @@ ROWS = [
 ]
 
 
-def run(command: str, branch) -> int:
-    payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": command}})
+def run(command: str, branch, payload: str | None = None) -> int:
+    payload = payload if payload is not None else json.dumps({"tool_name": "Bash", "tool_input": {"command": command}})
     branches = branch if isinstance(branch, dict) else {"": branch}
     env = {"GIT_GUARD_BRANCHES": json.dumps(branches), "PATH": "/usr/bin:/bin"}
     r = subprocess.run([sys.executable, str(HOOK)], input=payload, text=True, capture_output=True, env=env)
@@ -66,11 +102,17 @@ def run(command: str, branch) -> int:
     return r.returncode
 
 
+# Payloads the hook cannot read: it blocks rather than letting an unread command through (#612).
+UNREADABLE = ["not json", "[]", '{"tool_input": "git push -f"}']
+
+
 def main() -> int:
     failures = [(c, b, want, got) for c, b, want in ROWS if (got := run(c, b)) != want]
+    failures += [(p, "main", 2, got) for p in UNREADABLE if (got := run("", "main", payload=p)) != 2]
     for c, b, want, got in failures:
         print(f"FAIL [{b}] {c!r}: want {want}, got {got}")
-    print(f"{len(ROWS) - len(failures)}/{len(ROWS)} passed")
+    total = len(ROWS) + len(UNREADABLE)
+    print(f"{total - len(failures)}/{total} passed")
     return 1 if failures else 0
 
 
