@@ -27,7 +27,7 @@ ATTRIBUTION = re.compile(r"Co-Authored-By:\s*Claude|noreply@anthropic\.com|Gener
 
 DIRECTORY = r"(\"[^\"]+\"|'[^']+'|[^\s;&|]+)"
 # Options of git itself that take the next word, and commit's short options that do (a cluster ends at one of them).
-SEPARATORS = ";&|()\n"
+SEPARATORS = ";&|\n"
 GIT_VALUE_OPTIONS = {"-C", "-c", "--config-env", "--git-dir", "--work-tree", "--namespace", "--exec-path"}
 COMMIT_VALUE_LETTERS = set("mFcCt")
 HOOKS_KEY = "core.hookspath"
@@ -38,14 +38,19 @@ CONFIG_REMOVES = {"--unset", "--unset-all", "unset", "--remove-section", "--rena
 
 def segments(cmd: str) -> list[list[str]]:
     """The command as the shell splits it: words per simple command, quotes removed the way the shell removes them.
-    A newline, ;, &, |, ( and ) end a command; backticks are read as parentheses (a command inside a command)."""
-    lexer = shlex.shlex(cmd.replace("`", " ( "), posix=True, punctuation_chars=SEPARATORS)
+    A newline, ;, & and | end a command, and a backslash-newline continues it, as in the shell. ( ) and backticks are
+    dropped without ending anything: a command inside a command is read where it stands, and the outer one keeps its
+    later words, so both are seen."""
+    cmd = re.sub(r"\\\r?\n", "", cmd).replace("`", " ( ")
+    lexer = shlex.shlex(cmd, posix=True, punctuation_chars=SEPARATORS + "()")
     lexer.whitespace = " \t\r"
     lexer.whitespace_split = True
     lexer.commenters = ""
     found, current = [], []
     for word in lexer:
-        if word and set(word) <= set(SEPARATORS):
+        if word and set(word) <= set("()"):
+            continue
+        if word and set(word) <= set(SEPARATORS + "()"):
             found.append(current)
             current = []
         else:

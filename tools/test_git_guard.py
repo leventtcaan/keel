@@ -61,6 +61,9 @@ ROWS = [
     ("echo `git commit -n -m x`", "main", 2),
     # quotes the shell cannot close: a git command is blocked rather than read half-way
     ("git commit -n -m 'x", "main", 2),
+    # a backslash-newline continues the command; a $( ) inside the arguments does not end the outer git
+    ("git commit \\\n-n -m 'x'", "main", 2),
+    ("git commit -m $(echo x) -n", "main", 2),
     # AI attribution in commit and PR text
     ("git commit -m \"feat: x\n\nCo-Authored-By: Claude <noreply@anthropic.com>\"", "main", 2),
     ("gh pr create --title t --body 'Generated with [Claude Code](https://claude.com/claude-code)'", "x/1-y", 2),
