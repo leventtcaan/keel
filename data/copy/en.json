@@ -82,7 +82,7 @@
     },
     "consent": {
       "why": "Sick and In pain are health data, so they need your OK first.",
-      "allow": "Allow and continue",
+      "allow": "Continue",
       "notNow": "Not now",
       "failed": "Couldn't record your choice. Check your connection and try again."
     }
@@ -238,8 +238,8 @@
       "lineLabel": "{lead} {amount}. Log a meal",
       "lineLabelAround": "{lead}. Log a meal",
       "locked": "Needs your OK for health data",
-      "allow": "Allow",
-      "allowLabel": "Allow health data in Settings"
+      "allow": "Settings",
+      "allowLabel": "Health data consent in Settings"
     }
   },
   "callScreen": {
@@ -1075,7 +1075,7 @@
     },
     "editTitle": "Correct a meal",
     "consent": {
-      "allow": "Allow and continue",
+      "allow": "Continue",
       "notNow": "Not now",
       "failed": "Couldn't record your choice. Check your connection and try again."
     },
@@ -1145,7 +1145,7 @@
       "notFound": "That product isn't in the food database yet. Find it by name.",
       "failed": "Couldn't look that barcode up. Check your connection, or find it by name.",
       "badNumber": "That number doesn't read as a barcode. Check the digits.",
-      "askAgain": "Allow the camera"
+      "askAgain": "Try the camera again"
     }
   },
   "widget": {
@@ -1318,7 +1318,7 @@
     "invalid": "That doesn't look like a weight. Check the number.",
     "saveFailed": "Couldn't save it on this phone. Try again.",
     "consent": {
-      "allow": "Allow and continue",
+      "allow": "Continue",
       "notNow": "Not now",
       "failed": "Couldn't record your choice. Check your connection and try again."
     },
@@ -2426,7 +2426,7 @@
       "continueWithout": "Continue without"
     },
     "healthData": {
-      "allow": "Allow",
+      "allow": "Continue",
       "notNow": "Not now",
       "allowed": "Allowed. You can withdraw this in Settings at any time.",
       "declinedNote": "Without it there are no weekly calls. You can allow it later in Settings.",
@@ -2555,7 +2555,7 @@
       "finishFailed": "Couldn't finish on this phone. Try again."
     },
     "appleHealth": {
-      "connect": "Connect",
+      "connect": "Continue",
       "notNow": "Not now, I'll type it",
       "unavailable": "Apple Health connects in the app's device build. You can connect it later in Settings.",
       "finish": "Start",
@@ -2824,7 +2824,7 @@
     "outdated": "The text has changed since you allowed this. Allow it again to go on.",
       "view": "View",
       "hide": "Hide",
-      "allow": "Allow",
+      "allow": "Turn on",
       "withdraw": "Withdraw",
       "loadFailed": "Couldn't load your consents. Check your connection.",
       "retry": "Try again",
@@ -2957,7 +2957,7 @@
     "counting": "Taking the photo in a moment",
     "shutter": "Take photo",
     "library": "Choose from library",
-    "allow": "Allow camera",
+    "allow": "Continue",
     "denied": "The camera is off for Next Call. Turn it on in iOS Settings, or choose a photo from your library.",
     "failed": "Couldn't keep that photo on this phone. Try again.",
     "close": "Close"
