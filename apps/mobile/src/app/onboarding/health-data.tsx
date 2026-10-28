@@ -15,9 +15,9 @@ import { tokens } from '@/theme/tokens';
 
 /**
  * #ob-consent, the health data consent (K-312, ADR-007, GDPR Art. 9): its own screen, before the first health question.
- * What it covers in three lines; the full text, whose version is the one recorded, one tap away (ADR-072 #2). "Allow"
- * records it on the server before moving on. "Not now" says what that means and offers "Continue without", which asks
- * nothing health later in the walk (the weight). Once allowed it can be taken back right here (Art. 7(3)): withdrawn on
+ * What it covers in three lines; the full text, whose version is the one recorded, one tap away (ADR-072 #2). "Continue"
+ * (ADR-083: never "Allow" before a permission) records it on the server before moving on. "Not now" says what that
+ * means and offers "Continue without", which asks nothing health later in the walk (the weight). Once allowed it can be taken back right here (Art. 7(3)): withdrawn on
  * the server, and the health answers so far leave the draft with it. While an answer is on its way, the other choice and
  * the way back are off, so the last choice made is the one recorded.
  *
@@ -26,7 +26,7 @@ import { tokens } from '@/theme/tokens';
  * server's answer, or offline what the phone kept). While one is, "Continue without" withdraws it the same way, before
  * moving on (GDPR Art. 7(3): the last choice counts); one that does not go through says so and stays, and the same
  * button tries again. Unknown (the server answered with an error): withdrawn anyway, as the server does nothing when
- * nothing was given. An "Allow" sent counts as held even if its answer never came: it may have been recorded.
+ * nothing was given. A "Continue" sent counts as held even if its answer never came: it may have been recorded.
  */
 export default function HealthDataStep() {
   const { draft, update } = useDraft();

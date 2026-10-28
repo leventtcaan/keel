@@ -16,8 +16,8 @@ const nameOf = (error: unknown) => (error instanceof Error ? error.name : 'Unkno
 
 /**
  * Apple Health, the last step (prototype 1.8, ADR-018). The consent text says what is read and what never is.
- * Offered only with the health data consent: what it brings in is health data (GDPR Art. 9). "Connect" shows Apple's
- * sheet, then records the consent — so a sheet that fails leaves no consent behind; nothing is read before the consent
+ * Offered only with the health data consent: what it brings in is health data (GDPR Art. 9). "Continue" (ADR-083) shows
+ * Apple's sheet, then records the consent — so a sheet that fails leaves no consent behind; nothing is read before the consent
  * is recorded (K-404 reads only with it). "Not now" skips both. Either way onboarding finishes here (finish.ts). Where
  * HealthKit is not in the build (Expo Go), the screen says so.
  */
