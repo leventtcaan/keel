@@ -5,7 +5,12 @@ guncelleme: 2026-10-10
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (28 Eki — 1.0 REDDEDİLDİ, düzeltildi, build 5 ile YENİDEN GÖNDERİLDİ: Waiting for Review)
+## ▶ DEVAM NOKTASI (29 Eki — ÜRÜN DENETİMİ: build 5 kullanılabilir değil)
+Levent TestFlight'ta denedi: programsız kalan hesapta antrenman yok, yemek araması eşleşmiyor, onboarding görünmedi. Bulgular ve sıra: `plan/denetim-2026-10-29.md`.
+**1.0 (5) incelemede ama yayın şekli ELLE (29 Eki, Levent kararı):** onay gelse de mağazaya çıkmaz. Düzeltilmiş build ile güncellenir.
+**Sıradaki:** Levent denetim planını onaylar → 1-3 mantık düzeltmeleri (gerçek sunucuya karşı simülatör turu kanıtıyla) → 4 veri kararı → 5 prototip onayı.
+
+## (önceki) DEVAM NOKTASI (28 Eki — 1.0 REDDEDİLDİ, düzeltildi, build 5 ile YENİDEN GÖNDERİLDİ: Waiting for Review)
 **Red (28 Eki, gönderim 87ef804d, inceleme cihazı iPad Air 11" M3):** (1) **2.3.7** 6. mağaza karesinde "Try it free for 2 weeks" (ücretsiz/deneme atfı da fiyat sayılır);
 (2) **5.1.1(iv)** HealthKit izninden önceki özel ekranda "Allow" düğmesi (Apple: "Continue"/"Next"). ADR-083, K-1036 (#616).
 **Düzeltildi:** #617 (main `4787277a`): izin ya da sağlık rızası öncesi ekranların ana düğmesi "Continue" (onboarding sağlık verisi, Apple Health, tartı/yemek/durum rızası,
