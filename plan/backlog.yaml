@@ -5154,6 +5154,23 @@ tasks:
     tests: ["curl Turkcell hattından + check-host çok düğüm"]
     refs: ["apps/mobile/eas.json", "deploy/"]
 
+  - id: K-1036
+    title: "App Review 1.0 reddi: izin öncesi düğmeler Continue (5.1.1(iv)), 6. mağaza karesinde fiyat yok (2.3.7), build 5"
+    milestone: M10
+    module: mobile
+    type: fix
+    size: S
+    status: doing
+    depends_on: []
+    why: "28 Eki red (gönderim 87ef804d): sağlık rızası ekranında 'Allow' düğmesi HealthKit izninin ön mesajı sayıldı; 6. karede 'Try it free for 2 weeks' fiyat atfı. ADR-083"
+    acceptance:
+      - "İzin ya da sağlık rızası öncesi özel ekranların ana düğmesi 'Continue' (onboarding sağlık verisi, Apple Health, tartı/yemek/durum rızası, kamera); Ayarlar rıza satırı 'Turn on'; kilit satırı 'Settings'"
+      - "Rıza mekaniği ve kaydedilen metin sürümü değişmez; ilgili jest testleri ve anayasa denetimi yeşil"
+      - "6. kare fiyat, deneme, 'free', iptal atfı içermez; ASC 6.9 inç yuvasında yeni kare"
+      - "Build 5 sürüme bağlı, App Review notu güncel; Submit Levent"
+    tests: ["jest onboarding-flow + settings + weigh-in + meal + state + photo-capture", "tools/anayasa-denetimi.sh"]
+    refs: ["plan/kararlar/ADR-083-izin-dugmeleri-ve-magaza-gorseli.md", "data/copy/en.json", "docs/magaza/marketing/panorama.html"]
+
   - id: K-1010
     title: "Sunucudaki ek siteler: Caddy /opt/sites altındaki *.caddy dosyalarını içeri alır"
     milestone: M9
