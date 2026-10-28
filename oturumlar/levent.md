@@ -255,3 +255,9 @@
 - Disk: takas ~11 GB + Codex önbelleği; yerelde tam jest koşturmak takası büyütüyor (ajanlara yalnız dokunulan testler).
 - Sıradaki: inceleme sonucu; onayda webhook + REST anahtarı + SANDBOX kapanışı; 1.0.1 K-1034.
 
+## 2026-10-28 · App Review reddi (1.0, build 4) → düzeltme ve build 5
+- yaptım: ASC App Review mesajı (ego lite) → 2.3.7 (6. karede "Try it free") + 5.1.1(iv) (HealthKit öncesi "Allow"); ADR-083, K-1036 (#616); #617 izin/rıza düğmeleri "Continue" + koruyucu test; 6. kare "Data in, call out"; ASC'de iki ekran seti düzeltildi (büyük set sırası bozuktu); inceleme notuna RESUBMISSION; build 5 EAS → sürüme bağlandı
+- karar: agent — kamera ve öteki rıza ekranları da kapsama (ikinci red turu olmasın), Ayarlar satırı "Turn on"; Levent'e bildirildi: sağlık rızası düğmesi "Continue" (GDPR açık rızası ekrandan ve olumlu eylemden gelir)
+- takıldım: ego lite'ta ASC oturumu yoktu (Levent girdi); ASC'nin yeni sayfa düzeninde ekran görüntüleri "Header and Search Results" açılır menüsünün altında; EAS submit izlemesi yerel DNS hatasıyla koptu, build TestFlight'a yine de düştü
+- sıradaki: Levent Resubmit; sonra 1.0.1 (K-1034, K-1035), Dependabot #611
+- AI: kod, test, ASC işleri, build agent; Levent ASC girişi yaptı
