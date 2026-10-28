@@ -5,7 +5,16 @@ guncelleme: 2026-10-10
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (16 Eki 16:05 — 1.0 (build 4) APP REVIEW'DA: "Waiting for Review")
+## ▶ DEVAM NOKTASI (28 Eki — 1.0 REDDEDİLDİ, düzeltildi, build 5 yolda; Submit Levent'te)
+**Red (28 Eki, gönderim 87ef804d, inceleme cihazı iPad Air 11" M3):** (1) **2.3.7** 6. mağaza karesinde "Try it free for 2 weeks" (ücretsiz/deneme atfı da fiyat sayılır);
+(2) **5.1.1(iv)** HealthKit izninden önceki özel ekranda "Allow" düğmesi (Apple: "Continue"/"Next"). ADR-083, K-1036 (#616).
+**Düzeltildi:** #617 (main `4787277a`): izin ya da sağlık rızası öncesi ekranların ana düğmesi "Continue" (onboarding sağlık verisi, Apple Health, tartı/yemek/durum rızası,
+kamera), Ayarlar rıza satırı "Turn on", kilit satırı "Settings"; `permission-buttons.test.ts` korur; CI üçü yeşil. 6. kare "Data in, call out" (fiyatsız, `438add91`),
+ASC'de orta boy setin 6'sı değişti, büyük boy set (sırası bozuktu: 06,02,03,04,01,05) 01→06 yeniden yüklendi. App Review notunun başına "RESUBMISSION" bölümü eklendi.
+**Sıradaki:** build 5 (`eas build --auto-submit`, 28 Eki başlatıldı) TestFlight'a düşünce ASC › sürüm 1.0 › Build: 4 → 5 → **Levent: Update Review / Resubmit**.
+Bekleyen (1.0.1): K-1034, K-1035 (Turkcell/duckdns). Dependabot #611 (actions) bakılacak.
+
+## (önceki) DEVAM NOKTASI (16 Eki 16:05 — 1.0 (build 4) APP REVIEW'DA: "Waiting for Review")
 **Gönderildi:** iOS 1.0 build 4 + abonelik grubu "Next Call" + 2 abonelik tek gönderimde (Levent Submit etti). Yayın şekli otomatik: onayda mağazaya çıkar.
 **Beklerken / sonra (sırayla):** (1) Red gelirse Resolution Center mesajı → 3.1.2/5.1.1 kontrol listesi, düzeltme, build 5. (2) **22 Eki: RevenueCat webhook bağlandı** (onaydan ÖNCE: telefon erişimi
 yalnız sunucu "aktif" deyince açıyor, `paywall.ts` confirmActive; webhook yokken App Review'un test satın alması "waiting"de kalırdı).
