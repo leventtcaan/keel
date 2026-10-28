@@ -8,7 +8,8 @@ guncelleme: 2026-10-10
 ## ▶ DEVAM NOKTASI (29 Eki — ÜRÜN DENETİMİ: build 5 kullanılabilir değil)
 Levent TestFlight'ta denedi: programsız kalan hesapta antrenman yok, yemek araması eşleşmiyor, onboarding görünmedi. Bulgular ve sıra: `plan/denetim-2026-10-29.md`.
 **1.0 (5) incelemede ama yayın şekli ELLE (29 Eki, Levent kararı):** onay gelse de mağazaya çıkmaz. Düzeltilmiş build ile güncellenir.
-**Sıradaki:** Levent denetim planını onaylar → 1-3 mantık düzeltmeleri (gerçek sunucuya karşı simülatör turu kanıtıyla) → 4 veri kararı → 5 prototip onayı.
+**Kapsam büyüdü (Levent, 29 Eki):** düğmeler, Log ikonları, "+" sayfası, Ayarlar, Account, paywall Account dahil her sayfa acımasız tur + AI slop analiziyle baştan. Plan: `plan/yeniden-yapim.md` (Evre 0 envanter → 1 kırık mantık → 2 görsel sistem, prototip önce → 3 yemek verisi → 4 son tur, build 6).
+**Sıradaki:** Levent planı onaylar + Evre 0 ön koşulu: simülatörde Apple ID girişi (Levent).
 
 ## (önceki) DEVAM NOKTASI (28 Eki — 1.0 REDDEDİLDİ, düzeltildi, build 5 ile YENİDEN GÖNDERİLDİ: Waiting for Review)
 **Red (28 Eki, gönderim 87ef804d, inceleme cihazı iPad Air 11" M3):** (1) **2.3.7** 6. mağaza karesinde "Try it free for 2 weeks" (ücretsiz/deneme atfı da fiyat sayılır);
