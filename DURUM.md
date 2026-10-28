@@ -5,14 +5,15 @@ guncelleme: 2026-10-10
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (28 Eki — 1.0 REDDEDİLDİ, düzeltildi, build 5 bağlı; yalnız Resubmit Levent'te)
+## ▶ DEVAM NOKTASI (28 Eki — 1.0 REDDEDİLDİ, düzeltildi, build 5 ile YENİDEN GÖNDERİLDİ: Waiting for Review)
 **Red (28 Eki, gönderim 87ef804d, inceleme cihazı iPad Air 11" M3):** (1) **2.3.7** 6. mağaza karesinde "Try it free for 2 weeks" (ücretsiz/deneme atfı da fiyat sayılır);
 (2) **5.1.1(iv)** HealthKit izninden önceki özel ekranda "Allow" düğmesi (Apple: "Continue"/"Next"). ADR-083, K-1036 (#616).
 **Düzeltildi:** #617 (main `4787277a`): izin ya da sağlık rızası öncesi ekranların ana düğmesi "Continue" (onboarding sağlık verisi, Apple Health, tartı/yemek/durum rızası,
 kamera), Ayarlar rıza satırı "Turn on", kilit satırı "Settings"; `permission-buttons.test.ts` korur; CI üçü yeşil. 6. kare "Data in, call out" (fiyatsız, `438add91`),
 ASC'de orta boy setin 6'sı değişti, büyük boy set (sırası bozuktu: 06,02,03,04,01,05) 01→06 yeniden yüklendi. App Review notunun başına "RESUBMISSION" bölümü eklendi.
 **Build 5** (1.0.0, EAS `77bdba26`) TestFlight'ta "Ready to Submit" ve sürüm 1.0'a BAĞLI (build 4 çıkarıldı, kaydedildi). İki ekran seti 01→06, hepsi işlendi.
-**Sıradaki: Levent — ASC › sürüm 1.0 › Update Review (Resubmit to App Review).** Abonelik grubu + 2 abonelik "Ready for Review", aynı gönderimde kalıyor.
+**28 Eki: YENİDEN GÖNDERİLDİ** (Levent'in onayıyla agent, aynı gönderim `87ef804d`): 1.0 (5) + abonelik grubu + 2 abonelik "Waiting for Review". Yayın şekli otomatik.
+Not: ilk gönderim 16→28 Eki "Waiting for Review"da kaldı; Levent'in Apple Support'a yazması incelemeyi başlattı. Uzun bekleyişte ilk hamle Contact Us.
 Bekleyen (1.0.1): K-1034, K-1035 (Turkcell/duckdns). Dependabot #611 (actions) bakılacak.
 
 ## (önceki) DEVAM NOKTASI (16 Eki 16:05 — 1.0 (build 4) APP REVIEW'DA: "Waiting for Review")
