@@ -44,6 +44,10 @@ final class MealSuggestions {
         boolean somethingToAvoid = avoid.stream().anyMatch(word -> !word.isBlank());
         for (MealStore.Meal meal : meals) {
             for (FoodEstimator.EstimatedItem item : meal.items()) {
+                // A quick add has no food behind it: nothing to offer again.
+                if (FoodEstimator.QUICK.equals(item.foodId())) {
+                    continue;
+                }
                 boolean avoided = somethingToAvoid && left.computeIfAbsent(item.foodId(), id -> avoids(item.name(), avoid)
                         || alsoNamed.apply(id).stream().anyMatch(name -> avoids(name, avoid)));
                 if (avoided) {
@@ -82,6 +86,10 @@ final class MealSuggestions {
         Map<String, Boolean> left = new LinkedHashMap<>();
         for (MealStore.Meal meal : meals) {
             for (FoodEstimator.EstimatedItem item : meal.items()) {
+                // A quick add has no food behind it: nothing to offer again.
+                if (FoodEstimator.QUICK.equals(item.foodId())) {
+                    continue;
+                }
                 boolean avoided = left.computeIfAbsent(item.foodId(), id -> avoids(item.name(), avoid)
                         || alsoNamed.apply(id).stream().anyMatch(name -> avoids(name, avoid)));
                 if (!avoided) {

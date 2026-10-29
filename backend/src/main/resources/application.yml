@@ -157,12 +157,18 @@ keel:
     suggestions: 3
     suggestion-days: 28
     # The most eaten foods estimated to find them (each estimate reads the database; a few may not fit).
-    suggestion-candidates: 9
+    suggestion-candidates: 24
     # The foods the user ate lately (K-1025, GET /v1/foods/recent): from the same weeks as the suggestions (suggestion-days), a few at
     # most (at least 1, at most suggestion-candidates: the freshest candidates are the ones estimated, so a bigger number could never be
     # reached; a wrong pair is refused at start). The screen shows as many as it has room for; the server sends a few more so that a
     # food gone from the database leaves it enough.
-    recent-foods: 5
+    recent-foods: 12
+    # Meals read for a range of days (GET /v1/meals?from&to, GET /v1/days): the day strip and the reminder's learning look back a month at most.
+    max-meal-range-days: 62
+    # Starred foods and own foods (K-1063) a user keeps, and the longest name of an own food.
+    max-favorites: 200
+    max-own-foods: 200
+    max-own-food-name: 80
     # The search's order (K-1061, ADR-090 #1; FoodRanking): 20 points a step of how well the name holds the words (6 steps: the name
     # itself 100, the word first 80, ... somewhere inside 0), a generic food that starts with the word 25 (above one step, below two:
     # "egg" is the egg before a product called "Eggs", yet the product that is exactly "Eggs" outranks "Eggplant"), a brand that the

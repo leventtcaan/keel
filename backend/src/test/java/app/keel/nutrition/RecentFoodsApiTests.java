@@ -90,23 +90,24 @@ class RecentFoodsApiTests {
 
     @Test
     void aFewAtMostAndOnlyTheLastWeeks() throws Exception {
-        for (int i = 0; i < 7; i++) {
+        for (int i = 0; i < 14; i++) {
             jdbc.sql("""
                     insert into nutrition.food (id, name, source, kcal, protein_g, carbs_g, fat_g) values
                     (:id, :name, 'FOUNDATION', 100, 5, 10, 2) on conflict (id) do nothing""").param("id", "test:k1025-" + i)
                     .param("name", "K-1025 food " + i).update();
         }
         AccountId account = consenting();
-        // Seven foods on seven days, the freshest the last; and one from more than the window ago.
-        for (int i = 0; i < 7; i++) {
-            meal(account, 7 - i, "LUNCH", "test:k1025-" + i, 100);
+        // Fourteen foods on fourteen days, the freshest the last; and one from more than the window ago.
+        for (int i = 0; i < 14; i++) {
+            meal(account, 14 - i, "LUNCH", "test:k1025-" + i, 100);
         }
         meal(account, 40, "LUNCH", CHICKEN, 200);
 
         List<Map<String, Object>> recent = list(send(account, "GET", "/v1/foods/recent", null));
 
-        assertThat(recent).extracting(item -> item.get("foodId")).as("five (recent-foods), the freshest, none of 40 days ago")
-                .containsExactly("test:k1025-6", "test:k1025-5", "test:k1025-4", "test:k1025-3", "test:k1025-2");
+        assertThat(recent).extracting(item -> item.get("foodId")).as("twelve (recent-foods, K-1063), the freshest, none of 40 days ago")
+                .containsExactly("test:k1025-13", "test:k1025-12", "test:k1025-11", "test:k1025-10", "test:k1025-9", "test:k1025-8", "test:k1025-7",
+                        "test:k1025-6", "test:k1025-5", "test:k1025-4", "test:k1025-3", "test:k1025-2");
     }
 
     @Test

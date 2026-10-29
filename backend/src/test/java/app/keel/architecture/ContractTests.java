@@ -55,7 +55,10 @@ class ContractTests {
             "ReasonFacts.kcal",
             // A portion's single number on the logging screens (ADR-090 #5, K-1061): the middle of the range, the label value for a
             // product; the ranges stay in Food.per100g and in the estimate.
-            "Portion.kcal");
+            "Portion.kcal",
+            // Numbers the user types in (K-1063, ADR-090): a quick add's calories and a label's calories for an own food. Input, not an
+            // estimate; the estimate that comes back from them is a range as always.
+            "QuickEntry.kcal", "NewFood.kcal");
     private static final Set<String> RANGES = Set.of("#/components/schemas/KcalRange", "#/components/schemas/KcalBalance");
     private static final Pattern FAT_NUMBER = Pattern.compile(
             "(?i)body.?fat|fat.?(pct|percent|proxy|ratio|free)|fat_?mass|percent.?fat|lean.?mass|\\bffm\\b|body.?composition");
