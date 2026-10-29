@@ -5476,6 +5476,24 @@ tasks:
     tests: ["jest progress-*"]
     refs: ["plan/oturum-promptlari/yeniden-yapim-devam.md", "arastirma/ham/uygulama-qa-skill-2026-10-29.md"]
 
+  - id: K-1055
+    title: "Build 7 bulgusu: ilerleme fotoğrafı akışı baştan (tam ekran kamera, siluet, ön/arka, sakin açı, önizleme, sonuç)"
+    milestone: M10
+    module: mobile
+    type: fix
+    size: M
+    status: doing
+    depends_on: [K-1054]
+    why: "Levent build 7: Take photos ekranı modern değil, kılavuz yok, açı göstergesi teknik ve oynak (Level 12.3°), ön kameraya geçilemiyor, akış bir sonuca bağlanmıyor; QA turunda bu akış hiç yürünmemişti"
+    acceptance:
+      - "Prototip yeniden-yapim.html bölüm 10: başlangıç (ilk set), tam ekran kamera, vücut silueti + son fotoğraf soluk, ön/arka kamera, zamanlayıcı Off/3/10 s, geri sayım + iptal, önizleme Retake/Use photo, yan poz, sonuç ekranı (iki fotoğraf + sonraki set), izin kapalı ekranı"
+      - "Açı derece göstermez; yumuşatılmış ve histerezisli tek işaret (Straight / Hold the phone upright); eğikken de çekilebilir"
+      - "Fotoğraf yalnız Use photo ile kaydedilir; yarıda kapatınca kaydedilmeyen yok; kütüphane yolu her poz için çalışır"
+      - "Her durum testli: ilk set, ikinci set, tekrar çek, iptal, izin verildi/reddedildi/sorulmadı, kütüphane, kayıt hatası, kamera değişimi, zamanlayıcı"
+      - "npm run check + anayasa denetimi yeşil; simülatörde kamerasız yollar, cihazda kamera (TestFlight build 8)"
+    tests: ["jest photo-capture-screen + photo-tilt + photo-card", "tools/anayasa-denetimi.sh"]
+    refs: ["prototip/yeniden-yapim.html", "plan/oturum-promptlari/yeniden-yapim-devam.md"]
+
   - id: K-1010
     title: "Sunucudaki ek siteler: Caddy /opt/sites altındaki *.caddy dosyalarını içeri alır"
     milestone: M9
