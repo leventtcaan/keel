@@ -686,7 +686,8 @@ export interface paths {
          * The foods the user logs most often, each in its usual amount
          * @description From the meals of the last `suggestion-days` (28): the most logged first (then the latest), each food once, in the amount it
          *     was most often had, with its kcal as the database estimates it now (a range, the phone shows the middle). Never a food in the
-         *     profile's foods to avoid. A few at most (`recent-foods`).
+         *     profile's foods to avoid. A few at most (`recent-foods`). With `slot`, only the meals had in that slot count ("Usually at
+         *     breakfast"): each food with the amount and the times it had there; a slot nobody ate in has none (no fallback to the others).
          */
         get: operations["getFrequentFoods"];
         put?: never;
@@ -2344,6 +2345,8 @@ export interface components {
             amount: components["schemas"]["Amount"];
             kcal: components["schemas"]["KcalRange"];
             proteinG: components["schemas"]["GramRange"];
+            carbsG?: components["schemas"]["GramRange"];
+            fatG?: components["schemas"]["GramRange"];
         };
         EstimatedItem: {
             foodId: string;
@@ -5133,7 +5136,9 @@ export interface operations {
     };
     getFrequentFoods: {
         parameters: {
-            query?: never;
+            query?: {
+                slot?: components["schemas"]["MealSlot"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
