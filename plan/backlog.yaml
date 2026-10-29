@@ -5188,6 +5188,23 @@ tasks:
     tests: ["jest build-program + train + today + edit-program", "tools/anayasa-denetimi.sh"]
     refs: ["plan/kararlar/ADR-084-programsiz-hesap-cikisi.md", "plan/envanter-2026-10-29.md"]
 
+  - id: K-1038
+    title: "Yeniden yapım Evre 1: yemek araması, yazarken arama + sunucu sıralaması + çift kayıt (K-4)"
+    milestone: M10
+    module: nutrition
+    type: fix
+    size: M
+    status: doing
+    depends_on: []
+    why: "Arama yalnız düğmeyle, eski sonuç kalıyor, 'egg' önce Eggnog getiriyor, aynı ad iki kez, satırda kcal yok, varsayılan birim saçma (envanter K-4; denetim B4, B5, B7, B8). ADR-085"
+    acceptance:
+      - "Yazarken gecikmeli arama (parametre dosyasında), eski sonuç kalkar, aranıyor durumu, geç cevap yeniyi ezmez; bağlantı yok ile sunucu hatası ayrı metin; Search düğmesi kalkar"
+      - "Sonuç satırında 100 g başına kcal aralığı; varsayılan birim hacim olmayan ilk porsiyon ya da gram, miktar 1 / 100 dolu"
+      - "Sunucu: ı/İ katlama, ADR-085 #8 sıralaması, aynı katlanmış ad bir kez (Foundation önce); DB testleri CI'da"
+      - "Kanıt: gerçek sunucuya karşı simülatörde egg, rice, chıcken Search'e basmadan; ekran görüntüleri envanterde"
+    tests: ["jest food-picker + meal", "gradle FoodStore/FoodSearch testleri (CI)", "tools/anayasa-denetimi.sh"]
+    refs: ["plan/kararlar/ADR-085-yemek-aramasi.md", "plan/envanter-2026-10-29.md"]
+
   - id: K-1010
     title: "Sunucudaki ek siteler: Caddy /opt/sites altındaki *.caddy dosyalarını içeri alır"
     milestone: M9
