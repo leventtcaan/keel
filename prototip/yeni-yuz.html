@@ -1199,7 +1199,7 @@ const SCREENS = {
     <div style="flex:2"></div>
     <div class="dock"><button class="btn primary wide" type="button" data-go="ob-plan" data-replace="1" ${S.prep >= 3 ? '' : 'disabled'}>See my plan</button></div>` },
 
-  'ob-plan': { n: 'Plan hazır', t: 55, scen: true, r: () => {
+  'ob-plan': { n: 'Plan hazır', t: 66, scen: true, r: () => {
     /* "Decide for me": the engine's phase gate; with no fat estimate yet (no waist on day 1) it starts with a cut (ADR-027 #17) */
     const goal = S.ob.goal === 'build' ? 'Build muscle' : S.ob.goal === 'lose_fat' ? 'Lose fat' : 'Lose fat</b> · we picked<b>';
     const view = S.startView, mv = moves(), known = mv.some(m => m.kg != null), gaps = known && mv.some(m => m.kg == null), nch = applied();

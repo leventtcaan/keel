@@ -60,6 +60,8 @@ const mockPlanSeenAnswer = async () => {
   return mockPlanSeen === 204 ? { response: new Response(null, { status: 204 }) } : { error: { code: 'X' }, response: new Response(null, { status: mockPlanSeen }) };
 };
 const mockMove = (exerciseId: string): MockMove => ({ exerciseId, baseSets: 3, sets: 3, reps: { ...mockReps }, targetRir: 2 });
+/** More moves on each day than the three (the first workout shows three and says how many more). */
+let mockExtraMoves: string[] = [];
 /** Like the server: a program on the days asked for, each day the same three moves, with the engine's cardio. */
 function mockProgram(trainingDays: string[], loads: Record<string, number> = {}) {
   return {
@@ -69,7 +71,7 @@ function mockProgram(trainingDays: string[], loads: Record<string, number> = {})
       id: `a1b2c3d4-0000-4000-8000-00000000001${i}`,
       nameKey: 'programDays.full_body_a.name',
       weekday,
-      exercises: ['squat', 'bench_press', 'lat_pulldown'].map((id) => ({
+      exercises: ['squat', 'bench_press', 'lat_pulldown', ...mockExtraMoves].map((id) => ({
         ...mockMove(id),
         ...(loads[id] === undefined ? {} : { nextLoadKg: loads[id] }),
       })),
@@ -221,6 +223,7 @@ beforeEach(() => {
   mockTrainingDays = [];
   mockServerProgram = null;
   mockStarting = 404;
+  mockExtraMoves = [];
   mockFirstCall = '2026-10-19';
   mockPlanSeen = 204;
   mockFirstCallAfterSeen = null;
@@ -1158,7 +1161,7 @@ describe('#ob-preparing: each line ticked by the server, never a timer (ADR-072 
   });
 
   test('the food is on the second line only when the plan will show its row', async () => {
-    mockStarting = { targetKcal: 2450, maintenanceKcal: { low: 2600, high: 3000 }, observationDays: 14 };
+    mockStarting = { targetKcal: 2450, maintenanceKcal: { low: 2600, high: 3000 }, observationDays: 14, proteinG: 150, stepsPerDay: 7000 };
     await walkTo('activity', { experience: 'NEW', allow: true });
     await endWalk();
     expect(ticked(t('onboarding.preparing.foodAndCardio'))).toBe(true);
@@ -1258,7 +1261,7 @@ describe('closed with the plan still to be seen: it comes back (K-967 review)', 
     expect(screen.getByText(t('onboarding.preparing.firstCall', { day: t('onboarding.plan.today') }))).toBeOnTheScreen();
     await press(t('onboarding.preparing.see'));
     expect(screen.getByText('Wed, Oct 21')).toBeOnTheScreen();
-    expect(screen.getByText(t('onboarding.plan.today'))).toBeOnTheScreen();
+    expect(screen.getByText(t('onboarding.plan.callNote', { when: t('onboarding.plan.today'), day: t('onboarding.schedule.dayName.MONDAY') }))).toBeOnTheScreen();
   });
 
   test('(b) closed after the program was built: not built again, its starting weights kept', async () => {
@@ -1310,6 +1313,92 @@ describe('#ob-plan: the starting call in U3\'s parts (ADR-072 #6)', () => {
     return router;
   }
 
+  describe('the starting call leads (#661, prototype section 11 frame 6)', () => {
+    const START = { targetKcal: 2440, maintenanceKcal: { low: 2600, high: 3000 }, observationDays: 14, proteinG: 175, stepsPerDay: 7000 };
+    /** Every text on the screen, top to bottom. */
+    const texts = () => screen.getAllByText(/.*/).map((node) => String(node.props.children));
+    const at = (words: string) => texts().indexOf(words);
+
+    test('Food, Protein and the first call sit in one card, above the first workout and the cardio', async () => {
+      mockStarting = START;
+      await toPlan({ experience: 'NEW', allow: true });
+      expect(screen.getByRole('header', { name: t('onboarding.plan.callTitle') })).toBeOnTheScreen();
+      expect(screen.getByText(t('onboarding.plan.foodKcal', { kcal: '2,440' }))).toBeOnTheScreen();
+      expect(screen.getByText(t('onboarding.plan.foodNote', { days: 14 }))).toBeOnTheScreen();
+      expect(screen.getByText(t('onboarding.plan.protein'))).toBeOnTheScreen();
+      expect(screen.getByText(t('onboarding.plan.proteinG', { grams: 175 }))).toBeOnTheScreen();
+      const order = [
+        t('onboarding.plan.callTitle'),
+        t('onboarding.plan.food'),
+        t('onboarding.plan.protein'),
+        t('onboarding.plan.firstCall'),
+        t('onboarding.plan.firstWorkout', { day: t('onboarding.plan.today') }),
+        t('onboarding.plan.cardio'),
+      ].map(at);
+      expect(order).not.toContain(-1);
+      expect(order).toEqual([...order].sort((a, b) => a - b));
+    });
+
+    test('the first call says when, and that the calls then come every check-in day', async () => {
+      mockStarting = START;
+      await toPlan({ experience: 'NEW', allow: true });
+      expect(screen.getByText(t('onboarding.plan.callNote', { when: t('onboarding.plan.inDays', { count: 5 }), day: t('onboarding.schedule.dayName.MONDAY') }))).toBeOnTheScreen();
+    });
+
+    test('tomorrow and today are said as such in the same line', async () => {
+      mockFirstCall = '2026-10-15';
+      await toPlan({ experience: 'NEW', allow: true });
+      expect(screen.getByText(t('onboarding.plan.callNote', { when: t('onboarding.plan.tomorrow'), day: t('onboarding.schedule.dayName.MONDAY') }))).toBeOnTheScreen();
+      await screen.unmount();
+      mockFirstCall = '2026-10-14';
+      await toPlan({ experience: 'NEW', allow: true });
+      expect(screen.getByText(t('onboarding.plan.callNote', { when: t('onboarding.plan.today'), day: t('onboarding.schedule.dayName.MONDAY') }))).toBeOnTheScreen();
+    });
+
+    test('allowed but no starting target from the server: the card holds the first call alone, no food, no protein', async () => {
+      mockStarting = 404;
+      await toPlan({ experience: 'NEW', allow: true });
+      expect(screen.getByRole('header', { name: t('onboarding.plan.callTitle') })).toBeOnTheScreen();
+      expect(screen.getByText(t('onboarding.plan.firstCall'))).toBeOnTheScreen();
+      expect(screen.queryByText(t('onboarding.plan.food'))).toBeNull();
+      expect(screen.queryByText(t('onboarding.plan.protein'))).toBeNull();
+    });
+
+    test('declined: no starting call at all, no food, no protein, no call (there are none); the workout and the cardio stay', async () => {
+      mockStarting = START;
+      await toPlan({ experience: 'NEW' });
+      expect(screen.queryByText(t('onboarding.plan.callTitle'))).toBeNull();
+      expect(screen.queryByText(t('onboarding.plan.protein'))).toBeNull();
+      expect(screen.queryByText(/then every/)).toBeNull();
+      expect(screen.getByText(t('onboarding.plan.cardio'))).toBeOnTheScreen();
+      expect(screen.getByText(t('programDays.full_body_a.name'))).toBeOnTheScreen();
+    });
+
+    test('the first workout is cut to its first three moves and says how many more', async () => {
+      mockExtraMoves = ['leg_press', 'seated_row', 'overhead_press', 'face_pull', 'dumbbell_curl', 'triceps_pushdown'];
+      await toPlan({ experience: 'NEW' });
+      for (const move of ['squat', 'bench_press', 'lat_pulldown']) expect(screen.getByText(t(`exercises.${move}.name`))).toBeOnTheScreen();
+      for (const move of mockExtraMoves) expect(screen.queryByText(t(`exercises.${move}.name`))).toBeNull();
+      expect(screen.getByText(t('onboarding.plan.more', { count: 6 }))).toBeOnTheScreen();
+      // No weights known: the note stays in that line.
+      expect(screen.getByText(t('onboarding.plan.findsWeights'))).toBeOnTheScreen();
+      expect(at(t('onboarding.plan.more', { count: 6 }))).toBeLessThan(at(t('onboarding.plan.findsWeights')));
+    });
+
+    test('three moves or fewer: nothing is said to be more; the note is still there when no weight is known', async () => {
+      await toPlan({ experience: 'NEW' });
+      expect(screen.queryByText(/^and \d+ more$/)).toBeNull();
+      expect(screen.getByText(t('onboarding.plan.findsWeights'))).toBeOnTheScreen();
+    });
+
+    test('weights known: "and N more", without the note', async () => {
+      mockExtraMoves = ['leg_press', 'seated_row'];
+      await toPlan({ experience: 'Y3_PLUS' }, ['squat']);
+      expect(screen.getByText(t('onboarding.plan.more', { count: 2 }))).toBeOnTheScreen();
+      expect(screen.queryByText(t('onboarding.plan.findsWeights'))).toBeNull();
+    });
+  });
+
   test('the answers reflected: the goal, how many days, which days', async () => {
     await toPlan({ experience: 'NEW' });
     expect(screen.getByRole('header', { name: t('onboarding.plan.title') })).toBeOnTheScreen();
@@ -1359,7 +1448,7 @@ describe('#ob-plan: the starting call in U3\'s parts (ADR-072 #6)', () => {
     await toPlan({ experience: 'NEW', allow: true });
     expect(screen.getByText(t('onboarding.plan.firstCall'))).toBeOnTheScreen();
     expect(screen.getByText('Mon, Oct 19')).toBeOnTheScreen();
-    expect(screen.getByText(t('onboarding.plan.inDays', { count: 5 }))).toBeOnTheScreen();
+    expect(screen.getByText(t('onboarding.plan.callNote', { when: t('onboarding.plan.inDays', { count: 5 }), day: t('onboarding.schedule.dayName.MONDAY') }))).toBeOnTheScreen();
     // The first workout is today's: Wednesday is a training day.
     expect(screen.getByText(t('onboarding.plan.firstWorkout', { day: t('onboarding.plan.today') }))).toBeOnTheScreen();
   });
@@ -1368,7 +1457,7 @@ describe('#ob-plan: the starting call in U3\'s parts (ADR-072 #6)', () => {
     mockFirstCall = '2026-10-26';
     await toPlan({ experience: 'NEW', allow: true });
     expect(screen.getByText('Mon, Oct 26')).toBeOnTheScreen();
-    expect(screen.getByText(t('onboarding.plan.inDays', { count: 12 }))).toBeOnTheScreen();
+    expect(screen.getByText(t('onboarding.plan.callNote', { when: t('onboarding.plan.inDays', { count: 12 }), day: t('onboarding.schedule.dayName.MONDAY') }))).toBeOnTheScreen();
     expect(screen.queryByText('Mon, Oct 19')).toBeNull();
     await press(t('onboarding.continue'));
     expect(mockKeepPreview).toHaveBeenLastCalledWith(expect.objectContaining({ firstCall: '2026-10-26' }));
@@ -1378,7 +1467,7 @@ describe('#ob-plan: the starting call in U3\'s parts (ADR-072 #6)', () => {
     mockFirstCall = '2026-10-14';
     await toPlan({ experience: 'NEW', allow: true });
     expect(screen.getByText('Wed, Oct 14')).toBeOnTheScreen();
-    expect(screen.getByText(t('onboarding.plan.today'))).toBeOnTheScreen();
+    expect(screen.getByText(t('onboarding.plan.callNote', { when: t('onboarding.plan.today'), day: t('onboarding.schedule.dayName.MONDAY') }))).toBeOnTheScreen();
   });
 
   test('a finish that cannot be kept on the phone says so; Continue tries again', async () => {
@@ -1392,7 +1481,7 @@ describe('#ob-plan: the starting call in U3\'s parts (ADR-072 #6)', () => {
   });
 
   test('allowed, with a starting target: "Food to start", one number, and the days the scale corrects it in — the server\'s, not 14', async () => {
-    mockStarting = { targetKcal: 1850, maintenanceKcal: { low: 2050, high: 2400 }, observationDays: 28 };
+    mockStarting = { targetKcal: 1850, maintenanceKcal: { low: 2050, high: 2400 }, observationDays: 28, proteinG: 150, stepsPerDay: 7000 };
     await toPlan({ experience: 'NEW', allow: true });
     expect(screen.getByText(t('onboarding.plan.food'))).toBeOnTheScreen();
     expect(screen.getByText(t('onboarding.plan.foodKcal', { kcal: '1,850' }))).toBeOnTheScreen();
@@ -1409,7 +1498,7 @@ describe('#ob-plan: the starting call in U3\'s parts (ADR-072 #6)', () => {
   });
 
   test('declined: the starting target is not asked for, and there is no food row', async () => {
-    mockStarting = { targetKcal: 1850, maintenanceKcal: { low: 2050, high: 2400 }, observationDays: 14 };
+    mockStarting = { targetKcal: 1850, maintenanceKcal: { low: 2050, high: 2400 }, observationDays: 14, proteinG: 150, stepsPerDay: 7000 };
     await toPlan({ experience: 'NEW' });
     expect(mockApi.GET).not.toHaveBeenCalledWith('/v1/targets/starting');
     expect(screen.queryByText(t('onboarding.plan.food'))).toBeNull();
