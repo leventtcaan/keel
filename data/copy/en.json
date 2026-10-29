@@ -1086,7 +1086,6 @@
     "title": "Log a meal",
     "quick": {
       "recent": "Recent",
-      "add": "Add",
       "undoneSaid": "Meal taken back.",
       "undoFailed": "Couldn't take it back. Try again.",
       "undoOffline": "You're offline. Take it back once you're online."
@@ -1124,6 +1123,9 @@
     },
     "item": {
       "amount": "Amount of {name}",
+      "amountTitle": "Amount",
+      "unitTitle": "Unit",
+      "servingOf": "× {unit}",
       "grams": "g",
       "unitSpoken": "{name} in {unit}",
       "weighed": "Weighed",

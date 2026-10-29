@@ -106,7 +106,7 @@ test('a search finds the user\'s recipes too, apart from the foods; one added is
   const field = screen.getByLabelText(t('meal.item.amount', { name: SOUP.name }));
   expect(field.props.value).toBe('');
   expect(screen.getByRole('button', { name: t('meal.item.unitSpoken', { name: SOUP.name, unit: t('meal.item.portions') }) })).toBeTruthy();
-  expect(screen.queryByRole('button', { name: t('meal.item.weighedSpoken', { name: SOUP.name }) })).toBeNull(); // a portion is never weighed
+  expect(screen.queryByRole('switch', { name: t('meal.item.weighedSpoken', { name: SOUP.name }) })).toBeNull(); // a portion is never weighed
 });
 
 test('at most the whole recipe: more portions than it makes is refused before it is logged', async () => {

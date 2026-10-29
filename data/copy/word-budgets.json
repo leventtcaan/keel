@@ -1186,7 +1186,7 @@
       "budget": 25,
       "source": "prototip/yeni-yuz.html",
       "task": "K-980",
-      "note": "The first view is the first day's: the title, the four slots, the search (it searches as you type, ADR-085: no Search button) with its hint for an empty box and its Scan button, Log it; nothing is offered when there is no yesterday and no recent food. The face with the quick adds is the ordinary day: 'Same as yesterday' with Add, 'Recent' (at most quick_recent_max, data/parameters/food.json). Food names are the person's and the database's own words, as the prototype leaves them out of its count; the unit of an amount (g) and the kcal after each range are counted as listed. The plus on a recent food and the barcode button are spoken, not read.",
+      "note": "The first view is the first day's: the title, the four slots, the search (it searches as you type, ADR-085: no Search button) with its hint for an empty box and its Scan button; nothing is offered when there is no yesterday and no recent food. 'Log it' is not on the first view: the dock has it once a food is in the meal (K-1046, prototype yeniden-yapim.html 7). The face with the quick adds is the ordinary day: 'Same as yesterday' (a row, a press logs it), 'Recent' (at most quick_recent_max, data/parameters/food.json). Food names are the person's and the database's own words, as the prototype leaves them out of its count; the unit of an amount (g) and the kcal after each range are counted as listed. The plus on a recent food and the barcode button are spoken, not read.",
       "file": "src/app/meal.tsx",
       "parts": ["src/food/QuickAdds.tsx", "src/food/FoodPicker.tsx", "src/food/savedMeal.ts"],
       "keys": [
@@ -1197,8 +1197,7 @@
         "food.slot.SNACK",
         "meal.search.label",
         "meal.search.empty",
-        "meal.barcode.scanShort",
-        "meal.save"
+        "meal.barcode.scanShort"
       ],
       "notFirstView": [
         "consent.health_data.title",
@@ -1206,6 +1205,7 @@
         "consent.health_data.points.purpose",
         "consent.health_data.points.withdraw",
         "consent.health_data.points.scope",
+        "meal.save",
         "meal.consent.allow",
         "meal.consent.notNow",
         "meal.consent.failed",
@@ -1256,12 +1256,10 @@
             "food.slot.DINNER",
             "food.slot.SNACK",
             "food.repeat.title",
-            "meal.quick.add",
             "meal.quick.recent",
             "meal.search.label",
             "meal.search.empty",
-            "meal.barcode.scanShort",
-            "meal.save"
+            "meal.barcode.scanShort"
           ],
           "dynamic": [
             { "what": "kcal after the range of Same as yesterday", "words": 1 },

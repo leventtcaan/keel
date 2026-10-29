@@ -174,3 +174,32 @@ describe('ListRow', () => {
     expect(flat(screen.getByText('Only you see this.')).color).toBe(palettes.light.muted);
   });
 });
+
+describe('ListRow detail and trailing icon (K-1046)', () => {
+  test('a detail is a second line under the label, muted and smaller; the row is read with it', async () => {
+    await renderIn(
+      'light',
+      <ListGroup>
+        <ListRow label="Greek yogurt" detail="150-170 kcal" onPress={() => {}} />
+        <ListRow label="Plain" onPress={() => {}} />
+      </ListGroup>,
+    );
+    expect(flat(screen.getByText('150-170 kcal'))).toMatchObject({ color: palettes.light.muted, fontSize: tokens.type.bodySmall });
+    expect(flat(screen.getByText('Greek yogurt')).color).toBe(palettes.light.text);
+    expect(screen.getByRole('button', { name: 'Greek yogurt, 150-170 kcal' })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Plain' })).toBeOnTheScreen();
+  });
+
+  test('a trailing icon is the accent and decorative; a navigating row keeps its chevron instead', async () => {
+    await renderIn(
+      'light',
+      <ListGroup>
+        <ListRow label="Add" trailing="plus.circle.fill" onPress={() => {}} testID="adds" />
+        <ListRow label="Goal" trailing="plus.circle.fill" onPress={() => {}} navigates testID="goes" />
+      </ListGroup>,
+    );
+    expect(screen.getByTestId('adds-trailing').props).toMatchObject({ name: 'plus.circle.fill', tintColor: palettes.light.accent, accessible: false });
+    expect(screen.queryByTestId('goes-trailing')).toBeNull();
+    expect(screen.getByTestId('goes-chevron')).toBeOnTheScreen();
+  });
+});

@@ -1,10 +1,8 @@
 import { useRef } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
+import { StyleSheet, View } from 'react-native';
 
 import type { components } from '@/api/schema';
-import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
+import { ListGroup, ListRow } from '@/components/ListGroup';
 import { ProblemText, useProblem } from '@/components/ProblemText';
 import { t } from '@/copy';
 import { useSaved } from '@/saved/saved';
@@ -20,15 +18,14 @@ import { savedMeal } from './savedMeal';
 
 type Schemas = components['schemas'];
 
-const GLYPH = 28;
 const kcalOf = (range: Schemas['KcalRange']) => `${t('format.range', { low: range.low, high: range.high })} ${t('food.budget.kcalUnit')}`;
 /** Food names carry commas ("Oats, rolled"): spoken apart by a stronger pause. */
 const spoken = (meal: Schemas['Meal']) => meal.items.map((item) => item.name).join('; ');
 
 /**
  * The meal screen's one-tap part (K-980, ADR-018 Ek 1 and 3, prototype `#meal`): "Same as yesterday" for the slot being logged,
- * and the foods eaten lately ("Recent", `GET /v1/foods/recent`, K-1025), each with its range (U5) in the text colour — the
- * number is not judged. A tap keeps the meal on the phone (sent when it can be, K-304) and leaves the screen: "+", Meal, one
+ * and the foods eaten lately ("Recent", `GET /v1/foods/recent`, K-1025), each with its range (U5) as the row's second line, in a neutral colour
+ * — the number is not judged, never the warning colour. Both are grouped list rows (K-1046): a press logs, the plus says so. A tap keeps the meal on the phone (sent when it can be, K-304) and leaves the screen: "+", Meal, one
  * tap. "Same as yesterday" logs yesterday's meal again as it was (`repeatOf`); a recent food logs that food in the amount of its
  * last time. A tap leaves the sheet and the app's one banner says "Saved" with Undo, as the weigh-in and the cardio log do
  * (K-1044; the meal is taken back through the same delete the meal list uses, `takeBack`, K-1029). The server orders them (the slot's own first): the phone only shows the first few that fit. Nothing here estimates:
@@ -78,52 +75,39 @@ export function QuickAdds({
     saved(savedMeal({ clientId, slot, items }, { api, takeBack, report }));
   };
 
+  // Built outside the JSX children (the raw-text guard reads them).
+  const repeatGroup =
+    offers.length === 0 ? null : (
+      <ListGroup title={t('food.repeat.title')} testID="repeat">
+        {offers.map((meal) => (
+          <ListRow
+            key={meal.id}
+            label={meal.items.map((item) => item.name).join(' · ')}
+            detail={kcalOf(meal.kcal)}
+            trailing="plus.circle.fill"
+            accessibilityLabel={t('food.repeat.spoken', { slot: t(`food.slot.${meal.slot}`), items: spoken(meal) })}
+            onPress={() => void log(`repeat:${meal.id}`, meal.items.length, { repeatOf: meal.id })}
+          />
+        ))}
+      </ListGroup>
+    );
   return (
     <View style={styles.part}>
-      {offers.map((meal) => (
-        <Card key={meal.id} outline testID="repeat">
-          <Text style={[styles.label, { color: color.muted }]}>{t('food.repeat.title')}</Text>
-          <View style={styles.row}>
-            <View style={styles.grow}>
-              {meal.items.map((item, i) => (
-                <Text key={i} style={[styles.name, { color: color.text }]}>
-                  {item.name}
-                </Text>
-              ))}
-              <Text style={[styles.kcal, { color: color.text }]}>{kcalOf(meal.kcal)}</Text>
-            </View>
-            <Button
-              label={t('meal.quick.add')}
-              size="touch"
-              accessibilityLabel={t('food.repeat.spoken', { slot: t(`food.slot.${meal.slot}`), items: spoken(meal) })}
-              onPress={() => void log(`repeat:${meal.id}`, meal.items.length, { repeatOf: meal.id })}
-            />
-          </View>
-        </Card>
-      ))}
+      {repeatGroup}
       {recent.length > 0 && (
-        <View style={styles.part}>
-          <Text style={[styles.label, { color: color.muted }]}>{t('meal.quick.recent')}</Text>
+        <ListGroup title={t('meal.quick.recent')}>
           {recent.map((food) => (
-            <Pressable
+            <ListRow
               key={food.foodId}
-              accessibilityRole="button"
+              testID={`recent-${food.foodId}`}
+              label={amountLine(food.name, food.amount)}
+              detail={kcalOf(food.kcal)}
+              trailing="plus.circle.fill"
               accessibilityLabel={t('food.suggestions.log', { name: food.name })}
               onPress={() => void log(`food:${food.foodId}`, 1, { items: [{ foodId: food.foodId, amount: food.amount }] })}
-              style={({ pressed }) => [styles.usual, { borderColor: color.line }, pressed && styles.dim]}>
-              <View style={styles.grow}>
-                <Text style={[styles.name, { color: color.text }]}>
-                  {amountLine(food.name, food.amount)}
-                </Text>
-                <Text style={[styles.kcal, { color: color.text }]}>{kcalOf(food.kcal)}</Text>
-              </View>
-              <Svg width={GLYPH} height={GLYPH} viewBox="0 0 28 28" accessible={false}>
-                <Circle cx="14" cy="14" r="13" fill={color.accent} />
-                <Path d="M14 8v12M8 14h12" stroke={color.onAccent} strokeWidth={2.4} strokeLinecap="round" />
-              </Svg>
-            </Pressable>
+            />
           ))}
-        </View>
+        </ListGroup>
       )}
       {problem !== null && (
         <ProblemText occurrence={occurrence} style={[styles.name, { color: color.text }]}>
@@ -135,13 +119,6 @@ export function QuickAdds({
 }
 
 const styles = StyleSheet.create({
-  part: { gap: tokens.space.sm },
-  label: { fontSize: tokens.type.label, fontWeight: tokens.weight.bold },
-  row: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
-  grow: { flex: 1, gap: tokens.space.xs },
+  part: { gap: tokens.space.md },
   name: { fontSize: tokens.type.body },
-  strong: { fontWeight: tokens.weight.semibold },
-  kcal: { fontSize: tokens.type.bodySmall, fontVariant: ['tabular-nums'] },
-  usual: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, minHeight: tokens.size.touch, paddingVertical: tokens.space.xs, borderBottomWidth: tokens.border.hairline },
-  dim: { opacity: tokens.opacity.dim },
 });

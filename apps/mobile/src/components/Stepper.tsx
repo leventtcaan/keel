@@ -60,7 +60,10 @@ export function Stepper({ label, value, onChange, onEmpty, step, min = Number.NE
   const [draft, setDraft] = useState<string | null>(null);
   const clamp = (n: number) => Math.min(max, Math.max(min, round(n, places)));
   const stepBy = (direction: 1 | -1) => {
-    if (value !== null) onChange(clamp(value + direction * step));
+    if (value === null) return;
+    // A step while the field is being typed in: the number stepped to is shown, not what was typed (the keyboard stays up over a press).
+    setDraft(null);
+    onChange(clamp(value + direction * step));
   };
   const typed = (text: string) => {
     setDraft(text);
