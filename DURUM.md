@@ -5,7 +5,7 @@ guncelleme: 2026-10-10
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (29 Eki ~11:30 UTC — Evre 5: pazara çıkmadan son kontrol; plan `plan/son-kontrol-2026-10-29.md`)
+## ▶ DEVAM NOKTASI (29 Eki ~11:30 UTC — Evre 5: pazara çıkmadan son kontrol; plan `plan/son-kontrol-2026-10-29.md`, devam `plan/oturum-promptlari/son-kontrol-devam.md`)
 Build 7 TestFlight'ta; ASC 1.0'da build 7 bağlı, **taslak, gönderilmedi** (Levent durdurdu: fotoğraf akışı). #657 fotoğraf akışı baştan (CI'da).
 Pazar araştırması `arastirma/ham/pazar-{rakipler,kullanici-sesi,cikis}-2026-10-29.md`. Sıradaki: persona yürüyüşü (ABD'li sporcu, 4 hafta; gün 1 gerçek
 sunucu, haftalar 2-4 motor senaryo düzeneği `GoldenScenarioTests` + keel-sim sahte sunucu), bulguları düzelt, build 8.
