@@ -65,6 +65,7 @@ export default function ProgressScreen() {
       },
       [api, training, syncHealth, bodyFigure, report, queue],
     ),
+    { afterSaves: true },
   );
 
   let body = null;

@@ -59,6 +59,7 @@ export default function TrainScreen() {
       const checkInDay = profile?.state === 'ready' ? profile.value.schedule.checkInDay : null;
       return { ...read, own, records, declared, decision, checkInDay };
     }, [api, training, workoutRecords, state]),
+    { afterSaves: true },
   );
 
   // The program the server just answered (an undo, the full workout back), shown until the tab reads again.

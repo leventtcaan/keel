@@ -14,7 +14,7 @@ import { Saver, WithSaved, publishSave, undoButton } from './support/saved';
 
 function Reader() {
   const reads = useRef(0);
-  const { data } = useReadOnFocus(useCallback(async () => ++reads.current, []));
+  const { data } = useReadOnFocus(useCallback(async () => ++reads.current, []), { afterSaves: true });
   return <Text testID="reads">{String(data ?? 0)}</Text>;
 }
 
