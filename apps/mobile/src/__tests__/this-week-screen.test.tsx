@@ -952,13 +952,18 @@ describe("today's workout (#home)", () => {
 describe('the food line', () => {
   const range = (low: string | number, high: string | number) => `${t('format.range', { low, high })} ${t('food.budget.kcalUnit')}`;
 
-  test('"Food left" as a range, and the whole line opens the meal', async () => {
+  test('"Food left" as a range; the line opens the day\'s food, "Log" opens the meal (ADR-086)', async () => {
     mockAnswers['/v1/days/{day}/budget'] = ok(BUDGET(1240, 1480));
     await show();
     expect(screen.getByText(t('thisWeek.food.left'))).toBeOnTheScreen();
     expect(screen.getByText(range('1,240', '1,480'))).toBeOnTheScreen();
     await press(t('thisWeek.food.lineLabel', { lead: t('thisWeek.food.left'), amount: range('1,240', '1,480') }));
+    expect(mockPush).toHaveBeenCalledWith('/food');
+    expect(mockPush).not.toHaveBeenCalledWith('/meal');
+    mockPush.mockClear();
+    await press(t('thisWeek.food.logLabel'));
     expect(mockPush).toHaveBeenCalledWith('/meal');
+    expect(mockPush).not.toHaveBeenCalledWith('/food');
   });
 
   test("a meal logged, the range comes down: the server's numbers as they are", async () => {
@@ -999,7 +1004,7 @@ describe('the food line', () => {
       expect(screen.getByText(t('food.budget.single', { value: '2,100', unit: t('food.budget.kcalUnit') }))).toBeOnTheScreen();
       expect(mockGET).toHaveBeenCalledWith('/v1/days/{day}/budget', { params: { path: { day: '2026-10-12' } } });
       await press(t('thisWeek.food.lineLabel', { lead: t('thisWeek.food.left'), amount: '2,100 kcal' }));
-      expect(mockPush).toHaveBeenCalledWith('/meal');
+      expect(mockPush).toHaveBeenCalledWith('/food');
     });
 
     test('a meal logged: "Food left" as the server\'s range, nothing taken off on the phone', async () => {

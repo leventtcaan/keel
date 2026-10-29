@@ -44,6 +44,7 @@ function AppStack() {
         <Stack.Screen name="build-program" />
         <Stack.Screen name="settings" />
         <Stack.Screen name="weigh-in" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="food" />
         <Stack.Screen name="meal" options={{ presentation: 'modal' }} />
         <Stack.Screen name="cardio" options={{ presentation: 'modal' }} />
         <Stack.Screen name="workout" />
@@ -66,7 +67,6 @@ function AppStack() {
       </Stack.Protected>
       {/* Taken off the surface (ADR-069 #3, navigation/tabs RETIRED): the code stays, nothing opens them, a link neither. */}
       <Stack.Protected guard={false}>
-        <Stack.Screen name="food" />
         <Stack.Screen name="coach" options={{ presentation: 'modal' }} />
         <Stack.Screen name="meal-photo" options={{ presentation: 'modal' }} />
         <Stack.Screen name="recipes" />
