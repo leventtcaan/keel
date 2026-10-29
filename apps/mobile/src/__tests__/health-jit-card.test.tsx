@@ -3,12 +3,14 @@
  * once. Continue is Apple's sheet and the consent; "Not now" is free and ends the asking. It says what is read and
  * written, and the consent text is one tap away before anything is given (GDPR: informed).
  */
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 
 import { t } from '@/copy';
 import { HealthJit } from '@/health/HealthJit';
 import { createHealthAsk } from '@/health/justInTime';
 import { ThemeProvider } from '@/theme/theme';
+import { palettes } from '@/theme/tokens';
 
 const kept = new Map<string, string>();
 const kv = {
@@ -61,6 +63,17 @@ test('says what it reads and writes, and offers Continue and Not now', async () 
   expect(screen.getByText(t('health.jit.writes'))).toBeOnTheScreen();
   expect(screen.getByRole('button', { name: t('health.jit.continue') })).toBeOnTheScreen();
   expect(screen.getByRole('button', { name: t('health.jit.notNow') })).toBeOnTheScreen();
+});
+
+// K-1047 (ADR-070 Ek 2 #1): the ask sits under a screen's own primary (Done, Save), so it is a pair of secondary and text.
+test('the ask is a secondary and a text button inside its card: no primary of its own', async () => {
+  await show();
+  const card = within(screen.getByTestId('health-jit'));
+  const drawn = (name: string) => StyleSheet.flatten(card.getByRole('button', { name }).props.style);
+  expect(drawn(t('health.jit.continue')).backgroundColor).toBe(palettes.light.raise); // shows on the card, which is the surface
+  expect(drawn(t('health.jit.continue')).backgroundColor).not.toBe(palettes.light.cta);
+  expect(drawn(t('health.jit.notNow')).backgroundColor).toBeUndefined();
+  expect(within(card.getByRole('button', { name: t('health.jit.notNow') })).getByText(t('health.jit.notNow'))).toHaveStyle({ color: palettes.light.accent });
 });
 
 test('Continue: Apple\'s sheet, the consent, and it is settled as connected', async () => {

@@ -6,6 +6,8 @@ import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { type UnitSystem, formatLoad, formatPlate, loadValue, parseLoadKg, weightInput } from '@/units/units';
 
+import { onboardingParams } from '@/onboarding/params';
+
 import { type GymWeights, lighter, plateUnits, platesFor, round, within } from './loadSteps';
 import { workoutParams } from './params';
 import type { ExercisePlan } from './workout';
@@ -51,12 +53,18 @@ export function loadText(kg: number, units: UnitSystem): string {
  * user's unit), onto that step's grid (137.8 lb goes to 140, not 142.8). At the gym in use it lands on a load the gym
  * makes: the one within the step (loadSteps.within, as the calibration and the server round), else the next it makes past
  * it; a gym that says nothing of this equipment takes the plain step. A tap always moves the shown number: a load that
- * would show as the number shown now (a kg gym read in lb) is passed over. Nothing yet starts from nothing (at a gym, the
- * empty bar). An external load never reaches 0 (no set is "0 kg"); an added load goes down to 0, the body alone. Null
- * where a tap would not move it. Any other weight is typed.
+ * would show as the number shown now (a kg gym read in lb) is passed over. Nothing yet starts from nothing: on a barbell
+ * move the empty bar (the gym's own; else the one the onboarding's starting weights begin from, 20 kg or 45 lb), on any
+ * other the smallest step (ADR-070 Ek 2 #5; no table of starts per equipment exists, none is made up). An external load
+ * never reaches 0 (no set is "0 kg"); an added load goes down to 0, the body alone. Null where a tap would not move it. Any
+ * other weight is typed.
  */
 export function stepLoad(kg: number | null, direction: 1 | -1, move: Schemas['Exercise'], gym: GymWeights | undefined, units: UnitSystem): number | null {
   if (direction < 0 && (kg ?? 0) <= 0) return null;
+  if (kg === null && direction > 0 && move.load === 'EXTERNAL' && move.equipment === 'BARBELL' && (gym === undefined || gym.barKg === null)) {
+    const bar = units === 'METRIC' ? onboardingParams.startingWeightStepper.start_kg : onboardingParams.startingWeightStepper.start_lb;
+    return parseLoadKg(String(bar), units);
+  }
   const shown = loadValue(kg ?? 0, units);
   let from = kg ?? 0;
   // At most a few loads the gym makes can show as one number (a quarter-pound rack read in kg): past them, one moves it.

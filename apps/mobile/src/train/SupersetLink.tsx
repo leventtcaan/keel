@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
+import { Button } from "@/components/Button";
 import { Chip } from "@/components/Chip";
 import { t } from "@/copy";
 import { useTheme } from "@/theme/theme";
@@ -14,8 +14,10 @@ type Props = {
   partners: string[];
   /** The session's moves it can be paired with (in no superset yet), by id and name. */
   candidates: { id: string; name: string }[];
+  /** The partner is being chosen (opened from the More menu): the moves to pair it with are listed. */
+  choosing: boolean;
   onLink: (exerciseId: string) => void;
-  onUnlink: () => void;
+  onClose: () => void;
 };
 
 /** In the history (K-416): a move done in a superset says its partners; one in none says nothing. */
@@ -39,42 +41,22 @@ export function SupersetLine({
 }
 
 /**
- * The move under way's superset (K-416): its partners and a way out, or a way in with a move of the session. Small links
- * beside the move's other links (K-971: the set under way stays in the first view); picking opens the moves under them.
+ * The move under way's superset (K-416): its partners in a line, and while a partner is being chosen (opened from the More
+ * menu, ADR-070 Ek 2 #1: the header keeps one row of links) the moves of the session it can be paired with. The ways in and
+ * out ("Superset with…", "Not a superset") are the menu's rows.
  */
-export function SupersetLink({
-  partners,
-  candidates,
-  onLink,
-  onUnlink,
-}: Props) {
+export function SupersetLink({ partners, candidates, choosing, onLink, onClose }: Props) {
   const { color } = useTheme();
-  const [picking, setPicking] = useState(false);
-  const link = (label: string, onPress: () => void) => (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={styles.link}
-    >
-      <Text style={[styles.small, { color: color.accent }]}>{label}</Text>
-    </Pressable>
-  );
   if (partners.length > 0) {
-    // The partners across a line of their own, then the way out as one more link among the move's: never one row holding
-    // both, which squeezed the links after it (Skip move) into letters stacked on end (K-1013, 10 Oct walkthrough).
     return (
-      <>
-        <Text style={[styles.small, styles.line, { color: color.accent }]}>
-          {t("superset.with", {
-            names: partners.join(t("superset.separator")),
-          })}
-        </Text>
-        {link(t("superset.unlink"), onUnlink)}
-      </>
+      <Text style={[styles.small, styles.line, { color: color.accent }]}>
+        {t("superset.with", {
+          names: partners.join(t("superset.separator")),
+        })}
+      </Text>
     );
   }
-  if (candidates.length === 0) return null;
-  if (!picking) return link(t("superset.link"), () => setPicking(true));
+  if (!choosing || candidates.length === 0) return null;
   return (
     <View style={styles.picking}>
       <Text style={[styles.small, { color: color.textSecondary }]}>
@@ -86,21 +68,16 @@ export function SupersetLink({
             key={c.id}
             label={c.name}
             accessibilityLabel={t("superset.pick", { name: c.name })}
-            onPress={() => {
-              setPicking(false);
-              onLink(c.id);
-            }}
+            onPress={() => onLink(c.id)}
           />
         ))}
       </View>
-      {link(t("superset.close"), () => setPicking(false))}
+      <Button label={t("superset.close")} variant="text" size="sm" onPress={onClose} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  link: { minHeight: tokens.size.touch, justifyContent: "center" },
-  // Under the links it sits beside, across the whole line.
   line: { flexBasis: "100%" },
   picking: { gap: tokens.space.sm, flexBasis: "100%" },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: tokens.space.sm },

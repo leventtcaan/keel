@@ -6,12 +6,13 @@
  * a way to try again, no number made up.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
-import { AccessibilityInfo } from 'react-native';
+import { AccessibilityInfo, StyleSheet } from 'react-native';
 
 import WorkoutEndScreen from '@/app/workout-end';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { ThemeProvider } from '@/theme/theme';
+import { focusPalette } from '@/theme/tokens';
 import type { Move } from '@/train/trainData';
 import type { WorkoutEnd } from '@/train/workoutEnd';
 
@@ -344,5 +345,36 @@ describe('Apple Health at the end of the first workout (K-980, ADR-018 Ek 1, pro
     await show();
     expect(await screen.findByText(t('workoutEnd.title'))).toBeTruthy();
     expect(screen.queryByRole('header', { name: t('health.jit.title') })).toBeNull();
+  });
+});
+
+// K-1047 (ADR-070 Ek 2 #1): the screen has one primary, Done; Share is the alternative beside it.
+describe('one primary (ADR-070 Ek 2 #1)', () => {
+  const fill = (name: string) => StyleSheet.flatten(screen.getByRole('button', { name }).props.style)?.backgroundColor;
+  const primaries = () => screen.getAllByRole('button').filter((b) => StyleSheet.flatten(b.props.style)?.backgroundColor === focusPalette.cta);
+
+  test('Done is the only primary, in the turquoise of the focus mode; Share your workout is a secondary', async () => {
+    await show();
+    await screen.findByText(t('workoutEnd.title'));
+    expect(primaries().map((b) => b.props.accessibilityLabel)).toEqual([t('workoutEnd.done')]);
+    expect(fill(t('workoutEnd.share'))).toBe(focusPalette.surface);
+    expect(fill(t('workoutEnd.done'))).toBe(focusPalette.cta);
+    expect(focusPalette.cta).toBe(focusPalette.accent);
+  });
+
+  test('Done comes last, under Share', async () => {
+    await show();
+    await screen.findByText(t('workoutEnd.title'));
+    const names = screen.getAllByRole('button').map((b) => b.props.accessibilityLabel);
+    expect(names.indexOf(t('workoutEnd.share'))).toBeGreaterThanOrEqual(0);
+    expect(names.indexOf(t('workoutEnd.done'))).toBeGreaterThan(names.indexOf(t('workoutEnd.share')));
+  });
+
+  test('not on the server yet: Try again is a secondary, and Done is still the one primary', async () => {
+    mockEnd = { kind: 'pending' } as WorkoutEnd;
+    await show();
+    expect(await screen.findByText(t('workoutEnd.retry'))).toBeOnTheScreen();
+    expect(fill(t('workoutEnd.retry'))).toBe(focusPalette.surface);
+    expect(primaries().map((b) => b.props.accessibilityLabel)).toEqual([t('workoutEnd.done')]);
   });
 });

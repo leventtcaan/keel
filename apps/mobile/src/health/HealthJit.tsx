@@ -77,8 +77,9 @@ export function HealthJit({ onSettled }: { onSettled?: (how: 'connected' | 'decl
       {reading && <Text style={[styles.small, { color: color.textSecondary }]}>{t('consent.apple_health.body')}</Text>}
       {problem !== null && <ProblemText style={[styles.text, { color: color.text }]}>{problem}</ProblemText>}
       <View style={styles.actions}>
-        <Button label={t('health.jit.continue')} onPress={() => void connect()} disabled={busy} />
-        <Button label={t('health.jit.notNow')} variant="ghost" onPress={() => void decline()} disabled={busy} />
+        {/* Not the screen's one primary (ADR-070 Ek 2 #1): a secondary and a text button, inside the card. */}
+        <Button label={t('health.jit.continue')} variant="secondary" onSurface onPress={() => void connect()} disabled={busy} />
+        <Button label={t('health.jit.notNow')} variant="text" onPress={() => void decline()} disabled={busy} />
       </View>
     </Card>
   );

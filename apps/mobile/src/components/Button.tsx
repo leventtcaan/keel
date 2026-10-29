@@ -36,6 +36,8 @@ type Props = {
   busy?: boolean;
   /** What a screen reader says when the label is short for it ("Withdraw" → "Withdraw Health data"). */
   accessibilityLabel?: string;
+  /** Sits inside a Card (a surface): the secondary fill is the raised colour, or it would be the card's own and vanish. */
+  onSurface?: boolean;
 };
 
 const ROLE_OF: Record<ButtonVariant, Role> = {
@@ -47,13 +49,13 @@ const ROLE_OF: Record<ButtonVariant, Role> = {
   warn: 'destructive',
 };
 
-function colours(role: Role, color: Palette) {
+function colours(role: Role, color: Palette, onSurface: boolean) {
   switch (role) {
     case 'primary':
       return { fill: { backgroundColor: color.cta }, ink: color.onCta };
     case 'secondary':
       // Inside the decision block the surface is the block itself (inverse()), so the fill would vanish: the block's line stands in.
-      return { fill: { backgroundColor: color.surface === color.background ? color.raise : color.surface }, ink: color.text };
+      return { fill: { backgroundColor: onSurface || color.surface === color.background ? color.raise : color.surface }, ink: color.text };
     case 'text':
       return { fill: null, ink: color.accent };
     case 'destructive':
@@ -73,11 +75,11 @@ function reachFor(width: number, height: number): Reach | null {
   return up === 0 && across === 0 ? null : { top: up, bottom: up, left: across, right: across };
 }
 
-export function Button({ label, onPress, variant = 'primary', size = 'md', disabled = false, busy = false, accessibilityLabel }: Props) {
+export function Button({ label, onPress, variant = 'primary', size = 'md', disabled = false, busy = false, accessibilityLabel, onSurface = false }: Props) {
   const { color } = useTheme();
   const role = ROLE_OF[variant];
   const words = role === 'text' || role === 'destructive';
-  const { fill, ink } = colours(role, color);
+  const { fill, ink } = colours(role, color, onSurface);
   // The drawn size is known only after layout (text and padding decide it), so the reach is worked out from it.
   const [reach, setReach] = useState<Reach | null>(null);
   const measured = ({ nativeEvent: { layout } }: LayoutChangeEvent) => {

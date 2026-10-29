@@ -94,10 +94,12 @@ function Body({ end, units, figure, workout, onRetry }: { end: WorkoutEnd | null
     rest = (
       <View style={styles.rows}>
         <Text style={[styles.text, { color: color.textSecondary }]}>{t(end.kind === 'pending' ? 'workoutEnd.pending' : 'workoutEnd.failed')}</Text>
-        <Button label={t('workoutEnd.retry')} variant="ghost" onPress={onRetry} />
+        <Button label={t('workoutEnd.retry')} variant="secondary" onPress={onRetry} />
       </View>
     );
   }
+  const share =
+    ready === null ? null : <Button label={t('workoutEnd.share')} variant="secondary" onPress={() => router.push({ pathname: '/share', params: { workout } })} />;
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.body}>
@@ -105,8 +107,9 @@ function Body({ end, units, figure, workout, onRetry }: { end: WorkoutEnd | null
         {rest}
         {/* Apple Health, asked the first time (K-980, ADR-018 Ek 1): nothing here once asked, or where it cannot be. */}
         {end !== null && <HealthJit />}
-        {ready !== null && <Button label={t('workoutEnd.share')} onPress={() => router.push({ pathname: '/share', params: { workout } })} />}
-        <Button label={t('workoutEnd.done')} variant="ghost" onPress={() => router.dismissTo('/train')} />
+        {/* The screen's one primary is Done (ADR-070 Ek 2 #1); sharing is the alternative beside it. */}
+        {share}
+        <Button label={t('workoutEnd.done')} onPress={() => router.dismissTo('/train')} />
       </ScrollView>
     </SafeAreaView>
   );

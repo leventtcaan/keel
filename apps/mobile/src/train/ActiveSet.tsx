@@ -1,12 +1,13 @@
-import { SymbolView } from 'expo-symbols';
-import { type KeyboardTypeOptions, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ProblemText } from '@/components/ProblemText';
 import type { components } from '@/api/schema';
 import { Chip } from '@/components/Chip';
+import { Stepper } from '@/components/Stepper';
 import { TextField } from '@/components/TextField';
 import { t } from '@/copy';
 import { useUnits } from '@/services/ServicesProvider';
+import { loadInputDecimals } from '@/units/units';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
@@ -56,6 +57,8 @@ export function ActiveSet({ move, heading, range, aim, gym, plates, entry, onCha
   // No weight yet (a move never done, ADR-075 #3, Ek 8): "Pick a weight", and the button that logs waits for one. An added
   // load (BODYWEIGHT_PLUS_EXTERNAL) is never picked: empty is 0, the body alone.
   const picking = move.load === 'EXTERNAL' && entry.load.trim() === '';
+  // One tap of the weight: the gym's own loads, or the empty bar from nothing (stepLoad); the kg it lands on is kept, so what
+  // is logged is that load and not the rounded number shown.
   const loadStep = (direction: 1 | -1) => {
     const next = stepLoad(kg, direction, move, gym, units);
     return next === null ? null : () => onChange({ load: loadText(next, units), loadKg: next });
@@ -64,21 +67,24 @@ export function ActiveSet({ move, heading, range, aim, gym, plates, entry, onCha
     const next = stepReps(entry.reps, direction);
     return next === null ? null : () => onChange({ reps: String(next) });
   };
+  const loadLabel = t(move.load === 'BODYWEIGHT_PLUS_EXTERNAL' ? 'workout.addedLabel' : 'workout.loadLabel', { unit });
   const load =
     move.load === 'BODYWEIGHT' ? null : (
-      <Stepper
-        label={t(move.load === 'BODYWEIGHT_PLUS_EXTERNAL' ? 'workout.addedLabel' : 'workout.loadLabel', { unit })}
-        caption={picking ? t('workout.pick.caption') : unit}
-        placeholder={t('workout.pick.placeholder')}
-        value={entry.load}
-        onChangeText={(text) => onChange({ load: text, loadKg: null })}
-        keyboardType="decimal-pad"
-        maxLength={7}
-        less={loadStep(-1)}
-        more={loadStep(1)}
-        lessLabel={t('workout.stepper.lessLoad')}
-        moreLabel={t('workout.stepper.moreLoad')}
-      />
+      <View style={styles.field}>
+        <Text style={[styles.small, { color: color.muted }]}>{loadLabel}</Text>
+        <Stepper
+          label={loadLabel}
+          value={numberOf(entry.load)}
+          onChange={(number) => onChange({ load: String(number), loadKg: null })}
+          onEmpty={() => onChange({ load: '', loadKg: null })}
+          step={units === 'METRIC' ? workoutParams.loadStep.kg : workoutParams.loadStep.lb}
+          decimals={loadInputDecimals}
+          min={0}
+          unit={picking ? t('workout.pick.caption') : unit}
+          placeholder={t('workout.pick.placeholder')}
+          steps={loadStep}
+        />
+      </View>
     );
   const last = workoutParams.rirChoices.length - 1;
   const said =
@@ -129,18 +135,19 @@ export function ActiveSet({ move, heading, range, aim, gym, plates, entry, onCha
       </View>
       <View style={styles.steppers}>
         {load}
-        <Stepper
-          label={t('workout.repsLabel')}
-          caption={t('workout.repsLabel')}
-          value={entry.reps}
-          onChangeText={(text) => onChange({ reps: text })}
-          keyboardType="number-pad"
-          maxLength={3}
-          less={repsStep(-1)}
-          more={repsStep(1)}
-          lessLabel={t('workout.stepper.lessReps')}
-          moreLabel={t('workout.stepper.moreReps')}
-        />
+        <View style={styles.field}>
+          <Text style={[styles.small, { color: color.muted }]}>{t('workout.repsLabel')}</Text>
+          <Stepper
+            label={t('workout.repsLabel')}
+            value={numberOf(entry.reps)}
+            onChange={(number) => onChange({ reps: String(number) })}
+            onEmpty={() => onChange({ reps: '' })}
+            step={1}
+            decimals={0}
+            min={0}
+            steps={repsStep}
+          />
+        </View>
       </View>
       {weightLine}
       <View style={styles.rir}>
@@ -158,59 +165,10 @@ export function ActiveSet({ move, heading, range, aim, gym, plates, entry, onCha
   );
 }
 
-export type StepperProps = {
-  /** What VoiceOver calls the number ("Weight (kg)"). */
-  label: string;
-  /** The unit under the number. */
-  caption: string;
-  /** What the empty number says ("Pick"); with the caption it reads "Pick a weight". */
-  placeholder?: string;
-  value: string;
-  onChangeText: (text: string) => void;
-  keyboardType: KeyboardTypeOptions;
-  maxLength: number;
-  /** A tap each way; null where it would not move the number (the button is off). */
-  less: (() => void) | null;
-  more: (() => void) | null;
-  lessLabel: string;
-  moreLabel: string;
-};
-
-/** Less, the number (typed in place: a weight no step reaches), more (prototype `.stepper`). */
-export function Stepper({ label, caption, placeholder, value, onChangeText, keyboardType, maxLength, less, more, lessLabel, moreLabel }: StepperProps) {
-  const { color } = useTheme();
-  // Drawn, not a typed hyphen (prototype: the minus and plus icons); VoiceOver says the label.
-  const button = (onPress: (() => void) | null, name: string, symbol: 'minus' | 'plus') => (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={name}
-      accessibilityState={{ disabled: onPress === null }}
-      disabled={onPress === null}
-      onPress={onPress ?? undefined}
-      style={({ pressed }) => [styles.step, { backgroundColor: color.background }, (pressed || onPress === null) && styles.dim]}>
-      <SymbolView name={symbol} size={tokens.type.number} tintColor={color.text} />
-    </Pressable>
-  );
-  return (
-    <View style={[styles.stepper, { backgroundColor: color.surface }]}>
-      {button(less, lessLabel, 'minus')}
-      <View style={styles.value}>
-        <TextInput
-          accessibilityLabel={label}
-          placeholder={placeholder}
-          placeholderTextColor={color.muted}
-          value={value}
-          onChangeText={onChangeText}
-          keyboardType={keyboardType}
-          maxLength={maxLength}
-          selectTextOnFocus
-          style={[styles.number, { color: color.text }]}
-        />
-        <Text style={[styles.caption, { color: color.muted }]}>{caption}</Text>
-      </View>
-      {button(more, moreLabel, 'plus')}
-    </View>
-  );
+/** The number a field holds, null for none (the fields keep what was last heard from the Stepper: a plain number). */
+function numberOf(text: string): number | null {
+  const number = Number(text.trim().replace(',', '.'));
+  return text.trim() === '' || Number.isNaN(number) ? null : number;
 }
 
 const styles = StyleSheet.create({
@@ -220,17 +178,12 @@ const styles = StyleSheet.create({
   grow: { flexGrow: 1 },
   link: { minHeight: tokens.size.touch, justifyContent: 'center' },
   heading: { fontSize: tokens.type.body, fontWeight: tokens.weight.bold },
-  steppers: { flexDirection: 'row', gap: tokens.space.sm },
-  stepper: { flex: 1, flexDirection: 'row', alignItems: 'center', borderRadius: tokens.radius.card },
-  step: { width: tokens.size.touch, height: tokens.size.touch, borderRadius: tokens.radius.button, alignItems: 'center', justifyContent: 'center' },
-  value: { flex: 1, minWidth: 0, alignItems: 'center' },
-  // Heading size: "102.5" (and "226.5" lb) fits between the two buttons on a 375 pt wide phone.
-  number: { alignSelf: 'stretch', textAlign: 'center', fontFamily: tokens.font.display, fontSize: tokens.type.heading, padding: 0 },
-  caption: { fontSize: tokens.type.label, fontWeight: tokens.weight.bold },
+  // One under the other (prototype `.setc`): the shared Stepper is wide enough for "102.5 kg" between its buttons.
+  steppers: { gap: tokens.space.sm },
+  field: { gap: tokens.space.xs },
   rir: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: tokens.space.sm },
   rirLabel: { flex: 1, minWidth: tokens.size.primaryButton * 2 },
   weightLine: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },
-  dim: { opacity: tokens.opacity.dim },
 });
