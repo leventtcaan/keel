@@ -5,7 +5,12 @@ guncelleme: 2026-10-10
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (29 Eki — ÜRÜN DENETİMİ: build 5 kullanılabilir değil)
+## ▶ DEVAM NOKTASI (29 Eki ~09:00 UTC — BAĞLAM DEVRİ: önce `plan/oturum-promptlari/yeniden-yapim-devam.md` oku)
+**Levent build 6'da 1 dakikada 4 zayıflık buldu** ("+" solunda beyaz blok, Train hafta satırları güçsüz, tarama/yemek emin değil, Progress kas haritası altı
+statik). Sıradaki: kapsamlı uygulama testi skill'i araştır (ego: YouTube/Reddit/X/web/GitHub) → kur → build 6'da çalıştır → düzelt → build 7 → ASC.
+**ASC: 1.0 hâlâ build 5 ile incelemede; geri çekme yapılmadı.**
+
+## (önceki) DEVAM NOKTASI (29 Eki — ÜRÜN DENETİMİ: build 5 kullanılabilir değil)
 Levent TestFlight'ta denedi: programsız kalan hesapta antrenman yok, yemek araması eşleşmiyor, onboarding görünmedi. Bulgular ve sıra: `plan/denetim-2026-10-29.md`.
 **1.0 (5) incelemede ama yayın şekli ELLE (29 Eki, Levent kararı):** onay gelse de mağazaya çıkmaz. Düzeltilmiş build ile güncellenir.
 **Kapsam büyüdü (Levent, 29 Eki):** düğmeler, Log ikonları, "+" sayfası, Ayarlar, Account, paywall Account dahil her sayfa acımasız tur + AI slop analiziyle baştan. Plan: `plan/yeniden-yapim.md` (Evre 0 envanter → 1 kırık mantık → 2 görsel sistem, prototip önce → 3 yemek verisi → 4 son tur, build 6).
