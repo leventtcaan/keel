@@ -5,7 +5,7 @@
  */
 import type { components } from '@/api/schema';
 import { onboardingParams } from '@/onboarding/params';
-import { stepWeight, weightsToSend } from '@/onboarding/weights';
+import { kgFromWheel, loadOnWheel, loadValues, stepWeight, weightsToSend } from '@/onboarding/weights';
 
 type Program = components['schemas']['Program'];
 
@@ -34,6 +34,47 @@ describe('the stepper', () => {
     const next = stepWeight(bar, 1, 'IMPERIAL')!;
     expect(next).toBeCloseTo((S.start_lb + S.step_lb) * KG_PER_LB, 2);
     expect(Number.isInteger(Math.round(next * 100))).toBe(true);
+  });
+});
+
+describe('the wheel (K-1058): the load picked from rows, not tapped up from the bar', () => {
+  test('metric: from the empty bar to the top, one pair of the smallest plates apart', () => {
+    const rows = loadValues('METRIC');
+    expect(rows[0]).toBe(S.start_kg);
+    expect(rows.at(-1)).toBe(S.max_kg);
+    expect(rows.slice(1).every((row, i) => row - rows[i] === S.step_kg)).toBe(true);
+  });
+
+  test('imperial: from the 45 lb bar, 5 lb apart, whole pounds', () => {
+    const rows = loadValues('IMPERIAL');
+    expect(rows[0]).toBe(S.start_lb);
+    expect(rows.at(-1)).toBe(S.max_lb);
+    expect(rows.slice(1).every((row, i) => row - rows[i] === S.step_lb)).toBe(true);
+  });
+
+  test('every row is a load the server keeps (up to 1000 kg, ADR-029)', () => {
+    expect(kgFromWheel(S.max_lb, 'IMPERIAL')).toBeLessThanOrEqual(1000);
+    expect(kgFromWheel(S.max_kg, 'METRIC')).toBe(S.max_kg);
+  });
+
+  test('unset, the wheel stands on the bar: a suggestion, not a load (nothing is derived, ADR-072)', () => {
+    expect(loadOnWheel(undefined, 'METRIC')).toBe(S.start_kg);
+    expect(loadOnWheel(undefined, 'IMPERIAL')).toBe(S.start_lb);
+  });
+
+  test('set, it stands on the load\'s own row, in the user\'s unit', () => {
+    expect(loadOnWheel(kgFromWheel(100, 'METRIC'), 'METRIC')).toBe(100);
+    expect(loadOnWheel(kgFromWheel(185, 'IMPERIAL'), 'IMPERIAL')).toBe(185);
+  });
+
+  test('a row picked is kept in kg as the stepper kept it: the same value for the same load', () => {
+    expect(kgFromWheel(S.start_lb + S.step_lb, 'IMPERIAL')).toBe(stepWeight(stepWeight(undefined, 1, 'IMPERIAL'), 1, 'IMPERIAL'));
+    expect(kgFromWheel(S.start_kg + S.step_kg, 'METRIC')).toBe(stepWeight(stepWeight(undefined, 1, 'METRIC'), 1, 'METRIC'));
+  });
+
+  test('a load between rows (the unit changed since) stands on the nearest', () => {
+    expect(loadOnWheel(kgFromWheel(S.start_lb + 2, 'IMPERIAL'), 'IMPERIAL')).toBe(S.start_lb);
+    expect(loadOnWheel(kgFromWheel(S.start_lb + 3, 'IMPERIAL'), 'IMPERIAL')).toBe(S.start_lb + S.step_lb);
   });
 });
 

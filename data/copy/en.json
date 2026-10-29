@@ -2538,10 +2538,8 @@
       "title": "Your working weights",
       "why": "A weight you lift about {reps} times. Skip any.",
       "unset": "Not set",
-      "less": "Less on {move}",
-      "more": "More on {move}",
-      "minusMark": "-",
-      "plusMark": "+",
+      "tap": "Tap a lift, flick to your number. Your first session checks it.",
+      "rowHint": "Opens a wheel of weights.",
       "skip": "Skip, find them in session 1"
     },
     "preparing": {

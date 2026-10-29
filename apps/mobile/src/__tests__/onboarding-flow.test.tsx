@@ -10,7 +10,9 @@ import { AccessibilityInfo } from 'react-native';
 import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-library';
 
 import { t } from '@/copy';
+import { tokens } from '@/theme/tokens';
 import { defaultTrainingDays, onboardingParams } from '@/onboarding/params';
+import { kgFromWheel } from '@/onboarding/weights';
 import type { OnboardingState } from '@/onboarding/profileStatus';
 
 jest.mock('expo-font', () => ({ useFonts: () => [true, null] }));
@@ -276,6 +278,15 @@ async function turn(label: string, actionName: 'increment' | 'decrement', times 
   for (let i = 0; i < times; i++) {
     await fireEvent(wheel(label), 'accessibilityAction', { nativeEvent: { actionName } });
   }
+  await settle();
+}
+
+/** A lift's row opened (tapped by its name, whatever it shows) and its wheel brought to rest on a row: 0 is the empty bar (K-1058). */
+async function pickLoad(move: string, row = 0) {
+  const lift = t(`exercises.${move}.name`);
+  await fireEvent.press(screen.getByRole('button', { name: new RegExp(`^${lift}, `) }));
+  await settle();
+  await fireEvent(screen.getByTestId(`wheel-${lift}`), 'momentumScrollEnd', { nativeEvent: { contentOffset: { y: tokens.size.touch * row } } });
   await settle();
 }
 
@@ -1079,27 +1090,56 @@ describe('#ob-weights: the starting weights (ADR-072 #3, #5)', () => {
     expect(startingWeightsSent()).toEqual([]);
   });
 
-  test('three moves, each unset at first: "more" sets an empty bar, then a pair of plates; "less" steps back', async () => {
+  test('three moves, each "Not set" at first, with no wheel open; a tap opens a lift\'s wheel, one at a time, and the row shows its value', async () => {
     await walkTo('activity', { experience: 'Y3_PLUS' });
     await choose(t('onboarding.activity.ACTIVE'));
     expect(screen.getByRole('header', { name: t('onboarding.weights.title') })).toBeOnTheScreen();
     expect(screen.getByText(t('onboarding.weights.why', { reps: onboardingParams.startingWeightReps }))).toBeOnTheScreen();
+    expect(screen.getByText(t('onboarding.weights.tap'))).toBeOnTheScreen();
     for (const move of onboardingParams.startingWeightMoves) {
       expect(screen.getByLabelText(`${name(move)}, ${t('onboarding.weights.unset')}`)).toBeOnTheScreen();
-      // Nothing to take off an unset weight.
-      expect(screen.getByRole('button', { name: t('onboarding.weights.less', { move: name(move) }) })).toBeDisabled();
     }
-    const squat = name('squat');
-    await press(t('onboarding.weights.more', { move: squat }));
-    expect(screen.getByLabelText(`${squat}, ${KG(S.start_kg)}`)).toBeOnTheScreen();
-    await press(t('onboarding.weights.more', { move: squat }));
-    expect(screen.getByLabelText(`${squat}, ${KG(S.start_kg + S.step_kg)}`)).toBeOnTheScreen();
-    await press(t('onboarding.weights.less', { move: squat }));
-    expect(screen.getByLabelText(`${squat}, ${KG(S.start_kg)}`)).toBeOnTheScreen();
-    // Down from the bar: unset again, skipped (K-967 review).
-    await press(t('onboarding.weights.less', { move: squat }));
-    expect(screen.getByLabelText(`${squat}, ${t('onboarding.weights.unset')}`)).toBeOnTheScreen();
+    expect(screen.queryByRole('adjustable')).toBeNull();
+    const [first, second] = onboardingParams.startingWeightMoves;
+    await fireEvent.press(screen.getByRole('button', { name: new RegExp(`^${name(first)}, `) }));
+    await settle();
+    expect(screen.getByRole('adjustable', { name: name(first) })).toBeOnTheScreen();
+    // Opened, it is still not set: the wheel's middle row is a place to start, not a weight (ADR-072).
+    expect(screen.getByLabelText(`${name(first)}, ${t('onboarding.weights.unset')}`)).toBeOnTheScreen();
     expect(continueButton()).toBeDisabled();
+    await fireEvent.press(screen.getByRole('button', { name: new RegExp(`^${name(second)}, `) }));
+    await settle();
+    expect(screen.getAllByRole('adjustable')).toHaveLength(1);
+    expect(screen.getByRole('adjustable', { name: name(second) })).toBeOnTheScreen();
+    // A tap on the open lift closes it again.
+    await fireEvent.press(screen.getByRole('button', { name: new RegExp(`^${name(second)}, `) }));
+    await settle();
+    expect(screen.queryByRole('adjustable')).toBeNull();
+  });
+
+  test('coming to rest on the empty bar sets it; a step up is a pair of plates, a step down the bar again', async () => {
+    await walkTo('activity', { experience: 'Y3_PLUS' });
+    await choose(t('onboarding.activity.ACTIVE'));
+    const squat = name('squat');
+    await pickLoad('squat');
+    expect(screen.getByLabelText(`${squat}, ${KG(S.start_kg)}`)).toBeOnTheScreen();
+    await turn(squat, 'increment');
+    expect(screen.getByLabelText(`${squat}, ${KG(S.start_kg + S.step_kg)}`)).toBeOnTheScreen();
+    await turn(squat, 'decrement');
+    expect(screen.getByLabelText(`${squat}, ${KG(S.start_kg)}`)).toBeOnTheScreen();
+  });
+
+  test('flicking to a number sets the lift in the user\'s unit: pounds in 5 lb rows, kept in kg like the stepper kept them', async () => {
+    mockUnits = 'IMPERIAL';
+    await walkTo('activity', { experience: 'Y3_PLUS' });
+    await choose(t('onboarding.activity.ACTIVE'));
+    await pickLoad('bench_press', 28);
+    const bench = name('bench_press');
+    expect(screen.getByLabelText(`${bench}, ${t('units.lb', { value: S.start_lb + 28 * S.step_lb })}`)).toBeOnTheScreen();
+    await press(t('onboarding.continue'));
+    expect(startingWeightsSent()).toEqual([
+      ['/v1/program/starting-weights', { body: { weights: [{ exerciseId: 'bench_press', kg: kgFromWheel(S.start_lb + 28 * S.step_lb, 'IMPERIAL') }] } }],
+    ]);
   });
 
   test('Continue sends weights, so it waits for one; with none, "Skip" is the way on', async () => {
@@ -1107,16 +1147,15 @@ describe('#ob-weights: the starting weights (ADR-072 #3, #5)', () => {
     await choose(t('onboarding.activity.ACTIVE'));
     expect(continueButton()).toBeDisabled();
     expect(screen.getByRole('button', { name: t('onboarding.weights.skip') })).toBeEnabled();
-    await press(t('onboarding.weights.more', { move: name('bench_press') }));
+    await pickLoad('bench_press');
     expect(continueButton()).toBeEnabled();
   });
 
   test('each weight set becomes its move\'s first target, sent once the program is built; one left unset is skipped', async () => {
     await walkTo('activity', { experience: 'Y3_PLUS' });
     await choose(t('onboarding.activity.ACTIVE'));
-    await press(t('onboarding.weights.more', { move: name('squat') }));
-    await press(t('onboarding.weights.more', { move: name('squat') }));
-    await press(t('onboarding.weights.more', { move: name('bench_press') }));
+    await pickLoad('squat', 1);
+    await pickLoad('bench_press');
     await press(t('onboarding.continue'));
     expect(mockApi.POST.mock.invocationCallOrder[0]).toBeLessThan(mockApi.PUT.mock.invocationCallOrder.at(-1)!);
     expect(startingWeightsSent()).toEqual([
@@ -1130,7 +1169,7 @@ describe('#ob-weights: the starting weights (ADR-072 #3, #5)', () => {
   test('"Skip" goes on with none: no weight is sent, even one set before', async () => {
     const router = await walkTo('activity', { experience: 'UNDER_1Y' });
     await choose(t('onboarding.activity.ACTIVE'));
-    await press(t('onboarding.weights.more', { move: name('squat') }));
+    await pickLoad('squat');
     await press(t('onboarding.weights.skip'));
     expect(router.getPathname()).toBe('/onboarding/preparing');
     expect(startingWeightsSent()).toEqual([]);
@@ -1306,7 +1345,7 @@ describe('#ob-plan: the starting call in U3\'s parts (ADR-072 #6)', () => {
   async function toPlan(walk: Walk = {}, weights: string[] = []) {
     const router = await walkTo('activity', walk);
     await choose(t('onboarding.activity.ACTIVE'));
-    for (const move of weights) await press(t('onboarding.weights.more', { move: t(`exercises.${move}.name`) }));
+    for (const move of weights) await pickLoad(move);
     if (screen.queryByRole('header', { name: t('onboarding.weights.title') }) !== null) await press(t(weights.length > 0 ? 'onboarding.continue' : 'onboarding.weights.skip'));
     await press(t('onboarding.preparing.see'));
     expect(router.getPathname()).toBe('/onboarding/plan');

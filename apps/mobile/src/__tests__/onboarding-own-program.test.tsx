@@ -13,6 +13,7 @@ import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-librar
 
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
+import { tokens } from '@/theme/tokens';
 import { createTrainingCache, type Move } from '@/train/trainData';
 import type { KeyValue } from '@/units/preference';
 
@@ -547,7 +548,10 @@ describe('after the program', () => {
     await press(t('onboarding.programImport.leaveOutLabel', { name: 'Landmine Press' }));
     await press(t('onboarding.programImport.confirm'));
     await toActivityEnd();
-    await press(t('onboarding.weights.more', { move: name('bench_press') }));
+    await fireEvent.press(screen.getByRole('button', { name: new RegExp(`^${name('bench_press')}, `) }));
+    await settle();
+    await fireEvent(screen.getByTestId(`wheel-${name('bench_press')}`), 'momentumScrollEnd', { nativeEvent: { contentOffset: { y: tokens.size.touch } } });
+    await settle();
     await press(t('onboarding.continue'));
     expect(mockApi.POST).not.toHaveBeenCalledWith('/v1/program/generate', expect.anything());
     expect(mockApi.PUT).toHaveBeenCalledWith('/v1/program/starting-weights', { body: { weights: [expect.objectContaining({ exerciseId: 'bench_press' })] } });
@@ -562,8 +566,8 @@ describe('after the program', () => {
     await toDraft();
     await press(t('onboarding.programImport.confirm'));
     await toActivityEnd();
-    expect(screen.getByRole('button', { name: t('onboarding.weights.more', { move: name('bench_press') }) })).toBeOnTheScreen();
-    expect(screen.queryByRole('button', { name: t('onboarding.weights.more', { move: name('squat') }) })).toBeNull();
+    expect(screen.getByRole('button', { name: new RegExp(`^${name('bench_press')}, `) })).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: new RegExp(`^${name('squat')}, `) })).toBeNull();
   });
 
   test('brought in, then back and "Build it for me": a program is built for the days chosen, over the one brought in', async () => {

@@ -1,32 +1,34 @@
 import { router } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { t } from '@/copy';
-import { LoadStepper } from '@/onboarding/LoadStepper';
+import { LoadRow } from '@/onboarding/LoadRow';
 import { useDraft } from '@/onboarding/OnboardingContext';
 import { onboardingParams as P } from '@/onboarding/params';
 import { startingWeightMoves } from '@/onboarding/flow';
 import { StepFrame, routeAfter } from '@/onboarding/StepFrame';
-import { stepWeight } from '@/onboarding/weights';
 import { useUnits } from '@/services/ServicesProvider';
+import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { exerciseName } from '@/train/program';
 
 /**
- * #ob-weights (ADR-072 #3, #5): the experienced lifter's working weights, the load lifted about `starting_weight_reps`
- * times, for three moves (on a program brought in, those of them it has). Each is skippable: one left unset finds its load in session 1, none is derived from another.
- * Only for the experienced and an own program (flow.ts); the last question, so Continue prepares the plan. "Skip" goes on
- * with none.
+ * #ob-weights (ADR-072 #3, #5; prototype section 11 frame 7, K-1058): the experienced lifter's working weights, the load lifted
+ * about `starting_weight_reps` times, for three moves (on a program brought in, those of them it has). A tap on a lift opens its
+ * wheel under the row, one at a time; flicked to a number, the load reaches the draft in kg as the stepper's taps did. Each is
+ * skippable: one left unset finds its load in session 1, none is derived from another (the wheel starts on the empty bar, a
+ * place, not a suggestion). Only for the experienced and an own program (flow.ts); the last question, so Continue prepares the
+ * plan. "Skip" goes on with none.
  */
 export default function WeightsStep() {
   const { draft, update } = useDraft();
   const units = useUnits();
-  const step = (move: string, direction: 1 | -1) => {
-    const kg = stepWeight(draft.startingWeights[move], direction, units);
-    const { [move]: _, ...others } = draft.startingWeights;
-    update({ startingWeights: kg === undefined ? others : { ...others, [move]: kg } });
-  };
+  const { color } = useTheme();
+  // The lift whose wheel is open: one at a time.
+  const [open, setOpen] = useState<string | null>(null);
+  const set = (move: string, kg: number) => update({ startingWeights: { ...draft.startingWeights, [move]: kg } });
   const skip = () => {
     update({ startingWeights: {} });
     router.push(routeAfter(null));
@@ -38,15 +40,18 @@ export default function WeightsStep() {
       why={t('onboarding.weights.why', { reps: P.startingWeightReps })}>
       <View>
         {startingWeightMoves(draft).map((move) => (
-          <LoadStepper
+          <LoadRow
             key={move}
             name={exerciseName(move)}
             kg={draft.startingWeights[move]}
             units={units}
-            onStep={(direction) => step(move, direction)}
+            open={open === move}
+            onToggle={() => setOpen(open === move ? null : move)}
+            onChange={(kg) => set(move, kg)}
           />
         ))}
       </View>
+      <Text style={[styles.tap, { color: color.muted }]}>{t('onboarding.weights.tap')}</Text>
       <View style={styles.skip}>
         <Button label={t('onboarding.weights.skip')} variant="ghost" size="sm" onPress={skip} />
       </View>
@@ -55,5 +60,6 @@ export default function WeightsStep() {
 }
 
 const styles = StyleSheet.create({
+  tap: { fontSize: tokens.type.bodySmall },
   skip: { alignItems: 'center', paddingTop: tokens.space.sm },
 });

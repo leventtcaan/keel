@@ -23,6 +23,8 @@ type Props = {
   format: (value: number) => string;
   onChange: (value: number) => void;
   unset?: boolean;
+  /** The label is not drawn (the wheel sits under a row that already names it); VoiceOver still hears it. */
+  quiet?: boolean;
 };
 
 /** One row is a touch target high; five show, the value in the middle. */
@@ -30,7 +32,7 @@ const ROW = tokens.size.touch;
 const ROWS_SHOWN = 5;
 const AROUND = Math.floor(ROWS_SHOWN / 2);
 
-export function Wheel({ label, unit, values, value, format, onChange, unset = false }: Props) {
+export function Wheel({ label, unit, values, value, format, onChange, unset = false, quiet = false }: Props) {
   const { color } = useTheme();
   const list = useRef<ScrollView>(null);
   const index = Math.max(0, values.indexOf(value));
@@ -66,7 +68,7 @@ export function Wheel({ label, unit, values, value, format, onChange, unset = fa
   const spoken = unset ? t('onboarding.wheel.unset', { value: shown }) : shown;
   return (
     <View style={styles.box}>
-      <Text style={[styles.label, { color: color.muted }]}>{label}</Text>
+      {!quiet && <Text style={[styles.label, { color: color.muted }]}>{label}</Text>}
       <View
         accessible
         accessibilityRole="adjustable"
