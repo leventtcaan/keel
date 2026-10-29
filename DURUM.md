@@ -5,7 +5,16 @@ guncelleme: 2026-10-10
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (29 Eki ~11:30 UTC — Evre 5: pazara çıkmadan son kontrol; plan `plan/son-kontrol-2026-10-29.md`, devam `plan/oturum-promptlari/son-kontrol-devam.md`)
+## ▶ DEVAM NOKTASI (29 Eki ~13:55 UTC — Evre 5 son kontrol: düzeltmeler bitti, build 8 yolda)
+Persona yürüyüşü bulguları `plan/son-kontrol-2026-10-29.md` (15 madde). Birleşenler: #659 GS-39 (bir kısa tartı haftası ilk kararı hafta 3'ten 5'e atar),
+#662 küçük düzeltmeler (fotoğraf silme sistem uyarısı, düzeltmede Save, sabit ilerleme çubuğu, makine simgesi, About you listesi), prototip bölüm 11
+(Levent onayı) → #663 sunucu `first-weeks › weighInWeek` (ADR-089), #668 This week tartı sayacı + antrenman hatırlatmasına satır (Ek 2: dördüncü tür yok),
+#664 Your plan başta başlangıç kararı + protein, #665 başlangıç ağırlıkları tekerleği, #666 paywall kullanıcının kendi planıyla, #667 yavaş test bölündü.
+Build 8 (EAS c7d753e7, otomatik TestFlight gönderimi). Sırada: Levent cihazda dener (kamera, sayaç, paywall) → ASC'de build 7 taslağının yerine build 8 →
+Submit (Levent). K1 onayları `.envanter/notes.md` sonunda. Açık küçükler: ağırlık tekerleğinde tek lift "Not set"e dönmüyor; ilk seans adı A'dan başlamıyor;
+6 gün seçeneği (ürün kararı); Dependabot 2 uyarı.
+
+## (önceki) DEVAM NOKTASI (29 Eki ~11:30 UTC — Evre 5: pazara çıkmadan son kontrol; plan `plan/son-kontrol-2026-10-29.md`, devam `plan/oturum-promptlari/son-kontrol-devam.md`)
 Build 7 TestFlight'ta; ASC 1.0'da build 7 bağlı, **taslak, gönderilmedi** (Levent durdurdu: fotoğraf akışı). #657 fotoğraf akışı baştan (CI'da).
 Pazar araştırması `arastirma/ham/pazar-{rakipler,kullanici-sesi,cikis}-2026-10-29.md`. Sıradaki: persona yürüyüşü (ABD'li sporcu, 4 hafta; gün 1 gerçek
 sunucu, haftalar 2-4 motor senaryo düzeneği `GoldenScenarioTests` + keel-sim sahte sunucu), bulguları düzelt, build 8.

@@ -5500,7 +5500,7 @@ tasks:
     module: engine
     type: test
     size: S
-    status: doing
+    status: done
     depends_on: []
     why: "Son kontrol (29 Eki): tarihli check-in sunucuda yok; haftalar 2-4 motor düzeneğinde. Haftada 5 tartı + bir haftada 3 tartı yapan ABD'li kullanıcının ilk kararı hafta 5'e kayıyor; vaat riski kanıtla görünür olsun"
     acceptance:
@@ -5515,7 +5515,7 @@ tasks:
     module: mobile
     type: fix
     size: S
-    status: doing
+    status: done
     depends_on: []
     why: "Persona yürüyüşü (plan/son-kontrol-2026-10-29.md bulgu 6, 8, 10, 12, 14): yeni tasarım istemeyen, mevcut kararlarla (ADR-087) tutarsız ya da kırık görünen küçük şeyler; Levent 29 Eki onayı"
     acceptance:
@@ -5534,7 +5534,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: doing
+    status: done
     depends_on: []
     why: "Persona yürüyüşü bulgu 1 (P0: bir kısa tartı haftası ilk kararı hafta 3'ten 5'e atar, GS-39, kullanıcı görmez), 2, 3, 4 (P1); arayüz önce prototip + Levent onayı"
     acceptance:
