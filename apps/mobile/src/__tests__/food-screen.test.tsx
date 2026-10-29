@@ -107,10 +107,10 @@ test('what is left is one number, the middle of the server range; protein, carbs
 test('the ranges the numbers are the middle of open under Details, and close again', async () => {
   await show();
   await act(async () => fireEvent.press(screen.getByTestId('totals-detail')));
-  expect(screen.getByText(/1350-1520 kcal/)).toBeOnTheScreen();
+  expect(screen.getByText(/1,350-1,520 kcal/)).toBeOnTheScreen();
   expect(screen.getByText(/Left: 780-950 kcal/)).toBeOnTheScreen();
   await act(async () => fireEvent.press(screen.getByTestId('totals-detail')));
-  expect(screen.queryByText(/1350-1520 kcal/)).toBeNull();
+  expect(screen.queryByText(/1,350-1,520 kcal/)).toBeNull();
 });
 
 test('nothing logged yet: what is left is the target itself, one number (K-409 review)', async () => {
