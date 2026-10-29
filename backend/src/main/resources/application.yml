@@ -163,6 +163,27 @@ keel:
     # reached; a wrong pair is refused at start). The screen shows as many as it has room for; the server sends a few more so that a
     # food gone from the database leaves it enough.
     recent-foods: 5
+    # The search's order (K-1061, ADR-090 #1; FoodRanking): 20 points a step of how well the name holds the words (6 steps: the name
+    # itself 100, the word first 80, ... somewhere inside 0), a generic food that starts with the word 25 (above one step, below two:
+    # "egg" is the egg before a product called "Eggs", yet the product that is exactly "Eggs" outranks "Eggplant"), a brand that the
+    # word starts 30, the user's region 15; their own logs 8 a log up to 5 logs, everyone's 4 a natural-log unit (100 logs about 18).
+    # The best 100 by the text go on to the log bonuses.
+    search:
+      rank-step: 20
+      generic-bonus: 25
+      brand-bonus: 30
+      region-bonus: 15
+      personal-bonus: 8
+      personal-cap: 5
+      global-bonus: 4
+      pool: 100
+      # How like a typed word (4 letters or more) another may be spelled when the exact search finds fewer than asked: pg_trgm word
+      # similarity, 0.45 takes "chiken" (0.50), "avacado" (0.45), "bananna" (0.75) and not "beans" for "beef steak" (0.33).
+      typo-similarity: 0.45
+    # Logging a food (K-1061, FoodPortions): the words that name the size of a piece, smallest to largest. Of the sizes a food has
+    # the middle one is where the app starts ("1 large" egg, "1 medium" banana).
+    portions:
+      size-words: [mini, extra small, small, medium, large, extra large, jumbo]
   # The quota's old counts (K-532, ADR-043 #77): deleted once a day. Any hour keeps every time zone's today and
   # yesterday (QuotaCleanup.oldestKept); after 18:00 UTC the cut is also the tightest — the day before yesterday goes
   # everywhere from -12:00 to +05:30 (run before 18:00 UTC, it would go a day later for most).

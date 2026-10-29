@@ -137,6 +137,8 @@ class FoodEstimator {
         FoodRanges.Certainty scale = amount.certainty() == AmountCertainty.WEIGHED ? FoodRanges.Certainty.WEIGHED : FoodRanges.Certainty.ESTIMATED;
         Measured measured = switch (amount.unit().strip().toLowerCase(Locale.ROOT)) {
             case "g" -> new Measured(amount.quantity(), scale);
+            // An ounce of weight (what a US scale reads), not a fluid ounce: that is a serving's name where the database has it.
+            case "oz" -> new Measured(amount.quantity().multiply(Measures.OUNCE_GRAMS), scale);
             case "ml" -> {
                 require(food.gramsPerMl() != null);
                 yield new Measured(amount.quantity().multiply(food.gramsPerMl()), scale);
