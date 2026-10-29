@@ -5399,7 +5399,7 @@ tasks:
     module: mobile
     type: fix
     size: S
-    status: doing
+    status: done
     depends_on: [K-1049]
     why: "Levent TestFlight build 6: \"+\" tam genişlikte zemin renginde bir şeridin içinde; şerit kaydırılan içeriği kesiyor ve \"+\" solunda beyaz blok gibi duruyor (This week, Train, Progress)"
     acceptance:
@@ -5416,7 +5416,7 @@ tasks:
     module: mobile
     type: fix
     size: S
-    status: todo
+    status: done
     depends_on: [K-1050]
     why: "QA turu, gerçek sunucu: Progress açıkken + ile öğün kaydedildi; Calories 0 / 2,916 kaldı, sekme değişince düzeldi. + her sekmede, altta kalan sekme odak kaybetmiyor (rubrik F3)"
     acceptance:
@@ -5432,7 +5432,7 @@ tasks:
     module: mobile
     type: fix
     size: S
-    status: todo
+    status: done
     depends_on: [K-1050]
     why: "QA turu: chicken breast hızlı yazıldı, kutuda yalnız c kaldı; yavaş yazınca doğru. Denetimli TextInput her tuşta bütün öğün ekranını yeniden çiziyor, yerel değer eski çizimle eziliyor (QuickType kelime ekleme de aynı)"
     acceptance:
@@ -5448,7 +5448,7 @@ tasks:
     module: mobile
     type: fix
     size: S
-    status: todo
+    status: done
     depends_on: [K-1050]
     why: "Levent: Mon/Tue/Fri satırları çok güçsüz, arayüzden kopuk. Çıplak çizgili düz metin, kartlar ve gruplu listelerle uyumsuz (rubrik D6, D7, D17)"
     acceptance:
@@ -5464,7 +5464,7 @@ tasks:
     module: mobile
     type: fix
     size: S
-    status: todo
+    status: done
     depends_on: [K-1050]
     why: "Levent: This week's muscles altı güçsüz, statik, modern değil. Strength, Weight trend, Photos sayfaya düz metin; üstteki kart karolarıyla kopuk; Steps değersiz / 7,000 (rubrik D6, D7, S3, D17)"
     acceptance:
@@ -5482,7 +5482,7 @@ tasks:
     module: mobile
     type: fix
     size: M
-    status: doing
+    status: done
     depends_on: [K-1054]
     why: "Levent build 7: Take photos ekranı modern değil, kılavuz yok, açı göstergesi teknik ve oynak (Level 12.3°), ön kameraya geçilemiyor, akış bir sonuca bağlanmıyor; QA turunda bu akış hiç yürünmemişti"
     acceptance:
@@ -5493,6 +5493,21 @@ tasks:
       - "npm run check + anayasa denetimi yeşil; simülatörde kamerasız yollar, cihazda kamera (TestFlight build 8)"
     tests: ["jest photo-capture-screen + photo-tilt + photo-card", "tools/anayasa-denetimi.sh"]
     refs: ["prototip/yeniden-yapim.html", "plan/oturum-promptlari/yeniden-yapim-devam.md"]
+
+  - id: K-1056
+    title: "Evre 5 persona: gerçek ilk ay motor senaryosu (unutulan tartı haftası, yarım öğün) GS-39"
+    milestone: M10
+    module: engine
+    type: test
+    size: S
+    status: doing
+    depends_on: []
+    why: "Son kontrol (29 Eki): tarihli check-in sunucuda yok; haftalar 2-4 motor düzeneğinde. Haftada 5 tartı + bir haftada 3 tartı yapan ABD'li kullanıcının ilk kararı hafta 5'e kayıyor; vaat riski kanıtla görünür olsun"
+    acceptance:
+      - "GS-39 golden senaryosu: beklentiler kurallardan elle türetilmiş (yorumda hesap), motor çıktısından kopyalanmamış"
+      - "GoldenScenarioTests yeşil"
+    tests: ["./gradlew test --tests '*GoldenScenarioTests*'"]
+    refs: ["plan/son-kontrol-2026-10-29.md", "data/parameters/windows.yaml"]
 
   - id: K-1010
     title: "Sunucudaki ek siteler: Caddy /opt/sites altındaki *.caddy dosyalarını içeri alır"
