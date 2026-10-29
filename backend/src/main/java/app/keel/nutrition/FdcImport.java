@@ -96,11 +96,13 @@ final class FdcImport {
                 names.put(food.get("fdc_id"), food.get("description"));
             }
         });
+        Map<String, String> byNumber = nutrientIdsByNumber(folder.resolve("nutrient.csv"));
         Map<String, Map<String, BigDecimal>> nutrients = new HashMap<>();
         Csv.forEach(folder.resolve("food_nutrient.csv"), row -> {
             String id = row.get("fdc_id");
-            if (names.containsKey(id) && NUTRIENTS.contains(row.get("nutrient_id")) && !row.get("amount").isBlank()) {
-                nutrients.computeIfAbsent(id, key -> new HashMap<>()).put(row.get("nutrient_id"), new BigDecimal(row.get("amount")));
+            String nutrient = byNumber.getOrDefault(row.get("nutrient_id"), row.get("nutrient_id"));
+            if (names.containsKey(id) && NUTRIENTS.contains(nutrient) && !row.get("amount").isBlank()) {
+                nutrients.computeIfAbsent(id, key -> new HashMap<>()).put(nutrient, new BigDecimal(row.get("amount")));
             }
         });
         Map<String, String> units = new HashMap<>();
@@ -128,6 +130,25 @@ final class FdcImport {
                     gramsPerMl(own), own));
         }
         return new Read(foods, skipped);
+    }
+
+    /**
+     * Survey (FNDDS) names a food's nutrients by their old number (nutrient_nbr: 208 energy, 203 protein) where the other
+     * datasets use FDC's id (1008, 1003); the release's nutrient.csv maps one to the other. An old number that is also an id
+     * of ours is not mapped, so a dataset that already uses ids reads as before. Without the file, nothing is mapped.
+     */
+    private static Map<String, String> nutrientIdsByNumber(Path file) {
+        Map<String, String> byNumber = new HashMap<>();
+        if (!java.nio.file.Files.exists(file)) {
+            return byNumber;
+        }
+        Csv.forEach(file, nutrient -> {
+            String number = nutrient.get("nutrient_nbr");
+            if (number != null && !number.isBlank() && NUTRIENTS.contains(nutrient.get("id")) && !NUTRIENTS.contains(number)) {
+                byNumber.put(number, nutrient.get("id"));
+            }
+        });
+        return byNumber;
     }
 
     /** Each wanted food's servings in FDC's order, named as {@link #servingName} does; those without a weight or a name are left out. */

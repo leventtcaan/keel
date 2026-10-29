@@ -33,6 +33,22 @@ class FdcSurveyImportTests {
     }
 
     @Test
+    void theRealSurveyReleaseNamesItsNutrientsByTheirOldNumbersAndTheyAreReadTheSame() {
+        // FNDDS's food_nutrient.csv holds nutrient_nbr (208 energy, 203 protein, 204 fat, 205 carbohydrate), not the FDC id
+        // (1008, 1003, 1004, 1005) the other datasets use; nutrient.csv maps one to the other. Read wrong, every food is skipped.
+        FdcImport.Read read = FdcImport.read(Path.of("src/test/resources/fdc/survey-numbers"), FdcImport.Dataset.FNDDS);
+
+        assertThat(read.skipped()).isZero();
+        assertThat(read.foods()).extracting(FdcImport.Food::id).containsExactly("fdc:3001", "fdc:3002", "fdc:3003");
+        FdcImport.Food egg = read.foods().getFirst();
+        assertThat(egg.kcal()).isEqualByComparingTo("155");
+        assertThat(egg.proteinG()).isEqualByComparingTo("12.6");
+        assertThat(egg.fatG()).isEqualByComparingTo("10.6");
+        assertThat(egg.carbsG()).isEqualByComparingTo("1.1");
+        assertThat(egg.servings()).first().isEqualTo(new FdcImport.Serving("1 large", new BigDecimal("50.0")));
+    }
+
+    @Test
     void thePortionDescriptionIsTheNameWhenThereIsNoAmountAndTheModifierIsACode() {
         // "Quantity not specified" has no weight and no meaning; the second "1 large" is the same name as the first.
         assertThat(food("fdc:3001").servings()).containsExactly(
