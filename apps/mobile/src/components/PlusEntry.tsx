@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import type { Ref } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
@@ -17,12 +18,13 @@ export const PLUS_CLEARANCE = tokens.size.primaryButton + tokens.space.md + toke
  * It floats over the content (K-1050): placed in the tab's frame, not a strip of its own, so nothing beside it hides the
  * rows scrolling under it; only the button takes touches.
  */
-export function PlusEntry() {
+export function PlusEntry({ buttonRef }: { buttonRef?: Ref<View> } = {}) {
   const { color } = useTheme();
   const router = useRouter();
   return (
     <View testID="plus" style={styles.float} pointerEvents="box-none">
       <Pressable
+        ref={buttonRef}
         accessibilityRole="button"
         accessibilityLabel={t('plus.entry')}
         onPress={() => router.push('/plus')}

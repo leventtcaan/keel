@@ -1,6 +1,6 @@
 /**
- * A move's screen (K-418, ADR-017): the setup first — seat, pad, grip, kept on this phone —, then the demo clips (not
- * filmed yet: said so, nothing in their place), the coaching tips for the move, and the muscles it works.
+ * A move's screen (K-418, ADR-017, K-1065): what the move is (equipment, kind), its cues as short bullets, the muscles it
+ * works with the map, and the setup — seat, pad, grip — kept on this phone. No clips are promised: the "not filmed yet" card is gone.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
@@ -84,12 +84,24 @@ test("the setup first, saved on the phone and there when the move is opened agai
   expect((await screen.findByLabelText(t('exerciseSetup.seat_height.label'))).props.value).toBe('4');
 });
 
-test('no clips yet: said so; the tips for the move; the muscles it works', async () => {
+test('what the move is, its cues as short bullets, the muscles it works as chips; no clips card, no paragraph', async () => {
   await show();
-  expect(await screen.findByText(t('demo.clipsPending'))).toBeOnTheScreen();
+  expect(await screen.findByText(t('ownMove.equipments.MACHINE'))).toBeOnTheScreen();
+  expect(screen.getByText(t('demo.kind.COMPOUND'))).toBeOnTheScreen();
   expect(screen.getByText(t('demo.tip.fullRange'))).toBeOnTheScreen();
   expect(screen.getByText(t('demo.tip.lastRep'))).toBeOnTheScreen();
-  expect(screen.getByText(`${t('demo.muscle.quads')}, ${t('demo.muscle.glutes')}`)).toBeOnTheScreen();
+  expect(screen.getByText(t('demo.muscle.quads'))).toBeOnTheScreen();
+  expect(screen.getByText(t('demo.muscle.glutes'))).toBeOnTheScreen();
+  expect(screen.queryByText(/film/i)).toBeNull();
+  // Every line the screen says of the move is a few words (the setup's one note aside).
+  const words = (key: string) => t(key).split(/\s+/).length;
+  expect(['demo.tip.fullRange', 'demo.tip.backRange', 'demo.tip.tempo', 'demo.tip.lastRep'].map(words).every((n) => n <= 10)).toBe(true);
+});
+
+test('the way back is the system header: the screen draws no Done of its own', async () => {
+  await show();
+  await screen.findByText(t('demo.tip.tempo'));
+  expect(screen.queryByRole('button', { name: t('history.done') })).toBeNull();
 });
 
 test('a move with nothing to set: no setup card; an isolation move: no last-rep tip', async () => {
@@ -140,14 +152,15 @@ test('a save that fails says nothing of being saved, and is reported', async () 
   expect(screen.queryByText(t('demo.saved'))).toBeNull();
 });
 
-test('a back move and an own move: no clips promised to an own move, none filmed for it', async () => {
+test('an own move: its equipment and kind, and no clips promised', async () => {
   mockOwn = [
     { id: 'custom:1', nameKey: '', name: 'Landmine press', kind: 'COMPOUND', muscles: [], alternatives: [], load: 'EXTERNAL', equipment: 'BARBELL', unilateral: false, setupFields: [] },
   ];
   mockParams = { exercise: 'custom:1' };
   await show();
   expect(await screen.findByText('Landmine press')).toBeOnTheScreen();
-  expect(screen.queryByText(t('demo.clipsPending'))).toBeNull();
+  expect(screen.getByText(t('ownMove.equipments.BARBELL'))).toBeOnTheScreen();
+  expect(screen.queryByText(/film/i)).toBeNull();
 });
 
 test('every muscle the catalog may name has its words; the back muscles are muscles of the catalog', () => {

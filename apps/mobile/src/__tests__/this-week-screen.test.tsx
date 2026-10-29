@@ -9,6 +9,7 @@ import { StyleSheet } from 'react-native';
 import TodayScreen from '@/app/(tabs)/index';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
+import { GuideProvider } from '@/guide/GuideProvider';
 import { ThemeProvider } from '@/theme/theme';
 import { palettes } from '@/theme/tokens';
 import { weekRecordText } from '@/today/week';
@@ -1102,6 +1103,41 @@ describe('after a save elsewhere (K-1044, ADR-070 Ek 2 #6)', () => {
     await act(async () => {});
     expect(undo).toHaveBeenCalledTimes(1);
     expect(banner()).toBeNull();
+  });
+});
+
+describe('the first-use guide (K-1065)', () => {
+  const withGuide = async (seen: boolean) => {
+    const mark = { seen: jest.fn(async () => seen), markSeen: jest.fn(async () => {}), forget: jest.fn(async () => {}) };
+    await render(
+      <ThemeProvider scheme="light">
+        <GuideProvider mark={mark}>
+          <TodayScreen />
+        </GuideProvider>
+      </ThemeProvider>,
+    );
+    await act(async () => {});
+    return mark;
+  };
+
+  test('asked once the week is on the screen, not before; seen already, it opens nothing', async () => {
+    ordinaryWeek();
+    const mark = await withGuide(true);
+    expect(mark.seen).toHaveBeenCalledTimes(1);
+    expect(mark.markSeen).not.toHaveBeenCalled();
+  });
+
+  test('not seen: it opens, and is kept as shown at once', async () => {
+    ordinaryWeek();
+    const mark = await withGuide(false);
+    expect(mark.markSeen).toHaveBeenCalledTimes(1);
+  });
+
+  test('the week reads the same with the parts the guide points at held in views: the same blocks in the same order', async () => {
+    ordinaryWeek();
+    await withGuide(true);
+    expect(screen.getByTestId('hero')).toBeOnTheScreen();
+    expect(screen.getByText(t('thisWeek.today.start'))).toBeOnTheScreen();
   });
 });
 

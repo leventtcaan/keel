@@ -4,7 +4,7 @@
   },
   "welcome": {
     "headline": "Stop guessing in the gym.",
-    "lead": "Every Monday your plan adjusts, and tells you why.",
+    "lead": "Your plan adjusts every week, and tells you why.",
     "examplesLabel": "Example calls",
     "examples": {
       "hold": "Hold the weight",
@@ -17,6 +17,36 @@
       "dot": "·",
       "terms": "Terms",
       "privacy": "Privacy"
+    }
+  },
+  "keyboard": {
+    "done": "Done",
+    "hide": "Hide keyboard"
+  },
+  "modal": {
+    "close": "Close"
+  },
+  "guide": {
+    "skip": "Skip",
+    "skipLabel": "Skip the guide",
+    "next": "Next",
+    "done": "Got it",
+    "step": "Step {step} of {total}",
+    "call": {
+      "title": "Your weekly call",
+      "body": "One call a week: what to eat and lift next."
+    },
+    "workout": {
+      "title": "Today's workout",
+      "body": "Tap Start. Your sets and loads are ready."
+    },
+    "plus": {
+      "title": "Log anything",
+      "body": "Weigh in, add a meal, log cardio."
+    },
+    "tabs": {
+      "title": "Train and Progress",
+      "body": "Train is your week. Progress shows what moved."
     }
   },
   "signIn": {
@@ -552,7 +582,7 @@
     "undoEditLabel": "Undo: your last edit to the program",
     "notReady": "Every day needs a name and at least one move.",
     "applyAfterSave": "Save your edits before applying a flag.",
-    "targetsLost": "A new rep range, or a move taken out and added again, clears the next weight target of: {moves}. Your next session sets a new one.",
+    "targetsLost": "This clears the next weight target of: {moves}. Your next session sets a new one.",
     "saveAnyway": "Save anyway",
     "keepEditing": "Keep editing",
     "saveFirst": "Save your changes first, then add the day.",
@@ -577,7 +607,7 @@
     "undoneWith": { "one": "Undone, with 1 later change that needed it.", "other": "Undone, with {count} later changes that needed it." },
     "undoConflict": "Your program changed another way since, so this can't be undone.",
     "splitBody": "Your split follows your training days. Rebuild for me makes a new program from them.",
-    "rebuildBody": "This replaces your program with a new one built from your training days. What goes: every move's next targets and starting weights, this week's changes to your sessions (moved, skipped, short, swapped), the changes from the review, and your own program with your own moves in it. Your logged workouts stay.",
+    "rebuildBody": "A new program from your training days. Goes: targets, starting weights, this week's changes, your own program and moves. Logged workouts stay.",
     "cardio": {
       "title": "Cardio",
       "row": "{sessions} × {minutes} min",
@@ -899,13 +929,16 @@
     "setupNote": "Kept on this phone. Set it the same way every time.",
     "save": "Save setup",
     "saved": "Saved.",
-    "clipsPending": "The demo clips aren't filmed yet. They'll show the first rep and the last one, side by side.",
-    "tips": "How to do it",
+    "kind": {
+      "COMPOUND": "Compound",
+      "ISOLATION": "Isolation"
+    },
+    "tips": "Key cues",
     "tip": {
-      "fullRange": "Full range of motion on every rep. Take weight off if you have to.",
-      "backRange": "Full range until your reps slow down. On back moves, finish the set with partial reps.",
-      "tempo": "Lower with control, lift with intent. No slow-motion negatives.",
-      "lastRep": "Your last rep slows down on its own. That's where the set ends."
+      "fullRange": "Full range on every rep.",
+      "backRange": "Full range, then partial reps to finish.",
+      "tempo": "Lower with control, lift with intent.",
+      "lastRep": "The set ends when your last rep slows."
     },
     "muscles": "Works",
     "separator": ", ",
@@ -1125,6 +1158,7 @@
   },
   "meal": {
     "title": "Log a meal",
+    "closeLabel": "Close meal log",
     "quick": {
       "recent": "Recent",
       "undoneSaid": "Meal taken back.",
@@ -1372,6 +1406,7 @@
   },
   "weighIn": {
     "title": "Weigh-in",
+    "closeLabel": "Close weigh-in",
     "label": "Weight ({unit})",
     "last": "Last: {value}",
     "lastOn": "Last: {value}, {date}",
@@ -2224,7 +2259,7 @@
     "reason": {
       "training": "It decides what changes: food or training.",
       "recovery": "It decides whether food or rest changes next.",
-      "cycle_stopped": "Your plan is low on fuel right now, and a missed period is the clearest sign it's too low. Your answer itself isn't saved; if it changes your plan, that change is.",
+      "cycle_stopped": "A missed period is the clearest sign your plan is too low. Your answer isn't saved; a change to your plan is.",
       "appetite": "After a long bulk, forcing food down is a sign the bulk has stopped paying off.",
       "state_still": "Your weeks have been paused for a while. If it's over, your weekly calls start again; if not, they stay paused. Either is fine.",
       "week1_feel": "Every session happened. Your answer shapes next week."
@@ -2424,7 +2459,7 @@
       "choose": "Choose a file",
       "chooseAnother": "Choose another file",
       "noRoutine": "No routine in this file repeats enough to make a program from it.",
-      "allLeftOut": "Every move is left out, so there's no program. Choose the file again to start over.",
+      "allLeftOut": "Every move is left out. Choose the file again to start over.",
       "ownWaiting": "Your own move. It's saved with the program.",
       "change": "Change",
       "changeLabel": "Change what {name} is",
@@ -2820,6 +2855,9 @@
     "restoreFailed": "Couldn't restore purchases. Try again in a moment."
   },
   "settings": {
+    "guide": {
+      "row": "How it works"
+    },
     "subscription": {
       "title": "Subscription",
       "none": "Not subscribed. Your log, your weekly call and its reasons work without one.",
@@ -3440,7 +3478,7 @@
     },
     "once_a_week": {
       "title": "{muscle} on {to} days a week",
-      "body": "Coaching rule: train each muscle on {to} days a week. One session's growth signal fades after about two days, so part of the work moves to another day."
+      "body": "Train each muscle on {to} days a week: a session's growth signal fades after about two days."
     },
     "rep_range_compound": {
       "title": "{exercise}: {toMin}-{toMax} reps",

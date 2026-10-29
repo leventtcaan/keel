@@ -642,3 +642,32 @@ test('the same failure twice is said twice: the problem is cleared before each t
   await press(t('weighIn.save'));
   expect(announced.mock.calls.filter(([words]) => words === t('weighIn.saveFailed'))).toHaveLength(2);
 });
+
+describe('the way out and the keyboard (K-1065)', () => {
+  beforeAll(() => {
+    (globalThis as { __showKeyboardAccessory?: boolean }).__showKeyboardAccessory = true;
+  });
+  afterAll(() => {
+    (globalThis as { __showKeyboardAccessory?: boolean }).__showKeyboardAccessory = false;
+  });
+
+  test('Close is on the sheet from the first moment, consent or entry, and closes it', async () => {
+    mockGranted = false;
+    await show();
+    expect(screen.getByRole('button', { name: t('weighIn.closeLabel') })).toBeOnTheScreen();
+    await screen.unmount();
+    mockGranted = true;
+    await show();
+    await press(t('weighIn.closeLabel'));
+    expect(mockBack).toHaveBeenCalledTimes(1);
+    expect(mockServices.queue.record).not.toHaveBeenCalled();
+  });
+
+  test('the number pad has its Done bar, and Save stands in a dock the keyboard lifts', async () => {
+    await show();
+    expect(screen.getByLabelText(unitLabel()).props.inputAccessoryViewID).toEqual(expect.stringContaining('keel-done'));
+    expect(screen.getByRole('button', { name: t('keyboard.hide') })).toBeOnTheScreen();
+    expect(screen.getByTestId('keyboard-frame')).toBeOnTheScreen();
+    expect(within(screen.getByTestId('keyboard-frame')).getByRole('button', { name: t('weighIn.save') })).toBeOnTheScreen();
+  });
+});

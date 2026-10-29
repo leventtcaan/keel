@@ -485,6 +485,7 @@
       ],
       "uncounted": ["editProgram.dayList", "editProgram.listJoin"],
       "notFirstView": [
+        "settings.guide.row",
         "settings.appearance.failed",
         "settings.units.failed",
         "settings.training.none",
@@ -1305,6 +1306,7 @@
         { "what": "the month in the date of the last weigh-in (Oct 14), left out for today's", "words": 1 }
       ],
       "notFirstView": [
+        "weighIn.closeLabel",
         "weighIn.label",
         "weighIn.invalid",
         "weighIn.saveFailed",
@@ -1372,6 +1374,7 @@
         "meal.barcode.scanShort"
       ],
       "notFirstView": [
+        "meal.closeLabel",
         "consent.health_data.title",
         "consent.health_data.points.collected",
         "consent.health_data.points.purpose",

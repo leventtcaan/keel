@@ -1,5 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
+import { AnimatedFill } from '@/motion/AnimatedFill';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
@@ -25,7 +26,7 @@ export function ProgressBar({ value, label }: Props) {
       accessibilityLabel={label}
       accessibilityValue={{ min: 0, max: 100, now }}
       style={[styles.track, { backgroundColor: color.track, borderColor: color.edge }]}>
-      <View testID="progress-fill" style={[styles.fill, { width: `${now}%`, backgroundColor: color.accent }]} />
+      <AnimatedFill testID="progress-fill" percent={now} style={[styles.fill, { backgroundColor: color.accent }]} />
     </View>
   );
 }

@@ -9,6 +9,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import TodayChangeScreen from '@/app/today-change';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
+import { SavedProvider, useSavedChanges } from '@/saved/saved';
 import type { LocalRecord } from '@/sync/store';
 import { ThemeProvider } from '@/theme/theme';
 import type { TrainData } from '@/train/trainData';
@@ -281,4 +282,25 @@ test("a day that is not today's session has nothing to change", async () => {
   expect(screen.queryByText('Move it')).toBeNull();
   await fireEvent.press(screen.getByText(t('todayChange.close')));
   expect(mockBack).toHaveBeenCalled();
+});
+
+test('closing the sheet tells the tabs to read again (K-1065): a sheet over a tab does not give it its focus back', async () => {
+  const counts: number[] = [];
+  function Tab() {
+    counts.push(useSavedChanges());
+    return null;
+  }
+  const tree = (open: boolean) => (
+    <ThemeProvider>
+      <SavedProvider>
+        <Tab />
+        {open ? <TodayChangeScreen /> : null}
+      </SavedProvider>
+    </ThemeProvider>
+  );
+  const view = await render(tree(true));
+  await screen.findByText('Move it');
+  expect(counts.at(-1)).toBe(0);
+  await view.rerender(tree(false));
+  expect(counts.at(-1)).toBe(1);
 });

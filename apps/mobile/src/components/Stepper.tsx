@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { type AccessibilityActionEvent, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
+import { useDoneBar } from '@/components/KeyboardDone';
 import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
@@ -69,6 +70,8 @@ function parse(text: string): number | null {
  */
 export function Stepper({ label, value, onChange, onEmpty, step, min = Number.NEGATIVE_INFINITY, max = Number.POSITIVE_INFINITY, unit, decimals, placeholder = '-', steps, compact = false }: Props) {
   const { color } = useTheme();
+  // Its pad has no Return key: the Done bar over the keyboard closes it (K-1065).
+  const { id: doneId, bar } = useDoneBar(true);
   const places = decimals ?? decimalsOf(step);
   // What is on the screen while the field is being typed in: "5" on its way to "55" is not yet below the minimum. It holds
   // the value the typing gave the screen: when the value is another one by now (a step, a suggestion taken, the screen
@@ -121,10 +124,12 @@ export function Stepper({ label, value, onChange, onEmpty, step, min = Number.NE
         placeholder={placeholder}
         placeholderTextColor={color.muted}
         keyboardType={places > 0 ? 'decimal-pad' : 'number-pad'}
+        inputAccessoryViewID={doneId}
         selectTextOnFocus
         style={[styles.input, compact && styles.inputCompact, { color: color.text, borderBottomColor: color.edge }]}
       />
       {unit !== undefined && <Text style={[styles.unit, { color: color.muted }]}>{unit}</Text>}
+      {bar}
     </View>
   );
   // Compact: its name over the number, inside the box. The input says its name to a screen reader, so the caption is not read again.

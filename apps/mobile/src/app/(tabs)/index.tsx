@@ -1,6 +1,6 @@
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -10,6 +10,8 @@ import { Card } from '@/components/Card';
 import { PLUS_CLEARANCE, PlusEntry } from '@/components/PlusEntry';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
+import { GuideOverlay } from '@/guide/GuideOverlay';
+import { useGuide } from '@/guide/GuideProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { Hero } from '@/today/Hero';
@@ -35,7 +37,30 @@ type Program = components['schemas']['Program'];
  */
 export default function TodayScreen() {
   const { color } = useTheme();
+  // The first-use guide (K-1065): opened the first time the week is on the screen, and when Settings asked for it and This week is
+  // back in view. The focus part comes first, so the week's own read on focus is the last to register.
+  const guide = useGuide();
+  const { arrive } = guide;
+  const loadedRef = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (loadedRef.current) arrive();
+    }, [arrive]),
+  );
   const { day, data, reload } = useToday();
+  const loaded = data !== null;
+  useEffect(() => {
+    loadedRef.current = loaded;
+    if (loaded) arrive();
+  }, [loaded, arrive]);
+  // The parts the guide points at, and the scroll it may move to bring one into view.
+  const callRef = useRef<View>(null);
+  const workoutRef = useRef<View>(null);
+  const plusRef = useRef<View>(null);
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollY = useRef(0);
+  const targets = useMemo(() => ({ call: callRef, workout: workoutRef, plus: plusRef }), []);
+  const scroll = useMemo(() => ({ ref: scrollRef, y: scrollY }), []);
   // A change to today answered with the program as changed: shown at once, for the read it answered, while the week is
   // read again (Health, the queue, every part); the next read is the server's word again.
   const [answered, setAnswered] = useState<{ read: TodayData; program: Program } | null>(null);
@@ -70,24 +95,37 @@ export default function TodayScreen() {
           <BuildProgramPrompt />
         </Card>
       ) : null;
+    // The parts the guide points at are held in a view only where there is something to see: an empty one would still add a gap.
+    const call =
+      hero.kind === 'paused' || hero.kind === 'none' ? null : (
+        <View ref={callRef} collapsable={false}>
+          <Hero hero={hero} today={today} onChanged={reload} />
+        </View>
+      );
+    const workout =
+      card.kind === 'none' ? null : (
+        <View ref={workoutRef} collapsable={false}>
+          <TodayCard
+            card={card}
+            program={read?.program ?? null}
+            today={today}
+            parts={data.todayParts}
+            onChanged={(changed) => {
+              if (changed !== null) setAnswered({ read: data, program: changed });
+              reload();
+            }}
+          />
+        </View>
+      );
     top = (
       <>
         <WeekStrip head={weekHead(data.consistency, data.firstWeeks)} days={stripDays(monday, today, sessions, trainedDays(data.week?.workouts), loggedDays(data.week?.weighIns))} />
         {/* A paused week is the state's own card ("I'm back"); back, its welcome stays until another state is read. With the
             check-in open the Monday block is the one hero: the check-in asks whether the state still holds (word budget). */}
         {stateCard}
-        <Hero hero={hero} today={today} onChanged={reload} />
+        {call}
         {noProgram}
-        <TodayCard
-          card={card}
-          program={read?.program ?? null}
-          today={today}
-          parts={data.todayParts}
-          onChanged={(changed) => {
-            if (changed !== null) setAnswered({ read: data, program: changed });
-            reload();
-          }}
-        />
+        {workout}
         <FoodLine budget={data.budget} />
       </>
     );
@@ -97,7 +135,9 @@ export default function TodayScreen() {
     // Bottom edge too: inside native tabs the bottom inset includes the tab bar, so the "+" floats above it (K-1050).
     <SafeAreaView testID="screen" style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
       <View style={styles.frame}>
-        <ScrollView contentContainerStyle={styles.body}>
+        <ScrollView ref={scrollRef} contentContainerStyle={styles.body} scrollEventThrottle={16} onScroll={(e) => {
+            scrollY.current = e.nativeEvent.contentOffset.y;
+          }}>
           <View style={styles.head}>
             <ScreenTitle>{t('screens.today.title')}</ScreenTitle>
             <Pressable
@@ -111,7 +151,8 @@ export default function TodayScreen() {
           {problem}
           {top}
         </ScrollView>
-        <PlusEntry />
+        <PlusEntry buttonRef={plusRef} />
+        <GuideOverlay targets={targets} scroll={scroll} />
       </View>
     </SafeAreaView>
   );

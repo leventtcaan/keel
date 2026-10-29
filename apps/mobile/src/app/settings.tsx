@@ -5,6 +5,7 @@ import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
 import { AccountSection } from '@/settings/AccountSection';
 import { AppearanceSection } from '@/settings/AppearanceSection';
+import { GuideGroup } from '@/guide/GuideGroup';
 import { DataSourcesGroup } from '@/settings/DataSources';
 import { FoodGroup } from '@/settings/FoodGroup';
 import { HealthGroup } from '@/settings/HealthGroup';
@@ -45,6 +46,7 @@ export default function SettingsScreen() {
         <SubscriptionSection />
         <DataSourcesGroup />
         <LegalGroup />
+        <GuideGroup />
         <AccountSection title={t('settings.account.title')} />
       </ScrollView>
     </SafeAreaView>

@@ -8,6 +8,8 @@ import type { components } from '@/api/schema';
 import { MuscleMap } from '@/components/MuscleMap';
 import { Section } from '@/components/Section';
 import { t } from '@/copy';
+import { AnimatedFill } from '@/motion/AnimatedFill';
+import { CountUp } from '@/motion/CountUp';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import type { Figure } from '@/train/demo';
@@ -76,10 +78,13 @@ export function MuscleBars({ muscles }: { muscles: Schemas['MuscleSets'][] }) {
           <View key={m.muscle} testID={`muscle-bar-${m.muscle}`} accessible accessibilityLabel={t('progress.muscles.barLabel', { muscle: name, done: m.doneSets, target: m.targetSets })} style={styles.barRow}>
             <Text style={[styles.barName, styles.fine, { color: color.text }]}>{name}</Text>
             <View style={[styles.barTrack, { backgroundColor: color.track, borderColor: color.edge }]}>
-              <View style={[styles.barFill, { width: `${(m.doneSets / scale) * 100}%`, backgroundColor: color.accent }]} />
-              <View style={[styles.barTarget, { left: `${(m.targetSets / scale) * 100}%`, backgroundColor: color.text }]} />
+              <AnimatedFill percent={(m.doneSets / scale) * 100} style={[styles.barFill, { backgroundColor: color.accent }]} />
+              <AnimatedFill edge="left" percent={(m.targetSets / scale) * 100} style={[styles.barTarget, { backgroundColor: color.text }]} />
             </View>
-            <Text style={[styles.barCount, styles.fine, { color: color.muted }]}>{`${m.doneSets}/${m.targetSets}`}</Text>
+            <Text style={[styles.barCount, styles.fine, { color: color.muted }]}>
+              <CountUp value={m.doneSets} />
+              {`/${m.targetSets}`}
+            </Text>
           </View>
         );
       })}

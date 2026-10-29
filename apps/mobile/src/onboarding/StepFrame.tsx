@@ -8,10 +8,12 @@
 import { type Href, router, useFocusEffect } from 'expo-router';
 import { Stack } from 'expo-router/stack';
 import { type ReactNode, useCallback, useRef } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
+import { FormScroll } from '@/components/FormScroll';
+import { KeyboardFrame } from '@/components/KeyboardFrame';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
 import { useUnits } from '@/services/ServicesProvider';
@@ -134,12 +136,15 @@ export function StepFrame({ step, title, why, children, chosen = false, continue
           ))}
         </View>
       </View>
-      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-        <ScreenTitle>{title}</ScreenTitle>
-        {why !== undefined && <Text style={[styles.why, { color: color.textSecondary }]}>{why}</Text>}
-        {children}
-      </ScrollView>
-      {bottom !== null && <View style={styles.bottom}>{bottom}</View>}
+      {/* Continue stands on the keyboard when one is up (K-1065), and a number pad has its Done. */}
+      <KeyboardFrame>
+        <FormScroll contentContainerStyle={styles.body}>
+          <ScreenTitle>{title}</ScreenTitle>
+          {why !== undefined && <Text style={[styles.why, { color: color.textSecondary }]}>{why}</Text>}
+          {children}
+        </FormScroll>
+        {bottom !== null && <View style={styles.bottom}>{bottom}</View>}
+      </KeyboardFrame>
     </SafeAreaView>
   );
 }

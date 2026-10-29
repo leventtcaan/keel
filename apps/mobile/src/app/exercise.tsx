@@ -1,11 +1,11 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Body, { type Slug } from 'react-native-body-highlighter';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
+import { FormScroll } from '@/components/FormScroll';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { TextField } from '@/components/TextField';
 import { t } from '@/copy';
@@ -18,10 +18,10 @@ import { exerciseName } from '@/train/program';
 import { type Move, type TrainData, movesOf } from '@/train/trainData';
 
 /**
- * A move's screen (K-418, ADR-017): the setup first — seat, pad, grip, kept on this phone so the move is set the same way
- * every time (G1 K-38) —, then the demo clips (filmed by hand and checked against docs/hareket-cekim-kontrol-listesi.md;
- * none has passed yet, so the screen says so and shows nothing in their place: no stand-in footage, no AI video), the coaching
- * tips for the move, and the muscles it works. Offline: the catalog and the setup are the phone's.
+ * A move's screen (K-418, ADR-017, K-1065): scannable, no paragraphs. What the move is (its equipment and kind), the cues for it
+ * as short bullets, the muscles it works with the map, and the setup — seat, pad, grip, kept on this phone so the move is set
+ * the same way every time (G1 K-38). There are no demo clips in this version, so none is promised (the "not filmed yet" card is
+ * gone). The system header carries the way back. Offline: the catalog and the setup are the phone's.
  */
 const SIDES = ['front', 'back'] as const;
 // Two drawings side by side across the screen's width (the library draws at 200 × 400 at scale 1).
@@ -70,7 +70,9 @@ export default function ExerciseScreen() {
     move === undefined || move.setupFields.length === 0 ? null : (
       // Not on a card: a field on the card's colour does not show (simulator).
       <View style={styles.section}>
-        <Text style={[styles.heading, { color: color.text }]}>{t('demo.setup')}</Text>
+        <Text accessibilityRole="header" style={[styles.heading, { color: color.text }]}>
+          {t('demo.setup')}
+        </Text>
         <Text style={[styles.small, { color: color.muted }]}>{t('demo.setupNote')}</Text>
         {move.setupFields.map((field) => (
           <TextField
@@ -107,41 +109,52 @@ export default function ExerciseScreen() {
         ))}
       </View>
     );
-  // Clips are filmed for the catalog's moves (ADR-017): an own move gets none, so none is promised to it.
-  const clipsPending =
-    move === undefined || move.name !== undefined || move.clips !== undefined ? null : (
-      <Card>
-        <Text style={[styles.text, { color: color.textSecondary }]}>{t('demo.clipsPending')}</Text>
-      </Card>
+  const pill = (text: string) => (
+    <View key={text} style={[styles.pill, { backgroundColor: color.surface }]}>
+      <Text style={[styles.pillText, { color: color.text }]}>{text}</Text>
+    </View>
+  );
+  const worked =
+    move === undefined || move.muscles.length === 0 ? null : (
+      <View style={styles.section}>
+        <Text accessibilityRole="header" style={[styles.heading, { color: color.text }]}>
+          {t('demo.muscles')}
+        </Text>
+        <View style={styles.pills}>{move.muscles.map((m) => pill(t(`demo.muscle.${m}`)))}</View>
+        {muscleMap}
+      </View>
     );
   const about =
     move === undefined ? null : (
       <>
-        {clipsPending}
-        <Text style={[styles.heading, { color: color.text }]}>{t('demo.tips')}</Text>
-        {tipsFor(move).map((key) => (
-          <Text key={key} style={[styles.text, { color: color.text }]}>
-            {t(key)}
+        <View style={styles.pills}>
+          {pill(t(`ownMove.equipments.${move.equipment}`))}
+          {pill(t(`demo.kind.${move.kind}`))}
+        </View>
+        <View style={styles.section}>
+          <Text accessibilityRole="header" style={[styles.heading, { color: color.text }]}>
+            {t('demo.tips')}
           </Text>
-        ))}
-        {move.muscles.length > 0 && <Text style={[styles.label, { color: color.text }]}>{t('demo.muscles')}</Text>}
-        {muscleMap}
-        {move.muscles.length > 0 && (
-          <Text style={[styles.text, { color: color.textSecondary }]}>{muscleWords}</Text>
-        )}
+          {tipsFor(move).map((key) => (
+            <View key={key} style={styles.cue}>
+              <View style={[styles.dot, { backgroundColor: color.accent }]} />
+              <Text style={[styles.text, styles.grow, { color: color.text }]}>{t(key)}</Text>
+            </View>
+          ))}
+        </View>
+        {worked}
       </>
     );
   const unknown = read !== null && move === undefined ? <Text style={[styles.text, { color: color.textSecondary }]}>{t('demo.unknown')}</Text> : null;
 
   return (
-    <SafeAreaView testID="screen" style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
-      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+    <SafeAreaView testID="screen" style={[styles.safe, { backgroundColor: color.background }]} edges={['bottom']}>
+      <FormScroll contentContainerStyle={styles.body}>
         <ScreenTitle>{exerciseName(exercise, moves)}</ScreenTitle>
-        {setupCard}
         {about}
+        {setupCard}
         {unknown}
-        <Button label={t('history.done')} variant="ghost" onPress={() => router.back()} />
-      </ScrollView>
+      </FormScroll>
     </SafeAreaView>
   );
 }
@@ -151,8 +164,13 @@ const styles = StyleSheet.create({
   body: { padding: tokens.space.lg, gap: tokens.space.md },
   section: { gap: tokens.space.sm },
   map: { flexDirection: 'row', justifyContent: 'center', gap: tokens.space.md },
-  heading: { fontSize: tokens.type.heading, fontWeight: tokens.weight.bold },
-  label: { fontSize: tokens.type.body, fontWeight: tokens.weight.bold },
+  heading: { fontSize: tokens.type.body, fontWeight: tokens.weight.bold },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },
+  grow: { flex: 1 },
+  pills: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm },
+  pill: { borderRadius: tokens.radius.chip, paddingHorizontal: tokens.space.md, paddingVertical: tokens.space.xs },
+  pillText: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.semibold },
+  cue: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
+  dot: { width: tokens.size.swatch, height: tokens.size.swatch, borderRadius: tokens.size.swatch / 2 },
 });

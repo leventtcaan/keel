@@ -90,8 +90,10 @@ export default function ProgressScreen() {
     else if (strength !== null) strengthCard = <StrengthCard part={strength} lifts={lifts} moves={progress.moves} units={units} />;
     // The weigh-ins toward the trend, or the average once the server says it is ready (before the first call and after it).
     const weightCard = weight === null ? null : <WeightCard part={weight} units={units} />;
-    // The map fills as the user trains in the first days; after the first call, the sets of each muscle against its target.
-    const musclesCard = running ? <MuscleBars muscles={muscles} /> : <MusclesCard muscles={muscles} figure={figure} />;
+    // The map stays on this tab for good (K-1065): it fills as the user trains in the first days, and after the first call the
+    // sets of each muscle against its target follow it as bars, so the view is the same one before and after.
+    const musclesCard = <MusclesCard muscles={muscles} figure={figure} />;
+    const barsCard = running ? <MuscleBars muscles={muscles} /> : null;
     const callsCard = calls === null ? null : <CallsCard items={calls.items} />;
     // The first days' targets only while there is no first call (or no consent to read one); not while it is unknown.
     const first = phase === 'first' || phase === 'locked';
@@ -113,6 +115,7 @@ export default function ProgressScreen() {
       <>
         {strengthCard}
         {musclesCard}
+        {barsCard}
         {weightCard}
         <ConsistencyGrid weeks={weeks} />
         {callsCard}
