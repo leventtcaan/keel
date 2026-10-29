@@ -55,7 +55,7 @@ function AppStack() {
         <Stack.Screen name="settings" options={pushed} />
         <Stack.Screen name="settings-detail" options={pushed} />
         <Stack.Screen name="weigh-in" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="food" />
+        <Stack.Screen name="food" options={pushed} />
         <Stack.Screen name="meal" options={{ presentation: 'modal' }} />
         <Stack.Screen name="cardio" options={{ presentation: 'modal' }} />
         <Stack.Screen name="workout" />
@@ -63,15 +63,15 @@ function AppStack() {
         <Stack.Screen name="exercise-history" />
         <Stack.Screen name="exercise" options={pushed} />
         <Stack.Screen name="workout-edit" />
-        <Stack.Screen name="check-in" />
-        <Stack.Screen name="call" />
-        <Stack.Screen name="state" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="check-in" options={pushed} />
+        <Stack.Screen name="call" options={pushed} />
+        <Stack.Screen name="state" options={pushed} />
         {/* Coming back after a gap (K-981): over the tabs, answered rather than swiped away. */}
         <Stack.Screen name="return" options={{ gestureEnabled: false }} />
         {/* Full screen (K-1055): the camera and its controls are the whole screen; Close is a button, not a swipe down. */}
         <Stack.Screen name="photo-capture" options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
         <Stack.Screen name="compare" />
-        <Stack.Screen name="share" />
+        <Stack.Screen name="share" options={pushed} />
         <Stack.Screen name="import" options={pushed} />
         <Stack.Screen name="paywall" options={{ presentation: 'modal' }} />
       </Stack.Protected>

@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ProblemText } from '@/components/ProblemText';
@@ -104,11 +104,8 @@ export default function CheckInScreen() {
 
   const said = problem === null ? null : <ProblemText style={[styles.text, { color: color.text }]}>{t(SAID[problem])}</ProblemText>;
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['bottom']}>
       <FormScroll contentContainerStyle={styles.body}>
-        <Pressable accessibilityRole="button" accessibilityLabel={t('checkIn.screen.back')} onPress={() => router.back()} hitSlop={tokens.space.md}>
-          <Text style={[styles.back, { color: color.text }]}>{`${t('settings.backMark')} ${t('checkIn.screen.back')}`}</Text>
-        </Pressable>
         <ScreenTitle>{t('checkIn.screen.title')}</ScreenTitle>
         <Body
           checkIn={checkIn}
@@ -228,5 +225,4 @@ const styles = StyleSheet.create({
   question: { borderTopWidth: tokens.border.hairline, paddingTop: tokens.space.md, gap: tokens.space.sm },
   answers: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm },
   footer: { paddingHorizontal: tokens.space.lg, paddingBottom: tokens.space.lg },
-  back: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
 });

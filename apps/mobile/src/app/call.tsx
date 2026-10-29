@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { components } from '@/api/schema';
@@ -52,9 +52,8 @@ const SAID: Record<string, string> = {
  * once, as the prototype does, unless Reduce Motion is on.
  */
 export default function CallScreen() {
-  const { id, from } = useLocalSearchParams<{ id?: string; from?: string }>();
+  const { id } = useLocalSearchParams<{ id?: string }>();
   const readOnly = id !== undefined;
-  const backKey = from === 'progress' ? 'callScreen.backProgress' : 'callScreen.back';
   const { api, report } = useAppServices();
   const units = useUnits();
   const { color } = useTheme();
@@ -142,11 +141,6 @@ export default function CallScreen() {
     }
   }
 
-  const back = (
-    <Pressable accessibilityRole="button" accessibilityLabel={t(backKey)} onPress={() => router.back()} hitSlop={tokens.space.md}>
-      <Text style={[styles.back, { color: color.text }]}>{`${t('settings.backMark')} ${t(backKey)}`}</Text>
-    </Pressable>
-  );
   const note = (key: string, action?: { label: string; onPress: () => void }) => {
     // Built outside the JSX children (the raw-text guard reads them).
     const button = action === undefined ? null : <Button label={action.label} variant="ghost" size="sm" onPress={action.onPress} />;
@@ -259,15 +253,14 @@ export default function CallScreen() {
 
   if (week1?.changing) {
     return (
-      <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
+      <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['bottom']}>
         {week1.changing}
       </SafeAreaView>
     );
   }
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.body}>
-        {back}
         {body}
       </ScrollView>
       {dock}
@@ -278,7 +271,6 @@ export default function CallScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   body: { padding: tokens.space.lg, gap: tokens.space.md },
-  back: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
   note: { gap: tokens.space.sm },
   left: { gap: tokens.space.sm },
   strong: { fontWeight: tokens.weight.semibold },

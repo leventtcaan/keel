@@ -973,13 +973,15 @@ describe("today's workout (#home)", () => {
 
 describe('the food line', () => {
   const range = (low: string | number, high: string | number) => `${t('format.range', { low, high })} ${t('food.budget.kcalUnit')}`;
+  const single = (value: string) => t('food.budget.single', { value, unit: t('food.budget.kcalUnit') });
 
-  test('"Food left" as a range; the line opens the day\'s food, "Log" opens the meal (ADR-086)', async () => {
+  test('"Food left" as ONE number (ADR-090 #5); the line opens the day\'s food, "Log" opens the meal (ADR-086)', async () => {
     mockAnswers['/v1/days/{day}/budget'] = ok(BUDGET(1240, 1480));
     await show();
     expect(screen.getByText(t('thisWeek.food.left'))).toBeOnTheScreen();
-    expect(screen.getByText(range('1,240', '1,480'))).toBeOnTheScreen();
-    await press(t('thisWeek.food.lineLabel', { lead: t('thisWeek.food.left'), amount: range('1,240', '1,480') }));
+    expect(screen.getByText(single('1,360'))).toBeOnTheScreen();
+    expect(screen.queryByText(range('1,240', '1,480'))).toBeNull();
+    await press(t('thisWeek.food.lineLabel', { lead: t('thisWeek.food.left'), amount: single('1,360') }));
     expect(mockPush).toHaveBeenCalledWith('/food');
     expect(mockPush).not.toHaveBeenCalledWith('/meal');
     mockPush.mockClear();
@@ -988,10 +990,22 @@ describe('the food line', () => {
     expect(mockPush).not.toHaveBeenCalledWith('/food');
   });
 
-  test("a meal logged, the range comes down: the server's numbers as they are", async () => {
+  test("a meal logged, the number comes down with the server's range; the range itself is in a tap's detail", async () => {
     mockAnswers['/v1/days/{day}/budget'] = ok(BUDGET(610, 720));
     await show();
-    expect(screen.getByText(range(610, 720))).toBeOnTheScreen();
+    expect(screen.getByText(single('665'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('thisWeek.food.range', { range: range(610, 720) }))).toBeNull();
+    await press(t('thisWeek.food.showRange'));
+    expect(screen.getByText(t('thisWeek.food.range', { range: range(610, 720) }))).toBeOnTheScreen();
+    await press(t('thisWeek.food.hideRange'));
+    expect(screen.queryByText(t('thisWeek.food.range', { range: range(610, 720) }))).toBeNull();
+  });
+
+  test('the starting target is exact: one number and no range to open', async () => {
+    mockAnswers['/v1/days/{day}/budget'] = ok(BUDGET(2300, 2300));
+    await show();
+    expect(screen.getByText(single('2,300'))).toBeOnTheScreen();
+    expect(screen.queryByTestId('food-line-detail')).toBeNull();
   });
 
   test('after the first call, nothing eaten: "Food left" too, as in the first week (one name for the number)', async () => {
@@ -1033,7 +1047,7 @@ describe('the food line', () => {
       mockAnswers['/v1/days/{day}/budget'] = ok(FIRST_WEEK_BUDGET({ low: 1480, high: 1620 }, { low: 480, high: 620 }));
       await show();
       expect(screen.getByText(t('thisWeek.food.left'))).toBeOnTheScreen();
-      expect(screen.getByText(range('1,480', '1,620'))).toBeOnTheScreen();
+      expect(screen.getByText(single('1,550'))).toBeOnTheScreen();
     });
 
     test('the temporary starting route is not read for this line any more', async () => {
@@ -1226,7 +1240,7 @@ describe('on the system (K-1045, ADR-070 Ek 2 #7, #8; prototype yeniden-yapim 5)
     await press(t('thisWeek.food.logLabel'));
     expect(mockPush).toHaveBeenCalledWith('/meal');
     mockPush.mockClear();
-    await press(t('thisWeek.food.lineLabel', { lead: t('thisWeek.food.left'), amount: `${t('format.range', { low: '1,240', high: '1,480' })} ${t('food.budget.kcalUnit')}` }));
+    await press(t('thisWeek.food.lineLabel', { lead: t('thisWeek.food.left'), amount: t('food.budget.single', { value: '1,360', unit: t('food.budget.kcalUnit') }) }));
     expect(mockPush).toHaveBeenCalledWith('/food');
   });
 

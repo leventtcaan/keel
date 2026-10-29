@@ -49,4 +49,5 @@ export const numbersText = (m: Macros): string => t('food.single.line', { kcal: 
 export const numbersSpoken = (m: Macros): string => t('food.single.spoken', { kcal: m.kcal, protein: m.protein, carbs: m.carbs, fat: m.fat });
 
 /** A range as the detail shows it: "66-80 kcal". */
-export const rangeText = (range: Range, unit: string): string => `${t('format.range', { low: range.low, high: range.high })} ${unit}`;
+export const rangeText = (range: Range, unit: string): string =>
+  `${t('format.range', { low: range.low.toLocaleString('en-US'), high: range.high.toLocaleString('en-US') })} ${unit}`;

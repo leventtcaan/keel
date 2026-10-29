@@ -115,11 +115,11 @@ test('not recorded: it says so, by connection or not, and stays', async () => {
   expect(screen.getByText(t('state.screen.refused'))).toBeOnTheScreen();
 });
 
-test('a way back to Today without declaring anything', async () => {
+test('the way back to Today is the system header\'s (none drawn here); nothing is declared by leaving', async () => {
   await show();
-  await press(t('state.screen.back'));
+  expect(screen.queryByRole('button', { name: /^(‹ )?(Back|This week)$/ })).toBeNull();
   expect(mockDeclare).not.toHaveBeenCalled();
-  expect(mockBack).toHaveBeenCalledTimes(1);
+  expect(mockBack).not.toHaveBeenCalled();
 });
 
 test('two taps while it is on its way declare once', async () => {

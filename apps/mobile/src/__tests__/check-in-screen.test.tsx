@@ -282,11 +282,11 @@ test('two taps on send while it is on its way send once', async () => {
   await act(async () => answer(ok(CALL)));
 });
 
-test('a way back to Today, on every state of the screen', async () => {
+test('the way back is the system header\'s, on every state of the screen: the screen draws none', async () => {
   mockCheckIn = async () => ok({ weekOf: '2026-10-05', answered: true, questions: [] });
   await show();
-  await press(t('checkIn.screen.back'));
-  expect(mockBack).toHaveBeenCalledTimes(1);
+  expect(screen.queryByRole('button', { name: /^(‹ )?(Back|This week)$/ })).toBeNull();
+  expect(mockBack).not.toHaveBeenCalled();
 });
 
 test('the screen left while the answers are on their way: nothing is closed when they arrive', async () => {

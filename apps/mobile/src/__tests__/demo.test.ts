@@ -8,7 +8,13 @@ import type { components } from '@/api/schema';
 import { mapAreas, tipsFor } from '@/train/demo';
 
 type Schemas = components['schemas'];
-const move = (kind: 'COMPOUND' | 'ISOLATION', muscles: string[]) => ({ id: 'm', kind, muscles }) as unknown as Schemas['Exercise'];
+const move = (kind: 'COMPOUND' | 'ISOLATION', muscles: string[]) => ({ id: 'custom:m', kind, muscles }) as unknown as Schemas['Exercise'];
+
+test('a catalog move says its own three cues, not the general ones (Evre 6 G)', () => {
+  const squat = { id: 'squat', kind: 'COMPOUND', muscles: ['quads'] } as unknown as Schemas['Exercise'];
+  expect(tipsFor(squat)).toEqual(['exercises.squat.cue1', 'exercises.squat.cue2', 'exercises.squat.cue3']);
+  expect(tipsFor({ ...squat, id: 'leg_press' } as Schemas['Exercise'])).toEqual(['exercises.leg_press.cue1', 'exercises.leg_press.cue2', 'exercises.leg_press.cue3']);
+});
 
 test('a compound push: full range, tempo, the last rep', () => {
   expect(tipsFor(move('COMPOUND', ['chest', 'triceps']))).toEqual(['demo.tip.fullRange', 'demo.tip.tempo', 'demo.tip.lastRep']);

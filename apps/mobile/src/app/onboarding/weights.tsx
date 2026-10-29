@@ -29,6 +29,11 @@ export default function WeightsStep() {
   // The lift whose wheel is open: one at a time.
   const [open, setOpen] = useState<string | null>(null);
   const set = (move: string, kg: number) => update({ startingWeights: { ...draft.startingWeights, [move]: kg } });
+  // Back to "Not set": the move leaves the draft, so nothing is sent for it.
+  const clear = (move: string) => {
+    const { [move]: _cleared, ...rest } = draft.startingWeights;
+    update({ startingWeights: rest });
+  };
   const skip = () => {
     update({ startingWeights: {} });
     router.push(routeAfter(null));
@@ -48,6 +53,7 @@ export default function WeightsStep() {
             open={open === move}
             onToggle={() => setOpen(open === move ? null : move)}
             onChange={(kg) => set(move, kg)}
+            onClear={() => clear(move)}
           />
         ))}
       </View>

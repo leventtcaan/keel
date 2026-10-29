@@ -456,13 +456,13 @@ describe('what the call changes, and why in a line (K-978 part 2)', () => {
 });
 
 describe('a past call (Progress › Calls)', () => {
-  test('an applied one says it was applied, not that it is in this week\'s plan; the way back names where it came from', async () => {
+  test('an applied one says it was applied, not that it is in this week\'s plan; the way back is the system header\'s, none of its own', async () => {
     mockParams = { id: 'd0', from: 'progress' };
     mockAnswers['/v1/decisions/{id}'] = ok(decision({ id: 'd0' }));
     await show();
     expect(screen.getByText(t('callScreen.applied'))).toBeOnTheScreen();
     expect(screen.queryByText(t('callScreen.inPlan'))).toBeNull();
-    expect(screen.getByRole('button', { name: t('callScreen.backProgress') })).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: /^(‹ )?(Back|This week|Progress)$/ })).toBeNull();
   });
 
   test('the same screen, read only: where it stands, and nothing to tap but the way back', async () => {
@@ -472,7 +472,7 @@ describe('a past call (Progress › Calls)', () => {
     expect(mockGET).toHaveBeenCalledWith('/v1/decisions/{id}', { params: { path: { id: 'd0' } } });
     expect(screen.getByText(t('callScreen.notApplied'))).toBeOnTheScreen();
     for (const name of ['callScreen.gotIt', 'callScreen.keep', 'callScreen.use']) expect(screen.queryByRole('button', { name: t(name) })).toBeNull();
-    expect(screen.getByRole('button', { name: t('callScreen.back') })).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: /^(‹ )?(Back|This week|Progress)$/ })).toBeNull();
   });
 });
 

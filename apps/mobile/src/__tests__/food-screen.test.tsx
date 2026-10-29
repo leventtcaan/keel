@@ -107,10 +107,10 @@ test('what is left is one number, the middle of the server range; protein, carbs
 test('the ranges the numbers are the middle of open under Details, and close again', async () => {
   await show();
   await act(async () => fireEvent.press(screen.getByTestId('totals-detail')));
-  expect(screen.getByText(/1350-1520 kcal/)).toBeOnTheScreen();
+  expect(screen.getByText(/1,350-1,520 kcal/)).toBeOnTheScreen();
   expect(screen.getByText(/Left: 780-950 kcal/)).toBeOnTheScreen();
   await act(async () => fireEvent.press(screen.getByTestId('totals-detail')));
-  expect(screen.queryByText(/1350-1520 kcal/)).toBeNull();
+  expect(screen.queryByText(/1,350-1,520 kcal/)).toBeNull();
 });
 
 test('nothing logged yet: what is left is the target itself, one number (K-409 review)', async () => {
@@ -193,10 +193,10 @@ test("today's food: the title, the day's budget and the way to log a meal into t
   expect(jest.mocked(router.push)).toHaveBeenCalledWith({ pathname: '/meal', params: { day: '2026-09-29' } });
 });
 
-test('a way back, as on the other screens opened from a screen', async () => {
+test('the way back is the system header\'s, as on the other screens opened from a screen: the screen draws no Back of its own', async () => {
   await show();
-  await act(async () => fireEvent.press(screen.getByRole('button', { name: t('food.back') })));
-  expect(jest.mocked(router.back)).toHaveBeenCalledTimes(1);
+  expect(screen.queryByRole('button', { name: /^(‹ )?(Back|This week)$/ })).toBeNull();
+  expect(jest.mocked(router.back)).not.toHaveBeenCalled();
 });
 
 test('the AI is off on this surface (ADR-069 #3, K-909): no coach bar, no meal from a photo, no recipes; each led to a retired screen', async () => {
