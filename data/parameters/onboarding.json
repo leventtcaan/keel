@@ -39,11 +39,11 @@
     },
     {
       "key": "starting_weight_stepper",
-      "value": { "start_kg": 20, "step_kg": 2.5, "start_lb": 45, "step_lb": 5 },
+      "value": { "start_kg": 20, "step_kg": 2.5, "start_lb": 45, "step_lb": 5, "max_kg": 300, "max_lb": 660 },
       "unit": "kg, lb",
       "tag": "urun",
       "source": "plan/yeni-yuz-kurallar.md#R6",
-      "note": "#ob-weights' stepper: the first tap sets an empty bar (20 kg, 45 lb), then each step is a pair of the smallest common plates (prototype: 2.5 kg; as workout.json warmup_round_kg and warmup_round_lb). A move left unset is skipped: its weight is found in the first session (ADR-072 #5)."
+      "note": "#ob-weights' rows: the wheel starts on an empty bar (20 kg, 45 lb) and each row is a pair of the smallest common plates (prototype: 2.5 kg; as workout.json warmup_round_kg and warmup_round_lb), up to max_kg / max_lb (K-1058: the top row of the wheel; the server keeps up to 1000 kg). A move left unset is skipped: its weight is found in the first session (ADR-072 #5); no row is a suggestion of a load."
     },
     {
       "key": "welcome_example_ms",

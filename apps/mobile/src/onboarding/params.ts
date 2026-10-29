@@ -45,5 +45,5 @@ export const onboardingParams = {
   weightWheel: param<{ min_kg: number; step_kg: number; step_lb: number }>('weight_wheel'),
   startingWeightReps: param<number>('starting_weight_reps'),
   startingWeightMoves: param<string[]>('starting_weight_moves'),
-  startingWeightStepper: param<{ start_kg: number; step_kg: number; start_lb: number; step_lb: number }>('starting_weight_stepper'),
+  startingWeightStepper: param<{ start_kg: number; step_kg: number; start_lb: number; step_lb: number; max_kg: number; max_lb: number }>('starting_weight_stepper'),
 };

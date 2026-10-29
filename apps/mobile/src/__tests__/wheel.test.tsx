@@ -14,7 +14,7 @@ import { tokens } from '@/theme/tokens';
 const YEARS = [1990, 1991, 1992, 1993, 1994, 1995];
 const changes: number[] = [];
 
-function Harness({ start = 1992, unset = false }: { start?: number; unset?: boolean }) {
+function Harness({ start = 1992, unset = false, quiet = false }: { start?: number; unset?: boolean; quiet?: boolean }) {
   const [value, setValue] = useState(start);
   return (
     <Wheel
@@ -23,6 +23,7 @@ function Harness({ start = 1992, unset = false }: { start?: number; unset?: bool
       values={YEARS}
       value={value}
       unset={unset}
+      quiet={quiet}
       format={String}
       onChange={(next) => {
         changes.push(next);
@@ -32,7 +33,7 @@ function Harness({ start = 1992, unset = false }: { start?: number; unset?: bool
   );
 }
 
-async function show(props: { start?: number; unset?: boolean } = {}) {
+async function show(props: { start?: number; unset?: boolean; quiet?: boolean } = {}) {
   await render(
     <ThemeProvider scheme="light">
       <Harness {...props} />
@@ -165,4 +166,12 @@ test('every value is a row of the column, in order, the one it starts on at its 
   const column = screen.getByTestId('wheel-Born');
   expect(column.props.contentOffset).toEqual({ x: 0, y: tokens.size.touch * 3 });
   expect(YEARS.map((year) => screen.getByText(String(year)))).toHaveLength(YEARS.length);
+});
+
+test('quiet: the label is not drawn (a row above names it), but VoiceOver still hears it (K-1058)', async () => {
+  await show({ quiet: true });
+  expect(screen.queryByText('Born')).toBeNull();
+  expect(wheel()).toBeOnTheScreen();
+  await show();
+  expect(screen.getAllByText('Born')).toHaveLength(1);
 });

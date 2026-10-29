@@ -244,10 +244,11 @@
     },
     {
       "screen": "ob-weights",
-      "budget": 30,
+      "budget": 40,
       "source": "prototip/yeni-yuz.html",
       "task": "K-967",
       "file": "src/app/onboarding/weights.tsx",
+      "parts": ["src/onboarding/LoadRow.tsx"],
       "keys": [
         "onboarding.weights.title",
         "onboarding.weights.why",
@@ -257,10 +258,11 @@
         "onboarding.weights.unset",
         "exercises.romanian_deadlift.name",
         "onboarding.weights.unset",
+        "onboarding.weights.tap",
         "onboarding.weights.skip",
         "onboarding.continue"
       ],
-      "notFirstView": []
+      "notFirstView": ["onboarding.weights.rowHint", "units.kgUnit", "units.lbUnit"]
     },
     {
       "screen": "ob-preparing",
