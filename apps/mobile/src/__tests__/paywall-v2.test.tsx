@@ -14,6 +14,7 @@ import type { PlanPreview } from '@/subscription/planPreview';
 import type { Plan, SubscriptionStore } from '@/subscription/store';
 import { ThemeProvider } from '@/theme/theme';
 import { palettes, tokens } from '@/theme/tokens';
+import { weekdayDate } from '@/today/today';
 
 // The button names the trial's length, as the store gives it (paywall v2, ADR-072 Ek 3).
 const START = 'Start 2-week free trial';
@@ -24,7 +25,15 @@ const ID = '0b6f2a8e-1c3d-4e5f-8a9b-0c1d2e3f4a5b';
 const NONE: Subscription = { active: false, appUserId: ID };
 const ANNUAL: Plan = { id: '$rc_annual', period: 'annual', price: '$59.99', amount: 59.99, currency: 'USD', pricePerMonth: '$5.00', trial: { count: 2, unit: 'week' } };
 const MONTHLY: Plan = { id: '$rc_monthly', period: 'monthly', price: '$12.99', amount: 12.99, currency: 'USD', pricePerMonth: null, trial: null };
-const PREVIEW: PlanPreview = { own: false, days: 3, firstWorkout: 'MONDAY', firstCall: '2026-10-19', checkInDay: 'MONDAY', hasCardio: true };
+const PREVIEW: PlanPreview = {
+  own: false,
+  days: 3,
+  firstWorkout: 'MONDAY',
+  firstCall: '2026-10-19',
+  checkInDay: 'MONDAY',
+  hasCardio: true,
+  startingKcal: 2440, workoutName: 'Upper A', workoutMoves: 9, workoutToday: true,
+};
 
 let mockPlans: Plan[] = [ANNUAL, MONTHLY];
 let mockPreview: PlanPreview | null = null;
@@ -81,17 +90,14 @@ async function show(scheme: 'light' | 'dark' = 'light') {
 const press = async (name: string) => act(async () => fireEvent.press(screen.getByRole('button', { name })));
 
 describe('the hero: the app\'s own call card, an example', () => {
-  test('with calls (the health data consent given, or not known): the weekly call, marked EXAMPLE', async () => {
-    mockPreview = PREVIEW;
+  test('with no plan just shown (the paywall met later, from Settings): the weekly call, marked EXAMPLE', async () => {
+    mockPreview = null;
     await show();
     const card = screen.getByLabelText(t('subscription.example.call.label'));
     expect(within(card).getByText(t('subscription.example.tag'))).toBeOnTheScreen();
     expect(within(card).getByText(t('subscription.example.call.title'))).toBeOnTheScreen();
     expect(screen.queryByLabelText(t('subscription.example.set.label'))).toBeNull();
-    await screen.unmount();
-    mockPreview = null;
-    await show();
-    expect(screen.getByLabelText(t('subscription.example.call.label'))).toBeOnTheScreen();
+    expect(screen.queryByLabelText(t('subscription.yours.label'))).toBeNull();
   });
 
   test('without the health data consent there are no calls: the set card instead, also marked EXAMPLE', async () => {
@@ -101,6 +107,65 @@ describe('the hero: the app\'s own call card, an example', () => {
     expect(within(card).getByText(t('subscription.example.tag'))).toBeOnTheScreen();
     expect(within(card).getByText(t('subscription.example.set.title'))).toBeOnTheScreen();
     expect(screen.queryByLabelText(t('subscription.example.call.label'))).toBeNull();
+    expect(screen.queryByLabelText(t('subscription.yours.label'))).toBeNull();
+  });
+});
+
+describe('the hero right after onboarding: the user\'s own plan, tagged Yours (K-1058, prototype section 11 frame 8)', () => {
+  const card = () => within(screen.getByLabelText(t('subscription.yours.label')));
+
+  test('with calls: Food to start, the first workout and the first call, tagged Yours, no example card', async () => {
+    mockPreview = PREVIEW;
+    await show();
+    expect(card().getByText(t('subscription.yours.tag'))).toBeOnTheScreen();
+    expect(card().queryByText(t('subscription.example.tag'))).toBeNull();
+    expect(card().getByText(t('onboarding.plan.food'))).toBeOnTheScreen();
+    expect(card().getByText(t('onboarding.plan.foodKcal', { kcal: '2,440' }))).toBeOnTheScreen();
+    expect(card().getByText(t('onboarding.plan.today'))).toBeOnTheScreen();
+    expect(card().getByText(t('subscription.yours.workout', { name: 'Upper A', count: 9 }))).toBeOnTheScreen();
+    expect(card().getByText(t('onboarding.plan.firstCall'))).toBeOnTheScreen();
+    expect(card().getByText(weekdayDate('2026-10-19'))).toBeOnTheScreen();
+    expect(card().getByText(t('subscription.yours.callNote', { day: t('onboarding.schedule.dayName.MONDAY') }))).toBeOnTheScreen();
+    expect(screen.queryByLabelText(t('subscription.example.call.label'))).toBeNull();
+    expect(screen.queryByLabelText(t('subscription.example.set.label'))).toBeNull();
+  });
+
+  test('no starting target (no weigh-in yet): no food row, the rest as it is', async () => {
+    mockPreview = { ...PREVIEW, startingKcal: null };
+    await show();
+    expect(card().queryByText(t('onboarding.plan.food'))).toBeNull();
+    expect(card().getByText(t('subscription.yours.workout', { name: 'Upper A', count: 9 }))).toBeOnTheScreen();
+    expect(card().getByText(t('onboarding.plan.firstCall'))).toBeOnTheScreen();
+  });
+
+  test('a first workout that is not today is named by its day; one move is "1 move"', async () => {
+    mockPreview = { ...PREVIEW, workoutToday: false, firstWorkout: 'THURSDAY', workoutMoves: 1 };
+    await show();
+    expect(card().getByText(t('onboarding.schedule.dayName.THURSDAY'))).toBeOnTheScreen();
+    expect(card().queryByText(t('onboarding.plan.today'))).toBeNull();
+    expect(card().getByText(t('subscription.yours.workoutOne', { name: 'Upper A' }))).toBeOnTheScreen();
+  });
+
+  test('the first value line is the call, food and training together, on the check-in day', async () => {
+    mockPreview = { ...PREVIEW, checkInDay: 'THURSDAY' };
+    await show();
+    expect(screen.getByText(t('subscription.values.call', { day: t('onboarding.schedule.dayName.THURSDAY') }))).toBeOnTheScreen();
+    expect(t('subscription.values.call', { day: 'Thursday' })).toBe('Your Thursday call, food and training together');
+  });
+
+  test('the Apple 3.1.2 lines stay: the price, the period, the trial, the renewal and how to cancel', async () => {
+    mockPreview = PREVIEW;
+    await show();
+    expect(screen.getByRole('button', { name: START })).toBeOnTheScreen();
+    expect(screen.getByLabelText('No charge today. Then $59.99 a year, renewing every year until you cancel.')).toBeOnTheScreen();
+    expect(screen.getByText('When the trial ends: $59.99 a year, renewing every year until you cancel.')).toBeOnTheScreen();
+    expect(screen.getByText(t('subscription.cancelNote'))).toBeOnTheScreen();
+  });
+
+  test('dark: the card is drawn', async () => {
+    mockPreview = PREVIEW;
+    await show('dark');
+    expect(card().getByText(t('subscription.yours.tag'))).toBeOnTheScreen();
   });
 });
 

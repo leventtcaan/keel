@@ -333,6 +333,7 @@
         "src/subscription/PaywallView.tsx",
         "src/subscription/PaywallParts.tsx",
         "src/subscription/ExampleCard.tsx",
+        "src/subscription/YourPlanCard.tsx",
         "src/subscription/AccountSheet.tsx"
       ],
       "keys": [
@@ -379,6 +380,52 @@
         { "what": "the timeline's reminder date (Sat, Oct 24)", "words": 2 },
         { "what": "the timeline's charge date (Mon, Oct 26)", "words": 2 }
       ],
+      "faces": [
+        {
+          "face": "own plan: right after onboarding, with calls (K-1058)",
+          "keys": [
+            "subscription.yours.tag",
+            "subscription.yours.title",
+            "onboarding.plan.food",
+            "onboarding.plan.foodKcal",
+            ["onboarding.plan.today", "onboarding.schedule.dayName.THURSDAY", "subscription.yours.workoutDay"],
+            ["subscription.yours.workout", "subscription.yours.workoutOne"],
+            "onboarding.plan.firstCall",
+            "subscription.yours.callNote",
+            "subscription.titleLead",
+            "subscription.titleFor",
+            "subscription.trialSpan.week",
+            "subscription.sub.lead",
+            ["subscription.values.built", "subscription.values.own"],
+            "subscription.values.sets",
+            ["subscription.values.call", "subscription.values.weeklyCall", "subscription.values.cardio", "subscription.values.swap"],
+            "onboarding.schedule.dayName.MONDAY",
+            "subscription.plan.annual",
+            "subscription.plan.save",
+            "subscription.plan.annualBilled",
+            "subscription.plan.annualPrice",
+            "subscription.plan.perMonth",
+            "subscription.plan.monthly",
+            "subscription.plan.monthlyPrice",
+            "subscription.plan.monthlyBilled",
+            "subscription.timeline.heading",
+            "subscription.timeline.today",
+            "subscription.timeline.free",
+            "subscription.timeline.firstCall",
+            "subscription.timeline.reminder",
+            ["subscription.timeline.charge.annual", "subscription.timeline.charge.monthly"],
+            "subscription.startTrial",
+            "subscription.trial.week"
+          ],
+          "dynamic": [
+            {"what": "the day nothing is charged until (Tue, Oct 27)", "words": 2},
+            {"what": "the timeline's first call date (Mon, Oct 19)", "words": 2},
+            {"what": "the timeline's reminder date (Sat, Oct 24)", "words": 2},
+            {"what": "the timeline's charge date (Mon, Oct 26)", "words": 2},
+            {"what": "the own-plan card's first call date (Mon, Nov 2)", "words": 2}
+          ]
+        }
+      ],
       "uncounted": ["app.name", "subscription.example.arrow"],
       "notFirstView": [
         "settings.account.footer",
@@ -386,6 +433,7 @@
         "subscription.example.call.spoken",
         "subscription.example.set.label",
         "subscription.example.set.spoken",
+        "subscription.yours.label",
         "subscription.plan.savesSpoken",
         "subscription.dock.noCharge",
         "subscription.dock.then",

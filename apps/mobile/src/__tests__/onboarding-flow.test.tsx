@@ -1384,11 +1384,13 @@ describe('#ob-plan: the starting call in U3\'s parts (ADR-072 #6)', () => {
       expect(screen.getByText(t('onboarding.plan.callNote', { when: t('onboarding.plan.inDays', { count: 5 }), day: t('onboarding.schedule.dayName.MONDAY') }))).toBeOnTheScreen();
     });
 
-    test('tomorrow and today are said as such in the same line', async () => {
+    test('tomorrow is said as such in the same line', async () => {
       mockFirstCall = '2026-10-15';
       await toPlan({ experience: 'NEW', allow: true });
       expect(screen.getByText(t('onboarding.plan.callNote', { when: t('onboarding.plan.tomorrow'), day: t('onboarding.schedule.dayName.MONDAY') }))).toBeOnTheScreen();
-      await screen.unmount();
+    });
+
+    test('today is said as such in the same line', async () => {
       mockFirstCall = '2026-10-14';
       await toPlan({ experience: 'NEW', allow: true });
       expect(screen.getByText(t('onboarding.plan.callNote', { when: t('onboarding.plan.today'), day: t('onboarding.schedule.dayName.MONDAY') }))).toBeOnTheScreen();
@@ -1553,9 +1555,35 @@ describe('#ob-plan: the starting call in U3\'s parts (ADR-072 #6)', () => {
     mockKeepPreview.mockClear();
     await press(t('onboarding.continue'));
     // On the pinned Wednesday: today's workout, Monday's call.
-    expect(mockKeepPreview).toHaveBeenCalledWith({ own: false, days: 3, firstWorkout: 'WEDNESDAY', firstCall: '2026-10-19', checkInDay: 'MONDAY', hasCardio: true });
+    expect(mockKeepPreview).toHaveBeenCalledWith({
+      own: false,
+      days: 3,
+      firstWorkout: 'WEDNESDAY',
+      firstCall: '2026-10-19',
+      checkInDay: 'MONDAY',
+      hasCardio: true,
+      startingKcal: null,
+      workoutName: t('programDays.full_body_a.name'),
+      workoutMoves: 3,
+      workoutToday: true,
+    });
     // Kept before onboarding ends: the paywall that replaces the plan reads it as it opens.
     expect(mockKeepPreview.mock.invocationCallOrder[0]).toBeLessThan(mockProfile.finish.mock.invocationCallOrder[0]);
+  });
+
+  test('with a starting target the paywall also gets where the food starts, and the first workout\'s name and how many moves it has (K-1058)', async () => {
+    mockStarting = { targetKcal: 2440, maintenanceKcal: { low: 2600, high: 3000 }, observationDays: 14, proteinG: 175, stepsPerDay: 7000 };
+    mockExtraMoves = ['leg_press', 'seated_row'];
+    await toPlan({ experience: 'NEW', allow: true });
+    await press(t('onboarding.continue'));
+    expect(mockKeepPreview).toHaveBeenLastCalledWith(expect.objectContaining({ startingKcal: 2440, workoutName: t('programDays.full_body_a.name'), workoutMoves: 5, workoutToday: true }));
+  });
+
+  test('a first workout on a later day is not today\'s for the paywall', async () => {
+    jest.setSystemTime(new Date(2026, 9, 15, 12, 0)); // a Thursday: the program's days are Monday, Wednesday, Friday
+    await toPlan({ experience: 'NEW', allow: true });
+    await press(t('onboarding.continue'));
+    expect(mockKeepPreview).toHaveBeenLastCalledWith(expect.objectContaining({ firstWorkout: 'FRIDAY', workoutToday: false }));
   });
 
   test('without the health data consent the paywall names no first call either', async () => {

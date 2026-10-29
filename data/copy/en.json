@@ -2678,10 +2678,19 @@
       "built": "Program built for your days",
       "own": "Your program, tuned",
       "sets": "Weight and reps for every set",
-      "call": "A {day} call, with the reason",
+      "call": "Your {day} call, food and training together",
       "weeklyCall": "A weekly call, with the reason",
       "cardio": "Cardio planned around your lifting",
       "swap": "Swap any move, any time"
+    },
+    "yours": {
+      "tag": "Yours",
+      "title": "Your plan",
+      "label": "Your own plan",
+      "workout": "{name}, {count} moves",
+      "workoutOne": "{name}, 1 move",
+      "workoutDay": "First workout",
+      "callNote": "then every {day}, with the reason"
     },
     "example": {
       "tag": "Example",
