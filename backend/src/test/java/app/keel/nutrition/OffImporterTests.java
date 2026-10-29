@@ -27,7 +27,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 class OffImporterTests {
 
     private static final Path SAMPLE = Path.of("src/test/resources/off/off-tr.jsonl");
-    private static final String GOFRET = "{\"code\":\"8690504012345\",\"name\":\"Çikolatalı Gofret\",\"brand\":\"Ülker\",\"kcal\":520,\"protein\":6.5,"
+    private static final String GOFRET = "{\"code\":\"8690504012344\",\"name\":\"Çikolatalı Gofret\",\"brand\":\"Ülker\",\"kcal\":520,\"protein\":6.5,"
             + "\"carbs\":60.25,\"fat\":28,\"serving_g\":30,\"serving\":\"1 gofret (30 g)\"}\n";
 
     @Autowired
@@ -56,11 +56,11 @@ class OffImporterTests {
 
         Map<String, Object> gofret = jdbc.sql("""
                 select name, brand, source, dataset, gtin, kcal::text as kcal, protein_g::text as protein, carbs_g::text as carbs, fat_g::text as fat,
-                       grams_per_ml from nutrition.food where id = 'off:8690504012345'""").query().singleRow();
+                       grams_per_ml from nutrition.food where id = 'off:8690504012344'""").query().singleRow();
         assertThat(gofret).containsEntry("name", "Çikolatalı Gofret").containsEntry("brand", "Ülker").containsEntry("source", "BRANDED")
-                .containsEntry("dataset", "OFF").containsEntry("gtin", "08690504012345").containsEntry("kcal", "520.00")
+                .containsEntry("dataset", "OFF").containsEntry("gtin", "08690504012344").containsEntry("kcal", "520.00")
                 .containsEntry("protein", "6.50").containsEntry("carbs", "60.25").containsEntry("fat", "28.00").containsEntry("grams_per_ml", null);
-        assertThat(jdbc.sql("select name || ' = ' || grams::text from nutrition.food_serving where food_id = 'off:8690504012345' order by seq")
+        assertThat(jdbc.sql("select name || ' = ' || grams::text from nutrition.food_serving where food_id = 'off:8690504012344' order by seq")
                 .query(String.class).list()).containsExactly("1 serving (1 gofret (30 g)) = 30.00");
         assertThat(jdbc.sql("select gtin from nutrition.food where id = 'off:96385074'").query(String.class).single()).isEqualTo("00000096385074");
         assertThat(jdbc.sql("select count(*) from nutrition.food_serving where food_id = 'off:8690632000011'").query(Integer.class).single()).isZero();
@@ -74,18 +74,18 @@ class OffImporterTests {
         importer.loadIfChanged(SAMPLE);
 
         // A scanned EAN-13 and EAN-8 as the app sends them: Gtin makes the GTIN-14 the table keys on.
-        String ean13 = Gtin.candidates("8690504012345").getFirst();
+        String ean13 = Gtin.candidates("8690504012344").getFirst();
         String ean8 = Gtin.candidates("96385074").getFirst();
         assertThat(foods.byGtin(ean13)).hasValueSatisfying(food -> {
-            assertThat(food.id()).isEqualTo("off:8690504012345");
+            assertThat(food.id()).isEqualTo("off:8690504012344");
             assertThat(food.brand()).isEqualTo("Ülker");
             assertThat(food.source()).isEqualTo(FoodRanges.Source.BRANDED);
             assertThat(food.servings()).extracting(FoodStore.Serving::name).containsExactly("1 serving (1 gofret (30 g))");
         });
         assertThat(foods.byGtin(ean8)).hasValueSatisfying(food -> assertThat(food.name()).isEqualTo("Sade Gazoz"));
 
-        assertThat(foods.search("ülker", 20)).extracting(FoodStore.Food::id).contains("off:8690504012345");
-        assertThat(foods.search("ÜLKER gofret", 20)).extracting(FoodStore.Food::id).contains("off:8690504012345");
+        assertThat(foods.search("ülker", 20)).extracting(FoodStore.Food::id).contains("off:8690504012344");
+        assertThat(foods.search("ÜLKER gofret", 20)).extracting(FoodStore.Food::id).contains("off:8690504012344");
         assertThat(foods.search("beyaz peynir", 20)).extracting(FoodStore.Food::id).contains("off:8690632000011");
     }
 
@@ -109,9 +109,9 @@ class OffImporterTests {
         assertThat(importer.loadIfChanged(next)).isEqualTo(OffImporter.Outcome.IMPORTED);
 
         assertThat(jdbc.sql("select id from nutrition.food where dataset = 'OFF' order by id").query(String.class).list())
-                .as("the two products the file no longer has are gone, the new one is in").containsExactly("off:8690504012345", "off:8690632999990");
-        assertThat(jdbc.sql("select kcal::text from nutrition.food where id = 'off:8690504012345'").query(String.class).single()).isEqualTo("530.00");
-        assertThat(jdbc.sql("select grams::text from nutrition.food_serving where food_id = 'off:8690504012345'").query(String.class).list())
+                .as("the two products the file no longer has are gone, the new one is in").containsExactly("off:8690504012344", "off:8690632999990");
+        assertThat(jdbc.sql("select kcal::text from nutrition.food where id = 'off:8690504012344'").query(String.class).single()).isEqualTo("530.00");
+        assertThat(jdbc.sql("select grams::text from nutrition.food_serving where food_id = 'off:8690504012344'").query(String.class).list())
                 .containsExactly("40.00");
         assertThat(jdbc.sql("select count(*) from nutrition.food_serving where food_id in ('off:8690632000011', 'off:96385074')")
                 .query(Integer.class).single()).as("servings go with their product").isZero();

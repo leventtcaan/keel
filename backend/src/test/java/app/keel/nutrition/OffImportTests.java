@@ -20,13 +20,13 @@ class OffImportTests {
     @Test
     void aProductLineBecomesAFoodWithItsBarcodeAsGtin14() {
         OffImport.Food gofret = OffImport.parse("""
-                {"code":"8690504012345","name":"Çikolatalı Gofret","name_en":"Chocolate wafer","brand":"Ülker","kcal":520.0,"protein":6.5,"carbs":60.25,"fat":28.0,"serving_g":30.0,"serving":"1 gofret (30 g)"}""")
+                {"code":"8690504012344","name":"Çikolatalı Gofret","name_en":"Chocolate wafer","brand":"Ülker","kcal":520.0,"protein":6.5,"carbs":60.25,"fat":28.0,"serving_g":30.0,"serving":"1 gofret (30 g)"}""")
                 .orElseThrow();
 
-        assertThat(gofret.id()).isEqualTo("off:8690504012345");
+        assertThat(gofret.id()).isEqualTo("off:8690504012344");
         assertThat(gofret.name()).isEqualTo("Çikolatalı Gofret");
         assertThat(gofret.brand()).isEqualTo("Ülker");
-        assertThat(gofret.gtin()).isEqualTo("08690504012345");
+        assertThat(gofret.gtin()).isEqualTo("08690504012344");
         assertThat(gofret.kcal()).isEqualByComparingTo("520");
         assertThat(gofret.proteinG()).isEqualByComparingTo("6.5");
         assertThat(gofret.carbsG()).isEqualByComparingTo("60.25");
@@ -44,13 +44,13 @@ class OffImportTests {
     @Test
     void theServingNamesTheFilterGivenTextOrFallsBackToTheGrams() {
         OffImport.Food withText = OffImport.parse("""
-                {"code":"8690504012345","name":"A","brand":null,"kcal":1,"protein":1,"carbs":1,"fat":1,"serving_g":30.0,"serving":"2 biscuits (30 g)"}""")
+                {"code":"8690504012344","name":"A","brand":null,"kcal":1,"protein":1,"carbs":1,"fat":1,"serving_g":30.0,"serving":"2 biscuits (30 g)"}""")
                 .orElseThrow();
         OffImport.Food gramsOnly = OffImport.parse("""
-                {"code":"8690504012345","name":"A","brand":null,"kcal":1,"protein":1,"carbs":1,"fat":1,"serving_g":27.5,"serving":null}""")
+                {"code":"8690504012344","name":"A","brand":null,"kcal":1,"protein":1,"carbs":1,"fat":1,"serving_g":27.5,"serving":null}""")
                 .orElseThrow();
         OffImport.Food wholeGrams = OffImport.parse("""
-                {"code":"8690504012345","name":"A","brand":null,"kcal":1,"protein":1,"carbs":1,"fat":1,"serving_g":250,"serving":"  "}""")
+                {"code":"8690504012344","name":"A","brand":null,"kcal":1,"protein":1,"carbs":1,"fat":1,"serving_g":250,"serving":"  "}""")
                 .orElseThrow();
 
         assertThat(withText.serving()).isEqualTo(new OffImport.Serving("1 serving (2 biscuits (30 g))", new BigDecimal("30.00")));
@@ -62,7 +62,7 @@ class OffImportTests {
     void noServingWithoutAPositiveGramWeightEvenWhenTheTextIsThere() {
         for (String grams : new String[] {"null", "0", "-5", "0.001"}) {
             OffImport.Food food = OffImport.parse("""
-                    {"code":"8690504012345","name":"A","brand":null,"kcal":1,"protein":1,"carbs":1,"fat":1,"serving_g":%s,"serving":"1 piece"}"""
+                    {"code":"8690504012344","name":"A","brand":null,"kcal":1,"protein":1,"carbs":1,"fat":1,"serving_g":%s,"serving":"1 piece"}"""
                     .formatted(grams)).orElseThrow();
 
             assertThat(food.serving()).as("serving_g " + grams).isNull();
@@ -72,7 +72,7 @@ class OffImportTests {
     @Test
     void brandAndNameAreTrimmedAndABlankBrandIsNoBrand() {
         OffImport.Food food = OffImport.parse("""
-                {"code":"8690504012345","name":"  Süt  ","brand":"   ","kcal":1,"protein":1,"carbs":1,"fat":1}""").orElseThrow();
+                {"code":"8690504012344","name":"  Süt  ","brand":"   ","kcal":1,"protein":1,"carbs":1,"fat":1}""").orElseThrow();
 
         assertThat(food.name()).isEqualTo("Süt");
         assertThat(food.brand()).isNull();
@@ -81,7 +81,7 @@ class OffImportTests {
     @Test
     void valuesAreKeptToTheColumnsTwoDecimals() {
         OffImport.Food food = OffImport.parse("""
-                {"code":"8690504012345","name":"A","brand":null,"kcal":123.456,"protein":0.005,"carbs":1e-05,"fat":2.5}""").orElseThrow();
+                {"code":"8690504012344","name":"A","brand":null,"kcal":123.456,"protein":0.005,"carbs":1e-05,"fat":2.5}""").orElseThrow();
 
         assertThat(food.kcal()).isEqualTo(new BigDecimal("123.46"));
         assertThat(food.proteinG()).isEqualTo(new BigDecimal("0.01"));
@@ -105,26 +105,26 @@ class OffImportTests {
             """
             {"code":"٨٦٩٠٥٠٤٠١٢٣٤٥","name":"A","kcal":1,"protein":1,"carbs":1,"fat":1}""",
             """
-            {"code":8690504012345,"name":"A","kcal":1,"protein":1,"carbs":1,"fat":1}""",
+            {"code":8690504012344,"name":"A","kcal":1,"protein":1,"carbs":1,"fat":1}""",
             // the name
             """
-            {"code":"8690504012345","name":"  ","kcal":1,"protein":1,"carbs":1,"fat":1}""",
+            {"code":"8690504012344","name":"  ","kcal":1,"protein":1,"carbs":1,"fat":1}""",
             """
-            {"code":"8690504012345","kcal":1,"protein":1,"carbs":1,"fat":1}""",
+            {"code":"8690504012344","kcal":1,"protein":1,"carbs":1,"fat":1}""",
             // each of the four nutrients: missing, null, a string, negative
             """
-            {"code":"8690504012345","name":"A","protein":1,"carbs":1,"fat":1}""",
+            {"code":"8690504012344","name":"A","protein":1,"carbs":1,"fat":1}""",
             """
-            {"code":"8690504012345","name":"A","kcal":1,"protein":null,"carbs":1,"fat":1}""",
+            {"code":"8690504012344","name":"A","kcal":1,"protein":null,"carbs":1,"fat":1}""",
             """
-            {"code":"8690504012345","name":"A","kcal":1,"protein":1,"carbs":"3","fat":1}""",
+            {"code":"8690504012344","name":"A","kcal":1,"protein":1,"carbs":"3","fat":1}""",
             """
-            {"code":"8690504012345","name":"A","kcal":1,"protein":1,"carbs":1,"fat":-0.5}""",
+            {"code":"8690504012344","name":"A","kcal":1,"protein":1,"carbs":1,"fat":-0.5}""",
             // more than the columns hold
             """
-            {"code":"8690504012345","name":"A","kcal":100000,"protein":1,"carbs":1,"fat":1}""",
+            {"code":"8690504012344","name":"A","kcal":100000,"protein":1,"carbs":1,"fat":1}""",
             """
-            {"code":"8690504012345","name":"A","kcal":1,"protein":10000,"carbs":1,"fat":1}"""
+            {"code":"8690504012344","name":"A","kcal":1,"protein":10000,"carbs":1,"fat":1}"""
         };
 
         for (String line : unusable) {
@@ -136,7 +136,7 @@ class OffImportTests {
     void aFileIsReadLineByLineWithTheDuplicateAndTheUnusableSkippedAndCounted() {
         OffImport.Read read = OffImport.read(SAMPLE, Set.of());
 
-        assertThat(read.foods()).extracting(OffImport.Food::id).containsExactly("off:8690504012345", "off:8690632000011", "off:96385074");
+        assertThat(read.foods()).extracting(OffImport.Food::id).containsExactly("off:8690504012344", "off:8690632000011", "off:96385074");
         assertThat(read.foods().getFirst().name()).as("the first line of a code wins").isEqualTo("Çikolatalı Gofret");
         assertThat(read.skipped()).as("a repeated code and a line without energy").isEqualTo(2);
     }
@@ -145,7 +145,7 @@ class OffImportTests {
     void aBarcodeAnotherFoodAlreadyHoldsIsSkippedAndCounted() {
         OffImport.Read read = OffImport.read(SAMPLE, Set.of("08690632000011"));
 
-        assertThat(read.foods()).extracting(OffImport.Food::id).containsExactly("off:8690504012345", "off:96385074");
+        assertThat(read.foods()).extracting(OffImport.Food::id).containsExactly("off:8690504012344", "off:96385074");
         assertThat(read.skipped()).isEqualTo(3);
     }
 
@@ -153,9 +153,9 @@ class OffImportTests {
     void twoCodesThatPadToTheSameGtinGiveOneFood(@TempDir Path dir) throws Exception {
         Path file = dir.resolve("off.jsonl");
         Files.writeString(file, """
-                {"code":"8690504012345","name":"First","kcal":1,"protein":1,"carbs":1,"fat":1}
+                {"code":"8690504012344","name":"First","kcal":1,"protein":1,"carbs":1,"fat":1}
 
-                {"code":"08690504012345","name":"Same barcode, one more zero","kcal":2,"protein":2,"carbs":2,"fat":2}
+                {"code":"08690504012344","name":"Same barcode, one more zero","kcal":2,"protein":2,"carbs":2,"fat":2}
                 """);
 
         OffImport.Read read = OffImport.read(file, Set.of());
