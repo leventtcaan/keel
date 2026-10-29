@@ -34,3 +34,28 @@ Open Food Facts (ODbL, gecelik döküm) ve USDA Branded (CC0, çoğu ABD). TürK
   USDA Branded ya da kullanıcının etiketten girdiği ürün (ayrı karar).
 - Üretim (2026-10-29 03:22 UTC): süzme 27.987 Türkiye ürününden 2.897'sini tuttu (ad + dört besin + makul değer), içe aktarım 2.897 / 0 atlandı.
   Süzme bitmeden açılan backend içe aktarmaz: `fetch-off.sh` sonrası backend yeniden başlatılır (ya da sonraki dağıtım).
+
+## Ek 2 · ABD verisi, bölge, birim modeli ve arama (Evre 6 C, K-1061; ADR-090 #1 ve #5; agent, teknik karar ADR-019)
+Karar 4'teki "USDA Branded şimdilik alınmaz" kalktı (ADR-090 #1): ABD kullanıcısı için markalı ürün ve barkod olmadan yemek kaydı kullanılamaz.
+- **Kaynaklar:** USDA Foundation + SR Legacy (var) + **Survey/FNDDS** (pişmiş ve karışık yemekler, ev ölçüleri) + **Branded** (barkod `gtin_upc`, marka, etiket
+  porsiyonu; CC0); Open Food Facts **Türkiye ve ABD** alt kümeleri (ODbL, Karar 3'teki atıf). Branded'da barkod ve OFF'ta aynı ürün varsa **USDA etiketi** kalır (OFF içe
+  aktarıcısı USDA'nın tuttuğu barkodu atlar ve sayar); barkod aramasında da USDA önce, sonra kullanıcının bölgesi.
+- **Bölge modeli:** `nutrition.food.region` (ISO ülke kodu; USDA satırları `US`), `import_release` (satırı yazan sürüm ya da dosya özeti). OFF her bölge için **ayrı dosya
+  ve ayrı satırlar**: `off:<kod>` Türkiye (K-1042'den beri, öğünler bu kimliği tutar), `off-us:<kod>` ABD; her bölgenin içe aktarımı yalnız kendi satırlarını siler;
+  `food_import.dataset` Türkiye için `OFF`, ABD için `OFF_US`. Barkod artık tablo çapında **tekil değil** (V52): aynı ürün iki bölgede iki satırdır.
+- **İçe aktarma ölçeği:** CSV akış hâlinde okunur (`Csv`; 1,5 GB'lık `food_nutrient.csv` bellekte tutulmaz). Branded üç geçiş: `branded_food.csv` (ürün başına küçük kayıt,
+  ~430.000 ürün için yaklaşık 70-110 MB [ölçülmedi]) → `food_nutrient.csv` (yalnız enerji/protein/yağ/karbonhidrat) → `food.csv` (ad; tam ürünler yazıcıya akar).
+  2.000'erlik işlemlerle yazılır; her satır sürümle damgalanır, **başka sürümün satırları en sonda silinir**; `food_import` yalnız bitmiş sürümü kaydeder → yarıda kalan
+  (dağıtım arka plan içe aktarımını keser) sonraki açılışta aynı sürümle tamamlanır. Büyük içe aktarımlar `FoodImportQueue`'da **tek arka plan iş parçacığında**
+  sırayla koşar (Branded, sonra OFF dosyaları), sunucu içe aktarma sürerken yanıt verir. Etiket enerjisi/makrosu 100 g başına; ml porsiyonlu ürünlerde FDC değerleri
+  100 mL başınadır, 1 g/mL varsayılır [doğrulanmadı: FDC belgesi "100 g veya mL" der; porsiyonu birkaç yüzde oynatır].
+- **Birim modeli:** `Food.portions` (ev ölçüleri, etiket porsiyonu; her zaman g ve oz, yoğunluk biliniyorsa ml) ve `Food.defaultAmount`. Başlangıç: ürünse etiket porsiyonu;
+  yoksa sayılabilir (bedenlerin ortancası: yumurta "1 large", muz "1 medium"; yoksa ilk parça "1 slice"), sonra porsiyon, bardak/kaşık, ağırlık ölçüsü; **100 g yalnız hiç ev
+  ölçüsü yoksa**. Porsiyon başına kcal ve makro tek sayı (ADR-090 #5: aralığın ortası, ürünse etiket değeri); aralıklar `per100g`'da ve tahminde kalır. `oz` tahmin uç
+  noktasında ağırlık birimi. Beden sözcükleri `application.yml` `keel.nutrition.portions`.
+- **Arama:** `pg_trgm` + üretilmiş `search_text` sütunu üstünde GIN dizini (V52; eklenti `public`'te, tablolar `nutrition`'da). Önek/içinde-geçme `LIKE`, çoğul (`eggs` →
+  `egg`), yazım hatası (`<%` kelime benzerliği, yalnız tam eşleşme azken ve ≥4 harfli kelimede, tam eşleşmelerden sonra). Sıra puanla: ad eşleşmesi 6 basamak, genel kelimeye
+  genel gıda, marka kelimesine ürün, kullanıcının bölgesi (`Accept-Language`, yoksa profil saat dilimi); sonra kullanıcının kendi kayıtları ve herkesin kayıt sayısı
+  (`meal_item`; yalnız sayım). Ağırlıklar `application.yml` `keel.nutrition.search`, kural `FoodRanking`.
+- **Doğrulanamayan/ölçülmeyen:** Survey `food_portion.csv` biçimi gerçek sürümün başından (amount boş, modifier sayısal kod, açıklama "1 cup") okundu; Branded sütunları
+  gerçek sürümün başlığından (2026-04-30) doğrulandı. Arama süresi ve içe aktarma süresi gerçek veriyle ölçülmedi.
