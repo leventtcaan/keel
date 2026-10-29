@@ -27,6 +27,10 @@ type Props = {
  */
 export function SearchField({ label, value, onChangeText, onSearch, hint, maxLength, onScan }: Props) {
   const { color } = useTheme();
+  // The words are the field's own while it holds any (K-1052): a value sent back on every key raced the keys and dropped
+  // letters typed fast (14 typed, 1 kept). Only an empty value is sent, so the screen can still empty the box (a food
+  // picked, the search cleared); the field reports each change as before.
+  const held = value === '' ? { value } : {};
   // Built outside the JSX children (the raw-text guard reads them). The icon is a second, silent target for the same press.
   const scan =
     onScan === undefined ? null : (
@@ -45,7 +49,7 @@ export function SearchField({ label, value, onChangeText, onSearch, hint, maxLen
         <TextInput
           accessibilityLabel={label}
           accessibilityHint={hint}
-          value={value}
+          {...held}
           onChangeText={onChangeText}
           maxLength={maxLength}
           autoCapitalize="none"
