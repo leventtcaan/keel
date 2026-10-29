@@ -5205,6 +5205,40 @@ tasks:
     tests: ["jest food-picker + meal", "gradle FoodStore/FoodSearch testleri (CI)", "tools/anayasa-denetimi.sh"]
     refs: ["plan/kararlar/ADR-085-yemek-aramasi.md", "plan/envanter-2026-10-29.md"]
 
+  - id: K-1039
+    title: "Yeniden yapım Evre 1: bugünün yemekleri, kaydı gör/düzelt/sil (K-3)"
+    milestone: M10
+    module: mobile
+    type: fix
+    size: S
+    status: doing
+    depends_on: []
+    why: "Kaydedilen yemek hiçbir yerde görülemiyor, düzeltilemiyor, silinemiyor (envanter K-3). ADR-086"
+    acceptance:
+      - "This Week'te Food left satırına dokunmak bugünün öğün listesini açar; Log düğmesi /meal açmaya devam eder"
+      - "Listeden öğün /meal?edit= ile düzeltilir ve silinir; AI kapalıyken koç, foto, tarif girişi görünmez"
+      - "food RETIRED listesinden çıkar; ilgili jest testleri ve anayasa denetimi yeşil"
+      - "Kanıt: gerçek sunucuda kayıt → liste → düzelt → sil (ekran görüntüsü envanterde)"
+    tests: ["jest food-screen + this-week + navigation", "tools/anayasa-denetimi.sh"]
+    refs: ["plan/kararlar/ADR-086-bugunun-yemekleri.md"]
+
+  - id: K-1040
+    title: "Yeniden yapım Evre 1: onaylar sistem uyarısı, paywall güvenli alan, antrenman ilerleme çubuğu (K-5, K-6, K-7)"
+    milestone: M10
+    module: mobile
+    type: fix
+    size: S
+    status: doing
+    depends_on: []
+    why: "Sign out/Delete onayı ekran dışında, paywall durum çubuğunun altına giriyor, ilerleme çubuğu taşıyor (envanter K-5, K-6, K-7). ADR-087"
+    acceptance:
+      - "Sign out ve Delete account onayı sistem uyarısı (yıkıcı + iptal); Ayarlar ve paywall Account aynı"
+      - "Paywall kaydırınca içerik durum çubuğunun altına girmez"
+      - "10 hareketle ilerleme çubuğu tek satır, dinlenme kartı üstüne binmez"
+      - "jest + anayasa denetimi yeşil; kanıt gerçek sunucuda simülatörde"
+    tests: ["jest settings + paywall + workout", "tools/anayasa-denetimi.sh"]
+    refs: ["plan/kararlar/ADR-087-kirik-gorunum-duzeltmeleri.md"]
+
   - id: K-1010
     title: "Sunucudaki ek siteler: Caddy /opt/sites altındaki *.caddy dosyalarını içeri alır"
     milestone: M9
