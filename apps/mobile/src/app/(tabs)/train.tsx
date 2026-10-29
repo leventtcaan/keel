@@ -8,7 +8,7 @@ import type { components } from '@/api/schema';
 
 import { Button } from '@/components/Button';
 import { ProblemText, announce, useProblem } from '@/components/ProblemText';
-import { PlusEntry } from '@/components/PlusEntry';
+import { PLUS_CLEARANCE, PlusEntry } from '@/components/PlusEntry';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
@@ -270,18 +270,18 @@ function Screen({ children, editable = false }: { children: ReactNode; editable?
     </Pressable>
   ) : null;
   return (
-    // Bottom edge too: inside native tabs the bottom inset includes the tab bar, so the "+" sits above it.
+    // Bottom edge too: inside native tabs the bottom inset includes the tab bar, so the "+" floats above it (K-1050).
     <SafeAreaView testID="screen" style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
-      <ScrollView contentContainerStyle={styles.body}>
-        <View style={styles.top}>
-          <View style={styles.grow}>
-            <ScreenTitle>{t('screens.train.title')}</ScreenTitle>
+      <View style={styles.frame}>
+        <ScrollView contentContainerStyle={styles.body}>
+          <View style={styles.top}>
+            <View style={styles.grow}>
+              <ScreenTitle>{t('screens.train.title')}</ScreenTitle>
+            </View>
+            {edit}
           </View>
-          {edit}
-        </View>
-        {children}
-      </ScrollView>
-      <View style={styles.plus}>
+          {children}
+        </ScrollView>
         <PlusEntry />
       </View>
     </SafeAreaView>
@@ -290,8 +290,7 @@ function Screen({ children, editable = false }: { children: ReactNode; editable?
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  // Under the last row the "+" (a primary button's size) and the tab bar's air, so nothing at the foot sits behind them (T-18).
-  body: { padding: tokens.space.lg, paddingBottom: tokens.size.primaryButton + tokens.space.lg, gap: tokens.space.md },
+  body: { padding: tokens.space.lg, paddingBottom: PLUS_CLEARANCE, gap: tokens.space.md },
   note: { gap: tokens.space.sm },
   week: { gap: tokens.space.xs },
   row: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, minHeight: tokens.size.touch, borderTopWidth: tokens.border.hairline },
@@ -306,5 +305,5 @@ const styles = StyleSheet.create({
   heading: { fontSize: tokens.type.heading, fontWeight: tokens.weight.bold },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },
-  plus: { paddingHorizontal: tokens.space.lg, paddingBottom: tokens.space.sm },
+  frame: { flex: 1 },
 });

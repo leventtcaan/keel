@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { DecisionBlock } from '@/components/DecisionBlock';
-import { PlusEntry } from '@/components/PlusEntry';
+import { PLUS_CLEARANCE, PlusEntry } from '@/components/PlusEntry';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
 import { PhotoCard } from '@/photos/PhotoCard';
@@ -135,13 +135,13 @@ export default function ProgressScreen() {
   }
 
   return (
-    // Bottom edge too: inside native tabs the bottom inset includes the tab bar, so the "+" sits above it.
+    // Bottom edge too: inside native tabs the bottom inset includes the tab bar, so the "+" floats above it (K-1050).
     <SafeAreaView testID="screen" style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
-      <ScrollView contentContainerStyle={styles.body}>
-        <ScreenTitle>{t('screens.progress.title')}</ScreenTitle>
-        {body}
-      </ScrollView>
-      <View style={styles.plus}>
+      <View style={styles.frame}>
+        <ScrollView contentContainerStyle={styles.body}>
+          <ScreenTitle>{t('screens.progress.title')}</ScreenTitle>
+          {body}
+        </ScrollView>
         <PlusEntry />
       </View>
     </SafeAreaView>
@@ -162,10 +162,10 @@ function ShareEntry() {
 const styles = StyleSheet.create({
   share: { gap: tokens.space.xs },
   safe: { flex: 1 },
-  body: { paddingHorizontal: tokens.space.lg, paddingTop: tokens.space.md, paddingBottom: tokens.space.lg, gap: tokens.space.md },
+  body: { paddingHorizontal: tokens.space.lg, paddingTop: tokens.space.md, paddingBottom: PLUS_CLEARANCE, gap: tokens.space.md },
   note: { gap: tokens.space.sm },
   text: { fontSize: tokens.type.body },
   sub: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.bold },
   small: { fontSize: tokens.type.bodySmall },
-  plus: { paddingHorizontal: tokens.space.lg, paddingBottom: tokens.space.md },
+  frame: { flex: 1 },
 });
