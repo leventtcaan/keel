@@ -1,6 +1,8 @@
 package app.keel.nutrition;
 
 import app.keel.engine.Parameters;
+import app.keel.profile.ProfileFacts;
+import app.keel.profile.Profiles;
 import app.keel.shared.AccountId;
 import app.keel.shared.ApiException;
 import app.keel.shared.ErrorCode;
@@ -10,8 +12,10 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -20,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
  * asked; logging a meal (K-209) is health data and is.
  */
 @RestController
-@EnableConfigurationProperties(FoodController.NutritionLimits.class)
+@EnableConfigurationProperties({FoodController.NutritionLimits.class, FoodRanking.Weights.class, FoodPortions.Settings.class})
 class FoodController {
 
     /** What a request can ask for (keel.nutrition). */
@@ -49,7 +53,8 @@ class FoodController {
 
     /** Contract Food. */
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    record Food(String id, String name, String brand, FoodRanges.Nutrients per100g, List<FoodStore.Serving> servings) {
+    record Food(String id, String name, String brand, FoodRanges.Nutrients per100g, List<FoodStore.Serving> servings,
+            List<FoodPortions.Portion> portions, FoodEstimator.Amount defaultAmount) {
     }
 
     /** Contract FoodEstimate. */
@@ -63,29 +68,42 @@ class FoodController {
     private final FoodStore foods;
     private final FoodEstimator estimator;
     private final NutritionLimits limits;
+    private final FoodPortions.Settings portions;
+    private final Profiles profiles;
 
-    FoodController(FoodStore foods, FoodEstimator estimator, NutritionLimits limits) {
+    FoodController(FoodStore foods, FoodEstimator estimator, NutritionLimits limits, FoodPortions.Settings portions, Profiles profiles) {
         this.foods = foods;
         this.estimator = estimator;
         this.limits = limits;
+        this.portions = portions;
+        this.profiles = profiles;
     }
 
     @PostMapping("/v1/foods/search")
-    List<Food> search(AccountId account, @RequestBody FoodSearch search) {
+    List<Food> search(AccountId account, @RequestBody FoodSearch search,
+            @RequestHeader(name = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         String query = search.q() == null ? "" : search.q().strip();
         int limit = search.limit() == null ? limits.defaultSearchResults() : search.limit();
         require(query.length() >= MIN_QUERY && query.length() <= limits.maxQueryLength() && limit >= 1 && limit <= limits.maxSearchResults());
         Parameters p = estimator.parametersFor(account);
-        return foods.search(query, limit).stream().map(food -> view(food, p)).toList();
+        return foods.search(query, limit, new FoodStore.Searcher(Optional.of(account.value()), regionOf(account, acceptLanguage))).stream()
+                .map(food -> view(food, p, portions)).toList();
     }
 
     @PostMapping("/v1/foods/barcode-lookup")
-    Food barcode(AccountId account, @RequestBody BarcodeLookup lookup) {
+    Food barcode(AccountId account, @RequestBody BarcodeLookup lookup,
+            @RequestHeader(name = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         List<String> gtins = Gtin.candidates(lookup.gtin());
         require(!gtins.isEmpty());
-        // FDC has mostly US products (ADR-008): a plain NOT_FOUND, the app offers search instead (DURUM question 10).
-        return gtins.stream().map(foods::byGtin).flatMap(Optional::stream).findFirst().map(food -> view(food, estimator.parametersFor(account)))
-                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+        Optional<String> region = regionOf(account, acceptLanguage);
+        // USDA Branded first, then Open Food Facts of the user's region; none of them: a plain NOT_FOUND, the app offers search instead.
+        return gtins.stream().map(gtin -> foods.byGtin(gtin, region)).flatMap(Optional::stream).findFirst()
+                .map(food -> view(food, estimator.parametersFor(account), portions)).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+    }
+
+    /** The region whose foods come first for this request: the device's language, else the profile's time zone. */
+    private Optional<String> regionOf(AccountId account, String acceptLanguage) {
+        return FoodRegion.of(acceptLanguage, profiles.of(account).map(ProfileFacts::timeZone));
     }
 
     @PostMapping("/v1/food-estimates")
@@ -94,8 +112,10 @@ class FoodController {
         return new FoodEstimate(estimate.items(), estimate.total().kcal(), estimate.total().proteinG(), estimate.question().orElse(null));
     }
 
-    private static Food view(FoodStore.Food food, Parameters p) {
-        return new Food(food.id(), food.name(), food.brand(), FoodRanges.per100g(food.per100g(), food.source(), p), food.servings());
+    private static Food view(FoodStore.Food food, Parameters p, FoodPortions.Settings settings) {
+        FoodPortions.Portions ways = FoodPortions.of(food, settings);
+        return new Food(food.id(), food.name(), food.brand(), FoodRanges.per100g(food.per100g(), food.source(), p), food.servings(), ways.portions(),
+                ways.defaultAmount());
     }
 
     private static void require(boolean valid) {

@@ -797,7 +797,7 @@
    "table": "nutrition.food",
    "module": "nutrition",
    "class": "reference",
-   "purpose": "The food database (USDA FoodData Central, public domain; Open Food Facts Turkey subset, ODbL).",
+   "purpose": "The food database (USDA FoodData Central: Foundation, SR Legacy, Survey and Branded Foods, public domain; Open Food Facts subsets of the United States and Turkey, ODbL).",
    "columns": [
     "id",
     "name",
@@ -809,7 +809,10 @@
     "fat_g",
     "gtin",
     "grams_per_ml",
-    "dataset"
+    "dataset",
+    "region",
+    "import_release",
+    "search_text"
    ],
    "basis": "not personal data",
    "gated_by": null,

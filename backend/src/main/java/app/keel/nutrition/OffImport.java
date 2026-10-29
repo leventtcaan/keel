@@ -10,24 +10,30 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Reading the Open Food Facts Turkey subset (K-1042, ADR-088; ODbL): the JSONL deploy/off_filter.py writes, one product a
- * line — {@code code, name, brand, kcal, protein, carbs, fat} per 100 g and, when the label gives a portion,
- * {@code serving_g} and {@code serving}. The filter has already dropped what is not Turkish or lacks a name or a
- * nutrient; this reads the line again for what the database needs, and a line that is not a usable product is skipped and
- * counted, never guessed:
+ * Reading an Open Food Facts subset (K-1042, K-1061, ADR-088; ODbL): the JSONL deploy/off_filter.py writes for a region, one
+ * product a line — {@code code, name, brand, kcal, protein, carbs, fat} per 100 g and, when the label gives a portion,
+ * {@code serving_g} and {@code serving}, and the {@code region} the product was kept for. The filter has already dropped what
+ * is not of the region or lacks a name or a nutrient; this reads the line again for what the database needs, and a line that
+ * is not a usable product is skipped and counted, never guessed. The file is read line by line (the US subset is hundreds of
+ * thousands of products):
  *
  * <ul>
+ *   <li>The region ("TR", "US"): the file's, given by the importer; a line that says another region is skipped (the
+ *       Turkey file would not take US products in). A line with no region is the file's.</li>
  *   <li>The code: 8 to 14 digits (GTIN-8 … GTIN-14), stored left-padded to 14 as nutrition.food.gtin; the food's id is
- *       {@code off:<code>}. The first line of a code wins, and so does the first of two codes that pad to one barcode;
- *       a barcode another food already holds is skipped (the column is unique).</li>
+ *       {@code off:<code>} for Turkey (as since K-1042, meals hold it) and {@code off-<region>:<code>} for another region.
+ *       The first line of a code wins, and so does the first of two codes that pad to one barcode; a barcode another
+ *       dataset's food already holds is skipped by the importer (USDA's label is preferred).</li>
  *   <li>The name as given (trimmed), the brand or none.</li>
  *   <li>The four nutrients: numbers, not negative, kept to the columns' two decimals and within what the columns hold.</li>
  *   <li>The serving: only with a positive weight in grams, named "1 serving (&lt;the label's text, else the grams&gt;)".</li>
@@ -46,6 +52,9 @@ final class OffImport {
     record Read(List<Food> foods, int skipped) {
     }
 
+    /** Turkey: the first region, whose ids carry no region ({@code off:<code>}) and whose release record is called "OFF". */
+    static final String TURKEY = "TR";
+
     private static final JsonMapper JSON = JsonMapper.builder().build();
     private static final int GTIN_LENGTH = 14;
     private static final int DECIMALS = 2;
@@ -57,31 +66,61 @@ final class OffImport {
     private OffImport() {
     }
 
-    /** Every usable product of the file; {@code heldElsewhere} are the barcodes other foods (not Open Food Facts) already have. */
+    /**
+     * Every usable product of the file as Turkey's; {@code heldElsewhere} are the barcodes other foods (not Open Food Facts)
+     * already have. The whole file in a list: for a small file; the importer streams.
+     */
     static Read read(Path file, Set<String> heldElsewhere) {
         List<Food> foods = new ArrayList<>();
         Set<String> taken = new HashSet<>(heldElsewhere);
-        Set<String> ids = new HashSet<>();
+        int[] held = new int[1];
+        int skipped = stream(file, TURKEY, food -> {
+            if (taken.add(food.gtin())) {
+                foods.add(food);
+            } else {
+                held[0]++;
+            }
+        });
+        return new Read(foods, skipped + held[0]);
+    }
+
+    /**
+     * Calls {@code sink} with each usable product of the file, in file order, for this region; returns how many lines were
+     * skipped (a repeat of a barcode, an unusable line, a line of another region). A blank line is nothing.
+     */
+    static int stream(Path file, String region, Consumer<Food> sink) {
+        Set<Long> barcodes = new HashSet<>();
         int skipped = 0;
         try (Stream<String> lines = Files.lines(file, StandardCharsets.UTF_8)) {
             for (String line : (Iterable<String>) lines::iterator) {
                 if (line.isBlank()) {
                     continue;
                 }
-                Optional<Food> food = parse(line);
-                if (food.isEmpty() || !ids.add(food.get().id()) || !taken.add(food.get().gtin())) {
+                Optional<Food> food = parse(line, region);
+                if (food.isEmpty() || !barcodes.add(Long.parseLong(food.get().gtin()))) {
                     skipped++;
                 } else {
-                    foods.add(food.get());
+                    sink.accept(food.get());
                 }
             }
         } catch (IOException unreadable) {
             throw new UncheckedIOException("Cannot read " + file, unreadable);
         }
-        return new Read(foods, skipped);
+        return skipped;
     }
 
+    /** A line as a Turkey product; see {@link #parse(String, String)}. */
     static Optional<Food> parse(String line) {
+        return parse(line, TURKEY);
+    }
+
+    /** The id a product of this code has in this region. */
+    static String id(String region, String code) {
+        return TURKEY.equals(region) ? "off:" + code : "off-" + region.toLowerCase(Locale.ROOT) + ":" + code;
+    }
+
+    /** One line as a product of this region; empty when it is not a usable product or says it is of another region. */
+    static Optional<Food> parse(String line, String region) {
         JsonNode product;
         try {
             product = JSON.readTree(line);
@@ -89,6 +128,10 @@ final class OffImport {
             return Optional.empty();
         }
         if (product == null || !product.isObject()) {
+            return Optional.empty();
+        }
+        String lineRegion = text(product, "region");
+        if (lineRegion != null && !lineRegion.equalsIgnoreCase(region)) {
             return Optional.empty();
         }
         String code = text(product, "code");
@@ -100,8 +143,8 @@ final class OffImport {
         if (code == null || !code.matches("[0-9]{8,14}") || name == null || kcal == null || protein == null || carbs == null || fat == null) {
             return Optional.empty();
         }
-        return Optional.of(new Food("off:" + code, name, text(product, "brand"), "0".repeat(GTIN_LENGTH - code.length()) + code, kcal, protein, carbs,
-                fat, serving(product)));
+        return Optional.of(new Food(id(region, code), name, text(product, "brand"), "0".repeat(GTIN_LENGTH - code.length()) + code, kcal, protein,
+                carbs, fat, serving(product)));
     }
 
     private static Serving serving(JsonNode product) {
