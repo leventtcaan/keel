@@ -440,6 +440,30 @@ class ProgramDayAddsTests {
 
     }
 
+    @Test
+    void aGeneratedProgramEditedOnceTakesDayAfterDayUpToSevenAndEveryDayHasItsMoves() {
+        // Evre 7 (issue 684), Levent's account: a generated program, one move swapped by the user, then a day added until seven. The server's
+        // answer to each add is a program whose every day has moves, whichever way (replanned or added to), and no day the user had is lost.
+        for (boolean replan : new boolean[] {false, true}) {
+            ProgramStore.Program program = stored(EnumSet.of(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY));
+            List<ProgramStore.Day> edited = new ArrayList<>(program.days());
+            ProgramStore.Day first = edited.getFirst();
+            List<ProgramStore.PlannedExercise> moves = new ArrayList<>(first.exercises());
+            ProgramStore.PlannedExercise one = moves.getFirst();
+            String other = first.exercises().stream().map(ProgramStore.PlannedExercise::exerciseId).toList().contains("dumbbell_curl") ? "hammer_curl" : "dumbbell_curl";
+            moves.set(0, new ProgramStore.PlannedExercise(other, one.sets(), one.repMin(), one.repMax(), one.targetRir()));
+            edited.set(0, new ProgramStore.Day(first.id(), first.nameKey(), first.name(), first.weekday(), moves));
+            program = new ProgramStore.Program(program.id(), program.source(), edited);
+            for (DayOfWeek next : List.of(DayOfWeek.TUESDAY, DayOfWeek.THURSDAY, DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)) {
+                List<ProgramStore.Day> days = ProgramDayAdds.added(program, next, templates, catalog, P, ASKED_REPS, Optional.empty(), replan).orElseThrow();
+                assertThat(days).as("replan " + replan + " + " + next).hasSize(program.days().size() + 1).allSatisfy(day -> assertThat(day.exercises()).isNotEmpty());
+                assertThat(days.stream().map(ProgramStore.Day::weekday)).contains(next);
+                program = new ProgramStore.Program(program.id(), program.source(), days);
+            }
+            assertThat(program.days()).hasSize(7);
+        }
+    }
+
     /** The program of the user's own whose days have the given weekdays (null: "any day"), each with one move and an id. */
     private static ProgramStore.Program ownWith(DayOfWeek... weekdays) {
         List<ProgramStore.Day> days = new ArrayList<>();

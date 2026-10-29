@@ -294,10 +294,24 @@ describe('a move added to the session, outside the plan (K-416)', () => {
       ...(side ? { side } : {}),
     }) as Schemas['NewSet'];
 
-  test('the sets done, then one open row: as many as the user does, never a planned count', () => {
+  // Evre 7 (issue 684): "as many as the user does" meant no set was ever the last: a session held 41 sets of one added move and never moved on.
+  test('the sets it has (session_added_move_sets): the sets done, then the rows left; after the last the move is done', () => {
     const plan = extraPlan(benchMove, [], [done('bench_press', 60, 8), done('bench_press', 60, 7)]);
     expect(plan.rows.map((r) => r.done?.reps ?? null)).toEqual([8, 7, null]);
     expect(plan.current).toBe(2);
+    const finished = extraPlan(benchMove, [], [done('bench_press', 60, 8), done('bench_press', 60, 7), done('bench_press', 60, 6)]);
+    expect(finished.rows).toHaveLength(workoutParams.addedMoveSets);
+    expect(finished.current).toBeNull();
+    expect(exerciseStatus(finished)).toBe(t('workout.allDone'));
+  });
+
+  test('sets done past them are rows, done; one more set is one more row', () => {
+    const five = Array.from({ length: 5 }, () => done('bench_press', 60, 6));
+    expect(extraPlan(benchMove, [], five).rows).toHaveLength(5);
+    expect(extraPlan(benchMove, [], five).current).toBeNull();
+    const more = extraPlan(benchMove, [], [done('bench_press', 60, 8), done('bench_press', 60, 7), done('bench_press', 60, 6)], false, 1);
+    expect(more.rows).toHaveLength(workoutParams.addedMoveSets + 1);
+    expect(more.current).toBe(workoutParams.addedMoveSets);
   });
 
   test("the open row suggests the load just lifted in this session, else last time's at that row, else last time's heaviest", () => {
@@ -317,15 +331,16 @@ describe('a move added to the session, outside the plan (K-416)', () => {
   test('a bodyweight move suggests no load; a one-sided move has a row a side', () => {
     expect(extraPlan(pushUp, [], []).rows[0].suggested.loadKg).toBe(0);
     const plan = extraPlan(rowMove, [], [done('one_arm_dumbbell_row', 20, 10, 'LEFT')]);
-    expect(plan.rows.map((r) => [r.side, r.done?.reps ?? null])).toEqual([
+    expect(plan.rows.slice(0, 2).map((r) => [r.side, r.done?.reps ?? null])).toEqual([
       ['LEFT', 10],
       ['RIGHT', null],
     ]);
+    expect(plan.rows).toHaveLength(workoutParams.addedMoveSets * 2);
     expect(plan.current).toBe(1);
   });
 
   test("other moves' sets are not its", () => {
-    expect(extraPlan(benchMove, [], [done('squat', 100, 5)]).rows).toHaveLength(1);
+    expect(extraPlan(benchMove, [], [done('squat', 100, 5)]).rows.every((r) => r.done === null)).toBe(true);
   });
 
   // K-973 (ADR-075 Ek 7, Ek 8): a move swapped away from keeps its sets but is no move to come back to; its one open row is not
@@ -356,9 +371,9 @@ describe('a move added to the session, outside the plan (K-416)', () => {
     expect(extraPlan(rowMove, [], [done('one_arm_dumbbell_row', 20, 10, 'LEFT')]).rows[1].suggested).toEqual({ loadKg: 20, reps: 10 });
   });
 
-  test('both sides done: a new round opens, left first', () => {
+  test('both sides done: the next round is the next row, left first', () => {
     const plan = extraPlan(rowMove, [], [done('one_arm_dumbbell_row', 20, 10, 'LEFT'), done('one_arm_dumbbell_row', 20, 10, 'RIGHT')]);
-    expect(plan.rows.map((r) => [r.side, r.done === null])).toEqual([
+    expect(plan.rows.slice(0, 4).map((r) => [r.side, r.done === null])).toEqual([
       ['LEFT', false],
       ['RIGHT', false],
       ['LEFT', true],
@@ -370,7 +385,7 @@ describe('a move added to the session, outside the plan (K-416)', () => {
   test('a warm-up is not a work row, nor what the open row suggests', () => {
     const warmup = { ...done('bench_press', 20, 5), setType: 'WARM_UP' } as Schemas['NewSet'];
     const plan = extraPlan(benchMove, [], [warmup]);
-    expect(plan.rows).toHaveLength(1);
+    expect(plan.rows).toHaveLength(workoutParams.addedMoveSets);
     expect(plan.rows[0]).toMatchObject({ done: null, suggested: { loadKg: null, reps: null } });
   });
 });

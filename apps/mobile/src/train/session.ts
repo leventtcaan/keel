@@ -122,7 +122,6 @@ export function exerciseStatus(plan: ExercisePlan): string {
   const sides = plan.rows.some((row) => row.side !== 'BOTH') ? 2 : 1;
   const number = Math.floor(plan.current / sides) + 1;
   const count = plan.rows.length / sides;
-  if (plan.open === true) return t('workout.setNumber', { number });
   if (plan.current === 0) return count === 1 ? t('workout.setsOne') : t('workout.sets', { count });
   return t('workout.setOf', { number, count });
 }
