@@ -240,11 +240,11 @@ describe('the foods eaten lately', () => {
     expect(ids[1]).toBe(ids[0]);
   });
 
-  test('ranges only, in the text colour: no word or colour that judges the number (U5, U7)', async () => {
+  test('ranges only, in a neutral colour: no word or colour that judges the number (U5, U7)', async () => {
     await show();
     expect(screen.queryByText(/over|under|good|bad|too (much|many)/i)).toBeNull();
     const range = screen.getByText(`${t('format.range', { low: 150, high: 170 })} ${t('food.budget.kcalUnit')}`);
-    expect(range).toHaveStyle({ color: palettes.light.text });
+    expect(range).toHaveStyle({ color: palettes.light.muted });
     expect(range).not.toHaveStyle({ color: palettes.light.warn });
   });
 });

@@ -110,6 +110,17 @@ describe('the buttons', () => {
     expect(field().props.value).toBe('75');
   });
 
+  test('a step while the field is being typed in shows the number stepped to, not what was typed (K-1046)', async () => {
+    await renderIt(<Held />);
+    const user = userEvent.setup();
+    await fireEvent(field(), 'focus');
+    await fireEvent.changeText(field(), '60');
+    expect(field().props.value).toBe('60');
+    await user.press(screen.getByRole('button', { name: t('stepper.increase', { label: 'Weight' }) }));
+    expect(heard.at(-1)).toBe(62.5);
+    expect(field().props.value).toBe('62.5'); // the keyboard stays up over a press, so the field is still focused
+  });
+
   test('0.1 steps do not pick up floating point dust', async () => {
     await renderIt(<Held start={0.1} step={0.1} min={0} max={1} />);
     const user = userEvent.setup();

@@ -1,18 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import type { components } from '@/api/schema';
-import { Button } from '@/components/Button';
-import { TextField } from '@/components/TextField';
+import { ListGroup, ListRow } from '@/components/ListGroup';
 import { t } from '@/copy';
 import { useAppServices } from '@/services/ServicesProvider';
-import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { load } from '@/today/today';
 
 import { BarcodeScanner } from './BarcodeScanner';
+import { kcalPer100g } from './kcalLine';
 import { foodParams } from './params';
 import { type RecipeMatch, recipeMatches } from './recipes';
+import { SearchField } from './SearchField';
 
 type Schemas = components['schemas'];
 type Found =
@@ -39,16 +39,6 @@ type Props = {
   onRecipe?: (recipe: Schemas['Recipe']) => void;
 };
 
-/** A food's energy per 100 g as a range (U5), in the words the rest of the app uses for one. */
-const kcalPer100g = (food: Schemas['Food']) => {
-  const unit = t('food.budget.kcalUnit');
-  const { low, high } = food.per100g.kcal;
-  return {
-    written: t('meal.search.per100g', { kcal: `${t('format.range', { low, high })} ${unit}` }),
-    spoken: t('meal.search.per100gSpoken', { kcal: `${t('format.rangeSpoken', { low, high })} ${unit}` }),
-  };
-};
-
 /**
  * Finding a food (K-407): by name in the database (ADR-008), or by a barcode read by the camera or typed — and, where
  * it can be one, the user's own recipe by name (K-423). It searches as the user types (ADR-085): a short wait after the
@@ -58,7 +48,6 @@ const kcalPer100g = (food: Schemas['Food']) => {
  */
 export function FoodPicker({ full, onFood, recipes, onRecipe }: Props) {
   const { api } = useAppServices();
-  const { color } = useTheme();
   const [query, setQuery] = useState('');
   const [found, setFound] = useState<Found>({ state: 'idle' });
   const [recipeHits, setRecipeHits] = useState<RecipeMatch[]>([]);
@@ -179,80 +168,70 @@ export function FoodPicker({ full, onFood, recipes, onRecipe }: Props) {
                     : found.state === 'found' && found.foods.length === 0 && recipeHits.length === 0
                       ? t('meal.search.none')
                       : null;
-  // A full list takes no more, from a barcode either.
-  // "Scan" on the screen (the meal's words are few, K-980); VoiceOver says all of it.
-  const scanButton = full ? null : (
-    <Button label={t('meal.barcode.scanShort')} accessibilityLabel={t('meal.barcode.scan')} variant="ghost" size="sm" onPress={() => setScanning(true)} />
-  );
 
+  // Built outside the JSX children (the raw-text guard reads them).
+  const resultList =
+    results.length === 0 ? null : (
+      <ListGroup testID="results">
+        {results.map((food) => {
+          const kcal = kcalPer100g(food);
+          return (
+            <ListRow
+              key={food.id}
+              testID={`result-${food.id}`}
+              label={food.name}
+              detail={food.brand === undefined ? kcal.written : `${food.brand} · ${kcal.written}`}
+              trailing="plus.circle.fill"
+              accessibilityLabel={t('meal.search.add', { name: food.name })}
+              // The range in words, read after the name: the label stays "Add {name}", the button's name.
+              accessibilityHint={kcal.spoken}
+              onPress={() => pickFood(food)}
+            />
+          );
+        })}
+      </ListGroup>
+    );
   return (
     <View style={styles.search}>
-      <TextField
+      {/* A full list takes no more, from a barcode either. "Scan" on the screen (the meal's words are few, K-980); VoiceOver says all of it. */}
+      <SearchField
         label={t('meal.search.label')}
         value={query}
         onChangeText={type}
         onSearch={searchNow}
         hint={note ?? undefined}
         maxLength={foodParams.searchMaxChars}
+        onScan={full ? undefined : () => setScanning(true)}
       />
-      {scanButton !== null && <View style={styles.chips}>{scanButton}</View>}
       {recipeHits.length > 0 && !full && <RecipeHits hits={recipeHits} onAdd={pickRecipe} />}
-      {results.map((food) => {
-        const kcal = kcalPer100g(food);
-        return (
-          <Pressable
-            key={food.id}
-            accessibilityRole="button"
-            accessibilityLabel={t('meal.search.add', { name: food.name })}
-            // The range in words, read after the name: the label stays "Add {name}", the button's name.
-            accessibilityHint={kcal.spoken}
-            onPress={() => pickFood(food)}
-            style={[styles.result, { borderColor: color.line }]}>
-            <Text style={[styles.text, { color: color.text }]}>{food.name}</Text>
-            {food.brand !== undefined && <Text style={[styles.small, { color: color.muted }]}>{food.brand}</Text>}
-            <Text style={[styles.small, styles.kcal, { color: color.muted }]}>{kcal.written}</Text>
-          </Pressable>
-        );
-      })}
+      {resultList}
       {scanning && <BarcodeScanner onCode={(gtin) => void lookUpBarcode(gtin)} onClose={() => setScanning(false)} />}
     </View>
   );
 }
 
-/** The user's recipes a search found (K-423): addable ones as buttons, one the database can no longer estimate marked. */
+/** The user's recipes a search found (K-423): addable ones as rows, one the database can no longer estimate marked. */
 function RecipeHits({ hits, onAdd }: { hits: RecipeMatch[]; onAdd: (recipe: Schemas['Recipe']) => void }) {
-  const { color } = useTheme();
   return (
-    <View style={styles.search}>
-      <Text style={[styles.small, { color: color.muted }]}>{t('meal.recipes.heading')}</Text>
+    <ListGroup title={t('meal.recipes.heading')}>
       {hits.map(({ recipe, available }) =>
         available ? (
-          <Pressable
+          <ListRow
             key={recipe.id}
-            accessibilityRole="button"
+            label={recipe.name}
+            detail={t(`meal.recipes.makes.${recipe.portions === 1 ? 'one' : 'other'}`, { portions: recipe.portions })}
+            trailing="plus.circle.fill"
             accessibilityLabel={t('meal.recipes.add', { name: recipe.name })}
             onPress={() => onAdd(recipe)}
-            style={[styles.result, { borderColor: color.line }]}>
-            <Text style={[styles.text, { color: color.text }]}>{recipe.name}</Text>
-            <Text style={[styles.small, { color: color.muted }]}>
-              {t(`meal.recipes.makes.${recipe.portions === 1 ? 'one' : 'other'}`, { portions: recipe.portions })}
-            </Text>
-          </Pressable>
+          />
         ) : (
-          <Text key={recipe.id} style={[styles.small, styles.result, { color: color.text, borderColor: color.line }]}>
-            {t('meal.recipes.unavailable', { name: recipe.name })}
-          </Text>
+          <ListRow key={recipe.id} label={t('meal.recipes.unavailable', { name: recipe.name })} />
         ),
       )}
-    </View>
+    </ListGroup>
   );
 }
 
 const styles = StyleSheet.create({
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm },
-  search: { gap: tokens.space.sm },
-  result: { paddingVertical: tokens.space.sm, borderBottomWidth: tokens.border.hairline },
-  text: { fontSize: tokens.type.body },
-  small: { fontSize: tokens.type.bodySmall },
-  kcal: { fontVariant: ['tabular-nums'] },
+  search: { gap: tokens.space.md },
 });

@@ -50,6 +50,10 @@ type RowProps = {
   icon?: SFSymbol;
   /** On the right, muted. */
   value?: string;
+  /** A second line under the label, muted and smaller: the range of a food, what a recipe makes. Already translated. */
+  detail?: string;
+  /** At the very end, in the accent: what pressing the row does ("plus.circle.fill" adds). Decorative; the row's label says it. */
+  trailing?: SFSymbol;
   /** The row is a button. */
   onPress?: () => void;
   /** The press opens another page: only then the chevron shows. A row that acts in place (a sheet, an alert) has none. */
@@ -69,7 +73,7 @@ type RowProps = {
 const INSET_PAST_ICON = tokens.space.md + tokens.icon.regular + tokens.space.md;
 
 /** One row of a ListGroup: icon, label, value, and a chevron, a switch or nothing at the end. */
-export function ListRow({ label, icon, value: given, onPress, navigates = false, destructive = false, switch: toggle, accessibilityLabel, accessibilityHint, disabled = false, testID }: RowProps) {
+export function ListRow({ label, icon, value: given, detail, trailing, onPress, navigates = false, destructive = false, switch: toggle, accessibilityLabel, accessibilityHint, disabled = false, testID }: RowProps) {
   const { color } = useTheme();
   const first = useContext(FirstRow);
   // A value still being read is no value: the row is named by its label alone.
@@ -85,11 +89,23 @@ export function ListRow({ label, icon, value: given, onPress, navigates = false,
   );
   const chevron =
     onPress !== undefined && navigates ? <Icon name="chevron.right" size="small" tone="muted" testID={testID === undefined ? undefined : `${testID}-chevron`} /> : null;
+  const end = trailing === undefined || chevron !== null ? null : <Icon name={trailing} tone="accent" testID={testID === undefined ? undefined : `${testID}-trailing`} />;
+  // The row read as one: "Label, value" or "Label, detail" (a row has either on its second part, rarely both).
+  const spokenSecond = value ?? detail;
+  const text =
+    detail === undefined ? (
+      <Text style={[styles.label, { color: ink }]}>{label}</Text>
+    ) : (
+      <View style={styles.texts}>
+        <Text style={{ fontSize: tokens.type.body, color: ink }}>{label}</Text>
+        <Text style={[styles.detail, { color: color.muted }]}>{detail}</Text>
+      </View>
+    );
   const body = (
     <>
       {separator}
       {icon !== undefined && <Icon name={icon} tone={tone} />}
-      <Text style={[styles.label, { color: ink }]}>{label}</Text>
+      {text}
       {value !== undefined && (
         <Text style={[styles.value, { color: color.muted }]}>{value}</Text>
       )}
@@ -105,6 +121,7 @@ export function ListRow({ label, icon, value: given, onPress, navigates = false,
         />
       )}
       {chevron}
+      {end}
     </>
   );
   if (onPress === undefined || toggle !== undefined) {
@@ -112,7 +129,7 @@ export function ListRow({ label, icon, value: given, onPress, navigates = false,
     return (
       <View
         testID={testID}
-        {...(toggle === undefined ? { accessible: true, accessibilityLabel: value === undefined ? label : `${label}, ${value}` } : {})}
+        {...(toggle === undefined ? { accessible: true, accessibilityLabel: spokenSecond === undefined ? label : `${label}, ${spokenSecond}` } : {})}
         style={styles.row}>
         {body}
       </View>
@@ -122,7 +139,7 @@ export function ListRow({ label, icon, value: given, onPress, navigates = false,
     <Pressable
       testID={testID}
       accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel ?? (value === undefined ? label : `${label}, ${value}`)}
+      accessibilityLabel={accessibilityLabel ?? (spokenSecond === undefined ? label : `${label}, ${spokenSecond}`)}
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled }}
       disabled={disabled}
@@ -148,6 +165,9 @@ const styles = StyleSheet.create({
   },
   separator: { position: 'absolute', top: 0, right: 0, height: tokens.border.hairline },
   label: { flex: 1, minWidth: 0, fontSize: tokens.type.body },
+  // Label over detail in the room the label alone would take.
+  texts: { flex: 1, minWidth: 0, gap: tokens.space.xs },
+  detail: { fontSize: tokens.type.bodySmall, fontVariant: ['tabular-nums'] },
   // A long value (a list of foods, the user's own sentence) wraps in its share of the row, never cut (Larger Text) and never taking the label's room.
   value: { flexShrink: 1, maxWidth: '60%', textAlign: 'right', fontSize: tokens.type.bodySmall },
   dim: { opacity: tokens.opacity.dim },

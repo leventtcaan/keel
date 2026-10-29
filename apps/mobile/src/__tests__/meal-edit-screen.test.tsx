@@ -106,7 +106,7 @@ test('the meal opens as it was logged: its slot, its items, their amounts, units
   expect(screen.getByRole('button', { name: t('food.slot.BREAKFAST') })).toBeSelected();
   expect(amountField('Oats, rolled').props.value).toBe('80');
   expect(amountField('Milk, whole').props.value).toBe('1');
-  expect(screen.getByRole('button', { name: t('meal.item.weighedSpoken', { name: 'Oats, rolled' }) })).toBeSelected();
+  expect(screen.getByRole('switch', { name: t('meal.item.weighedSpoken', { name: 'Oats, rolled' }) }).props.value).toBe(true);
   expect(screen.getByRole('button', { name: t('meal.item.unitSpoken', { name: 'Milk, whole', unit: '1 cup' }) })).toBeSelected();
 });
 
