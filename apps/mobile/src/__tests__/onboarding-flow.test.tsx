@@ -6,7 +6,7 @@
 import * as path from 'path';
 
 import { router as appRouter } from 'expo-router';
-import { AccessibilityInfo } from 'react-native';
+import { AccessibilityInfo, StyleSheet } from 'react-native';
 import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-library';
 
 import { t } from '@/copy';
@@ -425,6 +425,20 @@ describe('the walk through', () => {
       t('onboarding.goal.lose_fat.title'),
       t('onboarding.goal.build_muscle.title'),
     ]);
+  });
+
+  test('Sign out on the first question is a small, quiet text link at the foot, not a chip among the answers (K-1066)', async () => {
+    await open();
+    const link = screen.getByRole('button', { name: t('onboarding.signOut') });
+    // No fill: the words alone, muted and small.
+    expect(StyleSheet.flatten(link.props.style).backgroundColor).toBeUndefined();
+    const words = StyleSheet.flatten(screen.getByText(t('onboarding.signOut')).props.style) as { fontSize: number };
+    expect(words.fontSize).toBe(tokens.type.bodySmall);
+    // After the goals and their note, not between them.
+    const labels = screen.getAllByRole('button').map((b) => b.props.accessibilityLabel as string | undefined);
+    expect(labels.indexOf(t('onboarding.signOut'))).toBe(labels.length - 1);
+    await fireEvent.press(link);
+    expect(mockSignOut).toHaveBeenCalledTimes(1);
   });
 
   test('going back keeps the answer', async () => {

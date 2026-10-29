@@ -47,7 +47,7 @@ export type PaywallWords = {
   accent: string | null;
   /** Under the headline: until when nothing is charged (the trial only). */
   sub: { lead: string; date: string } | null;
-  /** The renewal in full, in the scroll (Apple 3.1.2). */
+  /** The cancel note, in the scroll. The price and the renewal are said once, in `dock` by the button (Apple 3.1.2, K-1066). */
   terms: string[];
   /**
    * The line above the bottom links: what today costs (the trial only), then what it renews at. The billed amount is its own part
@@ -73,11 +73,9 @@ function dockWords(plan: Plan, strong: string | null): PaywallWords['dock'] {
  */
 export function paywallWords(plan: Plan, today: string): PaywallWords {
   const cancel = t('subscription.cancelNote');
-  const price = { price: plan.price };
   if (plan.trial === null) {
-    const renews = t(`subscription.renews.${plan.period}`, price);
     const title = t('subscription.title');
-    return { title, lead: title, accent: null, sub: null, terms: [renews, cancel], dock: dockWords(plan, null), action: t('subscription.subscribe') };
+    return { title, lead: title, accent: null, sub: null, terms: [cancel], dock: dockWords(plan, null), action: t('subscription.subscribe') };
   }
   const trial = span(plan.trial);
   return {
@@ -85,7 +83,7 @@ export function paywallWords(plan: Plan, today: string): PaywallWords {
     lead: t('subscription.titleLead'),
     accent: t('subscription.titleFor', { trial }),
     sub: { lead: t('subscription.sub.lead'), date: weekdayDate(after(today, plan.trial.count, plan.trial.unit)) },
-    terms: [t(`subscription.after.${plan.period}`, price), cancel],
+    terms: [cancel],
     dock: dockWords(plan, t('subscription.dock.noCharge')),
     action: t('subscription.startTrial', { trial: t(`subscription.trial.${plan.trial.unit}`, { count: String(plan.trial.count) }) }),
   };

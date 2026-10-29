@@ -28,6 +28,13 @@ export function dayLabel(day: string, today: string): string {
   return weekdayDate(day);
 }
 
+/** The Food page's title: "Today's food", "Yesterday's food", else the day itself ("Tue, Oct 27"). */
+export function dayTitle(day: string, today: string): string {
+  if (day === today) return t('screens.food.title');
+  if (day === addDays(today, -1)) return t('food.day.titleYesterday');
+  return weekdayDate(day);
+}
+
 /** The days of the strip, today last: `count` days ending today. */
 export function stripDays(today: string, count: number = foodParams.dayStripDays): string[] {
   return Array.from({ length: count }, (_, i) => addDays(today, i - (count - 1)));

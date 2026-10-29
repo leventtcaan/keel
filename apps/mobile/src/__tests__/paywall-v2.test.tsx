@@ -158,7 +158,8 @@ describe('the hero right after onboarding: the user\'s own plan, tagged Yours (K
     await show();
     expect(screen.getByRole('button', { name: START })).toBeOnTheScreen();
     expect(screen.getByLabelText('No charge today. Then $59.99 a year, renewing every year until you cancel.')).toBeOnTheScreen();
-    expect(screen.getByText('When the trial ends: $59.99 a year, renewing every year until you cancel.')).toBeOnTheScreen();
+    // Once: the line by the button says the price and the renewal; the scroll does not say them again (K-1066).
+    expect(screen.queryByText(/When the trial ends/)).toBeNull();
     expect(screen.getByText(t('subscription.cancelNote'))).toBeOnTheScreen();
   });
 
@@ -207,7 +208,7 @@ describe('the trial, only where the store offers it', () => {
     expect(screen.queryByText(t('subscription.sub.lead'))).toBeNull();
     expect(screen.getByRole('header', { name: t('subscription.title') })).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: t('subscription.subscribe') })).toBeOnTheScreen();
-    expect(screen.getAllByText('$59.99 a year, renewing every year until you cancel.').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('$59.99 a year, renewing every year until you cancel.')).toHaveLength(1);
   });
 });
 
@@ -218,7 +219,7 @@ describe('the bottom that stays', () => {
       expect(screen.getByRole('button', { name })).toBeOnTheScreen();
     }
     expect(screen.getByLabelText('No charge today. Then $59.99 a year, renewing every year until you cancel.')).toBeOnTheScreen();
-    expect(screen.getByText('When the trial ends: $59.99 a year, renewing every year until you cancel.')).toBeOnTheScreen();
+    expect(screen.queryByText(/When the trial ends/)).toBeNull();
     expect(screen.getByText(t('subscription.cancelNote'))).toBeOnTheScreen();
   });
 
@@ -233,9 +234,9 @@ describe('the bottom that stays', () => {
   test('the plan chosen changes the line, the full terms and the plan the button buys', async () => {
     await show();
     await act(async () => fireEvent.press(screen.getByRole('radio', { name: /^Monthly/ })));
-    // The renewal in the line at the bottom and in the full terms above.
+    // The renewal is said once, in the line at the bottom.
     expect(screen.getByLabelText('$12.99 a month, renewing every month until you cancel.')).toBeOnTheScreen();
-    expect(screen.getAllByText('$12.99 a month, renewing every month until you cancel.')).toHaveLength(2);
+    expect(screen.getAllByText('$12.99 a month, renewing every month until you cancel.')).toHaveLength(1);
     await press(t('subscription.subscribe'));
     expect(mockStore.buy).toHaveBeenCalledWith('$rc_monthly');
   });

@@ -83,7 +83,7 @@ function Settings() {
   return null;
 }
 
-async function show(start: Record<string, string> = {}, targets: Parameters<typeof GuideOverlay>[0]['targets'] = TARGETS) {
+async function show(start: Record<string, string> = {}, targets: Parameters<typeof GuideOverlay>[0]['targets'] = TARGETS, lines?: Parameters<typeof GuideOverlay>[0]['lines']) {
   const kept = store(start);
   const mark = createGuideMark({ kv: kept.kv });
   const view = await render(
@@ -91,7 +91,7 @@ async function show(start: Record<string, string> = {}, targets: Parameters<type
       <GuideProvider mark={mark}>
         <Settings />
         <Arrive />
-        <GuideOverlay targets={targets} />
+        <GuideOverlay targets={targets} {...(lines === undefined ? {} : { lines })} />
       </GuideProvider>
     </ThemeProvider>,
   );
@@ -127,6 +127,14 @@ test('walks through the call, the workout, the "+" and the tabs; each a line; th
   await tap(t('guide.done'));
   expect(step('tabs')).toBeNull();
   expect(screen.getByText('closed')).toBeOnTheScreen();
+});
+
+test("the workout step says the line the screen gives it (the card's state), the other steps their own (K-1066)", async () => {
+  await show({}, TARGETS, { workout: t('guide.workout.first') });
+  expect(screen.getByText(t('guide.call.body'))).toBeOnTheScreen();
+  await tap(t('guide.next'));
+  expect(screen.getByText(t('guide.workout.first'))).toBeOnTheScreen();
+  expect(screen.queryByText(t('guide.workout.body'))).toBeNull();
 });
 
 test('a tap anywhere on the dim goes on', async () => {

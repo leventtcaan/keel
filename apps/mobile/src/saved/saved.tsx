@@ -16,6 +16,8 @@ export type Undone =
 
 /** Something was saved and can be taken back for a few seconds. */
 export type Save = {
+  /** What it says in place of "Saved", for a save that is not a save: "Deleted", "Removed". Already translated. */
+  lead?: string;
   /** One short line after "Saved" ("80.2 kg"). Already translated. */
   detail?: string;
   /**
@@ -127,12 +129,13 @@ export function SavedBanner() {
     announce(result.message);
     Alert.alert(result.message);
     // Not taken back, but still possible: the banner comes back, with a new time.
-    if (result.again) publish({ detail: shown.detail, undo: shown.undo });
+    if (result.again) publish({ lead: shown.lead, detail: shown.detail, undo: shown.undo });
   };
 
   return (
     <UndoBanner
       key={shown.id}
+      lead={shown.lead}
       detail={shown.detail}
       onUndo={() => void undo()}
       onDismiss={() => dismiss(shown.id)}

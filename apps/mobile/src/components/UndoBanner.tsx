@@ -10,6 +10,8 @@ import { useReduceMotion } from '@/theme/useReduceMotion';
 import { workoutParams } from '@/train/params';
 
 type Props = {
+  /** The first word, "Saved" unless the screen says otherwise ("Deleted"). Already translated. */
+  lead?: string;
   /** What was saved, one short line after "Saved" ("72.5 kg"). Already translated. */
   detail?: string;
   /** The person tapped Undo. */
@@ -27,7 +29,7 @@ type Props = {
  * that goes by itself (ADR-070 Ek 2 #6). The screen shows it by rendering it and stops on `onDismiss`; a new save is a new
  * banner (give it a new `key`). It is the inverse surface, as the decision block is, so it reads on any page.
  */
-export function UndoBanner({ detail, onUndo, onDismiss, durationMs = workoutParams.undoBannerMs, bottomOffset = tokens.space.xl }: Props) {
+export function UndoBanner({ lead, detail, onUndo, onDismiss, durationMs = workoutParams.undoBannerMs, bottomOffset = tokens.space.xl }: Props) {
   const { color } = useTheme();
   const reduce = useReduceMotion();
   const [shown, setShown] = useState(true);
@@ -39,8 +41,9 @@ export function UndoBanner({ detail, onUndo, onDismiss, durationMs = workoutPara
   });
 
   useEffect(() => {
-    announce(detail === undefined ? t('undoBanner.announceBare') : t('undoBanner.announce', { detail }));
-  }, [detail]);
+    if (detail === undefined) announce(t('undoBanner.announceBare'));
+    else announce(lead === undefined ? t('undoBanner.announce', { detail }) : t('undoBanner.announceLead', { lead, detail }));
+  }, [lead, detail]);
 
   // The time is up: the banner goes. A tap on Undo ends it first (`shown` false), which clears the timer: nothing is dismissed twice.
   useEffect(() => {
@@ -71,7 +74,7 @@ export function UndoBanner({ detail, onUndo, onDismiss, durationMs = workoutPara
       testID="undo-banner"
       style={[styles.band, { backgroundColor: color.decisionBackground, bottom: bottomOffset, opacity: reduce ? 1 : fade }]}>
       <InverseSurface>
-        <BannerWords detail={detail} />
+        <BannerWords lead={lead} detail={detail} />
         <Button label={t('undoBanner.undo')} variant="text" onPress={undo} />
       </InverseSurface>
     </Animated.View>
@@ -79,11 +82,11 @@ export function UndoBanner({ detail, onUndo, onDismiss, durationMs = workoutPara
 }
 
 /** Inside the inverse surface: the block's own text colours. */
-function BannerWords({ detail }: { detail?: string }) {
+function BannerWords({ lead, detail }: { lead?: string; detail?: string }) {
   const { color } = useTheme();
   return (
     <View style={styles.words}>
-      <Text style={[styles.saved, { color: color.text }]}>{t('undoBanner.saved')}</Text>
+      <Text style={[styles.saved, { color: color.text }]}>{lead ?? t('undoBanner.saved')}</Text>
       {detail !== undefined && <Text style={[styles.detail, { color: color.textSecondary }]}>{detail}</Text>}
     </View>
   );

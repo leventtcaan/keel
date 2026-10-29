@@ -45,4 +45,5 @@ export const foodParams = {
   ownFoodServingG: param<number>('own_food_default_serving_g'),
   swipeDeletePx: param<number>('swipe_delete_px'),
   mealHintRoundKcal: param<number>('meal_hint_round_kcal'),
+  mealHintMinDays: param<number>('meal_hint_min_days'),
 };

@@ -38,7 +38,11 @@
     },
     "workout": {
       "title": "Today's workout",
-      "body": "Tap Start. Your sets and loads are ready."
+      "body": "Tap Start. Your sets and loads are ready.",
+      "first": "Tap Start. Session 1 finds your weights.",
+      "done": "Today's done. Next: {session}, {weekday}.",
+      "doneLast": "Today's done. Nice work.",
+      "other": "Today's training shows here."
     },
     "plus": {
       "title": "Log anything",
@@ -79,6 +83,7 @@
     "undo": "Undo",
     "announce": "Saved, {detail}. Undo is available.",
     "announceBare": "Saved. Undo is available.",
+    "announceLead": "{lead}, {detail}. Undo is available.",
     "failed": "Couldn't take it back. Try again."
   },
   "stepper": {
@@ -1093,6 +1098,7 @@
     "day": {
       "today": "Today",
       "yesterday": "Yesterday",
+      "titleYesterday": "Yesterday's food",
       "before": "Day before",
       "after": "Day after",
       "hasMeals": "has meals"
@@ -1121,11 +1127,13 @@
       "other": "{count} meals · {kcal}",
       "spoken": "Copy the meals of {day}",
       "failed": "Couldn't read that day. Try again.",
-      "saved": "Copied · {count} meals"
+      "lead": "Copied",
+      "saved": "{count} meals"
     },
     "deleted": {
-      "detail": "Deleted · {slot}",
-      "itemDetail": "Removed · {name}",
+      "lead": "Deleted",
+      "detail": "{slot}",
+      "itemLead": "Removed",
       "said": "Put back.",
       "undoFailed": "Couldn't put it back. Try again.",
       "failed": "Couldn't delete it. Try again."
@@ -3075,14 +3083,6 @@
         "monthly": ", renewing every month until you cancel."
       }
     },
-    "after": {
-      "annual": "When the trial ends: {price} a year, renewing every year until you cancel.",
-      "monthly": "When the trial ends: {price} a month, renewing every month until you cancel."
-    },
-    "renews": {
-      "annual": "{price} a year, renewing every year until you cancel.",
-      "monthly": "{price} a month, renewing every month until you cancel."
-    },
     "cancelNote": "Charged to your Apple ID. Cancel anytime in Settings, then Subscription, at least 24 hours before it renews, and you won't be charged again. What you've paid for stays yours until its end.",
     "startTrial": "Start {trial}",
     "subscribe": "Subscribe",
@@ -3125,13 +3125,13 @@
       "title": "Subscription",
       "none": "Not subscribed. Your log, your weekly call and its reasons work without one.",
       "status": {
-        "TRIAL": "Free trial until {date}.",
-        "ACTIVE": "Renews on {date}.",
+        "TRIAL": "Free trial until {date}",
+        "ACTIVE": "Renews on {date}",
         "CANCELLED": "Cancelled. Yours until {date}; it won't renew.",
         "BILLING_ISSUE": "The App Store couldn't charge your payment method. Access stays until {date} while it tries again.",
-        "PAUSED": "Paused.",
-        "EXPIRED": "Ended on {date}.",
-        "REFUNDED": "Refunded."
+        "PAUSED": "Paused",
+        "EXPIRED": "Ended on {date}",
+        "REFUNDED": "Refunded"
       },
       "manage": "Cancel or change plan",
       "manageNote": "Opens your App Store subscription, where you can cancel or switch plans.",
@@ -3578,6 +3578,7 @@
       "cardio": "Cardio",
       "ofKcal": "/ {target}",
       "ofGrams": "/ {target} g",
+      "noSteps": "No steps yet",
       "ofSteps": "/ {target}",
       "ofCardio": "/ {count} this week",
       "fromMeals": "From your meals",

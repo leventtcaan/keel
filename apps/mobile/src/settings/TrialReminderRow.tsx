@@ -18,6 +18,8 @@ export function TrialReminderRow() {
       label={t('subscription.reminder.ask')}
       detail={note === null ? undefined : t(`subscription.reminder.${note}`)}
       disabled={busy}
+      navigates
+      testID="trial-reminder-row"
       onPress={() => void ask()}
     />
   );

@@ -1,7 +1,6 @@
 import { Redirect } from 'expo-router';
-import { StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
 
-import { Button } from '@/components/Button';
 import { OptionCard } from '@/components/OptionCard';
 import { t } from '@/copy';
 import { useDraft } from '@/onboarding/OnboardingContext';
@@ -26,7 +25,17 @@ function GoalStep() {
   const { signOut } = useAppServices();
   const { color } = useTheme();
   return (
-    <StepFrame step="goal" title={t('onboarding.goal.title')} chosen>
+    <StepFrame
+      step="goal"
+      title={t('onboarding.goal.title')}
+      chosen
+      actions={
+        // The way out before any answer is kept: a different Apple ID, or not now. Nothing is saved until the end. Quiet, at the foot:
+        // the first question is the goal, not signing out.
+        <Pressable accessibilityRole="button" accessibilityLabel={t('onboarding.signOut')} onPress={() => void signOut()} hitSlop={tokens.space.md} style={styles.out}>
+          <Text style={[styles.outText, { color: color.muted }]}>{t('onboarding.signOut')}</Text>
+        </Pressable>
+      }>
       <OptionCard
         hero
         title={t('onboarding.goal.decide_for_me.title')}
@@ -46,10 +55,12 @@ function GoalStep() {
         onPress={() => choose({ goal: 'BUILD_MUSCLE' })}
       />
       <Text style={[styles.note, { color: color.muted }]}>{t('onboarding.goal.note')}</Text>
-      {/* The way out before any answer is kept: a different Apple ID, or not now. Nothing is saved until the end. */}
-      <Button label={t('onboarding.signOut')} variant="ghost" size="sm" onPress={() => void signOut()} />
     </StepFrame>
   );
 }
 
-const styles = StyleSheet.create({ note: { fontSize: tokens.type.bodySmall } });
+const styles = StyleSheet.create({
+  note: { fontSize: tokens.type.bodySmall },
+  out: { alignSelf: 'center', minHeight: tokens.size.touch, justifyContent: 'center' },
+  outText: { fontSize: tokens.type.bodySmall },
+});
