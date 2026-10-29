@@ -166,7 +166,7 @@ keel:
     # The search's order (K-1061, ADR-090 #1; FoodRanking): 20 points a step of how well the name holds the words (6 steps: the name
     # itself 100, the word first 80, ... somewhere inside 0), a generic food that starts with the word 25 (above one step, below two:
     # "egg" is the egg before a product called "Eggs", yet the product that is exactly "Eggs" outranks "Eggplant"), a brand that the
-    # word starts 30, the user's region 15; their own logs 8 a log up to 5 logs, everyone's 4 a natural-log unit (100 logs about 18).
+    # word starts 30, the user's region 15; their own logs 8 a log up to 5 logs, other accounts' 4 a natural-log unit, at most 19 (one step less than a name-match step).
     # The best 100 by the text go on to the log bonuses.
     search:
       rank-step: 20
@@ -180,6 +180,11 @@ keel:
       # How like a typed word (4 letters or more) another may be spelled when the exact search finds fewer than asked: pg_trgm word
       # similarity, 0.45 takes "chiken" (0.50), "avacado" (0.45), "bananna" (0.75) and not "beans" for "beef steak" (0.33).
       typo-similarity: 0.45
+      # Other accounts' logs count only once this many DISTINCT other accounts logged the food (security review of K-1061: below it, one
+      # account logging a rare food would change another user's order and so reveal that it was logged). A privacy threshold
+      # (k-anonymity style), a product choice, not a research value: no source in arastirma/; it lives here with the other search
+      # weights, not in data/parameters (those are the engine's, each tied to a research anchor, ParameterProvenanceTests).
+      popularity-min-accounts: 20
     # Logging a food (K-1061, FoodPortions): the words that name the size of a piece, smallest to largest. Of the sizes a food has
     # the middle one is where the app starts ("1 large" egg, "1 medium" banana).
     portions:

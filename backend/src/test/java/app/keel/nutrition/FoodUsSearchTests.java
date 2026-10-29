@@ -52,7 +52,7 @@ class FoodUsSearchTests {
         food("banana", "Bananas, raw", null, "SR_LEGACY", "US", null, "89");
         food("chicken", "Chicken, breast, raw", null, "FOUNDATION", "US", null, "120");
         food("yogurt", "Greek Yogurt, Strawberry", "Chobani", "BRANDED", "US", "00036000291452", "88");
-        food("granola", "Granola", null, "FOUNDATION", "US", null, "471");
+        food("granola", "Granola, plain", null, "FOUNDATION", "US", null, "471");
         food("granola-bar", "Granola bar, chewy", null, "SR_LEGACY", "US", null, "420");
         food("kefir-us", "Kefir plain", "Lifeway", "BRANDED", "US", null, "60");
         food("kefir-tr", "Kefir plain", "Pınar", "BRANDED", "TR", null, "60");
@@ -122,15 +122,36 @@ class FoodUsSearchTests {
     }
 
     @Test
-    void theFoodsEveryoneLogsComeBeforeTheRareOnesOfTheSameText() throws Exception {
+    void whatFewerThanTheMinimumOfOtherAccountsLogChangesNoOrder() throws Exception {
         AccountId someone = account();
         // Same text, same type, no region asked: the order is the database's tie-break (the shorter name, then the id).
         assertThat(ids(found("kefir plain", null, someone))).containsExactly("kefir-tr", "kefir-us");
-        for (int i = 0; i < 40; i++) {
+
+        // Security: fewer than the minimum of distinct other accounts (keel.nutrition.search.popularity-min-accounts: 20) change no order,
+        // or the order would tell that someone logged the food.
+        for (int i = 0; i < 19; i++) {
+            log(UUID.randomUUID(), "kefir-us");
+        }
+        assertThat(ids(found("kefir plain", null, someone))).as("19 other accounts").containsExactly("kefir-tr", "kefir-us");
+    }
+
+    @Test
+    void oneAccountLoggingAFoodAHundredTimesChangesNoOtherUsersOrder() throws Exception {
+        UUID loud = UUID.randomUUID();
+        for (int i = 0; i < 100; i++) {
+            log(loud, "kefir-us");
+        }
+
+        assertThat(ids(found("kefir plain", null, account()))).containsExactly("kefir-tr", "kefir-us");
+    }
+
+    @Test
+    void twentyDistinctOtherAccountsBoostAFood() throws Exception {
+        for (int i = 0; i < 20; i++) {
             log(UUID.randomUUID(), "kefir-us");
         }
 
-        assertThat(ids(found("kefir plain", null, someone))).containsExactly("kefir-us", "kefir-tr");
+        assertThat(ids(found("kefir plain", null, account()))).containsExactly("kefir-us", "kefir-tr");
     }
 
     @Test

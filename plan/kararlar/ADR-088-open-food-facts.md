@@ -55,7 +55,8 @@ Karar 4'teki "USDA Branded şimdilik alınmaz" kalktı (ADR-090 #1): ABD kullan�
   noktasında ağırlık birimi. Beden sözcükleri `application.yml` `keel.nutrition.portions`.
 - **Arama:** `pg_trgm` + üretilmiş `search_text` sütunu üstünde GIN dizini (V52; eklenti `public`'te, tablolar `nutrition`'da). Önek/içinde-geçme `LIKE`, çoğul (`eggs` →
   `egg`), yazım hatası (`<%` kelime benzerliği, yalnız tam eşleşme azken ve ≥4 harfli kelimede, tam eşleşmelerden sonra). Sıra puanla: ad eşleşmesi 6 basamak, genel kelimeye
-  genel gıda, marka kelimesine ürün, kullanıcının bölgesi (`Accept-Language`, yoksa profil saat dilimi); sonra kullanıcının kendi kayıtları ve herkesin kayıt sayısı
-  (`meal_item`; yalnız sayım). Ağırlıklar `application.yml` `keel.nutrition.search`, kural `FoodRanking`.
+  genel gıda, marka kelimesine ürün, kullanıcının bölgesi (`Accept-Language`, yoksa profil saat dilimi); sonra kullanıcının kendi kayıtları ve **başka hesapların** kaydı: yalnız en az 20 FARKLI başka hesap (kendisi sayılmaz) kaydettiyse sayılır
+  (`popularity-min-accounts`; altında 0: tek hesabın nadir bir besini kaydetmesi başkasının sırasını değiştirip bunu ele vermesin, güvenlik incelemesi), logaritmayla ve bir ad-eşleşme
+  basamağının altında kalır (`meal_item`; yalnız sayım). Ağırlıklar `application.yml` `keel.nutrition.search`, kural `FoodRanking`.
 - **Doğrulanamayan/ölçülmeyen:** Survey `food_portion.csv` biçimi gerçek sürümün başından (amount boş, modifier sayısal kod, açıklama "1 cup") okundu; Branded sütunları
   gerçek sürümün başlığından (2026-04-30) doğrulandı. Arama süresi ve içe aktarma süresi gerçek veriyle ölçülmedi.

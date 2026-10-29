@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 /** The search's SQL (K-1061) read without a database: every placeholder has a value, typos are asked for only when asked. */
 class FoodSearchStatementTests {
 
-    private static final FoodRanking.Weights WEIGHTS = new FoodRanking.Weights(20, 25, 30, 15, 8, 5, 4, 100, 0.45);
+    private static final FoodRanking.Weights WEIGHTS = new FoodRanking.Weights(20, 25, 30, 15, 8, 5, 4, 100, 0.45, 20);
     private static final FoodStore.Searcher US = new FoodStore.Searcher(Optional.empty(), Optional.of("US"));
 
     private static FoodStore.Statement statement(String query, boolean typos) {

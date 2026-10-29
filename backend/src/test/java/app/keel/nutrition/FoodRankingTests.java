@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 class FoodRankingTests {
 
     // The weights of application.yml.
-    private static final FoodRanking.Weights WEIGHTS = new FoodRanking.Weights(20, 25, 30, 15, 8, 5, 4, 100, 0.45);
+    private static final FoodRanking.Weights WEIGHTS = new FoodRanking.Weights(20, 25, 30, 15, 8, 5, 4, 100, 0.45, 20);
 
     private static FoodStore.Food food(String id) {
         return new FoodStore.Food(id, id, null, FoodRanges.Source.ANALYSED, new FoodRanges.Per100g(BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE),
@@ -34,13 +34,12 @@ class FoodRankingTests {
     }
 
     @Test
-    void theUsersOwnLogsOutweighEveryonesAndLiftAFoodOverABetterNameMatch() {
-        // "Granola bar" (60) the user logs five times is above the exact "Granola" (100) they never log.
-        List<FoodRanking.Hit> hits = List.of(new FoodRanking.Hit(food("granola"), 100), new FoodRanking.Hit(food("granola-bar"), 60));
+    void theUsersOwnLogsLiftAFoodOverABetterNameMatch() {
+        // "Granola bar" (70) the user logs five times is above the exact "Granola" (100) they never log.
+        List<FoodRanking.Hit> hits = List.of(new FoodRanking.Hit(food("granola"), 100), new FoodRanking.Hit(food("granola-bar"), 70));
 
-        assertThat(ids(FoodRanking.rank(hits, Map.of("granola-bar", new FoodRanking.Popularity(5, 5)), WEIGHTS, 10))).containsExactly("granola-bar", "granola");
-        // Once they log it, not five times: 60 + 8 + 4*ln(2) = 70.77, still behind.
-        assertThat(ids(FoodRanking.rank(hits, Map.of("granola-bar", new FoodRanking.Popularity(1, 1)), WEIGHTS, 10))).containsExactly("granola", "granola-bar");
+        assertThat(ids(FoodRanking.rank(hits, Map.of("granola-bar", new FoodRanking.Popularity(5, 0)), WEIGHTS, 10))).containsExactly("granola-bar", "granola");
+        assertThat(ids(FoodRanking.rank(hits, Map.of("granola-bar", new FoodRanking.Popularity(1, 0)), WEIGHTS, 10))).containsExactly("granola", "granola-bar");
     }
 
     @Test
@@ -50,14 +49,34 @@ class FoodRankingTests {
     }
 
     @Test
-    void everyonesLogsCountByTheirLogarithm() {
-        int ten = FoodRanking.bonus(new FoodRanking.Popularity(0, 10), WEIGHTS);
-        int tenThousand = FoodRanking.bonus(new FoodRanking.Popularity(0, 10_000), WEIGHTS);
+    void otherAccountsCountOnlyFromTheMinimumNumberOfDistinctAccountsAndByTheirLogarithm() {
+        // Security review: one account logging a rare food must not show in another user's order.
+        for (int accounts = 0; accounts < 20; accounts++) {
+            assertThat(FoodRanking.bonus(new FoodRanking.Popularity(0, accounts), WEIGHTS)).as(accounts + " other accounts").isZero();
+        }
+        int atTheMinimum = FoodRanking.bonus(new FoodRanking.Popularity(0, 20), WEIGHTS);
+        int many = FoodRanking.bonus(new FoodRanking.Popularity(0, 500), WEIGHTS);
 
         assertThat(FoodRanking.bonus(FoodRanking.Popularity.NONE, WEIGHTS)).isZero();
-        assertThat(ten).isEqualTo(10);
-        assertThat(tenThousand).isEqualTo(37);
-        assertThat(tenThousand).as("a thousand times the logs is not a thousand times the bonus").isLessThan(ten * 4);
+        assertThat(atTheMinimum).isEqualTo(12);
+        assertThat(many).isGreaterThan(atTheMinimum);
+    }
+
+    @Test
+    void otherAccountsNeverPutAFoodAheadOfABetterNameMatch() {
+        // Their bonus stays under one step of the name match (20), however many they are.
+        assertThat(FoodRanking.bonus(new FoodRanking.Popularity(0, 1_000_000), WEIGHTS)).isEqualTo(19);
+        List<FoodRanking.Hit> hits = List.of(new FoodRanking.Hit(food("exact"), 100), new FoodRanking.Hit(food("prefix"), 80));
+
+        assertThat(ids(FoodRanking.rank(hits, Map.of("prefix", new FoodRanking.Popularity(0, 1_000_000)), WEIGHTS, 10))).containsExactly("exact", "prefix");
+    }
+
+    @Test
+    void fewerThanTheMinimumAccountsChangeNoOrderAndTheMinimumDoes() {
+        List<FoodRanking.Hit> hits = List.of(new FoodRanking.Hit(food("a"), 80), new FoodRanking.Hit(food("b"), 80));
+
+        assertThat(ids(FoodRanking.rank(hits, Map.of("b", new FoodRanking.Popularity(0, 19)), WEIGHTS, 10))).containsExactly("a", "b");
+        assertThat(ids(FoodRanking.rank(hits, Map.of("b", new FoodRanking.Popularity(0, 20)), WEIGHTS, 10))).containsExactly("b", "a");
     }
 
     @Test
@@ -76,9 +95,10 @@ class FoodRankingTests {
 
     @Test
     void weightsThatCannotRankAreRefusedAtStart() {
-        assertThatThrownBy(() -> new FoodRanking.Weights(0, 25, 30, 15, 8, 5, 4, 100, 0.45)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new FoodRanking.Weights(20, 25, 30, 15, 8, 5, 4, 0, 0.45)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new FoodRanking.Weights(20, 25, 30, 15, 8, 5, 4, 100, 0)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new FoodRanking.Weights(20, 25, 30, 15, 8, -1, 4, 100, 0.45)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new FoodRanking.Weights(20, 25, 30, 15, 8, 5, 4, 100, 0.45, 0)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new FoodRanking.Weights(0, 25, 30, 15, 8, 5, 4, 100, 0.45, 20)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new FoodRanking.Weights(20, 25, 30, 15, 8, 5, 4, 0, 0.45, 20)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new FoodRanking.Weights(20, 25, 30, 15, 8, 5, 4, 100, 0, 20)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new FoodRanking.Weights(20, 25, 30, 15, 8, -1, 4, 100, 0.45, 20)).isInstanceOf(IllegalArgumentException.class);
     }
 }

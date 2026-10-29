@@ -193,7 +193,10 @@ class FoodStore {
                 + " else 5 end)";
     }
 
-    /** How often each food was logged: by the user, by everyone (nutrition.meal_item; a count, no one's meals leave the database). */
+    /**
+     * How each food was logged: by the user (times), by how many other accounts (distinct; the user's own are not among them). Only
+     * counts leave the database; FoodRanking uses the other accounts' count only above a minimum.
+     */
     private Map<String, FoodRanking.Popularity> popularity(List<String> ids, Optional<UUID> account) {
         if (ids.isEmpty()) {
             return Map.of();
@@ -201,10 +204,11 @@ class FoodStore {
         record Row(String food, FoodRanking.Popularity popularity) {
         }
         return jdbc.sql("""
-                select food_id, count(*) as everyone, count(*) filter (where account_id = :account) as mine
+                select food_id, count(distinct account_id) filter (where account_id <> :account) as others,
+                       count(*) filter (where account_id = :account) as mine
                 from nutrition.meal_item where food_id = any (cast(:ids as text[])) group by food_id""")
                 .param("ids", ids.toArray(String[]::new)).param("account", account.orElse(NOBODY))
-                .query((row, n) -> new Row(row.getString("food_id"), new FoodRanking.Popularity(row.getInt("mine"), row.getInt("everyone"))))
+                .query((row, n) -> new Row(row.getString("food_id"), new FoodRanking.Popularity(row.getInt("mine"), row.getInt("others"))))
                 .list().stream().collect(Collectors.toMap(Row::food, Row::popularity));
     }
 
