@@ -218,6 +218,23 @@
         "other": "{count} questions first."
       }
     },
+    "counter": {
+      "title": "Weigh-ins this week",
+      "of": "{count} of {needed}",
+      "label": "{count} of {needed} weigh-ins this week",
+      "labelReached": "{count} of {needed} weigh-ins this week, enough",
+      "enough": "Enough for {day}. More mornings make the call surer.",
+      "behind": "{count} more before {day}'s call, and it can read your week.",
+      "last": {
+        "today": "Weigh in today, and {day}'s call can read your week.",
+        "todayTomorrow": "Weigh in today and tomorrow, and {day}'s call can read your week.",
+        "tomorrow": "Weigh in tomorrow, and {day}'s call can read your week.",
+        "every": "Weigh in every morning until {day}, and {day}'s call can read your week."
+      },
+      "short": "A short week happens. {day}'s call can't read it. Weigh in most mornings and calls start {date} at the earliest.",
+      "shortFoot": "Training goes on as planned",
+      "weighIn": "Weigh in"
+    },
     "today": {
       "label": "Today's workout",
       "today": "Today",
@@ -2606,7 +2623,11 @@
   "reminders": {
     "training": {
       "title": "Training in {minutes} minutes",
-      "body": "Your session is coming up."
+      "body": "Your session is coming up.",
+      "weighIns": {
+        "one": "{count} more weigh-in before {day}'s call.",
+        "other": "{count} more weigh-ins before {day}'s call."
+      }
     },
     "checkIn": {
       "title": "A new week",

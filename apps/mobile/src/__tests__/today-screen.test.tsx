@@ -131,7 +131,7 @@ const mockServices = {
   queue: { drain: mockDrain },
   report: () => {},
   // The reminders follow the program's week off (ADR-037 › 51b).
-  reminders: { keepRestUntil: mockKeepRestUntil, keepFirstCall: mockKeepFirstCall, era: () => 0 },
+  reminders: { keepRestUntil: mockKeepRestUntil, keepFirstCall: mockKeepFirstCall, keepWeighInWeek: async () => {}, era: () => 0 },
   // The state read is kept on the phone for the reminders (K-518).
   state: { keep: jest.fn(async (_loaded: unknown) => {}), back: jest.fn(async () => {}) },
   opens: { previous: async () => mockPreviousOpen },

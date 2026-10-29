@@ -209,3 +209,108 @@ describe('the first call (K-992, ADR-077 Ek 2): no check-in morning before the s
     ]);
   });
 });
+
+describe('the weigh-in line on the training reminder (ADR-089 Ek 2, K-1058)', () => {
+  // Wednesday 7 Oct 2026, noon. The block runs Tuesday 6 Oct to the check-in Monday 12 Oct; training is Mon and Thu at 18:00.
+  const wednesday = new Date(2026, 9, 7, 12, 0);
+  const block = { from: '2026-10-06', to: '2026-10-12', weighed: 2, needed: 4, short: false };
+  const plan = (extra: Partial<PlanInput> = {}) => planReminders({ ...base, now: wednesday, lastOpened: wednesday, weighInWeek: block, ...extra });
+  const training = (extra: Partial<PlanInput> = {}) => plan(extra).filter((r) => r.kind === 'training');
+  const line = (count: number) => t(count === 1 ? 'reminders.training.weighIns.one' : 'reminders.training.weighIns.other', { count, day: 'Monday' });
+
+  test("behind and still reachable: Thursday's reminder says how many more before the call, after its usual words", () => {
+    const thursday = training().find((r) => r.id === 'training-2026-10-08');
+    expect(thursday?.when).toEqual({ at: new Date(2026, 9, 8, 17, 30) });
+    expect(thursday?.body).toBe(`${t('reminders.training.body')}\n${line(2)}`);
+    expect(line(2)).toBe("2 more weigh-ins before Monday's call.");
+  });
+
+  test('the line follows the user\'s own sentence, and the singular says "1 more weigh-in"', () => {
+    const own = training({ cue: 'After work, straight to the gym', weighInWeek: { ...block, weighed: 3 } }).find((r) => r.id === 'training-2026-10-08');
+    expect(own?.body).toBe(`After work, straight to the gym\n${line(1)}`);
+    expect(line(1)).toBe("1 more weigh-in before Monday's call.");
+  });
+
+  test("only the block's training days before the check-in day carry it; the check-in day's own and later weeks' reminders do not", () => {
+    const withLine = training().filter((r) => r.body.includes('\n'));
+    expect(withLine.map((r) => r.id)).toEqual(['training-2026-10-08']);
+    // The days after are still planned, by date, and say only their usual words.
+    const monday = training().find((r) => r.id === 'training-2026-10-12');
+    expect(monday?.body).toBe(t('reminders.training.body'));
+  });
+
+  test('the training days stay what they were: the same moments, by date for the two weeks ahead (a weekly reminder cannot carry a line for one week)', () => {
+    expect(training().map((r) => r.when)).toEqual([
+      { at: new Date(2026, 9, 8, 17, 30) },
+      { at: new Date(2026, 9, 12, 17, 30) },
+      { at: new Date(2026, 9, 15, 17, 30) },
+      { at: new Date(2026, 9, 19, 17, 30) },
+    ]);
+    expect(training({ weighInWeek: null }).every((r) => 'weekday' in r.when)).toBe(true); // weekly again once there is no line
+  });
+
+  test('enough: no line, the weekly reminders as before', () => {
+    expect(training({ weighInWeek: { ...block, weighed: 4 } })).toEqual(training({ weighInWeek: null }));
+  });
+
+  test('a short week (the server gave a date the calls start): no line', () => {
+    expect(training({ weighInWeek: { ...block, weighed: 1, short: true } })).toEqual(training({ weighInWeek: null }));
+  });
+
+  test('no weighInWeek (a call has read the scale): no line, nothing changes', () => {
+    expect(plan({ weighInWeek: null })).toEqual(plan({ weighInWeek: undefined }));
+    expect(training({ weighInWeek: null }).every((r) => !r.body.includes('weigh-in'))).toBe(true);
+  });
+
+  test('not reachable any more on that day: no line (Sunday with 4 to go and only Sunday and Monday left)', () => {
+    const sunday = { ...schedule, trainingDays: ['SUNDAY' as const] };
+    const saturday = new Date(2026, 9, 10, 12, 0);
+    expect(planReminders({ ...base, schedule: sunday, now: saturday, lastOpened: saturday, weighInWeek: { ...block, weighed: 0 } }).filter((r) => r.kind === 'training')).toEqual(
+      planReminders({ ...base, schedule: sunday, now: saturday, lastOpened: saturday, weighInWeek: null }).filter((r) => r.kind === 'training'),
+    );
+    // With 3 of 4 the same Sunday is reachable: Sunday and Monday are two mornings for one.
+    const reachable = planReminders({ ...base, schedule: sunday, now: saturday, lastOpened: saturday, weighInWeek: { ...block, weighed: 3 } });
+    expect(reachable.find((r) => r.id === 'training-2026-10-11')?.body).toBe(`${t('reminders.training.body')}\n${line(1)}`);
+  });
+
+  test('after the check-in day (the block is over): no line', () => {
+    const tuesday = new Date(2026, 9, 13, 12, 0);
+    expect(planReminders({ ...base, now: tuesday, lastOpened: tuesday, weighInWeek: block }).filter((r) => r.kind === 'training')).toEqual(
+      planReminders({ ...base, now: tuesday, lastOpened: tuesday, weighInWeek: null }).filter((r) => r.kind === 'training'),
+    );
+  });
+
+  test("a training day already past today (its reminder time gone): no line, and no reminder in the past", () => {
+    const thursdayNight = new Date(2026, 9, 8, 20, 0);
+    const list = planReminders({ ...base, now: thursdayNight, lastOpened: thursdayNight, weighInWeek: block }).filter((r) => r.kind === 'training');
+    expect(list.map((r) => r.id)).not.toContain('training-2026-10-08');
+    expect(list.filter((r) => r.body.includes('\n'))).toEqual([]);
+  });
+
+  test('the training reminder off (no usual time): nothing is planned for training, line or not; check-in and quiet are as before', () => {
+    const { usualTrainingTime: _none, ...withoutTime } = schedule;
+    const off = plan({ schedule: withoutTime });
+    expect(off.filter((r) => r.kind === 'training')).toEqual([]);
+    expect(off.map((r) => r.kind)).toEqual(planReminders({ ...base, schedule: withoutTime, now: wednesday, lastOpened: wednesday, weighInWeek: null }).map((r) => r.kind));
+    expect(off.some((r) => r.body.includes('weigh-in'))).toBe(false);
+  });
+
+  test('a week off or a state on that day: that day has no training reminder, so no line', () => {
+    expect(training({ restUntil: '2026-10-09' }).filter((r) => r.body.includes('\n'))).toEqual([]);
+    expect(training({ muted: true, mutedUntil: '2026-10-09' }).filter((r) => r.body.includes('\n'))).toEqual([]);
+  });
+
+  test('no first call at all (no health data consent): the line is not added', () => {
+    expect(training({ firstCall: 'off' })).toEqual(training({ firstCall: 'off', weighInWeek: null }));
+  });
+
+  test('check-in and quiet reminders are untouched, and no fourth kind is ever planned (ADR-036)', () => {
+    const kinds = new Set(plan().map((r) => r.kind));
+    expect([...kinds].sort()).toEqual(['check_in', 'quiet', 'training']);
+    expect(plan().filter((r) => r.kind !== 'training')).toEqual(planReminders({ ...base, now: wednesday, lastOpened: wednesday, weighInWeek: null }).filter((r) => r.kind !== 'training'));
+  });
+
+  test('no blame and nothing to make up (U7)', () => {
+    for (const count of [1, 2, 4]) expect(line(count)).not.toMatch(/make up|catch up|missed|failed|should|only|behind/i);
+  });
+});

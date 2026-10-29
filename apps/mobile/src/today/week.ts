@@ -104,8 +104,8 @@ export function nextSession(week: Schemas['WeekSession'][] | undefined, days: Sc
 export type Hero =
   | { kind: 'paused' }
   | { kind: 'monday'; week: number | null; questions: number }
-  | { kind: 'call'; decision: Schemas['Decision']; declined: boolean }
-  | { kind: 'firstWeek'; firstCallOn: string | null }
+  | { kind: 'call'; decision: Schemas['Decision']; declined: boolean; weighInWeek?: Schemas['WeighInWeek'] }
+  | { kind: 'firstWeek'; firstCallOn: string | null; weighInWeek?: Schemas['WeighInWeek'] }
   | { kind: 'callsOff' }
   | { kind: 'none' };
 
@@ -124,11 +124,14 @@ export function heroOf(data: TodayData): Hero {
   }
   if (data.state?.state === 'ready') return { kind: 'paused' };
   const { decision } = data;
-  if (decision.state === 'ready') return { kind: 'call', decision: decision.value, declined: decision.value.application.state === 'DECLINED' };
+  // The week's weigh-ins while no call has read the scale (ADR-089 Ek 1): on the call that closes week 1 as on "Your start".
+  const weighInWeek = data.firstWeeks?.state === 'ready' ? data.firstWeeks.value.weighInWeek : undefined;
+  const counter = weighInWeek === undefined ? {} : { weighInWeek };
+  if (decision.state === 'ready') return { kind: 'call', decision: decision.value, declined: decision.value.application.state === 'DECLINED', ...counter };
   if (decision.state === 'consent') return { kind: 'callsOff' };
   if (decision.state === 'none') {
     const firstCallOn = data.firstWeeks?.state === 'ready' ? (data.firstWeeks.value.firstCallOn ?? null) : null;
-    return { kind: 'firstWeek', firstCallOn };
+    return { kind: 'firstWeek', firstCallOn, ...counter };
   }
   return { kind: 'none' };
 }

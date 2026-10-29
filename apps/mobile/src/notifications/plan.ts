@@ -3,7 +3,9 @@
  * decision 29 Sep: the budget is kinds, not a weekly count). Pure — what is planned from what is known — so the slots are tested
  * without a phone; reminders.ts hands the plan to the device.
  *
- * 1. Training: each training day, the lead before the user's own usual time, in the user's own sentence (I1 F4, C2-C3).
+ * 1. Training: each training day, the lead before the user's own usual time, in the user's own sentence (I1 F4, C2-C3). On the
+ *    block's training days before the check-in day, while the week's weigh-ins are behind and still reachable, one more line
+ *    (ADR-089 Ek 2): the weigh-in count rides this reminder, it is no fourth kind (ADR-036).
  * 2. Check-in: the check-in day, in the morning (I1 F4, D1).
  * 3. Quiet: once, a quiet spell after the app was last opened, framed in self-compassion (I1 F4, C6; U7: no blame).
  */
@@ -24,6 +26,19 @@ export type Reminder = { id: string; kind: ReminderKind; when: ReminderTime; tit
  */
 export type FirstCall = { on: string } | 'weekly' | 'off';
 
+/**
+ * The week's weigh-ins as the server counted them (FirstWeeks.weighInWeek, ADR-089), as much as the plan reads: the block
+ * (`from`..`to`, `to` the check-in day), the days weighed in it, the count needed, and whether the block can no longer
+ * reach it (the server gave `callsFrom`). Kept on the phone from the last read.
+ */
+export type WeighInFacts = { from: string; to: string; weighed: number; needed: number; short: boolean };
+
+/** The facts the plan keeps of a FirstWeeks.weighInWeek: its count of days weighed inside the block, and whether it is short. */
+export function weighInFactsOf(week: components['schemas']['WeighInWeek']): WeighInFacts {
+  const weighed = week.weighedDays.filter((day) => day >= week.from && day <= week.to).length;
+  return { from: week.from, to: week.to, weighed, needed: week.needed, short: week.callsFrom !== undefined };
+}
+
 export type PlanInput = {
   schedule: Schedule | null;
   /** The user's own routine sentence, kept on the phone; blank means none. */
@@ -40,6 +55,8 @@ export type PlanInput = {
   /** A week off in force (Program.restUntil, a calendar day): no training reminder until it ends (ADR-037 › 51b). */
   restUntil: string | null;
   firstCall: FirstCall;
+  /** The week's weigh-ins, while no call has read the scale (ADR-089 Ek 2); none or absent: no line. */
+  weighInWeek?: WeighInFacts | null;
 };
 
 const WEEKDAYS: Schedule['checkInDay'][] = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
@@ -75,7 +92,25 @@ function dayBefore(day: string): string {
   return dayOf(new Date(year, month - 1, date - 1));
 }
 
-export function planReminders({ schedule, cue, lastOpened, now, muted, mutedUntil, restUntil, firstCall }: PlanInput): Reminder[] {
+const DAY_MS = 24 * 60 * 60 * 1000;
+const daysBetween = (from: string, to: string) => Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / DAY_MS);
+
+/**
+ * The weigh-in line for a training day (ADR-089 Ek 2), or none: the block is behind and, with every morning from that day
+ * to the check-in day weighed, still reachable. The day is inside the block and before the check-in day; a short week,
+ * enough, or no calls at all say nothing. The count is the server's; only the mornings left are counted here.
+ */
+function weighInLine(facts: PlanInput['weighInWeek'], firstCall: FirstCall, day: string): string | null {
+  if (facts == null || facts.short || firstCall === 'off') return null;
+  const missing = facts.needed - facts.weighed;
+  if (missing <= 0 || day < facts.from || day >= facts.to) return null;
+  // That day's morning and every one after it up to the check-in day.
+  if (missing > daysBetween(day, facts.to) + 1) return null;
+  const weekday = WEEKDAYS[new Date(`${facts.to}T00:00:00Z`).getUTCDay()];
+  return t(missing === 1 ? 'reminders.training.weighIns.one' : 'reminders.training.weighIns.other', { count: missing, day: t(`onboarding.schedule.dayName.${weekday}`) });
+}
+
+export function planReminders({ schedule, cue, lastOpened, now, muted, mutedUntil, restUntil, firstCall, weighInWeek }: PlanInput): Reminder[] {
   if (muted && mutedUntil === null) return [];
   const plan: Reminder[] = [];
   // A state with a last day still on (K-518): every slot waits for it to end.
@@ -87,7 +122,15 @@ export function planReminders({ schedule, cue, lastOpened, now, muted, mutedUnti
     const usual = minutesOf(schedule.usualTrainingTime);
     const title = t('reminders.training.title', { minutes: P.trainingLeadMinutes });
     const body = cue?.trim() || t('reminders.training.body');
-    if (offUntil === null) {
+    // The training days that carry the weigh-in line (ADR-089 Ek 2): a weekly reminder repeats its words every week, so
+    // while one of the days ahead carries the line the days are planned by date, from today, and the next open (after the
+    // week's weigh-ins are enough, or the block is over) turns them weekly again.
+    const today = dayOf(now);
+    const timeOf = (day: Date) => new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, usual - P.trainingLeadMinutes);
+    const lines = daysAfter(dayBefore(today)).some(
+      (day) => schedule.trainingDays.includes(WEEKDAYS[day.getDay()]) && timeOf(day) > now && weighInLine(weighInWeek, firstCall, dayOf(day)) !== null,
+    );
+    if (offUntil === null && !lines) {
       // In the week's order, so the plan reads Monday first whatever order the profile lists them in.
       for (const day of WEEKDAYS.filter((d) => schedule.trainingDays.includes(d))) {
         plan.push({ id: `training-${day}`, kind: 'training', when: weeklyAt(day, usual, P.trainingLeadMinutes), title, body });
@@ -96,11 +139,12 @@ export function planReminders({ schedule, cue, lastOpened, now, muted, mutedUnti
       // A week off (ADR-037 › 51b) or a state (K-518): nothing until it ends — a weekly reminder cannot skip a week — then
       // the training days of the weeks after it, by date, so they come back with no open needed; the next open turns them
       // weekly again.
-      for (const day of daysAfter(offUntil)) {
+      for (const day of daysAfter(offUntil ?? dayBefore(today))) {
         if (!schedule.trainingDays.includes(WEEKDAYS[day.getDay()])) continue;
         // Minutes past midnight, the lead taken off: a negative count is the evening before (Date carries it over).
-        const at = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, usual - P.trainingLeadMinutes);
-        if (at > now) plan.push({ id: `training-${dayOf(day)}`, kind: 'training', when: { at }, title, body });
+        const at = timeOf(day);
+        const line = weighInLine(weighInWeek, firstCall, dayOf(day));
+        if (at > now) plan.push({ id: `training-${dayOf(day)}`, kind: 'training', when: { at }, title, body: line === null ? body : `${body}\n${line}` });
       }
     }
   }

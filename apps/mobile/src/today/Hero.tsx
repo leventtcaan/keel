@@ -14,7 +14,9 @@ import { tokens } from '@/theme/tokens';
 
 import { applyCall } from './call';
 import { labelKey } from './today';
+import { WeighInCounter } from './WeighInCounter';
 import { type Hero as HeroFace, daysBetween, weekdayOf } from './week';
+import { counterOf } from './weighInWeek';
 
 type Schemas = components['schemas'];
 
@@ -122,6 +124,8 @@ export function Hero({ hero, today, onChanged }: Props) {
       // The line under the label, which a screen reader reads with it (the block is one control).
       const said = declined ? t('thisWeek.hero.notApplied') : t(`${decision.copyKey}.title`);
       const problem = failed?.read === decision ? <ProblemText style={[styles.meta, { color: color.decisionMuted }]}>{t(failed.key)}</ProblemText> : null;
+      // The week's weigh-ins while no call has read the scale (ADR-089 Ek 1): under the control, with a button of its own.
+      const weighIns = hero.weighInWeek === undefined ? null : <WeighInCounter week={hero.weighInWeek} today={today} />;
       return (
         <DecisionBlock
           testID="hero"
@@ -132,10 +136,11 @@ export function Hero({ hero, today, onChanged }: Props) {
           pressLabel={`${t(labelKey(decision.copyKey))}. ${said}`}
           pressHint={t('thisWeek.hero.openCall')}
           footer={
-            off ? (
+            off || weighIns !== null ? (
               <>
-                {foot(t(pending ? 'thisWeek.hero.pending' : 'thisWeek.hero.notAppliedShort'), use)}
-                {problem}
+                {off ? foot(t(pending ? 'thisWeek.hero.pending' : 'thisWeek.hero.notAppliedShort'), use) : null}
+                {off ? problem : null}
+                {weighIns}
               </>
             ) : undefined
           }>
@@ -146,10 +151,14 @@ export function Hero({ hero, today, onChanged }: Props) {
     }
     case 'firstWeek': {
       const call = hero.firstCallOn === null ? null : when('thisWeek.hero.firstCall', hero.firstCallOn, today);
+      // With the counter (ADR-089) the line "Weigh in most mornings." is the counter's job. A short week gives no day for a
+      // call that cannot read it: training goes on as planned instead.
+      const week = hero.weighInWeek;
+      const short = week !== undefined && counterOf(week, today).state === 'short';
       return (
         <DecisionBlock testID="hero" eyebrow={t('thisWeek.hero.start')} title={t('thisWeek.hero.firstWeek')}>
-          {line(t('thisWeek.hero.weighIn'))}
-          {call === null ? null : foot(call[0], count(call[1]))}
+          {week === undefined ? line(t('thisWeek.hero.weighIn')) : <WeighInCounter week={week} today={today} />}
+          {short ? foot(t('thisWeek.counter.shortFoot'), null) : call === null ? null : foot(call[0], count(call[1]))}
         </DecisionBlock>
       );
     }

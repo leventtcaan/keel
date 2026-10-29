@@ -67,6 +67,7 @@ const mockServices = {
     permission: async () => ({ granted: false, canAskAgain: true }),
     keepRestUntil: async () => {}, // Today hands on the program's week off (ADR-037 › 51b)
     keepFirstCall: async () => {}, // Today hands on the first call's day (K-992)
+    keepWeighInWeek: async () => {}, // and the week's weigh-ins (ADR-089 Ek 2)
     era: () => 0,
   },  // The Apple Health write switches (K-412): off. One settings object (useSyncExternalStore).
   healthWriting: { current: () => mockHealthWriteOff, subscribe: () => () => {}, shown: () => 'off' },

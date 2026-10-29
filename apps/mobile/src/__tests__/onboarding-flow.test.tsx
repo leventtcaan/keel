@@ -192,6 +192,7 @@ jest.mock('@/services/ServicesProvider', () => ({
     reminders: {
       era: () => 0,
       keepRestUntil: async () => {},
+      keepWeighInWeek: async () => {},
       keepFirstCall: mockKeepFirstCall,
       current: () => mockReminderSettings,
       subscribe: (listener: () => void) => (mockReminderListeners.add(listener), () => mockReminderListeners.delete(listener)),
