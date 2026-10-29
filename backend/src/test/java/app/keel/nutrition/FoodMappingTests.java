@@ -57,8 +57,8 @@ class FoodMappingTests {
     void searchFindsEveryWordAndPutsNamesThatStartWithItFirst() throws Exception {
         List<Map<String, Object>> found = list(post("/v1/foods/search", Map.of("q", "chicken")));
 
-        // Names that start with the word first, the shorter of those first; a name holding it elsewhere after them.
-        assertThat(found).extracting(food -> food.get("id")).containsExactly("fdc:999001", "fdc:171477", "fdc:999003");
+        // Names whose first word it is first, Foundation before Branded (ADR-085 #8), then a name holding it further in.
+        assertThat(found).extracting(food -> food.get("id")).containsExactly("fdc:171477", "fdc:999001", "fdc:999003");
         assertThat(list(post("/v1/foods/search", Map.of("q", "chicken roasted")))).extracting(food -> food.get("id")).containsExactly("fdc:171477");
         assertThat(list(post("/v1/foods/search", Map.of("q", "cheerios")))).extracting(food -> food.get("id")).containsExactly("fdc:1897574");
     }
