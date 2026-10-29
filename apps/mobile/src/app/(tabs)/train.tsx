@@ -23,7 +23,7 @@ import { changeToday } from '@/train/changes';
 import { dayName, programNotes, restNote } from '@/train/program';
 import { TodayCard } from '@/train/TodayCard';
 import { movesOf } from '@/train/trainData';
-import { type WeekRow, finishedDay, movedOffToday, sessionDone, sessionMoves, sessionState, splitName, todayKind, weekRows } from '@/train/week';
+import { type WeekRow, anyDayRows, finishedDay, movedOffToday, sessionDone, sessionMoves, sessionState, splitName, todayKind, weekRows } from '@/train/week';
 
 type Schemas = components['schemas'];
 
@@ -147,6 +147,9 @@ export default function TrainScreen() {
   // With no session today (and no week off), any of the week's can be started from its row.
   const pick = today === null && kind !== 'restWeek' && active === null;
   const rows = weekRows(program, session.today);
+  // Days on no weekday have no session of the week: each starts from its own row (Evre 7, issue 684).
+  const anyDays = anyDayRows(program, data?.records ?? [], session.today);
+  const anyStartable = active === null && kind !== 'restWeek';
   // The review's changes in force (ADR-073 #3): how many, and the page that undoes each.
   const appliedCount = program.review?.applied.length ?? 0;
   const applied =
@@ -199,7 +202,7 @@ export default function TrainScreen() {
         moves={moves}
         units={units}
         underWay={active !== null}
-        canPick={pick && rows.some((row) => startable(program, row, data?.records ?? []))}
+        canPick={pick && (rows.some((row) => startable(program, row, data?.records ?? [])) || anyDays.some((row) => !row.done))}
         checkInDay={data?.checkInDay ?? null}
         onStart={start}
         openWorkoutId={today?.session.workout?.state === 'OPEN' ? today.session.workout.id : null}
@@ -214,11 +217,13 @@ export default function TrainScreen() {
         }
       />
       <View style={styles.week}>
-        <Text accessibilityRole="header" style={[styles.heading, { color: color.text }]}>
-          {t('train.thisWeek')}
-        </Text>
+        {rows.length > 0 && (
+          <Text accessibilityRole="header" style={[styles.heading, { color: color.text }]}>
+            {t('train.thisWeek')}
+          </Text>
+        )}
         {/* One card, a row per session (K-1053): the date on a badge, the session, its state; as the app's grouped lists. */}
-        <View style={[styles.weekCard, { backgroundColor: color.surface }]}>
+        <View style={[styles.weekCard, { backgroundColor: color.surface }, rows.length === 0 && styles.hidden]}>
           {rows.map((row, index) => {
             const done = sessionDone(program, row, data?.records ?? []);
             const skipped = row.session.skipped === true;
@@ -263,6 +268,38 @@ export default function TrainScreen() {
             );
           })}
         </View>
+        {anyDays.length > 0 && (
+          <>
+            <Text accessibilityRole="header" style={[styles.heading, { color: color.text }]}>
+              {t('programEditor.anyDay')}
+            </Text>
+            <View testID="any-day-rows" style={[styles.weekCard, { backgroundColor: color.surface }]}>
+              {anyDays.map(({ day, done }, index) => {
+                const count = day.exercises.length;
+                const moves = t(count === 1 ? 'train.moveCount.one' : 'train.moveCount.other', { count });
+                return (
+                  <View key={day.id} style={[styles.row, index > 0 && { borderTopWidth: tokens.border.hairline, borderColor: color.line }]}>
+                    <View style={[styles.badge, { backgroundColor: done ? color.accent : color.raise }]} accessible={false}>
+                      <SymbolView name="dumbbell.fill" size={tokens.icon.small} tintColor={done ? color.onAccent : color.text} />
+                    </View>
+                    <View style={styles.grow}>
+                      <Text style={[styles.text, styles.bold, { color: color.text }]}>{dayName(day)}</Text>
+                      <Text style={[styles.small, { color: color.muted }]}>{moves}</Text>
+                    </View>
+                    {done ? (
+                      <View accessible accessibilityLabel={t('train.doneTag')} style={styles.doneMark}>
+                        <SymbolView name="checkmark.circle.fill" size={tokens.icon.small} tintColor={color.accent} />
+                        <Text style={[styles.small, styles.bold, { color: color.accent }]}>{t('train.doneTag')}</Text>
+                      </View>
+                    ) : anyStartable ? (
+                      <Button label={t('train.startThis')} accessibilityLabel={t('train.startDay', { day: dayName(day) })} variant="text" onPress={() => start(day.id)} />
+                    ) : null}
+                  </View>
+                );
+              })}
+            </View>
+          </>
+        )}
         {addDay}
       </View>
     </Screen>
@@ -337,6 +374,7 @@ const styles = StyleSheet.create({
   applied: { minHeight: tokens.size.touch, borderRadius: tokens.radius.card, borderWidth: tokens.border.outline, padding: tokens.space.md, flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
   bold: { fontWeight: tokens.weight.semibold },
   dim: { opacity: tokens.opacity.dim },
+  hidden: { display: 'none' },
   heading: { fontSize: tokens.type.heading, fontWeight: tokens.weight.bold },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },
