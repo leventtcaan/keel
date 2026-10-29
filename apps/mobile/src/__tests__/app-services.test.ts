@@ -238,7 +238,7 @@ test('the days the app was opened go with the session: forgotten at sign-out (K-
 test('the plan just shown goes with the session (K-967): the next account\'s paywall names no first call of this one', async () => {
   const { services } = await setup(server(404), memoryStorage(), memoryKv());
   await services.session.signIn(SESSION);
-  services.planPreviews.keep({ own: false, days: 3, firstWorkout: 'MONDAY', firstCall: '2026-10-19', checkInDay: 'MONDAY', hasCardio: true });
+  services.planPreviews.keep({ own: false, days: 3, firstWorkout: 'MONDAY', firstCall: '2026-10-19', checkInDay: 'MONDAY', hasCardio: true, startingKcal: 2440, workoutName: 'Upper A', workoutMoves: 9, workoutToday: true });
   await services.signOut();
   await settle();
   expect(services.planPreviews.current()).toBeNull();

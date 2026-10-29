@@ -18,7 +18,7 @@ export type StartingCallRow = {
 };
 
 /** One row; its own component, so its colours are the block's (the inverse surface DecisionBlock lays its children on). */
-function Row({ label, value, note }: StartingCallRow) {
+export function CallRow({ label, value, note }: StartingCallRow) {
   const { color } = useTheme();
   return (
     <View style={[styles.row, { borderTopColor: color.line }]}>
@@ -36,7 +36,7 @@ export function StartingCall({ rows }: { rows: StartingCallRow[] }) {
   return (
     <DecisionBlock title={t('onboarding.plan.callTitle')}>
       {rows.map((row) => (
-        <Row key={row.label} {...row} />
+        <CallRow key={row.label} {...row} />
       ))}
     </DecisionBlock>
   );

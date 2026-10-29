@@ -186,14 +186,23 @@ describe('#paywall after the plan (ADR-072 #7)', () => {
     jest.useRealTimers();
   });
   const FIRST_CALL = '2026-10-19';
-  const PREVIEW: PlanPreview = { own: false, days: 3, firstWorkout: 'MONDAY', firstCall: FIRST_CALL, checkInDay: 'MONDAY', hasCardio: true };
+  const PREVIEW: PlanPreview = {
+    own: false,
+    days: 3,
+    firstWorkout: 'MONDAY',
+    firstCall: FIRST_CALL,
+    checkInDay: 'MONDAY',
+    hasCardio: true,
+    startingKcal: 2440, workoutName: 'Upper A', workoutMoves: 9, workoutToday: true,
+  };
 
-  test('the plan just shown is not repeated (the hero is the example call, ADR-072 Ek 3); the first call is on the timeline, once', async () => {
+  test('the plan just shown is not repeated line by line (the hero is its three headlines, K-1058); the first call is on the card and on the timeline', async () => {
     mockPreview = PREVIEW;
     await show();
     expect(screen.queryByText('3 days a week')).toBeNull();
     expect(screen.queryByLabelText('Your plan')).toBeNull();
-    expect(screen.getAllByText(weekdayDate(FIRST_CALL))).toHaveLength(1);
+    // The own-plan card names the first call's day, and the timeline gives it its place in the trial (K-1058).
+    expect(screen.getAllByText(weekdayDate(FIRST_CALL))).toHaveLength(2);
   });
 
   test('three values: the program for the days (or the own program, tuned), every set\'s weight and reps, the call on its day', async () => {

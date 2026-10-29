@@ -111,6 +111,11 @@ export default function PlanScreen() {
       firstCall: call?.day ?? null,
       checkInDay: schedule.checkInDay,
       hasCardio: (program.cardio?.sessionsPerWeek ?? 0) > 0,
+      // What the paywall's own-plan card shows of this screen (K-1058): where the food starts and the first workout.
+      startingKcal: starting?.targetKcal ?? null,
+      workoutName: dayName(workout.day),
+      workoutMoves: workout.day.exercises.length,
+      workoutToday: workout.inDays === 0,
     });
     try {
       await profile.finish();

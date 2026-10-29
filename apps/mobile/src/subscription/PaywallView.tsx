@@ -10,6 +10,7 @@ import { useAppServices } from '@/services/ServicesProvider';
 import { AccountButton, AccountSheet } from '@/subscription/AccountSheet';
 import { BrandMark } from '@/subscription/BrandMark';
 import { ExampleCard } from '@/subscription/ExampleCard';
+import { YourPlanCard } from '@/subscription/YourPlanCard';
 import { configuredLegalLinks } from '@/subscription/links';
 import { type Opened, confirmActive, openPaywall, restorePurchases, subscribe, wait } from '@/subscription/paywall';
 import { PlanOption, TimelineCard, type ValueRow, Values } from '@/subscription/PaywallParts';
@@ -177,17 +178,19 @@ export function Paywall({ required = false, onActive, preview = null }: Props) {
     const timeline = paywallTimeline(chosen, { today, firstCall: preview?.firstCall ?? null });
     // Without the health data consent there are no calls (ADR-074): the example is a set's target, and another value takes the call's place.
     const calls = preview === null || preview.firstCall !== null;
-    hero = <ExampleCard kind={calls ? 'call' : 'set'} />;
+    // Right after onboarding, with calls: the plan the person just saw is the hero, tagged Yours (K-1058). Met later (Settings), or
+    // without calls, the example stays: it is not this person's call, and says so.
+    hero = preview !== null && preview.firstCall !== null ? <YourPlanCard preview={{ ...preview, firstCall: preview.firstCall }} /> : <ExampleCard kind={calls ? 'call' : 'set'} />;
     // The weekly call on the profile's own day; met later, with no plan just shown, without a day; the cardio only when the program sets some.
     let call: string;
     if (preview === null) call = t('subscription.values.weeklyCall');
     else if (preview.firstCall === null) call = t(preview.hasCardio ? 'subscription.values.cardio' : 'subscription.values.swap');
     else call = t('subscription.values.call', { day: t(`onboarding.schedule.dayName.${preview.checkInDay}`) });
-    const values: ValueRow[] = [
-      { icon: 'program', words: t(preview?.own === true ? 'subscription.values.own' : 'subscription.values.built') },
-      { icon: 'sets', words: t('subscription.values.sets') },
-      { icon: 'call', words: call },
-    ];
+    const program: ValueRow = { icon: 'program', words: t(preview?.own === true ? 'subscription.values.own' : 'subscription.values.built') };
+    const sets: ValueRow = { icon: 'sets', words: t('subscription.values.sets') };
+    const weekly: ValueRow = { icon: 'call', words: call };
+    // With a call of its own, it leads (K-1058): the call, food and training together, then what each set holds.
+    const values: ValueRow[] = preview !== null && preview.firstCall !== null ? [weekly, program, sets] : [program, sets, weekly];
     const choose = (id: string) => setStep((now) => (now.at === 'plans' && now.busy === null ? { ...now, chosen: id, note: null } : now));
     body = (
       <View style={styles.part}>
