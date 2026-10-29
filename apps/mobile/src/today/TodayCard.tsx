@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
+import { Icon } from '@/components/Icon';
 import { ProblemText } from '@/components/ProblemText';
 import { t } from '@/copy';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
@@ -20,7 +21,7 @@ import { sessionMoves } from '@/train/workout';
 import { type UnitSystem, loadValue } from '@/units/units';
 
 import { type TodayCard as Card, type TodayParts, cardioLoggedToday, cardioToday } from './todayWorkout';
-import { weekdayOf } from './week';
+import { nextSession, weekdayOf } from './week';
 
 type Schemas = components['schemas'];
 
@@ -113,7 +114,7 @@ export function TodayCard({ card, program, today, parts, onChanged }: Props) {
   }
   const problem = failed !== null && failed.read === program ? <ProblemText style={[styles.fine, { color: color.textSecondary }]}>{t(failed.key)}</ProblemText> : null;
   const undo = (programDayId: string) => (
-    <Button label={t('thisWeek.today.undo')} variant="ghost" size="sm" disabled={busy} onPress={() => void send(programDayId, 'UNDO')} />
+    <Button label={t('thisWeek.today.undo')} variant="text" disabled={busy} onPress={() => void send(programDayId, 'UNDO')} />
   );
 
   const name = (day: Schemas['ProgramDay'] | null) => (day === null ? '' : dayName(day));
@@ -132,17 +133,30 @@ export function TodayCard({ card, program, today, parts, onChanged }: Props) {
       {right}
     </View>
   );
-  // K-970's page to change today, for today's session. An icon, so the first view keeps its words (ADR-077 #1: the
-  // prototype's card has none for it).
+  // K-970's page to change today, for today's session: an icon in the text role (the accent, no fill, size.touch to press), so
+  // Start stays the card's one primary and the first view keeps its words (ADR-077 #1, ADR-070 Ek 2 #1).
   const change = (programDayId: string) => (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={t('thisWeek.today.changeLabel')}
       onPress={() => router.push({ pathname: '/today-change', params: { day: programDayId } })}
-      style={({ pressed }) => [styles.icon, { backgroundColor: color.background }, pressed && styles.dim]}>
-      <SymbolView name="slider.horizontal.3" size={tokens.type.body} tintColor={color.text} />
+      style={({ pressed }) => [styles.icon, pressed && styles.dim]}>
+      <Icon name="slider.horizontal.3" size="small" tone="accent" />
     </Pressable>
   );
+  // The cardio line (prototype `.cl`): planned minutes, or done once the server says it was logged today (K-1029).
+  const cardioLine = (minutes: number | null, logged: boolean, optional: boolean) =>
+    logged ? (
+      <View style={[styles.row, styles.cardio, { borderTopColor: color.line }]}>
+        <Icon name="checkmark.circle.fill" size="small" tone="accent" testID="cardio-icon" />
+        <Text style={[styles.fine, { color: color.textSecondary }]}>{t('thisWeek.today.cardioDone')}</Text>
+      </View>
+    ) : minutes === null ? null : (
+      <View style={[styles.row, styles.cardio, { borderTopColor: color.line }]}>
+        <Icon name="figure.run" size="small" tone="muted" testID="cardio-icon" />
+        <Text style={[styles.fine, { color: color.textSecondary }]}>{optional ? t('thisWeek.today.cardioOptional') : t('thisWeek.today.cardio', { minutes })}</Text>
+      </View>
+    );
 
   let body: ReactNode;
   switch (card.kind) {
@@ -210,37 +224,44 @@ export function TodayCard({ card, program, today, parts, onChanged }: Props) {
       );
       break;
     case 'restWeek':
-    case 'rest':
-      body = head(t('thisWeek.today.today'), t(card.kind === 'rest' ? 'thisWeek.today.rest' : 'thisWeek.today.restWeek'), null);
+      body = head(t('thisWeek.today.today'), t('thisWeek.today.restWeek'), null);
       break;
+    case 'rest': {
+      // A rest day is not an empty card (T-7, prototype 5): the next session, and the cardio when it is planned today.
+      const next = program === null ? null : nextSession(program.week, program.days, today);
+      const nextLine =
+        next === null ? null : (
+          <View style={styles.row}>
+            <Icon name="calendar" size="small" tone="muted" />
+            <Text style={[styles.fine, { color: color.textSecondary }]}>
+              {t('thisWeek.today.next', { session: name(next.day), weekday: t(`onboarding.schedule.dayName.${weekdayOf(next.date)}`) })}
+            </Text>
+          </View>
+        );
+      const minutes = program === null ? null : cardioToday(program, today);
+      body = (
+        <>
+          {head(t('thisWeek.today.today'), t('thisWeek.today.rest'), null)}
+          {nextLine}
+          {cardioLine(minutes, program !== null && cardioLoggedToday(program, today), false)}
+        </>
+      );
+      break;
+    }
     case 'session': {
       const { day, session } = card;
       const short = session.short === true;
+      // The card's one primary, full width at its foot (prototype 5).
       const start = (
         <Button
           label={t('thisWeek.today.start')}
           accessibilityLabel={t('thisWeek.today.startLabel', { session: name(day) })}
-          size="sm"
           onPress={() => router.push({ pathname: '/workout', params: { day: day.id } })}
         />
       );
       const minutes = program === null ? null : cardioToday(program, today);
       // Cardio already logged today is the server's word (K-1029): the row says it is done, not the plan again.
-      const logged = program !== null && cardioLoggedToday(program, today);
-      const cardio =
-        logged ? (
-          <View style={[styles.row, styles.cardio, { borderTopColor: color.line }]}>
-            <SymbolView name="checkmark.circle.fill" size={tokens.type.body} tintColor={color.accent} />
-            <Text style={[styles.fine, { color: color.textSecondary }]}>{t('thisWeek.today.cardioDone')}</Text>
-          </View>
-        ) : minutes === null ? null : (
-          <View style={[styles.row, styles.cardio, { borderTopColor: color.line }]}>
-            <SymbolView name="figure.run" size={tokens.type.body} tintColor={color.muted} />
-            <Text style={[styles.fine, { color: color.textSecondary }]}>
-              {short ? t('thisWeek.today.cardioOptional') : t('thisWeek.today.cardio', { minutes })}
-            </Text>
-          </View>
-        );
+      const cardio = cardioLine(minutes, program !== null && cardioLoggedToday(program, today), short);
       // The session's own moves, as the session takes them (short version, today's swaps): one rule for both.
       const all = sessionMoves(day, program?.week, today);
       const rest = all.length - FIRST_MOVES;
@@ -259,21 +280,19 @@ export function TodayCard({ card, program, today, parts, onChanged }: Props) {
           );
         });
       // The short version says so by the way back to the full session (K-995 FULL), as the Train tab does.
-      const full = short ? <Button label={t('thisWeek.today.full')} variant="ghost" size="sm" disabled={busy} onPress={() => void send(day.id, 'FULL')} /> : null;
+      const full = short ? <Button label={t('thisWeek.today.full')} variant="text" disabled={busy} onPress={() => void send(day.id, 'FULL')} /> : null;
       body = (
         <>
           {head(
             t('thisWeek.today.today'),
             name(day),
-            <View style={styles.row}>
-              {change(day.id)}
-              {start}
-            </View>,
+            change(day.id),
           )}
           {moves}
           {more}
           {cardio}
           {full}
+          {start}
         </>
       );
       break;
@@ -306,7 +325,7 @@ const styles = StyleSheet.create({
   moveName: { flex: 1, fontSize: tokens.type.body },
   target: { fontSize: tokens.type.body, fontVariant: ['tabular-nums'] },
   cardio: { borderTopWidth: tokens.border.hairline, paddingTop: tokens.space.sm },
-  icon: { width: tokens.size.touch, height: tokens.size.touch, borderRadius: tokens.radius.button, alignItems: 'center', justifyContent: 'center' },
+  icon: { width: tokens.size.touch, height: tokens.size.touch, alignItems: 'center', justifyContent: 'center' },
   dim: { opacity: tokens.opacity.dim },
   tick: { width: tokens.size.touch, height: tokens.size.touch, borderRadius: tokens.size.touch / 2, alignItems: 'center', justifyContent: 'center' },
 });

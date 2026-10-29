@@ -1,10 +1,10 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { ProblemText } from '@/components/ProblemText';
 import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
+import { Section } from '@/components/Section';
 import { t } from '@/copy';
 import { useAppServices } from '@/services/ServicesProvider';
 import { Confirm } from '@/settings/Confirm';
@@ -96,14 +96,13 @@ export function PhotoCard({ today, flowWeek }: Props) {
         busy={false}
       />
     ) : (
-      <Button label={t('photos.delete')} variant="ghost" size="sm" onPress={() => setAsking(true)} />
+      <View style={styles.remove}>
+        <Button label={t('photos.delete')} variant="destructive" size="sm" onPress={() => setAsking(true)} />
+      </View>
     );
 
   return (
-    <Card testID="photo-card">
-      <Text accessibilityRole="header" style={[styles.title, { color: color.text }]}>
-        {t('photos.title')}
-      </Text>
+    <Section testID="photo-card" title={t('photos.title')}>
       <Text style={[styles.text, { color: color.textSecondary }]}>{windowText(photoWindow(last, today, flowWeek))}</Text>
       {count}
       <Button label={t('photos.take')} onPress={() => router.push('/photo-capture')} />
@@ -114,17 +113,18 @@ export function PhotoCard({ today, flowWeek }: Props) {
           {t('photos.deleteFailed')}
         </ProblemText>
       )}
-    </Card>
+    </Section>
   );
 }
 
 /** The way to the comparison anchor (K-602): only with two days of one pose to set side by side. */
 function CompareLink() {
-  return <Button label={t('photos.compare')} variant="ghost" size="sm" onPress={() => router.push('/compare')} />;
+  return <Button label={t('photos.compare')} variant="secondary" onPress={() => router.push('/compare')} />;
 }
 
 const styles = StyleSheet.create({
-  title: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
+  // Apart from the primary above it: a destructive action is not one tap away from Take photos.
+  remove: { marginTop: tokens.space.md, alignItems: 'flex-start' },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },
 });

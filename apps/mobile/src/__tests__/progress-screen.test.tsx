@@ -5,7 +5,7 @@
  * empty. Every number is the server's; the screen counts nothing.
  */
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
-import { Linking, ScrollView } from 'react-native';
+import { Linking, ScrollView, StyleSheet } from 'react-native';
 
 import ProgressScreen from '@/app/(tabs)/progress';
 import { t } from '@/copy';
@@ -339,7 +339,7 @@ describe('the 12th week (ADR-078 #2)', () => {
   test('one sentence of results and the record, in place of the targets', async () => {
     await show();
     expect(screen.getByText('Stronger on 4 of 5 lifts. Down 3.8 kg.')).toBeOnTheScreen();
-    expect(screen.getByText('12 weeks · 11 on track')).toBeOnTheScreen();
+    expect(screen.getByText('11/12 weeks on track')).toBeOnTheScreen();
     expect(screen.queryAllByTestId(/^target-/)).toHaveLength(0);
     expect(screen.queryByText("Today's targets.")).toBeNull();
   });
@@ -381,10 +381,11 @@ describe('the 12th week (ADR-078 #2)', () => {
     expect(screen.getByText('Shows after 7 weigh-ins.')).toBeOnTheScreen();
   });
 
-  test('a missed week is not named: no legend entry, no red', async () => {
+  test('a missed week is not named (U7): the legend says "Other weeks", never "missed", and there is no red', async () => {
     await show();
     expect(screen.queryByText(/missed$/i)).toBeNull();
     expect(screen.queryByText(/Missed/)).toBeNull();
+    expect(screen.getByText(t('progress.consistency.other'))).toBeOnTheScreen();
   });
 
   test('a short history is a short row, never padded or filled', async () => {
@@ -405,7 +406,7 @@ describe('the 12th week (ADR-078 #2)', () => {
   test('the spare cells and the forgiven weeks need not agree: the grid shows what it is sent', async () => {
     answers['/v1/consistency'] = ok(consistency({ weeks: weeks(['SPARE', 'ON_TRACK']), record: { onTrackWeeks: 40, countedWeeks: 52, currentRun: 2, forgivenWeeks: 5 } }));
     await show();
-    expect(screen.getByText('52 weeks · 40 on track')).toBeOnTheScreen();
+    expect(screen.getByText('40/52 weeks on track')).toBeOnTheScreen();
     expect(screen.getByTestId('consistency-grid').props.accessibilityLabel).toBe(t('progress.consistency.spoken', { count: 2, onTrack: 1, spare: 1, paused: 0, other: 0 }));
   });
 
@@ -989,5 +990,68 @@ describe('photos (K-614) stay on the tab', () => {
     mockPhotoChecks = [{ takenOn: '2026-09-20', photos: { front: 'file:///docs/2026-09-20-front.jpg' } }];
     await show();
     expect(mockApiCalls.filter((c) => /photo/i.test(c))).toEqual([]);
+  });
+});
+
+describe('on the system (K-1045, T-8, ADR-070 Ek 2 #7, #8)', () => {
+  const flatten = (node: Node) => (StyleSheet.flatten(node.props.style as never) ?? {}) as { backgroundColor?: string; fontSize?: number; fontWeight?: string; fontFamily?: string; color?: string };
+
+  beforeEach(() => {
+    answers = weekTwelve();
+    mockPhotoChecks = [{ takenOn: '2026-09-20', photos: { front: 'file:///docs/2026-09-20-front.jpg' } }];
+  });
+
+  test('the sections are a heading and content, not each a grey card: no surface fill behind strength, sets, weight, consistency or photos', async () => {
+    await show();
+    for (const id of ['section-strength', 'section-sets', 'section-weight', 'section-consistency', 'photo-card']) {
+      expect(flatten(screen.getByTestId(id)).backgroundColor).toBeUndefined();
+    }
+  });
+
+  test('every section heading is the same type, Photos too (it was in another)', async () => {
+    await show();
+    const heading = (id: string) => flatten(within(screen.getByTestId(id)).getAllByRole('header')[0]);
+    const first = heading('section-strength');
+    expect(first).toMatchObject({ fontSize: tokens.type.label, fontWeight: tokens.weight.semibold, color: palettes.light.text });
+    for (const id of ['section-sets', 'section-weight', 'section-consistency', 'section-calls', 'photo-card']) expect(heading(id)).toEqual(first);
+  });
+
+  test('the decision block and the calls list keep their surfaces; they have a role (Ek 2 #8)', async () => {
+    await show();
+    expect(screen.getByTestId('progress-hero')).toBeOnTheScreen();
+    expect(flatten(screen.getByTestId('calls-list')).backgroundColor).toBe(palettes.light.surface);
+  });
+
+  test('the 12 weeks say in words what a filled and an empty square mean, not by colour alone', async () => {
+    await show();
+    const grid = within(screen.getByTestId('section-consistency'));
+    expect(grid.getByText(t('progress.consistency.range'))).toBeOnTheScreen();
+    expect(grid.getByText(t('progress.consistency.onTrack'))).toBeOnTheScreen();
+    expect(grid.getByText(t('progress.consistency.other'))).toBeOnTheScreen();
+    expect(grid.getByText(t('progress.consistency.spare'))).toBeOnTheScreen();
+    expect(grid.getByText(t('progress.consistency.paused'))).toBeOnTheScreen();
+    // The legend swatches draw the cells' own looks.
+    expect(flatten(grid.getByTestId('legend-swatch-ON_TRACK')).backgroundColor).toBe(palettes.light.accent);
+    expect(flatten(grid.getByTestId('legend-swatch-MISSED')).backgroundColor).toBe(palettes.light.weekMissed);
+  });
+
+  test('Delete all photos is a destructive text button after the primary, not beside it', async () => {
+    await show();
+    const names = screen.getAllByRole('button').map((b) => b.props.accessibilityLabel as string);
+    const take = names.indexOf(t('photos.take'));
+    const remove = names.indexOf(t('photos.delete'));
+    expect(take).toBeGreaterThanOrEqual(0);
+    expect(remove).toBeGreaterThan(take);
+    const button = screen.getByRole('button', { name: t('photos.delete') });
+    expect(flatten(button).backgroundColor).toBeUndefined();
+    expect(flatten(within(button).getByText(t('photos.delete'))).color).toBe(palettes.light.warn);
+    // Compare (when there is one) is between them; the primary keeps the cta.
+    expect(flatten(screen.getByRole('button', { name: t('photos.take') })).backgroundColor).toBe(palettes.light.cta);
+  });
+
+  test('the week count under the decision is the one This week shows: "11/12 weeks on track"', async () => {
+    await show();
+    expect(screen.getByText('11/12 weeks on track')).toBeOnTheScreen();
+    expect(screen.queryByText(/weeks · /)).toBeNull();
   });
 });

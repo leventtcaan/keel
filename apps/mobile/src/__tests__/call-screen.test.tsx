@@ -475,3 +475,84 @@ describe('a past call (Progress › Calls)', () => {
     expect(screen.getByRole('button', { name: t('callScreen.back') })).toBeOnTheScreen();
   });
 });
+
+describe('Wait for more weigh-ins (K-1045, T-9)', () => {
+  const wait = (extra: Partial<Schemas['Decision']> = {}) =>
+    decision({
+      copyKey: 'decision.no_decision_yet.data_insufficient',
+      action: { type: 'NO_DECISION_YET' } as Schemas['Decision']['action'],
+      reasons: [{ rule: 'data_insufficient', source: { tag: 'EXPERIENCE' } }],
+      declinable: false,
+      application: { state: 'NOT_NEEDED' },
+      ...extra,
+    });
+  const summary = (weighInCount: number, over: Partial<Schemas['WeighInSummary']> = {}) => ({ weighInCount, trendMinWeighIns: 7, trendReady: false, ...over });
+
+  beforeEach(() => {
+    mockAnswers['/v1/decisions/current'] = ok(wait());
+    mockAnswers['/v1/weigh-ins/summary'] = ok(summary(2));
+  });
+
+  test('says how many weigh-ins are still needed, from the count Progress uses (weighInCount of trendMinWeighIns)', async () => {
+    await show();
+    expect(mockGET).toHaveBeenCalledWith('/v1/weigh-ins/summary');
+    expect(screen.getByText(t('callScreen.weighInsLeft.other', { count: 5 }))).toBeOnTheScreen();
+    expect(screen.getByText(t('weighIn.trendCount', { count: 2, min: 7 }))).toBeOnTheScreen();
+    expect(screen.getAllByTestId('trend-segment-filled')).toHaveLength(2);
+    expect(screen.getAllByTestId('trend-segment-empty')).toHaveLength(5);
+  });
+
+  test('one left is said in the singular', async () => {
+    mockAnswers['/v1/weigh-ins/summary'] = ok(summary(6));
+    await show();
+    expect(screen.getByText(t('callScreen.weighInsLeft.one'))).toBeOnTheScreen();
+  });
+
+  test('"Weigh in" is the one primary button and opens the weigh-in; "Got it" only leaves', async () => {
+    await show();
+    const p = palettes.light;
+    expect(screen.getByRole('button', { name: t('callScreen.weighIn') })).toHaveStyle({ backgroundColor: p.cta });
+    expect(screen.getByRole('button', { name: t('callScreen.gotIt') })).not.toHaveStyle({ backgroundColor: p.cta });
+    await press(t('callScreen.weighIn'));
+    expect(mockPush).toHaveBeenCalledWith('/weigh-in');
+    await press(t('callScreen.gotIt'));
+    expect(mockBack).toHaveBeenCalled();
+  });
+
+  test('the count cannot be read (offline, no consent): no number is made up, and Weigh in is still the way', async () => {
+    mockAnswers['/v1/weigh-ins/summary'] = 'offline';
+    await show();
+    expect(screen.queryByText(/more weigh-in/)).toBeNull();
+    expect(screen.queryByTestId('trend-segment-empty')).toBeNull();
+    expect(screen.getByRole('button', { name: t('callScreen.weighIn') })).toBeOnTheScreen();
+  });
+
+  test('the trend already ready (a call read a moment ago): no count left to say', async () => {
+    mockAnswers['/v1/weigh-ins/summary'] = ok(summary(9, { trendReady: true }));
+    await show();
+    expect(screen.queryByText(/more weigh-in/)).toBeNull();
+  });
+
+  test('the call keeps its U3 words: its label and line, no confidence, the next call dated', async () => {
+    await show();
+    expect(screen.getByText(t('decision.no_decision_yet.data_insufficient.title'))).toBeOnTheScreen();
+    expect(screen.queryByText(/^Confidence/)).toBeNull();
+    expect(screen.getByText(t('callScreen.nextCall', { date: 'Mon, Jan 4' }))).toBeOnTheScreen();
+  });
+
+  test('another reason to wait does not send the user to the scale', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(wait({ copyKey: 'decision.no_decision_yet.window_not_full' }));
+    await show();
+    expect(screen.queryByRole('button', { name: t('callScreen.weighIn') })).toBeNull();
+    expect(mockGET).not.toHaveBeenCalledWith('/v1/weigh-ins/summary');
+    expect(screen.getByRole('button', { name: t('callScreen.gotIt') })).toHaveStyle({ backgroundColor: palettes.light.cta });
+  });
+
+  test('a past call, read only, offers nothing and asks nothing: it is not the user\'s count now', async () => {
+    mockParams = { id: 'd0' };
+    mockAnswers['/v1/decisions/{id}'] = ok(wait({ id: 'd0' }));
+    await show();
+    expect(screen.queryByRole('button', { name: t('callScreen.weighIn') })).toBeNull();
+    expect(mockGET).not.toHaveBeenCalledWith('/v1/weigh-ins/summary');
+  });
+});

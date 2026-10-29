@@ -3,6 +3,7 @@ import { SymbolView } from 'expo-symbols';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { components } from '@/api/schema';
+import { Button } from '@/components/Button';
 import { t } from '@/copy';
 import { budgetLine } from '@/food/budget';
 import { useTheme } from '@/theme/theme';
@@ -28,14 +29,7 @@ export function FoodLine({ budget }: { budget: Loaded<Schemas['DayBudget']> }) {
       <View testID="food-locked" style={[styles.line, { backgroundColor: color.surface }]}>
         <SymbolView name="lock.fill" size={tokens.type.body} tintColor={color.muted} />
         <Text style={[styles.text, styles.grow, { color: color.textSecondary }]}>{t('thisWeek.food.locked')}</Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('thisWeek.food.allowLabel')}
-          onPress={() => router.push('/settings')}
-          hitSlop={tokens.space.sm}
-          style={styles.allow}>
-          <Text style={[styles.strong, { color: color.accent }]}>{t('thisWeek.food.allow')}</Text>
-        </Pressable>
+        <Button label={t('thisWeek.food.allow')} accessibilityLabel={t('thisWeek.food.allowLabel')} variant="text" size="sm" onPress={() => router.push('/settings')} />
       </View>
     );
   }
@@ -65,14 +59,7 @@ export function FoodLine({ budget }: { budget: Loaded<Schemas['DayBudget']> }) {
         <Text style={[styles.text, { color: color.textSecondary }]}>{lead}</Text>
         {amount === null ? null : <Text style={[styles.amount, { color: color.text }]}>{amount}</Text>}
       </Pressable>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={t('thisWeek.food.logLabel')}
-        onPress={() => router.push('/meal')}
-        style={({ pressed }) => [styles.log, { backgroundColor: color.background }, pressed && styles.dim]}>
-        <SymbolView name="fork.knife" size={tokens.type.bodySmall} tintColor={color.text} />
-        <Text style={[styles.strong, { color: color.text }]}>{t('thisWeek.food.log')}</Text>
-      </Pressable>
+      <Button label={t('thisWeek.food.log')} accessibilityLabel={t('thisWeek.food.logLabel')} variant="text" onPress={() => router.push('/meal')} />
     </View>
   );
 }
@@ -90,15 +77,5 @@ const styles = StyleSheet.create({
   body: { minHeight: tokens.size.touch, justifyContent: 'center' },
   text: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.semibold },
   amount: { fontFamily: tokens.font.displayBold, fontSize: tokens.type.number, fontVariant: ['tabular-nums'] },
-  strong: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.bold },
-  log: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: tokens.space.xs,
-    borderRadius: tokens.radius.button,
-    paddingHorizontal: tokens.space.md,
-    minHeight: tokens.size.touch,
-  },
-  allow: { minHeight: tokens.size.touch, justifyContent: 'center', paddingHorizontal: tokens.space.sm },
   dim: { opacity: tokens.opacity.dim },
 });
