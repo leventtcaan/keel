@@ -11,6 +11,9 @@ import { t } from '@/copy';
 import { handOffMeal, takeMeal } from '@/food/handoff';
 import { ThemeProvider } from '@/theme/theme';
 
+/** Fifty items, each with its estimate asked at once (ADR-085 #5): longer than jest's 5 s default on a CI runner. */
+const FIFTY_ITEMS_MS = 30_000;
+
 type Schemas = components['schemas'];
 type Answer = { data?: unknown; error?: { code: string; message: string }; response: Response };
 const ok = (data: unknown, status = 200): Answer => ({ data, response: new Response(null, { status }) });
@@ -554,5 +557,5 @@ describe('review: answers in their order, guards, failures', () => {
     await search('rice');
     expect(screen.queryByRole('button', { name: t('meal.search.add', { name: RICE.name }) })).toBeNull();
     expect(screen.getByText(t('meal.full', { max: 50 }))).toBeOnTheScreen();
-  });
+  }, FIFTY_ITEMS_MS);
 });

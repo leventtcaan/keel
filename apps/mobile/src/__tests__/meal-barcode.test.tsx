@@ -11,6 +11,9 @@ import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { ThemeProvider } from '@/theme/theme';
 
+/** Fifty items, each with its estimate asked at once (ADR-085 #5): longer than jest's 5 s default on a CI runner. */
+const FIFTY_ITEMS_MS = 30_000;
+
 type Schemas = components['schemas'];
 type Answer = { data?: unknown; error?: { code: string; message: string }; response: Response };
 const ok = (data: unknown): Answer => ({ data, response: new Response(null, { status: 200 }) });
@@ -216,5 +219,5 @@ describe('review', () => {
       await scan('5000112548167');
     }
     expect(screen.queryByRole('button', { name: t('meal.barcode.scan') })).toBeNull();
-  });
+  }, FIFTY_ITEMS_MS);
 });
