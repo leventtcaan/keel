@@ -82,5 +82,7 @@ export function useToday(): { day: string; data: TodayData | null; reload: () =>
       },
       [api],
     ),
+    // This week is a tab: a save from its "+" shows on it at once (K-1051).
+    { afterSaves: true },
   );
 }

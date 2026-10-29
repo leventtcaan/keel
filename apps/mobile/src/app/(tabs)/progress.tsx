@@ -43,13 +43,15 @@ function flowWeek(read: Loaded<Schemas['FirstWeeks']>): number | 'over' | null {
  * and the way to share is the user's.
  */
 export default function ProgressScreen() {
-  const { api, training, syncHealth, bodyFigure, report } = useAppServices();
+  const { api, training, syncHealth, bodyFigure, report, queue } = useAppServices();
   const units = useUnits();
   const { color } = useTheme();
   const { day, data, reload } = useReadOnFocus(
     useCallback(
       async (day: string): Promise<Read> => {
         const named = (error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' });
+        // What waits on the phone goes first (a meal just logged from this tab's "+"), so the server's day counts it (K-1051).
+        await queue.drain().catch(named);
         // The Health read runs beside the server's, never before it; a Health that fails is reported by name and shows no steps.
         const [parts, trainData, own, stepsToday, firstWeeks, figure] = await Promise.all([
           loadProgress(api, day),
@@ -61,8 +63,9 @@ export default function ProgressScreen() {
         ]);
         return { progress: { ...parts, stepsToday, moves: movesOf(trainData, own) }, figure, firstWeeks };
       },
-      [api, training, syncHealth, bodyFigure, report],
+      [api, training, syncHealth, bodyFigure, report, queue],
     ),
+    { afterSaves: true },
   );
 
   let body = null;

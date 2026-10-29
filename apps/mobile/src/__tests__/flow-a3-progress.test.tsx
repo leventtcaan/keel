@@ -56,7 +56,8 @@ const mockServices = {
   syncHealth: async () => ({ weighIns: 0, stepsToday: 3240 }),
   bodyFigure: async () => 'male',
   photos: { checks: async () => [], forget: async () => {} },
-  queue: { record: jest.fn(async () => true) },
+  // drain: what waits on the phone is sent before Progress reads (K-1051); nothing waits here.
+  queue: { record: jest.fn(async () => true), drain: async () => {} },
   consents: { granted: async () => true, remember: jest.fn(async () => {}) },
   report: jest.fn(),
 };

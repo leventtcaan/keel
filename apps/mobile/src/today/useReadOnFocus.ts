@@ -2,6 +2,8 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 
+import { useSavedChanges } from '@/saved/saved';
+
 import { localDay } from './today';
 
 /**
@@ -9,8 +11,13 @@ import { localDay } from './today';
  * the tabs stay mounted, so a read on mount alone would keep yesterday's day, or a consent just given in Settings, out
  * of sight (K-401 review). `day` is fixed when a read starts, so a read that crosses midnight shows the day it asked
  * for; the next one asks for the new day. A slower, older read never overwrites a newer one. `read` must be stable.
+ * With `afterSaves` (the tabs), it reads again after a save and after one taken back (K-1051): the "+" sheets close over the
+ * tab without its focus. A sheet does not ask for it: it is the one saving, and it is closing.
  */
-export function useReadOnFocus<T>(read: (day: string) => Promise<T>): { day: string; data: T | null; reload: () => void } {
+export function useReadOnFocus<T>(
+  read: (day: string) => Promise<T>,
+  { afterSaves = false }: { afterSaves?: boolean } = {},
+): { day: string; data: T | null; reload: () => void } {
   const [state, setState] = useState<{ day: string; data: T | null }>(() => ({ day: localDay(new Date()), data: null }));
   const generation = useRef(0);
 
@@ -23,6 +30,15 @@ export function useReadOnFocus<T>(read: (day: string) => Promise<T>): { day: str
   }, [read]);
 
   useFocusEffect(reload);
+
+  // Not on the first draw (the focus read is that one): only when a save comes after.
+  const changes = useSavedChanges();
+  const seen = useRef(changes);
+  useEffect(() => {
+    if (!afterSaves || seen.current === changes) return;
+    seen.current = changes;
+    reload();
+  }, [afterSaves, changes, reload]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (next) => {

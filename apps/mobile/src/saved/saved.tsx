@@ -31,10 +31,14 @@ type Channel = {
   publish: (save: Save) => void;
   /** The banner is done (by time or by Undo): only if it is still the one shown, so a late call does not clear a newer save. */
   dismiss: (id: number) => void;
+  /** A save was taken back: what the screens show changed again. */
+  changed: () => void;
 };
 
 // Outside a provider (a screen under test) a save is told to nobody.
-const Saved = createContext<Channel>({ shown: null, publish: () => {}, dismiss: () => {} });
+const Saved = createContext<Channel>({ shown: null, publish: () => {}, dismiss: () => {}, changed: () => {} });
+/** How many times the user's records changed through a save or its Undo (K-1051): a number the reading screens watch. */
+const Changes = createContext(0);
 
 /**
  * The app's one "something was saved, here is how to take it back" (ADR-070 Ek 2 #6): a screen that keeps a weigh-in, a
@@ -43,11 +47,29 @@ const Saved = createContext<Channel>({ shown: null, publish: () => {}, dismiss: 
  */
 export function SavedProvider({ children }: { children: ReactNode }) {
   const [shown, setShown] = useState<Shown | null>(null);
+  const [changes, setChanges] = useState(0);
   const count = useRef(0);
-  const publish = useCallback((save: Save) => setShown({ ...save, id: ++count.current }), []);
+  const changed = useCallback(() => setChanges((n) => n + 1), []);
+  const publish = useCallback((save: Save) => {
+    setShown({ ...save, id: ++count.current });
+    setChanges((n) => n + 1);
+  }, []);
   const dismiss = useCallback((id: number) => setShown((now) => (now !== null && now.id === id ? null : now)), []);
-  const channel = useMemo(() => ({ shown, publish, dismiss }), [shown, publish, dismiss]);
-  return <Saved.Provider value={channel}>{children}</Saved.Provider>;
+  const channel = useMemo(() => ({ shown, publish, dismiss, changed }), [shown, publish, dismiss, changed]);
+  return (
+    <Saved.Provider value={channel}>
+      <Changes.Provider value={changes}>{children}</Changes.Provider>
+    </Saved.Provider>
+  );
+}
+
+/**
+ * Changes with every save and every save taken back (K-1051). The "+" opens its sheets over the tab in view, which keeps
+ * its focus, so a screen that reads only on focus would go on showing the day before the save; useReadOnFocus reads again
+ * on this. A save published again for another Undo try counts too: one read more, nothing wrong.
+ */
+export function useSavedChanges(): number {
+  return useContext(Changes);
 }
 
 /** The screen's way to say "this was saved, and this takes it back". */
@@ -68,7 +90,7 @@ const PLUS_TOP = tokens.size.tabBar + tokens.space.sm + tokens.size.primaryButto
  * it is gone the save cannot be taken back from here.
  */
 export function SavedBanner() {
-  const { shown, publish, dismiss } = useContext(Saved);
+  const { shown, publish, dismiss, changed } = useContext(Saved);
   const insets = useContext(SafeAreaInsetsContext);
   if (shown === null) return null;
 
@@ -80,6 +102,7 @@ export function SavedBanner() {
       result = { done: false, message: t('undoBanner.failed'), again: true };
     }
     if (result.done) {
+      changed();
       if (result.said !== undefined) announce(result.said);
       return;
     }

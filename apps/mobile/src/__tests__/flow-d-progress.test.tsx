@@ -62,6 +62,8 @@ const mockServices = {
   training: { read: async () => ({ program: { state: 'none' }, exercises: { state: 'ready', value: [] }, kept: false }), own: async () => [] },
   syncHealth: async () => ({ weighIns: 0, stepsToday: null }),
   bodyFigure: async () => 'male',
+  // What waits on the phone is sent before the read (K-1051); nothing waits here.
+  queue: { drain: async () => {} },
   photos: { checks: async () => [], forget: async () => {} },
   report: jest.fn(),
 };
