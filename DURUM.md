@@ -10,23 +10,19 @@ Levent TestFlight'ta denedi: programsız kalan hesapta antrenman yok, yemek aram
 **1.0 (5) incelemede ama yayın şekli ELLE (29 Eki, Levent kararı):** onay gelse de mağazaya çıkmaz. Düzeltilmiş build ile güncellenir.
 **Kapsam büyüdü (Levent, 29 Eki):** düğmeler, Log ikonları, "+" sayfası, Ayarlar, Account, paywall Account dahil her sayfa acımasız tur + AI slop analiziyle baştan. Plan: `plan/yeniden-yapim.md` (Evre 0 envanter → 1 kırık mantık → 2 görsel sistem, prototip önce → 3 yemek verisi → 4 son tur, build 6).
 **Levent (29 Eki): ara kapı yok, döngü bitene kadar otonom.** Döngü talimatı `plan/oturum-promptlari/yeniden-yapim-dongu.md`; ilerleme `plan/yeniden-yapim.md › İlerleme`.
-**Evre 0 BİTTİ (29 Eki gece):** `plan/envanter-2026-10-29.md` (8 kırık, 17 kötü) · sayfa https://claude.ai/artifact/7Ew5GE2C1uECT7dYaCofKb (özel).
-Levent hesabı turdan sonra silindi; şimdiki simülatör hesabı = aynı Apple ID ile yeni hesap (onboarding deneyimli dalı, 3 gün, RevenueCat'te 29 Kas'a
-kadar promosyon premium). Simülatör düzeneği: Metro gerçek sunucuya `.envanter/metro.sh` (arka planda koş), görüntü `.envanter/shot.sh <ad>`,
-sunucu logu `.envanter/slog.sh [süre]`, sayfa `python3 .envanter/build_page.py` + aynı dosya yoluyla yayın. Apple girişi her seferinde parola ister
-(Levent, ekran klavyesi ⌘K) → çıkış/silme gerektiren denemeleri topla. **Levent gece yok (29 Eki 01:00 UTC): oturum düşerse giriş yapılamaz** →
-uygulamayı kapatıp açma (çift yükleme çift yenileme yapıp oturumu düşürdü, K-9 adayı); Metro'da yeniden yükle ya da arka plan/ön plan.
-Evre 1 paket 1 BİTTİ (#619, ADR-084). Paket 2 kodu birleşti (#621, #622, ADR-085), sunucu sıralaması üretim verisinde doğru.
-**Simülatör oturumu 01:29 UTC'de düştü** (dev HMR çift servis örneği çift yenileme yaptı → aile iptal; üretimde görülmedi, K-9 kırık değil).
-**Sabah Levent tek giriş yapınca toplu kanıt:** paket 2 (egg/rice/chıcken yazarak, satır kcal, varsayılan birim) + gece biten paketler.
-Dev düzeneği sorunu: `apps/mobile/node_modules` eski `keel` kopyasına sembolik bağ; Metro bir kez eski `data/parameters/food.json` sundu →
-kanıttan önce düzeneği temizle (yerel `npm ci` ya da bağı kaldır, Metro `--clear`), dal değiştirdikten sonra uygulamayı tam yeniden yükle.
-Gece (29 Eki 01-03 UTC): Evre 1 paket 3-5 kodu birleşti (#625 bugünün yemekleri, #626 onay uyarıları + paywall güvenli alan + tek satır ilerleme,
-#627 test süresi). Evre 2: ADR-070 Ek 2 (tek bileşen sistemi), prototip `prototip/yeniden-yapim.html` (https://claude.ai/artifact/3w4F4AyapNksScmgmgzpD6),
-#630 bileşenler birleşti; Evre 2.2 Ayarlar/Account ajanda (#631). Evre 3: ADR-088 (OFF Türkiye alt kümesi), içe aktarıcı PR #632 (BEKLET: tanı sonucu),
-VPS'te `/opt/keel/off` tanı koşusu (`run.log`, `diag.log`; ilk kısmi koşu 1.996 Türkiye ürününden yalnız 36'sı dört besin + ad dolu).
-**K1 listesi (sabah Levent'e, test silme dahil):** `.envanter/notes.md › K1 listesi`.
-K1 listesi (sabah Levent'e toplu): `.envanter/notes.md › K1 listesi`.
+**Durum (29 Eki 04:10 UTC):** Evre 0 bitti · Evre 1, 2, 3 KODU main'de, simülatör kanıtları sabah (oturum düştü, Levent'in tek girişi gerekir).
+- Envanter `plan/envanter-2026-10-29.md` · sayfa https://claude.ai/artifact/7Ew5GE2C1uECT7dYaCofKb · prototip https://claude.ai/artifact/3w4F4AyapNksScmgmgzpD6
+- Evre 1: #619 programsız hesap (KANITLI) · #621/#622 yemek arama (sunucu üretim verisinde doğru) · #625 bugünün yemekleri · #626/#627 onay uyarıları, paywall, ilerleme çubuğu.
+- Evre 2 (ADR-070 Ek 2): #630 bileşenler · #633 Ayarlar/Account/veri kaynakları/tek geri · #635 "+" + Saved·Undo · #639 This Week/Train/Progress/karar · #640 yemek ekranı · #641 antrenman (CI'da).
+- Evre 3 (ADR-088): #632 birleşti, üretimde 2.897 OFF ürünü içe aktarıldı (03:22 UTC).
+- K-9 (çift jeton yenileme) kırık değil: yalnız dev (HMR/çift yükleme), üretim kayıtlarında görülmedi.
+- Simülatör hesabı: aynı Apple ID ile yeni hesap (Levent'in eski hesabı silindi), programı var (4 gün), RevenueCat promosyon premium 29 Kas'a kadar.
+**Sabah sırası (Evre 4):** (1) `.envanter/metro.sh` arka planda (keel-main artık kendi node_modules'u: eski kopya bağı kalktı), uygulamayı BİR kez
+openurl ile aç; sonra kapatıp açma, dal değiştirme (HMR ikinci servis örneği oturumu düşürür). (2) Levent tek Apple girişi (ekran klavyesi ⌘K).
+(3) Kanıt turu: envanterin her satırı + Evre 2 ekranları prototiple yan yana; `.envanter/shot.sh after-*` → `inventory.json › after` + `fixed` →
+`build_page.py` → aynı dosya yoluyla yayın. Çıkış/silme gerektiren denemeler en sona. (4) Kırık kalmadıysa build 6 (EAS production) → TestFlight →
+ASC 1.0: build 5 çıkar, 6 bağla, yeniden gönder (yayın şekli ELLE; Release Levent'te). (5) Levent'e: K1 listesi (test silme dahil) `.envanter/notes.md`.
+Simülatör yardımcıları: `.envanter/shot.sh <ad>`, `.envanter/peek.sh`, `.envanter/slog.sh [süre]`. Evre 4 tutarlılık notları `.envanter/notes.md` sonunda.
 
 ## (önceki) DEVAM NOKTASI (28 Eki — 1.0 REDDEDİLDİ, düzeltildi, build 5 ile YENİDEN GÖNDERİLDİ: Waiting for Review)
 **Red (28 Eki, gönderim 87ef804d, inceleme cihazı iPad Air 11" M3):** (1) **2.3.7** 6. mağaza karesinde "Try it free for 2 weeks" (ücretsiz/deneme atfı da fiyat sayılır);
