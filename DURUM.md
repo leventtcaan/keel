@@ -5,7 +5,12 @@ guncelleme: 2026-10-10
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (29 Eki ~13:55 UTC — Evre 5 son kontrol: düzeltmeler bitti, build 8 yolda)
+## ▶ DEVAM NOKTASI (29 Eki ~14:30 UTC — Evre 6: ortalamayı yakala, `plan/evre-6-ortalamayi-yakala.md`)
+Build 8 TestFlight'ta ama **App Review'a gönderilmeyecek**: Levent "MVP olarak dahi hazır değil" dedi (yemek kaydı, ayarlar, bağlantılar, mock). Kararlar
+ADR-090 (USDA + OFF ABD, öğün hatırlatması dördüncü tür, 7 gün uyarıyla, prototipsiz arayüz). Sıra: denetim → yemek verisi → yemek kaydı → antrenman/ayarlar/
+bağlantılar → rehber/cila → build 9.
+
+## (önceki) DEVAM NOKTASI (29 Eki ~13:55 UTC — Evre 5 son kontrol: düzeltmeler bitti, build 8 yolda)
 Persona yürüyüşü bulguları `plan/son-kontrol-2026-10-29.md` (15 madde). Birleşenler: #659 GS-39 (bir kısa tartı haftası ilk kararı hafta 3'ten 5'e atar),
 #662 küçük düzeltmeler (fotoğraf silme sistem uyarısı, düzeltmede Save, sabit ilerleme çubuğu, makine simgesi, About you listesi), prototip bölüm 11
 (Levent onayı) → #663 sunucu `first-weeks › weighInWeek` (ADR-089), #668 This week tartı sayacı + antrenman hatırlatmasına satır (Ek 2: dördüncü tür yok),
