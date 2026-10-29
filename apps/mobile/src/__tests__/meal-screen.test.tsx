@@ -1,6 +1,6 @@
 /**
  * Logging a meal (K-407): the health data consent first when it is not given (ADR-030 #25); then the slot, foods found by
- * name in the database, an amount for each (nothing filled in for the user), and the server's estimate as ranges before
+ * name in the database, an amount for each (filled with 1 serving or 100 g, ADR-085), and the server's estimate as ranges before
  * saving (U1, U5) — with its one question when one item dominates the range. Saved on the phone first (K-304).
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
@@ -21,7 +21,7 @@ const RICE: Schemas['Food'] = {
   id: 'fdc-3',
   name: 'Rice, white, cooked',
   per100g: { kcal: R(120, 140), proteinG: R(2, 3), carbsG: R(26, 30), fatG: R(0, 1) },
-  servings: [{ name: '1 cup', grams: 158 }],
+  servings: [{ name: '1 bowl', grams: 158 }],
 };
 const CHICKEN: Schemas['Food'] = {
   id: 'fdc-4',
@@ -115,7 +115,7 @@ async function show() {
 }
 async function search(text: string) {
   await fireEvent.changeText(screen.getByLabelText(t('meal.search.label')), text);
-  await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.search.go') })));
+  await act(async () => fireEvent(screen.getByLabelText(t('meal.search.label')), 'submitEditing'));
 }
 async function add(food: Schemas['Food']) {
   await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.search.add', { name: food.name }) })));
@@ -128,11 +128,11 @@ const estimates = () => mockPOST.mock.calls.filter(([path]) => path === '/v1/foo
 
 describe('a meal the coach read (K-509)', () => {
   test('comes in with its foods and amounts, and the estimate follows — the same screen, nothing saved yet', async () => {
-    handOffMeal([{ foodId: RICE.id, name: RICE.name, quantity: 1.5, unit: '1 cup' }]);
+    handOffMeal([{ foodId: RICE.id, name: RICE.name, quantity: 1.5, unit: '1 bowl' }]);
     await show();
     expect(screen.getByLabelText(t('meal.item.amount', { name: RICE.name })).props.value).toBe('1.5');
     expect(estimates().at(-1)?.[1]).toEqual({
-      body: { items: [{ foodId: RICE.id, amount: { quantity: 1.5, unit: '1 cup', certainty: 'ESTIMATED' } }] },
+      body: { items: [{ foodId: RICE.id, amount: { quantity: 1.5, unit: '1 bowl', certainty: 'ESTIMATED' } }] },
     });
     expect(mockRecord).not.toHaveBeenCalled();
   });
@@ -240,13 +240,35 @@ describe('finding a food', () => {
 });
 
 describe('the amounts and the estimate', () => {
-  test('a food comes in with its amount empty — nothing is guessed — and saving waits for it', async () => {
+  test('a food comes in with its amount filled — 1 of its first serving that is not a volume — and the estimate shows at once (ADR-085)', async () => {
     await show();
     await search('rice');
     await add(RICE);
+    expect(screen.getByLabelText(t('meal.item.amount', { name: RICE.name })).props.value).toBe('1');
+    expect(estimates().at(-1)?.[1]).toEqual({
+      body: { items: [{ foodId: 'fdc-3', amount: { quantity: 1, unit: '1 bowl', certainty: 'ESTIMATED' } }] },
+    });
+    expect(screen.getByRole('button', { name: t('meal.save') })).toBeEnabled();
+  });
+
+  test('a food with no serving that is not a volume comes in as 100 g', async () => {
+    await show();
+    await search('chicken');
+    await add(CHICKEN);
+    expect(screen.getByLabelText(t('meal.item.amount', { name: CHICKEN.name })).props.value).toBe('100');
+    expect(estimates().at(-1)?.[1]).toEqual({
+      body: { items: [{ foodId: 'fdc-4', amount: { quantity: 100, unit: 'g', certainty: 'ESTIMATED' } }] },
+    });
+  });
+
+  test('an amount the user empties stays empty: nothing is estimated or saved for it', async () => {
+    await show();
+    await search('rice');
+    await add(RICE);
+    await amount(RICE, '');
     expect(screen.getByLabelText(t('meal.item.amount', { name: RICE.name })).props.value).toBe('');
+    expect(screen.queryByTestId('estimate')).toBeNull();
     expect(screen.getByRole('button', { name: t('meal.save') })).toBeDisabled();
-    expect(estimates()).toHaveLength(0);
   });
 
   test("with every amount given, the server's estimate as ranges: each item, the meal's energy and protein (U1, U5)", async () => {
@@ -255,7 +277,7 @@ describe('the amounts and the estimate', () => {
     await add(RICE);
     await amount(RICE, '1,5');
     expect(estimates().at(-1)?.[1]).toEqual({
-      body: { items: [{ foodId: 'fdc-3', amount: { quantity: 1.5, unit: '1 cup', certainty: 'ESTIMATED' } }] },
+      body: { items: [{ foodId: 'fdc-3', amount: { quantity: 1.5, unit: '1 bowl', certainty: 'ESTIMATED' } }] },
     });
     expect(screen.getByText(kcal(170, 240))).toBeOnTheScreen();
     expect(screen.getByText(kcal(380, 530))).toBeOnTheScreen();
@@ -286,7 +308,7 @@ describe('the amounts and the estimate', () => {
     expect(estimates().at(-1)?.[1]).toEqual({ body: { items: [{ foodId: 'fdc-3', amount: { quantity: 200, unit: 'g', certainty: 'ESTIMATED' } }] } });
   });
 
-  test('another unit empties the amount: "1" of a cup is not 1 g (simulator: it became 15 g)', async () => {
+  test('another unit empties the amount: "1" of a bowl is not 1 g (simulator: it became 15 g)', async () => {
     await show();
     await search('rice');
     await add(RICE);
@@ -302,9 +324,10 @@ describe('the amounts and the estimate', () => {
     await show();
     await search('rice');
     await add(RICE);
-    await amount(RICE, '40'); // 40 cups: 6320 g
+    const opening = estimates().length; // the one for the amount the food came in with
+    await amount(RICE, '40'); // 40 bowls: 6320 g
     expect(screen.getByText(t('meal.item.tooMuch'))).toBeOnTheScreen();
-    expect(estimates()).toHaveLength(0);
+    expect(estimates()).toHaveLength(opening);
     expect(screen.getByRole('button', { name: t('meal.save') })).toBeDisabled();
   });
 
@@ -331,7 +354,7 @@ describe('saving', () => {
         clientId: expect.any(String),
         eatenAt: new Date(2026, 8, 29, 13, 0).toISOString(),
         slot: 'LUNCH',
-        items: [{ foodId: 'fdc-3', amount: { quantity: 1, unit: '1 cup', certainty: 'ESTIMATED' } }],
+        items: [{ foodId: 'fdc-3', amount: { quantity: 1, unit: '1 bowl', certainty: 'ESTIMATED' } }],
       },
     });
     expect(mockBack).toHaveBeenCalled();
@@ -390,7 +413,10 @@ describe('review: answers in their order, guards, failures', () => {
     await search('chicken');
     mockSearch = () => late.promise;
     await search('rice');
-    await add(CHICKEN);
+    // The old list went the moment the words changed (ADR-085 #2), so a food can no longer be added while the new search is out;
+    // what is left to guard is the box emptied (as picking a food does) before the answer comes.
+    expect(screen.queryByRole('button', { name: t('meal.search.add', { name: CHICKEN.name }) })).toBeNull();
+    await act(async () => fireEvent.changeText(screen.getByLabelText(t('meal.search.label')), ''));
     await act(async () => late.release(ok([RICE])));
     expect(screen.queryByRole('button', { name: t('meal.search.add', { name: RICE.name }) })).toBeNull();
   });
@@ -410,15 +436,16 @@ describe('review: answers in their order, guards, failures', () => {
   });
 
   test('estimate answers out of order: only the one for the current amounts is shown', async () => {
+    const opening = held<Answer>(); // the estimate for the amount the food comes in with (ADR-085 #5)
     const first = held<Answer>();
     const second = held<Answer>();
-    const queue = [first, second];
+    const queue = [opening, first, second];
     mockEstimate = () => (queue.shift() as typeof first).promise;
     await show();
     await search('rice');
     await add(RICE);
-    await amount(RICE, '1');
     await amount(RICE, '2');
+    await amount(RICE, '3');
     const answer = (low: number, high: number): Answer => ok({ items: [], kcal: R(low, high), proteinG: R(1, 2) });
     await act(async () => second.release(answer(500, 600)));
     await act(async () => first.release(answer(100, 200)));

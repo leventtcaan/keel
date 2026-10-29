@@ -34,6 +34,30 @@
       "note": "FoodSearch.q minLength: a shorter search is refused by the server, so the phone does not send it."
     },
     {
+      "key": "food_search_delay_ms",
+      "value": 300,
+      "unit": "ms",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-085-yemek-aramasi.md#ADR-085",
+      "note": "Search as you type (ADR-085 #1): how long the box waits after the last key before it asks the server. Short enough that the list follows the typing, long enough that a word being typed is one request, not one per letter. The keyboard's Search key does not wait."
+    },
+    {
+      "key": "food_serving_volume_words",
+      "value": ["cup", "tbsp", "tablespoon", "tsp", "teaspoon", "fl oz", "fluid ounce", "ml"],
+      "unit": "words",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-085-yemek-aramasi.md#ADR-085",
+      "note": "A serving named by one of these is a volume measure (ADR-085 #5): a food is not opened on it by default, because a cup of dried egg or of flour says little about what was eaten. Whole words in any case or plural; the first serving that has none of them, or grams, is the default unit."
+    },
+    {
+      "key": "meal_default_grams",
+      "value": 100,
+      "unit": "g",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-085-yemek-aramasi.md#ADR-085",
+      "note": "The amount a food opens on when it is counted in grams (ADR-085 #5): 100 g, the basis the database's values are given in, so the estimate shows at once and the user changes it. A serving opens on 1."
+    },
+    {
       "key": "food_search_max_chars",
       "value": 100,
       "unit": "characters",

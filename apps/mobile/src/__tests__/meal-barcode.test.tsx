@@ -101,12 +101,12 @@ test('the camera reads only the barcodes food packs carry', async () => {
   expect(mockCamera?.barcodeScannerSettings).toEqual({ barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e'] });
 });
 
-test('a code is looked up as scanned — a UPC-E is expanded on the server — and the product comes in with its amount empty', async () => {
+test('a code is looked up as scanned — a UPC-E is expanded on the server — and the product comes in with its amount filled (1 of its serving)', async () => {
   await openScanner();
   await scan('01234565', 'upc_e');
   expect(mockPOST).toHaveBeenCalledWith('/v1/foods/barcode-lookup', { body: { gtin: '01234565' } });
   expect(mockCamera).toBeNull(); // closed (the next render has no camera)
-  expect(screen.getByLabelText(t('meal.item.amount', { name: YOGURT.name })).props.value).toBe('');
+  expect(screen.getByLabelText(t('meal.item.amount', { name: YOGURT.name })).props.value).toBe('1');
   expect(screen.getByRole('button', { name: t('meal.item.unitSpoken', { name: YOGURT.name, unit: '1 container' }) })).toBeSelected();
 });
 
@@ -198,7 +198,7 @@ describe('review', () => {
     await openScanner();
     await scan('5000112548167');
     await act(async () => fireEvent.changeText(screen.getByLabelText(t('meal.search.label')), 'rice'));
-    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.search.go') })));
+    await act(async () => fireEvent(screen.getByLabelText(t('meal.search.label')), 'submitEditing'));
     await act(async () => release(ok(YOGURT)));
     expect(screen.queryByLabelText(t('meal.item.amount', { name: YOGURT.name }))).toBeNull();
     expect(screen.getByRole('button', { name: t('meal.search.add', { name: 'Rice' }) })).toBeOnTheScreen();

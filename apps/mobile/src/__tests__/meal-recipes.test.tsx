@@ -94,7 +94,7 @@ async function show() {
 }
 async function searchFor(q: string) {
   await fireEvent.changeText(screen.getByLabelText(t('meal.search.label')), q);
-  await fireEvent.press(screen.getByRole('button', { name: t('meal.search.go') }));
+  await fireEvent(screen.getByLabelText(t('meal.search.label')), 'submitEditing');
   await act(async () => {});
 }
 

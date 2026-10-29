@@ -61,7 +61,7 @@ async function fill() {
   await fireEvent.changeText(screen.getByLabelText(t('recipe.name')), ' Lentil soup ');
   await fireEvent.changeText(screen.getByLabelText(t('recipe.portions')), '4');
   await fireEvent.changeText(screen.getByLabelText(t('meal.search.label')), 'lentils');
-  await press(t('meal.search.go'));
+  await fireEvent(screen.getByLabelText(t('meal.search.label')), 'submitEditing');
   await press(t('meal.search.add', { name: LENTILS.name }));
   await fireEvent.press(screen.getByRole('button', { name: t('meal.item.unitSpoken', { name: LENTILS.name, unit: t('meal.item.grams') }) }));
   await fireEvent.changeText(screen.getByLabelText(t('meal.item.amount', { name: LENTILS.name })), '300');

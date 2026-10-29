@@ -384,7 +384,7 @@ describe('where it is not shown', () => {
     await show();
     mockServices.api.POST.mockResolvedValueOnce(ok([{ id: 'fdc-3', name: 'Rice, white, cooked', per100g: { kcal: R(120, 140), proteinG: R(2, 3), carbsG: R(26, 30), fatG: R(0, 1) } }]) as never);
     await fireEvent.changeText(screen.getByLabelText(t('meal.search.label')), 'rice');
-    await press(t('meal.search.go'));
+    await act(async () => fireEvent(screen.getByLabelText(t('meal.search.label')), 'submitEditing'));
     await press(t('meal.search.add', { name: 'Rice, white, cooked' }));
     expect(screen.queryByText(t('food.repeat.title'))).toBeNull();
     expect(screen.queryByText(t('meal.quick.recent'))).toBeNull();
