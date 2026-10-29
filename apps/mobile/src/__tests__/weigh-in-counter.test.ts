@@ -141,7 +141,7 @@ describe('the words (U7: no blame, nothing to make up)', () => {
     expect(t('thisWeek.counter.behind', { count: 2, day: MONDAY })).toBe("2 more before Monday's call, and it can read your week.");
     expect(t('thisWeek.counter.last.todayTomorrow', { day: MONDAY })).toBe("Weigh in today and tomorrow, and Monday's call can read your week.");
     expect(t('thisWeek.counter.short', { day: MONDAY, date: 'Wed, Nov 18' })).toBe(
-      "A short week happens. Monday's call can't read it, so calls start once you have most mornings for a few weeks: Wed, Nov 18 at the earliest.",
+      "A short week happens. Monday's call can't read it. Weigh in most mornings and calls start Wed, Nov 18 at the earliest.",
     );
     expect(t('thisWeek.counter.shortFoot')).toBe('Training goes on as planned');
   });

@@ -231,7 +231,7 @@
         "tomorrow": "Weigh in tomorrow, and {day}'s call can read your week.",
         "every": "Weigh in every morning until {day}, and {day}'s call can read your week."
       },
-      "short": "A short week happens. {day}'s call can't read it, so calls start once you have most mornings for a few weeks: {date} at the earliest.",
+      "short": "A short week happens. {day}'s call can't read it. Weigh in most mornings and calls start {date} at the earliest.",
       "shortFoot": "Training goes on as planned",
       "weighIn": "Weigh in"
     },
