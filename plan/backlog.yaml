@@ -5410,6 +5410,72 @@ tasks:
     tests: ["jest navigation + logging-flow", "tools/anayasa-denetimi.sh"]
     refs: ["prototip/yeniden-yapim.html", "plan/oturum-promptlari/yeniden-yapim-devam.md"]
 
+  - id: K-1051
+    title: "QA build 6: kayıttan sonra altta kalan sekme bayat (Progress öğün sonrası 0 kcal)"
+    milestone: M10
+    module: mobile
+    type: fix
+    size: S
+    status: todo
+    depends_on: [K-1050]
+    why: "QA turu, gerçek sunucu: Progress açıkken + ile öğün kaydedildi; Calories 0 / 2,916 kaldı, sekme değişince düzeldi. + her sekmede, altta kalan sekme odak kaybetmiyor (rubrik F3)"
+    acceptance:
+      - "Bir kayıt yayımlanınca (öğün, tartı, kardiyo, hızlı ekleme) ve geri alınınca odaktaki sekmeler yeniden okur"
+      - "Progress ve Train okumadan önce kuyruğu gönderir (This week gibi), okunan liste yeni kaydı içerir"
+      - "jest: kayıt sinyali yeniden okumayı tetikler; simülatörde Progress açıkken öğün sonrası kalori görünür"
+    tests: ["jest useReadOnFocus + saved", "tools/anayasa-denetimi.sh"]
+    refs: ["plan/oturum-promptlari/yeniden-yapim-devam.md", "arastirma/ham/uygulama-qa-skill-2026-10-29.md"]
+
+  - id: K-1052
+    title: "QA build 6: yemek aramasında hızlı yazınca harf düşüyor"
+    milestone: M10
+    module: mobile
+    type: fix
+    size: S
+    status: todo
+    depends_on: [K-1050]
+    why: "QA turu: chicken breast hızlı yazıldı, kutuda yalnız c kaldı; yavaş yazınca doğru. Denetimli TextInput her tuşta bütün öğün ekranını yeniden çiziyor, yerel değer eski çizimle eziliyor (QuickType kelime ekleme de aynı)"
+    acceptance:
+      - "Arama kutusu yazılanı kendisi tutar (denetimsiz); seçimden sonra temizlenir"
+      - "Hızlı yazılan 14 harf kutuda kalır (simülatör kanıtı)"
+      - "jest food-* yeşil"
+    tests: ["jest food-search + meal-*"]
+    refs: ["plan/oturum-promptlari/yeniden-yapim-devam.md", "arastirma/ham/uygulama-qa-skill-2026-10-29.md"]
+
+  - id: K-1053
+    title: "Build 6 bulgusu: Train > This week satırları güçlü ve uygulamayla bütünleşik"
+    milestone: M10
+    module: mobile
+    type: fix
+    size: S
+    status: todo
+    depends_on: [K-1050]
+    why: "Levent: Mon/Tue/Fri satırları çok güçsüz, arayüzden kopuk. Çıplak çizgili düz metin, kartlar ve gruplu listelerle uyumsuz (rubrik D6, D7, D17)"
+    acceptance:
+      - "Hafta tek bir yüzey kartında; her gün gün rozeti (MON), seans adı, hareket ve kardiyo satırı, durum (bugün vurgulu, yapıldı tik, atlandı soluk, taşındı)"
+      - "Bugünün satırı ve başlatılabilir satırlar dokunulabilir hedef >= 44 pt"
+      - "jest train-* yeşil; simülatörde önce/sonra görüntü"
+    tests: ["jest train-*"]
+    refs: ["plan/oturum-promptlari/yeniden-yapim-devam.md", "arastirma/ham/uygulama-qa-skill-2026-10-29.md"]
+
+  - id: K-1054
+    title: "Build 6 bulgusu: Progress kas haritası altı modern, kartlı ve canlı"
+    milestone: M10
+    module: mobile
+    type: fix
+    size: S
+    status: todo
+    depends_on: [K-1050]
+    why: "Levent: This week's muscles altı güçsüz, statik, modern değil. Strength, Weight trend, Photos sayfaya düz metin; üstteki kart karolarıyla kopuk; Steps değersiz / 7,000 (rubrik D6, D7, S3, D17)"
+    acceptance:
+      - "Strength, Weight trend, Photos aynı bölüm başlığı ve yüzey kartı diliyle (üstteki karolarla bir sistem)"
+      - "Weight trend kart içinde ilerleme halkası ya da çizgisiyle (7 tartıya kaç kaldı), statik nokta sırası değil"
+      - "Steps değer yoksa boş bırakılmaz"
+      - "Share satırı ikonlu satır; ekranda tek dolu birincil düğme"
+      - "jest progress-* yeşil; simülatörde önce/sonra görüntü"
+    tests: ["jest progress-*"]
+    refs: ["plan/oturum-promptlari/yeniden-yapim-devam.md", "arastirma/ham/uygulama-qa-skill-2026-10-29.md"]
+
   - id: K-1010
     title: "Sunucudaki ek siteler: Caddy /opt/sites altındaki *.caddy dosyalarını içeri alır"
     milestone: M9
