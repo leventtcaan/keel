@@ -58,7 +58,8 @@ class MealController {
     }
 
     /** Contract Suggestion: a food the user eats, in their usual amount, as the database estimates it now (U1, U5). */
-    record Suggestion(String foodId, String name, FoodEstimator.Amount amount, FoodRanges.Range kcal, FoodRanges.Range proteinG) {
+    record Suggestion(String foodId, String name, FoodEstimator.Amount amount, FoodRanges.Range kcal, FoodRanges.Range proteinG, FoodRanges.Range carbsG,
+            FoodRanges.Range fatG) {
     }
 
     private final MealStore store;
@@ -218,14 +219,16 @@ class MealController {
 
     /**
      * The foods the user logs most often (K-1063): from the meals of the last suggestion-days, the most logged first, each in the amount it
-     * was most often had, estimated from the database now (U1, U5) — never one they cannot eat, a few at most (recent-foods).
+     * was most often had, estimated from the database now (U1, U5) — never one they cannot eat, a few at most (recent-foods). With a slot,
+     * only the meals had in that slot count ("Usually at breakfast"): a slot nobody ate in has none.
      */
     @GetMapping("/v1/foods/frequent")
-    List<Suggestion> frequent(AccountId account) {
+    List<Suggestion> frequent(AccountId account, @RequestParam(required = false) MealStore.Slot slot) {
         consent.require(account, ConsentKind.HEALTH_DATA);
         LocalDate today = LocalDate.now(clock.withZone(zoneOf(account)));
         List<MealStore.Meal> eaten = store.days(account, today.minusDays(limits.suggestionDays()), today);
-        List<MealSuggestions.Usual> usual = MealSuggestions.usual(eaten, profiles.foodsAvoided(account), id -> ingredientNames(account, id));
+        List<MealSuggestions.Usual> usual = MealSuggestions.usual(eaten, Optional.ofNullable(slot), profiles.foodsAvoided(account),
+                id -> ingredientNames(account, id));
         List<Suggestion> shown = new java.util.ArrayList<>();
         for (MealSuggestions.Usual candidate : usual.subList(0, Math.min(usual.size(), limits.suggestionCandidates()))) {
             if (shown.size() == limits.recentFoods()) {
@@ -257,7 +260,7 @@ class MealController {
     private Optional<Suggestion> estimated(AccountId account, String foodId, FoodEstimator.Amount amount) {
         try {
             FoodEstimator.EstimatedItem item = estimator.estimate(account, List.of(new FoodEstimator.ItemRequest(foodId, amount))).items().getFirst();
-            return Optional.of(new Suggestion(item.foodId(), item.name(), item.amount(), item.kcal(), item.proteinG()));
+            return Optional.of(new Suggestion(item.foodId(), item.name(), item.amount(), item.kcal(), item.proteinG(), item.carbsG(), item.fatG()));
         } catch (ApiException gone) {
             return Optional.empty();
         }

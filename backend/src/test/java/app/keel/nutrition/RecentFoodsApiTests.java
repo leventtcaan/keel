@@ -89,6 +89,24 @@ class RecentFoodsApiTests {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void theFrequentFoodsOfASlotAreThoseHadThereWithAllThreeMacros() throws Exception {
+        AccountId account = consenting();
+        meal(account, 3, "LUNCH", CHICKEN, 200);
+        meal(account, 2, "LUNCH", CHICKEN, 200);
+        meal(account, 1, "SNACK", CEREAL, 80);
+
+        List<Map<String, Object>> lunch = list(send(account, "GET", "/v1/foods/frequent?slot=LUNCH", null));
+
+        assertThat(lunch).extracting(item -> item.get("foodId")).as("only lunch's chicken, not the snack's cereal").containsExactly(CHICKEN);
+        assertThat(lunch.getFirst()).containsKeys("kcal", "proteinG", "carbsG", "fatG");
+        assertThat((Map<String, Object>) lunch.getFirst().get("carbsG")).containsKeys("low", "high");
+        assertThat(list(send(account, "GET", "/v1/foods/frequent?slot=BREAKFAST", null))).as("a slot nobody ate in has none").isEmpty();
+        assertThat(list(send(account, "GET", "/v1/foods/frequent", null))).extracting(item -> item.get("foodId")).containsExactly(CHICKEN, CEREAL);
+        assertThat(send(account, "GET", "/v1/foods/frequent?slot=ELEVENSES", null)).hasStatus(400);
+    }
+
+    @Test
     void aFewAtMostAndOnlyTheLastWeeks() throws Exception {
         for (int i = 0; i < 14; i++) {
             jdbc.sql("""

@@ -82,9 +82,20 @@ final class MealSuggestions {
      * recipe named "Morning bowl" holds walnuts) — each read against the list as its own name is.
      */
     static List<Usual> usual(List<MealStore.Meal> meals, List<String> avoid, Function<String, List<String>> alsoNamed) {
+        return usual(meals, Optional.empty(), avoid, alsoNamed);
+    }
+
+    /**
+     * The usual foods of one slot (Evre 7, "Usually at breakfast"): only the meals had in that slot count, so a food has the amount and
+     * the times it had there. A slot nobody ate in has none (unlike {@link #recent}, nothing falls back to the other slots).
+     */
+    static List<Usual> usual(List<MealStore.Meal> meals, Optional<MealStore.Slot> slot, List<String> avoid, Function<String, List<String>> alsoNamed) {
         Map<String, List<Seen>> byFood = new LinkedHashMap<>();
         Map<String, Boolean> left = new LinkedHashMap<>();
         for (MealStore.Meal meal : meals) {
+            if (slot.isPresent() && meal.slot() != slot.get()) {
+                continue;
+            }
             for (FoodEstimator.EstimatedItem item : meal.items()) {
                 // A quick add has no food behind it: nothing to offer again.
                 if (FoodEstimator.QUICK.equals(item.foodId())) {
