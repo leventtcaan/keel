@@ -1,5 +1,6 @@
 package app.keel.training;
 
+import app.keel.profile.Profiles;
 import app.keel.shared.AccountId;
 import app.keel.shared.Decimals;
 import java.math.BigDecimal;
@@ -12,13 +13,20 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-/** The program tables (K-211): one current program per account, replaced whole. */
+/**
+ * The program tables (K-211): one current program per account, replaced whole. The program is where the training days are
+ * made and changed (ADR-090 Ek 1): every write of its days, a new program or an edit, keeps the profile's training days as the
+ * program has them (one place for every path: the generate, the own program, the edit, the review's apply and undo, the
+ * added day, a move swapped from now on).
+ */
 @Repository
 class ProgramStore {
 
@@ -73,10 +81,22 @@ class ProgramStore {
 
     private final JdbcClient jdbc;
     private final Clock clock;
+    private final Profiles profiles;
 
-    ProgramStore(JdbcClient jdbc, Clock clock) {
+    ProgramStore(JdbcClient jdbc, Clock clock, Profiles profiles) {
         this.jdbc = jdbc;
         this.clock = clock;
+        this.profiles = profiles;
+    }
+
+    /**
+     * The profile's training days follow the program's weekdays. A day on no weekday has none to give; a program with no
+     * weekday at all (the user's own, floating days) leaves the profile's list as it was.
+     */
+    private void keepProfileDays(AccountId account, List<Day> days) {
+        Set<DayOfWeek> weekdays = new TreeSet<>();
+        days.stream().map(Day::weekday).filter(java.util.Objects::nonNull).forEach(weekdays::add);
+        profiles.keepTrainingDays(account, weekdays);
     }
 
     /**
@@ -107,6 +127,7 @@ class ProgramStore {
                 .param("id", UUID.randomUUID()).param("account", account.value()).param("sessions", days.size()).param("program", program)
                 .update();
         insert(account, program, days);
+        keepProfileDays(account, days);
         return current(account).orElseThrow();
     }
 
@@ -141,6 +162,7 @@ class ProgramStore {
         }
         // Each move carries its starting weight (K-998) as read with the row: a row kept keeps it, unless the change dropped it.
         insert(account, program, days);
+        keepProfileDays(account, days);
         return current(account).orElseThrow();
     }
 

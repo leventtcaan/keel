@@ -52,6 +52,11 @@ type Props = {
    * pending until the program is sent; ADR-073 Ek 2), or says why it could not.
    */
   makeOwn: (body: Schemas['NewCustomExercise']) => Promise<Move | Exclude<SaveOutcome, 'saved'>>;
+  /**
+   * "Add a day" is the screen's, not the editor's (Edit: the server fills the day, ADR-090 Ek 1). Absent, the editor adds its own
+   * empty day (a typed program in onboarding has no server program yet).
+   */
+  onAddDay?: () => void;
 };
 
 /**
@@ -71,7 +76,7 @@ const movesWord = (count: number) => t(count === 1 ? 'programEditor.moves.one' :
  * can be put back (Undo). A new day opens; under the cards, "Add a day" while there are fewer than a program has. The
  * rules are programEdit.ts; what is done with the program, and with an own move, is the screen's.
  */
-export function ProgramEditor({ days, onChange, moves, makeOwn }: Props) {
+export function ProgramEditor({ days, onChange, moves, makeOwn, onAddDay }: Props) {
   const { color } = useTheme();
   const byId = useMemo(() => new Map(moves.map((m) => [m.id, m])), [moves]);
   const [open, setOpen] = useState<string | null>(days[0]?.id ?? null);
@@ -79,6 +84,9 @@ export function ProgramEditor({ days, onChange, moves, makeOwn }: Props) {
   const [removed, setRemoved] = useState<Removed | null>(null);
 
   const addDay = () => {
+    // Where the screen has a better way (Edit: the server fills the day, ADR-090 Ek 1), it is the screen's; the editor's own empty
+    // day is the way for a typed program that has no server yet (onboarding's "Type it in").
+    if (onAddDay !== undefined) return onAddDay();
     const id = nextDayId();
     onChange((all) => newDay(all, id));
     setOpen(id);

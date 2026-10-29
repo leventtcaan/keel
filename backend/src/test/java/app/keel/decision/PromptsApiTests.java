@@ -161,7 +161,10 @@ class PromptsApiTests {
 
         assertThat(firstMissed(account)).isEqualTo(trained.with(TemporalAdjusters.next(DayOfWeek.WEDNESDAY)));
 
-        // A program whose days have no weekday: the profile's Monday.
+        // A program whose days have no weekday: the profile's Monday. The profile follows the program's weekdays (ADR-090 Ek 1), so
+        // the profile is saved with Monday again, as if the user had set it so before a program that puts nothing on a weekday.
+        assertThat(send(account, "PUT", "/v1/profile", profile("METRIC", List.of("MONDAY")))).hasStatusOk();
+        trainingDaysSetLongAgo(account);
         program(account, (String) null);
         assertThat(firstMissed(account)).isEqualTo(trained.with(TemporalAdjusters.next(DayOfWeek.MONDAY)));
         // Some days with a weekday, some without: the ones it puts on a weekday.

@@ -39,6 +39,8 @@ export const workoutParams = {
   effortCallWindowWeeks: param<number>('effort_call_window_weeks'),
   /** The user's own program as the contract takes it (OwnProgram). */
   programDaysMax: param<number>('program_days_max'),
+  /** A program of more days than this carries the short rest-day note (ADR-090 #3). */
+  restNoteAboveDays: param<number>('rest_note_above_days'),
   programDayMovesMax: param<number>('program_day_moves_max'),
   programMoveSetsMax: param<number>('program_move_sets_max'),
   programDayNameMaxChars: param<number>('program_day_name_max_chars'),

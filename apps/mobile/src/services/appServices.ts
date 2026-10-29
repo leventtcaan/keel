@@ -33,6 +33,7 @@ import { type SessionSwaps, createSessionSwaps } from '@/train/sessionSwaps';
 import { type AlertAccess, type RestAlert, alertsUnavailable, createRestAlert } from '@/train/restAlert';
 import type { Figure } from '@/train/demo';
 import { type TrainingCache, createTrainingCache } from '@/train/trainData';
+import { programFollower } from '@/api/programFollower';
 import { type MealStart, readMealStart, readRecentFoods } from '@/food/mealStart';
 import { noPhotoCache, type PhotoCache } from '@/food/photo';
 import type { AppleReauth } from '@/session/appleSignIn';
@@ -219,7 +220,14 @@ export async function createAppServices({
   });
   const consents = createConsentState({ api, kv });
   // The program's week off reaches the reminders whenever the program is read (ADR-037 › 51b); they report their own failures.
-  const training = createTrainingCache(kv, (program) => void reminders.keepRestUntil(program?.restUntil ?? null));
+  // Whatever the program says reaches the reminders: its week off, and its training days (ADR-090 Ek 1: the program is where the
+  // days are made, so the reminders never go by an older list). None (404) leaves the profile's days.
+  const training = createTrainingCache(kv, (program) => {
+    void reminders.keepRestUntil(program?.restUntil ?? null);
+    void reminders.keepProgramDays(program === null ? [] : program.days.flatMap((day) => (day.weekday === undefined ? [] : [day.weekday])));
+  });
+  // Every program the server answers, from any screen or path, is followed: kept for offline, handed to the reminders, announced.
+  api.use(programFollower((program, changed, era) => training.follow(program, changed, era), training.era));
   const photos = createPhotoLibrary(photoFiles);
   // iOS is asked only on the user's tap ("Remind me before it ends"), through the reminders' own access.
   const trialReminder = createTrialReminder({ kv, alerts, ask: () => notifications.request(), now });

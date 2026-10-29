@@ -27,7 +27,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.yaml.snakeyaml.Yaml;
 
 /**
- * The program templates (K-211): data/programs/<n>-days.yaml for 1 to 6 training days. Each holds the coaching limits, sets
+ * The program templates (K-211): data/programs/<n>-days.yaml for 1 to 7 training days. Each holds the coaching limits, sets
  * counted for a move's first (primary) muscle: at most sets_per_session_per_muscle_max per muscle in a session (G1 K-10),
  * at most weekly_sets_per_muscle in a week (G1 K-11); with four days or more, a muscle worked four sets or more a week is
  * worked on frequency_per_muscle_per_week days (G1 K-22).
@@ -37,7 +37,7 @@ class ProgramTemplateTests {
     private static final Parameters P = RepositoryParameters.forSex(Sex.MALE);
 
     @ParameterizedTest
-    @ValueSource(ints = {1, 2, 3, 4, 5, 6})
+    @ValueSource(ints = {1, 2, 3, 4, 5, 6, 7})
     void everyTemplateLoadsWithItsDaysAndKeepsTheSetLimits(int days) throws IOException {
         ExerciseCatalog catalog = ExerciseCatalogTestData.catalog();
         assertThat(ProgramTemplates.of(files(), catalog).forDays(days)).as(days + " days").isPresent();
@@ -81,7 +81,7 @@ class ProgramTemplateTests {
      * sets_per_session_per_muscle_max, K-10).
      */
     @ParameterizedTest
-    @ValueSource(ints = {1, 2, 3, 4, 5, 6})
+    @ValueSource(ints = {1, 2, 3, 4, 5, 6, 7})
     void everyMuscleATemplateTrainsGetsItsWeeklyMinimum(int days) throws IOException {
         ExerciseCatalog catalog = ExerciseCatalogTestData.catalog();
         List<ProgramTemplates.Day> template = ProgramTemplates.of(files(), catalog).forDays(days).orElseThrow();
@@ -120,7 +120,7 @@ class ProgramTemplateTests {
      * goes unnoticed for want of a move.
      */
     @ParameterizedTest
-    @ValueSource(ints = {1, 2, 3, 4, 5, 6})
+    @ValueSource(ints = {1, 2, 3, 4, 5, 6, 7})
     void theGeneratedProgramPassesItsOwnReview(int days) throws IOException {
         ExerciseCatalog catalog = ExerciseCatalogTestData.catalog();
         ProgramTemplates templates = ProgramTemplates.of(files(), catalog);
@@ -149,8 +149,9 @@ class ProgramTemplateTests {
                         .map(planned -> new ProgramStore.PlannedExercise(planned.exerciseId(), planned.sets(), planned.reps().min(),
                                 planned.reps().max(), planned.targetRir())).toList()))
                 .toList());
+        // ADR-090 #3: a number of days the user may choose (6, 7) is never flagged in what the user sees; a short note says what a rest day does.
         assertThat(ProgramReviews.suggestions(stored, catalog, P)).as(days + " days, as shown")
-                .extracting(ProgramReviews.Suggestion::finding).isEqualTo(expected);
+                .extracting(ProgramReviews.Suggestion::finding).isEmpty();
     }
 
     @Test
@@ -160,11 +161,11 @@ class ProgramTemplateTests {
         Map<String, Object> copy = new Yaml().load(Files.readString(Path.of("../data/copy/en.json")));
         Map<String, Map<String, String>> names = (Map<String, Map<String, String>>) copy.get("programDays");
 
-        for (int days = 1; days <= 6; days++) {
+        for (int days = 1; days <= 7; days++) {
             assertThat(templates.forDays(days)).as(days + " days").isPresent();
             assertThat(templates.forDays(days).orElseThrow()).allSatisfy(day -> assertThat(names.get(day.key())).as(day.key()).containsKey("name"));
         }
-        assertThat(templates.forDays(7)).isEmpty();
+        assertThat(templates.forDays(8)).as("seven is the most (ADR-090 #3)").isEmpty();
     }
 
     @Test

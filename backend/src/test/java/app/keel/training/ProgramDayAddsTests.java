@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import app.keel.engine.ParameterKey;
 import app.keel.engine.Parameters;
+import app.keel.engine.ProgramReview;
 import app.keel.engine.RepRange;
 import app.keel.engine.RepositoryParameters;
 import app.keel.engine.Sex;
@@ -14,6 +15,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
@@ -25,18 +27,20 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
- * A training day added to the program (K-1012, ADR-073 Ek 9), without a database. The day is added only to a program of
- * add_day_from_days days (2: the first week's call, to three); the new day is what the program template for one more day has
- * at that weekday's place in the week (no coaching rule of its own, U14); every day the program has stays as it was, ids and
- * targets; a move the program already has a starting weight for has it in the new day too (ADR-072 #5); what the review makes
- * of the program with the day is pinned; any other number of days, the user's own program, a taken weekday and a day on no
- * weekday are refused.
+ * A training day added to the program (K-1012, ADR-073 Ek 9; K-1060, ADR-090 Ek 1), without a database. The new day is what the
+ * program template for one more day has at that weekday's place in the week (no coaching rule of its own, U14); a program as the
+ * generator made it, other than the two-day one whose add was measured to balance, is replanned to that template whole, each day on
+ * its weekday keeping its id and each move the plan has again its row and target; a program the user changed or brought, the
+ * two-day one, or any program when a workout was started today, is added to: every day the program has stays as it was, ids and
+ * targets. A move the program already has a starting weight for has it in the new day
+ * too (ADR-072 #5); what the review makes of the program with the day is pinned; a taken weekday, a day on no weekday and an
+ * eighth day are refused.
  */
 class ProgramDayAddsTests {
 
     private static final Parameters P = RepositoryParameters.forSex(Sex.MALE);
-    /** The number of days a program has when a day is added to it (every other number is refused). */
-    private static final int FROM = P.wholeNumber(ParameterKey.ADD_DAY_FROM_DAYS);
+    /** The number of days of the one step whose add to the old split was measured to balance (the first week's call, ADR-073 Ek 9). */
+    private static final int FROM = P.wholeNumber(ParameterKey.ADD_DAY_BALANCED_DAYS);
     private static final int ASKED_REPS = StartingWeightReps.fromClasspath().reps();
     private static ExerciseCatalog catalog;
     private static ProgramTemplates templates;
@@ -94,8 +98,14 @@ class ProgramDayAddsTests {
                 .toList());
     }
 
+    /** The day added to the program as it is (the program is not replanned). */
     private static Optional<List<ProgramStore.Day>> add(ProgramStore.Program program, DayOfWeek weekday) {
-        return ProgramDayAdds.added(program, weekday, templates, catalog, P, ASKED_REPS, Optional.empty());
+        return ProgramDayAdds.added(program, weekday, templates, catalog, P, ASKED_REPS, Optional.empty(), false);
+    }
+
+    /** The day added where a program as the generator made it may be replanned. */
+    private static Optional<List<ProgramStore.Day>> replan(ProgramStore.Program program, DayOfWeek weekday) {
+        return ProgramDayAdds.added(program, weekday, templates, catalog, P, ASKED_REPS, Optional.empty(), true);
     }
 
     private static ProgramStore.Day onWeekday(List<ProgramStore.Day> days, DayOfWeek weekday) {
@@ -202,7 +212,7 @@ class ProgramDayAddsTests {
 
         // The same call for fewer reps than the range starts at (NextTargets.starting): none, as the starting weights call finds.
         List<ProgramStore.PlannedExercise> asked = onWeekday(ProgramDayAdds.added(program, DayOfWeek.WEDNESDAY, templates, catalog, P, minimum - 1,
-                Optional.empty()).orElseThrow(), DayOfWeek.WEDNESDAY).exercises();
+                Optional.empty(), false).orElseThrow(), DayOfWeek.WEDNESDAY).exercises();
         assertThat(asked).filteredOn(move -> move.repMin() == minimum).allSatisfy(move -> assertThat(move.nextLoadKg()).isNull());
     }
 
@@ -248,69 +258,181 @@ class ProgramDayAddsTests {
     }
 
     @Test
-    void aProgramOfAnyOtherNumberOfDaysIsRefusedOnEveryWeekdayAndNothingIsChanged() {
-        // 2 to 3 is the one add the template for one more day is known to balance; the rest go to Edit (ADR-073 Ek 9).
+    void aProgramOfAnyNumberOfDaysBelowSevenTakesADayAndSevenDaysTakeNone() {
+        // ADR-090 Ek 1: a day is added wherever there is a template for one more day (K-1060 lifts the two-day limit of Ek 9).
+        for (int size = 1; size <= 6; size++) {
+            for (Set<DayOfWeek> weekdays : weekdaySets(size)) {
+                ProgramStore.Program program = stored(weekdays);
+                int more = size + 1;
+                for (DayOfWeek added : EnumSet.complementOf(EnumSet.copyOf(weekdays))) {
+                    String where = size + " days " + weekdays + " + " + added;
+                    assertThat(add(program, added)).as(where).hasValueSatisfying(days -> assertThat(days).hasSize(more));
+                    assertThat(replan(program, added)).as(where + ", replanned").hasValueSatisfying(days -> assertThat(days).hasSize(more));
+                }
+            }
+        }
+        for (DayOfWeek added : DayOfWeek.values()) {
+            assertThat(add(stored(EnumSet.allOf(DayOfWeek.class)), added)).as("seven days").isEmpty();
+        }
+    }
+
+    @Test
+    void everyNumberOfDaysTheAddCanStartFromHasATemplateForOneMoreDay() {
+        for (int size = 1; size <= 6; size++) {
+            assertThat(templates.forDays(size + 1)).as(size + 1 + " days: the template the new day comes from").isPresent();
+        }
+        assertThat(templates.forDays(8)).as("seven is the most").isEmpty();
+    }
+
+    @Test
+    void aProgramAsTheGeneratorMadeItIsReplannedToTheTemplateForOneMoreDayOnItsWeekdaysAndTheNewOne() {
         for (int size = 1; size <= 6; size++) {
             if (size == FROM) {
                 continue;
             }
             for (Set<DayOfWeek> weekdays : weekdaySets(size)) {
                 ProgramStore.Program program = stored(weekdays);
-                for (DayOfWeek added : DayOfWeek.values()) {
-                    assertThat(add(program, added)).as(size + " days " + weekdays + " + " + added).isEmpty();
+                DayOfWeek added = EnumSet.complementOf(EnumSet.copyOf(weekdays)).iterator().next();
+                Set<DayOfWeek> all = EnumSet.copyOf(weekdays);
+                all.add(added);
+                List<ProgramGenerator.PlannedDay> expected = ProgramGenerator.generate(all, templates, catalog, P);
+
+                List<ProgramStore.Day> days = replan(program, added).orElseThrow();
+
+                String where = size + " days " + weekdays + " + " + added;
+                assertThat(days).as(where).extracting(ProgramStore.Day::weekday)
+                        .containsExactlyElementsOf(expected.stream().map(ProgramGenerator.PlannedDay::weekday).toList());
+                assertThat(days).as(where).extracting(ProgramStore.Day::nameKey)
+                        .containsExactlyElementsOf(expected.stream().map(ProgramGenerator.PlannedDay::nameKey).toList());
+                for (int d = 0; d < days.size(); d++) {
+                    assertThat(days.get(d).exercises()).as(where + " day " + d)
+                            .extracting(ProgramStore.PlannedExercise::exerciseId, ProgramStore.PlannedExercise::sets)
+                            .containsExactlyElementsOf(expected.get(d).exercises().stream().map(move -> Tuple.tuple(move.exerciseId(), move.sets())).toList());
                 }
+                assertThat(ProgramReviews.suggestions(new ProgramStore.Program(program.id(), program.source(), days), catalog, P))
+                        .as(where + ": a number of days the user may choose is never flagged").extracting(ProgramReviews.Suggestion::finding)
+                        .doesNotContain(ProgramReview.Finding.TOO_MANY_DAYS);
             }
         }
     }
 
     @Test
-    void canAddIsTrueOnlyForAGeneratedProgramOfTheStartingNumberOfDaysEachOnItsOwnWeekday() {
-        // Program.canAddDay (K-1013): the phone offers the add only where the server will do it, by this one rule.
-        for (int size = 1; size <= 6; size++) {
+    void theTwoDayProgramTheFirstWeekAddsToIsNeverReplannedItsAddWasMeasuredToBalance() {
+        assertThat(FROM).as("add_day_balanced_days (Levent, ADR-073 Ek 9)").isEqualTo(2);
+        for (Set<DayOfWeek> weekdays : weekdaySets(FROM)) {
+            ProgramStore.Program program = storedWithStartingWeights(weekdays);
+            for (DayOfWeek added : EnumSet.complementOf(EnumSet.copyOf(weekdays))) {
+                assertThat(replan(program, added)).as(weekdays + " + " + added).isEqualTo(add(program, added));
+            }
+        }
+    }
+
+    @Test
+    void aReplanKeepsEachDaysIdOnItsWeekdayAndEachKeptMovesRowAndTargetOnceAndGivesTheRestNewRows() {
+        ProgramStore.Program program = storedWithStartingWeights(EnumSet.of(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY));
+        Map<DayOfWeek, UUID> ids = program.days().stream().collect(Collectors.toMap(ProgramStore.Day::weekday, ProgramStore.Day::id));
+        Set<UUID> rows = program.days().stream().flatMap(day -> day.exercises().stream()).map(ProgramStore.PlannedExercise::id).collect(Collectors.toSet());
+
+        List<ProgramStore.Day> days = replan(program, DayOfWeek.SATURDAY).orElseThrow();
+
+        assertThat(days).extracting(ProgramStore.Day::weekday).containsExactly(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY, DayOfWeek.SATURDAY);
+        days.stream().filter(day -> day.weekday() != DayOfWeek.SATURDAY)
+                .forEach(day -> assertThat(day.id()).as(day.weekday().name()).isEqualTo(ids.get(day.weekday())));
+        assertThat(onWeekday(days, DayOfWeek.SATURDAY).id()).as("the new day is stored with a new id").isNull();
+        List<ProgramStore.PlannedExercise> kept = days.stream().flatMap(day -> day.exercises().stream()).filter(move -> move.id() != null).toList();
+        assertThat(kept).extracting(ProgramStore.PlannedExercise::id).doesNotHaveDuplicates().isSubsetOf(rows);
+        assertThat(kept).as("a kept compound move keeps its target and starting weight").filteredOn(move -> compound(move.exerciseId()))
+                .allSatisfy(move -> {
+                    assertThat(move.nextLoadKg()).isEqualByComparingTo("45");
+                    assertThat(move.startLoadKg()).isEqualByComparingTo("40");
+                });
+        assertThat(days.stream().flatMap(day -> day.exercises().stream()).filter(move -> move.id() == null)).as("a move the program did not have")
+                .isNotEmpty();
+    }
+
+    @Test
+    void aProgramTheUserChangedOrBroughtIsNeverReplannedAndKeepsEveryDay() {
+        ProgramStore.Program generated = stored(EnumSet.of(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY));
+        assertThat(ProgramDayAdds.asGenerated(generated, templates, catalog, P)).isTrue();
+
+        // A move with other sets: an edit.
+        List<ProgramStore.Day> edited = new ArrayList<>(generated.days());
+        ProgramStore.Day first = edited.getFirst();
+        List<ProgramStore.PlannedExercise> moves = new ArrayList<>(first.exercises());
+        moves.set(0, moves.getFirst().withSets(moves.getFirst().sets() + 1));
+        edited.set(0, new ProgramStore.Day(first.id(), first.nameKey(), first.name(), first.weekday(), moves));
+        ProgramStore.Program changed = new ProgramStore.Program(generated.id(), generated.source(), edited);
+        ProgramStore.Program own = new ProgramStore.Program(generated.id(), ProgramStore.Source.OWN, generated.days());
+
+        for (ProgramStore.Program program : List.of(changed, own)) {
+            assertThat(ProgramDayAdds.asGenerated(program, templates, catalog, P)).as(program.source().name()).isFalse();
+            List<ProgramStore.Day> days = replan(program, DayOfWeek.SATURDAY).orElseThrow();
+            assertThat(days).hasSize(4);
+            assertThat(days.stream().filter(day -> day.id() != null).toList()).as("every day the program had, as it was").isEqualTo(program.days());
+            assertThat(onWeekday(days, DayOfWeek.SATURDAY).nameKey()).as("the four-day template's fourth day")
+                    .isEqualTo(templates.forDays(4).orElseThrow().get(3).nameKey());
+        }
+    }
+
+    @Test
+    void sixDaysBecomeTheSevenDayTemplateAndSevenDaysAreTheMost() {
+        ProgramStore.Program six = stored(EnumSet.of(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY, DayOfWeek.FRIDAY,
+                DayOfWeek.SATURDAY));
+
+        List<ProgramStore.Day> seven = replan(six, DayOfWeek.SUNDAY).orElseThrow();
+
+        assertThat(seven).extracting(ProgramStore.Day::nameKey)
+                .containsExactlyElementsOf(templates.forDays(7).orElseThrow().stream().map(ProgramTemplates.Day::nameKey).toList());
+        assertThat(ProgramDayAdds.canAdd(new ProgramStore.Program(six.id(), six.source(), seven), templates)).as("the eighth day").isFalse();
+    }
+
+    @Test
+    void canAddIsTrueForAnyProgramBelowSevenDaysEachOnItsOwnWeekday() {
+        // Program.canAddDay (K-1013, K-1060): the phone offers the add only where the server will do it, by this one rule.
+        for (int size = 1; size <= 7; size++) {
             for (Set<DayOfWeek> weekdays : weekdaySets(size)) {
-                assertThat(ProgramDayAdds.canAdd(stored(weekdays), P)).as(size + " days " + weekdays).isEqualTo(size == FROM);
+                assertThat(ProgramDayAdds.canAdd(stored(weekdays), templates)).as(size + " days " + weekdays).isEqualTo(size < 7);
             }
         }
         ProgramStore.Program generated = stored(EnumSet.of(DayOfWeek.MONDAY, DayOfWeek.FRIDAY));
-        assertThat(ProgramDayAdds.canAdd(new ProgramStore.Program(generated.id(), ProgramStore.Source.OWN, generated.days()), P)).as("own program").isFalse();
+        assertThat(ProgramDayAdds.canAdd(new ProgramStore.Program(generated.id(), ProgramStore.Source.OWN, generated.days()), templates)).as("own program")
+                .isTrue();
 
         List<ProgramStore.Day> unplaced = new ArrayList<>(generated.days());
         ProgramStore.Day last = unplaced.removeLast();
         unplaced.add(new ProgramStore.Day(last.id(), last.nameKey(), last.name(), null, last.exercises()));
-        assertThat(ProgramDayAdds.canAdd(new ProgramStore.Program(generated.id(), generated.source(), unplaced), P)).as("a day on no weekday").isFalse();
+        assertThat(ProgramDayAdds.canAdd(new ProgramStore.Program(generated.id(), generated.source(), unplaced), templates)).as("a day on no weekday")
+                .isFalse();
 
         ProgramStore.Day first = generated.days().getFirst();
         List<ProgramStore.Day> twice = List.of(first, new ProgramStore.Day(UUID.randomUUID(), first.nameKey(), first.name(), first.weekday(), first.exercises()));
-        assertThat(ProgramDayAdds.canAdd(new ProgramStore.Program(generated.id(), generated.source(), twice), P)).as("two days on one weekday").isFalse();
+        assertThat(ProgramDayAdds.canAdd(new ProgramStore.Program(generated.id(), generated.source(), twice), templates)).as("two days on one weekday")
+                .isFalse();
     }
 
     @Test
     void anAddIsDoneForAFreeWeekdayExactlyWhenTheProgramCanTakeADay() {
         // One rule for both: wherever canAdd, every free weekday adds (a taken one is the endpoint's own refusal); wherever not, none does.
-        for (int size = 1; size <= 6; size++) {
+        for (int size = 1; size <= 7; size++) {
             for (Set<DayOfWeek> weekdays : weekdaySets(size)) {
                 ProgramStore.Program program = stored(weekdays);
                 for (DayOfWeek day : DayOfWeek.values()) {
-                    boolean expected = ProgramDayAdds.canAdd(program, P) && !weekdays.contains(day);
+                    boolean expected = ProgramDayAdds.canAdd(program, templates) && !weekdays.contains(day);
                     assertThat(add(program, day).isPresent()).as(size + " days " + weekdays + " + " + day).isEqualTo(expected);
+                    assertThat(replan(program, day).isPresent()).as(size + " days " + weekdays + " + " + day + ", replanned").isEqualTo(expected);
                 }
             }
         }
     }
 
     @Test
-    void theNumberOfDaysTheAddStartsFromHasATemplateForOneMoreDay() {
-        assertThat(FROM).as("add_day_from_days (Levent, ADR-073 Ek 9)").isEqualTo(2);
-        assertThat(templates.forDays(FROM + 1)).as("the template the new day comes from").isPresent();
-    }
-
-    @Test
-    void theUsersOwnProgramATakenWeekdayAndADayOnNoWeekdayAreRefused() {
+    void aTakenWeekdayAndADayOnNoWeekdayAreRefusedAndTheUsersOwnProgramTakesTheDay() {
         ProgramStore.Program generated = stored(EnumSet.of(DayOfWeek.MONDAY, DayOfWeek.FRIDAY));
         assertThat(add(generated, DayOfWeek.WEDNESDAY)).as("generated, free weekday").isPresent();
 
+        // ADR-090 Ek 1: the user's own program takes the generator's day too (the empty day of Edit was the missing flow).
         ProgramStore.Program own = new ProgramStore.Program(generated.id(), ProgramStore.Source.OWN, generated.days());
-        assertThat(add(own, DayOfWeek.WEDNESDAY)).as("own program").isEmpty();
+        assertThat(add(own, DayOfWeek.WEDNESDAY)).as("own program").isPresent();
 
         assertThat(add(generated, DayOfWeek.FRIDAY)).as("taken weekday").isEmpty();
 

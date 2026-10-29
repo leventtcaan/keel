@@ -11,6 +11,8 @@ function param<T>(key: string): T {
 export const notificationParams = {
   trainingLeadMinutes: param<number>('training_reminder_lead_minutes'),
   checkInTime: param<string>('check_in_reminder_time'),
+  /** The usual training time the reminder goes by when the user gave none (K-1060). */
+  defaultTrainingTime: param<string>('default_training_time'),
   quietDays: param<number>('quiet_days'),
   cueMaxChars: param<number>('cue_max_chars'),
   restResumeWeeks: param<number>('rest_resume_weeks'),

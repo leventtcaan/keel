@@ -443,6 +443,9 @@
     "retry": "Try again"
   },
   "train": {
+    "addDay": "Add a day",
+    "addDayLabel": "Add a training day",
+    "restNote": "A rest day helps you grow faster.",
     "kept": "You're offline. This is your program as it was last loaded.",
     "loading": "Loading your program…",
     "failed": "Your program couldn't load.",
@@ -552,6 +555,7 @@
     "targetsLost": "A new rep range, or a move taken out and added again, clears the next weight target of: {moves}. Your next session sets a new one.",
     "saveAnyway": "Save anyway",
     "keepEditing": "Keep editing",
+    "saveFirst": "Save your changes first, then add the day.",
     "addingDay": "We can't fill in a new day for this plan. {day} is marked: add its moves, then save.",
     "editConflictKept": "Today's workout is on a day you moved or removed, so this can't be saved yet. Your edits are still here.",
     "editConflictCleared": "Your program changed since you opened it. Your edits were cleared. Here it is again.",
@@ -618,6 +622,20 @@
     "failed": "Something went wrong on our side. Try again in a moment.",
     "close": "Close",
     "label": "Swap {move}"
+  },
+  "addDay": {
+    "title": "Add a day",
+    "hint": "Pick the day. Your coach fills it with moves.",
+    "addOn": "Add {day}",
+    "addOnLabel": "Add a training day on {day}",
+    "suggested": "A good spot between your sessions.",
+    "other": "Or another day",
+    "added": "{day} added.",
+    "full": "Every day of your week is a training day.",
+    "conflict": "That day can't be added now. Pick another, or check Edit.",
+    "offline": "No connection. Try again in a moment.",
+    "failed": "Couldn't add the day. Try again.",
+    "close": "Close"
   },
   "todayChange": {
     "title": "Change today",
@@ -2167,6 +2185,10 @@
     },
     "legs_b": {
       "name": "Legs B",
+      "split": "Push / Pull / Legs"
+    },
+    "arms_shoulders": {
+      "name": "Arms and shoulders",
       "split": "Push / Pull / Legs"
     }
   },

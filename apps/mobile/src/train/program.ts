@@ -5,6 +5,7 @@
  */
 import type { components } from '@/api/schema';
 import { has, t } from '@/copy';
+import { workoutParams } from '@/train/params';
 import { repsText } from '@/train/reps';
 import { type UnitSystem, formatLoad } from '@/units/units';
 
@@ -33,6 +34,14 @@ export function programNotes(program: Schemas['Program'], declared?: Schemas['De
   const dose = declared?.busyDose;
   if (dose !== undefined && program.restUntil === undefined) notes.push(busyNote(dose));
   return notes;
+}
+
+/**
+ * The short note a heavy week carries (ADR-090 #3): a program that trains more days than rest_note_above_days (6 and 7; the
+ * user's own choice, never asked to come down) says a rest day helps them grow. None for fewer days.
+ */
+export function restNote(program: Schemas['Program']): string | null {
+  return program.days.length > workoutParams.restNoteAboveDays ? t('train.restNote') : null;
 }
 
 /** A generated day by its copy key, whole as the server sends it (programDays.<day>.name); the user's own day by the name they gave it. */

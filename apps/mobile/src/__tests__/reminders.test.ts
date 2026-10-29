@@ -603,3 +603,71 @@ describe("the week's weigh-ins on the training reminder (ADR-089 Ek 2, K-1058)",
     expect(device.scheduled).toEqual([]);
   });
 });
+
+describe("the program's training days (ADR-090 Ek 1, K-1060)", () => {
+  const trainingIds = (device: Device) => device.scheduled.filter((r) => r.kind === 'training').map((r) => r.id);
+
+  test("the reminders go by the program's weekdays when the program is read, not by the profile's older list", async () => {
+    const { reminders, device } = await make();
+    await reminders.keepSchedule(schedule); // the profile: Monday
+    await reminders.turnOn();
+    expect(trainingIds(device)).toEqual(['training-MONDAY']);
+
+    await reminders.keepProgramDays(['THURSDAY', 'TUESDAY']);
+
+    expect(trainingIds(device)).toEqual(['training-TUESDAY', 'training-THURSDAY']);
+  });
+
+  test('a day added or moved in the program is planned at once; seven days are seven reminders', async () => {
+    const { reminders, device } = await make();
+    await reminders.keepSchedule(schedule);
+    await reminders.turnOn();
+    await reminders.keepProgramDays(['MONDAY', 'THURSDAY']);
+    await reminders.keepProgramDays(['MONDAY', 'WEDNESDAY', 'THURSDAY']);
+    expect(trainingIds(device)).toEqual(['training-MONDAY', 'training-WEDNESDAY', 'training-THURSDAY']);
+
+    await reminders.keepProgramDays(['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']);
+    expect(trainingIds(device)).toHaveLength(7);
+  });
+
+  test('the same days again change nothing: no rebuild of what is scheduled', async () => {
+    const { reminders, device } = await make();
+    await reminders.keepSchedule(schedule);
+    await reminders.turnOn();
+    await reminders.keepProgramDays(['TUESDAY']);
+    const replaced = device.replaced;
+    await reminders.keepProgramDays(['TUESDAY']);
+    expect(device.replaced).toBe(replaced);
+  });
+
+  test('a program with no day on a weekday: the profile\'s days stand in', async () => {
+    const { reminders, device } = await make();
+    await reminders.keepSchedule(schedule);
+    await reminders.turnOn();
+    await reminders.keepProgramDays(['FRIDAY']);
+    await reminders.keepProgramDays([]);
+    expect(trainingIds(device)).toEqual(['training-MONDAY']);
+  });
+
+  test('kept on the phone for the next start, and gone with a sign-out', async () => {
+    const { reminders, kv } = await make();
+    await reminders.keepProgramDays(['TUESDAY']);
+    expect(JSON.parse(kv.items.get('reminders.programDays') ?? 'null')).toEqual(['TUESDAY']);
+
+    await reminders.forget();
+
+    expect(kv.items.has('reminders.programDays')).toBe(false);
+  });
+
+  test('a new user, no usual time and the program read: the training reminder is planned all the same', async () => {
+    const { usualTrainingTime: _none, ...withoutTime } = schedule;
+    const { reminders, device } = await make();
+    await reminders.keepSchedule(withoutTime);
+    await reminders.keepProgramDays(['WEDNESDAY', 'SATURDAY']);
+    await reminders.turnOn();
+    expect(device.scheduled.filter((r) => r.kind === 'training').map((r) => r.when)).toEqual([
+      { weekday: 4, hour: 17, minute: 30 },
+      { weekday: 7, hour: 17, minute: 30 },
+    ]);
+  });
+});

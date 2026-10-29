@@ -348,19 +348,21 @@ class ProgramController {
     }
 
     /**
-     * One more training day on the weekday (K-1012, ADR-073 Ek 9), for the first week's "add a day" call: the day is what the
-     * generator gives that weekday for the program's weekdays and this one (no rule of its own), a move the program has a
-     * starting weight for has it in the day too, the days the program has stay as they are, and the add is a change of the
-     * log an undo takes out. CONFLICT: the user's own program, a program of another number of days than add_day_from_days
-     * (two: the one add checked to come out balanced), a weekday the program trains, a day on no weekday.
+     * One more training day on the weekday (K-1012, ADR-073 Ek 9; K-1060, ADR-090 Ek 1): the one way a day is added, from the
+     * Train tab, Edit and the first week's call. The content is the generator's (ProgramDayAdds): a program as the generator
+     * made it becomes the plan for one more day on its weekdays and this one (each day keeps its weekday, id, and a move its
+     * target); a program the user changed or brought keeps every day and gets the generator's day for this weekday. A move the
+     * program has a starting weight for has it in the new day. The add is a change of the log an undo takes out. CONFLICT: a
+     * weekday the program trains, a day on no weekday, no template for one more day (seven days are the most), a workout of
+     * a day it would re-lay started today.
      */
     @PostMapping("/v1/program/days")
     Program addDay(AccountId account, @RequestBody NewProgramDay request) {
         require(request.weekday() != null);
         Parameters p = parametersFor(account);
         Optional<GymStore.Gym> gym = gyms.current(account);
-        return view(account, reviews.addDay(account,
-                program -> ProgramDayAdds.added(program, request.weekday(), templates, catalog, p, startingWeightReps.reps(), gym)));
+        return view(account, reviews.addDay(account, (program, replan) -> ProgramDayAdds.added(program, request.weekday(), templates, catalog, p,
+                startingWeightReps.reps(), gym, replan), today(account), zone(account)));
     }
 
     /**
@@ -533,7 +535,7 @@ class ProgramController {
                 TrainingChanges.inForce(changes, TrainingChanges.Kind.HOLD_LOAD, today).map(TrainingChanges.Change::startsOn).orElse(null),
                 backAfterBreak ? Boolean.TRUE : null, reviews.review(account, program, back.parameters()),
                 cardioThisWeek(account, program, facts, today, back.parameters()).orElse(null), today, TodayChanges.monday(today), week,
-                ProgramDayAdds.canAdd(program, back.parameters()));
+                ProgramDayAdds.canAdd(program, templates));
     }
 
     /**

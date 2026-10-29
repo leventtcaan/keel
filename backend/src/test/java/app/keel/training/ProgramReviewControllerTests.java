@@ -150,26 +150,39 @@ class ProgramReviewControllerTests {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void anEditedGeneratedProgramStaysGenerated() throws Exception {
-        // Six training days: the review brings them down to training_days_max; the days left keep their names.
+        // K-1060 (ADR-090 #3): the review no longer brings six days down (6 and 7 are the user's own), so the change applied here is
+        // a rep range outside K-21, which the user's own edit of the generated program put there; the days keep their names.
         AccountId account = TestSessions.newAccount();
         Map<String, Object> generated = map(send("POST", account, "/v1/program/generate", Map.of("trainingDays",
-                List.of("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"))));
-        assertThat(suggestions(generated)).contains("TOO_MANY_DAYS");
+                List.of("MONDAY", "TUESDAY", "THURSDAY", "FRIDAY"))));
+        assertThat(suggestions(generated)).isEmpty();
+        List<Map<String, Object>> edit = days(generated).stream().map(day -> {
+            Map<String, Object> edited = new HashMap<>(Map.of("id", day.get("id"), "weekday", day.get("weekday")));
+            edited.put("exercises", ((List<Map<String, Object>>) day.get("exercises")).stream().map(move -> {
+                Map<String, Object> one = new HashMap<>(Map.of("id", move.get("id"), "exerciseId", move.get("exerciseId"), "sets", move.get("baseSets")));
+                one.put("reps", move.get("exerciseId").equals("squat") ? Map.of("min", 3, "max", 5) : move.get("reps"));
+                return one;
+            }).toList());
+            return edited;
+        }).toList();
+        MvcTestResult patched = send("PATCH", account, "/v1/program", Map.of("days", edit));
+        assertThat(patched.getResponse().getStatus()).as(patched.getResponse().getContentAsString()).isEqualTo(200);
+        Map<String, Object> edited = map(patched);
+        assertThat(suggestions(edited)).containsExactly("REP_RANGE:squat");
 
-        Map<String, Object> program = map(send("POST", account, "/v1/program/review/apply", Map.of("reviewId", reviewId(generated),
-                "suggestionIds", List.of("TOO_MANY_DAYS"))));
+        Map<String, Object> program = map(send("POST", account, "/v1/program/review/apply", Map.of("reviewId", reviewId(edited),
+                "suggestionIds", List.of("REP_RANGE:squat"))));
 
         assertThat(program).containsEntry("source", "GENERATED");
-        assertThat(days(program)).hasSize(P.wholeNumber(ParameterKey.TRAINING_DAYS_MAX)).allSatisfy(day -> assertThat(day).containsKey("nameKey"));
-        assertThat(appliedIds(program)).containsExactly("TOO_MANY_DAYS");
-        // Fewer days ask fewer sessions a week from now (K-535); undone, as many as before, from then.
-        assertThat(programs.history(account)).extracting(ProgramPeriod::sessionsPerWeek)
-                .containsExactly(6, P.wholeNumber(ParameterKey.TRAINING_DAYS_MAX));
+        assertThat(days(program)).hasSize(4).allSatisfy(day -> assertThat(day).containsKey("nameKey"));
+        assertThat(appliedIds(program)).containsExactly("REP_RANGE:squat");
+        assertThat(move(program, "squat")).containsEntry("reps", Map.of("min", P.wholeNumber(ParameterKey.REP_RANGE_COMPOUND_MIN),
+                "max", P.wholeNumber(ParameterKey.REP_RANGE_COMPOUND_MAX)));
+        assertThat(programs.history(account)).as("the same four days a week throughout").extracting(ProgramPeriod::sessionsPerWeek).containsOnly(4);
 
-        assertThat(days(undo(account, Map.of()))).hasSize(6);
-        assertThat(programs.history(account)).extracting(ProgramPeriod::sessionsPerWeek)
-                .containsExactly(6, P.wholeNumber(ParameterKey.TRAINING_DAYS_MAX), 6);
+        assertThat(days(undo(account, Map.of()))).hasSize(4);
         assertThat(programs.history(account)).extracting(ProgramPeriod::from).isSorted();
     }
 
@@ -429,6 +442,7 @@ class ProgramReviewControllerTests {
         var request = switch (method) {
             case "GET" -> mvc.get();
             case "PUT" -> mvc.put();
+            case "PATCH" -> mvc.patch();
             case "DELETE" -> mvc.delete();
             default -> mvc.post();
         };

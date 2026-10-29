@@ -91,8 +91,8 @@ describe('where the walk starts (prototype: 3 days; K-1049)', () => {
 });
 
 describe('training days: one question, how many (ADR-072 #4)', () => {
-  test('the limit is 6, as the program contract allows', () => {
-    expect(onboardingParams.maxTrainingDays).toBe(6);
+  test('the limit is 7, as the program contract allows (ADR-090 #3)', () => {
+    expect(onboardingParams.maxTrainingDays).toBe(7);
   });
 
   test('the days step needs only the days placed: last month and a usual time are no longer asked', () => {

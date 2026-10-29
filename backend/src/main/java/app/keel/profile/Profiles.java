@@ -1,6 +1,7 @@
 package app.keel.profile;
 
 import app.keel.shared.AccountId;
+import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
@@ -43,6 +44,17 @@ public class Profiles {
     /** When the plan was first shown (K-993, ADR-077 Ek 3); empty until the app says so, and without a profile. */
     public Optional<Instant> planSeenAt(AccountId account) {
         return store.planSeenAt(account);
+    }
+
+    /**
+     * The training days kept as the program has them (ADR-090 Ek 1): the program is where the days are made and changed, and
+     * the profile's list follows it, so what still reads the profile's days (the cardio and first week fallbacks, a profile read)
+     * never disagrees with the program. A no-op without a profile or with no day to keep.
+     */
+    public void keepTrainingDays(AccountId account, Set<DayOfWeek> days) {
+        if (!days.isEmpty()) {
+            store.setTrainingDays(account, List.copyOf(days));
+        }
     }
 
     /** When the training days were last set: they are asked for from then on, at the earliest (K-512). */
