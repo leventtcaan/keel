@@ -52,11 +52,13 @@ public final class ExerciseCatalog {
     private final Map<String, Exercise> byId;
     private final Map<String, Region> regions;
     private final Set<String> arms;
+    private final List<Set<String>> swapGroups;
 
-    private ExerciseCatalog(Map<String, Exercise> byId, Map<String, Region> regions, Set<String> arms) {
+    private ExerciseCatalog(Map<String, Exercise> byId, Map<String, Region> regions, Set<String> arms, List<Set<String>> swapGroups) {
         this.byId = byId;
         this.regions = regions;
         this.arms = arms;
+        this.swapGroups = swapGroups;
     }
 
     /** The catalog from its files (file name → parsed YAML); IllegalArgumentException naming the first problem. */
@@ -84,6 +86,15 @@ public final class ExerciseCatalog {
         Set<String> arms = Set.copyOf((List<String>) vocabulary.getOrDefault("arm_muscles", List.of()));
         for (String arm : arms) {
             require(regions.containsKey(arm), "muscles.yaml: arm " + arm + " is not a muscle");
+        }
+        List<Set<String>> swapGroups = new ArrayList<>();
+        for (Object group : (List<Object>) vocabulary.getOrDefault("swap_groups", List.of())) {
+            Set<String> muscles = Set.copyOf((List<String>) group);
+            require(muscles.size() > 1, "muscles.yaml: a swap group names two muscles or more");
+            for (String muscle : muscles) {
+                require(regions.containsKey(muscle), "muscles.yaml: swap group muscle " + muscle + " is not a muscle");
+            }
+            swapGroups.add(muscles);
         }
         List<Exercise> moves = new ArrayList<>();
         filesByName.forEach((file, document) -> {
@@ -125,12 +136,21 @@ public final class ExerciseCatalog {
                 require(byId.containsKey(alternative), move.id() + ": alternative " + alternative + " is not in the catalog");
             }
         }
-        return new ExerciseCatalog(byId, Map.copyOf(regions), arms);
+        return new ExerciseCatalog(byId, Map.copyOf(regions), arms, List.copyOf(swapGroups));
     }
 
     /** The muscles with their own weekly minimum, arm_weekly_sets_min (data/muscles.yaml arm_muscles; G1 K-61). */
     public Set<String> armMuscles() {
         return arms;
+    }
+
+    /**
+     * Whether training {@code other} stands in for training {@code muscle} when a move is taken (data/muscles.yaml
+     * swap_groups, G1 K-77): the same muscle, or two muscles of one group — a vertical pull works the lats, a row the upper
+     * back and the lats, and a taken lat pulldown is well replaced by a row.
+     */
+    public boolean standsIn(String muscle, String other) {
+        return muscle.equals(other) || swapGroups.stream().anyMatch(group -> group.contains(muscle) && group.contains(other));
     }
 
     public List<Exercise> all() {

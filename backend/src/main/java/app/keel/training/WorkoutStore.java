@@ -145,6 +145,19 @@ class WorkoutStore {
                 .param("paused", pausedSeconds).param("id", id).param("account", account.value()).update();
     }
 
+    /** The moves found taken in the session (#674, ADR-090 Ek 2), as the finish gave them, sorted; none for a session before it. */
+    void keepTaken(AccountId account, UUID id, Set<String> takenExerciseIds) {
+        jdbc.sql("update training.workout set taken_exercise_ids = :taken where id = :id and account_id = :account")
+                .param("taken", takenExerciseIds.stream().sorted().toArray(String[]::new)).param("id", id).param("account", account.value()).update();
+    }
+
+    /** What {@link #keepTaken} kept for the session. */
+    List<String> taken(AccountId account, UUID id) {
+        return jdbc.sql("select taken_exercise_ids from training.workout where id = :id and account_id = :account")
+                .param("id", id).param("account", account.value())
+                .query((row, n) -> List.of((String[]) row.getArray("taken_exercise_ids").getArray())).optional().orElse(List.of());
+    }
+
     /** Discards a workout with its sets (K-998, on delete cascade); false when there was none of the account's to discard. */
     boolean delete(AccountId account, UUID id) {
         return jdbc.sql("delete from training.workout where id = :id and account_id = :account")

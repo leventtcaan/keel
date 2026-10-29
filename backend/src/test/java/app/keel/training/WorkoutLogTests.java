@@ -183,6 +183,29 @@ class WorkoutLogTests {
     }
 
     @Test
+    void theFinishKeepsTheMovesFoundTakenAndRefusesWhatIsNotAMove() throws Exception {
+        // #674 (ADR-090 Ek 2): "Taken" in the workout; kept with the session for a later suggestion, each move once.
+        AccountId account = TestSessions.newAccount();
+        String workout = start(account, "2026-09-30T15:40:00Z");
+        String finish = "/v1/workouts/" + workout + "/finish";
+        WorkoutStore store = context.getBean(WorkoutStore.class);
+        assertThat(store.taken(account, UUID.fromString(workout))).isEmpty();
+
+        assertThat(post(account, finish, Map.of("endedAt", "2026-09-30T16:40:00Z", "takenExerciseIds", List.of("nope")))).as("not a move").hasStatus(400);
+        assertThat(post(account, finish, Map.of("endedAt", "2026-09-30T16:40:00Z", "takenExerciseIds", List.of("lat_pulldown", "lat_pulldown"))))
+                .as("twice").hasStatus(400);
+        assertThat(store.taken(account, UUID.fromString(workout))).as("a refused finish keeps nothing").isEmpty();
+
+        assertThat(post(account, finish, Map.of("endedAt", "2026-09-30T16:40:00Z", "takenExerciseIds", List.of("lat_pulldown", "bench_press")))).hasStatusOk();
+        assertThat(store.taken(account, UUID.fromString(workout))).containsExactly("bench_press", "lat_pulldown");
+        // A later finish without it (a replay) keeps it; an empty list clears it.
+        assertThat(post(account, finish, Map.of("endedAt", "2026-09-30T16:45:00Z"))).hasStatusOk();
+        assertThat(store.taken(account, UUID.fromString(workout))).containsExactly("bench_press", "lat_pulldown");
+        assertThat(post(account, finish, Map.of("endedAt", "2026-09-30T16:45:00Z", "takenExerciseIds", List.of()))).hasStatusOk();
+        assertThat(store.taken(account, UUID.fromString(workout))).isEmpty();
+    }
+
+    @Test
     void twoDiscardsAtOnceAreOneDiscardAndANotFound() throws Exception {
         // #509 review: both waiting on the same row must not deadlock (a 500 the phone would send again).
         AccountId account = TestSessions.newAccount();
