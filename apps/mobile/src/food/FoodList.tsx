@@ -20,6 +20,8 @@ export type FoodRowData = {
   /** What a screen reader says for each press. */
   openLabel: string;
   logLabel?: string;
+  /** The row itself logs (a past meal has no portion step): it carries a plus that is drawn, not a second button. */
+  logOnOpen?: boolean;
   testID?: string;
 };
 
@@ -62,6 +64,12 @@ function FoodRow({ row, first }: { row: FoodRowData; first: boolean }) {
         <Icon name="plus.circle.fill" tone="accent" />
       </Pressable>
     );
+  const drawnPlus =
+    row.logOnOpen === true && row.onLog === undefined ? (
+      <View style={styles.plus}>
+        <Icon name="plus.circle.fill" tone="accent" />
+      </View>
+    ) : null;
   const line = first ? null : <View style={[styles.line, { backgroundColor: color.line }]} />;
   return (
     <View style={styles.row}>
@@ -72,6 +80,7 @@ function FoodRow({ row, first }: { row: FoodRowData; first: boolean }) {
         {marker}
       </Pressable>
       {plus}
+      {drawnPlus}
     </View>
   );
 }

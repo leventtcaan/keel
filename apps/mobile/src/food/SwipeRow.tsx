@@ -51,11 +51,12 @@ class SwipeBody extends Component<BodyProps> {
   render() {
     const { children, label, onDelete, testID, surface, warn, onWarn } = this.props;
     return (
-      <View testID={testID} style={styles.wrap}>
+      <View style={styles.wrap}>
         <View style={[styles.behind, { backgroundColor: warn }]}>
           <Text style={[styles.word, { color: onWarn }]}>{label}</Text>
         </View>
         <Animated.View
+          testID={testID}
           {...this.pan.panHandlers}
           accessibilityActions={[{ name: 'delete', label }]}
           onAccessibilityAction={(event) => event.nativeEvent.actionName === 'delete' && onDelete()}

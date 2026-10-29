@@ -76,11 +76,10 @@ export function FoodBrowse({ recent, frequent, favorites, again, onSuggestion, o
     testID: `again-${meal.id}`,
     name: meal.items.map((item) => item.name).join(' · '),
     detail: t('meal.browse.againLine', { slot: t(`food.slot.${meal.slot}`), day: dayLabel(localDay(new Date(meal.eatenAt)), today), kcal: kcalText(mid(meal.kcal)) }),
-    // A past meal has no portion step: one tap logs it again as it was.
+    // A past meal has no portion step: one tap on the row logs it again as it was.
     onOpen: () => onLogAgain(meal),
-    onLog: () => onLogAgain(meal),
+    logOnOpen: true,
     openLabel: t('meal.browse.againSpoken', { slot: t(`food.slot.${meal.slot}`), items: meal.items.map((item) => item.name).join('; ') }),
-    logLabel: t('meal.browse.againSpoken', { slot: t(`food.slot.${meal.slot}`), items: meal.items.map((item) => item.name).join('; ') }),
   }));
   const rows = tab === 'recent' ? suggestionRows(recent, 'recent') : tab === 'frequent' ? suggestionRows(frequent, 'frequent') : tab === 'favorites' ? favoriteRows : againRows;
 
