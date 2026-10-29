@@ -75,3 +75,6 @@ gram), kayıt hatırlatması yok, 7 gün antrenman akışı yok.
   "Günde N öğün": yalnız kullanıcının kullandığı öğünler gösterilir, bir tane eklenebilir; kalori hedefi varsa öğün başına ipucu yalnız küçük bir satırdır.
 - **Reddedilen:** favoriyi telefonda tutmak (cihazlar arası kaybolur, dışa aktarma ve silme dışında kalır) · hızlı kaloriyi "Quick add" adlı gizli bir besin satırıyla yapmak (veritabanını kirletir,
   aramada çıkar) · gün toplamını telefonda toplamak (sunucunun `eaten` aralığı var).
+- **Bilinen sınırlar (Ek 3):** This week'teki "Food left" satırı hâlâ aralık gösterir (karar/özet yüzeyi, #5'in "karar ekranında" kapsamı; Levent isterse tek sayıya çevrilir) ·
+  öğün hatırlatması öğrenmesi geçmiş güne yazılan kayıtları da sayar (sabit saatle yazıldıkları için medyanı biraz çeker) · hatırlatma yalnız uygulama açılınca tazelenir
+  (bugün ve yarın tarihle planlıdır; birkaç gün açılmazsa son bilinen öğünlerle çalar) · gün toplamı ve öğün başı ipucu hedef yoksa gösterilmez (yalnız yenen).
