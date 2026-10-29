@@ -201,39 +201,52 @@ export default function TrainScreen() {
         <Text accessibilityRole="header" style={[styles.heading, { color: color.text }]}>
           {t('train.thisWeek')}
         </Text>
-        {rows.map((row) => {
-          const done = sessionDone(program, row, data?.records ?? []);
-          const tag = row.session.skipped === true ? t('train.skippedTag') : row.session.moved === true ? t('train.moved') : null;
-          const label = t('train.startDay', { day: dayName(row.day) });
-          const startRow =
-            pick && startable(program, row, data?.records ?? []) ? (
-              <Button label={t('train.startThis')} accessibilityLabel={label} variant="text" onPress={() => start(row.day.id)} />
-            ) : null;
-          // A session done carries its tick, as the week strip's day does (the same words: it is done).
-          const tick = done ? (
-            <View accessible accessibilityLabel={t('train.doneTag')} style={styles.doneMark}>
-              <SymbolView name="checkmark" size={tokens.type.bodySmall} tintColor={color.accent} weight="bold" />
-              <Text style={[styles.small, { color: color.muted }]}>{t('train.doneTag')}</Text>
-            </View>
-          ) : null;
-          // The session's size at a glance: its moves, and Cardio when the program puts cardio on its day (T-7).
-          const count = sessionMoves(row.day, row.session).length;
-          const moves = t(count === 1 ? 'train.moveCount.one' : 'train.moveCount.other', { count });
-          const cardio = program.cardio?.sessions.some((s) => s.weekday === row.weekday) === true;
-          return (
-            <View key={row.day.id} style={[styles.row, { borderColor: color.line }]}>
-              <View style={styles.grow}>
-                <Text style={[styles.text, { color: color.text }]}>
-                  {t('train.weekRow', { weekday: t(`programEditor.weekdayShort.${row.weekday}`), day: dayName(row.day) })}
-                </Text>
-                <Text style={[styles.small, { color: color.textSecondary }]}>{cardio ? t('train.weekRowCardio', { moves }) : moves}</Text>
+        {/* One card, a row per session (K-1053): the date on a badge, the session, its state; as the app's grouped lists. */}
+        <View style={[styles.weekCard, { backgroundColor: color.surface }]}>
+          {rows.map((row, index) => {
+            const done = sessionDone(program, row, data?.records ?? []);
+            const skipped = row.session.skipped === true;
+            // A day gone by without its session is only quieter, never marked (U7: no blame).
+            const past = program.today !== undefined && row.session.date < program.today && !done;
+            const tag = skipped ? t('train.skippedTag') : row.session.moved === true ? t('train.moved') : null;
+            const label = t('train.startDay', { day: dayName(row.day) });
+            const startRow =
+              pick && startable(program, row, data?.records ?? []) ? (
+                <Button label={t('train.startThis')} accessibilityLabel={label} variant="text" onPress={() => start(row.day.id)} />
+              ) : null;
+            // A session done carries its tick, as the week strip's day does (the same words: it is done).
+            const tick = done ? (
+              <View accessible accessibilityLabel={t('train.doneTag')} style={styles.doneMark}>
+                <SymbolView name="checkmark.circle.fill" size={tokens.icon.small} tintColor={color.accent} />
+                <Text style={[styles.small, styles.bold, { color: color.accent }]}>{t('train.doneTag')}</Text>
               </View>
-              {tag !== null && <Text style={[styles.small, { color: color.muted }]}>{tag}</Text>}
-              {tick}
-              {startRow}
-            </View>
-          );
-        })}
+            ) : null;
+            // The session's size at a glance: its moves, and Cardio when the program puts cardio on its day (T-7).
+            const count = sessionMoves(row.day, row.session).length;
+            const moves = t(count === 1 ? 'train.moveCount.one' : 'train.moveCount.other', { count });
+            const cardio = program.cardio?.sessions.some((s) => s.weekday === row.weekday) === true;
+            const quiet = past || skipped;
+            const badge = done
+              ? { backgroundColor: color.accent, color: color.onAccent }
+              : { backgroundColor: quiet ? color.track : color.raise, color: quiet ? color.muted : color.text };
+            return (
+              <View key={row.day.id} style={[styles.row, index > 0 && { borderTopWidth: tokens.border.hairline, borderColor: color.line }]}>
+                <View style={[styles.badge, { backgroundColor: badge.backgroundColor }]} accessible={false}>
+                  <Text style={[styles.badgeNumber, { color: badge.color }]}>{Number(row.session.date.slice(8, 10))}</Text>
+                </View>
+                <View style={styles.grow}>
+                  <Text style={[styles.text, styles.bold, { color: quiet ? color.textSecondary : color.text }]}>
+                    {t('train.weekRow', { weekday: t(`programEditor.weekdayShort.${row.weekday}`), day: dayName(row.day) })}
+                  </Text>
+                  <Text style={[styles.small, { color: color.muted }]}>{cardio ? t('train.weekRowCardio', { moves }) : moves}</Text>
+                </View>
+                {tag !== null && <Text style={[styles.small, { color: color.muted }]}>{tag}</Text>}
+                {tick}
+                {startRow}
+              </View>
+            );
+          })}
+        </View>
       </View>
     </Screen>
   );
@@ -292,8 +305,12 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   body: { padding: tokens.space.lg, paddingBottom: PLUS_CLEARANCE, gap: tokens.space.md },
   note: { gap: tokens.space.sm },
-  week: { gap: tokens.space.xs },
-  row: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, minHeight: tokens.size.touch, borderTopWidth: tokens.border.hairline },
+  week: { gap: tokens.space.sm },
+  weekCard: { borderRadius: tokens.radius.card, paddingHorizontal: tokens.space.md },
+  row: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.md, minHeight: tokens.size.row + tokens.space.md, paddingVertical: tokens.space.sm },
+  badge: { width: tokens.size.touch, height: tokens.size.touch, borderRadius: tokens.radius.button, alignItems: 'center', justifyContent: 'center' },
+  // A large number, in the display face (ADR-070 #5).
+  badgeNumber: { fontFamily: tokens.font.display, fontSize: tokens.type.heading, fontVariant: ['tabular-nums'] },
   grow: { flex: 1 },
   doneMark: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.xs },
   loading: { alignSelf: 'flex-start', minHeight: tokens.size.touch },
