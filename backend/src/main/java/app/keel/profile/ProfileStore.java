@@ -41,6 +41,25 @@ class ProfileStore {
                 .query((row, n) -> row.getObject("training_days_since", OffsetDateTime.class).toInstant()).optional();
     }
 
+    /**
+     * The training days set to these, the rest of the profile as it is (the program is where the days are made, ADR-090 Ek 1):
+     * {@code training_days_since} moves only when the days differ, as a save of the whole profile does. False without a profile.
+     */
+    boolean setTrainingDays(AccountId account, List<DayOfWeek> days) {
+        Optional<ProfileController.Profile> profile = find(account);
+        if (profile.isEmpty()) {
+            return false;
+        }
+        if (new java.util.HashSet<>(profile.get().schedule().trainingDays()).equals(new java.util.HashSet<>(days))) {
+            return true;
+        }
+        return jdbc.sql("""
+                update profile.profile set training_days = :days, updated_at = :now, training_days_since = :now
+                where account_id = :account""")
+                .param("days", days.stream().sorted().map(Enum::name).toArray(String[]::new))
+                .param("now", clock.instant().atOffset(ZoneOffset.UTC)).param("account", account.value()).update() == 1;
+    }
+
     /** When onboarding finished: the first save, which a later one never moves (K-990); none for a profile saved before it was kept. */
     Optional<Instant> onboardedAt(AccountId account) {
         return jdbc.sql("select onboarded_at from profile.profile where account_id = :account").param("account", account.value())

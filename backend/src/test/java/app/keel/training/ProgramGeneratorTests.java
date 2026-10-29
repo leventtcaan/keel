@@ -81,9 +81,10 @@ class ProgramGeneratorTests {
     }
 
     @Test
-    void sevenDaysOrNoneIsNotAProgram() {
-        // G1 K-70: rest days are part of the program; seven training days leave none.
-        assertThatIllegalArgumentException().isThrownBy(() -> ProgramGenerator.generate(EnumSet.allOf(DayOfWeek.class), templates, catalog, P));
+    void sevenDaysIsAProgramAndNoDaysIsNot() {
+        // ADR-090 #3: seven training days are the user's choice (a short note on the screen says what a rest day does); none is no program.
+        assertThat(ProgramGenerator.generate(EnumSet.allOf(DayOfWeek.class), templates, catalog, P)).hasSize(7)
+                .extracting(ProgramGenerator.PlannedDay::weekday).containsExactly(DayOfWeek.values());
         assertThatIllegalArgumentException().isThrownBy(() -> ProgramGenerator.generate(EnumSet.noneOf(DayOfWeek.class), templates, catalog, P));
     }
 }

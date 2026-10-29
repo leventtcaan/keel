@@ -202,17 +202,29 @@ class ProgramReviews {
         return stored;
     }
 
+    /** How a day is added: the program's days with the new one from the program as it is, and whether the program may be replanned. */
+    @FunctionalInterface
+    interface DayAdd {
+        Optional<List<ProgramStore.Day>> to(ProgramStore.Program program, boolean replan);
+    }
+
     /**
-     * A day added (K-1012, ADR-073 Ek 9), under the program's lock: {@code add} gives the program's days with the new one from
-     * the program as it is (empty: the day can't be added, CONFLICT, nothing changed). Stored in place of the program like an
-     * edit, and logged as one, so an undo takes the day out again. No day moves or goes, so this week's sessions need no re-laying.
+     * A day added (K-1012, ADR-073 Ek 9; K-1060, ADR-090 Ek 1), under the program's lock: {@code add} gives the program's days
+     * with the new one from the program as it is (empty: the day can't be added, CONFLICT, nothing changed). Stored in place of
+     * the program like an edit, and logged as one, so an undo takes the day out again (a replanned program whole, back to the
+     * plan it was). It may replan a program as the generator made it, unless a workout was started today: that day's moves must
+     * not change under the session. A replan keeps each day on its weekday, so no day is re-laid, but its moves can change, so
+     * this week's changes are re-checked against the plan as an edit's are.
      */
     @Transactional
-    ProgramStore.Program addDay(AccountId account, Function<ProgramStore.Program, Optional<List<ProgramStore.Day>>> add) {
+    ProgramStore.Program addDay(AccountId account, DayAdd add, LocalDate today, ZoneId zone) {
         ProgramStore.Program current = programs.locked(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
-        List<ProgramStore.Day> days = add.apply(current).orElseThrow(() -> new ApiException(ErrorCode.CONFLICT));
+        boolean startedToday = !workouts.between(account, today.atStartOfDay(zone).toInstant(), today.plusDays(1).atStartOfDay(zone).toInstant()).isEmpty();
+        List<ProgramStore.Day> days = add.to(current, !startedToday).orElseThrow(() -> new ApiException(ErrorCode.CONFLICT));
+        requireStartedDaysStay(account, current, new ProgramStore.Program(current.id(), current.source(), days), today, zone);
         ProgramStore.Program stored = programs.rewrite(account, days);
         changes.add(account, List.of(Step.edit(current, stored)), clock.instant());
+        relay(account, current, stored, TodayChanges.monday(today));
         return stored;
     }
 
@@ -274,7 +286,20 @@ class ProgramReviews {
      */
     static List<Suggestion> suggestions(ProgramStore.Program program, ExerciseCatalog catalog, Parameters parameters) {
         Engine engine = engine(program, catalog);
-        return ProgramReview.review(engine.program(), engine.catalog(), parameters).stream().map(ProgramReviews::view).toList();
+        return shown(engine, parameters).stream().limit(parameters.wholeNumber(ParameterKey.REVIEW_MAX_SUGGESTIONS)).map(ProgramReviews::view)
+                .toList();
+    }
+
+    /**
+     * Every finding that is the user's to see, in priority order. A number of days the user may choose (training_days_free_max,
+     * ADR-090 #3) is never one: 6 and 7 days are the user's own, a short note on the screen says what a rest day does. The
+     * engine's rule on the days (G6 K-36) is not changed; it speaks only above what the user can choose.
+     */
+    private static List<ProgramReview.Suggestion> shown(Engine engine, Parameters parameters) {
+        int free = parameters.wholeNumber(ParameterKey.TRAINING_DAYS_FREE_MAX);
+        int trained = (int) engine.program().days().stream().filter(day -> !day.moves().isEmpty()).count();
+        return ProgramReview.findings(engine.program(), engine.catalog(), parameters).stream()
+                .filter(suggestion -> suggestion.finding() != ProgramReview.Finding.TOO_MANY_DAYS || trained > free).toList();
     }
 
     /**
@@ -332,7 +357,7 @@ class ProgramReviews {
     /** The pick found in the review of {@code work} and applied; empty when the review does not hold it. */
     private static Optional<Step> pick(ProgramStore.Program work, String pick, ExerciseCatalog catalog, Parameters parameters, int targetRir) {
         Engine engine = engine(work, catalog);
-        return ProgramReview.findings(engine.program(), engine.catalog(), parameters).stream().filter(suggestion -> id(suggestion).equals(pick))
+        return shown(engine, parameters).stream().filter(suggestion -> id(suggestion).equals(pick))
                 .findFirst().map(found -> new Step(view(found), work, applyOne(work, engine, found, catalog, targetRir)));
     }
 

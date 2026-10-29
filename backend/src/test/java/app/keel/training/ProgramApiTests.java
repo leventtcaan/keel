@@ -89,13 +89,29 @@ class ProgramApiTests {
     }
 
     @Test
-    void noDaysSevenDaysOrADayTwiceIsNotAProgram() {
+    void noDaysOrADayTwiceIsNotAProgram() {
         AccountId account = TestSessions.newAccount();
 
         assertThat(send(account, "POST", "/v1/program/generate", Map.of("trainingDays", List.of()))).hasStatus(400);
-        assertThat(send(account, "POST", "/v1/program/generate", Map.of("trainingDays",
-                List.of("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY")))).hasStatus(400);
         assertThat(send(account, "POST", "/v1/program/generate", Map.of("trainingDays", List.of("MONDAY", "MONDAY")))).hasStatus(400);
+    }
+
+    @Test
+    void sevenDaysAreAProgramTheUserMayChoose() throws Exception {
+        // ADR-090 #3: the seven-day template; the week has no rest day and the review does not ask to take one away.
+        AccountId account = TestSessions.newAccount();
+
+        MvcTestResult generated = send(account, "POST", "/v1/program/generate", Map.of("trainingDays",
+                List.of("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY")));
+
+        assertThat(generated).hasStatusOk();
+        Map<String, Object> program = map(generated);
+        List<Map<String, Object>> days = (List<Map<String, Object>>) program.get("days");
+        assertThat(days).hasSize(7).allSatisfy(day -> assertThat((List<?>) day.get("exercises")).isNotEmpty());
+        assertThat(days).extracting(day -> day.get("nameKey")).contains("programDays.arms_shoulders.name");
+        assertThat((List<Map<String, Object>>) ((Map<String, Object>) program.get("review")).get("suggestions")).extracting(s -> s.get("id"))
+                .doesNotContain("TOO_MANY_DAYS");
+        assertThat(program).containsEntry("canAddDay", false);
     }
 
     @Test

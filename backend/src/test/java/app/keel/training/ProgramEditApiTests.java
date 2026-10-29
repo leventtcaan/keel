@@ -420,50 +420,128 @@ class ProgramEditApiTests {
     }
 
     @Test
-    void aDayCanNotBeAddedOnATakenWeekdayToTheUsersOwnProgramOrOtherThanToTwoDaysAndNothingChanges() throws Exception {
+    void aDayCanNotBeAddedOnATakenWeekdayOrToSevenDaysAndNothingChanges() throws Exception {
         AccountId account = TestSessions.newAccount();
         Map<String, Object> program = twoDays(account);
         assertThat(send(account, "POST", "/v1/program/days", Map.of("weekday", "FRIDAY"))).hasStatus(409);
         assertThat(map(send(account, "GET", "/v1/program", null))).isEqualTo(program);
 
+        // Seven days are the most (ADR-090 #3): every weekday is taken.
+        AccountId seven = TestSessions.newAccount();
+        assertThat(send(seven, "POST", "/v1/program/generate", Map.of("trainingDays",
+                List.of("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY")))).hasStatusOk();
+        Map<String, Object> full = map(send(seven, "GET", "/v1/program", null));
+        assertThat(send(seven, "POST", "/v1/program/days", Map.of("weekday", "SUNDAY"))).hasStatus(409);
+        assertThat(map(send(seven, "GET", "/v1/program", null))).isEqualTo(full);
+    }
+
+    @Test
+    void theUsersOwnProgramTakesTheGeneratorsDayAndEveryDayItHadStaysAsItWas() throws Exception {
+        // ADR-090 Ek 1: the empty day of Edit was the missing flow; an own program is added to, never replanned.
         AccountId own = TestSessions.newAccount();
         assertThat(send(own, "PUT", "/v1/program", Map.of("days", List.of(
                 Map.of("name", "Upper", "weekday", "MONDAY", "exercises", List.of(Map.of("exerciseId", "bench_press", "sets", 3, "reps", Map.of("min", 6, "max", 10)))),
                 Map.of("name", "Lower", "weekday", "THURSDAY", "exercises", List.of(Map.of("exerciseId", "squat", "sets", 3, "reps", Map.of("min", 6, "max", 10)))))))).hasStatusOk();
         Map<String, Object> ownProgram = map(send(own, "GET", "/v1/program", null));
-        assertThat(send(own, "POST", "/v1/program/days", Map.of("weekday", "TUESDAY"))).hasStatus(409);
-        assertThat(map(send(own, "GET", "/v1/program", null))).isEqualTo(ownProgram);
 
-        // Three to six days: the user adds the day in Edit (ADR-073 Ek 9).
+        Map<String, Object> added = map(send(own, "POST", "/v1/program/days", Map.of("weekday", "TUESDAY")));
+
+        assertThat(added).containsEntry("source", "OWN");
+        assertThat(days(added)).extracting(day -> day.get("weekday")).containsExactly("MONDAY", "TUESDAY", "THURSDAY");
+        assertThat(days(added).get(1)).containsKey("nameKey");
+        assertThat(moves(added, 1)).isNotEmpty();
+        List<Map<String, Object>> others = new ArrayList<>(days(added));
+        others.remove(1);
+        assertThat(others).as("the user's own days, as they were").isEqualTo(days(ownProgram));
+    }
+
+    @Test
+    void aGeneratedProgramOfThreeToSixDaysBecomesTheProgramForOneMoreDayAndTheAddIsUndoneWhole() throws Exception {
+        // ADR-090 Ek 1: not the two-day step (add_day_balanced_days, added to as it was): the plan for one more day.
         List<String> week = List.of("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY");
         for (int size = 3; size <= 6; size++) {
-            AccountId other = TestSessions.newAccount();
-            assertThat(send(other, "POST", "/v1/program/generate", Map.of("trainingDays", week.subList(0, size)))).hasStatusOk();
-            Map<String, Object> before = map(send(other, "GET", "/v1/program", null));
-            assertThat(send(other, "POST", "/v1/program/days", Map.of("weekday", "SUNDAY"))).as(size + " days").hasStatus(409);
-            assertThat(map(send(other, "GET", "/v1/program", null))).as(size + " days: nothing changed").isEqualTo(before);
+            AccountId account = TestSessions.newAccount();
+            assertThat(send(account, "POST", "/v1/program/generate", Map.of("trainingDays", week.subList(0, size)))).hasStatusOk();
+            Map<String, Object> before = map(send(account, "GET", "/v1/program", null));
+
+            Map<String, Object> added = map(send(account, "POST", "/v1/program/days", Map.of("weekday", week.get(size))));
+
+            String where = size + " days";
+            assertThat(added).as(where).containsEntry("source", "GENERATED").containsEntry("id", before.get("id"));
+            assertThat(days(added)).as(where).hasSize(size + 1);
+            assertThat(days(added)).as(where).extracting(day -> day.get("weekday")).containsExactlyElementsOf(week.subList(0, size + 1));
+            assertThat(days(added)).as(where).allSatisfy(day -> assertThat(day).containsKey("nameKey").doesNotContainKey("name"));
+            assertThat(days(added).stream().limit(size).map(day -> day.get("id")).toList()).as(where + ": each day keeps its id on its weekday")
+                    .isEqualTo(days(before).stream().map(day -> day.get("id")).toList());
+            assertThat(map(added.get("review")).get("suggestions")).as(where).isEqualTo(List.of());
+            assertThat(edits(added)).as(where).hasSize(1);
+
+            Map<String, Object> back = map(map(send(account, "POST", "/v1/program/review/undo", Map.of("changeId", edits(added).getFirst().get("id")))).get("program"));
+            assertThat(days(back)).as(where + ": undone, the plan as it was").isEqualTo(days(before));
         }
     }
 
     @Test
+    void theProfilesTrainingDaysFollowTheProgramWhateverChangesItsDays() throws Exception {
+        // ADR-090 Ek 1: one place the days are made; the profile's list is kept as the program's weekdays.
+        AccountId account = TestSessions.newAccount();
+        assertThat(send(account, "PUT", "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "MALE", "heightCm", 180, "birthYear", 1996, "programChoice",
+                "BUILD_ONE_FOR_ME", "units", "METRIC", "schedule", Map.of("trainingDays", List.of("MONDAY"), "checkInDay", "MONDAY", "timeZone", "UTC"))))
+                .hasStatusOk();
+        assertThat(profileDays(account)).containsExactly("MONDAY");
+
+        Map<String, Object> program = twoDays(account);
+        assertThat(profileDays(account)).as("generate").containsExactlyInAnyOrder("MONDAY", "FRIDAY");
+
+        Map<String, Object> edited = map(send(account, "PATCH", "/v1/program", edit(program, days -> {
+            days.getFirst().put("weekday", "TUESDAY");
+            return days;
+        })));
+        assertThat(profileDays(account)).as("edit").containsExactlyInAnyOrder("TUESDAY", "FRIDAY");
+
+        Map<String, Object> added = map(send(account, "POST", "/v1/program/days", Map.of("weekday", "WEDNESDAY")));
+        assertThat(profileDays(account)).as("add a day").containsExactlyInAnyOrder("TUESDAY", "WEDNESDAY", "FRIDAY");
+
+        assertThat(send(account, "POST", "/v1/program/review/undo", Map.of("changeId", edits(added).getLast().get("id")))).hasStatusOk();
+        assertThat(profileDays(account)).as("undo").containsExactlyInAnyOrder("TUESDAY", "FRIDAY");
+        assertThat(edited).isNotNull();
+
+        assertThat(send(account, "POST", "/v1/program/generate", Map.of("trainingDays", List.of("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY",
+                "SATURDAY", "SUNDAY")))).hasStatusOk();
+        assertThat(profileDays(account)).as("seven days").hasSize(7);
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<String> profileDays(AccountId account) throws Exception {
+        Map<String, Object> profile = map(send(account, "GET", "/v1/profile", null));
+        return (List<String>) ((Map<String, Object>) profile.get("schedule")).get("trainingDays");
+    }
+
+    @Test
     void theProgramSaysWhetherADayCanBeAddedByTheRuleTheAddUses() throws Exception {
-        // K-1013: Program.canAddDay is true exactly where POST /v1/program/days would add (a free weekday given).
+        // K-1013, K-1060: Program.canAddDay is true exactly where POST /v1/program/days would add (a free weekday given).
         AccountId account = TestSessions.newAccount();
         twoDays(account);
         assertThat(map(send(account, "GET", "/v1/program", null))).containsEntry("canAddDay", true);
         assertThat(send(account, "POST", "/v1/program/days", Map.of("weekday", "WEDNESDAY"))).hasStatusOk();
-        assertThat(map(send(account, "GET", "/v1/program", null))).as("three days now").containsEntry("canAddDay", false);
+        assertThat(map(send(account, "GET", "/v1/program", null))).as("three days now, one more still fits").containsEntry("canAddDay", true);
 
         AccountId own = TestSessions.newAccount();
         assertThat(send(own, "PUT", "/v1/program", Map.of("days", List.of(
                 Map.of("name", "Upper", "weekday", "MONDAY", "exercises", List.of(Map.of("exerciseId", "bench_press", "sets", 3, "reps", Map.of("min", 6, "max", 10)))),
                 Map.of("name", "Lower", "weekday", "THURSDAY", "exercises", List.of(Map.of("exerciseId", "squat", "sets", 3, "reps", Map.of("min", 6, "max", 10)))))))).hasStatusOk();
-        assertThat(map(send(own, "GET", "/v1/program", null))).as("two days, but the user's own").containsEntry("canAddDay", false);
-        assertThat(send(own, "POST", "/v1/program/days", Map.of("weekday", "TUESDAY"))).hasStatus(409);
+        assertThat(map(send(own, "GET", "/v1/program", null))).as("two days of the user's own").containsEntry("canAddDay", true);
 
-        AccountId three = TestSessions.newAccount();
-        assertThat(send(three, "POST", "/v1/program/generate", Map.of("trainingDays", List.of("MONDAY", "TUESDAY", "WEDNESDAY")))).hasStatusOk();
-        assertThat(map(send(three, "GET", "/v1/program", null))).as("three days").containsEntry("canAddDay", false);
+        AccountId floating = TestSessions.newAccount();
+        assertThat(send(floating, "PUT", "/v1/program", Map.of("days", List.of(
+                Map.of("name", "Upper", "exercises", List.of(Map.of("exerciseId", "bench_press", "sets", 3, "reps", Map.of("min", 6, "max", 10)))))))).hasStatusOk();
+        assertThat(map(send(floating, "GET", "/v1/program", null))).as("a day on no weekday").containsEntry("canAddDay", false);
+        assertThat(send(floating, "POST", "/v1/program/days", Map.of("weekday", "TUESDAY"))).hasStatus(409);
+
+        AccountId seven = TestSessions.newAccount();
+        assertThat(send(seven, "POST", "/v1/program/generate", Map.of("trainingDays",
+                List.of("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY")))).hasStatusOk();
+        assertThat(map(send(seven, "GET", "/v1/program", null))).as("seven days").containsEntry("canAddDay", false);
     }
 
     @Test

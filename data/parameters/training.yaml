@@ -120,12 +120,18 @@ parameters:
     tag: urun
     source: "arastirma/01-urun-ilkeleri.md#26"
     note: "SEÇİM, ürün kararı (agent), K-1014, ADR-075 Ek 10; sayının araştırma kaynağı yok. Antrenman özetinde 'son seansa göre %' yalnız iki seansta da yapılan hareketlerin setleri, her iki seansın çalışma setlerinin en az bu kadarıysa söylenir; ortak hareket sayısı short_session_moves'a ulaşıyorsa bu pay aranmaz. İki setlik yarım seans (tek ortak hareket, günün beşte biri) karşılaştırılmaz. 'Short on time' (ilk short_session_moves hareket, setler tam) gerçek program günlerinde günün yalnız 0.33-0.44'ünü kapsar (3 günlük programın 10 hareketli günü: 9 set / 25), bu pay eşiğin altındadır; kısa sürümü karşılaştırılabilir yapan ortak hareket sayısıdır. Atlanan bir hareket seansı eşiğin üstünde bırakır, yüzde ortak hareketler üzerinden hesaplanır. Dahil olmayan (yalnız bugün ya da yalnız geçen sefer yapılan) hareket yüzdeye girmez. Değer değişirse ProgressSummaryTests tablosu güncellenir."
-  - key: add_day_from_days
+  - key: add_day_balanced_days
     value: 2
     unit: days_per_week
     tag: urun
     source: "arastirma/01-urun-ilkeleri.md#26"
-    note: "SEÇİM, ürün kararı (Levent, ADR-073 Ek 9, KABUL 2026-10-10); sayının araştırma kaynağı yok. 'Add a day' ucu (POST /v1/program/days, K-1012) yeni günü yalnız programın bu kadar günü varken kendisi ekler: 2 günlük üretilmiş programdan 3 güne, 1. hafta kararının ana yolu (ADR-077 Ek 1; 3 taban, G6 K-36). Başka gün sayısında 409 verir, kullanıcı Edit › Days'e gider. Sebep: yeni gün N+1 günlük şablonun o hafta günündeki günüdür ve mevcut günlere bakmaz; ardışık aynı bölge (iki bacak günü üst üste) ve haftada 3 alt vücut günü çıkabilir (simülasyon: 3'ten 4'e 140 diziliminin 20'si, 4'ten 5'e 105'in 30'u, 5'ten 6'ya 42'nin 12'si). Yeni koçluk kuralı yazılmadı (U14). Değer değişirse N+1 günlük şablon bulunmalı (ProgramDayAddsTests)."
+    note: "SEÇİM, ürün kararı (Levent, ADR-073 Ek 9 KABUL 2026-10-10; ADR-090 Ek 1, K-1060); sayının araştırma kaynağı yok. 'Add a day' ucu (POST /v1/program/days) üretilmiş bir programa gün eklerken, programın bu kadar günü varsa eski günleri olduğu gibi bırakıp yalnız yeni günü ekler: 2 günlük programdan 3 güne, 1. hafta kararının ana yolu (ADR-077 Ek 1). Sebep: bu geçiş ölçüldü ve dengeli çıktı (21 gün çifti x 5 boş hafta günü, inceleme hiçbir öneri vermez). Yeni gün N+1 günlük şablonun o hafta günündeki günüdür ve mevcut günlere bakmaz; başka sayılarda ardışık aynı bölge çıkabilir (simülasyon: 3'ten 4'e 140 diziliminin 20'si, 4'ten 5'e 105'in 30'u, 5'ten 6'ya 42'nin 12'si) ve bazı kaslar eksik kalır, bu yüzden şablondan sapmamış üretilmiş program başka sayıda gün için N+1 günlük programa yeniden kurulur (günler hafta günlerinde ve kimlikleriyle kalır, hareket satırları ve hedefler taşınır). Kullanıcının değiştirdiği ya da getirdiği programa her sayıda yalnız gün eklenir, günler olduğu gibi kalır. Yeni koçluk kuralı yazılmadı (U14). Değer değişirse N+1 günlük şablon bulunmalı (ProgramDayAddsTests)."
+  - key: training_days_free_max
+    value: 7
+    unit: days_per_week
+    tag: urun
+    source: "arastirma/01-urun-ilkeleri.md#26"
+    note: "SEÇİM, ürün kararı (Levent, ADR-090 #3, KABUL 2026-10-29); sayının araştırma kaynağı yok. Kullanıcının kendi seçebildiği en çok gün (program_days_max ile aynı): program incelemesi (training_days_max) bu sayıya kadar günü birleştirmeyi ÖNERMEZ, çünkü 6-7 gün serbesttir ve ekranda kısa bir dinlenme notuyla anılır (workout.json rest_note_above_days). Güray'ın 5 günlük tavanı (G6 K-36) motorda durur, ama kullanıcının seçtiği günü kendi başına bozmaz: yalnız bu sayının üstü işaretlenir."
   - key: default_training_days_per_week
     value: 4
     unit: days_per_week

@@ -2162,6 +2162,10 @@
     "legs_b": {
       "name": "Legs B",
       "split": "Push / Pull / Legs"
+    },
+    "arms_shoulders": {
+      "name": "Arms and shoulders",
+      "split": "Push / Pull / Legs"
     }
   },
   "foodEstimate": {

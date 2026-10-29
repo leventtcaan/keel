@@ -364,14 +364,21 @@ class ProgramReviewChangesTests {
 
     @Test
     void aDayWithAnOwnMoveStaysWhenItsOtherMovesGoToOtherDays() {
-        // Six full-body days: the review merges the lightest (the last); the user's own move on it stays where it is.
+        // The upper/lower week plus four light shoulder days: eight days, more than the user may choose (training_days_free_max;
+        // ADR-090 #3), so the review still merges the lightest. The user's own move is on the first of them to go; the day stays.
         ProgramStore.PlannedExercise own = isolation("custom:neck-curl", 2);
         List<ProgramStore.Day> days = new ArrayList<>();
-        for (int d = 0; d < 6; d++) {
-            days.add(day("Day " + d, DayOfWeek.of(d + 1), compound("bench_press", 2), compound("squat", 2), compound("seated_row", 2)));
-        }
-        days.set(5, new ProgramStore.Day(days.get(5).id(), null, "Day 5", DayOfWeek.SATURDAY,
-                List.of(compound("bench_press", 2), compound("squat", 2), compound("seated_row", 2), own)));
+        days.add(day("Upper A", DayOfWeek.MONDAY, compound("bench_press", 3), compound("barbell_row", 3), compound("overhead_press", 2),
+                isolation("barbell_curl", 3), isolation("triceps_pushdown", 3)));
+        days.add(day("Lower A", DayOfWeek.TUESDAY, compound("squat", 3), compound("romanian_deadlift", 2), isolation("standing_calf_raise", 3)));
+        days.add(day("Upper B", DayOfWeek.WEDNESDAY, compound("dumbbell_bench_press", 3), compound("seated_row", 3),
+                compound("dumbbell_shoulder_press", 2), isolation("dumbbell_curl", 3), isolation("overhead_triceps_extension", 3)));
+        days.add(day("Lower B", DayOfWeek.THURSDAY, compound("leg_press", 3), isolation("lying_leg_curl", 2), isolation("seated_calf_raise", 3)));
+        days.add(day("Delts A", DayOfWeek.FRIDAY, isolation("lateral_raise", 2), isolation("face_pull", 2)));
+        days.add(day("Delts B", DayOfWeek.SATURDAY, isolation("cable_lateral_raise", 2), isolation("reverse_pec_deck", 2)));
+        days.add(day("Delts C", DayOfWeek.SUNDAY, isolation("lateral_raise", 2), isolation("rear_delt_fly", 2)));
+        days.add(new ProgramStore.Day(UUID.randomUUID(), null, "Delts D", null,
+                List.of(isolation("cable_lateral_raise", 2), isolation("face_pull", 2), own)));
         ProgramStore.Program program = new ProgramStore.Program(UUID.randomUUID(), ProgramStore.Source.OWN, days);
 
         ProgramStore.Program after = ProgramReviews.apply(program, List.of("TOO_MANY_DAYS"), catalog, P).program();
