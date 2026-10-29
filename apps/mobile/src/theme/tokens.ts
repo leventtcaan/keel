@@ -124,6 +124,8 @@ export const tokens = {
     displaySmall: 24,
     /** The number on an onboarding day box (prototype `.numtile b`). */
     tile: 56,
+    /** The photo timer's countdown over the viewfinder (prototype `.cnt`), in the display face. */
+    countdown: 140,
     button: 16,
     buttonSmall: 14,
     /** The stepper's value, in the display face (prototype `.stp .sv b`). */
@@ -157,6 +159,10 @@ export const tokens = {
     outline: 1.5,
     /** The chosen recommended answer's accent ring (prototype `.opt.hero[aria-pressed]`). */
     ring: 3,
+    /** The shutter's ring (prototype `.sh`). */
+    shutter: 4,
+    /** The photo guide's outline (prototype `.sil`). */
+    silhouette: 2.2,
   },
   size: {
     track: 6,
@@ -186,6 +192,8 @@ export const tokens = {
     valueTile: 36,
     timelineDot: 16,
     planRadio: 24,
+    /** The progress photo's camera (K-1055, prototype yeniden-yapim §10): the shutter. */
+    shutter: 78,
     /** Sets per muscle: the muscle's name column and the count column beside its bar. */
     barName: 92,
     barCount: 44,
@@ -203,6 +211,8 @@ export const tokens = {
     dim: 0.5,
     /** The dark panel behind a sticker's words, so they read on any photo (K-975). */
     scrim: 0.45,
+    /** The photo guide's outline while the phone is not straight, over the live picture (K-1055): present, not shouting. */
+    silhouette: 0.55,
   },
   /** The app's few movements of its own, each skipped under Reduce Motion (K-807). */
   motion: {

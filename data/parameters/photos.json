@@ -47,6 +47,42 @@
       "tag": "urun",
       "source": "arastirma/ham/H1-olcum.md#2.4",
       "note": "The camera's JPEG compression for a progress photo (expo-camera takePictureAsync quality, 0-1). Kept on the phone only and compared by eye; high enough that the outline is sharp. Product choice."
+    },
+    {
+      "key": "photo_level_exit_deg",
+      "value": 4,
+      "unit": "degrees",
+      "tag": "urun",
+      "source": "arastirma/ham/H1-olcum.md#2.4",
+      "note": "How far the smoothed lean may drift before the capture screen stops calling the phone straight (hysteresis around photo_level_tolerance_deg, K-1055). Without a gap, a hand hovering at the tolerance flipped the word on every reading. Twice the tolerance: a stand-held phone stays straight through a nudge, a real lean is called. Product choice, no source for the number."
+    },
+    {
+      "key": "photo_level_smoothing",
+      "value": 0.15,
+      "unit": "ratio",
+      "tag": "urun",
+      "source": "arastirma/ham/H1-olcum.md#2.4",
+      "note": "The weight of each new accelerometer reading in the capture screen's smoothed lean (exponential moving average, 0-1; K-1055): fifteen parts in a hundred of the new reading, the rest of what was. At photo_level_update_ms apart it follows a lean in about a second and ignores the tremor and a single jolt in between (one reading up to about 26 degrees off does not move a straight phone past photo_level_exit_deg). Product choice."
+    },
+    {
+      "key": "photo_timer_options",
+      "value": [
+        0,
+        3,
+        10
+      ],
+      "unit": "seconds",
+      "tag": "urun",
+      "source": "arastirma/ham/H1-olcum.md#2.4",
+      "note": "The self-timer choices on the capture screen (K-1055), 0 meaning off: none for someone holding the phone, a short one, and the stand's. photo_timer_seconds and photo_timer_hand_seconds must be among them. Product choice."
+    },
+    {
+      "key": "photo_timer_hand_seconds",
+      "value": 0,
+      "unit": "seconds",
+      "tag": "urun",
+      "source": "arastirma/ham/H1-olcum.md#2.4",
+      "note": "The timer the capture screen starts with when someone else holds the phone (K-1055): off, 0 seconds. The stand's start is photo_timer_seconds. Product choice."
     }
   ]
 }
