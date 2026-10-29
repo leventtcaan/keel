@@ -35,7 +35,7 @@ export function ConsistencyGrid({ weeks }: { weeks: Week[] }) {
     [t('progress.consistency.other'), 'MISSED'],
   ];
   return (
-    <Section testID="section-consistency" title={t('progress.consistency.title')} aside={t('progress.consistency.range', { count: weeks.length })}>
+    <Section card testID="section-consistency" title={t('progress.consistency.title')} aside={t('progress.consistency.range', { count: weeks.length })}>
       <View
         testID="consistency-grid"
         accessible

@@ -44,7 +44,7 @@ export function WeightCard({ part, units }: { part: WeightPart; units: UnitSyste
       </Text>
     );
   return (
-    <Section testID="section-weight" title={t('progress.weight.chartTitle')} aside={t('progress.weight.average')}>
+    <Section card testID="section-weight" title={t('progress.weight.chartTitle')} aside={t('progress.weight.average')}>
       <Text testID="weight-latest" style={[styles.big, { color: color.text }]}>
         {last.label}
       </Text>

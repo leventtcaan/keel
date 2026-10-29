@@ -39,7 +39,7 @@ export function CallsCard({ items }: { items: components['schemas']['Decision'][
     );
   });
   return (
-    <Section testID="section-calls" title={t('progress.calls.title')}>
+    <Section card testID="section-calls" title={t('progress.calls.title')}>
       <Card testID="calls-list">{rows}</Card>
     </Section>
   );

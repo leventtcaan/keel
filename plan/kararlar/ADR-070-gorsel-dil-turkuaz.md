@@ -108,3 +108,11 @@ her ekran simülatör görüntüsü prototiple yan yana envanterde.
   verilmez, Continue seçimle açılır.
 - Boy tekerleği **100-250 cm** kalır (prototipte 140-210): profil bu aralığı kabul eder, dar aralık kısa ve uzun boyluları dışarıda bırakır.
 - Plan ekranında "Decide for me"nin seçtiği hedefin adı sözleşmede alan bekler (`StartingTarget.phase`); telefon kendi hesaplamaz (U1). Ayrı iş.
+
+## Ek 4 · Progress'in parçaları kart (2026-10-29, agent; Levent'in build 6 bulgusu, K-1054)
+- Ek 2 #7, #8 Progress'in bölümlerini kartsız, sayfaya düz başlık ve içerik olarak koymuştu ("her parça aynı gri kutu olmasın"). Levent build 6'da
+  bunları kas haritasının altında güçsüz, statik, uygulamadan kopuk buldu: üstteki dört hedef kutusu kart, altı düz metin, ekran tek parça okunmuyor.
+- Karar: Progress'in parçaları (kaslar, güç, setler, tartı, haftalar, kararlar, fotoğraflar) yüzey kartı; başlık kartın içinde, hedef kutularının
+  başlık stiliyle (15 pt kalın, muted). `Section` bileşeni `card` ile; Ayarlar'daki bölümler kartsız kalır (orada kart rolü gruplu liste).
+- Tartı sayacı 7 noktadan tek parçalı çubuğa (7 dilim) döner; paylaş girişi ikonlu gruplu satır. Fotoğrafın birincil düğmesi kalır.
+- Test: `progress-screen.test` iki beklentisi bu karara göre değişti (yüzey dolgusu var, başlık stili); gevşetme yok, K1 listesinde Levent onayına.

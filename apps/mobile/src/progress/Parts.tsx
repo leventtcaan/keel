@@ -44,7 +44,7 @@ export function MusclesCard({ muscles, figure }: { muscles: Schemas['MuscleSets'
   if (muscles.length === 0) return null;
   const trained = muscles.some((m) => m.doneSets > 0);
   return (
-    <Section testID="section-muscles" title={t('progress.muscles.title')} aside={t(trained ? 'progress.muscles.thisWeek' : 'progress.muscles.planned')}>
+    <Section card testID="section-muscles" title={t('progress.muscles.title')} aside={t(trained ? 'progress.muscles.thisWeek' : 'progress.muscles.planned')}>
       <MuscleMap muscles={muscles} figure={figure} />
       <View style={styles.legend} accessible={false}>
         <View style={styles.legendItem}>
@@ -68,7 +68,7 @@ export function MuscleBars({ muscles }: { muscles: Schemas['MuscleSets'][] }) {
   const { color } = useTheme();
   if (muscles.length === 0) return null;
   return (
-    <Section testID="section-sets" title={t('progress.muscles.setsTitle')} aside={t('progress.muscles.thisWeek')}>
+    <Section card testID="section-sets" title={t('progress.muscles.setsTitle')} aside={t('progress.muscles.thisWeek')}>
       {muscles.map((m) => {
         const scale = Math.max(m.doneSets, m.targetSets);
         const name = t(`demo.muscle.${m.muscle}`);
@@ -130,7 +130,7 @@ export function StrengthCard({ part, lifts, moves, units }: { part: 'locked' | '
     );
   }
   return (
-    <Section testID="section-strength" title={t('progress.strength.title')} aside={part === 'baseline' ? t('progress.strength.baseline') : null}>
+    <Section card testID="section-strength" title={t('progress.strength.title')} aside={part === 'baseline' ? t('progress.strength.baseline') : null}>
       {body}
     </Section>
   );
@@ -141,10 +141,10 @@ export function WeighInDots({ count, min, note }: { count: number; min: number; 
   const { color } = useTheme();
   const line = note === null ? null : t(note === 'stale' ? 'progress.weight.stale' : 'progress.weight.after', { min });
   const dots = Array.from({ length: min }, (_, i) => (
-    <View key={i} testID={i < count ? 'weight-dot-filled' : 'weight-dot-empty'} style={[styles.dot, i < count ? { backgroundColor: color.accent } : { backgroundColor: color.track, borderColor: color.edge, borderWidth: tokens.border.hairline }]} />
+    <View key={i} testID={i < count ? 'weight-dot-filled' : 'weight-dot-empty'} style={[styles.dot, { backgroundColor: i < count ? color.accent : color.track }]} />
   ));
   return (
-    <Section testID="section-weight" title={t('progress.weight.title')} aside={t('progress.weight.count', { count, min })}>
+    <Section card testID="section-weight" title={t('progress.weight.title')} aside={t('progress.weight.count', { count, min })}>
       <View testID="weight-dots" accessible accessibilityLabel={t('progress.weight.spoken', { count, min })} style={styles.dots}>
         {dots}
       </View>
@@ -171,6 +171,7 @@ const styles = StyleSheet.create({
   barFill: { position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: tokens.radius.track },
   barTarget: { position: 'absolute', top: -tokens.space.xs, bottom: -tokens.space.xs, width: tokens.border.outline },
   barCount: { width: tokens.size.barCount, textAlign: 'right', fontVariant: ['tabular-nums'] },
-  dots: { flexDirection: 'row', gap: tokens.space.sm },
-  dot: { width: tokens.size.dot, height: tokens.size.dot, borderRadius: tokens.size.dot / 2 },
+  // The weigh-ins toward the trend as one segmented bar across the card (K-1054), a segment for each.
+  dots: { flexDirection: 'row', gap: tokens.space.xs },
+  dot: { flex: 1, height: tokens.space.sm, borderRadius: tokens.radius.track },
 });
