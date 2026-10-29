@@ -5324,6 +5324,39 @@ tasks:
     tests: ["jest this-week + train + progress + call", "tools/anayasa-denetimi.sh"]
     refs: ["plan/kararlar/ADR-070-gorsel-dil-turkuaz.md", "prototip/yeniden-yapim.html", "plan/envanter-2026-10-29.md"]
 
+  - id: K-1046
+    title: "Yeniden yapım Evre 2.5: yemek kaydı ekranı sistemle (stepper, birim çipleri, tahmin, düğmeler)"
+    milestone: M10
+    module: mobile
+    type: feature
+    size: S
+    status: doing
+    depends_on: [K-1041]
+    why: "Log a meal'de dört düğme dili, Remove ayrışmıyor, öğün ve birim çipleri aynı görünüm farklı anlam, miktar serbest metin (envanter T-1, K-4 kalanı). ADR-070 Ek 2 #1, #5"
+    acceptance:
+      - "prototip/yeniden-yapim.html › 7 gibi: öğün çipleri, arama alanı ve sonuç satırları, seçili yemekte Stepper miktar + birim çipleri + Estimate kartı, tek birincil Log it"
+      - "Remove yıkıcı metin düğme; Scan metin düğme; Recent satırları gruplu liste"
+      - "jest + anayasa denetimi yeşil; kanıt simülatörde gerçek sunucuda"
+    tests: ["jest meal + food-picker + meal-quick + meal-barcode", "tools/anayasa-denetimi.sh"]
+    refs: ["plan/kararlar/ADR-070-gorsel-dil-turkuaz.md", "prototip/yeniden-yapim.html"]
+
+  - id: K-1047
+    title: "Yeniden yapım Evre 2.6: antrenman ekranı sistemle (başlık, More menüsü, tek stepper, klavye)"
+    milestone: M10
+    module: mobile
+    type: feature
+    size: S
+    status: doing
+    depends_on: [K-1041]
+    why: "Hareket başlığında 4 bağlantı + Skip yoğun, set sonrası klavye açık kalıyor, ağırlık + 2.5 kg'dan başlıyor, bitiş ekranında iki birincil (envanter T-13, T-3, T-14). ADR-070 Ek 2 #1, #5"
+    acceptance:
+      - "prototip/yeniden-yapim.html › 8 gibi: başlıkta How to · History · Swap + More (Superset, Skip move); set kartında ortak Stepper (kg, reps), reps-left çipleri"
+      - "Set kaydından sonra klavye kapanır; ilk ağırlık hareketin tipik başlangıç değerinden (parametre, kaynaklı) ya da boş + yazılabilir"
+      - "Workout complete: tek birincil (Done), Share ve Apple Health ikincil/metin; Discard workout yıkıcı"
+      - "jest + anayasa denetimi yeşil; kanıt simülatörde gerçek sunucuda"
+    tests: ["jest workout + workout-end + workout-summary + stepper", "tools/anayasa-denetimi.sh"]
+    refs: ["plan/kararlar/ADR-070-gorsel-dil-turkuaz.md", "prototip/yeniden-yapim.html"]
+
   - id: K-1010
     title: "Sunucudaki ek siteler: Caddy /opt/sites altındaki *.caddy dosyalarını içeri alır"
     milestone: M9
