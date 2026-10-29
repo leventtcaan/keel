@@ -14,5 +14,9 @@ export const photoParams = {
   timerSeconds: param<number>('photo_timer_seconds'),
   jpegQuality: param<number>('photo_jpeg_quality'),
   levelUpdateMs: param<number>('photo_level_update_ms'),
+  levelExitDeg: param<number>('photo_level_exit_deg'),
+  levelSmoothing: param<number>('photo_level_smoothing'),
+  timerOptions: param<number[]>('photo_timer_options'),
+  timerHandSeconds: param<number>('photo_timer_hand_seconds'),
   compareSlideStep: param<number>('compare_slide_step'),
 };

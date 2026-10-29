@@ -18,3 +18,19 @@ export function tiltOf({ x, y, z }: { x: number; y: number; z: number }): Tilt {
   const degrees = Math.round(Math.max(sideways, toward) * DEGREES * 10) / 10;
   return { degrees, level: degrees <= photoParams.levelToleranceDeg };
 }
+
+/** The level as the screen shows it: the lean smoothed over the last readings, and whether the phone counts as straight. */
+export type Level = { smoothed: number; straight: boolean };
+
+/**
+ * The next level from one more reading (K-1055). A raw reading jitters with every breath and hand tremor, so the lean is an
+ * exponential moving average (photo_level_smoothing), and "straight" has two thresholds: it begins at or under
+ * photo_level_tolerance_deg and ends only past photo_level_exit_deg. Between the two it keeps what it was, so a phone
+ * hovering at the edge does not flip the word on every reading. The first reading is taken as it is: nothing to average with.
+ */
+export function nextLevel(previous: Level | null, degrees: number): Level {
+  const { levelSmoothing, levelToleranceDeg, levelExitDeg } = photoParams;
+  const smoothed = previous === null ? degrees : previous.smoothed + levelSmoothing * (degrees - previous.smoothed);
+  const straight = previous?.straight === true ? smoothed <= levelExitDeg : smoothed <= levelToleranceDeg;
+  return { smoothed, straight };
+}

@@ -2997,25 +2997,71 @@
     "deleteFailed": "Couldn't delete the photos. Try again."
   },
   "capture": {
-    "title": "Photo",
+    "intro": {
+      "title": "Progress photos",
+      "light": "Same spot and light each time, ideally in the morning.",
+      "clothes": "Fitted clothes, arms a little away from your body.",
+      "phone": "Phone upright at hip height on a stand, or hand it to someone.",
+      "stand": "On a stand · {seconds} s",
+      "hand": "Someone holds it",
+      "note": "Two photos: front, then side. They stay on this phone.",
+      "start": "Start"
+    },
     "pose": {
       "front": "Front · {step} of {total}",
       "side": "Side · {step} of {total}"
     },
-    "guide": "Same spot, same light, morning.",
-    "ghost": "The faded photo is your last one. Line up with it.",
-    "onPhone": "Kept on this phone only. Never uploaded.",
-    "level": "Level {degrees}°",
-    "levelOk": "Hold steady",
-    "levelOff": "Straighten the phone",
-    "timer": "{seconds} s timer",
-    "counting": "Taking the photo in a moment",
+    "switch": "Switch camera",
+    "level": {
+      "straight": "Straight",
+      "upright": "Hold the phone upright"
+    },
+    "hint": {
+      "front": "Stand in the outline.",
+      "frontGhost": "Stand in the outline. Your last front photo is faded behind it.",
+      "side": "Turn to your right, arms relaxed.",
+      "sideGhost": "Turn to your right, arms relaxed. Your last side photo is faded behind it.",
+      "tilted": "You can still take it. A straight phone makes weeks easier to compare."
+    },
+    "timer": {
+      "label": "Timer {seconds} s",
+      "labelOff": "Timer off",
+      "off": "Off",
+      "seconds": "{seconds} s"
+    },
+    "counting": "Taking the photo in {seconds}",
+    "cancel": "Cancel",
     "shutter": "Take photo",
     "library": "Choose from library",
+    "close": "Close",
+    "ask": {
+      "title": "Allow the camera",
+      "body": "Next Call uses the camera only for your progress photos. They stay on this phone."
+    },
     "allow": "Continue",
-    "denied": "The camera is off for Next Call. Turn it on in iOS Settings, or choose a photo from your library.",
+    "off": {
+      "title": "Camera is off",
+      "body": "Next Call needs the camera for progress photos. Turn it on in Settings, or pick photos you already took.",
+      "settings": "Open Settings"
+    },
+    "preview": {
+      "photo": "Your {pose} photo",
+      "retake": "Retake",
+      "use": "Use photo"
+    },
     "failed": "Couldn't keep that photo on this phone. Try again.",
-    "close": "Close"
+    "done": {
+      "title": "Week {week} photos saved",
+      "front": "Front",
+      "side": "Side",
+      "photo": "Your {pose} photo",
+      "next": "Next set",
+      "nextOn": "Week {week} · {date}",
+      "compareLater": "Compare opens with your second set, side by side with this one.",
+      "compare": "Compare",
+      "onPhone": "On this phone only. Never uploaded.",
+      "done": "Done"
+    }
   },
   "compare": {
     "title": "Compare",

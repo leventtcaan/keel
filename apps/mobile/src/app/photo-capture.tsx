@@ -1,32 +1,24 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
-import { Accelerometer } from 'expo-sensors';
-import { type ReactNode, useEffect, useRef, useState } from 'react';
-import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Line, Path } from 'react-native-svg';
+import { useEffect, useRef, useState } from 'react';
+import { Linking, View } from 'react-native';
 
-import { ProblemText } from '@/components/ProblemText';
-import { Button } from '@/components/Button';
-import { Chip } from '@/components/Chip';
-import { ScreenTitle } from '@/components/ScreenTitle';
-import { t } from '@/copy';
-import { type PhotoCheck, POSES } from '@/photos/library';
+import { CaptureCamera } from '@/photos/CaptureCamera';
+import { CaptureDone } from '@/photos/CaptureDone';
+import { CaptureIntro, type Setup } from '@/photos/CaptureIntro';
+import { CaptureNoCamera } from '@/photos/CaptureNoCamera';
+import { CapturePreview } from '@/photos/CapturePreview';
+import { type PhotoCheck, type Pose, POSES } from '@/photos/library';
 import { photoParams } from '@/photos/params';
-import { type Tilt, tiltOf } from '@/photos/tilt';
+import { summarise } from '@/photos/result';
 import { useAppServices } from '@/services/ServicesProvider';
-import { ThemeProvider, useTheme } from '@/theme/theme';
-import { tokens } from '@/theme/tokens';
+import { useTheme } from '@/theme/theme';
 import { localDay } from '@/today/today';
-
-/** The viewfinder's drawing space for the frame guide (prototype 4.1): corner marks and a centre line. */
-const FRAME = { width: 324, height: 430 };
-const CORNERS = ['M40 60 V40 H60', 'M264 40 H284 V60', 'M40 370 V390 H60', 'M264 390 H284 V370'];
-const GUIDE_WIDTH = 3;
+import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 
 /** The last photo of a pose, newest day first; none before the first. */
-function lastOf(checks: PhotoCheck[], pose: (typeof POSES)[number]): string | null {
+function lastOf(checks: PhotoCheck[], pose: Pose): string | null {
   for (let i = checks.length - 1; i >= 0; i -= 1) {
     const uri = checks[i].photos[pose];
     if (uri !== undefined) return uri;
@@ -34,72 +26,92 @@ function lastOf(checks: PhotoCheck[], pose: (typeof POSES)[number]): string | nu
   return null;
 }
 
+/** A photo taken or chosen and not yet kept: where it is, and the day it was taken (the same day names both poses' files). */
+type Shot = { uri: string; day: string };
+
 /**
- * The guided progress photo (K-601, H1 §2.4, prototype 4.1): front, then side; each over the last photo of its pose, faded
- * (onion skin), inside a frame guide, with a level from the accelerometer — standardising the pose halves the error
- * (Wong 2021). A self-timer for a phone on a stand. Without a camera (the simulator) or with it off, a photo from the
- * library. Each photo goes to the phone's library (K-614) and nowhere else (V1); the camera is asked for only on a tap.
+ * The guided progress photo (K-601, K-1055, H1 §2.4, prototype yeniden-yapim §10): an intro on the first set, then a
+ * full-screen camera for the front and the side — each over the last photo of its pose, faded, inside a body outline, with a
+ * calm level (standardising the pose halves the error, Wong 2021) — a preview after every photo (Retake / Use photo), and a
+ * result. A self-timer for a phone on a stand. Without a camera (the simulator, or it is off) a photo comes from the library
+ * and goes through the same preview. A photo is kept only by Use photo, in the phone's photos folder (K-614) and nowhere else
+ * (V1); the camera is asked for only on a tap.
+ *
+ * Close at any point keeps nothing more. A photo already kept with Use photo stays: it is a photo the person chose, the front
+ * of a set that was never finished is still a front photo, and the next try retakes the pose (same file name, replaced).
+ *
+ * Mirroring: the front camera's live picture is mirrored (the system's preview, as a mirror), the photo we save is not
+ * (CameraView `mirror` false, the default, said out loud): every progress photo is then as others would see the person,
+ * front camera, back camera or library alike, so sets taken a different way still compare. The faded photo is turned over
+ * with the front camera, to match the mirrored picture it is lined up with.
  */
-export default function PhotoCaptureScreen() {
+/**
+ * Presented full screen (a native full-screen modal), which keeps the insets of the app around it from reaching in: the
+ * title sat under the status bar and the Dynamic Island. Its own provider measures this screen's safe area (build 7 QA),
+ * starting from the window's (the screen covers the window); none known (tests) draws at once with no insets.
+ */
+const NO_INSETS = { frame: { x: 0, y: 0, width: 0, height: 0 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } };
+
+export default function PhotoCaptureRoute() {
+  return (
+    <SafeAreaProvider initialMetrics={initialWindowMetrics ?? NO_INSETS}>
+      <PhotoCaptureScreen />
+    </SafeAreaProvider>
+  );
+}
+
+function PhotoCaptureScreen() {
   const { photos, report } = useAppServices();
   const { color } = useTheme();
   const [permission, requestPermission] = useCameraPermissions();
   const camera = useRef<CameraView>(null);
-  const [checks, setChecks] = useState<PhotoCheck[]>([]);
+  // null until read: the intro is for the first set only, so it waits for the answer.
+  const [checks, setChecks] = useState<PhotoCheck[] | null>(null);
+  const [started, setStarted] = useState(false);
+  const [setup, setSetup] = useState<Setup>('stand');
+  const [facing, setFacing] = useState<'front' | 'back'>('front');
+  const [timerSeconds, setTimerSeconds] = useState(photoParams.timerSeconds);
+  const [counting, setCounting] = useState<number | null>(null);
   const [step, setStep] = useState(0);
-  const [tilt, setTilt] = useState<Tilt | null>(null);
-  const [timer, setTimer] = useState(false);
-  const [counting, setCounting] = useState(false);
+  const [shot, setShot] = useState<Shot | null>(null);
+  const [saved, setSaved] = useState<{ day: string; photos: Partial<Record<Pose, string>> } | null>(null);
+  const [finished, setFinished] = useState(false);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
   const pose = POSES[step];
   const reportName = (error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' });
 
   useEffect(() => {
-    photos.checks().then(setChecks).catch(reportName);
+    photos
+      .checks()
+      .then(setChecks)
+      .catch((error: unknown) => {
+        reportName(error);
+        setChecks([]);
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- read once on arrival
   }, [photos]);
 
-  // The level: the accelerometer while the screen is open, stopped when it closes (also if it closes before the check ends).
-  useEffect(() => {
-    let open = true;
-    let subscription: { remove(): void } | null = null;
-    void Accelerometer.isAvailableAsync().then((available) => {
-      if (!open || !available) return;
-      Accelerometer.setUpdateInterval(photoParams.levelUpdateMs);
-      subscription = Accelerometer.addListener((gravity) => setTilt(tiltOf(gravity)));
-    });
-    return () => {
-      open = false;
-      subscription?.remove();
-    };
-  }, []);
-
-  // While open: a photo that arrives after Close is not kept, and nothing goes back twice. A pending self-timer goes too.
+  // While open: a photo that arrives after Close is not kept, and nothing goes back twice. A running countdown goes too.
   const open = useRef(true);
-  const countdown = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tick = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(
     () => () => {
       open.current = false;
-      if (countdown.current !== null) clearTimeout(countdown.current);
+      if (tick.current !== null) clearTimeout(tick.current);
     },
     [],
   );
 
-  // One photo at a time, from the first tap: the camera takes seconds, and a second tap would take another (or fail).
+  // One thing at a time, from the first tap: the camera takes seconds, keeping a photo takes a moment, and a second tap would
+  // take another (or fail).
   const inFlight = useRef(false);
-  async function capture(source: () => Promise<string | null>) {
+  async function work(job: () => Promise<void>) {
     if (inFlight.current) return;
     inFlight.current = true;
     setBusy(true);
     try {
-      const uri = await source();
-      if (uri === null || !open.current) return;
-      await photos.add(uri, localDay(new Date()), pose);
-      if (!open.current) return;
-      setFailed(false);
-      if (step + 1 < POSES.length) setStep(step + 1);
-      else router.back();
+      await job();
     } catch (error) {
       reportName(error);
       if (open.current) setFailed(true);
@@ -108,6 +120,15 @@ export default function PhotoCaptureScreen() {
       if (open.current) setBusy(false);
     }
   }
+
+  /** A picture from `source` to the preview; nothing is kept yet. */
+  const capture = (source: () => Promise<string | null>) =>
+    work(async () => {
+      const uri = await source();
+      if (uri === null || !open.current) return;
+      setFailed(false);
+      setShot({ uri, day: localDay(new Date()) });
+    });
 
   const fromCamera = async () => {
     const picture = await camera.current?.takePictureAsync({ quality: photoParams.jpegQuality, exif: false, shutterSound: false });
@@ -118,109 +139,118 @@ export default function PhotoCaptureScreen() {
     return result.canceled ? null : (result.assets[0]?.uri ?? null);
   };
 
+  /** Use photo: the one place a photo is kept. A failure stays on the preview, to try again or retake. */
+  const keep = () =>
+    work(async () => {
+      if (shot === null) return;
+      const photo = await photos.add(shot.uri, shot.day, pose);
+      if (!open.current) return;
+      setFailed(false);
+      const uri = photo.uri;
+      setSaved((before) => ({ day: shot.day, photos: { ...before?.photos, [pose]: uri } }));
+      setShot(null);
+      if (step + 1 < POSES.length) setStep(step + 1);
+      else setFinished(true);
+    });
+
   function press() {
-    if (inFlight.current || countdown.current !== null) return;
-    if (!timer) return void capture(fromCamera);
-    setCounting(true);
-    countdown.current = setTimeout(() => {
-      countdown.current = null;
-      setCounting(false);
-      void capture(fromCamera);
-    }, photoParams.timerSeconds * 1000);
+    if (inFlight.current || tick.current !== null) return;
+    if (timerSeconds === 0) return void capture(fromCamera);
+    // The timer counts down a second at a time, shown as it goes, and takes the photo as it reaches the end.
+    let left = timerSeconds;
+    setCounting(left);
+    const next = () => {
+      tick.current = setTimeout(() => {
+        left -= 1;
+        if (left > 0) {
+          setCounting(left);
+          next();
+        } else {
+          tick.current = null;
+          setCounting(null);
+          void capture(fromCamera);
+        }
+      }, 1000);
+    };
+    next();
+  }
+  function cancel() {
+    if (tick.current !== null) clearTimeout(tick.current);
+    tick.current = null;
+    setCounting(null);
   }
 
-  const ghost = lastOf(checks, pose);
-  const granted = permission?.granted === true;
-  // Built outside the JSX below (the raw-text guard reads JSX children).
-  const viewfinder = granted ? (
-    <CameraView ref={camera} style={StyleSheet.absoluteFill} facing="back" />
-  ) : null;
-  const ghostImage =
-    ghost === null ? null : (
-      // Decorative for VoiceOver (K-807): a faint copy of the last photo to line the body up with, not a photo to read.
-      <Image testID="capture-ghost" accessible={false} source={{ uri: ghost }} resizeMode="cover"
-        style={[StyleSheet.absoluteFill, { opacity: photoParams.ghostOpacity }]} />
+  function start() {
+    // On a stand: the front camera, so the person sees themselves, and the stand's timer. In someone's hands: the back camera, no timer.
+    setFacing(setup === 'stand' ? 'front' : 'back');
+    setTimerSeconds(setup === 'stand' ? photoParams.timerSeconds : photoParams.timerHandSeconds);
+    setStarted(true);
+  }
+
+  const blank = <View style={{ flex: 1, backgroundColor: color.background }} />;
+  if (checks === null) return blank;
+  if (checks.length === 0 && !started) {
+    return <CaptureIntro setup={setup} onSetup={setSetup} onStart={start} onClose={() => router.back()} />;
+  }
+  if (finished && saved !== null) {
+    return (
+      <CaptureDone
+        saved={saved.photos}
+        summary={summarise(checks, saved.photos, saved.day)}
+        onCompare={() => router.replace('/compare')}
+        onDone={() => router.back()}
+      />
     );
-  // Not known yet (the hook's first answer): neither the camera nor "off".
-  const access = granted || permission === null ? null : permission.canAskAgain === false ? (
-    <Text style={[styles.text, { color: color.textSecondary }]}>{t('capture.denied')}</Text>
-  ) : (
-    <Button label={t('capture.allow')} onPress={() => void requestPermission()} />
-  );
-  const shutter = granted ? (
-    <View style={styles.row}>
-      <Chip label={t('capture.timer', { seconds: photoParams.timerSeconds })} selected={timer} onPress={() => setTimer(!timer)} />
-      <Button label={t('capture.shutter')} onPress={press} disabled={busy || counting} />
-    </View>
-  ) : null;
-  const ghostNote = ghost === null ? null : <Text style={[styles.small, { color: color.muted }]}>{t('capture.ghost')}</Text>;
-  const countingNote = counting ? <Text style={[styles.small, { color: color.muted }]}>{t('capture.counting')}</Text> : null;
-  const failure = failed ? <ProblemText style={[styles.text, { color: color.text }]}>{t('capture.failed')}</ProblemText> : null;
-
+  }
+  if (shot !== null) {
+    return (
+      <CapturePreview
+        uri={shot.uri}
+        pose={pose}
+        step={step + 1}
+        total={POSES.length}
+        busy={busy}
+        failed={failed}
+        onRetake={() => {
+          setShot(null);
+          setFailed(false);
+        }}
+        onUse={() => void keep()}
+      />
+    );
+  }
+  if (permission === null) return blank;
+  if (!permission.granted) {
+    return (
+      <CaptureNoCamera
+        state={permission.canAskAgain === false ? 'off' : 'ask'}
+        busy={busy}
+        failed={failed}
+        onAllow={() => void requestPermission()}
+        onSettings={() => void Linking.openSettings()}
+        onLibrary={() => void capture(fromLibrary)}
+        onClose={() => router.back()}
+      />
+    );
+  }
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
-      <ScrollView contentContainerStyle={styles.body}>
-        <ScreenTitle>{t('capture.title')}</ScreenTitle>
-        <Text style={[styles.label, { color: color.text }]}>{t(`capture.pose.${pose}`, { step: step + 1, total: POSES.length })}</Text>
-        {/* The viewfinder stays dark in both themes (prototype 4.1). */}
-        <ThemeProvider scheme="dark">
-          <Finder>
-            {viewfinder}
-            {ghostImage}
-          </Finder>
-        </ThemeProvider>
-        <Level tilt={tilt} />
-        <Text style={[styles.heading, { color: color.text }]}>{t('capture.guide')}</Text>
-        {ghostNote}
-        {access}
-        {shutter}
-        {countingNote}
-        <Button label={t('capture.library')} variant="ghost" onPress={() => void capture(fromLibrary)} disabled={busy || counting} />
-        {failure}
-        <Text style={[styles.small, { color: color.muted }]}>{t('capture.onPhone')}</Text>
-        <Button label={t('capture.close')} variant="ghost" size="sm" onPress={() => router.back()} />
-      </ScrollView>
-    </SafeAreaView>
+    <CaptureCamera
+      cameraRef={camera}
+      pose={pose}
+      step={step + 1}
+      total={POSES.length}
+      facing={facing}
+      ghost={lastOf(checks, pose)}
+      timerSeconds={timerSeconds}
+      counting={counting}
+      busy={busy}
+      failed={failed}
+      onClose={() => router.back()}
+      onSwitch={() => setFacing(facing === 'front' ? 'back' : 'front')}
+      onTimer={setTimerSeconds}
+      onShutter={press}
+      onCancel={cancel}
+      onLibrary={() => void capture(fromLibrary)}
+    />
   );
 }
-
-/** The dark viewfinder (both themes, prototype 4.1): what the camera sees, the last photo faded over it, the frame guide. */
-function Finder({ children }: { children: ReactNode }) {
-  const { color } = useTheme();
-  return (
-    <View testID="capture-finder" style={[styles.finder, { backgroundColor: color.background }]}>
-      {children}
-      {/* The framing guide: decorative for VoiceOver (K-807); the screen's text says how to stand. */}
-      <Svg testID="capture-frame" accessible={false} style={StyleSheet.absoluteFill} viewBox={`0 0 ${FRAME.width} ${FRAME.height}`}
-        pointerEvents="none">
-        {CORNERS.map((d) => (
-          <Path key={d} d={d} fill="none" stroke={color.accent} strokeWidth={GUIDE_WIDTH} />
-        ))}
-        <Line x1={70} y1={FRAME.height / 2} x2={FRAME.width - 70} y2={FRAME.height / 2} stroke={color.text} strokeWidth={1.5} />
-      </Svg>
-    </View>
-  );
-}
-
-/** The level under the viewfinder, on the page: the page's colours, the accent when straight. */
-function Level({ tilt }: { tilt: Tilt | null }) {
-  const { color } = useTheme();
-  if (tilt === null) return null;
-  return (
-    <View style={styles.row}>
-      <Text style={[styles.small, { color: tilt.level ? color.accent : color.textSecondary }]}>{t('capture.level', { degrees: tilt.degrees })}</Text>
-      <Text style={[styles.small, { color: color.textSecondary }]}>{t(tilt.level ? 'capture.levelOk' : 'capture.levelOff')}</Text>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  safe: { flex: 1 },
-  body: { paddingHorizontal: tokens.space.lg, paddingTop: tokens.space.md, paddingBottom: tokens.space.lg, gap: tokens.space.sm },
-  finder: { aspectRatio: FRAME.width / FRAME.height, borderRadius: tokens.radius.card, overflow: 'hidden' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
-  label: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
-  heading: { fontFamily: tokens.font.displayBold, fontSize: tokens.type.number },
-  text: { fontSize: tokens.type.body },
-  small: { fontSize: tokens.type.bodySmall },
-});

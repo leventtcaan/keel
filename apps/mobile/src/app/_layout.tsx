@@ -67,7 +67,8 @@ function AppStack() {
         <Stack.Screen name="state" options={{ presentation: 'modal' }} />
         {/* Coming back after a gap (K-981): over the tabs, answered rather than swiped away. */}
         <Stack.Screen name="return" options={{ gestureEnabled: false }} />
-        <Stack.Screen name="photo-capture" options={{ presentation: 'modal' }} />
+        {/* Full screen (K-1055): the camera and its controls are the whole screen; Close is a button, not a swipe down. */}
+        <Stack.Screen name="photo-capture" options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
         <Stack.Screen name="compare" />
         <Stack.Screen name="share" />
         <Stack.Screen name="import" options={pushed} />
