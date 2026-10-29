@@ -36,6 +36,7 @@ jest.mock('@/components/MuscleMap', () => ({ MuscleMap: (props: unknown) => mock
 type Answer = { data: unknown } | { status: number; code?: string } | 'offline';
 let answers: Record<string, Answer>;
 const mockApiCalls: string[] = [];
+const mockCallsAtDrain: number[] = [];
 /** The query each path was last asked with. */
 const mockQueries: Record<string, unknown> = {};
 const mockApi = new Proxy(
@@ -64,6 +65,8 @@ const mockServices = {
   },
   syncHealth: () => mockSyncHealth(),
   bodyFigure: async () => 'female',
+  // What waits on the phone is sent before the server is asked (K-1051): how many calls were made when it was sent.
+  queue: { drain: jest.fn(async () => void mockCallsAtDrain.push(mockApiCalls.length)) },
   report: jest.fn(),
 };
 let mockUnits: 'METRIC' | 'IMPERIAL' = 'METRIC';
@@ -124,6 +127,14 @@ const box = (kind: string) => screen.getByTestId(`target-${kind}`);
 type Node = ReturnType<typeof screen.getByTestId>;
 /** Every word under an element, in order, nested texts included. */
 const words = (el: Node): string => el.children.map((child) => (typeof child === 'string' ? child : words(child))).join(' ');
+
+// K-1051: a meal logged from this tab's "+" waits in the queue; the read sends it first, so the day it reads counts it.
+test('what waits on the phone is sent before the server is asked', async () => {
+  mockCallsAtDrain.length = 0;
+  await show();
+  expect(mockCallsAtDrain).toEqual([0]);
+  expect(mockApiCalls.length).toBeGreaterThan(0);
+});
 
 describe('the first days (ADR-078 #1)', () => {
   test("the title, today's targets and how to use them", async () => {
