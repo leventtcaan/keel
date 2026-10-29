@@ -43,7 +43,7 @@ Kod dizinlerinde (`backend/`, `apps/mobile/`, `contracts/`) kendi `CLAUDE.md`'si
 ## Kırmızı çizgiler (özet — tam metin `docs/anayasa.md`)
 1. **LLM karar vermez, sayı uydurmaz.** Karar motordan, tahmin veritabanından, dil LLM'den (U1).
 2. **Kararı ısrar değil veri değiştirir** (U2). Motor "henüz karar yok" diyebilir (U3).
-3. **Yağ yüzdesi sayısı gösterilmez · tahmin daima aralık · tıbbi dil yok** (U4, U5, U6).
+3. **Yağ yüzdesi sayısı gösterilmez · tahmin aralık olarak hesaplanır (kayıt ekranında tek sayı, aralık detayda; ADR-090 #5) · tıbbi dil yok** (U4, U5, U6).
 4. **Suçlama, telafi mekaniği, günlük sıfırlanan streak yok** (U7).
 5. **Her motor kuralı kaynağa bağlı:** `arastirma/` dosya + kural no + [tecrübe]/[literatür]. Kaynaksız kural yok (U14).
 6. **Hardcode yok:** eşik, pencere, metin, kimlik koda gömülmez (K2).

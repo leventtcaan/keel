@@ -14,6 +14,7 @@ gram), kayıt hatırlatması yok, 7 gün antrenman akışı yok.
 3. **7 gün antrenman serbest, uyarıyla** (ADR-027 #15'e ek): yedinci gün tek dokunuşla eklenir; ekranda kısa not (bir dinlenme günü gelişimi
    hızlandırır). Motor yükü buna göre okur; `max_training_days` 7.
 4. **Arayüzde prototip onayı yok:** agent doğrudan kodlar, simülatörde kanıtlar; Levent TestFlight'ta inceler.
+5. **Tek sayı, aralık detayda (U5 değişir):** kayıt ekranlarında tek sayı (aralığın ortası; etiket değeri varsa o), aralık dokununca açılan detayda ve karar ekranında. Hesap ve saklama aralık kalır.
 
 ## Sonuç
 - ADR-036, ADR-027, ADR-088 bu ADR'ye atıfla güncellenmiş sayılır; ilgili parametreler (`max_training_days`, bildirim türleri) bu kararla değişir.

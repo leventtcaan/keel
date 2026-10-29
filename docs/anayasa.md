@@ -29,7 +29,7 @@ Kapsam: uygulamanın her ekranı, bildirimi ve metni; kullanıcının istediği 
 *Gerekçe:* yağ yüzdesi değişimi izlenemiyor (R² 0,23-0,25), yağ kütlesi izlenebiliyor (R² 0,75-0,86); Güray da sayı
 vermiyor. *Kaynak:* `ham/H1-olcum.md` · `03-guray-karar-omurgasi.md` §8.
 
-**U5 · Tahmin daima aralıktır** (öğün kalorisi, porsiyon, projeksiyon süresi). Hedef ve karar tek sayı olabilir.
+**U5 · Tahmin aralık olarak hesaplanır ve saklanır** (öğün kalorisi, porsiyon, projeksiyon süresi). Hedef ve karar tek sayı olabilir. Kayıt ekranlarında (öğün, kalan bütçe, arama sonucu) tek sayı gösterilir: aralığın ortası, etiket değeri varsa o; aralık dokununca açılan detayda ve karar ekranında görünür (ADR-090 #5, Levent 29 Eki 2026).
 Belirsizlik itiraf edilmez, **çözülebilir** kılınır: karar ver + güveni nicelle + tek dokunuşluk düzeltme sun.
 *Kaynak:* `04-faz3-urun.md` Ö-12, §8.1.
 
