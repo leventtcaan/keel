@@ -1052,8 +1052,11 @@ paths:
         undone with POST /v1/program/review/undo by its id, which takes the day out (a replanned program: back whole, as it was); the
         review runs again. The call it came from stays as it was (NOT_NEEDED): the day is the user's touch. The profile's
         `schedule.trainingDays` follows the program's weekdays.
-        CONFLICT (409), nothing changed: the weekday is already a day of the program, the program has a day on no weekday, there is no
-        program for one more day (seven days are the most), or a workout of a day the add would change was started today.
+        A day on no weekday ("any day", of a program typed or brought in) does not stop an add (Evre 7, issue 684): the new day is the
+        generator's day for this weekday, laid among the weekdays the program has (a day on no weekday counts for one more, the week's
+        first free weekdays standing in), and every day on no weekday stays as it is, in its place.
+        CONFLICT (409), nothing changed: the weekday is already a day of the program, there is no program for one more day (seven days
+        are the most), or a workout of a day the add would change was started today.
         VALIDATION_FAILED: no weekday. NOT_FOUND: no program.
       requestBody:
         required: true
@@ -3343,8 +3346,8 @@ components:
         canAddDay:
           type: boolean
           description: |
-            Whether POST /v1/program/days can add a day to this program (K-1013, K-1060, ADR-073 Ek 9, ADR-090 Ek 1): each of its days
-            on its own weekday and a program for one more day (below seven days). The same rule that endpoint answers with, so the app
+            Whether POST /v1/program/days can add a day to this program (K-1013, K-1060, ADR-073 Ek 9, ADR-090 Ek 1): no weekday two
+            days' (a day on no weekday is no obstacle, Evre 7) and a program for one more day (below seven days). The same rule that endpoint answers with, so the app
             offers "add a day" only where it works (the app holds no rule of its own). The endpoint can still answer CONFLICT for a
             weekday the program trains already. This server always sends it; absent (an older server) means not known: the app adds the
             day in Edit.
