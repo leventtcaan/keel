@@ -178,6 +178,13 @@ class FoodController {
         return stripped.scale() <= OWN_DECIMALS && stripped.precision() - stripped.scale() <= integerDigits;
     }
 
+    /** One food with its portions: the app changes the portion of a logged item with it. */
+    @GetMapping("/v1/foods/{id}")
+    Food one(AccountId account, @PathVariable String id) {
+        return estimator.food(account, id).map(food -> view(food, estimator.parametersFor(account), portions, profiles.foodsAvoided(account)))
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+    }
+
     /** The foods the user starred, newest star first, each with its portions; one gone from the database is left out. */
     @GetMapping("/v1/foods/favorites")
     List<Food> favorites(AccountId account) {

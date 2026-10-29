@@ -147,6 +147,19 @@ class MealLoggingApiTests {
     }
 
     @Test
+    void oneFoodIsReadWithItsPortionsAndAnotherUsersOwnFoodIsNotThere() throws Exception {
+        AccountId account = consenting();
+        AccountId other = consenting();
+        String own = (String) body(send(account, "POST", "/v1/foods", Map.of("name", "Quark pot", "servingGrams", 150, "kcal", 90, "proteinG", 15,
+                "carbsG", 6, "fatG", 0.5))).get("id");
+
+        assertThat(body(send(account, "GET", "/v1/foods/" + CHICKEN, null))).containsEntry("id", CHICKEN).containsKey("portions");
+        assertThat(body(send(account, "GET", "/v1/foods/" + own, null))).containsEntry("own", true);
+        assertThat(send(other, "GET", "/v1/foods/" + own, null)).hasStatus(404);
+        assertThat(send(account, "GET", "/v1/foods/fdc:not-a-food", null)).hasStatus(404);
+    }
+
+    @Test
     void anOwnFoodThatCannotBeRealIsRefused() {
         AccountId account = consenting();
 
