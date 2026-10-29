@@ -1,6 +1,6 @@
 import { Stack, router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { components } from '@/api/schema';
@@ -261,9 +261,13 @@ export default function EditProgramScreen() {
   const undo = (applied: Schemas['AppliedReviewChange']) => undoOf(applied.id);
   // A tap waits for the training days too: a second one before they come must not rebuild twice.
   const rebuilding = useRef(false);
+  // Shown while it does (Evre 7, issue 684): the button says so, and the way back is shut, as the days question's is: the answer of a
+  // page that was left leads nowhere, and a button that only dims looked like a press that did nothing.
+  const [working, setWorking] = useState(false);
   const rebuildNow = async () => {
     if (sending.current || rebuilding.current) return;
     rebuilding.current = true;
+    setWorking(true);
     // The days to build for are the PROGRAM's, as it is now (ADR-090 Ek 1: the program is where the days are made, so a rebuild keeps the
     // days the user has). Only a program with a day on no weekday has fewer weekdays than days; then the profile's, which the server
     // keeps as the program's last weekdays.
@@ -274,9 +278,17 @@ export default function EditProgramScreen() {
       if (!shown.current) return;
       if (profile.state !== 'ready') {
         rebuilding.current = false;
+        setWorking(false);
         return setProblem(t(profile.state === 'failed' && profile.problem === 'NoConnection' ? 'editProgram.offline' : 'editProgram.noDays'));
       }
       days = profile.value.schedule.trainingDays;
+    }
+    // No days anywhere (a program of "any day" days that the profile keeps none for): the server has nothing to build for, and a request
+    // for none came back as a sentence with no way on. The days question is the way: the count is the one answer, the app places the days.
+    if (days.length === 0) {
+      rebuilding.current = false;
+      setWorking(false);
+      return router.push('/build-program');
     }
     let rebuilt = false;
     await send(
@@ -291,6 +303,7 @@ export default function EditProgramScreen() {
     );
     // Rebuilt, the page is on its way out: no second rebuild from it. Not rebuilt, another try is the user's.
     rebuilding.current = rebuilt;
+    if (!rebuilt && shown.current) setWorking(false);
   };
 
   let title = t('editProgram.title');
@@ -386,11 +399,25 @@ export default function EditProgramScreen() {
     title = t('editProgram.rebuild');
     // A workout under way is on one of the days a rebuild replaces: its targets would have nowhere to go.
     const underWay = data?.active != null;
-    const confirm = underWay ? null : <Button label={t('editProgram.rebuildConfirm')} variant="warn" disabled={busy} onPress={() => void rebuildNow()} />;
+    const confirm = underWay ? null : (
+      <Button
+        label={t(working ? 'buildProgram.building' : 'editProgram.rebuildConfirm')}
+        variant="warn"
+        busy={working}
+        disabled={busy || working}
+        onPress={() => void rebuildNow()}
+      />
+    );
+    const progress = !working ? null : (
+      <View style={styles.progress}>
+        <ActivityIndicator color={color.muted} />
+      </View>
+    );
     body = (
       <View style={styles.rows}>
         <Text style={[styles.text, { color: color.text }]}>{t(underWay ? 'editProgram.rebuildUnderWay' : 'editProgram.rebuildBody')}</Text>
         {confirm}
+        {progress}
       </View>
     );
   } else if (data?.program.state === 'none') {
@@ -446,7 +473,7 @@ export default function EditProgramScreen() {
   return (
     <SafeAreaView edges={['bottom']} style={[styles.safe, { backgroundColor: color.background }]}>
       {/* The iOS edge swipe back would drop unsaved edits without the question Back asks. */}
-      <Stack.Screen options={{ gestureEnabled: !dirty }} />
+      <Stack.Screen options={{ gestureEnabled: !dirty && !working, headerBackVisible: !working }} />
       <ScrollView ref={scroller} contentContainerStyle={styles.body}>
         <ScreenTitle>{title}</ScreenTitle>
         {leave}
@@ -508,4 +535,5 @@ const styles = StyleSheet.create({
   bold: { fontWeight: tokens.weight.semibold },
   small: { fontSize: tokens.type.bodySmall },
   dim: { opacity: tokens.opacity.dim },
+  progress: { alignItems: 'center' },
 });
