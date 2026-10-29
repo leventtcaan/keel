@@ -123,7 +123,7 @@ const mockServices = {
   syncHealth: jest.fn(async () => 0),
   queue: { drain: jest.fn(async () => {}) },
   report: () => {},
-  reminders: { keepRestUntil: jest.fn(async () => {}), keepFirstCall: jest.fn(async () => {}), era: () => 0 },
+  reminders: { keepRestUntil: jest.fn(async () => {}), keepFirstCall: jest.fn(async () => {}), keepWeighInWeek: jest.fn(async () => {}), era: () => 0 },
   state: { keep: jest.fn(async () => {}), back: jest.fn(async () => {}) },
   opens: { previous: async () => null },
   // The phone's own records: a workout under way (K-405, K-961).
@@ -1323,5 +1323,23 @@ describe("this week's weigh-ins before the first calls (ADR-089, K-1058, prototy
     await act(async () => {});
     expect(counter().getByText(t('thisWeek.counter.of', { count: 3, needed: 4 }))).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: t('thisWeek.counter.weighIn') })).toBeNull();
+  });
+
+  test('the reminders are told the week each time it is read (the training reminder carries the line, ADR-089 Ek 2)', async () => {
+    firstWeeksWith(weighInWeek(['2026-10-27', '2026-10-29', '2026-11-05']));
+    await show();
+    expect(mockServices.reminders.keepWeighInWeek).toHaveBeenLastCalledWith({ from: '2026-10-27', to: '2026-11-02', weighed: 2, needed: 4, short: false }, 0);
+    firstWeeksWith(weighInWeek(['2026-10-27'], { callsFrom: '2026-11-18' }));
+    await act(async () => mockRefocus());
+    expect(mockServices.reminders.keepWeighInWeek).toHaveBeenLastCalledWith({ from: '2026-10-27', to: '2026-11-02', weighed: 1, needed: 4, short: true }, 0);
+    firstWeeksWith(undefined);
+    await act(async () => mockRefocus());
+    expect(mockServices.reminders.keepWeighInWeek).toHaveBeenLastCalledWith(null, 0);
+  });
+
+  test('first weeks not read (offline): the reminders keep what they had', async () => {
+    mockAnswers['/v1/first-weeks'] = 'offline';
+    await show();
+    expect(mockServices.reminders.keepWeighInWeek).not.toHaveBeenCalled();
   });
 });

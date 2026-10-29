@@ -522,3 +522,84 @@ describe('the first call day (K-992), kept from the server\'s answer', () => {
     expect(kv.items.size).toBe(0);
   });
 });
+
+describe("the week's weigh-ins on the training reminder (ADR-089 Ek 2, K-1058)", () => {
+  // Friday 2 Oct; the block ends on the check-in Monday 5 Oct. Training on Saturday: one of the block's days before it.
+  const saturdays: Schedule = { ...schedule, trainingDays: ['SATURDAY'] };
+  const behind = { from: '2026-09-29', to: '2026-10-05', weighed: 2, needed: 4, short: false };
+  const training = (device: Device) => device.scheduled.filter((r) => r.kind === 'training');
+
+  async function on(kv = memoryKv(), device = fakeDevice()) {
+    const made = await make(kv, device);
+    await made.reminders.keepSchedule(saturdays);
+    await made.reminders.opened();
+    await made.reminders.turnOn();
+    return made;
+  }
+
+  test('kept while behind, the training reminder takes the line; enough, it is weekly again, in the same turn as the read', async () => {
+    const { reminders, device } = await on();
+    expect(training(device).map((r) => r.when)).toEqual([{ weekday: 7, hour: 17, minute: 30 }]);
+
+    await reminders.keepWeighInWeek(behind);
+    expect(training(device)[0].when).toEqual({ at: new Date(2026, 9, 3, 17, 30) });
+    expect(training(device)[0].body).toContain("2 more weigh-ins before Monday's call.");
+    expect(kinds(device.scheduled).filter((k) => k !== 'training')).toEqual(['check_in', 'quiet']); // still the three kinds
+
+    await reminders.keepWeighInWeek({ ...behind, weighed: 4 });
+    expect(training(device).map((r) => r.when)).toEqual([{ weekday: 7, hour: 17, minute: 30 }]);
+    expect(training(device)[0].body).not.toContain('weigh-in');
+  });
+
+  test('none (a call has read the scale) removes the line', async () => {
+    const { reminders, device } = await on();
+    await reminders.keepWeighInWeek(behind);
+    await reminders.keepWeighInWeek(null);
+    expect(training(device)[0].when).toEqual({ weekday: 7, hour: 17, minute: 30 });
+  });
+
+  test('the same facts again change nothing (no rebuild)', async () => {
+    const { reminders, device } = await on();
+    await reminders.keepWeighInWeek(behind);
+    const before = device.replaced;
+    await reminders.keepWeighInWeek({ ...behind });
+    await reminders.keepWeighInWeek({ ...behind });
+    expect(device.replaced).toBe(before);
+  });
+
+  test('reminders off: nothing is scheduled and iOS is never asked, whatever is kept', async () => {
+    const { reminders, device } = await make();
+    await reminders.keepSchedule(saturdays);
+    await reminders.keepWeighInWeek(behind);
+    expect(device.scheduled).toEqual([]);
+    expect(device.asked).toBe(0);
+  });
+
+  test('only the check-in morning on: no training reminder, so no line', async () => {
+    const { reminders, device } = await make();
+    await reminders.keepSchedule(saturdays);
+    await reminders.keepWeighInWeek(behind);
+    await reminders.turnOn({ only: 'check_in' });
+    expect(kinds(device.scheduled)).toEqual(['check_in']);
+  });
+
+  test('kept across launches, and a sign-out forgets it', async () => {
+    const kv = memoryKv();
+    const first = await on(kv);
+    await first.reminders.keepWeighInWeek(behind);
+    const device = fakeDevice();
+    const again = await make(kv, device);
+    await again.reminders.refresh();
+    expect(training(device)[0].body).toContain('weigh-ins before Monday');
+    await again.reminders.forget();
+    expect([...kv.items.keys()].filter((key) => key.includes('weighIn'))).toEqual([]);
+  });
+
+  test("a read that began for an account that left is dropped", async () => {
+    const { reminders, device } = await on();
+    const era = reminders.era();
+    await reminders.forget();
+    await reminders.keepWeighInWeek(behind, era);
+    expect(device.scheduled).toEqual([]);
+  });
+});

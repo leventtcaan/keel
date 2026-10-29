@@ -10,7 +10,7 @@
 import type { KeyValue } from '@/units/preference';
 
 import { notificationParams as P } from './params';
-import { type FirstCall, type Reminder, type ReminderKind, type Schedule, planReminders } from './plan';
+import { type FirstCall, type Reminder, type ReminderKind, type Schedule, type WeighInFacts, planReminders } from './plan';
 
 /** What iOS answers about notifications: allowed or not, and whether its sheet can still be shown. */
 export type NotificationPermission = { granted: boolean; canAskAgain: boolean };
@@ -51,6 +51,7 @@ const KEY = {
   lastOpened: 'reminders.lastOpened',
   restUntil: 'reminders.restUntil',
   firstCall: 'reminders.firstCall',
+  weighIns: 'reminders.weighIns',
 };
 const ON = 'on';
 
@@ -71,6 +72,19 @@ function firstCallOf(kept: string | null): FirstCall {
   return kept !== null && /^\d{4}-\d{2}-\d{2}$/.test(kept) ? { on: kept } : 'weekly';
 }
 const keptFirstCall = (firstCall: FirstCall) => (typeof firstCall === 'object' ? firstCall.on : firstCall);
+
+/** The week's weigh-in facts kept by an earlier run; anything that is not them counts as none. */
+function weighInsOf(kept: string | null): WeighInFacts | null {
+  if (kept === null) return null;
+  try {
+    const v = JSON.parse(kept) as Partial<WeighInFacts> | null;
+    const ok =
+      v !== null && typeof v.from === 'string' && typeof v.to === 'string' && typeof v.weighed === 'number' && typeof v.needed === 'number' && typeof v.short === 'boolean';
+    return ok ? (v as WeighInFacts) : null;
+  } catch {
+    return null;
+  }
+}
 
 function dateOf(kept: string | null): Date | null {
   const date = kept === null ? null : new Date(kept);
@@ -131,6 +145,7 @@ export async function createReminders({ kv, access, now, report, muted = async (
       mutedUntil: until,
       restUntil: await kv.getItemAsync(KEY.restUntil),
       firstCall: firstCallOf(await kv.getItemAsync(KEY.firstCall)),
+      weighInWeek: weighInsOf(await kv.getItemAsync(KEY.weighIns)),
     });
     await access.replace(settings.only === undefined ? plan : plan.filter((reminder) => reminder.kind === settings.only));
   }
@@ -239,6 +254,22 @@ export async function createReminders({ kv, access, now, report, muted = async (
         await kv.setItemAsync(KEY.firstCall, kept);
         const { noCalls: _, ...rest } = settings;
         become({ ...rest, ...(firstCall === 'off' ? { noCalls: true as const } : {}) });
+        await reschedule();
+      }),
+
+    /**
+     * The week's weigh-ins as the server counted them (FirstWeeks.weighInWeek, ADR-089 Ek 2), kept whenever it is read —
+     * Today, and again after a weigh-in is saved. While behind and reachable the block's training reminders carry one more
+     * line; null (a call has read the scale, or none yet): none. No new kind, no permission asked. `era` as keepRestUntil's;
+     * the same facts again change nothing.
+     */
+    keepWeighInWeek: (facts: WeighInFacts | null, era: number = generation): Promise<void> =>
+      inTurn(async () => {
+        if (era !== generation) return;
+        const kept = facts === null ? null : JSON.stringify(facts);
+        if ((await kv.getItemAsync(KEY.weighIns)) === kept) return;
+        if (kept === null) await kv.removeItemAsync(KEY.weighIns);
+        else await kv.setItemAsync(KEY.weighIns, kept);
         await reschedule();
       }),
 

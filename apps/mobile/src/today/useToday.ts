@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 
+import { weighInFactsOf } from '@/notifications/plan';
 import { useAppServices } from '@/services/ServicesProvider';
 
 import { type TodayData, loadToday } from './today';
@@ -70,6 +71,12 @@ export function useToday(): { day: string; data: TodayData | null; reload: () =>
         else if (firstWeeks?.state === 'ready' || firstWeeks?.state === 'none') {
           const on = firstWeeks.state === 'ready' ? firstWeeks.value.firstCallOn : undefined;
           void remind.keepFirstCall(on === undefined ? 'weekly' : { on }, era);
+        }
+        // The week's weigh-ins, for the training reminder's extra line (ADR-089 Ek 2): kept at each read; none once a call has read
+        // the scale. A read that failed says nothing new.
+        if (firstWeeks?.state === 'ready' || firstWeeks?.state === 'none' || firstWeeks?.state === 'consent') {
+          const counted = firstWeeks.state === 'ready' ? firstWeeks.value.weighInWeek : undefined;
+          void remind.keepWeighInWeek(counted === undefined ? null : weighInFactsOf(counted), era);
         }
         // A state declared, kept on the phone for the reminders (K-518) — not for an account that left during the read.
         if (today.state !== undefined && remind.era() === era) await declared.keep(today.state).catch(named);

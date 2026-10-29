@@ -2623,7 +2623,11 @@
   "reminders": {
     "training": {
       "title": "Training in {minutes} minutes",
-      "body": "Your session is coming up."
+      "body": "Your session is coming up.",
+      "weighIns": {
+        "one": "{count} more weigh-in before {day}'s call.",
+        "other": "{count} more weigh-ins before {day}'s call."
+      }
     },
     "checkIn": {
       "title": "A new week",
