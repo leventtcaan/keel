@@ -27,3 +27,12 @@ Ders: agent'ın görsel denetimi Levent'in bir dakikada gördüğünü kaçırd�
 4. **Eksikleri ve geliştirilebilir noktaları tamamla** (yukarıdaki 4 bulgu dahil), her biri PR + test + simülatör kanıtı.
 5. Sonra **build 7** → TestFlight → ASC'de 1.0: incelemeden geri çek, build 5 çıkar, build 7 bağla, yeniden gönder (yayın şekli ELLE; Release Levent).
 6. Döngüyü durdur, Levent'e envanter sayfasıyla tek özet + K1 listesi (test silmeler dahil) onayı.
+
+## Güncelleme 29 Eki ~09:40 UTC (QA turu)
+- Skill'ler kuruldu ve build 6'da çalıştırıldı; bulgu tablosu `arastirma/ham/uygulama-qa-skill-2026-10-29.md`.
+- Düzeltildi: #647 (+ yüzer), #653 (arama harf), #652 (sekmeler kayıttan sonra okur; yalnız sekmeler, `afterSaves`), #654 (Train haftası), #655 (Progress kartları, ADR-070 Ek 4).
+- Açık bulgular (build 7 sonrası ya da ayrı iş): OFF'ta akla yatmayan enerji (Lezita chicken 397-531 kcal; makro-enerji tutarlılık süzgeci), metrik
+  kullanıcıda varsayılan birim "3 oz" (USDA porsiyonu), tek seçenekli Unit çipi, arama boşken bomboş sayfa, yüzen + This week'te Food left'in "Log"
+  bağlantısını örtüyor (kaydırınca açılır), Steps değersizken yalnız "/ 7,000" (çizgi metni copy-dashes yasak), dev'de bir kez SIGSEGV (hızlı ekleme +
+  art arda Fast Refresh; temiz açılışta tekrar etmedi; build 7'de TestFlight'ta dene).
+- Test hesabında bugün yanlışlıkla 3 fazla öğün kaydı var (hızlı ekleme satırına denk gelen dokunuşlar); Bugünün yemekleri ekranından silinebilir.
