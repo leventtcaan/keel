@@ -1250,7 +1250,18 @@ describe('Add a day is the one flow (ADR-090 Ek 1, K-1060)', () => {
     expect(mockPush).not.toHaveBeenCalledWith('/add-day');
   });
 
-  test("where the server can not add (a day on no weekday), or does not say, the editor's own empty day stays the way", async () => {
+  test('a program with a day on no weekday ("any day") is added to by the server too: the sheet, never an empty "No moves yet" day (Evre 7, issue 684)', async () => {
+    mockParams = { part: 'days' };
+    const { weekday: _weekday, ...floating } = EDITABLE.days[1];
+    editable({ ...EDITABLE, days: [EDITABLE.days[0], floating], canAddDay: true });
+    await show();
+    await screen.findByText('Upper');
+    await fireEvent.press(screen.getByText(t('programEditor.addDay')));
+    expect(mockPush).toHaveBeenCalledWith('/add-day');
+    expect(screen.queryByText(t('programEditor.defaultName', { number: 3 }))).toBeNull();
+  });
+
+  test("where the server can not add (seven days), or does not say (an older server), the editor's own empty day stays the way", async () => {
     mockParams = { part: 'days' };
     for (const canAddDay of [false, undefined]) {
       editable({ ...EDITABLE, ...(canAddDay === undefined ? {} : { canAddDay }) });

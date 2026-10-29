@@ -398,11 +398,13 @@ class ProgramDayAddsTests {
         assertThat(ProgramDayAdds.canAdd(new ProgramStore.Program(generated.id(), ProgramStore.Source.OWN, generated.days()), templates)).as("own program")
                 .isTrue();
 
+        // Evre 7 (issue 684): a day on no weekday ("any day" of a typed or brought program) does not stop an add: the add used to be refused for it,
+        // so the phone's editor gave an empty day with no moves.
         List<ProgramStore.Day> unplaced = new ArrayList<>(generated.days());
         ProgramStore.Day last = unplaced.removeLast();
         unplaced.add(new ProgramStore.Day(last.id(), last.nameKey(), last.name(), null, last.exercises()));
         assertThat(ProgramDayAdds.canAdd(new ProgramStore.Program(generated.id(), generated.source(), unplaced), templates)).as("a day on no weekday")
-                .isFalse();
+                .isTrue();
 
         ProgramStore.Day first = generated.days().getFirst();
         List<ProgramStore.Day> twice = List.of(first, new ProgramStore.Day(UUID.randomUUID(), first.nameKey(), first.name(), first.weekday(), first.exercises()));
@@ -426,7 +428,7 @@ class ProgramDayAddsTests {
     }
 
     @Test
-    void aTakenWeekdayAndADayOnNoWeekdayAreRefusedAndTheUsersOwnProgramTakesTheDay() {
+    void aTakenWeekdayIsRefusedAndTheUsersOwnProgramTakesTheDay() {
         ProgramStore.Program generated = stored(EnumSet.of(DayOfWeek.MONDAY, DayOfWeek.FRIDAY));
         assertThat(add(generated, DayOfWeek.WEDNESDAY)).as("generated, free weekday").isPresent();
 
@@ -436,9 +438,55 @@ class ProgramDayAddsTests {
 
         assertThat(add(generated, DayOfWeek.FRIDAY)).as("taken weekday").isEmpty();
 
-        List<ProgramStore.Day> unplaced = new ArrayList<>(generated.days());
-        ProgramStore.Day last = unplaced.removeLast();
-        unplaced.add(new ProgramStore.Day(last.id(), last.nameKey(), last.name(), null, last.exercises()));
-        assertThat(add(new ProgramStore.Program(generated.id(), generated.source(), unplaced), DayOfWeek.WEDNESDAY)).as("a day on no weekday").isEmpty();
+    }
+
+    /** The program of the user's own whose days have the given weekdays (null: "any day"), each with one move and an id. */
+    private static ProgramStore.Program ownWith(DayOfWeek... weekdays) {
+        List<ProgramStore.Day> days = new ArrayList<>();
+        for (int i = 0; i < weekdays.length; i++) {
+            days.add(new ProgramStore.Day(UUID.randomUUID(), null, "Day " + (i + 1), weekdays[i], List.of(new ProgramStore.PlannedExercise("bench_press", 3, 6, 10, 1))));
+        }
+        return new ProgramStore.Program(UUID.randomUUID(), ProgramStore.Source.OWN, days);
+    }
+
+    @Test
+    void anOwnProgramOfDaysOnNoWeekdayTakesTheDayWithTheTemplatesMovesAndKeepsItsOwnDaysAsTheyAre() {
+        // Evre 7 (issue 684), Levent's "Add a day came without moves": a program typed or brought in with days on "any day" was refused,
+        // so the phone's editor made an empty day. The day is the template's now, laid among the weekdays the program has.
+        ProgramStore.Program own = ownWith(null, null, null);
+        List<ProgramTemplates.Day> template = templates.forDays(4).orElseThrow();
+
+        List<ProgramStore.Day> days = add(own, DayOfWeek.MONDAY).orElseThrow();
+
+        assertThat(days).hasSize(4);
+        assertThat(days.subList(0, 3)).as("the user's own days, as they were").isEqualTo(own.days());
+        ProgramStore.Day added = days.get(3);
+        assertThat(added.weekday()).isEqualTo(DayOfWeek.MONDAY);
+        assertThat(added.id()).as("stored with a new id").isNull();
+        assertThat(added.nameKey()).isEqualTo(template.getFirst().nameKey());
+        assertThat(added.exercises()).as("it comes with moves").isNotEmpty();
+        assertThat(added.exercises()).extracting(ProgramStore.PlannedExercise::exerciseId, ProgramStore.PlannedExercise::sets)
+                .containsExactlyElementsOf(template.getFirst().exercises().stream().map(slot -> Tuple.tuple(slot.exerciseId(), slot.sets())).toList());
+    }
+
+    @Test
+    void aDayAddedToAMixOfPlacedAndUnplacedDaysGoesBeforeTheFirstLaterWeekdayAndTheOthersKeepTheirPlace() {
+        ProgramStore.Program own = ownWith(null, DayOfWeek.WEDNESDAY, null);
+
+        List<ProgramStore.Day> days = add(own, DayOfWeek.TUESDAY).orElseThrow();
+
+        assertThat(days).extracting(ProgramStore.Day::weekday).containsExactly(null, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, null);
+        assertThat(days.get(0)).isEqualTo(own.days().get(0));
+        assertThat(days.get(2)).isEqualTo(own.days().get(1));
+        assertThat(days.get(3)).isEqualTo(own.days().get(2));
+        assertThat(days.get(1).exercises()).isNotEmpty();
+    }
+
+    @Test
+    void aTakenWeekdayIsStillRefusedWhateverElseTheProgramHas() {
+        assertThat(add(ownWith(null, DayOfWeek.WEDNESDAY), DayOfWeek.WEDNESDAY)).isEmpty();
+        // Seven days are the most, placed or not.
+        assertThat(add(ownWith(null, null, null, null, null, null, null), DayOfWeek.MONDAY)).isEmpty();
+        assertThat(ProgramDayAdds.canAdd(ownWith(null, null, null, null, null, null), templates)).isTrue();
     }
 }

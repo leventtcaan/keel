@@ -35,16 +35,18 @@ final class ProgramDayAdds {
     }
 
     /**
-     * Whether the program can take an added day at all: each of its days on its own weekday (a day on no weekday has no place in
-     * the week) and a template for one more day. The one rule {@link #added} and the contract's {@code Program.canAddDay} share,
-     * so the phone never offers an add the server refuses for the program (it can still refuse a weekday the program trains: the
-     * phone offers only free ones).
+     * Whether the program can take an added day at all: no weekday is two days' (the program is one the server can keep) and there
+     * is a template for one more day. A day on no weekday does not stop it (an own program typed or brought in with "any day" days,
+     * Evre 7, #684): the new day is the template's day for the weekday picked, and the days on no weekday stay as they are. The one
+     * rule {@link #added} and the contract's {@code Program.canAddDay} share, so the phone never offers an add the server refuses
+     * for the program (it can still refuse a weekday the program trains: the phone offers only free ones).
      */
     static boolean canAdd(ProgramStore.Program program, ProgramTemplates templates) {
-        if (program.days().stream().anyMatch(day -> day.weekday() == null) || templates.forDays(program.days().size() + 1).isEmpty()) {
+        if (templates.forDays(program.days().size() + 1).isEmpty()) {
             return false;
         }
-        return program.days().stream().map(ProgramStore.Day::weekday).distinct().count() == program.days().size();
+        List<DayOfWeek> placed = program.days().stream().map(ProgramStore.Day::weekday).filter(java.util.Objects::nonNull).toList();
+        return placed.stream().distinct().count() == placed.size();
     }
 
     /**
@@ -94,11 +96,19 @@ final class ProgramDayAdds {
             return Optional.empty();
         }
         Set<DayOfWeek> weekdays = EnumSet.noneOf(DayOfWeek.class);
-        program.days().forEach(day -> weekdays.add(day.weekday()));
+        program.days().stream().map(ProgramStore.Day::weekday).filter(java.util.Objects::nonNull).forEach(weekdays::add);
         if (!weekdays.add(weekday)) {
             return Optional.empty();
         }
         Map<String, BigDecimal> known = startingWeights(program);
+        // The template for one more day is laid on that many weekdays: those the program has, this one, and for each day of the program
+        // on no weekday a free one in the week's order to make up the count. Only this weekday's day is taken from the plan.
+        int count = program.days().size() + 1;
+        for (DayOfWeek free : DayOfWeek.values()) {
+            if (weekdays.size() < count) {
+                weekdays.add(free);
+            }
+        }
         List<ProgramGenerator.PlannedDay> plan = ProgramGenerator.generate(weekdays, templates, catalog, parameters);
         // The step measured to balance as an add to the old split (add_day_balanced_days: two to three, the first week's call) stays one.
         if (replan && program.days().size() != parameters.wholeNumber(ParameterKey.ADD_DAY_BALANCED_DAYS)
@@ -108,9 +118,13 @@ final class ProgramDayAdds {
         ProgramStore.Day added = plan.stream().filter(day -> day.weekday() == weekday).findFirst()
                 .map(day -> fresh(day, known, askedReps, catalog, gym)).orElseThrow();
         List<ProgramStore.Day> days = new ArrayList<>(program.days());
-        int at = 0;
-        while (at < days.size() && days.get(at).weekday().compareTo(weekday) < 0) {
-            at++;
+        // Before the first day on a later weekday, else last: a day on no weekday keeps its place among the others.
+        int at = days.size();
+        for (int i = 0; i < days.size(); i++) {
+            if (days.get(i).weekday() != null && days.get(i).weekday().compareTo(weekday) > 0) {
+                at = i;
+                break;
+            }
         }
         days.add(at, added);
         return Optional.of(List.copyOf(days));
