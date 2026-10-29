@@ -18,7 +18,9 @@ Levent TestFlight'ta denedi: programsız kalan hesapta antrenman yok, yemek aram
 - K-9 (çift jeton yenileme) kırık değil: yalnız dev (HMR/çift yükleme), üretim kayıtlarında görülmedi.
 - Simülatör hesabı: aynı Apple ID ile yeni hesap (Levent'in eski hesabı silindi), programı var (4 gün), RevenueCat promosyon premium 29 Kas'a kadar.
 **05:35 UTC:** #643 (Evre 4.1 tutarlılık) birleşti, sahte sunucu görsel turunda doğrulandı; #644 onboarding prototip farkları ajanda. Metro gerçek sunucuda,
-keel-main kendi node_modules'u ile (eski kopya bağı yok); uygulama karşılama ekranında, Levent'in Apple girişini bekliyor.
+keel-main kendi node_modules'u ile (eski kopya bağı yok); uygulama main d1f0dc15 ile karşılama ekranında, Levent'in Apple girişini bekliyor.
+**Metro dersi:** `git pull` ile gelen `data/parameters/*.json` değişikliklerini çalışan Metro görmez (eski JSON sunar) → main değişince Metro'yu durdur,
+`metro-tmp`'yi sil, yeniden başlat, uygulamayı kapat-aç; bunu OTURUM AÇIKKEN yapma (çift yenileme oturumu düşürür). Kanıt turunda main'i çekme.
 **Sabah sırası (Evre 4):** (1) `.envanter/metro.sh` arka planda (keel-main artık kendi node_modules'u: eski kopya bağı kalktı), uygulamayı BİR kez
 openurl ile aç; sonra kapatıp açma, dal değiştirme (HMR ikinci servis örneği oturumu düşürür). (2) Levent tek Apple girişi (ekran klavyesi ⌘K).
 (3) Kanıt turu: envanterin her satırı + Evre 2 ekranları prototiple yan yana; `.envanter/shot.sh after-*` → `inventory.json › after` + `fixed` →
