@@ -10,7 +10,6 @@ import { t } from '@/copy';
 import { useAppServices } from '@/services/ServicesProvider';
 import { restorePurchases, wait } from '@/subscription/paywall';
 import { hasStoreSubscription } from '@/subscription/status';
-import { TrialReminderOffer } from '@/subscription/TrialReminderOffer';
 import { dayWords } from '@/subscription/words';
 import { load } from '@/today/today';
 import { useTheme } from '@/theme/theme';
@@ -35,7 +34,7 @@ function stateWords(subscription: Subscription): string {
  * at once — no screen of ours between, no "are you sure", nothing said about what would be lost (U7; ADR-012: cancelling is
  * visible). It leaves the app, so it is a row with no chevron. No pause button: the App Store has no pause (ADR-057). Without
  * a subscription, the way to the plans. Restore always, where the store is in the build, as a text button under the list;
- * nothing is pressed under an account the server did not name.
+ * nothing is pressed under an account the server did not name. The free trial's reminder is in Settings › Reminders (K-1062).
  */
 export function SubscriptionSection() {
   const { api, purchases } = useAppServices();
@@ -110,7 +109,6 @@ export function SubscriptionSection() {
         {manageRow}
         {plansRow}
       </ListGroup>
-      <TrialReminderOffer subscription={subscription} />
       {restoreButton}
       {restoreWaiting && note(t('subscription.restoreWaiting'), 'text')}
       {problem !== null && <ProblemText style={[styles.note, { color: color.text }]}>{problem}</ProblemText>}

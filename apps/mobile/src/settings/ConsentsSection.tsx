@@ -103,7 +103,10 @@ export function ConsentsSection({ onChanged, only, bare = false }: { onChanged?:
         accessibilityLabel={`${t('settings.consents.withdraw')} ${name}`}
         variant="ghost"
         size="sm"
-        onPress={() => setAsking(kind)}
+        onPress={() => {
+          setOpen(null); // the question first: the long text would push it off the screen
+          setAsking(kind);
+        }}
         disabled={busy}
       />
     );

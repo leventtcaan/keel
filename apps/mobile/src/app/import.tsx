@@ -16,6 +16,7 @@ import { type Matched, matchNames } from '@/import/match';
 import { MoveRow } from '@/import/MoveRow';
 import { sendImport } from '@/import/send';
 import { useAppServices } from '@/services/ServicesProvider';
+import { ConsentsSection } from '@/settings/ConsentsSection';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { type Move, ownMove } from '@/train/trainData';
@@ -34,10 +35,11 @@ const FAILURES = ['NoConnection', 'ConsentRequired', 'ImportRefused'];
 const digest = (text: string) => Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, text);
 
 /**
- * Bring in workouts from Strong or Hevy (K-609, ADR-053): the file is picked and read on this phone (H13: only the
+ * Import workouts from Strong or Hevy (K-609, ADR-053): the file is picked and read on this phone (H13: only the
  * verified forms), each move name matched to the catalog — a sure match shown and changeable, anything less offered in
  * one tap or left out (U5) — the unit and the dumbbell count asked, never guessed; only the matched sets are sent,
- * marked as brought in. They show in the history and never change a call. Needs the health data consent.
+ * marked as imported. They show in the history and never change a call. Needs the health data consent, which this screen
+ * offers when it is missing.
  */
 export default function ImportScreen() {
   const { api, consents, importFile, training, report } = useAppServices();
@@ -124,7 +126,15 @@ export default function ImportScreen() {
   // Built before the JSX: a literal inside a JSX child is read as text by the copy guard (copy-literals.test.ts).
   const moveState = moves === null ? 'loading' : moves === 'failed' ? 'failed' : 'ready';
   let body: ReactNode = null;
-  if (stage.kind === 'consent') body = <Note text={t('import.needsConsent')} />;
+  // Without the consent: one line, and the consent itself right under it (a button, not a dead end, K-1062).
+  if (stage.kind === 'consent') {
+    body = (
+      <View style={styles.part}>
+        <Note text={t('import.needsConsent')} />
+        <ConsentsSection only="HEALTH_DATA" bare onChanged={() => setStage({ kind: 'start' })} />
+      </View>
+    );
+  }
   else if (stage.kind === 'start' || stage.kind === 'unknown' || stage.kind === 'empty') {
     body = <Start stage={stage.kind} moves={moveState} onChoose={() => void choose()} />;
   } else if (stage.kind === 'map') {

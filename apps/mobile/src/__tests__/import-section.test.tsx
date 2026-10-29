@@ -1,7 +1,7 @@
 /**
- * Settings › Bring in your history (K-616, ADR-018 §3, ADR-053): Apple Health's older weigh-ins, read once when the user
- * asks. It says how many were found, that a call is never changed by them, what is missing when a consent is, and where
- * Apple Health cannot be read at all.
+ * Settings › Import weigh-ins (K-616, ADR-018 §3, ADR-053): Apple Health's older weigh-ins, read once when the user
+ * asks. It says how many were found, that a call is never changed by them, gives the consent that is missing right there
+ * (K-1062), and says where Apple Health cannot be read at all. The workouts file is Settings › Training › Import workouts.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
@@ -15,8 +15,17 @@ const mockServices = {
   report: jest.fn(),
 };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices }));
-const mockPush = jest.fn();
-jest.mock('expo-router', () => ({ router: { push: (...args: unknown[]) => mockPush(...args) } }));
+// The consent offered under "needs your OK" is the consents section itself (settings-screen.test.tsx covers it): here, that it is offered.
+jest.mock('@/settings/ConsentsSection', () => ({
+  ConsentsSection: ({ only, onChanged }: { only: string; onChanged: () => void }) => {
+    const { Pressable, Text } = jest.requireActual<typeof import('react-native')>('react-native');
+    return (
+      <Pressable accessibilityRole="button" accessibilityLabel={`allow ${only}`} onPress={onChanged}>
+        <Text>{only}</Text>
+      </Pressable>
+    );
+  },
+}));
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -72,13 +81,16 @@ test('none new: it says so, not "0 found"', async () => {
   expect(screen.getByText(t('settings.import.noneNew'))).toBeOnTheScreen();
 });
 
-test('without both consents it says which are needed and reads nothing', async () => {
+test('without the Apple Health consent it says so and offers the consent right there, then the import can be tried again', async () => {
   mockServices.importHealthWeights.mockResolvedValueOnce('consent');
   await show();
 
   await importWeighIns();
 
   expect(screen.getByText(t('settings.import.needsConsent'))).toBeOnTheScreen();
+  await fireEvent.press(screen.getByRole('button', { name: 'allow APPLE_HEALTH' }));
+  expect(screen.queryByText(t('settings.import.needsConsent'))).toBeNull();
+  expect(screen.queryByRole('button', { name: 'allow APPLE_HEALTH' })).toBeNull();
 });
 
 test('a failure is said, by name only to the report', async () => {
@@ -132,20 +144,4 @@ test('where Apple Health cannot be read (Expo Go), it says so and offers nothing
 
   expect(screen.getByText(t('settings.import.unavailable'))).toBeOnTheScreen();
   expect(screen.queryByRole('button', { name: t('settings.import.importLabel', { what: what() }) })).toBeNull();
-});
-
-test('workouts from Strong or Hevy open their own screen (K-609)', async () => {
-  await show();
-
-  await fireEvent.press(screen.getByRole('button', { name: t('settings.import.workoutsLabel') }));
-
-  expect(mockPush).toHaveBeenCalledWith('/import');
-});
-
-test('where Apple Health cannot be read, workouts can still be brought in: a file needs no HealthKit', async () => {
-  mockServices.health.available = false;
-  await show();
-
-  expect(screen.getByText(t('settings.import.unavailable'))).toBeOnTheScreen();
-  expect(screen.getByRole('button', { name: t('settings.import.workoutsLabel') })).toBeOnTheScreen();
 });

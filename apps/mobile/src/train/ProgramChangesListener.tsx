@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-import { useMarkChanged } from '@/saved/saved';
+import { useSavedSignal } from '@/saved/saved';
 
 import { onProgramChanged } from './programChanges';
 
@@ -10,7 +10,7 @@ import { onProgramChanged } from './programChanges';
  * and Progress never go on showing the program before it.
  */
 export function ProgramChangesListener() {
-  const changed = useMarkChanged();
+  const changed = useSavedSignal();
   useEffect(() => onProgramChanged(changed), [changed]);
   return null;
 }

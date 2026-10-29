@@ -64,8 +64,10 @@ async function show() {
   );
   await act(async () => {});
 }
-const press = async (name: string) => {
-  await fireEvent.press(screen.getByRole('button', { name }));
+/** The switch of a row (iOS switches, K-1062): found by the name it is given for VoiceOver. */
+const switchOf = (what: string) => screen.getByRole('switch', { name: t('settings.healthWrite.switchLabel', { what }) });
+const flip = async (what: string, to: boolean) => {
+  await fireEvent(switchOf(what), 'valueChange', to);
   await act(async () => {});
 };
 const workouts = t('settings.healthWrite.workouts');
@@ -74,49 +76,55 @@ const weighIns = t('settings.healthWrite.weighIns');
 test('both off, apart: turning workouts on asks for workouts only', async () => {
   await show();
   expect(screen.getByText(t('settings.healthWrite.note'))).toBeTruthy();
-  await press(t('settings.healthWrite.turnOnLabel', { what: workouts }));
+  expect(switchOf(workouts)).not.toBeChecked();
+  await flip(workouts, true);
   expect(mockServices.healthWriting.turnOn).toHaveBeenCalledWith('workouts');
-  expect(screen.getByRole('button', { name: t('settings.healthWrite.turnOffLabel', { what: workouts }) })).toBeTruthy();
-  expect(screen.getByRole('button', { name: t('settings.healthWrite.turnOnLabel', { what: weighIns }) })).toBeTruthy();
+  expect(mockServices.healthWriting.turnOn).toHaveBeenCalledTimes(1);
+  expect(switchOf(workouts)).toBeChecked();
+  expect(switchOf(weighIns)).not.toBeChecked();
 });
 
 test('refused by Apple Health: it says where to allow it, and stays off', async () => {
   mockAllowed = false;
   await show();
-  await press(t('settings.healthWrite.turnOnLabel', { what: weighIns }));
+  await flip(weighIns, true);
   expect(screen.getByText(t('settings.healthWrite.refused'))).toBeTruthy();
-  expect(screen.getByRole('button', { name: t('settings.healthWrite.turnOnLabel', { what: weighIns }) })).toBeTruthy();
+  expect(switchOf(weighIns)).not.toBeChecked();
 });
 
 test('turning off goes through the service', async () => {
   mockSettings = { workouts: true, weighIns: false };
   await show();
-  await press(t('settings.healthWrite.turnOffLabel', { what: workouts }));
+  expect(switchOf(workouts)).toBeChecked();
+  await flip(workouts, false);
   expect(mockServices.healthWriting.turnOff).toHaveBeenCalledWith('workouts');
+  expect(switchOf(workouts)).not.toBeChecked();
 });
 
 test('without HealthKit in the build: it says so, and there is nothing to turn on', async () => {
   mockServices.health.available = false;
   await show();
   expect(screen.getByText(t('settings.healthWrite.unavailable'))).toBeTruthy();
+  expect(screen.queryByRole('switch')).toBeNull();
   expect(screen.queryByRole('button')).toBeNull();
 });
 
 test('a failure is worded and reported by name only', async () => {
   mockServices.healthWriting.turnOn.mockRejectedValueOnce(Object.assign(new Error('HK'), { name: 'HealthSheetFailed' }));
   await show();
-  await press(t('settings.healthWrite.turnOnLabel', { what: workouts }));
+  await flip(workouts, true);
   expect(screen.getByText(t('settings.healthWrite.failed'))).toBeTruthy();
   expect(mockServices.report).toHaveBeenCalledWith({ name: 'HealthSheetFailed' });
 });
 
-test('on, but taken back in the Health app: not "On" — where to allow it, and a way to turn it off; seen again on return', async () => {
+test('on, but taken back in the Health app: not shown on — where to allow it; turning it on asks again; seen again on return', async () => {
   mockSettings = { workouts: true, weighIns: false };
   await show();
-  expect(screen.getByText(t('settings.healthWrite.on'))).toBeTruthy();
+  expect(switchOf(workouts)).toBeChecked();
   mockRevoked = true;
   await act(async () => mockForeground('active'));
-  expect(screen.queryByText(t('settings.healthWrite.on'))).toBeNull();
+  expect(switchOf(workouts)).not.toBeChecked();
   expect(screen.getByText(t('settings.healthWrite.refused'))).toBeTruthy();
-  expect(screen.getByRole('button', { name: t('settings.healthWrite.turnOffLabel', { what: workouts }) })).toBeTruthy();
+  await flip(workouts, true);
+  expect(mockServices.healthWriting.turnOn).toHaveBeenCalledWith('workouts');
 });

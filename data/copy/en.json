@@ -481,7 +481,7 @@
     "inProgress": "Workout in progress",
     "continue": "Continue",
     "nextBodyweight": "Next {reps} reps",
-    "rackEnds": "Your gym has no next weight for this move that you can reach yet. Add one to your gym's weights and the load can go up again.",
+    "rackEnds": "No heavier weight for this move at your gym yet.",
     "startDay": "Start {day}",
     "split": { "own": "Your own program", "join": " + " },
     "call": { "notApplied": "Not applied: last week's plan, kept", "use": "Use this call" },
@@ -1298,23 +1298,23 @@
     }
   },
   "import": {
-    "title": "Bring in workouts",
-    "intro": "Export your workouts from Strong or Hevy, then choose the file here.",
-    "privacy": "The file stays on this phone. Only the sets you match to a move are sent, marked as brought in. They show in your history and never change a call.",
-    "needsConsent": "Bringing in workouts needs the health data consent. You can give it in Settings.",
+    "title": "Import workouts",
+    "intro": "Export from Strong or Hevy, then choose the file.",
+    "privacy": "Stays on this phone. Only sets you match are sent, and they never change a call.",
+    "needsConsent": "Importing workouts needs your OK for health data.",
     "choose": "Choose a file",
     "chooseAnother": "Choose another file",
-    "unknown": "This isn't a Strong or Hevy export we can read. Export it again from the app, in English, and choose it without editing it.",
+    "unknown": "We can't read this file. Export again from Strong or Hevy, in English, and don't edit it.",
     "empty": "There are no sets in this file.",
     "summary": "From {app} · sessions: {sessions} · sets: {sets}",
-    "rowsLeftOut": "Rows that aren't sets we can bring in (no reps, like a timed hold, or a date we can't read): {count}",
+    "rowsLeftOut": "Rows skipped (no reps, or a date we can't read): {count}",
     "apps": {
       "STRONG": "Strong",
       "HEVY": "Hevy"
     },
     "unit": {
       "title": "What unit are the weights in?",
-      "note": "Strong's file doesn't say. It's the unit set in Strong when you exported. Pick one to go on.",
+      "note": "The file doesn't say. Use the unit Strong was set to.",
       "kg": "kg",
       "lb": "lb"
     },
@@ -1327,29 +1327,29 @@
     "moves": "Your moves",
     "sets": "Sets: {count}",
     "matched": "As {move}",
-    "notMatched": "Not brought in",
+    "notMatched": "Not imported",
     "unsure": "Not sure which move this is. Pick one, or leave it out:",
-    "pickLabel": "Bring in {file} as {move}",
+    "pickLabel": "Import {file} as {move}",
     "other": "Other",
     "otherLabel": "Choose another move for {file}",
     "skip": "Leave out",
-    "skipLabel": "Don't bring in {file}",
+    "skipLabel": "Don't import {file}",
     "search": "Search moves",
     "own": "My own move",
     "ownLabel": "Make {file} one of my own moves",
     "back": "Back",
-    "send": "Bring in {count} sessions",
-    "sendOne": "Bring in 1 session",
-    "nothing": "Nothing to bring in yet: match at least one move.",
+    "send": "Import {count} sessions",
+    "sendOne": "Import 1 session",
+    "nothing": "Nothing to import yet: match at least one move.",
     "unitFirst": "Pick the unit the weights are in first.",
     "loadingMoves": "Reading the moves list…",
     "noMoves": "Couldn't read the moves list. Open this again when you're online.",
     "sending": "Sending {done} of {of}…",
-    "done": "{count} sessions brought in.",
-    "doneOne": "1 session brought in.",
+    "done": "{count} sessions imported.",
+    "doneOne": "1 session imported.",
     "already": "Already here from before: {count}",
-    "skipped": "Sets of moves you left out, kept in the file only: {count}. Bringing the same file in again won't add them to sessions already here.",
-    "leftOut": "Sets that couldn't come in (a load the move can't take, or over the limits): {count}",
+    "skipped": "Sets you left out: {count}. They stay in the file.",
+    "leftOut": "Sets that couldn't come in: {count}",
     "close": "Done",
     "failed": {
       "NoConnection": "No connection. Try again: what was sent stays, and it won't come in twice.",
@@ -1890,6 +1890,12 @@
     "health_data": {
       "version": "5",
       "title": "Your health data, for your coaching",
+      "headings": {
+        "collected": "What we keep",
+        "purpose": "What it is for",
+        "withdraw": "Taking it back",
+        "scope": "What it covers"
+      },
       "points": {
         "collected": "Your weight, waist, steps, sleep and active energy, what you conclude from your progress photos and the look you pick, your meals and recipes, your plan and check-in answers, what you tell the app about being sick or in pain, and the foods you avoid are health data.",
         "purpose": "We use your health data to make your weekly calls and show your progress. We also count, in totals across all users and never per person or by value, whether the coaching works. We never sell it or use it for ads. You can export or delete it at any time.",
@@ -2853,7 +2859,7 @@
       "title": "Reminders",
       "kinds": "Training day, check-in morning, a note after a quiet week.",
       "routine": "Your routine",
-      "what": "Three kinds, never more: {minutes} minutes before your usual training time, in your own words; your weekly check-in morning; and one note if a week goes by without the app. They're set on this phone and nothing is sent anywhere.",
+      "what": "Three reminders: training ({minutes} minutes before), the check-in morning, and a note after a quiet week. All stay on this phone.",
       "turnOn": "Turn on reminders",
     "onlyCheckIn": "Only the check-in morning reminder is on.",
     "noCalls": "No weekly calls without your OK for health data, so the check-in morning reminder waits.",
@@ -2861,45 +2867,44 @@
       "blocked": "Notifications for Next Call are off in iOS Settings.",
       "openSettings": "Open iOS Settings",
       "failed": "Couldn't change reminders. Try again.",
+      "trial": "Trial reminder",
       "cue": {
         "label": "Your routine, in your words",
-        "hint": "The training reminder says this. For example: After work, straight to the gym.",
+        "hint": "The training reminder says this.",
+        "options": {
+          "afterWork": "After work, straight to the gym.",
+          "beforeWork": "Before work, while it's quiet.",
+          "lunch": "On my lunch break.",
+          "morning": "First thing in the morning."
+        },
         "save": "Save",
         "saveLabel": "Save your routine"
       }
     },
     "healthWrite": {
       "title": "Add to Apple Health",
-      "note": "Nothing is added until you turn it on. What's added stays in Apple Health, yours to keep or delete there.",
+      "note": "Off until you turn it on. What's added stays yours in Apple Health.",
       "workouts": "Finished workouts",
-      "workoutsHint": "So your Fitness rings count them.",
+      "workoutsHint": "So your rings count them.",
       "weighIns": "Weigh-ins you type",
-      "turnOn": "Turn on",
-      "turnOff": "Turn off",
-      "turnOnLabel": "Add {what} to Apple Health",
-      "turnOffLabel": "Stop adding {what} to Apple Health",
-      "on": "On",
-      "refused": "Apple Health didn't allow it. You can allow it in the Health app.",
+      "switchLabel": "Add {what} to Apple Health",
+      "refused": "Apple Health said no. Allow it in the Health app.",
       "unavailable": "Adding to Apple Health works in the app's device build.",
       "failed": "Couldn't change this. Try again."
     },
     "import": {
-      "title": "Bring in your history",
-      "note": "Older weigh-ins join your weigh-in history right away. They never change a call: calls read only what the app records itself.",
+      "title": "Import weigh-ins",
+      "note": "Older weigh-ins from Apple Health. They never change a call.",
       "weighIns": "Weigh-ins from Apple Health",
-      "weighInsHint": "The year before the last week. Read when you tap, never on its own.",
+      "weighInsHint": "Read only when you tap.",
       "import": "Import",
       "importLabel": "Import {what}",
-      "found": "{count} older weigh-ins found. See them on Weigh-in under Year once they're sent.",
-      "foundOne": "1 older weigh-in found. See it on Weigh-in under Year once it's sent.",
-      "noneNew": "Nothing new to bring in.",
-      "needsConsent": "This needs the health data and Apple Health consents. Give them under Health and data in Settings.",
+      "found": "{count} found. See them under Weigh-in, Year.",
+      "foundOne": "1 found. See it under Weigh-in, Year.",
+      "noneNew": "Nothing new.",
+      "needsConsent": "Needs your OK for Apple Health.",
       "failed": "Couldn't read Apple Health. Try again.",
-      "unavailable": "Bringing in Apple Health history works in the app's device build.",
-      "workouts": "Workouts from Strong or Hevy",
-      "workoutsHint": "From the app's CSV export. The file stays on this phone.",
-      "open": "Choose",
-      "workoutsLabel": "Bring in workouts from Strong or Hevy"
+      "unavailable": "Importing from Apple Health works in the app's device build."
     },
     "consents": {
       "title": "Your data and consents",
@@ -2923,7 +2928,7 @@
     "withdrawConfirm": {
       "HEALTH_DATA": {
         "title": "Withdraw the health data consent?",
-        "body": "Your health entries are deleted for good: weigh-ins, waist, photo checks, steps and sleep, meals, your weekly calls and plan, and the foods you avoid. You can't undo this. Your training stays. Export your data first if you want a copy."
+        "body": "Deleted for good: weigh-ins, waist, photo checks, steps, sleep, meals, calls, plan and foods. Your training stays. This can't be undone."
       },
       "APPLE_HEALTH": {
         "title": "Stop reading Apple Health?",
@@ -2961,13 +2966,11 @@
       "title": "Account",
       "footer": "Delete account removes everything, on every device."
     },
-    "gyms": "Gyms",
     "training": {
       "title": "Training",
       "days": "Training days",
       "import": "Import workouts",
       "importFrom": "Strong, Hevy",
-      "noGym": "None yet",
       "none": "None yet",
       "unread": "Couldn't load"
     },
@@ -2975,19 +2978,49 @@
       "title": "Food",
       "avoid": "Foods you avoid",
       "none": "None",
+      "count": "{count} foods",
       "locked": "Needs your OK for health data",
       "unread": "Couldn't load",
-      "label": "Foods you don't or can't eat",
-      "hint": "Separate them with commas.",
+      "label": "A food you avoid",
+      "add": "Add",
+      "addOwn": "Add your own",
       "save": "Save",
-      "cancel": "Cancel",
-      "failed": "Couldn't save that. Try again."
+      "failed": "Couldn't save that. Try again.",
+      "common": {
+        "pork": "Pork",
+        "beef": "Beef",
+        "shellfish": "Shellfish",
+        "fish": "Fish",
+        "dairy": "Dairy",
+        "eggs": "Eggs",
+        "gluten": "Gluten",
+        "nuts": "Nuts",
+        "peanuts": "Peanuts",
+        "soy": "Soy",
+        "alcohol": "Alcohol"
+      }
+    },
+    "profile": {
+      "title": "About you",
+      "goal": "Goal",
+      "checkIn": "Check-in day",
+      "checkInNote": "This day closes your week and plans the next.",
+      "height": "Height",
+      "activity": "Activity",
+      "born": "Born",
+      "notSet": "Not set",
+      "save": "Save",
+      "failed": "Couldn't save that. Check your connection and try again.",
+      "unread": "Couldn't load"
+    },
+    "legal": {
+      "title": "Legal"
     },
     "health": {
       "title": "Health and data",
       "consent": "Health data consent",
       "needsConsent": "Needs your OK for health data",
-      "locked": "Bringing in Apple Health history needs your OK for health data."
+      "locked": "Needs your OK for health data."
     },
     "sources": {
       "title": "Data sources",
@@ -3165,45 +3198,6 @@
     "keep": "Keep it",
     "targetsNote": "Changes here don't move your next session's targets: a later session set them.",
     "targetsMove": "Changes here update your next session's targets, from what this session now holds."
-  },
-  "gyms": {
-    "title": "Gyms",
-    "note": "Your next weights are rounded to what the gym you use can make; warm-ups and plates follow it too.",
-    "inUse": "In use",
-    "add": "Add a gym",
-    "loadFailed": "Your gyms couldn't load. Try again when you're online.",
-    "retry": "Try again"
-  },
-  "gym": {
-    "title": "Gym",
-    "name": "Name",
-    "bar": "Bar ({unit})",
-    "plates": "Plates ({unit}), separated by spaces",
-    "dumbbells": "Dumbbells ({unit}), separated by spaces",
-    "rack": {
-      "lightest": "Lightest",
-      "heaviest": "Heaviest",
-      "step": "Step",
-      "fill": "Fill the rack"
-    },
-    "stackStep": "Stack step ({unit})",
-    "machines": "Machines with their own step",
-    "machine": "{exercise}: its own step ({unit})",
-    "current": "Use this gym",
-    "save": "Save",
-    "delete": "Delete this gym",
-    "problem": {
-      "name": "Give the gym a name.",
-      "bar": "Write the bar's weight as a number.",
-      "plates": "Write each plate as a number, with spaces between.",
-      "dumbbells": "Write each dumbbell as a number, with spaces between.",
-      "stackStep": "Write the stack step as a number.",
-      "machines": "Write each machine's step as a number."
-    },
-    "refused": "This gym wasn't saved: something in it is past what the app takes. Check the name and the lists.",
-    "saveFailed": "This gym couldn't be saved. Try again when you're online.",
-    "deleteFailed": "This gym couldn't be deleted. Try again when you're online.",
-    "unitNote": "The gym's weights, as its plates and dumbbells are marked:"
   },
   "projection": {
     "scoff": {

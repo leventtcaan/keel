@@ -11,12 +11,14 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
 import { openDetail } from './detail';
+import { TrialReminderRow } from './TrialReminderRow';
 import { useAction } from './useAction';
 
 /**
- * The reminders (K-410, ADR-036) as a grouped list: one switch, "Reminders", and the row "Your routine", which opens the page
- * with what the three kinds are and the user's own sentence (RoutineEditor). The line under the switch names the three kinds
- * in one line; the paragraph is on the routine page, in front of the sentence. When iOS has said no for good, or the
+ * The reminders (K-410, ADR-036) as one grouped list, all of them in this one place (K-1062): the switch "Reminders" for the three
+ * kinds, "Your routine" (the page with the user's own sentence, RoutineEditor), and the free trial's reminder while there is one
+ * (TrialReminderRow). A slot is left for the meal reminder (ADR-090 #2). The line under the switch names the kinds in one line;
+ * the words are on the routine page, in front of the sentence. When iOS has said no for good, or the
  * check-in morning is on alone, that line says so instead, with the step that fixes it. "On" is shown only when iOS allows
  * it too: never a switch that does nothing.
  */
@@ -93,6 +95,8 @@ export function RemindersSection() {
           disabled={busy}
         />
         <ListRow icon="clock" label={t('settings.reminders.routine')} value={settings.cue} navigates onPress={() => openDetail('routine')} />
+        {/* The meal reminder (ADR-090 #2, the fourth kind) gets its row here when the kind is added, before the trial's. */}
+        <TrialReminderRow />
       </ListGroup>
       {stepButton}
       {problem !== null && <ProblemText style={[styles.note, { color: color.text }]}>{problem}</ProblemText>}

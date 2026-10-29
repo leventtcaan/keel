@@ -22,9 +22,8 @@ describe('previousScreenName', () => {
     expect(previousScreenName({ routes: [tabs(), { key: 's', name: 'settings' }] }, 's')).toBe(t('tabs.today'));
   });
 
-  test('over Settings it says Settings; over the gyms, Gyms; over Edit program, Edit program', () => {
+  test('over Settings it says Settings; over Edit program, Edit program', () => {
     expect(previousScreenName({ routes: [tabs(), { key: 'a', name: 'settings' }, { key: 'b', name: 'settings-detail' }] }, 'b')).toBe(t('settings.title'));
-    expect(previousScreenName({ routes: [tabs(), { key: 'a', name: 'gyms' }, { key: 'b', name: 'gym' }] }, 'b')).toBe(t('gyms.title'));
     expect(previousScreenName({ routes: [tabs(), { key: 'a', name: 'edit-program' }, { key: 'b', name: 'edit-program' }] }, 'b')).toBe(t('editProgram.title'));
   });
 

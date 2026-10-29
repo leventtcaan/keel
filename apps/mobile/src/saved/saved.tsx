@@ -73,10 +73,10 @@ export function useSavedChanges(): number {
 }
 
 /**
- * Says "what the screens show changed" without a banner (a program changed by a path that has its own Undo, ADR-090 Ek 1): the
- * tabs that read on this count read again, as after a save.
+ * A setting was saved on a page of its own (the profile's answers, the foods): no banner and nothing to take back, but the
+ * screens that read it read again (the same count `useSavedChanges` watches).
  */
-export function useMarkChanged(): () => void {
+export function useSavedSignal(): () => void {
   return useContext(Saved).changed;
 }
 
