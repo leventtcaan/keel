@@ -1,6 +1,6 @@
 import { StyleSheet, Text } from 'react-native';
 
-import { Card } from '@/components/Card';
+import { Section } from '@/components/Section';
 import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
@@ -9,7 +9,7 @@ import { type UnitSystem, formatWeight, weightStepKg } from '@/units/units';
 
 import { LineChart } from './LineChart';
 import type { ChartPoint } from './lineScale';
-import { CardHead, WeighInDots } from './Parts';
+import { WeighInDots } from './Parts';
 import type { WeightPart } from './sections';
 
 /**
@@ -44,14 +44,13 @@ export function WeightCard({ part, units }: { part: WeightPart; units: UnitSyste
       </Text>
     );
   return (
-    <Card>
-      <CardHead title={t('progress.weight.chartTitle')} aside={t('progress.weight.average')} />
+    <Section testID="section-weight" title={t('progress.weight.chartTitle')} aside={t('progress.weight.average')}>
       <Text testID="weight-latest" style={[styles.big, { color: color.text }]}>
         {last.label}
       </Text>
       {day}
       {chart}
-    </Card>
+    </Section>
   );
 }
 

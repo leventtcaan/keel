@@ -75,7 +75,11 @@ export function Stepper({ label, value, onChange, onEmpty, step, min = Number.NE
     const next = clamp(value + direction * step);
     return next === value ? null : () => onChange(next);
   };
-  const stepBy = (direction: 1 | -1) => stepTo(direction)?.();
+  // A step while the field is being typed in: the number stepped to is shown, not what was typed (the keyboard stays up over a press).
+  const stepBy = (direction: 1 | -1) => {
+    setDraft(null);
+    stepTo(direction)?.();
+  };
   const typed = (text: string) => {
     const number = parse(text);
     if (number !== null) {

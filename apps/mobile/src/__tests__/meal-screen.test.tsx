@@ -305,7 +305,7 @@ describe('the amounts and the estimate', () => {
     // Named: with several items the question says which one it is about (simulator).
     const question = t('meal.estimate.question', { name: CHICKEN.name, question: t('foodEstimate.question.grams') });
     expect(screen.getByText(question)).toBeOnTheScreen();
-    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.item.weighedSpoken', { name: CHICKEN.name }) })));
+    await act(async () => fireEvent(screen.getByRole('switch', { name: t('meal.item.weighedSpoken', { name: CHICKEN.name }) }), 'valueChange', true));
     expect(estimates().at(-1)?.[1]).toEqual({ body: { items: [{ foodId: 'fdc-4', amount: { quantity: 150, unit: 'g', certainty: 'WEIGHED' } }] } });
     expect(screen.queryByText(question)).toBeNull();
   });

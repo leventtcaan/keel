@@ -4,12 +4,11 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { components } from '@/api/schema';
 import { Card } from '@/components/Card';
+import { Section } from '@/components/Section';
 import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { shortDate } from '@/train/program';
-
-import { CardHead } from './Parts';
 
 /**
  * Calls (ADR-078 #2, Ek 3, prototype `#progress`): the latest calls the server listed, newest first. A row opens that call on
@@ -40,10 +39,9 @@ export function CallsCard({ items }: { items: components['schemas']['Decision'][
     );
   });
   return (
-    <Card>
-      <CardHead title={t('progress.calls.title')} />
-      {rows}
-    </Card>
+    <Section testID="section-calls" title={t('progress.calls.title')}>
+      <Card testID="calls-list">{rows}</Card>
+    </Section>
   );
 }
 

@@ -6,6 +6,7 @@
  */
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
+import { weekRecordText } from '@/today/week';
 import { type UnitSystem, formatWeight } from '@/units/units';
 
 import type { ProgressRead } from './read';
@@ -78,7 +79,8 @@ export function heroOf(read: ProgressRead, units: UnitSystem): { title: string; 
   if (phase === 'running') {
     const record = read.consistency.state === 'ready' ? read.consistency.value.record : null;
     const { countedWeeks, onTrackWeeks } = record ?? { countedWeeks: 0, onTrackWeeks: 0 };
-    const sub = countedWeeks === 0 ? null : t(countedWeeks === 1 ? 'progress.hero.recordOne' : 'progress.hero.record', { counted: countedWeeks, onTrack: onTrackWeeks });
+    // The line This week's header shows, from the same Consistency.record (K-1045, T-8): one wording, one source.
+    const sub = countedWeeks === 0 ? null : weekRecordText({ onTrack: onTrackWeeks, counted: countedWeeks });
     return { title: resultSentence(read, units), sub };
   }
   // Without the consent the lifts and the calls are not read together: no first workout line there. Nor are the food and

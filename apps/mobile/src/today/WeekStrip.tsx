@@ -5,7 +5,7 @@ import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
-import type { StripDay, WeekHead } from './week';
+import { type StripDay, type WeekHead, weekRecordText } from './week';
 
 /** What VoiceOver says of a day: its name, then each mark it has ("Monday, trained, today"). */
 function spoken(day: StripDay): string {
@@ -23,10 +23,12 @@ function spoken(day: StripDay): string {
 export function WeekStrip({ head, days }: { head: WeekHead; days: StripDay[] }) {
   const { color } = useTheme();
   // Built outside the JSX (the raw-text guard reads its children).
-  const tick = <SymbolView name="checkmark" size={tokens.type.bodySmall} tintColor={color.onAccent} weight="bold" />;
+  const tick = <SymbolView testID="tick" name="checkmark" size={tokens.type.bodySmall} tintColor={color.onAccent} weight="bold" />;
   const dot = (date: string) => <View testID={`logged-${date}`} style={[styles.dot, { backgroundColor: color.accent }]} />;
+  // A day with nothing on it is a small quiet dot (prototype `.mk.none`): the day is there, and nothing says missed (U7).
+  const none = (date: string) => <View testID={`empty-dot-${date}`} style={[styles.none, { backgroundColor: color.edge }]} />;
   const right =
-    head.record !== null ? t('thisWeek.onTrack', head.record) : head.countedByWeek ? t('thisWeek.countedByWeek') : null;
+    head.record !== null ? weekRecordText({ onTrack: head.record.onTrack, counted: head.record.counted }) : head.countedByWeek ? t('thisWeek.countedByWeek') : null;
   return (
     <View style={styles.strip}>
       <View style={styles.head}>
@@ -36,16 +38,19 @@ export function WeekStrip({ head, days }: { head: WeekHead; days: StripDay[] }) 
       <View testID="week-strip" accessibilityLabel={t('thisWeek.strip.label')} style={styles.week}>
         {days.map((day) => (
           <View key={day.date} testID={`day-${day.date}`} accessible accessibilityLabel={spoken(day)} style={styles.day}>
-            <View
-              style={[
-                styles.mark,
-                day.trained && { backgroundColor: color.accent },
-                day.planned && { borderColor: color.accent, borderWidth: tokens.border.outline },
-                !day.trained && !day.planned && { backgroundColor: color.surface },
-                day.today && { borderColor: color.text, borderWidth: tokens.border.outline },
-              ]}>
-              {day.trained ? tick : null}
-              {day.logged && !day.trained ? dot(day.date) : null}
+            {/* Today's ink ring stands off the mark (prototype `.mk.td`): a planned day keeps its accent ring inside it. */}
+            <View testID={day.today ? `ring-${day.date}` : undefined} style={[styles.ring, { borderColor: day.today ? color.text : color.background }]}>
+              <View
+                testID={`mark-${day.date}`}
+                style={[
+                  styles.mark,
+                  day.trained && { backgroundColor: color.accent },
+                  day.planned && { borderColor: color.accent, borderWidth: tokens.border.outline },
+                ]}>
+                {day.trained ? tick : null}
+                {day.logged && !day.trained ? dot(day.date) : null}
+                {!day.trained && !day.planned && !day.logged ? none(day.date) : null}
+              </View>
             </View>
             <Text style={[styles.letter, { color: day.today ? color.text : color.muted }]}>{t(`thisWeek.strip.letter.${day.weekday}`)}</Text>
           </View>
@@ -61,6 +66,7 @@ const styles = StyleSheet.create({
   headText: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.semibold },
   week: { flexDirection: 'row', justifyContent: 'space-between' },
   day: { alignItems: 'center', gap: tokens.space.xs, minWidth: tokens.size.touch },
+  ring: { borderWidth: tokens.border.outline, borderRadius: tokens.radius.card, padding: tokens.space.xs / 2 },
   mark: {
     width: tokens.size.touch - tokens.space.md,
     height: tokens.size.touch - tokens.space.md,
@@ -69,5 +75,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   dot: { width: tokens.space.sm, height: tokens.space.sm, borderRadius: tokens.space.xs },
+  none: { width: tokens.size.track, height: tokens.size.track, borderRadius: tokens.size.track / 2 },
   letter: { fontSize: tokens.type.label, fontWeight: tokens.weight.bold },
 });

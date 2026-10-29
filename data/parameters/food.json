@@ -98,6 +98,22 @@
       "note": "FoodEstimateRequest.items maxItems; the server checks a logged meal's items the same way (K-407 review: a larger meal was queued, refused and lost)."
     },
     {
+      "key": "meal_amount_step_g",
+      "value": 10,
+      "unit": "g",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-070-gorsel-dil-turkuaz.md#Ek 2",
+      "note": "One tap of - or + on a food counted in grams (the one Stepper, ADR-070 Ek 2 #5; K-1046). The amount opens on meal_default_grams (100 g), so ten is a tenth of it; any other amount is typed."
+    },
+    {
+      "key": "meal_amount_step_serving",
+      "value": 0.5,
+      "unit": "servings",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-070-gorsel-dil-turkuaz.md#Ek 2",
+      "note": "One tap of - or + on a food counted in servings or on a recipe's portions (the one Stepper, ADR-070 Ek 2 #5; K-1046). Half a serving is the smallest part people say (\"half a bowl\"); any other amount is typed, up to Amount.quantity's 2 decimals."
+    },
+    {
       "key": "meal_amount_max_chars",
       "value": 8,
       "unit": "characters",

@@ -4,15 +4,15 @@
  * today, skipped or short as the server says; the rest of the week below. Offline, the copy kept on the phone, saying
  * so; no program, one line; a failed read, one line and a way to try again.
  */
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
-import { AccessibilityInfo } from 'react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
+import { AccessibilityInfo, StyleSheet } from 'react-native';
 
 import TrainScreen from '@/app/(tabs)/train';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { workoutParams } from '@/train/params';
 import { ThemeProvider } from '@/theme/theme';
-import { tokens } from '@/theme/tokens';
+import { palettes, tokens } from '@/theme/tokens';
 import { CallRow } from '@/train/CallRow';
 import type { Outbound } from '@/sync/queue';
 import type { LocalRecord } from '@/sync/store';
@@ -457,8 +457,8 @@ test('a day without a session: rest, and any session of the week can be started 
   await show();
   expect(await screen.findByText(t('train.restDayPick'))).toBeTruthy();
   const start = screen.getByLabelText('Start Lower A');
-  // A full-size button (at least size.touch tall), not the small one.
-  expect(start).toHaveStyle({ paddingVertical: tokens.space.md });
+  // A text button (K-1045, ADR-070 Ek 2 #1): words with no box, still size.touch tall to press.
+  expect(start).toHaveStyle({ minHeight: tokens.size.touch });
   await fireEvent.press(start);
   expect(mockPush).toHaveBeenCalledWith({ pathname: '/workout', params: { day: 'b' } });
 });
@@ -1061,4 +1061,78 @@ test("the user's own move in their program is named as they named it, never by i
   expect(screen.queryByText(/custom:/)).toBeNull();
   // Their own program is theirs, whatever its days are called.
   expect(screen.getByText('Your own program · 1 day')).toBeTruthy();
+});
+
+describe('on the system (K-1045, T-7, T-18, ADR-070 Ek 2 #1, #8)', () => {
+  test("Start is in the card's head, above the moves, so the tab bar and the \"+\" never cover it (T-18)", async () => {
+    await show();
+    const card = within(await screen.findByTestId('today-card'));
+    const names = card.getAllByRole('button').map((b) => b.props.accessibilityLabel as string);
+    const start = names.indexOf(t('train.startDay', { day: 'Upper A' }));
+    const firstMove = names.indexOf(t('history.openLabel', { exercise: 'Bench press' }));
+    // In the tree order of the card: Start and Change come before the first move's own button.
+    expect(start).toBeGreaterThanOrEqual(0);
+    expect(start).toBeLessThan(firstMove);
+    expect(names.indexOf(t('train.changeLabel'))).toBeLessThan(firstMove);
+  });
+
+  test('the page leaves room under its last row for the "+" and the tab bar', async () => {
+    await show();
+    await screen.findByTestId('today-card');
+    // The scroll view as rendered: its contentContainerStyle is the screen's.
+    type Node = { type: string; props: { contentContainerStyle?: unknown }; children?: (Node | string)[] | null };
+    const find = (node: Node | string | null | undefined): Node | null => {
+      if (node === null || node === undefined || typeof node === 'string') return null;
+      if (node.type === 'RCTScrollView') return node;
+      for (const child of node.children ?? []) {
+        const found = find(child);
+        if (found !== null) return found;
+      }
+      return null;
+    };
+    const content = StyleSheet.flatten(find(screen.toJSON() as unknown as Node)?.props.contentContainerStyle as never) as { paddingBottom: number };
+    expect(content.paddingBottom).toBeGreaterThanOrEqual(tokens.size.primaryButton + tokens.space.lg);
+  });
+
+  test('the card has one primary button (Start); Change is the quieter one', async () => {
+    await show();
+    const card = within(await screen.findByTestId('today-card'));
+    // The card is the inverse surface, so its primary is that palette's own cta: whatever Start is filled with, nothing else is.
+    const fill = (node: { props: { style?: unknown } }) => (StyleSheet.flatten(node.props.style as never) as { backgroundColor?: string } | undefined)?.backgroundColor;
+    const start = card.getByLabelText(t('train.startDay', { day: 'Upper A' }));
+    expect(fill(start)).toBeDefined();
+    const sameFill = card.getAllByRole('button').filter((b) => fill(b) === fill(start));
+    expect(sameFill).toEqual([start]);
+    expect(fill(card.getByLabelText(t('train.changeLabel')))).not.toBe(fill(start));
+  });
+
+  describe('the rest of the week', () => {
+    const THURSDAY_CARDIO = { ...CARDIO, sessions: [{ weekday: 'THURSDAY' as const, place: 'AFTER_LIFT' as const }] };
+
+    test('each row: the session, its move count, and Cardio when it has cardio', async () => {
+      mockData = withProgram({ cardio: THURSDAY_CARDIO });
+      await show();
+      expect(await screen.findByText('Thu · Lower A')).toBeTruthy();
+      expect(screen.getByText(t('train.weekRowCardio', { moves: t('train.moveCount.one', { count: 1 }) }))).toBeTruthy();
+    });
+
+    test('a row without cardio: only the move count', async () => {
+      mockData = withProgram({ cardio: { ...CARDIO, sessions: [{ weekday: 'MONDAY', place: 'AFTER_LIFT' }] } });
+      await show();
+      await screen.findByText('Thu · Lower A');
+      expect(screen.getByText(t('train.moveCount.one', { count: 1 }))).toBeTruthy();
+      expect(screen.queryByText(/Cardio$/)).toBeNull();
+    });
+
+    test("with no session today, a row's Start is a text button (the accent words, no fill) and starts that day", async () => {
+      mockData = withProgram({ week: [THURSDAY] });
+      await show();
+      await screen.findByText(t('train.restDayPick'));
+      const start = screen.getByLabelText('Start Lower A');
+      expect(StyleSheet.flatten(start.props.style)?.backgroundColor).toBeUndefined();
+      expect(within(start).getByText(t('train.startThis'))).toHaveStyle({ color: palettes.light.accent });
+      await fireEvent.press(start);
+      expect(mockPush).toHaveBeenCalledWith({ pathname: '/workout', params: { day: 'b' } });
+    });
+  });
 });

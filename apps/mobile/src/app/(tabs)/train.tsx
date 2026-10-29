@@ -23,7 +23,7 @@ import { changeToday } from '@/train/changes';
 import { dayName, programNotes } from '@/train/program';
 import { TodayCard } from '@/train/TodayCard';
 import { movesOf } from '@/train/trainData';
-import { type WeekRow, finishedDay, movedOffToday, sessionDone, sessionState, splitName, todayKind, weekRows } from '@/train/week';
+import { type WeekRow, finishedDay, movedOffToday, sessionDone, sessionMoves, sessionState, splitName, todayKind, weekRows } from '@/train/week';
 
 type Schemas = components['schemas'];
 
@@ -207,7 +207,7 @@ export default function TrainScreen() {
           const label = t('train.startDay', { day: dayName(row.day) });
           const startRow =
             pick && startable(program, row, data?.records ?? []) ? (
-              <Button label={t('train.startThis')} accessibilityLabel={label} variant="ghost" onPress={() => start(row.day.id)} />
+              <Button label={t('train.startThis')} accessibilityLabel={label} variant="text" onPress={() => start(row.day.id)} />
             ) : null;
           // A session done carries its tick, as the week strip's day does (the same words: it is done).
           const tick = done ? (
@@ -216,11 +216,18 @@ export default function TrainScreen() {
               <Text style={[styles.small, { color: color.muted }]}>{t('train.doneTag')}</Text>
             </View>
           ) : null;
+          // The session's size at a glance: its moves, and Cardio when the program puts cardio on its day (T-7).
+          const count = sessionMoves(row.day, row.session).length;
+          const moves = t(count === 1 ? 'train.moveCount.one' : 'train.moveCount.other', { count });
+          const cardio = program.cardio?.sessions.some((s) => s.weekday === row.weekday) === true;
           return (
             <View key={row.day.id} style={[styles.row, { borderColor: color.line }]}>
-              <Text style={[styles.text, styles.grow, { color: color.text }]}>
-                {t('train.weekRow', { weekday: t(`programEditor.weekdayShort.${row.weekday}`), day: dayName(row.day) })}
-              </Text>
+              <View style={styles.grow}>
+                <Text style={[styles.text, { color: color.text }]}>
+                  {t('train.weekRow', { weekday: t(`programEditor.weekdayShort.${row.weekday}`), day: dayName(row.day) })}
+                </Text>
+                <Text style={[styles.small, { color: color.textSecondary }]}>{cardio ? t('train.weekRowCardio', { moves }) : moves}</Text>
+              </View>
               {tag !== null && <Text style={[styles.small, { color: color.muted }]}>{tag}</Text>}
               {tick}
               {startRow}
@@ -283,7 +290,8 @@ function Screen({ children, editable = false }: { children: ReactNode; editable?
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  body: { padding: tokens.space.lg, gap: tokens.space.md },
+  // Under the last row the "+" (a primary button's size) and the tab bar's air, so nothing at the foot sits behind them (T-18).
+  body: { padding: tokens.space.lg, paddingBottom: tokens.size.primaryButton + tokens.space.lg, gap: tokens.space.md },
   note: { gap: tokens.space.sm },
   week: { gap: tokens.space.xs },
   row: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, minHeight: tokens.size.touch, borderTopWidth: tokens.border.hairline },

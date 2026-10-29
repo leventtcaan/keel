@@ -4,12 +4,14 @@
  * phone lays them out. First week, an ordinary week, Monday with the check-in open, a call declined, no consent.
  */
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 
 import TodayScreen from '@/app/(tabs)/index';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { ThemeProvider } from '@/theme/theme';
 import { palettes } from '@/theme/tokens';
+import { weekRecordText } from '@/today/week';
 import { workoutParams } from '@/train/params';
 
 import { Saver, WithSaved, banner, publishSave, undoButton } from './support/saved';
@@ -1083,5 +1085,101 @@ describe('after a save elsewhere (K-1044, ADR-070 Ek 2 #6)', () => {
     await act(async () => {});
     expect(undo).toHaveBeenCalledTimes(1);
     expect(banner()).toBeNull();
+  });
+});
+
+describe('on the system (K-1045, ADR-070 Ek 2 #7, #8; prototype yeniden-yapim 5)', () => {
+  const p = palettes.light;
+
+  test('the strip needs no legend: done is a filled accent day with a tick, planned an accent ring, today an ink ring, any other day a small dot', async () => {
+    await show();
+    // Monday: trained, filled accent with the tick, no ring.
+    expect(screen.getByTestId('mark-2026-12-21')).toHaveStyle({ backgroundColor: p.accent });
+    expect(within(screen.getByTestId('day-2026-12-21')).getByTestId('tick')).toBeOnTheScreen();
+    // Friday: planned and today: the accent ring inside the ink ring.
+    expect(screen.getByTestId('mark-2026-12-25')).toHaveStyle({ borderColor: p.accent });
+    expect(screen.getByTestId('ring-2026-12-25')).toHaveStyle({ borderColor: p.text });
+    // Thursday: nothing planned, nothing done: a small dot, no ring, no fill.
+    expect(screen.getByTestId('empty-dot-2026-12-24')).toBeOnTheScreen();
+    expect(screen.getByTestId('mark-2026-12-24')).not.toHaveStyle({ backgroundColor: p.accent });
+    // A day with a mark has no empty dot.
+    expect(screen.queryByTestId('empty-dot-2026-12-21')).toBeNull();
+    expect(screen.queryByTestId('empty-dot-2026-12-25')).toBeNull();
+    // Only today has the ink ring.
+    expect(screen.queryByTestId('ring-2026-12-24')).toBeNull();
+  });
+
+  test("today's card: three moves with their targets, \"and 1 more\", the cardio line with its icon, and one primary Start", async () => {
+    await show();
+    const card = within(screen.getByTestId('today-card'));
+    expect(card.getAllByTestId(/^move-/)).toHaveLength(3);
+    expect(card.getByText('and 1 more')).toBeOnTheScreen();
+    expect(card.getByText(t('thisWeek.today.cardio', { minutes: 30 }))).toBeOnTheScreen();
+    expect(card.getByTestId('cardio-icon')).toBeOnTheScreen();
+    // One primary (the cta fill) in the card: Start. Change is not a second one.
+    const primaries = card.getAllByRole('button').filter((b) => StyleSheet.flatten(b.props.style)?.backgroundColor === p.cta);
+    expect(primaries).toHaveLength(1);
+    expect(primaries[0]).toBe(card.getByRole('button', { name: startFullBodyA() }));
+  });
+
+  test('Change is not a filled button: no cta fill, still its own way to the change page', async () => {
+    await show();
+    const change = within(screen.getByTestId('today-card')).getByRole('button', { name: t('thisWeek.today.changeLabel') });
+    expect(StyleSheet.flatten(change.props.style)?.backgroundColor).not.toBe(p.cta);
+  });
+
+  describe('a rest day', () => {
+    beforeEach(() => {
+      onPhone(new Date(2026, 11, 24, 9, 0)); // Thursday 24 Dec: no session today
+      mockAnswers['/v1/program'] = ok({
+        ...PROGRAM,
+        today: '2026-12-24',
+        cardio: { ...PROGRAM.cardio, sessions: [{ weekday: 'THURSDAY', place: 'AFTER_LIFT' }] },
+      });
+    });
+
+    test('"Rest day", the next session by name and weekday, and the cardio line when cardio is planned; no Start', async () => {
+      await show();
+      const card = within(screen.getByTestId('today-card'));
+      expect(card.getByText(t('thisWeek.today.rest'))).toBeOnTheScreen();
+      expect(card.getByText(t('thisWeek.today.next', { session: t('programDays.full_body_a.name'), weekday: 'Friday' }))).toBeOnTheScreen();
+      expect(card.getByText(t('thisWeek.today.cardio', { minutes: 30 }))).toBeOnTheScreen();
+      expect(card.getByTestId('cardio-icon')).toBeOnTheScreen();
+      expect(card.queryByRole('button', { name: startFullBodyA() })).toBeNull();
+    });
+
+    test('no cardio planned for the day: no cardio line; the next session is still said', async () => {
+      mockAnswers['/v1/program'] = ok({ ...PROGRAM, today: '2026-12-24' });
+      await show();
+      const card = within(screen.getByTestId('today-card'));
+      expect(card.getByText(t('thisWeek.today.next', { session: t('programDays.full_body_a.name'), weekday: 'Friday' }))).toBeOnTheScreen();
+      expect(card.queryByTestId('cardio-icon')).toBeNull();
+    });
+
+    test('nothing left in the week: no next-session line, and none is made up', async () => {
+      onPhone(new Date(2026, 11, 26, 9, 0)); // Saturday: Friday has passed
+      mockAnswers['/v1/program'] = ok({ ...PROGRAM, today: '2026-12-26' });
+      await show();
+      expect(screen.queryByText(/^Next session/)).toBeNull();
+    });
+  });
+
+  test('Food left: the row opens /food, and "Log" is a text button (no fill) that opens /meal', async () => {
+    mockAnswers['/v1/days/{day}/budget'] = ok(BUDGET(1240, 1480));
+    await show();
+    const log = screen.getByRole('button', { name: t('thisWeek.food.logLabel') });
+    expect(StyleSheet.flatten(log.props.style)?.backgroundColor).toBeUndefined();
+    expect(within(log).getByText(t('thisWeek.food.log'))).toHaveStyle({ color: p.accent });
+    await press(t('thisWeek.food.logLabel'));
+    expect(mockPush).toHaveBeenCalledWith('/meal');
+    mockPush.mockClear();
+    await press(t('thisWeek.food.lineLabel', { lead: t('thisWeek.food.left'), amount: `${t('format.range', { low: '1,240', high: '1,480' })} ${t('food.budget.kcalUnit')}` }));
+    expect(mockPush).toHaveBeenCalledWith('/food');
+  });
+
+  test("the week count is Progress's line, from one function (weekRecordText)", async () => {
+    await show();
+    expect(screen.getByText(weekRecordText({ onTrack: 11, counted: 12 }))).toBeOnTheScreen();
+    expect(weekRecordText({ onTrack: 0, counted: 1 })).toBe('0/1 week on track');
   });
 });

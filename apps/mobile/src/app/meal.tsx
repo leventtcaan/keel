@@ -251,7 +251,7 @@ export default function MealScreen() {
         <ConsentText kind="HEALTH_DATA" />
         {problem !== null && <ProblemText style={[styles.text, { color: color.text }]}>{problem}</ProblemText>}
         <Button label={t('meal.consent.allow')} onPress={() => void allow()} disabled={busy} />
-        <Button label={t('meal.consent.notNow')} variant="ghost" onPress={() => router.back()} disabled={busy} />
+        <Button label={t('meal.consent.notNow')} variant="secondary" onPress={() => router.back()} disabled={busy} />
       </View>
     ) : null;
 
@@ -263,9 +263,9 @@ export default function MealScreen() {
   const deleting =
     original !== null && original.state === 'ready' ? (
       confirming ? (
-        <Button label={t('meal.edit.confirmDelete')} variant="warn" onPress={() => void remove()} disabled={busy} />
+        <Button label={t('meal.edit.confirmDelete')} variant="destructive" onPress={() => void remove()} disabled={busy} />
       ) : (
-        <Button label={t('meal.edit.delete')} variant="ghost" onPress={() => setConfirming(true)} disabled={busy} />
+        <Button label={t('meal.edit.delete')} variant="destructive" onPress={() => setConfirming(true)} disabled={busy} />
       )
     ) : null;
   const entry =
@@ -293,8 +293,14 @@ export default function MealScreen() {
         {fromPhoto && question !== null && <Text style={[styles.text, { color: color.textSecondary }]}>{t('meal.photo.why')}</Text>}
         {problem !== null && <ProblemText style={[styles.text, { color: color.text }]}>{problem}</ProblemText>}
         {unchecked && <Text style={[styles.text, { color: color.text }]}>{t(fromCoach ? 'meal.fromCoach.notChecked' : 'meal.edit.notChecked')}</Text>}
-        <Button label={t('meal.save')} onPress={() => void save()} disabled={busy || requests === null || !checked} />
         {deleting}
+      </View>
+    ) : null;
+  // The screen's one primary, in the dock under the scroll (ADR-070 Ek 2 #1): there once a food is in the meal, as the prototype's empty frame has none.
+  const dock =
+    step === 'entry' && (original === null || original.state === 'ready') && items.length > 0 ? (
+      <View style={styles.dock}>
+        <Button label={t('meal.save')} onPress={() => void save()} disabled={busy || requests === null || !checked} />
       </View>
     ) : null;
 
@@ -306,6 +312,7 @@ export default function MealScreen() {
         {originalNote}
         {entry}
       </ScrollView>
+      {dock}
     </SafeAreaView>
   );
 }
@@ -313,6 +320,7 @@ export default function MealScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   body: { padding: tokens.space.lg, gap: tokens.space.lg },
+  dock: { paddingHorizontal: tokens.space.lg, paddingBottom: tokens.space.sm },
   part: { gap: tokens.space.md },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm },
   heading: { fontSize: tokens.type.heading, fontWeight: tokens.weight.bold },

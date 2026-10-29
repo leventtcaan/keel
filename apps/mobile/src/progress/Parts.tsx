@@ -5,8 +5,8 @@ import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { components } from '@/api/schema';
-import { Card } from '@/components/Card';
 import { MuscleMap } from '@/components/MuscleMap';
+import { Section } from '@/components/Section';
 import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
@@ -19,19 +19,6 @@ import { type UnitSystem, formatLoad } from '@/units/units';
 import type { DotsNote } from './sections';
 
 type Schemas = components['schemas'];
-
-/** A card's heading with a quiet line at its right end. */
-export function CardHead({ title, aside }: { title: string; aside?: string | null }) {
-  const { color } = useTheme();
-  return (
-    <View style={styles.head}>
-      <Text accessibilityRole="header" style={[styles.heading, { color: color.text }]}>
-        {title}
-      </Text>
-      {aside == null ? null : <Text style={[styles.fine, { color: color.muted }]}>{aside}</Text>}
-    </View>
-  );
-}
 
 /** "Needs your OK for health data · Allow" (ADR-072 Ek 1): in place of what needs the consent; Allow leads to Settings. */
 export function LockLine() {
@@ -57,8 +44,7 @@ export function MusclesCard({ muscles, figure }: { muscles: Schemas['MuscleSets'
   if (muscles.length === 0) return null;
   const trained = muscles.some((m) => m.doneSets > 0);
   return (
-    <Card>
-      <CardHead title={t('progress.muscles.title')} aside={t(trained ? 'progress.muscles.thisWeek' : 'progress.muscles.planned')} />
+    <Section testID="section-muscles" title={t('progress.muscles.title')} aside={t(trained ? 'progress.muscles.thisWeek' : 'progress.muscles.planned')}>
       <MuscleMap muscles={muscles} figure={figure} />
       <View style={styles.legend} accessible={false}>
         <View style={styles.legendItem}>
@@ -70,7 +56,7 @@ export function MusclesCard({ muscles, figure }: { muscles: Schemas['MuscleSets'
           <Text style={[styles.fine, { color: color.muted }]}>{t('progress.muscles.legendDone')}</Text>
         </View>
       </View>
-    </Card>
+    </Section>
   );
 }
 
@@ -82,8 +68,7 @@ export function MuscleBars({ muscles }: { muscles: Schemas['MuscleSets'][] }) {
   const { color } = useTheme();
   if (muscles.length === 0) return null;
   return (
-    <Card>
-      <CardHead title={t('progress.muscles.setsTitle')} aside={t('progress.muscles.thisWeek')} />
+    <Section testID="section-sets" title={t('progress.muscles.setsTitle')} aside={t('progress.muscles.thisWeek')}>
       {muscles.map((m) => {
         const scale = Math.max(m.doneSets, m.targetSets);
         const name = t(`demo.muscle.${m.muscle}`);
@@ -99,7 +84,7 @@ export function MuscleBars({ muscles }: { muscles: Schemas['MuscleSets'][] }) {
         );
       })}
       <Text style={[styles.fine, { color: color.muted }]}>{t('progress.muscles.legendTarget')}</Text>
-    </Card>
+    </Section>
   );
 }
 
@@ -145,10 +130,9 @@ export function StrengthCard({ part, lifts, moves, units }: { part: 'locked' | '
     );
   }
   return (
-    <Card>
-      <CardHead title={t('progress.strength.title')} aside={part === 'baseline' ? t('progress.strength.baseline') : null} />
+    <Section testID="section-strength" title={t('progress.strength.title')} aside={part === 'baseline' ? t('progress.strength.baseline') : null}>
       {body}
-    </Card>
+    </Section>
   );
 }
 
@@ -160,19 +144,16 @@ export function WeighInDots({ count, min, note }: { count: number; min: number; 
     <View key={i} testID={i < count ? 'weight-dot-filled' : 'weight-dot-empty'} style={[styles.dot, i < count ? { backgroundColor: color.accent } : { backgroundColor: color.track, borderColor: color.edge, borderWidth: tokens.border.hairline }]} />
   ));
   return (
-    <Card>
-      <CardHead title={t('progress.weight.title')} aside={t('progress.weight.count', { count, min })} />
+    <Section testID="section-weight" title={t('progress.weight.title')} aside={t('progress.weight.count', { count, min })}>
       <View testID="weight-dots" accessible accessibilityLabel={t('progress.weight.spoken', { count, min })} style={styles.dots}>
         {dots}
       </View>
       {line === null ? null : <Text style={[styles.fine, { color: color.muted }]}>{line}</Text>}
-    </Card>
+    </Section>
   );
 }
 
 const styles = StyleSheet.create({
-  head: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: tokens.space.sm },
-  heading: { fontFamily: tokens.font.display, fontSize: tokens.type.number },
   fine: { fontSize: tokens.type.bodySmall },
   body: { fontSize: tokens.type.body },
   strong: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.bold },

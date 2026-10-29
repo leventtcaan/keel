@@ -8,6 +8,7 @@
  */
 import type { ApiClient } from '@/api/client';
 import type { components } from '@/api/schema';
+import { t } from '@/copy';
 
 import { type Loaded, type TodayData, load, localDay } from './today';
 
@@ -79,6 +80,25 @@ export function weekHead(consistency: Loaded<Schemas['Consistency']>, firstWeeks
   // Without the consent the record is not there to explain (ADR-072 Ek 1: no consent, no line).
   const countedByWeek = record === null && (consistency.state === 'ready' || consistency.state === 'none');
   return { week, record, countedByWeek };
+}
+
+/**
+ * The record of weeks on track as one line, for This week and Progress alike (K-1045, T-8): the server's two numbers
+ * (Consistency.record: the weeks counted, the weeks on track among them) in one wording, so the two screens never say
+ * the same thing two ways. Not the week's number (WeekHead.week), which is where the user stands in the first eight weeks.
+ */
+export function weekRecordText(record: { onTrack: number; counted: number }): string {
+  return t(record.counted === 1 ? 'thisWeek.onTrackOne' : 'thisWeek.onTrack', record);
+}
+
+/**
+ * The first session still to come after today in the server's week (not skipped), for a day with none: its program day
+ * and its date. None when the week has no more. The week is the server's; nothing is chosen here.
+ */
+export function nextSession(week: Schemas['WeekSession'][] | undefined, days: Schemas['ProgramDay'][], today: string): { day: Schemas['ProgramDay']; date: string } | null {
+  const next = (week ?? []).filter((s) => s.date > today && s.skipped !== true).sort((a, b) => (a.date < b.date ? -1 : 1))[0];
+  const day = next === undefined ? undefined : days.find((d) => d.id === next.programDayId);
+  return next === undefined || day === undefined ? null : { day, date: next.date };
 }
 
 export type Hero =

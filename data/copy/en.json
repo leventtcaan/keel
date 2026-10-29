@@ -172,6 +172,7 @@
     "settings": "Settings",
     "week": "Week {week}",
     "onTrack": "{onTrack}/{counted} weeks on track",
+    "onTrackOne": "{onTrack}/{counted} week on track",
     "countedByWeek": "Counted by week",
     "strip": {
       "label": "This week",
@@ -220,7 +221,8 @@
       "start": "Start",
       "startLabel": "Start {session}",
       "changeLabel": "Change today's workout",
-      "rest": "Rest",
+      "rest": "Rest day",
+      "next": "Next session: {session}, {weekday}",
       "restWeek": "Week off training",
       "movedTo": "Moved to {day}.",
       "skipped": "Skipped. {day} reads what happened.",
@@ -269,6 +271,8 @@
     "level": { "LOW": "Low", "MEDIUM": "Medium", "HIGH": "High" },
     "nextCall": "Next call {date}",
     "gotIt": "Got it",
+    "weighIn": "Weigh in",
+    "weighInsLeft": { "one": "1 more weigh-in needed", "other": "{count} more weigh-ins needed" },
     "keep": "Keep last week's plan",
     "use": "Use this call",
     "keepFailed": "Not changed: no connection. Try again in a moment.",
@@ -487,6 +491,7 @@
     "continueWorkout": "Continue workout",
     "thisWeek": "This week",
     "weekRow": "{weekday} · {day}",
+    "weekRowCardio": "{moves} · Cardio",
     "moved": "moved",
     "skippedTag": "skipped",
     "doneTag": "Done"
@@ -1081,7 +1086,6 @@
     "title": "Log a meal",
     "quick": {
       "recent": "Recent",
-      "add": "Add",
       "undoneSaid": "Meal taken back.",
       "undoFailed": "Couldn't take it back. Try again.",
       "undoOffline": "You're offline. Take it back once you're online."
@@ -1119,6 +1123,9 @@
     },
     "item": {
       "amount": "Amount of {name}",
+      "amountTitle": "Amount",
+      "unitTitle": "Unit",
+      "servingOf": "× {unit}",
       "grams": "g",
       "unitSpoken": "{name} in {unit}",
       "weighed": "Weighed",
@@ -3147,9 +3154,7 @@
       "firstWorkout": "First workout in. Today's targets.",
       "tap": "Tap one to log it.",
       "tapLocked": "Tap Cardio to log it.",
-      "early": "Your numbers build week by week.",
-      "record": "{counted} weeks · {onTrack} on track",
-      "recordOne": "1 week · {onTrack} on track"
+      "early": "Your numbers build week by week."
     },
     "result": {
       "stronger": "Stronger on {stronger} of {tracked} lifts.",
@@ -3239,6 +3244,8 @@
       "onTrack": "On track",
       "spare": "Spare week",
       "paused": "Paused",
+      "other": "Other weeks",
+      "range": "Oldest first",
       "note": "A missed week never resets your record.",
       "spoken": "Last {count} weeks, oldest first: {onTrack} on track, {spare} spare, {paused} paused, {other} other weeks."
     }
