@@ -6,7 +6,7 @@ Salt okuma: kod değişmedi. Dayanak: 82 ekranlık yürüyüş (`G/`) + `D/ A/ B
 **İşaretler.** `[kod]` = ekran görüntüsü yok, koddan/metinden değerlendirildi. `◆` = gizli durum (dokununca/açılınca/ilk kez/boş-hata hâli) bulgusu. `◆sim` = o gizli durum simülatörde açılıp görüldü (ekran görüntüsü `E7-review/`). Önem: **P0** vaadi bozar (iş yapılamaz / yapıldığı anlaşılmaz / Levent'in açık şikâyeti sürüyor) · **P1** ucuz ya da zor hissettirir · **P2** cila.
 
 ## Sınırlar (dürüstlük)
-- **Simülatör yürüyüşü yapılamadı.** Levent'in ek talimatı (her gizli durumu simülatörde açıp ekran görüntüsü almak) için 8081 ve 8790 portlarının boşalması bekleniyordu; 00:42-02:41 arası 60 sn aralıkla 120 dk yoklandı, başka ajanın Metro'su (`keel/.claude/worktrees/agent-a159a647…`) ve fixture'ı (`keel-sim/.sim/fixture.js`) bu süre boyunca ayakta kaldı. Kural gereği kullanılmadı. Sonuç: envanterdeki hiçbir eleman `[x]` değil; `◆sim` işaretli bulgu yok; `E7-review/` klasörü oluşmadı. Gizli durum bulguları (`◆ [kod]`) **koddan ve metin dosyasından** çıkarıldı; görünüm yargıları (örn. 'eski action sheet görünümü') simülatörde doğrulanmalı. Yürüyüş için hazır: fixture senaryoları (`new-user`, `food-history`, `regular-midweek`, `progress-w12`, `own-program`, `first-call`, `return-8d`, `no-consent`, `open-session`, `call-pending`, `call-declined`, `regular-short-today`, `regular-moved`) ve `keel-sim/.sim/run.sh main <senaryo>` + `shot.sh`.
+- **Simülatör yürüyüşü (30 Eki, `main` d8255805, #688-#692 dahil).** Kısmi yapıldı: envanterin 292 elemanından aşağıdaki sayıda eleman açıldı (`[x]`), kalanı açılmadı; ekran görüntüleri `side-session-notes/…/E7-review/` altında, adı `<envanter-kimliği>-<eleman>.png` (kimlik → § eşlemesi Ek'teki grup harfleridir: T=§7, C=§8, R=§9, A=§10/16, E=§11-15, W=§17-18, X=§19-21, L=§22/27/28, M=§23-24, F=§25, P=§26, S=§29-33, Y=§1-6). Sistem seçicileri (Choose a file, Gallery, Camera, Choose from library) **bilerek tamamlanmadı**: simülatörde Levent'in gerçek dosya/fotoğraf listesini gösteriyor; bir kez açılıp iptal edildi, o görüntüler silindi. Metro ve fixture bitişte durduruldu.
 - Levent'in dört "hata"sının (#3 Log again +, #7 Add a day hareketsiz, #11 Rebuild, #12 antrenman bitmiyor) **kök nedeni bu belgenin işi değil** (parça 1). Burada yalnız ekranda ne görüldüğü ve kullanıcıya ne yaşattığı var.
 - Ekran görüntülerindeki `Geri`, `Bitti`, `TR EN` simülatörün Türkçe yerel ayarından gelen sistem metinleri; ABD kullanıcıda `Back/Done` olur. Hata sayılmadı. `[RevenueCat] Purchase was cancelled` toast'ı (G/17) geliştirme logu; release'te görünmediği doğrulanmadı.
 - `RETIRED` yüzeyler (`coach`, `meal-photo`, `recipes`, `recipe`, `why`, `scoff`, `projection`, `ledger`, `what-if`, `workout-summary`) değerlendirilmedi. Ayrıca **hiçbir yerden bağlanmayan ölü bileşenler** var (bkz. Ek, "Ölü kod"): `PromptCard`, `CheckInCard`, `ConsistencyCard`, `FirstWeeksCard`, `TodayList`, `CoachEntry`. Bunların metinleri (`first_weeks.*`, `prompt.*`) ekrana hiç çıkmıyor; yalnız `en.json`'u şişiriyor ve "bilimsel metin" izlenimini bu belgeye yanlış taşımamak için not düşüyorum.
@@ -432,6 +432,61 @@ Salt okuma: kod değişmedi. Dayanak: 82 ekranlık yürüyüş (`G/`) + `D/ A/ B
 
 ---
 
+# Yürüyüş bulguları (`◆sim`, 30 Eki, `main` d8255805)
+Açılan: **81 / 292** (+1 kısmi `[~]`). Senaryolar: regular-midweek, regular-w12-mon, return-8d, no-consent. Açılmayanlar: new-user onboarding ve paywall (önceki `G/` görüntüleri geçerli), food-history'ye özgü durumlar, barkod kamerası, tüm sistem seçicileri, çoğu hata/çevrimdışı hâli (fixture'la tetiklenmedi), Settings alt sayfalarının çoğu (zincirli dokunuşlar yanlış sayfaya düştü; o görüntüler silindi, eleman `[ ]` kaldı).
+
+## Yeni `◆sim` P0
+| Bulgu | Kanıt | Çözüm |
+|---|---|---|
+| **Rebuild bitti ama hiçbir şey söylemiyor** (Levent #11 sürüyor). Onay sayfası kısaldı (tek cümle) ve kırmızı metin-link duruyor; basınca doğrudan Train'e dönüyor, ilk karede bile "working" işareti, toast ya da fark yok, Train aynı görünüyor. | `E30-rebuild-confirm-page`, `E30-rebuild-working`, `E30-rebuild-after` | Train'e dönünce banner "Program rebuilt · 4 days · 27 moves · Undo" + yeni kart vurgusu; onay = action sheet. |
+
+## Yeni `◆sim` P1
+| Bulgu | Kanıt | Çözüm |
+|---|---|---|
+| **Birim dönüşümü ham ondalık, plaka hesabı kg'da kalıyor** (Imperial seçiliyken): This week/Train "396.8 × 8", "242.5 × 10"; antrenmanda "209.4 lb" ve altında "25 + 10 + 2.5 kg a side"; geçmiş "104.7 lb warm-up"; Progress "165.3 lb". | `S2`, `R0-train-tab`, `W0-workout-start`, `W6-history-page`, `P0-progress-tab` | lb'da 5'e yuvarla (ya da salon adımına); plaka satırı da lb ("45 + 10 + 2.5 lb a side"). Kullanıcının gördüğü "doğru" sayı bu, kg'ı kimse bilmez. |
+| **Dinlenme sayacı yukarı sayıyor** ("0:03  Rest · 2:00-3:00") ve çubuk eklenince set kartı ~55pt aşağı kayıyor (dokunuşlar yanlış hedefe düşüyor; yürüyüşte iki kez kaçırıldı). | `W20-log-set-rest-timer`, `W9-more-menu` | Geri sayım halkası, sabit yükseklikli yer (kart kaymasın). |
+| **Düzenlemede "unsaved" notu en üste ekleniyor ve sayfayı aşağı itiyor**; "Add a day" kaydedilmemiş düzenlemede **hiçbir görünür yanıt vermiyor** (uyarı Save'in altında, kıvrımın dışında, yalnız kenarı görünüyor). | `E10`, `E11`, `E17-add-a-day-with-dirty-b/-c` | Otomatik kaydet; uyarı yeri sabit/sticky; ya da Save'siz akış. |
+| **Kayıt geri bildirimi**: "Saved." düz metin + tam genişlik gri **Undo** butonu Save'in altında; Cardio'da kayıttan sonra "Cardio after the weights works best kept short…" cümlesi çıktı; "Turn cardio off" sonrası tüm çipler boş + "Saved. This is your cardio now." (kapalı olduğu söylenmiyor); "Back to the coach's default" sonrası sayfa 35 dk / Çarşamba'yı gösteriyor, satır "4 × 30 min" diyor. | `E18`, `E20`, `E26`, `E27`, `E28` | Toast + Undo; Cardio'ya açık/kapalı anahtarı; reset sonrası taze veri. |
+| **Workout complete olumsuz çerçeve**: 1 set yapınca "1,257 lb lifted  −94% vs last time", "What moved: Squat 209.4 × 6  4 reps fewer": kutlama ekranında suçlayıcı fark (U7 ruhuna ters). Apple Health kartı + "What we read" 6 satırlık paragraf hâlâ araya giriyor; "This week 4 of 4" iyi. | `X6-workout-complete`, `X8-workout-complete-bottom`, `X8-healthjit-what-we-read` | Eksik antrenmanda fark gösterme ("1 of 4 moves"); sağlık kartını bitişten çıkar. |
+| **Details aralığı saçma**: "Eaten: 0-0 kcal; protein 0-0 g; carbs 0-0 g; fat 0-0 g / Left: 2,050-2,050 kcal" (Today's food) ve "110-204 kcal; 9-18 g protein" (2 yumurta). | `F4-food-totals-details`, `M15-portion-star-2x-details` | Tek sayı; Details'i kaldır. |
+| **Yinelenen/belirsiz teklifler**: "Same as yesterday" listesi ve altındaki "Copy a day's meals" → "Copy into Today: Yesterday 3 meals" aynı şeyi iki kez sunuyor; "Fits what's left today" satırları dokunulabilir ama `+`/ok yok; banner ("Removed… Undo") sayfa içi akışta bölüm başlığının üstüne biniyor. | `F11`, `F12-copy-days-meals`, `F8-swipe-delete-row` | Tek "Copy from…" menüsü; öneri satırlarına `+`; banner alt sabit. |
+| **Edit-meal sheet'inde tüm kayıt arayüzü** (arama, Quick add/Create, Recent·**Frequent**·Favorites·Log again) ve Save dock'u ilk liste satırının üstüne biniyor. | `M18-edit-meal-sheet` | Düzeltme = yalnız miktar/öğün; arama kapalı. |
+| **Boş Quick add kartı "Log it"i kilitliyor**: yumurta hazır, kart boş → buton gri; "Quick add" linki kart açıkken de duruyor. | `M8-quick-add-with-draft` | Boş kartı yok say ya da kartı otomatik kapat. |
+| **Recent'te `+` sheet'i kapatıyor**, banner "Saved Snack, 1 item" Start butonunu örtüyor; varsayılan öğün "Snack" ve Recent listesi Snack için kahvaltı/akşam yemeği öğeleri gösteriyor (öğüne göre filtre görünmüyor). | `M11-recent-plus-logs`, `M2-log-a-meal-open` | Çoklu ekleme için sheet açık kalsın; Recent gerçekten öğüne göre olsun. |
+| **İlk kullanım rehberi hedefi olmayan ekranlara biniyor**: "Your weekly call · One call a week" Welcome-back ekranının (return-8d) ve "WEEKLY CALLS ARE OFF" hero'nun üstünde (no-consent). | `Y24-return-8d`, `T22-no-consent-thisweek` | Rehber yalnız hedef bileşen varsa; yoksa adımı atla. |
+| **Settings › Training days** Edit program kökünü değil doğrudan editörü açıyor (ilk gün açık, "Remove this day" gri); Train'den Edit farklı kapı → aynı içeriğe iki yol. | `S3-training-days-row` | Tek yol. |
+| **Add a move**: düz alfabetik liste (ad + "6-10 reps"), filtre/ikon yok, **Close listenin en altında** (kaydırmadan görünmez). | `E12-add-a-move-sheet`, `E13-add-move-search-none` | Kas/ekipman çipleri, ikon, Close yerine sheet tutamacı. |
+| **History** ("RIR 1" jargonu, ondalık lb) başlığında geri oku yok; "Edit this session" her kartta ayrı buton. | `W6-history-page` | RIR → "1 left"; tek ⋯ menü. |
+| **Antrenman içi Swap** panel olarak (sheet değil) iki prose satırıyla ("Same muscles, and your gym has these. The new move has no target of its own: its weight is yours." + "This workout only. Your program stays as it is."); **End** da yerel menü değil satır içi panel; **FinishForm** (Clean / Not clean) hâlâ ara adım. | `W7-swap-sheet`, `W1-end-sheet`, `W29-finish-form` | Yerel action sheet; prose sil. |
+| **Gym is busy**: 3 dokunuş (Change → Gym is busy → hareket → alternatif) ve alternatif seçilince Train'de onay/Undo **yok** (kart sessizce değişiyor). | `A5-today-change-sheet`, `A5-gym-busy-which-taken`, `A13-swap-alternatives`, `A13-swap-scope` | Banner + Undo. |
+| **Hafta şeridi dokunulamıyor** (`[kod]` doğrulandı). Today's food'a giden Food kartı satırı çalışıyor ama chevron yok (`[kod]` doğrulandı). | `T2-weekstrip-day-tap`, `T00-thisweek-regular-midweek` | Bkz. §7. |
+| **Progress'te kilo trendi (en önemli grafik) dördüncü blok**: Strength → Muscles → Sets per muscle → Weight; çizgi grafik aslında iyi (7 günlük ortalama, "192.7 lb"). Calls listesi başlıkları tekrar ediyor (×3 "Keep going exactly as you are."). | `P8-progress-scroll2`, `P10-progress-scroll4` | Hedefe göre sırala; Calls'ta değişikliği yaz. |
+| **Today's food swipe**: hızlı uzun kaydırma satırı **anında siler** (Delete düğmesini göstermeden), yalnız Undo banner'ı kurtarıyor. | `F8-swipe-delete-row` | Tam kaydırma onayı için eşik/haptic. |
+
+## Olumlu doğrulamalar (`◆sim`)
+- **Return / Welcome back** (`Y24-return-8d-clean`): üç seçenek kartı, tek "Suggested" siyah kart, Continue/Not now: uygulamanın en tutarlı ikincil ekranı; diğer seçim ekranlarının örneği olmalı.
+- **Monday ritüeli** (`T7-monday-ritual`): turkuaz yuvarlak "Open your call" blokta güçlü bir an; yalnız alt cümle sade tutulabilir.
+- **Call ekranı, "Keep last week's plan" sonrası** (`C2-keep-last-weeks-plan`): "Not applied. Kept on record." + "Steps, in force 7,000" + "Use this call" net ve suçlamasız; `Confidence Medium` ve boş alt yarı sorunları sürüyor.
+- **Koyu tema** (`S1-appearance-dark`) Settings'te temiz çalışıyor.
+- **Share çıkartmaları** (`X9-share-screen`, `X11-share-*`): "8 of 10", "10 weeks in" içerikleri iyi; üst %60 boş.
+
+## Eski `[kod]` yargılarından değişenler
+| Eski yargı | Yürüyüş sonucu |
+|---|---|
+| §16 "Change today" 6 satırlık düz liste (push sayfa) | **Düzeldi:** orta boy bottom sheet, 4 seçenek kartı (Undo/Full workout yalnız ilgili durumda). P1 → P2 (açıklama satırları + "Close" kalıyor). |
+| §16 Gym busy "4 adım, kapsam seçimi" | Bugün için kapsam sorusu **yok**, 3 dokunuş; sorun adım sayısından çok sessiz sonuç (yeni P1 satırı). |
+| §15 Rebuild onay sayfası "5 satır paragraf" | **Kısalmış** (tek cümle, #690); kırmızı metin-link ve **sonucun görünmezliği** (P0) sürüyor. |
+| §23 Log again `+` yalnız çizili ikon (P0) | #688 birleşti; Log again sekmesi yürüyüşte **yeniden denenmedi** (Recent `+` çalışıyor, sheet'i kapatıyor). Durum belirsiz, P0 → "doğrulanmadı, yeniden dene". |
+| §7 Hafta şeridi dokunulamaz, Food kartında chevron yok | Doğrulandı. |
+| §12 Editörde sıra değiştirme yok | Doğrulandı (sürükleme tutamacı yok). |
+| §9 Train "Today kartında 9 ⇆" | Düzeltme: ⇆ **yalnız hedef yükü olmayan** satırlarda var (Leg press'te var, Hip thrust'ta yok): sorun gürültü değil tutarsızlık. |
+| §12 "Remove this day" | Onaysız silme + satır içi Undo doğrulandı; kabul edilebilir, ama gri/ikonsuz görünüm sürüyor. |
+| §26 "Weight trend kilitli kart" | Veri varken **gerçek bir çizgi grafik** (iyi); sorun yeri (4. blok), kilidi değil. |
+| §14/§13 Cardio ve Split içerikleri | Cardio sayfası beklenenden kötü: reset sonrası bayat veri, kapalıyken yanlış "Saved" (yeni satırlar). Split sayfası yürütülmedi (E4 `[ ]`). |
+| §23 "Recent öğüne göre" | Sheet'te "Snack" için kahvaltı/akşam öğeleri çıkıyor: öğüne göre filtre **gözlemlenmedi**. |
+
+---
+
 # Çapraz bölüm
 
 ## Çapraz §A · Tutarlılık kuralları (tek kart, tek buton hiyerarşisi, tek boş durum, tek satır, tek bölüm başlığı)
@@ -528,24 +583,24 @@ Kaynak: `apps/mobile/src` içinde her `onPress/onLongPress/Switch/Modal/Alert/as
 **Ölü kod (hiçbir yerden bağlı değil, envantere alınmadı):** `PromptCard`, `CheckInCard`, `ConsistencyCard`, `FirstWeeksCard`, `TodayList`, `CoachEntry`. **Kapalı (RETIRED) yüzeyler:** coach, meal-photo, recipes, recipe, why, scoff, projection, ledger, what-if, workout-summary.
 
 ## G · Genel (her ekran)
-- [ ] G1 · `+` FAB (PlusEntry) → `/plus` sheet
+- [x] G1 · `+` FAB (PlusEntry) → `/plus` sheet
 - [ ] G2 · Tab: This week → `/(tabs)/index`
 - [ ] G3 · Tab: Train → `/(tabs)/train`
 - [ ] G4 · Tab: Progress → `/(tabs)/progress`
-- [ ] G5 · UndoBanner "Undo" (siyah alt bant, her kaydet/sil sonrası) → işlemi geri alır; hata durumu (`undoFailed`)
+- [x] G5 · UndoBanner "Undo" (siyah alt bant, her kaydet/sil sonrası) → işlemi geri alır; hata durumu (`undoFailed`)
 - [ ] G6 · Klavye "Done" çubuğu (Stepper/TextField) → klavyeyi kapatır
-- [ ] G7 · Sistem geri (sol üst, önceki ekranın adı) → pop
+- [x] G7 · Sistem geri (sol üst, önceki ekranın adı) → pop
 - [ ] G8 · Çevrimdışı bant/durum ("You're offline…") → Train, Workout, Meal'de farklı metin
 
 ## T · This week (`(tabs)/index`)
-- [ ] T1 · Gear → `/settings`
-- [ ] T2 · Hafta şeridi günleri (7 hücre) → dokunulabilir mi? (kodda `WeekStrip` accessibilityLabel var; dokunma yok)
+- [x] T1 · Gear → `/settings`
+- [x] T2 · Hafta şeridi günleri (7 hücre) → dokunulabilir mi? (kodda `WeekStrip` accessibilityLabel var; dokunma yok)
 - [ ] T3 · Hero hâli firstWeek: başlık, WeighInCounter "Weigh in" → `/weigh-in`
 - [ ] T4 · Hero hâli firstWeek (kısa hafta): "Training goes on as planned" metni
 - [ ] T5 · Hero hâli call: tüm blok → `/call`
 - [ ] T6 · Hero hâli call (pending/declined): "Use this call" → inline uygula; hata metni
-- [ ] T7 · Hero hâli monday: yuvarlak "Open your call" → `/check-in`
-- [ ] T8 · Hero hâli callsOff: "Settings" → `/settings`
+- [x] T7 · Hero hâli monday: yuvarlak "Open your call" → `/check-in`
+- [x] T8 · Hero hâli callsOff: "Settings" → `/settings`
 - [ ] T9 · StateCard (durumlu hafta): "I'm back" → inline sıfırla; "Welcome back" mesajı
 - [ ] T10 · Bugünkü antrenman kartı: "Start" → `/workout?day=`
 - [ ] T11 · Bugünkü antrenman kartı: slider ikonu (Change today) → `/today-change`
@@ -556,26 +611,26 @@ Kaynak: `apps/mobile/src` içinde her `onPress/onLongPress/Switch/Modal/Alert/as
 - [ ] T16 · Kart hâli: dinlenme günü ("Next session: …")
 - [ ] T17 · Kart hâli: bitti ("Today · done" + tik, "2 sets · 600 lb lifted")
 - [ ] T18 · Kart hâli: taşındı/atlandı/dinlenme haftası
-- [ ] T19 · Food kartı: satır → `/food`
+- [x] T19 · Food kartı: satır → `/food`
 - [ ] T20 · Food kartı: ⓘ → aralık aç/kapat (inline)
 - [ ] T21 · Food kartı: "Log" → `/meal`
-- [ ] T22 · Food kartı: rıza yok → kilit satırı + "Settings"
+- [x] T22 · Food kartı: rıza yok → kilit satırı + "Settings"
 - [ ] T23 · Program yok → "Build my program" kartı → `/build-program`
 - [ ] T24 · Hata bandı "Couldn't load today." + "Try again"
-- [ ] T25 · Rehber (GuideOverlay) 4 adım: Next / Skip / Got it / ekrana dokun
+- [x] T25 · Rehber (GuideOverlay) 4 adım: Next / Skip / Got it / ekrana dokun
 - [ ] T26 · Rehber yeniden: Settings › How it works → `/` + overlay
 
 ## C · Call / Check-in
-- [ ] C1 · `/call` "Got it" → geri
-- [ ] C2 · `/call` "Keep last week's plan" → uygulamama
+- [x] C1 · `/call` "Got it" → geri
+- [x] C2 · `/call` "Keep last week's plan" → uygulamama
 - [ ] C3 · `/call` "Use this call" (uygulanmamış) → uygula
 - [ ] C4 · `/call` "Weigh in" (az weigh-in) → `/weigh-in`
 - [ ] C5 · `/call` durum: none / abonelik kilidi ("See plans" → `/paywall`) / failed ("Try again") / rıza ("Open Settings")
 - [ ] C6 · `/call?id=&from=progress` salt okunur
-- [ ] C7 · `/check-in` soru seçenek çipleri (training/recovery/appetite/state_still/week1_feel) → seçim
+- [x] C7 · `/check-in` soru seçenek çipleri (training/recovery/appetite/state_still/week1_feel) → seçim
 - [ ] C8 · `/check-in` 1-10 ölçek çipleri
 - [ ] C9 · `/check-in` waist TextField (cm/inç)
-- [ ] C10 · `/check-in` "Get this week's call" → `/call`
+- [x] C10 · `/check-in` "Get this week's call" → `/call`
 - [ ] C11 · `/check-in` durum: none / answered / moved / failed ("Try again") / rıza ("Open Settings")
 - [ ] C12 · Week-1 check-in: "Sounds right" / "Change it" → gün çipleri / "Keep the suggestion" / "Done" / "Open Edit"
 
@@ -583,8 +638,8 @@ Kaynak: `apps/mobile/src` içinde her `onPress/onLongPress/Switch/Modal/Alert/as
 - [ ] R1 · "Edit" → `/edit-program`
 - [ ] R2 · "N changes applied · Undo" kartı → `/edit-program?part=changes`
 - [ ] R3 · CallRow "Use this call" (declined) → uygula
-- [ ] R4 · Bugünün kartı "Start workout" → `/workout`
-- [ ] R5 · Bugünün kartı "Change" → `/today-change`
+- [x] R4 · Bugünün kartı "Start workout" → `/workout`
+- [x] R5 · Bugünün kartı "Change" → `/today-change`
 - [ ] R6 · Bugünün kartı hareket satırı ⇆ (swap) → `/swap`
 - [ ] R7 · Bugünün kartı hareket satırı (history) → `/exercise-history`
 - [ ] R8 · Bugünün kartı "Continue workout" / "Undo" / "Full workout"
@@ -600,63 +655,63 @@ Kaynak: `apps/mobile/src` içinde her `onPress/onLongPress/Switch/Modal/Alert/as
 - [ ] A2 · `/add-day` "Or another day" çipleri → ekle
 - [ ] A3 · `/add-day` "Close"
 - [ ] A4 · `/add-day` durum: conflict / offline / failed / full
-- [ ] A5 · `/today-change` Gym is busy → `/swap?scope=today`
+- [x] A5 · `/today-change` Gym is busy → `/swap?scope=today`
 - [ ] A6 · `/today-change` Short on time → uygula
 - [ ] A7 · `/today-change` Full workout
 - [ ] A8 · `/today-change` Undo
 - [ ] A9 · `/today-change` Move it (yarına; kayma listesi `Shifts:`)
 - [ ] A10 · `/today-change` Skip today
 - [ ] A11 · `/today-change` Close; durumlar: started / none / offline / conflict
-- [ ] A12 · `/swap` "Which one is taken?" hareket seçimi
-- [ ] A13 · `/swap` alternatif satırı → `Today only / From now on` kapsam seçimi
+- [x] A12 · `/swap` "Which one is taken?" hareket seçimi
+- [x] A13 · `/swap` alternatif satırı → `Today only / From now on` kapsam seçimi
 - [ ] A14 · `/swap` "Skip today instead" → `/today-change`
 - [ ] A15 · `/swap` "Close"; durumlar: not found / none / conflict / offline
 - [ ] A16 · `/build-program` gün sayısı seçimi → oluştur → `/train`; "Try again"
 
 ## E · Edit program
-- [ ] E1 · Satır Training days → `part=days`
+- [x] E1 · Satır Training days → `part=days`
 - [ ] E2 · Satır Moves → `part=moves`
-- [ ] E3 · Satır Cardio → `part=cardio`
+- [x] E3 · Satır Cardio → `part=cardio`
 - [ ] E4 · Satır Split → `part=split`
-- [ ] E5 · Satır Rebuild for me → `part=rebuild`
-- [ ] E6 · Günler: gün başlığı (aç/kapat)
+- [x] E5 · Satır Rebuild for me → `part=rebuild`
+- [x] E6 · Günler: gün başlığı (aç/kapat)
 - [ ] E7 · Günler: Day name TextField
-- [ ] E8 · Günler: "Remove this day" → silinir + Undo bar
+- [x] E8 · Günler: "Remove this day" → silinir + Undo bar
 - [ ] E9 · Günler: 7 gün çipi (dolu gün devre dışı)
-- [ ] E10 · Günler: hareket stepperları (Sets / Min reps / Max reps) − +
-- [ ] E11 · Günler: hareket "Remove" → Undo bar
-- [ ] E12 · Günler: "Add a move" → pageSheet arama
-- [ ] E13 · Add a move: Search moves TextField
+- [x] E10 · Günler: hareket stepperları (Sets / Min reps / Max reps) − +
+- [x] E11 · Günler: hareket "Remove" → Undo bar
+- [x] E12 · Günler: "Add a move" → pageSheet arama
+- [x] E13 · Add a move: Search moves TextField
 - [ ] E14 · Add a move: sonuç satırı → ekle
-- [ ] E15 · Add a move: "Add my own move" → OwnMoveForm (kind / equipment / added weight / one side çipleri, name, Save and add, Back, "Is it one of these?" listesi)
-- [ ] E16 · Add a move: "Close"
-- [ ] E17 · Günler: "Add a day" (canAddDay → `/add-day`; değilse editör boş gün)
-- [ ] E18 · Günler: "Save changes"; hedef kaybı uyarısı "Save anyway / Keep editing"
+- [x] E15 · Add a move: "Add my own move" → OwnMoveForm (kind / equipment / added weight / one side çipleri, name, Save and add, Back, "Is it one of these?" listesi)
+- [x] E16 · Add a move: "Close"
+- [x] E17 · Günler: "Add a day" (canAddDay → `/add-day`; değilse editör boş gün)
+- [x] E18 · Günler: "Save changes"; hedef kaybı uyarısı "Save anyway / Keep editing"
 - [ ] E19 · Günler: kaydedilmemiş not + geri → "Leave without saving / Keep editing"
-- [ ] E20 · Günler: kayıt sonrası "Undo" (son düzenleme)
+- [x] E20 · Günler: kayıt sonrası "Undo" (son düzenleme)
 - [ ] E21 · Moves: Review önerileri "Apply" (her bayrak)
 - [ ] E22 · Moves: "Your own moves aren't reviewed: N"
 - [ ] E23 · Changes: her değişiklik "Undo"
-- [ ] E24 · Cardio: dakika stepper − +
-- [ ] E25 · Cardio: 7 gün çipi
-- [ ] E26 · Cardio: "Save my cardio"
-- [ ] E27 · Cardio: "Turn cardio off"
-- [ ] E28 · Cardio: "Back to the coach's default"
+- [x] E24 · Cardio: dakika stepper − +
+- [x] E25 · Cardio: 7 gün çipi
+- [x] E26 · Cardio: "Save my cardio"
+- [x] E27 · Cardio: "Turn cardio off"
+- [x] E28 · Cardio: "Back to the coach's default"
 - [ ] E29 · Split: statik sayfa
-- [ ] E30 · Rebuild: "Rebuild my program" → `/train`; antrenman sürerken engel metni
+- [x] E30 · Rebuild: "Rebuild my program" → `/train`; antrenman sürerken engel metni
 - [ ] E31 · Durumlar: program yok (BuildProgramPrompt), offline, conflict (stale/kept/cleared), refused, failed
 
 ## W · Workout (`/workout`, dark)
-- [ ] W1 · "End" → End sheet
+- [x] W1 · "End" → End sheet
 - [ ] W2 · "Pause" / "Resume"
 - [ ] W3 · Zaman göstergesi; MoveDots (9 nokta) → dokun = o harekete atla
 - [ ] W4 · Hareket ikon kutusu / başlık → How to (`/exercise`)
-- [ ] W5 · "How to" → `/exercise?exercise=`
-- [ ] W6 · "History" → `/exercise-history`
-- [ ] W7 · "Swap" → SwapSheet
+- [x] W5 · "How to" → `/exercise?exercise=`
+- [x] W6 · "History" → `/exercise-history`
+- [x] W7 · "Swap" → SwapSheet
 - [ ] W8 · "Taken" → TakenSheet
-- [ ] W9 · "More" → MoveMenu (Superset with… / Not a superset / Skip move)
-- [ ] W10 · Superset partner seçimi (çipler, Cancel)
+- [x] W9 · "More" → MoveMenu (Superset with… / Not a superset / Skip move)
+- [x] W10 · Superset partner seçimi (çipler, Cancel)
 - [ ] W11 · "Bring it back" (atlanan hareket)
 - [ ] W12 · Hedef kutusu ("First time / Match last time / Beat last time")
 - [ ] W13 · Warm-up: katlanır başlık + "Log warm-up N"
@@ -666,20 +721,20 @@ Kaynak: `apps/mobile/src` içinde her `onPress/onLongPress/Switch/Modal/Alert/as
 - [ ] W17 · "Add a note" → TextField
 - [ ] W18 · "Too heavy?" → LoadNote (Use / Keep)
 - [ ] W19 · LoadNote "That weight is light. Next set …?" (Use / Keep)
-- [ ] W20 · "Log set N" (dock)
+- [x] W20 · "Log set N" (dock)
 - [ ] W21 · "Skip set"
 - [ ] W22 · Biten set satırı → EditSet sheet (stepperlar, Delete set → "Yes, delete it / Keep it", Done)
-- [ ] W23 · Rest timer "Ready" / "End the rest"
+- [x] W23 · Rest timer "Ready" / "End the rest"
 - [ ] W24 · Undo bar (skip/swap/later)
 - [ ] W25 · "Up next · Taken?" → TakenSheet (sonraki hareket)
 - [ ] W26 · "Add a move" → arama (Find a move, sonuç, "Create “name”", Close)
 - [ ] W27 · "Next: <move>" (dock)
 - [ ] W28 · Cardio adımı: "Next: cardio" → sayfa (Done N min / Later today / Skip today / Undo / Finish workout)
-- [ ] W29 · "Finish workout" (dock) → FinishForm
+- [x] W29 · "Finish workout" (dock) → FinishForm
 - [ ] W30 · FinishForm: Clean / Not clean (her hareket)
 - [ ] W31 · FinishForm: Note TextField
-- [ ] W32 · FinishForm: "Finish" → `/workout-end`; "Keep going" → geri
-- [ ] W33 · End sheet: "Finish and save"
+- [x] W32 · FinishForm: "Finish" → `/workout-end`; "Keep going" → geri
+- [x] W33 · End sheet: "Finish and save"
 - [ ] W34 · End sheet: "Fill in the rest later" → kaydet + geri
 - [ ] W35 · End sheet: "Discard this workout" → alert (Discard / Keep it)
 - [ ] W36 · End sheet: "Back to the workout"
@@ -692,12 +747,12 @@ Kaynak: `apps/mobile/src` içinde her `onPress/onLongPress/Switch/Modal/Alert/as
 - [ ] X3 · `/exercise-history` oturum satırı → "Edit this session" → `/workout-edit`
 - [ ] X4 · `/exercise-history` "Done"
 - [ ] X5 · `/workout-edit` set satırı (Delete → Yes/Keep), "Add a set", yan çipleri (L/R), hareket çipleri, steppers
-- [ ] X6 · `/workout-end` Retry (pending/failed)
+- [x] X6 · `/workout-end` Retry (pending/failed)
 - [ ] X7 · `/workout-end` MovedCard "and N more" (aç/kapat)
-- [ ] X8 · `/workout-end` HealthJit: Continue / Not now / "What we read" (aç/kapat)
-- [ ] X9 · `/workout-end` "Share your workout" → `/share?workout=`
-- [ ] X10 · `/workout-end` "Done" → `/train`
-- [ ] X11 · `/share` tür çipleri (Workout / PR / Weeks on track / Progress)
+- [x] X8 · `/workout-end` HealthJit: Continue / Not now / "What we read" (aç/kapat)
+- [x] X9 · `/workout-end` "Share your workout" → `/share?workout=`
+- [x] X10 · `/workout-end` "Done" → `/train`
+- [x] X11 · `/share` tür çipleri (Workout / PR / Weeks on track / Progress)
 - [ ] X12 · `/share` arka plan çipleri (Gallery / Camera / Dark / In Instagram) → izin/fotoğraf seçici
 - [ ] X13 · `/share` "Share to Story"
 - [ ] X14 · `/share` "Share" → sistem paylaşım sayfası
@@ -705,7 +760,7 @@ Kaynak: `apps/mobile/src` içinde her `onPress/onLongPress/Switch/Modal/Alert/as
 
 ## L · Log (+), Weigh-in, Cardio, State
 - [ ] L1 · `/plus` Weigh-in karosu → `/weigh-in`
-- [ ] L2 · `/plus` Meal karosu → `/meal`
+- [x] L2 · `/plus` Meal karosu → `/meal`
 - [ ] L3 · `/plus` Workout karosu → `/workout` ya da `/train`
 - [ ] L4 · `/plus` Cardio satırı → `/cardio`
 - [ ] L5 · `/plus` "Life got in the way" → `/state`
@@ -722,54 +777,54 @@ Kaynak: `apps/mobile/src` içinde her `onPress/onLongPress/Switch/Modal/Alert/as
 - [ ] L16 · `/state` rıza adımı (Continue / Not now)
 
 ## M · Log a meal / Today's food
-- [ ] M1 · Close (sağ üst)
-- [ ] M2 · Öğün çipleri Breakfast / Lunch / Dinner / Snack / Other
+- [x] M1 · Close (sağ üst)
+- [x] M2 · Öğün çipleri Breakfast / Lunch / Dinner / Snack / Other
 - [ ] M3 · "Same as yesterday" satırı (QuickAdds, `+`) → logla + kapan
-- [ ] M4 · Arama alanı yaz → sonuç satırı (aç) / `+` (hemen logla)
+- [x] M4 · Arama alanı yaz → sonuç satırı (aç) / `+` (hemen logla)
 - [ ] M5 · Arama durumları: kısa / aranıyor / bulunamadı / bağlantı yok / sunucu hatası
 - [ ] M6 · "Scan" → barkod sheet (kamera / "Or type the number" / Look up / Close / "Try the camera again")
 - [ ] M7 · Barkod bulundu → porsiyon; bulunamadı → "Add it" / "Search instead"; kötü numara; hata
-- [ ] M8 · "Quick add" → kart (Calories, Protein, Carbs, Fat, Remove)
+- [x] M8 · "Quick add" → kart (Calories, Protein, Carbs, Fat, Remove)
 - [ ] M9 · "Create my own food" → form (Name, Serving size, Calories, Protein, Carbs, Fat, "Save and add", "Cancel")
 - [ ] M10 · Sekmeler Recent / Frequent / Favorites / Log again
-- [ ] M11 · Recent/Frequent satırı aç + `+` logla
+- [x] M11 · Recent/Frequent satırı aç + `+` logla
 - [ ] M12 · Favorites satırı aç + `+`
 - [ ] M13 · Log again satırı (tek dokunuşla tüm öğün)
 - [ ] M14 · Boş sekmeler (4 metin)
-- [ ] M15 · Porsiyon kartı: yıldız (favori), Remove, birim çipleri, ½ 1 2 3, stepper, Details (aç/kapat), Weighed anahtarı
+- [x] M15 · Porsiyon kartı: yıldız (favori), Remove, birim çipleri, ½ 1 2 3, stepper, Details (aç/kapat), Weighed anahtarı
 - [ ] M16 · Estimate kartı (2+ öğe): Details
 - [ ] M17 · "Log it" (dock)
-- [ ] M18 · Düzeltme modu (`?edit=`): öğe kartları, slot çipleri, "Delete this meal" → alert (Delete/Keep), Save
+- [x] M18 · Düzeltme modu (`?edit=`): öğe kartları, slot çipleri, "Delete this meal" → alert (Delete/Keep), Save
 - [ ] M19 · Rıza adımı (Continue / Not now)
 - [ ] M20 · Durumlar: meal full (12), offline düzeltme, gone, not checked
-- [ ] F1 · `/food` geri
+- [x] F1 · `/food` geri
 - [ ] F2 · `/food` gün oku ‹ ›
 - [ ] F3 · `/food` gün şeridi hücreleri (son ay)
-- [ ] F4 · `/food` toplam kartı "Details" (aç/kapat)
+- [x] F4 · `/food` toplam kartı "Details" (aç/kapat)
 - [ ] F5 · `/food` "Log a meal" / "Add food to this day"
-- [ ] F6 · `/food` öğün `⋯` menüsü (Alert: Log again today / Delete meal / Cancel)
-- [ ] F7 · `/food` öğe satırı → düzeltme (`/meal?edit=`)
-- [ ] F8 · `/food` öğe satırı sola kaydır → Delete (Undo bar)
+- [x] F6 · `/food` öğün `⋯` menüsü (Alert: Log again today / Delete meal / Cancel)
+- [x] F7 · `/food` öğe satırı → düzeltme (`/meal?edit=`)
+- [x] F8 · `/food` öğe satırı sola kaydır → Delete (Undo bar)
 - [ ] F9 · `/food` "Add to <slot>" metin linki
 - [ ] F10 · `/food` boş öğün `⊕`
-- [ ] F11 · `/food` "Same as yesterday/the day before" teklifleri
-- [ ] F12 · `/food` "Copy a day's meals" → CopyDay listesi + "Done"
-- [ ] F13 · `/food` "Fits what's left today" önerisi "Log <food>"
+- [x] F11 · `/food` "Same as yesterday/the day before" teklifleri
+- [x] F12 · `/food` "Copy a day's meals" → CopyDay listesi + "Done"
+- [x] F13 · `/food` "Fits what's left today" önerisi "Log <food>"
 - [ ] F14 · `/food` Your targets kartı
 - [ ] F15 · `/food` geçmiş gün: "Log again today" (gün başlığında)
 - [ ] F16 · `/food` durumlar: rıza yok ("Open Settings"), yükleme hatası ("Try again"), hedef yok, "Not sent yet"
 
 ## P · Progress
-- [ ] P1 · Hero (statik)
+- [x] P1 · Hero (statik)
 - [ ] P2 · Karo Calories → `/meal`
 - [ ] P3 · Karo Protein → `/meal`
 - [ ] P4 · Karo Steps → Apple Health / `/settings`
 - [ ] P5 · Karo Cardio → `/cardio`
 - [ ] P6 · Muscles kartı (dokunma?) + Sets per muscle çubukları
 - [ ] P7 · Strength: lift çipleri (kaydırılır) + grafik noktası dokunma
-- [ ] P8 · Weight trend kartı (kilitli/açık) + grafik dokunma
-- [ ] P9 · Consistency ızgarası
-- [ ] P10 · Calls satırı → `/call?id=&from=progress`
+- [x] P8 · Weight trend kartı (kilitli/açık) + grafik dokunma
+- [x] P9 · Consistency ızgarası
+- [x] P10 · Calls satırı → `/call?id=&from=progress`
 - [ ] P11 · Photos: "Take photos" → `/photo-capture`
 - [ ] P12 · Photos: "Compare" → `/compare`
 - [ ] P13 · Photos: "Delete all photos" → alert (Keep them / Delete photos)
@@ -783,11 +838,11 @@ Kaynak: `apps/mobile/src` içinde her `onPress/onLongPress/Switch/Modal/Alert/as
 - [ ] P21 · `/compare` anchor çipleri, Side by side / Slide, Front/Side çipleri, kaydırıcı, Close
 
 ## S · Settings
-- [ ] S1 · Appearance segmenti (Light / Dark / System)
-- [ ] S2 · Units segmenti (Metric / Imperial)
-- [ ] S3 · Training days → `/edit-program?part=days`
-- [ ] S4 · Cardio → `/edit-program?part=cardio`
-- [ ] S5 · Import workouts → `/import`
+- [x] S1 · Appearance segmenti (Light / Dark / System)
+- [x] S2 · Units segmenti (Metric / Imperial)
+- [x] S3 · Training days → `/edit-program?part=days`
+- [x] S4 · Cardio → `/edit-program?part=cardio`
+- [x] S5 · Import workouts → `/import`
 - [ ] S6 · Foods you avoid → detail `food`
 - [ ] S7 · Goal / Check-in day / Height / Activity / Born (5 satır) → detail sayfaları
 - [ ] S8 · Reminders anahtarı (aç/kapat + izin; "Open iOS Settings"; "Turn on all four")
@@ -817,7 +872,7 @@ Kaynak: `apps/mobile/src` içinde her `onPress/onLongPress/Switch/Modal/Alert/as
 - [ ] S32 · Detail write: Finished workouts / Weigh-ins you type anahtarları
 - [ ] S33 · Detail import: Import (rıza yoksa kilit + Continue)
 - [ ] S34 · Durumlar: rıza yok (Food/Health kilitli satırlar), yükleme hatası ("Try again"), bildirim kapalı ("Open iOS Settings")
-- [ ] S35 · `/import`: Choose a file, birim çipleri, dumbbell çipleri, eşleştirme satırları (pick / Other / Leave out / My own move + arama), "Import N sessions", Done; hatalar
+- [~] S35 · `/import`: Choose a file, birim çipleri, dumbbell çipleri, eşleştirme satırları (pick / Other / Leave out / My own move + arama), "Import N sessions", Done; hatalar
 
 ## Y · Paywall / Sign-in / Onboarding
 - [ ] Y1 · Paywall plan seçimi Yearly / Monthly
@@ -843,4 +898,4 @@ Kaynak: `apps/mobile/src` içinde her `onPress/onLongPress/Switch/Modal/Alert/as
 - [ ] Y21 · Plan: "Tell me Monday morning" anahtarı (+ izin), Continue
 - [ ] Y22 · Onboarding apple-health: Connect / Not now / Start
 - [ ] Y23 · Geri oku (‹), ilerleme çubuğu
-- [ ] Y24 · `/return` (8+ gün): Ease back in / Pick up where I left off / Rebuild my plan seçenekleri, Continue, Not now, Try again
+- [x] Y24 · `/return` (8+ gün): Ease back in / Pick up where I left off / Rebuild my plan seçenekleri, Continue, Not now, Try again
