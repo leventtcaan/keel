@@ -579,10 +579,28 @@ test('while the first read is on its way: a calm loading sign under the title, s
   expect(screen.queryByLabelText(t('train.loading'))).toBeNull();
 });
 
-test('no program yet: one line', async () => {
+test('no program yet: the line, what to do about it, and the way out: Build my program (K-1037)', async () => {
   mockData = { program: { state: 'none' }, exercises: { state: 'ready', value: EXERCISES }, kept: false };
   await show();
   expect(await screen.findByText('No program yet.')).toBeTruthy();
+  expect(screen.getByText(t('buildProgram.line'))).toBeTruthy();
+  await fireEvent.press(screen.getByRole('button', { name: t('buildProgram.action') }));
+  expect(mockPush).toHaveBeenCalledWith('/build-program');
+});
+
+test('Build my program is only for a program that is not there: not while loading, not after a failed read, not with a program', async () => {
+  let answer: (data: TrainData) => void = () => undefined;
+  mockRead.mockImplementationOnce(() => new Promise((resolve) => (answer = resolve)));
+  await show();
+  expect(screen.queryByText(t('buildProgram.action'))).toBeNull();
+  await act(async () => answer({ program: { state: 'failed', problem: 'NoConnection' }, exercises: { state: 'failed', problem: 'NoConnection' }, kept: false }));
+  expect(await screen.findByText("Your program couldn't load.")).toBeTruthy();
+  expect(screen.queryByText(t('buildProgram.action'))).toBeNull();
+  await screen.unmount();
+  mockData = { program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: EXERCISES }, kept: false };
+  await show();
+  expect(await screen.findByText('Upper A')).toBeTruthy();
+  expect(screen.queryByText(t('buildProgram.action'))).toBeNull();
 });
 
 test('a failed read says so once, and trying again reads again', async () => {

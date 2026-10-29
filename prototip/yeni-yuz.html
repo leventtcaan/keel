@@ -1335,6 +1335,18 @@ const SCREENS = {
     </section>`;
   } },
 
+  /* ADR-084: an account with a profile and no program gets one way out everywhere the program would show */
+  'train-empty': { n: 'Antrenman (programsız, ADR-084)', t: null, tabs: true, r: () => `<header class="top"><h1 class="title">Train</h1></header>
+    <p class="sub">No program yet.</p>
+    <section class="card" aria-label="Your program"><p class="line" style="margin:0">Pick your training days and we build the program.</p>
+      <button class="btn" type="button" data-go="build-program">Build my program</button></section>` },
+
+  'build-program': { n: 'Program kur (ADR-084)', t: null, r: () => `<header class="top"><h1 class="title">Build my program</h1></header>
+    <h1 class="q">How many days a week?</h1>
+    <p class="why">Pick what you can keep.</p>
+    <div class="numtiles">${[2, 3, 4, 5].map(n => `<button class="numtile" type="button" data-go="train" aria-label="${n} days"><b class="tnum">${n}</b><span>days</span></button>`).join('')}</div>
+    <p class="fine">We place the days. Move them anytime. Session 1 finds your weights.</p>` },
+
   workout: { n: 'Oturum (odak modu)', t: null, scen: true, session: true, r: () => workoutScreen() },
 
   summary: { n: 'Antrenman sonu', t: 55, scen: true, dark: true, r: () => summaryScreen() },
@@ -1722,6 +1734,7 @@ const FLOWS = [
   { t: '2 · Sıradan gün (12. hafta)', sc: 'w12', items: ['home', 'plus', 'train', 'workout', 'editset', 'endwo', 'summary', 'share', 'progress', 'weigh', 'meal', 'barcode', 'photos', 'settings'] },
   { t: '3 · Pazartesi (12. hafta)', sc: 'w12', items: ['home-mon', 'checkin', 'call'] },
   { t: '4 · Dönüş ve duraklatma', sc: 'w12', items: ['return', 'life'] },
+  { t: '5 · Programsız hesap (ADR-084)', sc: 'w12', items: ['train-empty', 'build-program', 'train'] },
 ];
 const PREVKEY = { addmove: null, 'ob-plan': 'ob-plan', 'ob-exp': null, 'ob-own': null, 'ob-type': null, 'ob-review': null, 'ob-weights': null, 'home-mon': 'home-mon', today: null, editprog: null, w1change: null, editset: null, endwo: null, swap: null };
 const prevKey = (id, sc) => id in PREVKEY ? PREVKEY[id] : (SCREENS[id]?.scen ? (sc === 'own' ? null : `${id}.${sc}`) : id);
@@ -1731,6 +1744,7 @@ const CH = {
   'ob-type': 'YENİ (8 Eki, K-968), 2. hal: bütün günler alt alta kart; "Add a day" (en çok 7). Kullanıcı testi: tekrar iki ayrı sayı (en az, en çok); "Add a move" gerçek sayfa; hareketsiz gün uyarır ve "Use this program" kapanır; yazdığın program incelemeye, plana ve Antrenman sekmesine gider.',
   addmove: 'YENİ (kullanıcı testi): ara (15 yaygın hareket) ya da kendi hareketini adıyla ekle; 3 set ve katalog aralığıyla (bileşik 6-10, izolasyon 8-12) açık güne girer; geri al.',
   'ob-review': 'Programın koçluk kurallarıyla incelenir (6 gün K-36, set aralığı K-11), en çok 3 öneri. Kullanıcı testi: hamstring örneği 3 set (4 alt sınırdır, işaretlenmez); yazdığın programı inceler, öneri yoksa "Good as it is"; uygulanan sayı plana ve Antrenman sekmesine taşınır.',
+  'train-empty': 'YENİ (ADR-084): profil var, program yok; tek çıkış Build my program.', 'build-program': 'YENİ (ADR-084): onboarding gün sorusunun aynısı, sonra Train.',
   'ob-days': 'Aynı.', 'ob-consent': 'Aynı.', 'ob-about': 'Aynı.', 'ob-activity': 'Aynı.',
   'ob-weights': 'YENİ: tecrübeli için çalışma ağırlıkları; atlanabilir, ilk seans bulur.',
   'ob-preparing': 'Kardiyo da hesaba girer. Kullanıcı testi: kendiliğinden geçmez, üç satır tamamlanınca "See my plan" açılır; rıza yoksa üçüncü satır "Your first workout".',

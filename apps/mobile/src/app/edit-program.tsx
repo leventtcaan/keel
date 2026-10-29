@@ -19,6 +19,7 @@ import { type Changed, type Undone, applySuggestion, coachCardio, editProgram, p
 import type { SaveOutcome } from '@/train/OwnMoveForm';
 import { dayName, exerciseName } from '@/train/program';
 import { type EditedDay, WEEKDAYS, draftFits, editedDays, newDay, programEditOf, targetsLost, weekdayTaken, withWeekday } from '@/train/programEdit';
+import { BuildProgramPrompt } from '@/train/BuildProgramPrompt';
 import { ProgramEditor } from '@/train/ProgramEditor';
 import { suggestionWords } from '@/train/review';
 import { type Move, movesOf, ownMove } from '@/train/trainData';
@@ -371,6 +372,9 @@ export default function EditProgramScreen() {
         {confirm}
       </View>
     );
+  } else if (data?.program.state === 'none') {
+    // No program (K-1037, ADR-084): nothing to edit, and the way to build one.
+    body = <BuildProgramPrompt />;
   }
   // The page is long and Back is at its foot: the question is asked at the top, so the page goes up to it, without
   // motion (Reduce Motion, accessibility.test.ts).
