@@ -1141,6 +1141,7 @@
         "progress.result.steady",
         "progress.targets.ofKcal",
         "progress.targets.ofSteps",
+        "progress.targets.noSteps",
         "progress.targets.label.calories",
         "progress.targets.label.protein",
         "progress.targets.label.steps",

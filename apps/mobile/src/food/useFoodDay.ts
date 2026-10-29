@@ -5,6 +5,8 @@ import { useAppServices } from '@/services/ServicesProvider';
 import { type Loaded, load } from '@/today/today';
 import { useReadOnFocus } from '@/today/useReadOnFocus';
 
+import { localDay } from '@/today/today';
+
 import { addDays } from './dayLabel';
 import { type DayMeal, dayBefore, dayMeals, repeatOffers } from './meals';
 import { foodParams } from './params';
@@ -33,6 +35,8 @@ export type FoodDay = {
   summaries: Schemas['DaySummary'][];
   /** The slots the user's day is made of: those they logged into lately, and this day's (all four until a pattern shows). */
   slots: Schemas['MealSlot'][];
+  /** On how many different days of the recent window the user logged a meal: the pattern the slots and the per-meal hint rest on. */
+  patternDays: number;
 };
 
 /**
@@ -71,13 +75,15 @@ export function useFoodDay(selected: string | null): { today: string; day: strin
       const loggedDays = new Set(summaries.map((summary) => summary.day));
       const summary = summaries.find((entry) => entry.day === day);
       const shownSlots = (shown.state === 'ready' ? shown.value : []).map((meal) => meal.slot);
-      const slots = usedSlots(history.state === 'ready' ? history.value : [], shownSlots);
-      if (shown.state === 'consent') return { day, budget, targets, meals: null, mealsRead: false, offers: [], suggestions: [], summary, loggedDays, summaries, slots };
+      const logged = history.state === 'ready' ? history.value : [];
+      const slots = usedSlots(logged, shownSlots);
+      const patternDays = new Set(logged.map((meal) => localDay(new Date(meal.eatenAt)))).size;
+      if (shown.state === 'consent') return { day, budget, targets, meals: null, mealsRead: false, offers: [], suggestions: [], summary, loggedDays, summaries, slots, patternDays };
       const mealsRead = shown.state === 'ready';
       const meals = dayMeals(mealsRead ? shown.value : null, local, day);
       // Without the day's list a slot already logged could be offered again.
       const offers = mealsRead && before.state === 'ready' ? repeatOffers(before.value, meals) : [];
-      return { day, budget, targets, meals, mealsRead, offers, suggestions, summary, loggedDays, summaries, slots };
+      return { day, budget, targets, meals, mealsRead, offers, suggestions, summary, loggedDays, summaries, slots, patternDays };
     },
     [api, selected],
   );

@@ -43,6 +43,22 @@ export function dayMeals(server: Meal[] | null, records: LocalRecord[], day: str
   return [...rows.values()].sort((a, b) => Date.parse(eatenAt(a)) - Date.parse(eatenAt(b)));
 }
 
+/** One slot of the day: every meal logged into it (several logs of the same slot are one section), and how many are not sent yet. */
+export type SlotGroup = { slot: MealSlot; meals: Meal[]; waiting: number };
+
+/** The day's rows grouped by slot, in the order the slots first appear (the rows are in time order): one header per slot (K-1066). */
+export function groupBySlot(rows: DayMeal[]): SlotGroup[] {
+  const groups = new Map<MealSlot, SlotGroup>();
+  for (const row of rows) {
+    const slot = row.kind === 'sent' ? row.meal.slot : row.slot;
+    const group = groups.get(slot) ?? { slot, meals: [], waiting: 0 };
+    if (row.kind === 'sent') group.meals.push(row.meal);
+    else group.waiting += 1;
+    groups.set(slot, group);
+  }
+  return [...groups.values()];
+}
+
 /**
  * "Same as yesterday" (K-407): yesterday's meals for the slots today has nothing in yet, one tap each. Once a slot is
  * logged — by a repeat or otherwise — its offers go.

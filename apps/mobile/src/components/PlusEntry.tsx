@@ -13,6 +13,12 @@ const GLYPH = 22;
 export const PLUS_CLEARANCE = tokens.size.primaryButton + tokens.space.md + tokens.space.lg;
 
 /**
+ * The width at the right end of a row in a tab's content that the "+" can float over (K-1066): the button, and a gap. A card with an
+ * action at its right end keeps this much free there, so at the first view, with the card at the fold, nothing is under the "+".
+ */
+export const PLUS_GUTTER = tokens.size.primaryButton + tokens.space.sm;
+
+/**
  * The one "+" (ADR-069 #4, prototype #plus): on every tab, at the bottom right above the tab bar, it opens the log sheet
  * (weigh-in, meal, workout, life got in the way). Turquoise, the only accent besides the selected tab (ADR-070 #9).
  * It floats over the content (K-1050): placed in the tab's frame, not a strip of its own, so nothing beside it hides the

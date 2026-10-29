@@ -94,3 +94,11 @@ test('Reduce Motion on: the banner is there whole at once, not faded in', async 
   await act(async () => {});
   expect(StyleSheet.flatten(screen.getByTestId('undo-banner').props.style).opacity).toBe(1);
 });
+
+test('a lead says what happened in place of "Saved": "Deleted" and what, once each, and VoiceOver hears the same (K-1066)', async () => {
+  await renderIt(<UndoBanner lead="Deleted" detail="Breakfast" onUndo={() => {}} onDismiss={() => {}} />);
+  expect(screen.getByText('Deleted')).toBeOnTheScreen();
+  expect(screen.getByText('Breakfast')).toBeOnTheScreen();
+  expect(screen.queryByText(t('undoBanner.saved'))).toBeNull();
+  expect(announce).toHaveBeenCalledWith(t('undoBanner.announceLead', { lead: 'Deleted', detail: 'Breakfast' }));
+});

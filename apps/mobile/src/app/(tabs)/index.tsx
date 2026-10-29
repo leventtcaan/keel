@@ -12,6 +12,7 @@ import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
 import { GuideOverlay } from '@/guide/GuideOverlay';
 import { useGuide } from '@/guide/GuideProvider';
+import { workoutLine } from '@/guide/workoutLine';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { Hero } from '@/today/Hero';
@@ -75,6 +76,7 @@ export default function TodayScreen() {
   ) : null;
 
   let top = null;
+  let guideLines: { workout?: string } = {};
   if (data !== null) {
     const monday = data.monday ?? weekMonday(data.consistency, data.program, day);
     const program = answered !== null && answered.read === data ? answered.program : data.program.state === 'ready' ? data.program.value : null;
@@ -117,6 +119,7 @@ export default function TodayScreen() {
           />
         </View>
       );
+    guideLines = { workout: workoutLine(card, read?.program ?? null, today) };
     top = (
       <>
         <WeekStrip head={weekHead(data.consistency, data.firstWeeks)} days={stripDays(monday, today, sessions, trainedDays(data.week?.workouts), loggedDays(data.week?.weighIns))} />
@@ -152,7 +155,7 @@ export default function TodayScreen() {
           {top}
         </ScrollView>
         <PlusEntry buttonRef={plusRef} />
-        <GuideOverlay targets={targets} scroll={scroll} />
+        <GuideOverlay targets={targets} scroll={scroll} lines={guideLines} />
       </View>
     </SafeAreaView>
   );

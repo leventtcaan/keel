@@ -4,7 +4,7 @@
  * an item is deleted by swipe (VoiceOver: the custom action) with Undo in the app's banner, a whole meal from its menu, and the way to
  * log into the day shown — a past day too — and to copy a day's meals into it is one tap.
  */
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { Alert, type AlertButton } from 'react-native';
 
 import FoodScreen from '@/app/food';
@@ -239,7 +239,9 @@ describe('deleting where it stands, with Undo', () => {
       body: { items: [{ foodId: 'f-Toast', amount: { quantity: 2, unit: '1 slice' } }] },
     });
     expect(mockDELETE).not.toHaveBeenCalled();
-    expect(screen.getByText(t('food.deleted.itemDetail', { name: 'Egg' }))).toBeOnTheScreen();
+    expect(within(banner()!).getByText(t('food.deleted.itemLead'))).toBeOnTheScreen();
+    expect(within(banner()!).getByText('Egg')).toBeOnTheScreen();
+    expect(within(banner()!).queryByText(t('undoBanner.saved'))).toBeNull();
 
     mockPATCH.mockClear();
     await press(undoButton());
@@ -261,7 +263,8 @@ describe('deleting where it stands, with Undo', () => {
     await swipeAway('swipe-s1-0');
     expect(mockDELETE).toHaveBeenCalledWith('/v1/meals/{id}', { params: { path: { id: 's1' } } });
     expect(mockForget).toHaveBeenCalledWith('c-s1');
-    expect(screen.getByText(t('food.deleted.detail', { slot: t('food.slot.SNACK') }))).toBeOnTheScreen();
+    expect(within(banner()!).getByText(t('food.deleted.lead'))).toBeOnTheScreen();
+    expect(within(banner()!).getByText(t('food.slot.SNACK'))).toBeOnTheScreen();
     await press(undoButton());
     expect(mockRecord).toHaveBeenCalledWith({
       kind: 'meal',
@@ -271,7 +274,7 @@ describe('deleting where it stands, with Undo', () => {
 
   test('a whole meal from its menu, in a system action sheet: Delete meal deletes it with Undo; Cancel changes nothing', async () => {
     await show();
-    await press(screen.getByTestId('menu-b1'));
+    await press(screen.getByTestId('menu-BREAKFAST'));
     expect(alert).toHaveBeenCalledTimes(1);
     const [title, , buttons] = alert.mock.calls[0] as [string, string | undefined, AlertButton[]];
     expect(title).toBe(t('food.slot.BREAKFAST'));
@@ -280,13 +283,14 @@ describe('deleting where it stands, with Undo', () => {
     expect(mockDELETE).not.toHaveBeenCalled();
     await act(async () => buttons.find((b) => b.style === 'destructive')?.onPress?.());
     expect(mockDELETE).toHaveBeenCalledWith('/v1/meals/{id}', { params: { path: { id: 'b1' } } });
-    expect(screen.getByText(t('food.deleted.detail', { slot: t('food.slot.BREAKFAST') }))).toBeOnTheScreen();
+    expect(within(banner()!).getByText(t('food.deleted.lead'))).toBeOnTheScreen();
+    expect(within(banner()!).getByText(t('food.slot.BREAKFAST'))).toBeOnTheScreen();
   });
 
   test('on a past day the meal menu also logs it again today', async () => {
     await show();
     await press(screen.getByTestId('day-2026-09-25'));
-    await press(screen.getByTestId('menu-l1'));
+    await press(screen.getByTestId('menu-LUNCH'));
     const [, , buttons] = alert.mock.calls[0] as [string, string | undefined, AlertButton[]];
     expect(buttons.map((b) => b.text)).toEqual([t('food.meals.logToday'), t('food.meals.deleteMeal'), t('food.meals.cancel')]);
     await act(async () => buttons[0].onPress?.());
@@ -355,6 +359,83 @@ describe('same as the day before', () => {
     expect(mockRecord).toHaveBeenCalledWith({
       kind: 'meal',
       body: { clientId: expect.any(String), eatenAt: new Date(2026, 8, 27, 12, 0).toISOString(), slot: 'LUNCH', repeatOf: 'p1' },
+    });
+  });
+});
+
+describe('first-day rough edges (K-1066)', () => {
+  const LATER = meal('b2', 29, 10, 'BREAKFAST', [item('Oats', [150, 170], { quantity: 50, unit: 'g' })]);
+
+  test('two logs of the same slot are one section: one header, every log\'s items, the slot total is their sum', async () => {
+    mockMeals = { '2026-09-29': [BREAKFAST, LATER] };
+    await show();
+    expect(screen.getAllByRole('header', { name: t('food.slot.BREAKFAST') })).toHaveLength(1);
+    expect(screen.getAllByTestId(/^meal-/)).toHaveLength(1);
+    for (const name of ['Egg', 'Toast', 'Oats']) expect(screen.getByText(name)).toBeOnTheScreen();
+    // 72 + 90 + 160 (the middle of each range), once, in the header
+    expect(screen.getByText(kcal(322))).toBeOnTheScreen();
+    expect(screen.getAllByRole('button', { name: t('food.meals.addTo', { slot: t('food.slot.BREAKFAST') }) })).toHaveLength(1);
+    // each item still acts on its own log
+    await press(screen.getByTestId('item-b2-0'));
+    expect(mockPush).toHaveBeenLastCalledWith({ pathname: '/meal', params: { edit: 'b2', day: '2026-09-29', item: '0' } });
+  });
+
+  test('the slot menu deletes every log of the slot, and one Undo logs them all again at their own times', async () => {
+    mockMeals = { '2026-09-29': [BREAKFAST, LATER] };
+    await show();
+    await press(screen.getByTestId('menu-BREAKFAST'));
+    const [, , buttons] = alert.mock.calls[0] as [string, string | undefined, AlertButton[]];
+    await act(async () => buttons.find((b) => b.style === 'destructive')?.onPress?.());
+    expect(mockDELETE).toHaveBeenCalledTimes(2);
+    expect(mockDELETE).toHaveBeenCalledWith('/v1/meals/{id}', { params: { path: { id: 'b1' } } });
+    expect(mockDELETE).toHaveBeenCalledWith('/v1/meals/{id}', { params: { path: { id: 'b2' } } });
+    expect(within(banner()!).getByText(t('food.deleted.lead'))).toBeOnTheScreen();
+    await press(undoButton());
+    expect(mockRecord).toHaveBeenCalledTimes(2);
+    expect(mockRecord).toHaveBeenCalledWith(expect.objectContaining({ body: expect.objectContaining({ eatenAt: at(29, 8), slot: 'BREAKFAST' }) }));
+    expect(mockRecord).toHaveBeenCalledWith(expect.objectContaining({ body: expect.objectContaining({ eatenAt: at(29, 10), slot: 'BREAKFAST' }) }));
+  });
+
+  test('the title is the day: "Today\'s food", "Yesterday\'s food", else the date', async () => {
+    await show();
+    expect(screen.getByRole('header', { name: t('screens.food.title') })).toBeOnTheScreen();
+    await press(screen.getByTestId('day-before'));
+    expect(screen.getByRole('header', { name: t('food.day.titleYesterday') })).toBeOnTheScreen();
+    expect(screen.queryByRole('header', { name: t('screens.food.title') })).toBeNull();
+    await press(screen.getByTestId('day-2026-09-25'));
+    // The title and the navigator's own label both name the day.
+    expect(screen.getAllByRole('header', { name: 'Fri, Sep 25' })).toHaveLength(2);
+  });
+
+  test('a quick add says its name once', async () => {
+    const quick = meal('q1', 29, 15, 'SNACK', [{ ...item('Quick add', [150, 150]), foodId: 'quick', amount: { quantity: 1, unit: 'serving' } }]);
+    mockMeals = { '2026-09-29': [quick] };
+    await show();
+    expect(screen.getAllByText(t('meal.quickAdd.name'))).toHaveLength(1);
+  });
+
+  describe('the per-meal hint', () => {
+    const days = (count: number) => {
+      const all: Record<string, Schemas['Meal'][]> = {};
+      for (let i = 0; i < count; i += 1) {
+        const day = 29 - i;
+        all[`2026-09-${day}`] = [meal(`h${i}`, day, 8, 'BREAKFAST', [item('Egg', [70, 80])]), meal(`k${i}`, day, 19, 'DINNER', [item('Rice', [200, 240])])];
+      }
+      return all;
+    };
+    const hint = () => t('food.totals.hint', { count: 2, kcal: '1,200' });
+
+    test('with the first day only, nothing is said of what a meal is', async () => {
+      mockMeals = days(1);
+      await show();
+      expect(screen.queryByText(hint())).toBeNull();
+      expect(screen.queryByText(/meals a day/)).toBeNull();
+    });
+
+    test('from the third day of the user\'s own pattern it is said', async () => {
+      mockMeals = days(3);
+      await show();
+      expect(screen.getByText(hint())).toBeOnTheScreen();
     });
   });
 });

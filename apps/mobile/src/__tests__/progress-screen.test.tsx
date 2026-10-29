@@ -201,6 +201,9 @@ describe('the first days (ADR-078 #1)', () => {
     mockSyncHealth.mockResolvedValue({ weighIns: 0, stepsToday: null });
     await show();
     expect(words(box('steps'))).toContain('Connect Apple Health');
+    // An empty state, not a target with no number before it (K-1066).
+    expect(words(box('steps'))).toContain(t('progress.targets.noSteps'));
+    expect(words(box('steps'))).not.toContain('/ 7,000');
     expect(box('steps').props.accessibilityLabel).toBe(t('progress.targets.label.stepsOff', { target: '7,000' }));
     await fireEvent.press(box('steps'));
     expect(mockPush).toHaveBeenLastCalledWith('/settings');

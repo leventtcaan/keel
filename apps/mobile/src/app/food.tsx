@@ -11,9 +11,10 @@ import { t } from '@/copy';
 import { CopyDay } from '@/food/CopyDay';
 import { DayStrip } from '@/food/DayStrip';
 import { DayTotals } from '@/food/DayTotals';
-import { copiedAt, changeMeal, deleteMeal, deletedMeal, logMealAgain, removedItem, requestsOfMeal } from '@/food/mealActions';
-import { eatenAtFor } from '@/food/dayLabel';
+import { copiedAt, changeMeal, deleteMeal, deletedMeal, deletedMeals, logMealAgain, removedItem, requestsOfMeal } from '@/food/mealActions';
+import { dayTitle, eatenAtFor } from '@/food/dayLabel';
 import { MealList, RepeatOffers } from '@/food/MealList';
+import { foodParams } from '@/food/params';
 import { emptySlotsOf, perMealKcal } from '@/food/slots';
 import { savedMeal } from '@/food/savedMeal';
 import { Suggestions } from '@/food/Suggestions';
@@ -90,6 +91,24 @@ export default function FoodScreen() {
       else setProblem(t('food.deleted.failed'));
     });
 
+  // A slot's menu: every log of the slot goes, and one Undo puts them all back. A log already gone stays gone if another fails.
+  const deleteSlot = (logs: Schemas['Meal'][]) =>
+    guarded(async () => {
+      const gone: Schemas['Meal'][] = [];
+      let failure: 'offline' | 'failed' | null = null;
+      for (const meal of logs) {
+        const result = await deleteMeal(services, meal);
+        if (result === 'done') gone.push(meal);
+        else {
+          failure = result;
+          break;
+        }
+      }
+      if (gone.length > 0) saved(deletedMeals(services, gone, reload));
+      if (failure === 'offline') needsConnection();
+      else if (failure === 'failed') setProblem(t('food.deleted.failed'));
+    });
+
   const deleteItem = (meal: Schemas['Meal'], index: number) => {
     // The last item of a meal is the meal.
     if (meal.items.length === 1) return deleteWhole(meal);
@@ -101,12 +120,28 @@ export default function FoodScreen() {
     });
   };
 
-  const logToday = (meal: Schemas['Meal']) =>
+  const logToday = (logs: Schemas['Meal'][]) =>
     guarded(async () => {
       if (!(await consents.granted('HEALTH_DATA'))) return setProblem(t('food.repeat.noConsent'));
-      const clientId = await logMealAgain(services, meal, new Date().toISOString());
-      saved(savedMeal({ clientId, slot: meal.slot, items: meal.items.length }, { api, takeBack, report }));
+      const ids: string[] = [];
+      for (const meal of logs) ids.push(await logMealAgain(services, meal, new Date().toISOString()));
+      if (ids.length === 1) return saved(savedMeal({ clientId: ids[0], slot: logs[0].slot, items: logs[0].items.length }, { api, takeBack, report }));
+      saved({ detail: t('food.copy.saved', { count: ids.length }), undo: undoAll(ids) });
     });
+
+  /** Takes back every meal logged by one action (its clientIds), as one Undo. */
+  const undoAll = (ids: string[]) => async () => {
+    try {
+      for (const clientId of ids) {
+        await takeBack(clientId, async (id) => (await api.DELETE('/v1/meals/{id}', { params: { path: { id } } })).response.status);
+      }
+      reload();
+      return { done: true as const, said: t('meal.quick.undoneSaid') };
+    } catch (error) {
+      named(error);
+      return { done: false as const, message: t('meal.quick.undoFailed'), again: true };
+    }
+  };
 
   const copyDay = (source: Schemas['DaySummary']) =>
     guarded(async () => {
@@ -118,19 +153,9 @@ export default function FoodScreen() {
       for (const meal of meals.value) ids.push(await logMealAgain(services, meal, copiedAt(meal, day, today, now)));
       setCopying(false);
       saved({
+        lead: t('food.copy.lead'),
         detail: t('food.copy.saved', { count: ids.length }),
-        undo: async () => {
-          try {
-            for (const clientId of ids) {
-              await takeBack(clientId, async (id) => (await api.DELETE('/v1/meals/{id}', { params: { path: { id } } })).response.status);
-            }
-            reload();
-            return { done: true, said: t('meal.quick.undoneSaid') };
-          } catch (error) {
-            named(error);
-            return { done: false, message: t('meal.quick.undoFailed'), again: true };
-          }
-        },
+        undo: undoAll(ids),
       });
     });
 
@@ -139,7 +164,8 @@ export default function FoodScreen() {
   const isToday = day === today;
   const loggedSlots = data?.meals?.map((row) => (row.kind === 'sent' ? row.meal.slot : row.slot)) ?? [];
   const slots = data?.slots ?? [];
-  const perMeal = data !== null && data.budget.state === 'ready' ? perMealKcal(data.budget.value.targetKcal, slots.length) : null;
+  // Only from the user's own pattern: the first days' slots are a guess from one or two meals, not a habit (K-1066).
+  const perMeal = data !== null && data.budget.state === 'ready' && data.patternDays >= foodParams.mealHintMinDays ? perMealKcal(data.budget.value.targetKcal, slots.length) : null;
   const hint = perMeal === null ? null : t('food.totals.hint', { count: slots.length, kcal: perMeal.toLocaleString('en-US') });
   const noTarget = data !== null && data.budget.state === 'none' && data.summary === undefined && isToday;
 
@@ -170,9 +196,9 @@ export default function FoodScreen() {
         emptySlots={data.mealsRead ? emptySlotsOf(slots, loggedSlots) : []}
         onEditItem={(meal, index) => router.push({ pathname: '/meal', params: { edit: meal.id, day, item: String(index) } })}
         onDeleteItem={(meal, index) => void deleteItem(meal, index)}
-        onDeleteMeal={(meal) => void deleteWhole(meal)}
+        onDeleteSlot={(logs) => void deleteSlot(logs)}
         onAdd={(slot) => router.push({ pathname: '/meal', params: { day, slot } })}
-        {...(isToday ? {} : { onLogToday: (meal: Schemas['Meal']) => void logToday(meal) })}
+        {...(isToday ? {} : { onLogToday: (logs: Schemas['Meal'][]) => void logToday(logs) })}
       />
     ) : null;
   const offered = data === null ? [] : data.offers.filter((meal) => !hidden.has(meal.id));
@@ -190,7 +216,7 @@ export default function FoodScreen() {
   return (
     <SafeAreaView testID="screen" style={[styles.safe, { backgroundColor: color.background }]} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.body}>
-        <ScreenTitle>{t('screens.food.title')}</ScreenTitle>
+        <ScreenTitle>{dayTitle(day, today)}</ScreenTitle>
         <DayStrip day={day} today={today} logged={data?.loggedDays ?? new Set<string>()} onChange={(next) => setSelected(next === today ? null : next)} />
         {retry}
         {consent}

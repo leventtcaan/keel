@@ -85,8 +85,8 @@ const press = async (name: string) => act(async () => fireEvent.press(screen.get
 const sub = (status: Subscription['status'], active: boolean): Subscription => ({ active, appUserId: ID, status, accessUntil: UNTIL });
 
 test.each([
-  ['TRIAL', true, 'Free trial until Oct 11, 2026.'],
-  ['ACTIVE', true, 'Renews on Oct 11, 2026.'],
+  ['TRIAL', true, 'Free trial until Oct 11, 2026'],
+  ['ACTIVE', true, 'Renews on Oct 11, 2026'],
   ['CANCELLED', true, "Cancelled. Yours until Oct 11, 2026; it won't renew."],
   ['BILLING_ISSUE', true, "The App Store couldn't charge your payment method. Access stays until Oct 11, 2026 while it tries again."],
 ] as const)('%s: said plainly with its date, and the way to cancel or change it', async (status, active, words) => {
@@ -112,8 +112,8 @@ test('never subscribed: not subscribed, what works without one, and the way to t
 });
 
 test.each([
-  ['EXPIRED', 'Ended on Oct 11, 2026.'],
-  ['REFUNDED', 'Refunded.'],
+  ['EXPIRED', 'Ended on Oct 11, 2026'],
+  ['REFUNDED', 'Refunded'],
 ] as const)('%s: said, and the way to the plans', async (status, words) => {
   await show(sub(status, false));
   expect(screen.getByText(words)).toBeOnTheScreen();
@@ -124,7 +124,7 @@ test('restore from here: restored and seen, the section reads the subscription a
   await show({ active: false, appUserId: ID }, { active: false, appUserId: ID }, sub('ACTIVE', true));
   await press(t('subscription.restore'));
   expect((mockStore as ReturnType<typeof store>).calls).toEqual([`identify ${ID}`, 'restore']);
-  expect(screen.getByText('Renews on Oct 11, 2026.')).toBeOnTheScreen();
+  expect(screen.getByText('Renews on Oct 11, 2026')).toBeOnTheScreen();
 });
 
 test('restore with nothing to restore says so', async () => {
@@ -136,7 +136,7 @@ test('restore with nothing to restore says so', async () => {
 test('not in this build: the state is still the server’s; managing says where it works, and nothing is pressed', async () => {
   mockStore = storeUnavailable;
   await show(sub('ACTIVE', true));
-  expect(screen.getByText('Renews on Oct 11, 2026.')).toBeOnTheScreen();
+  expect(screen.getByText('Renews on Oct 11, 2026')).toBeOnTheScreen();
   expect(screen.getByText(t('settings.subscription.unavailable'))).toBeOnTheScreen();
   expect(screen.queryByRole('button', { name: t('settings.subscription.manage') })).toBeNull();
   expect(screen.queryByRole('button', { name: t('subscription.restore') })).toBeNull();
@@ -163,7 +163,7 @@ test('back from the plans (Settings in view again): the subscription is read aga
   expect(screen.getByText(t('settings.subscription.none'))).toBeOnTheScreen();
   mockAnswers = [ok(sub('TRIAL', true))];
   await act(async () => mockFocus());
-  expect(screen.getByText('Free trial until Oct 11, 2026.')).toBeOnTheScreen();
+  expect(screen.getByText('Free trial until Oct 11, 2026')).toBeOnTheScreen();
 });
 
 test("back from Apple's page: read again — a cancellation made there shows here", async () => {

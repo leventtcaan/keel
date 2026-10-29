@@ -45,7 +45,7 @@ test('with a trial: when it ends, what is charged then and that it renews until 
     lead: 'Try it free',
     accent: 'for 7 days',
     sub: { lead: 'Full access today. Nothing is charged until', date: 'Tue, Oct 20' },
-    terms: ['When the trial ends: $59.99 a year, renewing every year until you cancel.', t('subscription.cancelNote')],
+    terms: [t('subscription.cancelNote')],
     dock: {
       strong: 'No charge today.',
       lead: 'Then',
@@ -64,7 +64,7 @@ test('without one (none offered, or had already): the price and the renewal only
     lead: t('subscription.title'),
     accent: null,
     sub: null,
-    terms: ['$12.99 a month, renewing every month until you cancel.', t('subscription.cancelNote')],
+    terms: [t('subscription.cancelNote')],
     dock: {
       strong: null,
       lead: null,

@@ -64,13 +64,19 @@ export async function logMealAgain({ queue }: Pick<Services, 'queue'>, meal: Mea
   return clientId;
 }
 
-/** A deleted meal's banner: "Deleted · Lunch", Undo logs it again at its own time (a copy of its items, since the original is gone). */
-export function deletedMeal(services: Services, meal: Meal, after: () => void): Save {
+/**
+ * A deleted slot's banner: "Deleted" and the slot ("Breakfast"). Undo logs every deleted log again at its own time (a copy of its
+ * items, since the originals are gone), so one Undo puts back what one delete took.
+ */
+export function deletedMeals(services: Services, meals: Meal[], after: () => void): Save {
   return {
-    detail: t('food.deleted.detail', { slot: t(`food.slot.${meal.slot}`) }),
+    lead: t('food.deleted.lead'),
+    detail: t('food.deleted.detail', { slot: t(`food.slot.${meals[0].slot}`) }),
     undo: async () => {
       try {
-        await services.queue.record({ kind: 'meal', body: { clientId: newClientId(), eatenAt: meal.eatenAt, slot: meal.slot, items: requestsOfMeal(meal) } });
+        for (const meal of meals) {
+          await services.queue.record({ kind: 'meal', body: { clientId: newClientId(), eatenAt: meal.eatenAt, slot: meal.slot, items: requestsOfMeal(meal) } });
+        }
         after();
         return { done: true, said: t('food.deleted.said') };
       } catch (error) {
@@ -81,10 +87,14 @@ export function deletedMeal(services: Services, meal: Meal, after: () => void): 
   };
 }
 
+/** One deleted meal's banner (the meal page's Delete). */
+export const deletedMeal = (services: Services, meal: Meal, after: () => void): Save => deletedMeals(services, [meal], after);
+
 /** An item taken out of a meal: Undo puts the meal's items back as they were (one change in place again). */
 export function removedItem(services: Pick<Services, 'api' | 'report'>, before: Meal, name: string, after: () => void): Save {
   return {
-    detail: t('food.deleted.itemDetail', { name }),
+    lead: t('food.deleted.itemLead'),
+    detail: name,
     undo: async () => {
       const back = await changeMeal(services.api, before.id, { items: requestsOfMeal(before) });
       if (back.state === 'done') {

@@ -79,3 +79,8 @@ test('not a trial: no row at all', async () => {
   expect(screen.queryByText(t('subscription.reminder.ask'))).toBeNull();
   expect(screen.queryByText(t('settings.reminders.trial'))).toBeNull();
 });
+
+test('the row has a chevron, as the rows beside it (K-1066)', async () => {
+  await show();
+  expect(screen.getByTestId('trial-reminder-row-chevron')).toBeOnTheScreen();
+});

@@ -26,6 +26,8 @@ type Props = {
   targets: Partial<Record<Exclude<StepId, 'tabs'>, Target>>;
   /** The screen's scroll, so a part below the fold is brought into view for its step. */
   scroll?: { ref: RefObject<ScrollView | null>; y: MutableRefObject<number> };
+  /** A step's line when it depends on the state of its part (today's workout); already translated. Else the step's own copy. */
+  lines?: Partial<Record<StepId, string>>;
 };
 
 function measure(target: Target | undefined): Promise<Frame | null> {
@@ -67,7 +69,7 @@ export function GuideOverlay(props: Props) {
   return useGuide().open ? <Walk {...props} /> : null;
 }
 
-function Walk({ targets, scroll }: Props) {
+function Walk({ targets, scroll, lines }: Props) {
   const guide = useGuide();
   const window = useWindowDimensions();
   const insets = useContext(SafeAreaInsetsContext) ?? { top: 0, bottom: 0 };
@@ -135,7 +137,7 @@ function Walk({ targets, scroll }: Props) {
         onPress={next}>
         <Spotlight rect={rect} round={id === 'plus'} />
       </Pressable>
-      <Card key={id} id={id} index={at} total={ids.length} rect={rect} last={last} onNext={next} onSkip={close} />
+      <Card key={id} id={id} line={lines?.[id]} index={at} total={ids.length} rect={rect} last={last} onNext={next} onSkip={close} />
     </Modal>
   );
 }
@@ -178,10 +180,10 @@ function Spotlight({ rect, round }: { rect: Frame; round: boolean }) {
   );
 }
 
-type CardProps = { id: StepId; index: number; total: number; rect: Frame; last: boolean; onNext: () => void; onSkip: () => void };
+type CardProps = { id: StepId; line?: string | undefined; index: number; total: number; rect: Frame; last: boolean; onNext: () => void; onSkip: () => void };
 
 /** One step's card: which step of how many, what it is in a line, Next, and Skip. It rises in as the step comes. */
-function Card({ id, index, total, rect, last, onNext, onSkip }: CardProps) {
+function Card({ id, line, index, total, rect, last, onNext, onSkip }: CardProps) {
   const { color } = useTheme();
   const window = useWindowDimensions();
   const reduce = useReduceMotion();
@@ -206,7 +208,7 @@ function Card({ id, index, total, rect, last, onNext, onSkip }: CardProps) {
       <Text accessibilityRole="header" style={[styles.title, { color: color.text }]}>
         {t(`guide.${id}.title`)}
       </Text>
-      <Text style={[styles.body, { color: color.textSecondary }]}>{t(`guide.${id}.body`)}</Text>
+      <Text style={[styles.body, { color: color.textSecondary }]}>{line ?? t(`guide.${id}.body`)}</Text>
       <View style={styles.foot}>
         <View accessible={false} style={styles.dots}>
           {dots}

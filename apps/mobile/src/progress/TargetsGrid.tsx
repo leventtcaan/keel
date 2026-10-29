@@ -42,7 +42,7 @@ function Box({ kind, title, value, of, fill, source, label, hint, onPress }: Box
       </View>
       <Text style={[styles.value, { color: color.text }]}>
         {counted === null ? value : <CountUp value={counted} format={num} />}
-        <Text style={[styles.of, { color: color.muted }]}>{value === null ? of : ` ${of}`}</Text>
+        <Text style={[styles.of, { color: color.muted }]}>{of === '' ? '' : ` ${of}`}</Text>
       </Text>
       <ProgressBar value={fill} label={label} />
       <Text style={[styles.source, { color: color.muted }]}>{source}</Text>
@@ -79,7 +79,7 @@ export function TargetsGrid({ targets }: { targets: Target[] }) {
         const of = t('progress.targets.ofSteps', { target: num(target.target) });
         if (target.steps === null) {
           return (
-            <Box key="steps" kind="steps" title={t('progress.targets.steps')} value={null} of={of} fill={0} source={t('progress.targets.connect')}
+            <Box key="steps" kind="steps" title={t('progress.targets.steps')} value={t('progress.targets.noSteps')} of="" fill={0} source={t('progress.targets.connect')}
               label={t('progress.targets.label.stepsOff', { target: num(target.target) })} hint={t('progress.targets.hint.connect')} onPress={() => router.push('/settings')} />
           );
         }

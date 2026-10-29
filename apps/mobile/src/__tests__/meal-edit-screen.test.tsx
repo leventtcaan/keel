@@ -5,7 +5,7 @@
  * system's alert (ADR-087 #1, K-1048), and the app's banner offers Undo. Changing needs the server: offline it says so and
  * changes nothing.
  */
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { Alert, type AlertButton } from 'react-native';
 
 import MealScreen from '@/app/meal';
@@ -208,7 +208,8 @@ test('the destructive button deletes and goes back; the banner says Deleted and 
   expect(mockDELETE).toHaveBeenCalledWith('/v1/meals/{id}', { params: { path: { id: 'm1' } } });
   expect(mockRecord).not.toHaveBeenCalled();
   expect(mockBack).toHaveBeenCalled();
-  expect(screen.getByText(t('food.deleted.detail', { slot: t('food.slot.BREAKFAST') }))).toBeOnTheScreen();
+  expect(within(banner()!).getByText(t('food.deleted.lead'))).toBeOnTheScreen();
+  expect(within(banner()!).getByText(t('food.slot.BREAKFAST'))).toBeOnTheScreen();
   await act(async () => fireEvent.press(undoButton()));
   expect(mockRecord).toHaveBeenCalledWith({
     kind: 'meal',

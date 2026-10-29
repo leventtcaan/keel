@@ -9,6 +9,7 @@ import { StyleSheet } from 'react-native';
 import TodayScreen from '@/app/(tabs)/index';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
+import { PLUS_GUTTER } from '@/components/PlusEntry';
 import { GuideProvider } from '@/guide/GuideProvider';
 import { ThemeProvider } from '@/theme/theme';
 import { palettes } from '@/theme/tokens';
@@ -988,6 +989,13 @@ describe('the food line', () => {
     await press(t('thisWeek.food.logLabel'));
     expect(mockPush).toHaveBeenCalledWith('/meal');
     expect(mockPush).not.toHaveBeenCalledWith('/food');
+  });
+
+  test('the card keeps the width the floating "+" can cover free at its right end, so Log is never under it (K-1066)', async () => {
+    mockAnswers['/v1/days/{day}/budget'] = ok(BUDGET(1240, 1480));
+    await show();
+    const card = StyleSheet.flatten(screen.getByTestId('food-line').props.style) as { paddingRight: number };
+    expect(card.paddingRight).toBeGreaterThanOrEqual(PLUS_GUTTER);
   });
 
   test("a meal logged, the number comes down with the server's range; the range itself is in a tap's detail", async () => {
