@@ -13,7 +13,7 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { parseNumber } from '@/units/units';
 
-import { unitAfterNumber, unitLabel } from './amountText';
+import { amountPhrase, unitAfterNumber, unitLabel } from './amountText';
 import { type DraftItem, type KnownFoods, type KnownRecipes, PORTION, itemProblem } from './draft';
 import { parseQuantity } from './meals';
 import { foodParams } from './params';
@@ -33,6 +33,8 @@ type Props = {
   recipes?: KnownRecipes;
   /** The server's estimate of these very items, in order, when it has answered: the ranges of the detail, and the numbers of an item read back from a logged meal. */
   estimated?: Schemas['EstimatedItem'][];
+  /** The items as they were logged (a correction): an item still at its logged amount shows the very numbers the day shows for it. */
+  logged?: Schemas['EstimatedItem'][];
   /** Foods starred, by id; absent: no star is drawn. */
   favorites?: ReadonlySet<string>;
   onFavorite?: (item: DraftItem, on: boolean) => void;
@@ -43,8 +45,11 @@ type Props = {
 };
 
 /** The single numbers of an item: its portion's, times the quantity; else the middle of the server's estimate for it. */
-function numbersOf(item: DraftItem, estimate: Schemas['EstimatedItem'] | undefined): Macros | null {
+function numbersOf(item: DraftItem, estimate: Schemas['EstimatedItem'] | undefined, logged: Schemas['EstimatedItem'][] | undefined): Macros | null {
   const quantity = parseQuantity(item.quantity);
+  // Where it was logged and nothing changed, the day's own number: the portion's single number is the food's, the logged one has the amount's error.
+  const was = logged?.find((one) => one.foodId === item.foodId && one.amount.unit === item.unit && one.amount.quantity === quantity);
+  if (was !== undefined) return macrosOf(was);
   const portion = portionOf(item);
   if (portion !== undefined && quantity !== null) return macrosOfPortion(portion, quantity);
   return estimate === undefined ? null : macrosOf(estimate);
@@ -57,7 +62,7 @@ function numbersOf(item: DraftItem, estimate: Schemas['EstimatedItem'] | undefin
  * amount, kcal) that opens on a tap, so a meal of five foods is five lines, not five forms. "Details" opens the ranges (U5). A quick
  * add is its calories and macros as fields. Shared by the meal and the recipe entry (K-423).
  */
-export function ItemRows({ items, known, recipes, estimated, favorites, onFavorite, onChange, onRemove, openFirst }: Props) {
+export function ItemRows({ items, known, recipes, estimated, logged, favorites, onFavorite, onChange, onRemove, openFirst }: Props) {
   const { color } = useTheme();
   const [open, setOpen] = useState<number | null>(() => openFirst ?? (items.length === 0 ? null : items.length - 1));
   const [detail, setDetail] = useState<number | null>(null);
@@ -73,7 +78,7 @@ export function ItemRows({ items, known, recipes, estimated, favorites, onFavori
     <>
       {items.map((item, index) => {
         const estimate = estimated?.[index];
-        const numbers = numbersOf(item, estimate);
+        const numbers = numbersOf(item, estimate, logged);
         const isOpen = open === index || items.length === 1;
         const spokenName = item.name;
         if (!isOpen) {
@@ -121,7 +126,9 @@ export function ItemRows({ items, known, recipes, estimated, favorites, onFavori
 /** "2 × 1 large", "150 g": the amount of a folded line. */
 function foldedAmount(item: DraftItem): string {
   if (item.quick !== undefined) return t('meal.quickAdd.folded');
-  return `${item.quantity} ${unitAfterNumber(item.unit)}`.trim();
+  const quantity = parseQuantity(item.quantity);
+  // Typed halfway ("1."): the words as typed rather than a guess.
+  return quantity === null ? `${item.quantity} ${unitAfterNumber(item.unit)}`.trim() : amountPhrase({ quantity, unit: item.unit });
 }
 
 function OpenItem({
@@ -194,7 +201,7 @@ function OpenItem({
         ))}
       </View>
     );
-  const quickChips = counted ? (
+  const quickChips = counted && item.quick === undefined ? (
     <View style={styles.chips}>
       {foodParams.quickQuantities.map((value) => (
         <Chip

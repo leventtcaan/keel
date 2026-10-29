@@ -371,6 +371,7 @@ export default function MealScreen() {
           known={known}
           recipes={knownRecipes}
           {...(estimatedItems === undefined ? {} : { estimated: estimatedItems })}
+          {...(original !== null && original.state === 'ready' ? { logged: original.meal.items } : {})}
           favorites={extras.favoriteIds}
           onFavorite={(item, on) => void extras.setFavorite(item.foodId, on)}
           {...(itemParam !== undefined && !Number.isNaN(Number(itemParam)) ? { openFirst: Number(itemParam) } : {})}

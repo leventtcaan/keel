@@ -290,6 +290,9 @@ describe('a correction opened on one item', () => {
     // The egg's food was read for its portions: tapping it opens the portion step with the 1 large chip.
     await press(t('meal.item.open', { name: 'Egg, whole' }));
     expect(screen.getByRole('button', { name: t('meal.item.unitSpoken', { name: 'Egg, whole', unit: '1 large' }) })).toBeSelected();
-    expect(screen.getByTestId('numbers-0')).toHaveTextContent('144 kcal');
+    // Still at the amount it was logged in: the day's own number for it (the middle of 130-150), not the portion's 72 twice.
+    expect(screen.getByTestId('numbers-0')).toHaveTextContent('140 kcal');
+    await press(t('meal.item.quantitySpoken', { quantity: 3 }));
+    expect(screen.getByTestId('numbers-0')).toHaveTextContent('216 kcal'); // changed: the portion's numbers, three times
   });
 });

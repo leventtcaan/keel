@@ -117,7 +117,7 @@ export function MealList({ meals, complete, isToday, emptySlots, onEditItem, onD
           onPress={() => onAdd(slot)}
           style={[styles.emptySlot, { backgroundColor: color.surface }]}>
           <Text style={[styles.name, { color: color.text }]}>{t(`food.slot.${slot}`)}</Text>
-          <Text style={[styles.amount, { color: color.muted }]}>{t('food.meals.emptySlot')}</Text>
+          <Text style={[styles.amount, styles.grow, { color: color.muted }]}>{t('food.meals.emptySlot')}</Text>
           <Icon name="plus.circle.fill" tone="accent" />
         </Pressable>
       ))}
@@ -176,5 +176,6 @@ const styles = StyleSheet.create({
   amount: { fontSize: tokens.type.bodySmall },
   kcal: { fontSize: tokens.type.body, fontVariant: ['tabular-nums'] },
   empty: { fontSize: tokens.type.body },
+  grow: { flex: 1 },
   emptySlot: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, borderRadius: tokens.radius.card, padding: tokens.space.md, minHeight: tokens.size.touch },
 });
