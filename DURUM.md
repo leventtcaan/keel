@@ -21,7 +21,11 @@ Evre 1 paket 1 BİTTİ (#619, ADR-084). Paket 2 kodu birleşti (#621, #622, ADR-
 **Sabah Levent tek giriş yapınca toplu kanıt:** paket 2 (egg/rice/chıcken yazarak, satır kcal, varsayılan birim) + gece biten paketler.
 Dev düzeneği sorunu: `apps/mobile/node_modules` eski `keel` kopyasına sembolik bağ; Metro bir kez eski `data/parameters/food.json` sundu →
 kanıttan önce düzeneği temizle (yerel `npm ci` ya da bağı kaldır, Metro `--clear`), dal değiştirdikten sonra uygulamayı tam yeniden yükle.
-Gece işi: Evre 1 paket 3-5 kodu (kanıt sabah), sonra Evre 2 tasarım (prototip, kanıt gerektirmez).
+Gece (29 Eki 01-03 UTC): Evre 1 paket 3-5 kodu birleşti (#625 bugünün yemekleri, #626 onay uyarıları + paywall güvenli alan + tek satır ilerleme,
+#627 test süresi). Evre 2: ADR-070 Ek 2 (tek bileşen sistemi), prototip `prototip/yeniden-yapim.html` (https://claude.ai/artifact/3w4F4AyapNksScmgmgzpD6),
+#630 bileşenler birleşti; Evre 2.2 Ayarlar/Account ajanda (#631). Evre 3: ADR-088 (OFF Türkiye alt kümesi), içe aktarıcı PR #632 (BEKLET: tanı sonucu),
+VPS'te `/opt/keel/off` tanı koşusu (`run.log`, `diag.log`; ilk kısmi koşu 1.996 Türkiye ürününden yalnız 36'sı dört besin + ad dolu).
+**K1 listesi (sabah Levent'e, test silme dahil):** `.envanter/notes.md › K1 listesi`.
 K1 listesi (sabah Levent'e toplu): `.envanter/notes.md › K1 listesi`.
 
 ## (önceki) DEVAM NOKTASI (28 Eki — 1.0 REDDEDİLDİ, düzeltildi, build 5 ile YENİDEN GÖNDERİLDİ: Waiting for Review)
