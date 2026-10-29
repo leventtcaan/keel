@@ -44,6 +44,8 @@ const light = {
   decisionLine: '#2A2F2F',
   /** `edge` inside the block. */
   decisionEdge: '#7E8888',
+  /** The floating "+"'s shadow, the one control that sits over the content (K-1050). */
+  shadow: '#0B0C0C',
 } as const;
 
 const dark: Record<keyof typeof light, string> = {
@@ -76,6 +78,7 @@ const dark: Record<keyof typeof light, string> = {
   decisionMuted: '#4C5555',
   decisionLine: '#C9D0D0',
   decisionEdge: '#727D7D',
+  shadow: '#000000',
 };
 
 export const palettes = { light, dark } as const;
@@ -193,6 +196,8 @@ export const tokens = {
     regular: 24,
     weight: 'medium',
   },
+  /** What floats over the content (the "+", K-1050): a soft drop under it. */
+  float: { offsetY: 4, blur: 12, opacity: 0.24 },
   opacity: {
     /** Pressed and disabled controls. */
     dim: 0.5,

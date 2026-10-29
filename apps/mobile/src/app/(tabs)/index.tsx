@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
-import { PlusEntry } from '@/components/PlusEntry';
+import { PLUS_CLEARANCE, PlusEntry } from '@/components/PlusEntry';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
@@ -94,23 +94,23 @@ export default function TodayScreen() {
   }
 
   return (
-    // Bottom edge too: inside native tabs the bottom inset includes the tab bar, so the "+" sits above it.
+    // Bottom edge too: inside native tabs the bottom inset includes the tab bar, so the "+" floats above it (K-1050).
     <SafeAreaView testID="screen" style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
-      <ScrollView contentContainerStyle={styles.body}>
-        <View style={styles.head}>
-          <ScreenTitle>{t('screens.today.title')}</ScreenTitle>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('thisWeek.settings')}
-            onPress={() => router.push('/settings')}
-            style={({ pressed }) => [styles.gear, { backgroundColor: color.surface }, pressed && styles.dim]}>
-            <SymbolView name="gearshape" size={tokens.type.heading} tintColor={color.text} />
-          </Pressable>
-        </View>
-        {problem}
-        {top}
-      </ScrollView>
-      <View style={styles.plus}>
+      <View style={styles.frame}>
+        <ScrollView contentContainerStyle={styles.body}>
+          <View style={styles.head}>
+            <ScreenTitle>{t('screens.today.title')}</ScreenTitle>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('thisWeek.settings')}
+              onPress={() => router.push('/settings')}
+              style={({ pressed }) => [styles.gear, { backgroundColor: color.surface }, pressed && styles.dim]}>
+              <SymbolView name="gearshape" size={tokens.type.heading} tintColor={color.text} />
+            </Pressable>
+          </View>
+          {problem}
+          {top}
+        </ScrollView>
         <PlusEntry />
       </View>
     </SafeAreaView>
@@ -119,11 +119,11 @@ export default function TodayScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  body: { padding: tokens.space.lg, gap: tokens.space.md },
+  body: { padding: tokens.space.lg, paddingBottom: PLUS_CLEARANCE, gap: tokens.space.md },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   gear: { width: tokens.size.touch, height: tokens.size.touch, borderRadius: tokens.size.touch / 2, alignItems: 'center', justifyContent: 'center' },
   dim: { opacity: tokens.opacity.dim },
   note: { gap: tokens.space.sm },
   text: { fontSize: tokens.type.body },
-  plus: { paddingHorizontal: tokens.space.lg, paddingBottom: tokens.space.sm },
+  frame: { flex: 1 },
 });

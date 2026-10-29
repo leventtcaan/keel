@@ -9,6 +9,7 @@ import * as path from 'path';
 import { router as appRouter } from 'expo-router';
 import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-library';
 import type { ComponentType } from 'react';
+import { StyleSheet } from 'react-native';
 
 import TodayScreen from '@/app/(tabs)/index';
 import ProgressScreen from '@/app/(tabs)/progress';
@@ -157,6 +158,10 @@ test.each(TABS.map((tab) => tab.name))('the %s tab shows the "+" and no coach en
   expect(screen.queryByRole('button', { name: t('coach.entry') })).toBeNull();
   // The native tab bar overlays the screen; the bottom safe area keeps the "+" above it.
   expect(screen.getByTestId('screen').props.edges).toMatchObject({ top: 'additive', bottom: 'additive' });
+  // It floats over the rows (K-1050): no strip of its own beside it, and only the button takes touches.
+  const plus = screen.getByTestId('plus');
+  expect(StyleSheet.flatten(plus.props.style)).toMatchObject({ position: 'absolute' });
+  expect(plus.props.pointerEvents).toBe('box-none');
 });
 
 test.each(TABS.map((tab, position) => [tab.name, position] as const))(
