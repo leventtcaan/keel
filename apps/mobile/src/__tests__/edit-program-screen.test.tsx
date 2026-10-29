@@ -1018,15 +1018,59 @@ describe('rebuild for me', () => {
     expect(screen.queryByText(t('editProgram.rebuildUnderWay'))).toBeNull();
   });
 
-  test("days the server can't build for: said with their number, not as our failure (a program with days on no weekday goes by the profile's)", async () => {
+  const unplaced = () => ({ ...PROGRAM, days: PROGRAM.days.map(({ weekday: _w, ...d }) => d) });
+
+  test("days the server can't build for: said with their number, not as our failure", async () => {
     mockParams = { part: 'rebuild' };
-    mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, days: PROGRAM.days.map(({ weekday: _w, ...d }) => d) } } };
-    mockGet.mockImplementationOnce(async () => ({ data: { schedule: { trainingDays: [] } }, response: { status: 200 } }));
+    mockData = { ...mockData, program: { state: 'ready', value: unplaced() } };
+    mockGet.mockImplementationOnce(async () => ({ data: { schedule: { trainingDays: ['MONDAY'] } }, response: { status: 200 } }));
     mockAnswers['/v1/program/generate'] = () => ({ error: { code: 'VALIDATION_FAILED' }, response: { status: 400 } });
     await show();
     await fireEvent.press(await screen.findByText(t('editProgram.rebuildConfirm')));
-    expect(await screen.findByText(t('editProgram.rebuildRefused', { count: 0 }))).toBeTruthy();
+    expect(await screen.findByText(t('editProgram.rebuildRefused', { count: 1 }))).toBeTruthy();
     expect(mockDismissTo).not.toHaveBeenCalled();
+  });
+
+  // Evre 7 (issue 684), Levent: "I press Rebuild my program and it takes me nowhere". A program typed or brought in with "any day" days
+  // has no weekdays of its own, and the profile keeps none either: the request went out with no days and came back as "can't make a
+  // program for 0 training days. Change your training days in Settings" (which has no such place): a sentence, and nowhere to go.
+  test('no days known anywhere (a program of "any day" days, none on the profile): nothing is sent for none; the days question opens', async () => {
+    mockParams = { part: 'rebuild' };
+    mockData = { ...mockData, program: { state: 'ready', value: unplaced() } };
+    mockGet.mockImplementationOnce(async () => ({ data: { schedule: { trainingDays: [] } }, response: { status: 200 } }));
+    await show();
+    await fireEvent.press(await screen.findByText(t('editProgram.rebuildConfirm')));
+    await act(async () => undefined);
+    expect(mockPost).not.toHaveBeenCalled();
+    expect(mockPush).toHaveBeenCalledWith('/build-program');
+    expect(screen.queryByText(t('editProgram.rebuildRefused', { count: 0 }))).toBeNull();
+  });
+
+  // The same press on a slow connection looked like nothing too: the button only dimmed, and leaving meanwhile dropped the answer.
+  test('while it rebuilds the page says so, and the way back is shut: the answer would lead nowhere', async () => {
+    mockParams = { part: 'rebuild' };
+    let answer: (value: unknown) => void = () => undefined;
+    mockAnswers['/v1/program/generate'] = () => new Promise((resolve) => (answer = resolve));
+    await show();
+    expect(mockScreenOptions).toMatchObject({ gestureEnabled: true });
+    await fireEvent.press(await screen.findByText(t('editProgram.rebuildConfirm')));
+    expect(await screen.findByText(t('buildProgram.building'))).toBeTruthy();
+    expect(screen.queryByText(t('editProgram.rebuildConfirm'))).toBeNull();
+    expect(mockScreenOptions).toMatchObject({ gestureEnabled: false, headerBackVisible: false });
+    await act(async () => answer({ data: PROGRAM, response: { status: 200 } }));
+    expect(mockDismissTo).toHaveBeenCalledWith('/train');
+  });
+
+  test('a rebuild the server refused or could not answer gives the page back: the button again, the way back open', async () => {
+    mockParams = { part: 'rebuild' };
+    mockAnswers['/v1/program/generate'] = () => {
+      throw new TypeError('Network request failed');
+    };
+    await show();
+    await fireEvent.press(await screen.findByText(t('editProgram.rebuildConfirm')));
+    await act(async () => undefined);
+    expect(await screen.findByText(t('editProgram.rebuildConfirm'))).toBeTruthy();
+    expect(mockScreenOptions).toMatchObject({ gestureEnabled: true, headerBackVisible: true });
   });
 
   test('two taps on the confirmation rebuild once', async () => {
