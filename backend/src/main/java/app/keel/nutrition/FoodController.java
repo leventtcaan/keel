@@ -85,6 +85,13 @@ class FoodController {
     private static final BigDecimal MAX_KCAL_PER_100G = BigDecimal.valueOf(1000);
     private static final BigDecimal MAX_MACROS_PER_100G = BigDecimal.valueOf(110);
     private static final BigDecimal MIN_SERVING_G = BigDecimal.ONE;
+    // The contract's bounds for a label's numbers (NewFood), and how many digits before the point each may have (the database columns).
+    private static final BigDecimal KCAL_MAX = BigDecimal.valueOf(10_000);
+    private static final BigDecimal GRAMS_MAX = BigDecimal.valueOf(1_000);
+    private static final int OWN_DECIMALS = 2;
+    private static final int SERVING_DIGITS = 4;
+    private static final int KCAL_DIGITS = 5;
+    private static final int GRAM_DIGITS = 4;
 
     private final FoodStore foods;
     private final FoodEstimator estimator;
@@ -142,10 +149,15 @@ class FoodController {
         String name = food.name() == null ? "" : food.name().strip();
         String brand = food.brand() == null || food.brand().isBlank() ? null : food.brand().strip();
         Optional<String> gtin = food.gtin() == null ? Optional.empty() : Gtin.normalize(food.gtin());
+        // The five numbers first, by their shape alone (no arithmetic on a value like 1E+1000000 or one with fifty decimals): then bounds, then
+        // the per-100 g sums. Each fits its database column (numeric(7,2), numeric(6,2)).
+        require(shaped(food.servingGrams(), SERVING_DIGITS) && shaped(food.kcal(), KCAL_DIGITS) && shaped(food.proteinG(), GRAM_DIGITS)
+                && shaped(food.carbsG(), GRAM_DIGITS) && shaped(food.fatG(), GRAM_DIGITS));
+        require(food.servingGrams().compareTo(MIN_SERVING_G) >= 0 && food.servingGrams().compareTo(limits.maxGrams()) <= 0
+                && food.kcal().compareTo(KCAL_MAX) <= 0 && food.proteinG().compareTo(GRAMS_MAX) <= 0 && food.carbsG().compareTo(GRAMS_MAX) <= 0
+                && food.fatG().compareTo(GRAMS_MAX) <= 0);
         require(!name.isEmpty() && name.length() <= limits.maxOwnFoodName() && (brand == null || brand.length() <= limits.maxOwnFoodName())
-                && (food.gtin() == null || gtin.isPresent()) && food.servingGrams() != null && food.servingGrams().compareTo(MIN_SERVING_G) >= 0
-                && food.servingGrams().compareTo(limits.maxGrams()) <= 0 && nonNegative(food.kcal()) && nonNegative(food.proteinG())
-                && nonNegative(food.carbsG()) && nonNegative(food.fatG())
+                && (food.gtin() == null || gtin.isPresent())
                 && OwnFoods.per100g(food.kcal(), food.servingGrams()).compareTo(MAX_KCAL_PER_100G) <= 0
                 && OwnFoods.per100g(food.proteinG().add(food.carbsG()).add(food.fatG()), food.servingGrams()).compareTo(MAX_MACROS_PER_100G) <= 0
                 && ownFoods.count(account) < limits.maxOwnFoods());
@@ -154,8 +166,16 @@ class FoodController {
         return ResponseEntity.status(HttpStatus.CREATED).body(view(stored, estimator.parametersFor(account), portions, profiles.foodsAvoided(account)));
     }
 
-    private static boolean nonNegative(BigDecimal value) {
-        return value != null && value.signum() >= 0;
+    /**
+     * A number typed in: not null, not negative, at most two decimals and at most {@code integerDigits} before the point. Judged by
+     * its shape only, so a value like 1E+1000000 or one with a huge scale costs nothing to refuse (no arithmetic on it).
+     */
+    static boolean shaped(BigDecimal value, int integerDigits) {
+        if (value == null || value.signum() < 0) {
+            return false;
+        }
+        BigDecimal stripped = value.stripTrailingZeros();
+        return stripped.scale() <= OWN_DECIMALS && stripped.precision() - stripped.scale() <= integerDigits;
     }
 
     /** The foods the user starred, newest star first, each with its portions; one gone from the database is left out. */

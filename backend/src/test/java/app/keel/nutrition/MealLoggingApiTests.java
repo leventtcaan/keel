@@ -163,6 +163,31 @@ class MealLoggingApiTests {
     }
 
     @Test
+    void anOwnFoodsNumbersAreJudgedByTheirShapeBeforeAnyArithmetic() {
+        // Security review: 1E+1000000 or fifty decimals must cost nothing to refuse — no division, no sum on them.
+        AccountId account = consenting();
+        java.math.BigDecimal huge = new java.math.BigDecimal("1E+1000000");
+        java.math.BigDecimal fifty = new java.math.BigDecimal("1." + "1".repeat(50));
+        Map<String, Object> fine = Map.of("name", "Shape test", "servingGrams", 30, "kcal", 100, "proteinG", 1, "carbsG", 1, "fatG", 1);
+
+        for (String field : List.of("servingGrams", "kcal", "proteinG", "carbsG", "fatG")) {
+            for (Object bad : List.of(huge, fifty, new java.math.BigDecimal("-1"), new java.math.BigDecimal("1E-1000000"))) {
+                Map<String, Object> food = new java.util.HashMap<>(fine);
+                food.put(field, bad);
+                assertThat(send(account, "POST", "/v1/foods", food)).as(field + " = " + bad.toString().substring(0, Math.min(12, bad.toString().length())))
+                        .hasStatus(400);
+            }
+        }
+        Map<String, Object> zero = new java.util.HashMap<>(fine);
+        zero.put("servingGrams", 0);
+        assertThat(send(account, "POST", "/v1/foods", zero)).as("a serving that weighs nothing").hasStatus(400);
+        Map<String, Object> missing = new java.util.HashMap<>(fine);
+        missing.remove("kcal");
+        assertThat(send(account, "POST", "/v1/foods", missing)).as("a number left out").hasStatus(400);
+        assertThat(send(account, "POST", "/v1/foods", fine)).as("the same food with sane numbers").hasStatus(201);
+    }
+
+    @Test
     void aFoodIsStarredAndUnstarred() throws Exception {
         AccountId account = consenting();
         AccountId other = consenting();

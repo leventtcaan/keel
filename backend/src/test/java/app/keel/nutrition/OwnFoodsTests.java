@@ -16,6 +16,21 @@ class OwnFoodsTests {
     }
 
     @Test
+    void aNumberIsJudgedByItsShapeWithoutArithmetic() {
+        // Security review: refused at once, whatever the size or scale.
+        assertThat(FoodController.shaped(new BigDecimal("1E+1000000"), 5)).isFalse();
+        assertThat(FoodController.shaped(new BigDecimal("1E-1000000"), 5)).isFalse();
+        assertThat(FoodController.shaped(new BigDecimal("1." + "1".repeat(50)), 5)).isFalse();
+        assertThat(FoodController.shaped(new BigDecimal("-0.5"), 5)).isFalse();
+        assertThat(FoodController.shaped(null, 5)).isFalse();
+        assertThat(FoodController.shaped(new BigDecimal("123456"), 5)).as("six digits before the point").isFalse();
+        assertThat(FoodController.shaped(new BigDecimal("12.345"), 5)).as("three decimals").isFalse();
+        assertThat(FoodController.shaped(new BigDecimal("12345.67"), 5)).isTrue();
+        assertThat(FoodController.shaped(new BigDecimal("1.0E+4"), 5)).as("10000 written in exponent form").isTrue();
+        assertThat(FoodController.shaped(BigDecimal.ZERO, 5)).isTrue();
+    }
+
+    @Test
     void aServingOfOneHundredGramsIsItsOwnPer100() {
         assertThat(OwnFoods.per100g(new BigDecimal("250.5"), new BigDecimal("100"))).isEqualByComparingTo("250.5");
     }
