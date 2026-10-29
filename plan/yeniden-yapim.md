@@ -55,10 +55,11 @@ paketini bitirir, ikisini günceller. Bağlam özetlense de iş kaybolmaz.
         "Build my program" çıkışı (Edit program'daki "Rebuild for me" mantığı); sign-out onboarding işaretini silmez.
   - [~] 2. K-4 yemek arama (kod birleşti: #621 sunucu, #622 istemci; sunucu sıralaması üretim verisinde doğrulandı 29 Eki 01:22 — egg/rice/chicken; **simülatör kanıtı sabah**: oturum düştü, dev düzeneği eski food.json sundu): istemci (yazarken gecikmeli arama, eski sonuç temizlenir, aranıyor durumu, bağlantı ≠ sunucu hatası, satırda kcal,
         makul varsayılan birim) + sunucu (kelime başı önce, ı/İ katlama, ilgi sıralaması, aynı adlı kayıtları ayırt etme ya da birleştirme).
-  - [ ] 3. K-3 kaydedilen yemeği görme / düzeltme / silme yolu (emekli food ekranı yerine; ADR-069 #3 Ek).
-  - [ ] 4. K-5 Sign out / Delete account onayı görünür yerde (sheet ya da sistem uyarısı).
-  - [ ] 5. K-6 paywall üst güvenli alan · K-7 antrenman ilerleme çubuğu taşması.
+  - [~] 3. (kod birleşti #625, ADR-086; kanıt sabah) K-3 kaydedilen yemeği görme / düzeltme / silme yolu (emekli food ekranı yerine; ADR-069 #3 Ek).
+  - [~] 4. (kod birleşti #626, ADR-087; kanıt sabah) K-5 Sign out / Delete account onayı görünür yerde (sheet ya da sistem uyarısı).
+  - [~] 5. (kod birleşti #626 + #627 test süresi; kanıt sabah) K-6 paywall üst güvenli alan · K-7 antrenman ilerleme çubuğu taşması.
   - (K-8 yemek verisi → Evre 3.)
-- [ ] Evre 2 — görsel sistem + ekranlar
+- [ ] Evre 2 — görsel sistem + ekranlar (kararlar ADR-070 Ek 2; prototip `prototip/yeniden-yapim.html`, https://claude.ai/artifact/3w4F4AyapNksScmgmgzpD6;
+  sıra: 1 bileşen sistemi → 2 Ayarlar + Account → 3 "+" + onay bandı → 4 This Week + Train → 5 yemek → 6 antrenman başlığı + stepper yerleri)
 - [ ] Evre 3 — yemek verisi
 - [ ] Evre 4 — son tur + build 6
