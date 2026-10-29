@@ -23,7 +23,7 @@ test('the health data text is a list of its points, in order', async () => {
   const items = screen.getAllByTestId('consent-point');
   expect(items).toHaveLength(HEALTH_POINTS.length);
   HEALTH_POINTS.forEach((point, index) => {
-    expect(items[index]).toHaveTextContent(t(`consent.health_data.points.${point}`));
+    expect(items[index]).toHaveTextContent(t(`consent.health_data.points.${point}`), { exact: false });
   });
 });
 
@@ -32,7 +32,8 @@ test('each point is one stop for VoiceOver, read whole (the bullet is not read)'
   const items = screen.getAllByTestId('consent-point');
   HEALTH_POINTS.forEach((point, index) => {
     expect(items[index].props.accessible).toBe(true);
-    expect(items[index].props.accessibilityLabel).toBe(t(`consent.health_data.points.${point}`));
+    // The short heading is read before the words (K-1062).
+    expect(items[index].props.accessibilityLabel).toBe(`${t(`consent.health_data.headings.${point}`)}. ${t(`consent.health_data.points.${point}`)}`);
   });
 });
 

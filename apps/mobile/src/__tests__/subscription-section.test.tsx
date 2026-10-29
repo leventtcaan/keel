@@ -188,9 +188,9 @@ test('a restore that fails says so and is reported by name', async () => {
   expect(mockReport).toHaveBeenCalledWith('StoreError_10');
 });
 
-test('during a trial the reminder is offered here too (K-707); not otherwise', async () => {
+test('during a trial the reminder is not offered under Subscription: all the reminders are in Settings › Reminders (K-1062)', async () => {
   await show(sub('TRIAL', true));
-  expect(screen.getByRole('button', { name: t('subscription.reminder.ask') })).toBeOnTheScreen();
+  expect(screen.queryByRole('button', { name: t('subscription.reminder.ask') })).toBeNull();
 });
 
 test('renewing: no reminder offer', async () => {

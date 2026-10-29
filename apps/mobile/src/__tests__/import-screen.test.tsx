@@ -66,6 +66,18 @@ jest.mock('expo-crypto', () => ({
   randomUUID: () => jest.requireActual<typeof import('node:crypto')>('node:crypto').randomUUID(),
 }));
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => mockUnits }));
+// The consent offered when it is missing is the consents section itself (settings-screen.test.tsx): here, that it is offered
+// and that giving it opens the file step.
+jest.mock('@/settings/ConsentsSection', () => ({
+  ConsentsSection: ({ only, onChanged }: { only: string; onChanged: () => void }) => {
+    const { Pressable, Text } = jest.requireActual<typeof import('react-native')>('react-native');
+    return (
+      <Pressable accessibilityRole="button" accessibilityLabel={`allow ${only}`} onPress={onChanged}>
+        <Text>{only}</Text>
+      </Pressable>
+    );
+  },
+}));
 
 const mockDefaultPost = async (path: string, init: { body: components['schemas']['WorkoutImport'] }) =>
   path === '/v1/custom-exercises' ? (ok({ ...(init.body as object), id: 'custom:8a1d' }) as unknown) : (ok({ imported: 2, alreadyThere: 0 }) as unknown);
@@ -112,12 +124,15 @@ test('the screen draws no Back of its own: the system header has it (ADR-070 Ek 
   expect(screen.queryByText(/^Back$/)).toBeNull();
 });
 
-test('without the health data consent it says so and offers no file', async () => {
+test('without the health data consent it says so, offers no file yet, and gives the consent as a button, not a dead end (K-1062)', async () => {
   mockGranted = false;
   await show();
 
   expect(screen.getByText(t('import.needsConsent'))).toBeOnTheScreen();
   expect(screen.queryByRole('button', { name: t('import.choose') })).toBeNull();
+  await press('allow HEALTH_DATA');
+  expect(screen.queryByText(t('import.needsConsent'))).toBeNull();
+  expect(screen.getByRole('button', { name: t('import.choose') })).toBeEnabled();
 });
 
 test('before a file: what happens to it is said first', async () => {

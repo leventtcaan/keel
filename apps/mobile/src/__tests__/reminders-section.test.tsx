@@ -200,9 +200,24 @@ describe('the routine page (RoutineEditor)', () => {
     await act(async () => {});
   }
 
-  test('the three kinds are said in full, before the sentence', async () => {
+  test('one line on what the words are for, then sentences to tap that fill the field (K-1062)', async () => {
     await showPage();
-    expect(screen.getByText(t('settings.reminders.what', { minutes: P.trainingLeadMinutes }))).toBeTruthy();
+    expect(screen.getByText(t('settings.reminders.cue.hint'))).toBeTruthy();
+    const options = ['afterWork', 'beforeWork', 'lunch', 'morning'].map((id) => t(`settings.reminders.cue.options.${id}`));
+    for (const words of options) expect(screen.getByRole('button', { name: words })).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: options[2] }));
+    expect(screen.getByLabelText(t('settings.reminders.cue.label')).props.value).toBe(options[2]);
+    await press(t('settings.reminders.cue.saveLabel'));
+    expect(mockServices.reminders.setCue).toHaveBeenCalledWith(options[2]);
+  });
+
+  test('tapping the chosen sentence again clears it', async () => {
+    mockSettings = { enabled: true, cue: t('settings.reminders.cue.options.lunch') };
+    await showPage();
+    const chip = screen.getByRole('button', { name: t('settings.reminders.cue.options.lunch') });
+    expect(chip.props.accessibilityState.selected).toBe(true);
+    await fireEvent.press(chip);
+    expect(screen.getByLabelText(t('settings.reminders.cue.label')).props.value).toBe('');
   });
 
   test('the sentence: shown as kept, saved when changed, and only then; saved, the page closes', async () => {

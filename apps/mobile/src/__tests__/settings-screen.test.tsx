@@ -71,15 +71,12 @@ jest.mock('@/services/ServicesProvider', () => ({
 // The subscription section (K-702) reads the server on its own; its behaviour is subscription-section.test.tsx. Here it
 // would take this file's consent answers (one GET mock for every path) out of their order.
 jest.mock('@/settings/SubscriptionSection', () => ({ SubscriptionSection: () => null }));
-// The training group and the food row (K-982) read the program, the gyms and the profile on their own; their behaviour is
-// settings-groups.test.tsx. Here they would take this file's consent answers out of their order too. The Gyms row stays, to open the gyms.
-jest.mock('@/settings/TrainingGroup', () => ({
-  TrainingGroup: () => {
-    const { ListRow } = jest.requireActual('@/components/ListGroup');
-    const { router } = jest.requireMock('expo-router');
-    return <ListRow label="Gyms" onPress={() => router.push('/gyms')} />;
-  },
-}));
+// The training group, the food row and the About you rows (K-982, K-1062) read the program and the profile on their own; their
+// behaviour is settings-groups.test.tsx. Here they would take this file's consent answers out of their order too.
+jest.mock('@/settings/TrainingGroup', () => ({ TrainingGroup: () => null }));
+jest.mock('@/settings/ProfileGroup', () => ({ ProfileGroup: () => null }));
+// The trial's reminder row reads the subscription on its own (subscription-section and trial-reminder-offer tests).
+jest.mock('@/settings/TrialReminderRow', () => ({ TrialReminderRow: () => null }));
 jest.mock('@/settings/FoodGroup', () => ({ FoodGroup: () => null }));
 
 beforeEach(() => {
@@ -147,12 +144,6 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: () => mockParams,
   useFocusEffect: (effect: () => void) => jest.requireActual<typeof import('react')>('react').useEffect(effect, [effect]),
 }));
-
-test("Gyms opens the user's gyms (K-421)", async () => {
-  await show();
-  await fireEvent.press(await screen.findByText('Gyms'));
-  expect(mockPush).toHaveBeenCalledWith('/gyms');
-});
 
 test('the sections are there, and nothing is in the warn colour until a destructive step asks', async () => {
   await show();
