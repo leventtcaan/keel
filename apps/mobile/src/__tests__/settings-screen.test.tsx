@@ -1,8 +1,9 @@
 /**
  * Settings (K-309, prototype 5.2): units, the consents (view, allow, withdraw), the data export, deleting the account
- * and signing out. A destructive step asks first, and the warn colour appears only on that confirming step (ADR-016).
+ * and signing out. A destructive step asks first: a withdrawal on screen in the warn colour (ADR-016), deleting and signing out in a system alert (ADR-087).
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { Alert, type AlertButton } from 'react-native';
 
 import SettingsScreen from '@/app/settings';
 import { t } from '@/copy';
@@ -106,6 +107,14 @@ const warnButtons = () =>
     const flat = [b.props.style].flat(Infinity) as ({ backgroundColor?: string } | undefined)[];
     return flat.some((style) => style?.backgroundColor === palettes.light.warn);
   });
+// The destructive questions are system alerts (ADR-087 #1): the spy stands in for the system, and a tap on one of its buttons is its onPress.
+const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+const lastAlert = () => {
+  const [title, message, buttons] = alert.mock.calls[alert.mock.calls.length - 1] as [string, string, AlertButton[]];
+  return { title, message, buttons };
+};
+const tapAlert = async (style: 'cancel' | 'destructive') =>
+  act(async () => lastAlert().buttons.find((b) => b.style === style)!.onPress?.());
 const row = (kind: 'HEALTH_DATA' | 'APPLE_HEALTH') => t(`settings.consents.${kind}`);
 
 const mockPush = jest.fn();
@@ -332,15 +341,16 @@ describe('export, delete, sign out', () => {
     expect(screen.getByText(t('settings.export.failed'))).toBeOnTheScreen();
   });
 
-  test('Delete account asks first, in the warn colour only there; "Keep my account" changes nothing', async () => {
+  test('Delete account asks first, in a system alert; "Keep my account" changes nothing', async () => {
     await show();
     await press(t('settings.delete.title'));
-    expect(screen.getByText(t('settings.delete.confirmTitle'))).toBeOnTheScreen();
-    expect(warnButtons()).toEqual([button(t('settings.delete.confirm'))]);
-    await press(t('settings.delete.keep'));
+    expect(lastAlert().title).toBe(t('settings.delete.confirmTitle'));
+    expect(screen.queryByText(t('settings.delete.confirmTitle'))).toBeNull();
+    expect(warnButtons()).toEqual([]);
+    await tapAlert('cancel');
     expect(mockServices.deleteAccount).not.toHaveBeenCalled();
     await press(t('settings.delete.title'));
-    await press(t('settings.delete.confirm'));
+    await tapAlert('destructive');
     expect(mockServices.deleteAccount).toHaveBeenCalledTimes(1);
   });
 
@@ -348,7 +358,7 @@ describe('export, delete, sign out', () => {
     mockServices.deleteAccount.mockRejectedValueOnce(Object.assign(new Error('x'), { name: 'DeletionFailed' }));
     await show();
     await press(t('settings.delete.title'));
-    await press(t('settings.delete.confirm'));
+    await tapAlert('destructive');
     expect(screen.getByText(t('settings.serverError'))).toBeOnTheScreen();
   });
 
@@ -363,9 +373,9 @@ describe('export, delete, sign out', () => {
     await show();
     await press(t('settings.signOut.title'));
     expect(mockServices.signOut).not.toHaveBeenCalled();
-    expect(screen.getByText(t('settings.signOut.pending', { count: 3 }))).toBeOnTheScreen();
-    expect(warnButtons()).toEqual([button(t('settings.signOut.confirm'))]);
-    await press(t('settings.signOut.confirm'));
+    expect(lastAlert().message).toBe(t('settings.signOut.pending', { count: 3 }));
+    expect(warnButtons()).toEqual([]);
+    await tapAlert('destructive');
     expect(mockServices.signOut).toHaveBeenCalledTimes(1);
   });
 
@@ -374,9 +384,8 @@ describe('export, delete, sign out', () => {
     await show();
     await press(t('settings.signOut.title'));
     expect(mockServices.signOut).not.toHaveBeenCalled();
-    expect(screen.getByText(t('settings.signOut.photos'))).toBeOnTheScreen();
-    expect(screen.queryByText(t('settings.signOut.pending', { count: 0 }))).toBeNull();
-    await press(t('settings.signOut.confirm'));
+    expect(lastAlert().message).toBe(t('settings.signOut.photos'));
+    await tapAlert('destructive');
     expect(mockServices.signOut).toHaveBeenCalledTimes(1);
   });
 
@@ -385,17 +394,16 @@ describe('export, delete, sign out', () => {
     mockServices.photos.photos.mockResolvedValueOnce([{ takenOn: '2026-10-07', pose: 'front', uri: 'file:///docs/a.jpg' }]);
     await show();
     await press(t('settings.signOut.title'));
-    expect(screen.getByText(t('settings.signOut.pending', { count: 2 }))).toBeOnTheScreen();
-    expect(screen.getByText(t('settings.signOut.photos'))).toBeOnTheScreen();
+    expect(lastAlert().message).toContain(t('settings.signOut.pending', { count: 2 }));
+    expect(lastAlert().message).toContain(t('settings.signOut.photos'));
   });
 
   test('"Stay signed in" keeps the session and the entries', async () => {
     mockServices.pendingCount.mockResolvedValue(3);
     await show();
     await press(t('settings.signOut.title'));
-    await press(t('settings.signOut.keep'));
+    await tapAlert('cancel');
     expect(mockServices.signOut).not.toHaveBeenCalled();
-    expect(screen.queryByText(t('settings.signOut.pending', { count: 3 }))).toBeNull();
   });
 
   test('when the phone cannot count what is waiting, it does not sign out blind: it says so', async () => {
@@ -411,7 +419,7 @@ describe('export, delete, sign out', () => {
     mockServices.pendingCount.mockResolvedValueOnce(3);
     await show();
     await press(t('settings.signOut.title'));
-    expect(screen.queryByText(t('settings.signOut.photos'))).toBeNull();
+    expect(lastAlert().message).not.toContain(t('settings.signOut.photos'));
   });
 
   test('when the phone cannot read its photos, it does not sign out blind either (K-614)', async () => {
@@ -427,7 +435,7 @@ describe('export, delete, sign out', () => {
     mockServices.deleteAccount.mockRejectedValueOnce(Object.assign(new Error('x'), { name: 'NoConnection' }));
     await show();
     await press(t('settings.delete.title'));
-    await press(t('settings.delete.confirm'));
+    await tapAlert('destructive');
     expect(screen.getByText(t('settings.delete.failed'))).toBeOnTheScreen();
     expect(screen.queryByText(t('settings.serverError'))).toBeNull();
   });
@@ -437,12 +445,12 @@ describe('export, delete, sign out', () => {
     mockServices.deleteAccount.mockImplementationOnce(() => new Promise<void>((resolve) => (finish = resolve)));
     await show();
     await press(t('settings.delete.title'));
-    const confirm = button(t('settings.delete.confirm'));
+    const confirm = lastAlert().buttons.find((b) => b.style === 'destructive')!;
     const overlapNote = jest.spyOn(console, 'error').mockImplementation(() => {});
     try {
       await act(async () => {
-        void fireEvent.press(confirm);
-        void fireEvent.press(confirm);
+        confirm.onPress?.();
+        confirm.onPress?.();
       });
     } finally {
       overlapNote.mockRestore();

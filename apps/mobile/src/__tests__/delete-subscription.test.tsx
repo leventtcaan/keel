@@ -1,10 +1,12 @@
 /**
  * Deleting the account with a subscription (K-811, App Review 5.1.1(v); Apple's "Offering account deletion in your app":
  * "If the user has auto-renewable subscriptions, notify them that their billing will continue through Apple and request
- * that they cancel their subscription before continuing"). The confirming step says so whenever a subscription runs or the
- * phone cannot tell, offers Apple's page where the store is in the build, and the deletion stays one tap away.
+ * that they cancel their subscription before continuing"). The confirming alert (a system alert, ADR-087 #1) says so whenever
+ * a subscription runs or the phone cannot tell, and the deletion stays one tap away. Apple's page ("Cancel or change plan") is
+ * Settings' subscription section; the alert names where it is.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { Alert, type AlertButton } from 'react-native';
 
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
@@ -66,31 +68,32 @@ async function askToDelete(answer: Subscription | 'offline' | 500) {
   await act(async () => fireEvent.press(screen.getByText(t('settings.delete.title'))));
 }
 
-const billing = () => screen.queryByText(t('settings.delete.subscription'));
-const manage = () => screen.queryByText(t('settings.subscription.manage'));
+const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+const message = () => (alert.mock.calls[0] as [string, string, AlertButton[]])[1];
+const billing = () => message().includes(t('settings.delete.subscription'));
+const deleteEverything = async () =>
+  act(async () => (alert.mock.calls[0] as [string, string, AlertButton[]])[2].find((b) => b.style === 'destructive')!.onPress?.());
 
 test.each<[string, Subscription]>([
   ['running', { appUserId: ID, active: true, status: 'ACTIVE', accessUntil: UNTIL }],
   ['in its trial', { appUserId: ID, active: true, status: 'TRIAL', accessUntil: UNTIL }],
   ['with a payment problem', { appUserId: ID, active: false, status: 'BILLING_ISSUE', accessUntil: UNTIL }],
   ['paused (it resumes)', { appUserId: ID, active: false, status: 'PAUSED', accessUntil: UNTIL }],
-])('a subscription %s: Apple goes on billing, said before the deletion, with its page one tap away', async (_, subscription) => {
+])('a subscription %s: Apple goes on billing, said before the deletion, and where to cancel it', async (_, subscription) => {
   await askToDelete(subscription);
   expect(mockGET).toHaveBeenCalledWith('/v1/subscription');
-  expect(billing()).toBeOnTheScreen();
-  await act(async () => fireEvent.press(manage()!));
-  expect(mockStore.calls).toEqual([`identify ${ID}`, 'manage']);
+  expect(billing()).toBe(true);
+  expect(t('settings.delete.subscription')).toContain('Settings › Subscription');
   expect(mockServices.deleteAccount).not.toHaveBeenCalled();
   // Still one tap away: cancelling first is asked, not required.
-  await act(async () => fireEvent.press(screen.getByText(t('settings.delete.confirm'))));
+  await deleteEverything();
   expect(mockServices.deleteAccount).toHaveBeenCalledTimes(1);
 });
 
 test('no subscription: nothing said about billing', async () => {
   await askToDelete({ appUserId: ID, active: false });
-  expect(screen.getByText(t('settings.delete.confirmBody'))).toBeOnTheScreen();
-  expect(billing()).toBeNull();
-  expect(manage()).toBeNull();
+  expect(message()).toBe(t('settings.delete.confirmBody'));
+  expect(billing()).toBe(false);
 });
 
 test.each<[string, Subscription]>([
@@ -99,21 +102,18 @@ test.each<[string, Subscription]>([
   ['refunded', { appUserId: ID, active: false, status: 'REFUNDED', accessUntil: UNTIL }],
 ])('%s: nothing more is billed, nothing said about billing', async (_, subscription) => {
   await askToDelete(subscription);
-  expect(billing()).toBeNull();
-  expect(manage()).toBeNull();
+  expect(billing()).toBe(false);
 });
 
-test.each<['offline' | 500]>([['offline'], [500]])('the phone cannot tell (%s): it says so anyway, without the button it cannot back', async (answer) => {
+test.each<['offline' | 500]>([['offline'], [500]])('the phone cannot tell (%s): it says so anyway', async (answer) => {
   await askToDelete(answer);
-  expect(billing()).toBeOnTheScreen();
-  expect(manage()).toBeNull();
-  await act(async () => fireEvent.press(screen.getByText(t('settings.delete.confirm'))));
+  expect(billing()).toBe(true);
+  await deleteEverything();
   expect(mockServices.deleteAccount).toHaveBeenCalledTimes(1);
 });
 
-test('the store not in the build: said, with no button to a page it cannot open', async () => {
+test('the store not in the build: said all the same (the alert has no button to a page it cannot open)', async () => {
   mockStore = store(false);
   await askToDelete({ appUserId: ID, active: true, status: 'ACTIVE', accessUntil: UNTIL });
-  expect(billing()).toBeOnTheScreen();
-  expect(manage()).toBeNull();
+  expect(billing()).toBe(true);
 });

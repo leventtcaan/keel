@@ -236,9 +236,12 @@ export function Paywall({ required = false, onActive, preview = null }: Props) {
   }
 
   return (
-    <View style={[styles.safe, { backgroundColor: color.background }]}>
-      <ScrollView contentContainerStyle={styles.scroll}>
-        <View style={[styles.band, { backgroundColor: color.accentSoft, paddingTop: (insets?.top ?? 0) + tokens.space.sm }]}>
+    <View testID="paywall" style={[styles.safe, { backgroundColor: color.background }]}>
+      {/* The status bar's own place, outside the scroll (ADR-087 #2): in the band's colour, so at rest it is the band's top, and
+          scrolled, the page stops under it instead of passing under the clock. */}
+      <View testID="status-bar-band" style={{ height: insets?.top ?? 0, backgroundColor: color.accentSoft }} />
+      <ScrollView testID="paywall-scroll" contentContainerStyle={styles.scroll}>
+        <View style={[styles.band, { backgroundColor: color.accentSoft, paddingTop: tokens.space.sm }]}>
           <View style={styles.head}>
             <View style={styles.brand}>
               <BrandMark />
