@@ -5306,6 +5306,24 @@ tasks:
     tests: ["jest plus + weigh-in + cardio + meal + this-week + undo-banner", "tools/anayasa-denetimi.sh"]
     refs: ["plan/kararlar/ADR-070-gorsel-dil-turkuaz.md", "prototip/yeniden-yapim.html"]
 
+  - id: K-1045
+    title: "Yeniden yapım Evre 2.4: This Week, Train, Progress ve karar ekranı sistemle"
+    milestone: M10
+    module: mobile
+    type: feature
+    size: M
+    status: doing
+    depends_on: [K-1041, K-1044]
+    why: "Kardiyo sönük/görünmüyor, dinlenme günü boş, hafta sayımı çelişiyor, her bölüm kart, Wait kararı tartıya götürmüyor, Train'de Start altta kalıyor (envanter T-7, T-8, T-9, T-18). ADR-070 Ek 2 #7, #8"
+    acceptance:
+      - "This Week prototip/yeniden-yapim.html › 5 gibi: hafta şeridi anlamlı (yapıldı, planlı, bugün), bugünün antrenmanı + kardiyo satırı, dinlenme günü sıradaki seans + kardiyo, Food left satırı"
+      - "Train: bugünün kartında Start görünür (sekme ve + altında kalmaz), satırlarda hareket sayısı; kardiyo satırı"
+      - "Progress: hafta sayımı This Week ile aynı kaynaktan; bölümler kart değil başlık + içerik (karar ve gruplu listeler hariç); Consistency okunur"
+      - "Wait kararı: kaç tartı kaldığını söyler ve tartıya giden düğmesi var"
+      - "jest + anayasa denetimi yeşil; kanıt simülatörde gerçek sunucuda prototiple yan yana"
+    tests: ["jest this-week + train + progress + call", "tools/anayasa-denetimi.sh"]
+    refs: ["plan/kararlar/ADR-070-gorsel-dil-turkuaz.md", "prototip/yeniden-yapim.html", "plan/envanter-2026-10-29.md"]
+
   - id: K-1010
     title: "Sunucudaki ek siteler: Caddy /opt/sites altındaki *.caddy dosyalarını içeri alır"
     milestone: M9
