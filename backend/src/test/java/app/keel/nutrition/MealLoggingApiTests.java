@@ -40,7 +40,7 @@ class MealLoggingApiTests {
     private static final String CHICKEN = "fdc:k1063-chicken";
     private static final String CEREAL = "fdc:k1063-cereal";
     // A UPC-A with a valid check digit (GS1's own example).
-    private static final String BARCODE = "012345678905";
+    private static final String BARCODE = "6291041500213";
 
     @Autowired
     MockMvcTester mvc;
@@ -169,7 +169,7 @@ class MealLoggingApiTests {
                 "fatG", 40))).as("120 g of macros in 30 g").hasStatus(400);
         assertThat(send(account, "POST", "/v1/foods", Map.of("name", " ", "servingGrams", 30, "kcal", 100, "proteinG", 1, "carbsG", 1, "fatG", 1)))
                 .as("no name").hasStatus(400);
-        assertThat(send(account, "POST", "/v1/foods", Map.of("name", "Bad code", "gtin", "012345678906", "servingGrams", 30, "kcal", 100,
+        assertThat(send(account, "POST", "/v1/foods", Map.of("name", "Bad code", "gtin", "6291041500214", "servingGrams", 30, "kcal", 100,
                 "proteinG", 1, "carbsG", 1, "fatG", 1))).as("a wrong check digit").hasStatus(400);
         assertThat(send(TestSessions.newAccount(), "POST", "/v1/foods", Map.of("name", "No consent", "servingGrams", 30, "kcal", 100,
                 "proteinG", 1, "carbsG", 1, "fatG", 1))).hasStatus(403);
