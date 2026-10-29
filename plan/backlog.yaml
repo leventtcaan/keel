@@ -5559,6 +5559,96 @@ tasks:
     tests: ["npm run check"]
     refs: ["data/programs/6-days.yaml", "data/parameters/onboarding.json", "plan/kararlar/ADR-072-teklif-ve-onboarding.md"]
 
+  - id: K-1060
+    title: "Evre 6 A: antrenman günleri tek kaynak (program), hatırlatma ve Rebuild programdan; 7 gün şablonu ve tek dokunuşla içerikli gün ekleme"
+    milestone: M10
+    module: engine
+    type: fix
+    size: L
+    status: doing
+    depends_on: []
+    why: "Levent build 8 incelemesi (29 Eki): MVP olarak dahi hazır değil; denetim plan/evre-6-denetim.md A; ADR-090 #3"
+    acceptance:
+      - "plan/evre-6-denetim.md ilgili bölümdeki her P0/P1 kapanır, kanıtla"
+      - "npm run check + anayasa denetimi + ilgili backend testleri yeşil; simülatör ekran görüntüleri"
+    tests: ["npm run check", "tools/anayasa-denetimi.sh"]
+    refs: ["plan/evre-6-denetim.md", "plan/kararlar/ADR-090-evre-6-kararlari.md"]
+
+  - id: K-1061
+    title: "Evre 6 C: ABD yemek verisi (USDA Branded + FNDDS, gtin, OFF ABD), birim modeli (adet/porsiyon/cup/oz), arama dizini ve sıralama"
+    milestone: M10
+    module: nutrition
+    type: fix
+    size: L
+    status: doing
+    depends_on: []
+    why: "Levent build 8 incelemesi (29 Eki): MVP olarak dahi hazır değil; denetim plan/evre-6-denetim.md C; ADR-090 #1"
+    acceptance:
+      - "plan/evre-6-denetim.md ilgili bölümdeki her P0/P1 kapanır, kanıtla"
+      - "npm run check + anayasa denetimi + ilgili backend testleri yeşil; simülatör ekran görüntüleri"
+    tests: ["npm run check", "tools/anayasa-denetimi.sh"]
+    refs: ["plan/evre-6-denetim.md", "plan/kararlar/ADR-090-evre-6-kararlari.md"]
+
+  - id: K-1062
+    title: "Evre 6 E: ayarlar (Gyms kalkar, düzenlenebilir profil satırları, Foods you avoid çip, içe aktarma rızası, kısa metin, yasal bağlantılar)"
+    milestone: M10
+    module: mobile
+    type: fix
+    size: L
+    status: doing
+    depends_on: []
+    why: "Levent build 8 incelemesi (29 Eki): MVP olarak dahi hazır değil; denetim plan/evre-6-denetim.md E"
+    acceptance:
+      - "plan/evre-6-denetim.md ilgili bölümdeki her P0/P1 kapanır, kanıtla"
+      - "npm run check + anayasa denetimi + ilgili backend testleri yeşil; simülatör ekran görüntüleri"
+    tests: ["npm run check", "tools/anayasa-denetimi.sh"]
+    refs: ["plan/evre-6-denetim.md", "plan/kararlar/ADR-090-evre-6-kararlari.md"]
+
+  - id: K-1063
+    title: "Evre 6 D: yemek kaydı (gün gezgini, tek sayı + makrolar, düzelt/sil, son/sık/favori, hızlı kalori, barkod kaçınca elle, öğün hatırlatması)"
+    milestone: M10
+    module: mobile
+    type: fix
+    size: L
+    status: doing
+    depends_on: []
+    why: "Levent build 8 incelemesi (29 Eki): MVP olarak dahi hazır değil; denetim plan/evre-6-denetim.md D; ADR-090 #2 #5"
+    acceptance:
+      - "plan/evre-6-denetim.md ilgili bölümdeki her P0/P1 kapanır, kanıtla"
+      - "npm run check + anayasa denetimi + ilgili backend testleri yeşil; simülatör ekran görüntüleri"
+    tests: ["npm run check", "tools/anayasa-denetimi.sh"]
+    refs: ["plan/evre-6-denetim.md", "plan/kararlar/ADR-090-evre-6-kararlari.md"]
+
+  - id: K-1064
+    title: "Evre 6 B: antrenman sırasında dolu alete farklı ekipmanlı alternatif ve sona alma"
+    milestone: M10
+    module: mobile
+    type: fix
+    size: L
+    status: doing
+    depends_on: []
+    why: "Levent build 8 incelemesi (29 Eki): MVP olarak dahi hazır değil; denetim plan/evre-6-denetim.md B"
+    acceptance:
+      - "plan/evre-6-denetim.md ilgili bölümdeki her P0/P1 kapanır, kanıtla"
+      - "npm run check + anayasa denetimi + ilgili backend testleri yeşil; simülatör ekran görüntüleri"
+    tests: ["npm run check", "tools/anayasa-denetimi.sh"]
+    refs: ["plan/evre-6-denetim.md", "plan/kararlar/ADR-090-evre-6-kararlari.md"]
+
+  - id: K-1065
+    title: "Evre 6 F: ilk kullanım rehberi, klip kartı kalkar, Progress animasyonu, klavye ve modal davranışları, sheet sinyalleri"
+    milestone: M10
+    module: mobile
+    type: fix
+    size: L
+    status: doing
+    depends_on: []
+    why: "Levent build 8 incelemesi (29 Eki): MVP olarak dahi hazır değil; denetim plan/evre-6-denetim.md F"
+    acceptance:
+      - "plan/evre-6-denetim.md ilgili bölümdeki her P0/P1 kapanır, kanıtla"
+      - "npm run check + anayasa denetimi + ilgili backend testleri yeşil; simülatör ekran görüntüleri"
+    tests: ["npm run check", "tools/anayasa-denetimi.sh"]
+    refs: ["plan/evre-6-denetim.md", "plan/kararlar/ADR-090-evre-6-kararlari.md"]
+
   - id: K-1010
     title: "Sunucudaki ek siteler: Caddy /opt/sites altındaki *.caddy dosyalarını içeri alır"
     milestone: M9
