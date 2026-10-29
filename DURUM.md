@@ -5,7 +5,14 @@ guncelleme: 2026-10-10
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (29 Eki ~09:00 UTC — BAĞLAM DEVRİ: önce `plan/oturum-promptlari/yeniden-yapim-devam.md` oku)
+## ▶ DEVAM NOKTASI (29 Eki ~09:40 UTC — QA turu + build 6 bulguları; devam `plan/oturum-promptlari/yeniden-yapim-devam.md`)
+**QA skill kuruldu** (`~/.claude/skills/`: mobile-ui-audit, mobile-ui-elevate, mobile-design-lab, mobile-app-studio; araştırma
+`arastirma/ham/uygulama-qa-skill-2026-10-29.md`). Build 6'da tur: 7 bulgu. Düzeltmeler: #647 "+" yüzer (birleşti) · #653 arama harf düşürmez (birleşti) ·
+#652 sekmeler kayıttan sonra yeniden okur · #654 Train haftası kart · #655 Progress parçaları kart (ADR-070 Ek 4; 2 test beklentisi K1 listesinde).
+Sıradaki: PR'lar birleşince build 7 (`cd apps/mobile && npx eas build -p ios --profile production --auto-submit --non-interactive`) → ASC 1.0: geri çek, build 7 bağla, gönder (ELLE).
+**ASC: 1.0 hâlâ build 5 ile incelemede; geri çekme yapılmadı.** Disk 29 Eki temizlendi (1.2 → 3.9 GB; Claude vm_bundles 11 GB Levent kararı).
+
+## (önceki) DEVAM NOKTASI (29 Eki ~09:00 UTC)
 **Levent build 6'da 1 dakikada 4 zayıflık buldu** ("+" solunda beyaz blok, Train hafta satırları güçsüz, tarama/yemek emin değil, Progress kas haritası altı
 statik). Sıradaki: kapsamlı uygulama testi skill'i araştır (ego: YouTube/Reddit/X/web/GitHub) → kur → build 6'da çalıştır → düzelt → build 7 → ASC.
 **ASC: 1.0 hâlâ build 5 ile incelemede; geri çekme yapılmadı.**
