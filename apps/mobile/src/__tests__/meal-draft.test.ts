@@ -1,8 +1,8 @@
 /**
  * A meal being put together (K-407): each item is a food the database matched, an amount as typed and its unit — grams
  * or one of the food's servings — weighed or not. It becomes the contract's items only when every amount is one the
- * server takes (above 0, at most 2 decimals, at most 5000 g); nothing is guessed for an amount left empty (I2 A4: a wrong
- * default costs more than an empty field).
+ * server takes (above 0, at most 2 decimals, at most 5000 g). A food comes in with its amount filled — 1 of a serving, 100 g
+ * (ADR-085 #5); an amount the user then empties stays empty and nothing is guessed for it.
  */
 import type { components } from '@/api/schema';
 import { type DraftItem, addFood, draftOf, itemProblem, itemsHanded, requestsOf } from '@/food/draft';
@@ -19,14 +19,35 @@ const RICE: Schemas['Food'] = {
 const CHICKEN: Schemas['Food'] = { ...RICE, id: 'fdc-4', name: 'Chicken breast', servings: undefined };
 
 describe('addFood', () => {
-  test('a food comes in with no amount, on its first serving when it has one', () => {
-    expect(addFood([], RICE)).toEqual([
-      { foodId: 'fdc-3', name: 'Rice, white, cooked', units: ['1 cup', 'g'], quantity: '', unit: '1 cup', weighed: false },
+  // ADR-085 #5: the amount comes filled (1 of a serving, 100 g), so the estimate shows at once; the user changes it.
+  test('a food comes in with its amount filled, on its first serving that is not a volume', () => {
+    const egg: Schemas['Food'] = { ...RICE, id: 'fdc-5', name: 'Egg', servings: [{ name: '1 cup', grams: 243 }, { name: '1 large', grams: 50 }] };
+    expect(addFood([], egg)).toEqual([
+      { foodId: 'fdc-5', name: 'Egg', units: ['1 cup', '1 large', 'g'], quantity: '1', unit: '1 large', weighed: false },
     ]);
   });
 
-  test('without servings it is grams', () => {
-    expect(addFood([], CHICKEN)[0]).toMatchObject({ units: ['g'], unit: 'g', quantity: '' });
+  test('a food whose servings are all volumes comes in as 100 g', () => {
+    const sifted: Schemas['Food'] = { ...RICE, id: 'fdc-6', name: 'Egg, dried', servings: [{ name: '1 cup, sifted', grams: 60 }, { name: '1 tbsp', grams: 4 }] };
+    expect(addFood([], sifted)).toEqual([
+      { foodId: 'fdc-6', name: 'Egg, dried', units: ['1 cup, sifted', '1 tbsp', 'g'], quantity: '100', unit: 'g', weighed: false },
+    ]);
+  });
+
+  test('without servings it is 100 g', () => {
+    expect(addFood([], CHICKEN)[0]).toMatchObject({ units: ['g'], unit: 'g', quantity: '100' });
+  });
+
+  test('a volume is a volume in any case, plural or spelling', () => {
+    const unitOf = (name: string) => addFood([], { ...RICE, servings: [{ name, grams: 10 }, { name: '1 slice', grams: 30 }] })[0].unit;
+    for (const volume of ['1 CUP', '2 Cups', '1 tbsp', '3 TBSPS', '1 tsp', '1 fl oz', '1 FL. OZ', '30 ml', '1 tablespoon', '1 teaspoon', '1 fluid ounce']) {
+      expect(unitOf(volume)).toBe('1 slice');
+    }
+  });
+
+  test('a measure that only contains the letters of a volume is not one', () => {
+    const slices: Schemas['Food'] = { ...RICE, servings: [{ name: '1 cupcake', grams: 50 }, { name: '1 small', grams: 30 }] };
+    expect(addFood([], slices)[0]).toMatchObject({ unit: '1 cupcake', quantity: '1' });
   });
 
   test('added after the ones already there', () => {

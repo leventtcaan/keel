@@ -1092,11 +1092,15 @@
     },
     "search": {
       "label": "Find a food",
-      "go": "Search",
       "add": "Add {name}",
       "tooShort": "Type at least {min} letters.",
       "none": "Nothing found. Try other words.",
-      "failed": "Searching needs a connection. Try again."
+      "failed": "Searching needs a connection. Try again.",
+      "serverError": "Couldn't search just now. Try again in a moment.",
+      "searching": "Searching...",
+      "empty": "Try rice.",
+      "per100g": "{kcal} per 100 g",
+      "per100gSpoken": "{kcal} per 100 grams"
     },
     "recipes": {
       "heading": "Your recipes",

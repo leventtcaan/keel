@@ -1,8 +1,9 @@
 /**
  * A meal being put together (K-407), before it is logged. Each item is a food the database matched, with its amount as
- * typed: nothing is filled in for the user — an amount left empty stays empty (I2 A4: a wrong default costs more than an
- * empty field). It turns into the contract's items only when every amount is one the server takes, so the queue never
- * holds a meal the server would refuse and lose (K-304).
+ * typed. A food comes in with its amount filled — 1 of a serving, 100 g — so its estimate shows at once and the user changes
+ * it (ADR-085 #5); an amount the user empties stays empty (I2 A4: a wrong default costs more than an empty field). It turns
+ * into the contract's items only when every amount is one the server takes, so the queue never holds a meal the server
+ * would refuse and lose (K-304).
  */
 import type { components } from '@/api/schema';
 
@@ -21,10 +22,21 @@ export type KnownFoods = Map<string, Schemas['Food']>;
 
 const GRAMS = 'g';
 
-/** A food added from the search or a barcode: no amount yet, on its first serving when it has one (a measure people use). */
+const escaped = (word: string) => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/** The words of a volume measure as whole words, in any case, plural or not ("1 cup, sifted", "2 TBSPS", "1 fl. oz"). */
+const VOLUME = new RegExp(`(^|[^a-z])(${foodParams.servingVolumeWords.map(escaped).join('|')})s?($|[^a-z])`);
+const isVolume = (serving: string) => VOLUME.test(serving.toLowerCase().replace(/\./g, ''));
+
+/**
+ * A food added from the search or a barcode (ADR-085 #5): on its first serving that is not a volume measure — "1 large" over
+ * "1 cup, sifted" — else on grams, with the amount filled (1 of a serving, 100 g) so the estimate shows at once.
+ */
 export function addFood(items: DraftItem[], food: Schemas['Food']): DraftItem[] {
-  const units = [...(food.servings ?? []).map((serving) => serving.name), GRAMS];
-  return [...items, { foodId: food.id, name: food.name, units, quantity: '', unit: units[0], weighed: false }];
+  const servings = (food.servings ?? []).map((serving) => serving.name);
+  const units = [...servings, GRAMS];
+  const unit = servings.find((name) => !isVolume(name)) ?? GRAMS;
+  const quantity = unit === GRAMS ? foodParams.defaultGrams : 1;
+  return [...items, { foodId: food.id, name: food.name, units, quantity: String(quantity), unit, weighed: false }];
 }
 
 /** The user's recipes the phone was given, by their item id ("recipe:<id>", ADR-034): how many portions each makes. */

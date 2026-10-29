@@ -1154,7 +1154,7 @@
       "budget": 25,
       "source": "prototip/yeni-yuz.html",
       "task": "K-980",
-      "note": "The first view is the first day's: the title, the four slots, the search with its Search and Scan buttons, Log it; nothing is offered when there is no yesterday and no recent food. The face with the quick adds is the ordinary day: 'Same as yesterday' with Add, 'Recent' (at most quick_recent_max, data/parameters/food.json). Food names are the person's and the database's own words, as the prototype leaves them out of its count; the unit of an amount (g) and the kcal after each range are counted as listed. The plus on a recent food and the barcode button are spoken, not read.",
+      "note": "The first view is the first day's: the title, the four slots, the search (it searches as you type, ADR-085: no Search button) with its hint for an empty box and its Scan button, Log it; nothing is offered when there is no yesterday and no recent food. The face with the quick adds is the ordinary day: 'Same as yesterday' with Add, 'Recent' (at most quick_recent_max, data/parameters/food.json). Food names are the person's and the database's own words, as the prototype leaves them out of its count; the unit of an amount (g) and the kcal after each range are counted as listed. The plus on a recent food and the barcode button are spoken, not read.",
       "file": "src/app/meal.tsx",
       "parts": ["src/food/QuickAdds.tsx", "src/food/FoodPicker.tsx"],
       "keys": [
@@ -1164,7 +1164,7 @@
         "food.slot.DINNER",
         "food.slot.SNACK",
         "meal.search.label",
-        "meal.search.go",
+        "meal.search.empty",
         "meal.barcode.scanShort",
         "meal.save"
       ],
@@ -1187,6 +1187,10 @@
         "meal.search.add",
         "meal.search.tooShort",
         "meal.search.failed",
+        "meal.search.serverError",
+        "meal.search.searching",
+        "meal.search.per100g",
+        "meal.search.per100gSpoken",
         "meal.search.none",
         "meal.recipes.heading",
         "meal.recipes.add",
@@ -1210,7 +1214,8 @@
         "meal.quick.undoOffline",
         "meal.quick.done",
         "food.budget.kcalUnit",
-        "format.range"
+        "format.range",
+        "format.rangeSpoken"
       ],
       "faces": [
         {
@@ -1225,7 +1230,7 @@
             "meal.quick.add",
             "meal.quick.recent",
             "meal.search.label",
-            "meal.search.go",
+            "meal.search.empty",
             "meal.barcode.scanShort",
             "meal.save"
           ],
