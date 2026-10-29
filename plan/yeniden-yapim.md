@@ -50,18 +50,18 @@ paketini bitirir, ikisini günceller. Bağlam özetlense de iş kaybolmaz.
 ## İlerleme
 - [x] Evre 0 — envanter (29 Eki): `plan/envanter-2026-10-29.md` · sayfa https://claude.ai/artifact/7Ew5GE2C1uECT7dYaCofKb (özel; önce şeritleri dolu,
   sonra şeritleri Evre 4'te). Yerel kaynak: `.envanter/` (inventory.json → build_page.py → page/; görüntüler shots/). 8 kırık, 17 kötü satır.
-- [ ] Evre 1 — kırık mantık (sıra; her biri kendi dalı + PR + gerçek sunucu kanıtı; kanıt görüntüsü inventory.json › after'a, bulguya `fixed`):
+- [x] Evre 1 — kırık mantık (29 Eki; kanıt: gerçek sunucuda simülatör turu 08:23-08:27 UTC, envanter sayfası sürüm 3) (sıra; her biri kendi dalı + PR + gerçek sunucu kanıtı; kanıt görüntüsü inventory.json › after'a, bulguya `fixed`):
   - [x] 1. K-1 + K-2 programsız hesap (29 Eki, #619, ADR-084; kanıt: gerçek sunucuda programsız hesap → Build my program → 4 gün → Train/This Week'te program): açılışta profil var + program yok → hazırlık yeniden koşar (resume); Train, This Week, Training days/Cardio'da
         "Build my program" çıkışı (Edit program'daki "Rebuild for me" mantığı); sign-out onboarding işaretini silmez.
-  - [~] 2. K-4 yemek arama (kod birleşti: #621 sunucu, #622 istemci; sunucu sıralaması üretim verisinde doğrulandı 29 Eki 01:22 — egg/rice/chicken; **simülatör kanıtı sabah**: oturum düştü, dev düzeneği eski food.json sundu): istemci (yazarken gecikmeli arama, eski sonuç temizlenir, aranıyor durumu, bağlantı ≠ sunucu hatası, satırda kcal,
+  - [x] 2. K-4 yemek arama (kod birleşti: #621 sunucu, #622 istemci; sunucu sıralaması üretim verisinde doğrulandı 29 Eki 01:22 — egg/rice/chicken; **simülatör kanıtı sabah**: oturum düştü, dev düzeneği eski food.json sundu): istemci (yazarken gecikmeli arama, eski sonuç temizlenir, aranıyor durumu, bağlantı ≠ sunucu hatası, satırda kcal,
         makul varsayılan birim) + sunucu (kelime başı önce, ı/İ katlama, ilgi sıralaması, aynı adlı kayıtları ayırt etme ya da birleştirme).
-  - [~] 3. (kod birleşti #625, ADR-086; kanıt sabah) K-3 kaydedilen yemeği görme / düzeltme / silme yolu (emekli food ekranı yerine; ADR-069 #3 Ek).
-  - [~] 4. (kod birleşti #626, ADR-087; kanıt sabah) K-5 Sign out / Delete account onayı görünür yerde (sheet ya da sistem uyarısı).
-  - [~] 5. (kod birleşti #626 + #627 test süresi; kanıt sabah) K-6 paywall üst güvenli alan · K-7 antrenman ilerleme çubuğu taşması.
+  - [x] 3. (kod birleşti #625, ADR-086; kanıt sabah) K-3 kaydedilen yemeği görme / düzeltme / silme yolu (emekli food ekranı yerine; ADR-069 #3 Ek).
+  - [x] 4. (kod birleşti #626, ADR-087; kanıt sabah) K-5 Sign out / Delete account onayı görünür yerde (sheet ya da sistem uyarısı).
+  - [x] 5. (kod birleşti #626 + #627 test süresi; kanıt sabah) K-6 paywall üst güvenli alan · K-7 antrenman ilerleme çubuğu taşması.
   - (K-8 yemek verisi → Evre 3.)
-- [ ] Evre 2 — görsel sistem + ekranlar (kararlar ADR-070 Ek 2; prototip `prototip/yeniden-yapim.html`, https://claude.ai/artifact/3w4F4AyapNksScmgmgzpD6;
+- [x] Evre 2 — görsel sistem + ekranlar (kararlar ADR-070 Ek 2; prototip `prototip/yeniden-yapim.html`, https://claude.ai/artifact/3w4F4AyapNksScmgmgzpD6;
   sıra: 1 bileşen sistemi → 2 Ayarlar + Account → 3 "+" + onay bandı → 4 This Week + Train → 5 yemek → 6 antrenman başlığı + stepper yerleri)
-  - [~] 2.1 bileşen sistemi (#630 birleşti; kanıt sabah) · [~] 2.2 Ayarlar + Account + veri kaynakları + tek geri (#633 birleşti; kanıt sabah) · [~] 2.3 "+" + onay bandı (#635) · [~] 2.4 This Week/Train/Progress/karar (#639) · [~] 2.5 yemek ekranı (#640) · [~] 2.6 antrenman ekranı (#641) — hepsinin kanıtı sabah
-- [~] Evre 3 — yemek verisi (ADR-088; #632 birleşti; üretimde 29 Eki 03:22 UTC 2.897 OFF ürünü içe aktarıldı, 0 atlandı; atıf satırı #633;
+  - [x] 2.1 bileşen sistemi (#630 birleşti; kanıt sabah) · [x] 2.2 Ayarlar + Account + veri kaynakları + tek geri (#633 birleşti; kanıt sabah) · [x] 2.3 "+" + onay bandı (#635) · [x] 2.4 This Week/Train/Progress/karar (#639) · [x] 2.5 yemek ekranı (#640) · [x] 2.6 antrenman ekranı (#641) — hepsinin kanıtı sabah
+- [x] Evre 3 — yemek verisi (ADR-088; #632 birleşti; üretimde 29 Eki 03:22 UTC 2.897 OFF ürünü içe aktarıldı, 0 atlandı; atıf satırı #633;
   kalan: uygulamada adla arama kanıtı sabah; Türk yemekleri ayrı karar)
-- [ ] Evre 4 — son tur + build 6
+- [~] Evre 4 — son tur + build 6 (4.1 #643, 4.2 #645 birleşti; kanıt turu 29 Eki 08:27 UTC tamam; build 6 EAS'te; ASC yeniden gönderim sırada)

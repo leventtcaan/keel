@@ -5194,7 +5194,7 @@ tasks:
     module: nutrition
     type: fix
     size: M
-    status: doing
+    status: done
     depends_on: []
     why: "Arama yalnız düğmeyle, eski sonuç kalıyor, 'egg' önce Eggnog getiriyor, aynı ad iki kez, satırda kcal yok, varsayılan birim saçma (envanter K-4; denetim B4, B5, B7, B8). ADR-085"
     acceptance:
@@ -5211,7 +5211,7 @@ tasks:
     module: mobile
     type: fix
     size: S
-    status: doing
+    status: done
     depends_on: []
     why: "Kaydedilen yemek hiçbir yerde görülemiyor, düzeltilemiyor, silinemiyor (envanter K-3). ADR-086"
     acceptance:
@@ -5228,7 +5228,7 @@ tasks:
     module: mobile
     type: fix
     size: S
-    status: doing
+    status: done
     depends_on: []
     why: "Sign out/Delete onayı ekran dışında, paywall durum çubuğunun altına giriyor, ilerleme çubuğu taşıyor (envanter K-5, K-6, K-7). ADR-087"
     acceptance:
@@ -5245,7 +5245,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: doing
+    status: done
     depends_on: []
     why: "Düğme dili ekrandan ekrana değişiyor, birincil düğme ADR-070 #2'ye aykırı turkuaz, 164 çerçeveli hap, üç stepper, ikon yok (envanter T-1..T-6, T-11). ADR-070 Ek 2"
     acceptance:
@@ -5261,7 +5261,7 @@ tasks:
     module: nutrition
     type: feature
     size: M
-    status: doing
+    status: done
     depends_on: []
     why: "Yemek verisi yalnız USDA: marka 0, barkod 0, Türkiye ürünleri yok (envanter K-8; denetim B6). ADR-088"
     acceptance:
@@ -5278,7 +5278,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: doing
+    status: done
     depends_on: [K-1041]
     why: "Ayarlar üç ekran boyu, ayrık haplar, paragraf yükü, tutarsız başlıklar; Account düğmeleri birebir aynı (envanter T-5, T-6, T-2). ADR-070 Ek 2 #2, #4; ADR-088 #3 atıf"
     acceptance:
@@ -5295,7 +5295,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: doing
+    status: done
     depends_on: [K-1041]
     why: "+ sayfası ikonsuz, onaylar üç ayrı düzen, yemekte geri al yok, tartıda sayaç yok (envanter T-4, T-11, T-9). ADR-070 Ek 2 #3, #6"
     acceptance:
@@ -5312,7 +5312,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: doing
+    status: done
     depends_on: [K-1041, K-1044]
     why: "Kardiyo sönük/görünmüyor, dinlenme günü boş, hafta sayımı çelişiyor, her bölüm kart, Wait kararı tartıya götürmüyor, Train'de Start altta kalıyor (envanter T-7, T-8, T-9, T-18). ADR-070 Ek 2 #7, #8"
     acceptance:
@@ -5330,7 +5330,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: doing
+    status: done
     depends_on: [K-1041]
     why: "Log a meal'de dört düğme dili, Remove ayrışmıyor, öğün ve birim çipleri aynı görünüm farklı anlam, miktar serbest metin (envanter T-1, K-4 kalanı). ADR-070 Ek 2 #1, #5"
     acceptance:
@@ -5346,7 +5346,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: doing
+    status: done
     depends_on: [K-1041]
     why: "Hareket başlığında 4 bağlantı + Skip yoğun, set sonrası klavye açık kalıyor, ağırlık + 2.5 kg'dan başlıyor, bitiş ekranında iki birincil (envanter T-13, T-3, T-14). ADR-070 Ek 2 #1, #5"
     acceptance:
@@ -5363,7 +5363,7 @@ tasks:
     module: mobile
     type: fix
     size: S
-    status: doing
+    status: done
     depends_on: [K-1045, K-1046, K-1047]
     why: "Sahte sunucu görsel turunda kalanlar (envanter T-12 ve Evre 2 sonrası): ADR-070 Ek 2, ADR-087"
     acceptance:
@@ -5381,7 +5381,7 @@ tasks:
     module: mobile
     type: fix
     size: S
-    status: doing
+    status: done
     depends_on: [K-1041]
     why: "Karşılamada 18+ · Terms · Privacy yok; deneyim/aktivite/rıza ikonları yok; gün ve cinsiyet varsayılanı yok; plan seçilen hedefi söylemiyor (envanter T-15, T-12; denetim C9-C13)"
     acceptance:
