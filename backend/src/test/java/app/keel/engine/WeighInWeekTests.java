@@ -10,7 +10,12 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * This week's weigh-ins against what the next call needs (ADR-089 #1): the block is the engine's own, the seven days ending
@@ -125,6 +130,32 @@ class WeighInWeekTests {
 
         assertThat(week.weighedDays()).containsExactly(SUNDAY);
         assertThat(week.callsFrom()).hasValueSatisfying(day -> assertThat(day).isAfter(CHECK_IN));
+    }
+
+    @Test
+    void aFirstCallsPlanThatHasNotStartedYetIsJudgedFromItsStart() {
+        // The plan starts with the first call, on Monday 2 Nov; its 21-day window is full from Sunday 22 Nov, and the weigh-ins
+        // daily from Monday keep every block full by then (the oldest holds 2 to 8 Nov).
+        WeighInWeek week = WeighInWeek.of(SUNDAY, CHECK_IN, CHECK_IN, series(List.of(weighIn(SUNDAY, "80.0"))), MALE);
+
+        assertThat(week.callsFrom()).contains(LocalDate.of(2026, 11, 22));
+    }
+
+    @ParameterizedTest(name = "{0}, plan starting {1} days on")
+    @MethodSource("everyPlanStartTheFirstCallCanHave")
+    void aPlanStartingWithinTheWeekIsNeverBeyondTheSearch(Sex sex, int daysOn) {
+        // Nothing weighed and the first call within two days: the block is short (it never is with more mornings left than
+        // the minimum), and the window of the plan starting with that call, still ahead, is found by the search.
+        LocalDate planStart = SUNDAY.plusDays(daysOn);
+
+        WeighInWeek week = WeighInWeek.of(SUNDAY, planStart, planStart, series(), parameters(sex));
+
+        int window = parameters(sex).wholeNumber(ParameterKey.DECISION_WINDOW_DAYS);
+        assertThat(week.callsFrom()).hasValueSatisfying(day -> assertThat(day).isAfterOrEqualTo(planStart.plusDays(window - 1L)));
+    }
+
+    static Stream<Arguments> everyPlanStartTheFirstCallCanHave() {
+        return Stream.of(Sex.values()).flatMap(sex -> IntStream.rangeClosed(0, 2).mapToObj(days -> Arguments.of(sex, days)));
     }
 
     @Test

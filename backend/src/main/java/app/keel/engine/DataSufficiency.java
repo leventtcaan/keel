@@ -2,6 +2,7 @@ package app.keel.engine;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -84,10 +85,11 @@ public final class DataSufficiency {
     /**
      * The same day for the inputs the checks read, without a Snapshot ({@link WeighInWeek}: the day a user whose block is
      * short is told the call can read the data is the one formula, not a copy of it). {@code planStart} may be a day to come:
-     * the plan a first call has not started yet.
+     * the plan a first call has not started yet. Its window starts then, so the search reaches that many days further.
      */
     static LocalDate earliestEnoughDay(LocalDate today, LocalDate planStart, WeightSeries weights, Parameters parameters) {
-        int horizon = Math.max(parameters.wholeNumber(ParameterKey.NO_INTERPRETATION_DAYS),
+        int daysToPlanStart = (int) Math.max(0, ChronoUnit.DAYS.between(today, planStart));
+        int horizon = daysToPlanStart + Math.max(parameters.wholeNumber(ParameterKey.NO_INTERPRETATION_DAYS),
                 parameters.wholeNumber(ParameterKey.DECISION_WINDOW_DAYS));
         List<WeighIn> weighIns = new ArrayList<>(weights.weighIns());
         BigDecimal lastKg = weighIns.isEmpty() ? BigDecimal.ONE : weighIns.getLast().kg();

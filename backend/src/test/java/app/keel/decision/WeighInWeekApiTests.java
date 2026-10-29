@@ -164,11 +164,11 @@ class WeighInWeekApiTests {
                 StoredSnapshot.of(snapshot), DecisionJson.of(decision), CallStore.Application.NOT_NEEDED))).isTrue();
     }
 
-    /** A weigh-in on {@code day} at {@code hour} UTC (a minute ago when that is still to come today) from {@code source}. */
+    /** A weigh-in on {@code day} at {@code hour} UTC (a minute ago, a second further back per hour, when that is still to come today). */
     private void weighIn(AccountId account, LocalDate day, String source, int hour) {
         Instant at = day.atTime(hour, 0).toInstant(ZoneOffset.UTC);
         assertThat(send(account, "POST", "/v1/weigh-ins", Map.of("clientId", UUID.randomUUID(),
-                "measuredAt", (at.isAfter(Instant.now()) ? Instant.now().minusSeconds(60) : at).toString(), "kg", 85.0, "source", source)))
+                "measuredAt", (at.isAfter(Instant.now()) ? Instant.now().minusSeconds(60L + hour) : at).toString(), "kg", 85.0, "source", source)))
                 .hasStatus(201);
     }
 
