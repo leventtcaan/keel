@@ -5393,6 +5393,23 @@ tasks:
     tests: ["jest onboarding-* + sign-in + copy", "tools/anayasa-denetimi.sh"]
     refs: ["prototip/yeni-yuz.html", "plan/denetim-2026-10-29.md", "plan/envanter-2026-10-29.md"]
 
+  - id: K-1050
+    title: "Build 6 bulgusu: \"+\" düğmesi içeriğin üstünde yüzer (solundaki beyaz şerit kalkar)"
+    milestone: M10
+    module: mobile
+    type: fix
+    size: S
+    status: doing
+    depends_on: [K-1049]
+    why: "Levent TestFlight build 6: \"+\" tam genişlikte zemin renginde bir şeridin içinde; şerit kaydırılan içeriği kesiyor ve \"+\" solunda beyaz blok gibi duruyor (This week, Train, Progress)"
+    acceptance:
+      - "\"+\" sağ altta içeriğin üstünde yüzer; altında ya da solunda zemin şeridi yok, içerik tab çubuğuna kadar kayar"
+      - "Son satır \"+\" arkasında kalmaz (içerik altında düğme kadar boşluk)"
+      - "Düğmenin hafif gölgesi token'dan gelir; üç sekmede aynı bileşen"
+      - "jest + anayasa denetimi yeşil; simülatörde üç sekmenin ekran görüntüsü"
+    tests: ["jest navigation + logging-flow", "tools/anayasa-denetimi.sh"]
+    refs: ["prototip/yeniden-yapim.html", "plan/oturum-promptlari/yeniden-yapim-devam.md"]
+
   - id: K-1010
     title: "Sunucudaki ek siteler: Caddy /opt/sites altındaki *.caddy dosyalarını içeri alır"
     milestone: M9
