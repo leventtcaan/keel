@@ -42,8 +42,11 @@ services:
       KEEL_DB_USER: keel
       # FoodData Central's releases, imported at start (ADR-008; the same release again changes nothing).
       KEEL_FDC_IMPORT_DIR: /fdc
+      # The Open Food Facts Turkey subset (ADR-088), imported at start when it changed; no file there, nothing happens.
+      KEEL_OFF_IMPORT_FILE: /off/off-tr.jsonl
     volumes:
       - ./fdc:/fdc:ro
+      - ./off:/off:ro
     depends_on:
       postgres:
         condition: service_healthy

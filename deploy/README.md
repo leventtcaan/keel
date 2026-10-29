@@ -18,6 +18,7 @@ backend (`prod` profile, K-907) and Caddy (HTTPS, the only open ports). Everythi
 | `restore-drill.sh` | Restores the newest backup into a throwaway database and compares every table's row count with the counts the backup took |
 | `weekly-report.sh`, `weekly-report.sql` | The weekly leading indicators (K-905, ADR-081): time to first value, week-2 retention, share who saw their plan change; read-only, aggregates only |
 | `fetch-fdc.sh` | Downloads FoodData Central's releases (ADR-008) for the backend to import |
+| `fetch-off.sh`, `off_filter.py` | Streams Open Food Facts' nightly dump through the filter (Turkish products with a name and the four nutrients, ADR-088) into `/opt/keel/off/off-tr.jsonl`; the backend imports it at start when the file changed |
 | `ci-deploy.sh`, `authorize-ci.sh` | The CI key's only command on the server, installed root's (K-902); letting that key in |
 
 ## First setup (once)
@@ -30,7 +31,7 @@ On the Mac (`~/.ssh/config` has `keel-vps` → root at first, `keel` after provi
    `ssh keel-vps "bash /opt/keel/deploy/provision.sh '$(cat ~/.ssh/keel_backup.pub)'"`, then `deploy/harden-ssh.sh`
    (it logs in as `keel` first; only then closes root and passwords). From now on `keel-vps` logs in as `keel`.
 4. `age-keygen -y ~/.keel-backup/age-key.txt | ssh keel-vps 'cat > /opt/keel/backup-recipient.txt'`
-5. `deploy/init-env.sh` (domain, Apple Team ID, key ID, `.p8` path) · `ssh keel-vps /opt/keel/deploy/fetch-fdc.sh`
+5. `deploy/init-env.sh` (domain, Apple Team ID, key ID, `.p8` path) · `ssh keel-vps /opt/keel/deploy/fetch-fdc.sh` · `ssh keel-vps /opt/keel/deploy/fetch-off.sh`
 6. `deploy/deploy.sh` · `deploy/mac/install-pull.sh` · after the first backup: `deploy/restore-drill.sh`
 
 ## Continuous deployment (K-902, ADR-066)

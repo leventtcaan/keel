@@ -20,12 +20,21 @@ const mockServices = { api: { POST: (path: string, init?: unknown) => mockPost(p
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices }));
 const mockDismissTo = jest.fn();
 const mockBack = jest.fn();
+/** The options the screen gave its Stack.Screen last (the system header's back button and the edge swipe are two of them). */
+let mockScreenOptions: { headerBackVisible?: boolean; gestureEnabled?: boolean } | undefined;
 jest.mock('expo-router', () => ({
+  Stack: {
+    Screen: ({ options }: { options?: { headerBackVisible?: boolean; gestureEnabled?: boolean } }) => {
+      mockScreenOptions = options;
+      return null;
+    },
+  },
   router: { dismissTo: (...args: unknown[]) => mockDismissTo(...args), back: () => mockBack() },
 }));
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockScreenOptions = undefined;
   mockAnswer = async () => built;
 });
 
@@ -126,9 +135,20 @@ test('after a failure another count can be chosen instead, and the old message g
   expect(mockDismissTo).toHaveBeenCalledWith('/train');
 });
 
-test('Back leaves without sending anything', async () => {
+// The way back is the system's (ADR-070 Ek 2 #4): no Back button in the screen, and the header's is open until the build is on its way.
+test('there is no Back of its own in the screen; the header back is open, and shut only while the program is being built', async () => {
   await show();
-  await fireEvent.press(screen.getByRole('button', { name: t('buildProgram.back') }));
-  expect(mockBack).toHaveBeenCalledTimes(1);
+  expect(screen.queryByRole('button', { name: /^Back$/ })).toBeNull();
+  expect(mockScreenOptions).toEqual({ headerBackVisible: true, gestureEnabled: true });
+  let answer: (a: Answer) => void = () => undefined;
+  mockAnswer = () => new Promise((resolve) => (answer = resolve));
+  await choose(3);
+  expect(mockScreenOptions).toEqual({ headerBackVisible: false, gestureEnabled: false });
+  await act(async () => answer(built));
+  expect(mockPost).toHaveBeenCalledTimes(1);
+});
+
+test('opening the screen sends nothing: leaving by the header sends nothing', async () => {
+  await show();
   expect(mockPost).not.toHaveBeenCalled();
 });

@@ -61,5 +61,7 @@ paketini bitirir, ikisini günceller. Bağlam özetlense de iş kaybolmaz.
   - (K-8 yemek verisi → Evre 3.)
 - [ ] Evre 2 — görsel sistem + ekranlar (kararlar ADR-070 Ek 2; prototip `prototip/yeniden-yapim.html`, https://claude.ai/artifact/3w4F4AyapNksScmgmgzpD6;
   sıra: 1 bileşen sistemi → 2 Ayarlar + Account → 3 "+" + onay bandı → 4 This Week + Train → 5 yemek → 6 antrenman başlığı + stepper yerleri)
-- [ ] Evre 3 — yemek verisi
+  - [~] 2.1 bileşen sistemi (#630 birleşti; kanıt sabah) · [~] 2.2 Ayarlar + Account + veri kaynakları + tek geri (#633 birleşti; kanıt sabah) · [ ] 2.3 "+" + onay bandı (#634 ajanda)
+- [~] Evre 3 — yemek verisi (ADR-088; #632 birleşti; üretimde 29 Eki 03:22 UTC 2.897 OFF ürünü içe aktarıldı, 0 atlandı; atıf satırı #633;
+  kalan: uygulamada adla arama kanıtı sabah; Türk yemekleri ayrı karar)
 - [ ] Evre 4 — son tur + build 6

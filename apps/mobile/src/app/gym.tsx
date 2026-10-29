@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ProblemText, useProblem } from '@/components/ProblemText';
@@ -190,11 +190,8 @@ export default function GymScreen() {
     );
 
   return (
-    <SafeAreaView testID="screen" style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
+    <SafeAreaView testID="screen" style={[styles.safe, { backgroundColor: color.background }]} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-        <Pressable accessibilityRole="button" onPress={() => router.back()} hitSlop={tokens.space.md}>
-          <Text style={[styles.text, { color: color.text }]}>{t('gyms.back')}</Text>
-        </Pressable>
         <ScreenTitle>{t('gym.title')}</ScreenTitle>
         {failed}
         {fields}

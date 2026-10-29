@@ -1,7 +1,7 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 
 import { ProblemText } from '@/components/ProblemText';
-import { Chip } from '@/components/Chip';
+import { Segmented } from '@/components/Segmented';
 import { t } from '@/copy';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
@@ -11,41 +11,30 @@ import type { UnitSystem } from '@/units/units';
 import { Section } from './Section';
 import { useAction } from './useAction';
 
+const SYSTEMS: { value: UnitSystem; key: string }[] = [
+  { value: 'METRIC', key: 'settings.units.metric' },
+  { value: 'IMPERIAL', key: 'settings.units.imperial' },
+];
+
 /** The unit system, stored on the profile (K-310): a choice that does not reach the server is not half-made. */
-export function UnitsSection({ inGroup = false }: { inGroup?: boolean } = {}) {
+export function UnitsSection() {
   const { units } = useAppServices();
   const system = useUnits();
   const { color } = useTheme();
   const { problem, run } = useAction();
   const choose = (next: UnitSystem) => void run(() => units.set(next).then(() => undefined), {}, 'settings.units.failed');
-  const body = (
-    <>
-      <View style={styles.row}>
-        <Chip label={t('settings.units.metric')} selected={system === 'METRIC'} onPress={() => choose('METRIC')} />
-        <Chip label={t('settings.units.imperial')} selected={system === 'IMPERIAL'} onPress={() => choose('IMPERIAL')} />
-      </View>
+  return (
+    <Section title={t('settings.units.title')}>
+      <Segmented options={SYSTEMS.map((s) => ({ value: s.value, label: t(s.key) }))} value={system} onChange={choose} />
       {problem === null ? (
         <Text style={[styles.note, { color: color.muted }]}>{t('settings.units.note')}</Text>
       ) : (
         <ProblemText style={[styles.note, { color: color.text }]}>{problem}</ProblemText>
       )}
-    </>
+    </Section>
   );
-  // In a group (Settings › Appearance, K-982) the units are a row of it, named but not a heading of their own.
-  if (inGroup) {
-    return (
-      <View style={styles.block}>
-        <Text style={[styles.label, { color: color.text }]}>{t('settings.units.title')}</Text>
-        {body}
-      </View>
-    );
-  }
-  return <Section title={t('settings.units.title')}>{body}</Section>;
 }
 
 const styles = StyleSheet.create({
-  block: { gap: tokens.space.sm },
-  label: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm },
-  note: { fontSize: tokens.type.bodySmall },
+  note: { marginHorizontal: tokens.space.xs, fontSize: tokens.type.label },
 });

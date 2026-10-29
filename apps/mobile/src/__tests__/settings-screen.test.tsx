@@ -1,10 +1,14 @@
 /**
- * Settings (K-309, prototype 5.2): units, the consents (view, allow, withdraw), the data export, deleting the account
- * and signing out. A destructive step asks first: a withdrawal on screen in the warn colour (ADR-016), deleting and signing out in a system alert (ADR-087).
+ * Settings (K-309, prototype 5.2; K-1043: grouped lists, ADR-070 Ek 2): units, the consents (view, allow, withdraw — on the
+ * pages Health data consent and Apple Health open), the data export, deleting the account and signing out. A destructive
+ * step asks first: a withdrawal on screen in the warn colour (ADR-016), deleting and signing out in a system alert (ADR-087).
+ * Sign out and Delete account are destructive rows (the warn colour is their design, ADR-070 Ek 2 #1); nothing else is warn
+ * until a step asks.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { Alert, type AlertButton } from 'react-native';
 
+import SettingsDetailScreen from '@/app/settings-detail';
 import SettingsScreen from '@/app/settings';
 import { t } from '@/copy';
 import { ThemeProvider } from '@/theme/theme';
@@ -71,9 +75,9 @@ jest.mock('@/settings/SubscriptionSection', () => ({ SubscriptionSection: () => 
 // settings-groups.test.tsx. Here they would take this file's consent answers out of their order too. The Gyms row stays, to open the gyms.
 jest.mock('@/settings/TrainingGroup', () => ({
   TrainingGroup: () => {
-    const { SettingsRow } = jest.requireActual('@/settings/SettingsRow');
+    const { ListRow } = jest.requireActual('@/components/ListGroup');
     const { router } = jest.requireMock('expo-router');
-    return <SettingsRow label="Gyms" onPress={() => router.push('/gyms')} />;
+    return <ListRow label="Gyms" onPress={() => router.push('/gyms')} />;
   },
 }));
 jest.mock('@/settings/FoodGroup', () => ({ FoodGroup: () => null }));
@@ -95,6 +99,16 @@ async function show() {
   );
   await act(async () => {});
 }
+/** A page under Settings (K-1043): what the row Health data consent, Apple Health, ... opens. */
+async function showDetail(part: string) {
+  mockParams = { part };
+  await render(
+    <ThemeProvider scheme="light">
+      <SettingsDetailScreen />
+    </ThemeProvider>,
+  );
+  await act(async () => {});
+}
 
 const button = (name: string) => screen.getByRole('button', { name });
 async function press(name: string) {
@@ -105,8 +119,9 @@ async function press(name: string) {
  * Buttons drawn in the warn colour: the rule is none but a confirming step's. A warn button is the destructive role now
  * (ADR-070 Ek 2 #1): words in the warning colour with no fill, so it is found by its label's colour, not by a fill.
  */
+const DESTRUCTIVE_ROWS = [t('settings.signOut.title'), t('settings.delete.title')];
 const warnButtons = () =>
-  screen.queryAllByRole('button').filter((b) => {
+  screen.queryAllByRole('button').filter((b) => !DESTRUCTIVE_ROWS.includes(b.props.accessibilityLabel)).filter((b) => {
     const warned = (node: { props: { style?: unknown }; children?: unknown[] }): boolean => {
       const flat = [node.props.style].flat(Infinity) as ({ color?: string } | undefined)[];
       if (flat.some((style) => style?.color === palettes.light.warn)) return true;
@@ -125,9 +140,12 @@ const tapAlert = async (style: 'cancel' | 'destructive') =>
 const row = (kind: 'HEALTH_DATA' | 'APPLE_HEALTH') => t(`settings.consents.${kind}`);
 
 const mockPush = jest.fn();
+let mockParams: Record<string, string> = {};
 jest.mock('expo-router', () => ({
   ...jest.requireActual<object>('expo-router'),
   router: { push: (...args: unknown[]) => mockPush(...args), back: jest.fn() },
+  useLocalSearchParams: () => mockParams,
+  useFocusEffect: (effect: () => void) => jest.requireActual<typeof import('react')>('react').useEffect(effect, [effect]),
 }));
 
 test("Gyms opens the user's gyms (K-421)", async () => {
@@ -139,7 +157,7 @@ test("Gyms opens the user's gyms (K-421)", async () => {
 test('the sections are there, and nothing is in the warn colour until a destructive step asks', async () => {
   await show();
   expect(screen.getByRole('header', { name: t('settings.title') })).toBeOnTheScreen();
-  for (const key of ['units.title', 'consents.title', 'import.title', 'account.title', 'export.title', 'delete.title', 'signOut.title']) {
+  for (const key of ['units.title', 'health.title', 'import.title', 'account.title', 'export.title', 'delete.title', 'signOut.title']) {
     expect(screen.getAllByText(t(`settings.${key}`)).length).toBeGreaterThan(0);
   }
   expect(warnButtons()).toEqual([]);
@@ -162,24 +180,42 @@ describe('units', () => {
 });
 
 describe('consents', () => {
-  test('each health consent with its state; the AI consent is not offered before a provider is chosen (K-511)', async () => {
+  test('Health and data lists each health consent with its state and opens its page; the AI consent has no row (K-511, V2)', async () => {
     await show();
-    expect(screen.getByText(row('HEALTH_DATA'))).toBeOnTheScreen();
-    expect(screen.getByText(row('APPLE_HEALTH'))).toBeOnTheScreen();
-    expect(screen.getAllByText(t('settings.consents.allowed'))).toHaveLength(1);
-    // Exactly the two health consents: no row, and no button, for the AI consent (V2: not before its provider is named).
-    expect(screen.getAllByRole('button', { name: new RegExp(`^${t('settings.consents.view')} `) })).toHaveLength(2);
+    expect(button(`${t('settings.health.consent')}, ${t('settings.consents.allowed')}`)).toBeOnTheScreen();
+    expect(button(`${row('APPLE_HEALTH')}, ${t('settings.consents.notAllowed')}`)).toBeOnTheScreen();
+    await press(`${t('settings.health.consent')}, ${t('settings.consents.allowed')}`);
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/settings-detail', params: { part: 'consent' } });
+    await press(`${row('APPLE_HEALTH')}, ${t('settings.consents.notAllowed')}`);
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/settings-detail', params: { part: 'apple' } });
+    // Not before the AI provider is named (V2): no row, and no button, for it.
     expect(screen.queryAllByRole('button').filter((b) => /THIRD_PARTY_AI|missing/.test(String(b.props.accessibilityLabel)))).toEqual([]);
   });
 
-  test('View shows the text the consent was given to', async () => {
+  test('a consent that is outdated says Allow again on its row; the long reason is on its page', async () => {
+    mockVersions.HEALTH_DATA = '4';
     await show();
+    expect(button(`${t('settings.health.consent')}, ${t('settings.consents.outdatedShort')}`)).toBeOnTheScreen();
+    await showDetail('consent');
+    expect(screen.getByText(t('settings.consents.outdated'))).toBeOnTheScreen();
+  });
+
+  test('each consent has a page of its own, titled by its row, with that consent alone: its text, Allow and Withdraw (ADR-007)', async () => {
+    await showDetail('consent');
+    expect(screen.getByRole('header', { name: t('settings.health.consent') })).toBeOnTheScreen();
+    expect(screen.getByText(row('HEALTH_DATA'))).toBeOnTheScreen();
+    expect(screen.queryByText(row('APPLE_HEALTH'))).toBeNull();
+    expect(screen.getAllByText(t('settings.consents.allowed'))).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: new RegExp(`^${t('settings.consents.view')} `) })).toHaveLength(1);
+  });
+  test('View shows the text the consent was given to', async () => {
+    await showDetail('consent');
     await press(`${t('settings.consents.view')} ${row('HEALTH_DATA')}`);
     expect(screen.getByText(t('consent.health_data.points.collected'))).toBeOnTheScreen();
   });
 
   test('Withdraw asks first — the only warn-coloured button is its confirmation — then withdraws and shows the new state', async () => {
-    await show();
+    await showDetail('consent');
     await press(`${t('settings.consents.withdraw')} ${row('HEALTH_DATA')}`);
     expect(mockServices.api.DELETE).not.toHaveBeenCalled();
     expect(screen.getByText(t('settings.withdrawConfirm.HEALTH_DATA.body'))).toBeOnTheScreen();
@@ -193,7 +229,7 @@ describe('consents', () => {
   });
 
   test('"Keep it" closes the question and changes nothing', async () => {
-    await show();
+    await showDetail('consent');
     await press(`${t('settings.consents.withdraw')} ${row('HEALTH_DATA')}`);
     await press(t('settings.withdrawConfirm.keep'));
     expect(mockServices.api.DELETE).not.toHaveBeenCalled();
@@ -202,7 +238,7 @@ describe('consents', () => {
 
   test('Allow on the health data consent records the version shown', async () => {
     mockConsents.HEALTH_DATA = 'WITHDRAWN';
-    await show();
+    await showDetail('consent');
     await press(`${t('settings.consents.allow')} ${row('HEALTH_DATA')}`);
     expect(mockServices.api.PUT).toHaveBeenCalledWith('/v1/consents/{kind}', {
       params: { path: { kind: 'HEALTH_DATA' } },
@@ -214,14 +250,14 @@ describe('consents', () => {
 
   test('the health data consent given to version 4 reads outdated: the text was revised into points (K-1032)', async () => {
     mockVersions.HEALTH_DATA = '4';
-    await show();
+    await showDetail('consent');
     expect(screen.getByText(t('settings.consents.outdated'))).toBeOnTheScreen();
     expect(screen.queryAllByText(t('settings.consents.allowed'))).toHaveLength(0);
   });
 
   test('a consent given to a text since revised (K-429): not allowed, and both ways are open — the new text, or withdrawing', async () => {
     mockVersions.HEALTH_DATA = '1-draft';
-    await show();
+    await showDetail('consent');
     expect(screen.getByText(t('settings.consents.outdated'))).toBeOnTheScreen();
     expect(screen.queryAllByText(t('settings.consents.allowed'))).toHaveLength(0);
     // Withdrawing needs no yes to the new text first (GDPR Art. 7(3)): it asks, then deletes as any withdrawal does.
@@ -243,35 +279,35 @@ describe('consents', () => {
       order.push(`consent ${init.params.path.kind}`);
       return ok({ status: 'GRANTED' });
     });
-    await show();
+    await showDetail('apple');
     await press(`${t('settings.consents.allow')} ${row('APPLE_HEALTH')}`);
     expect(order).toEqual(['sheet', 'consent APPLE_HEALTH']);
   });
 
   test('Apple Health cannot be allowed without the health data consent, nor where HealthKit is not in the build', async () => {
     mockConsents.HEALTH_DATA = 'WITHDRAWN';
-    await show();
+    await showDetail('apple');
     expect(screen.queryByRole('button', { name: `${t('settings.consents.allow')} ${row('APPLE_HEALTH')}` })).toBeNull();
     expect(screen.getByText(t('settings.consents.needsHealthConsent'))).toBeOnTheScreen();
   });
 
   test('where HealthKit is not in the build, Apple Health says so', async () => {
     mockServices.health.available = false;
-    await show();
+    await showDetail('apple');
     expect(screen.queryByRole('button', { name: `${t('settings.consents.allow')} ${row('APPLE_HEALTH')}` })).toBeNull();
     expect(screen.getByText(t('settings.consents.unavailable'))).toBeOnTheScreen();
   });
 
   test('consents that cannot be loaded say so, and can be tried again', async () => {
     mockServices.api.GET.mockRejectedValueOnce(new TypeError('Network request failed'));
-    await show();
+    await showDetail('consent');
     expect(screen.getByText(t('settings.consents.loadFailed'))).toBeOnTheScreen();
     await press(t('settings.consents.retry'));
     expect(screen.getByText(row('HEALTH_DATA'))).toBeOnTheScreen();
   });
 
   test('a change that went through shows at once, even when reading the states back fails — and the failure shows', async () => {
-    await show();
+    await showDetail('consent');
     mockServices.api.GET.mockRejectedValueOnce(new TypeError('Network request failed'));
     await press(`${t('settings.consents.withdraw')} ${row('HEALTH_DATA')}`);
     await press(t('settings.withdrawConfirm.confirm'));
@@ -283,7 +319,7 @@ describe('consents', () => {
 
   test('Apple Health can be withdrawn too, with its own question', async () => {
     mockConsents.APPLE_HEALTH = 'GRANTED';
-    await show();
+    await showDetail('apple');
     await press(`${t('settings.consents.withdraw')} ${row('APPLE_HEALTH')}`);
     expect(screen.getByText(t('settings.withdrawConfirm.APPLE_HEALTH.body'))).toBeOnTheScreen();
     await press(t('settings.withdrawConfirm.confirm'));
@@ -295,7 +331,7 @@ describe('consents', () => {
 
   test("Apple's sheet failing in Settings says so and records nothing", async () => {
     mockServices.health.requestRead.mockRejectedValueOnce(new Error('HealthKit'));
-    await show();
+    await showDetail('apple');
     await press(`${t('settings.consents.allow')} ${row('APPLE_HEALTH')}`);
     expect(screen.getByText(t('settings.consents.sheetFailed'))).toBeOnTheScreen();
     expect(mockServices.api.PUT).not.toHaveBeenCalled();
@@ -305,7 +341,7 @@ describe('consents', () => {
   test('the health data withdrawal says the entries are deleted for good, and offers the export first (K-231)', async () => {
     expect(t('settings.withdrawConfirm.HEALTH_DATA.body')).toMatch(/delet/i);
     expect(t('settings.withdrawConfirm.HEALTH_DATA.body')).toMatch(/undo/i);
-    await show();
+    await showDetail('consent');
     await press(`${t('settings.consents.withdraw')} ${row('HEALTH_DATA')}`);
 
     await press(t('settings.withdrawConfirm.exportFirst'));
@@ -318,14 +354,14 @@ describe('consents', () => {
 
   test('Apple Health deletes nothing stored, so its question offers no export', async () => {
     mockConsents.APPLE_HEALTH = 'GRANTED';
-    await show();
+    await showDetail('apple');
     await press(`${t('settings.consents.withdraw')} ${row('APPLE_HEALTH')}`);
     expect(screen.queryByRole('button', { name: t('settings.withdrawConfirm.exportFirst') })).toBeNull();
   });
 
   test('a change the server refuses says so and keeps the state shown', async () => {
     mockServices.withdrawHealthData.mockRejectedValueOnce(Object.assign(new Error('x'), { name: 'ConsentRefused' }));
-    await show();
+    await showDetail('consent');
     await press(`${t('settings.consents.withdraw')} ${row('HEALTH_DATA')}`);
     await press(t('settings.withdrawConfirm.confirm'));
     expect(screen.getByText(t('settings.serverError'))).toBeOnTheScreen();

@@ -262,7 +262,14 @@ test('signed in, sign-in is not reachable', async () => {
   expect(router.getPathname()).toBe('/');
 });
 
-test('Settings opens from Today, over the tabs (K-309, prototype 5.2)', async () => {
+/** The header the stack drew for the screen on top: the native one has its back button and the name it carries (ADR-070 Ek 2 #4). */
+const topHeader = () => {
+  const found = screen.root!.queryAll((n) => n.type === 'RNSScreenStackHeaderConfig');
+  return found[found.length - 1]!.props as { hidden: boolean; backTitle?: string; title: string };
+};
+const inScreenBack = () => screen.queryAllByRole('button', { name: /^(‹ )?(Back|Today)$/ });
+
+test('Settings opens from Today, over the tabs (K-309, prototype 5.2); its way back is the system header, named for This week (ADR-070 Ek 2 #4)', async () => {
   const router = renderRouter(APP, { initialUrl: '/' });
   await router;
   await fireEvent.press(screen.getByRole('button', { name: t('settings.entry') }));
@@ -271,12 +278,52 @@ test('Settings opens from Today, over the tabs (K-309, prototype 5.2)', async ()
   });
   expect(router.getPathname()).toBe('/settings');
   expect(screen.getByRole('header', { name: t('settings.title') })).toBeOnTheScreen();
-  // Its own way back (prototype: "‹ Today"), not only the swipe.
-  await fireEvent.press(screen.getByRole('button', { name: t('settings.back') }));
+  // No back button of its own in the screen: the header's, "‹ This week".
+  expect(inScreenBack()).toEqual([]);
+  expect(screen.queryByText(`${t('settings.backMark')} Today`)).toBeNull();
+  expect(topHeader()).toMatchObject({ hidden: false, backTitle: t('tabs.today'), title: '' });
   await act(async () => {
+    appRouter.back();
     jest.runAllTimers();
   });
   expect(router.getPathname()).toBe('/');
+});
+
+// One back pattern for the screens pushed onto the stack: the system header with a back button naming the screen before it; no "Back" in the
+// screen. Each is opened cold from a link, so the tabs (This week) sit underneath, and each can be left.
+test.each(['/settings', '/settings-detail?part=sources', '/gyms', '/gym?id=g1', '/edit-program', '/build-program', '/import'])(
+  'a pushed screen (%s) has the system back, named for the screen before it, and none of its own',
+  async (url) => {
+    const router = renderRouter(APP, { initialUrl: url });
+    await router;
+    await act(async () => {
+      jest.runAllTimers();
+    });
+    expect(topHeader()).toMatchObject({ hidden: false, backTitle: t('tabs.today') });
+    expect(inScreenBack()).toEqual([]);
+    expect(appRouter.canGoBack()).toBe(true);
+    await act(async () => {
+      appRouter.back();
+      jest.runAllTimers();
+    });
+    expect(router.getPathname()).toBe('/');
+  },
+);
+
+test('a page under Settings names Settings on its back button; Settings opened from Train names Train', async () => {
+  const router = renderRouter(APP, { initialUrl: '/train' });
+  await router;
+  await act(async () => {
+    appRouter.push('/settings');
+    jest.runAllTimers();
+  });
+  expect(topHeader().backTitle).toBe(t('tabs.train'));
+  await act(async () => {
+    appRouter.push({ pathname: '/settings-detail', params: { part: 'sources' } });
+    jest.runAllTimers();
+  });
+  expect(router.getPathname()).toBe('/settings-detail');
+  expect(topHeader().backTitle).toBe(t('settings.title'));
 });
 
 test.each(['/check-in', '/state'])('signed out, %s is not reachable (K-501, K-518)', async (url) => {

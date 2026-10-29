@@ -25,3 +25,12 @@ Open Food Facts (ODbL, gecelik döküm) ve USDA Branded (CC0, çoğu ABD). TürK
 ## Sonuç
 - Barkod okutma Türkiye'deki ürünlerde eşleşir; marka adıyla arama çalışır. Kanıt: gerçek sunucuda bir Türk ürününün barkodu ve adıyla arama.
 - Bedel: döküm her güncellemede ~GB indirme (VPS); içe aktarım açılış süresine eklenir (ölçülür).
+
+## Ek 1 · Ölçülen (2026-10-29, VPS, OFF gecelik dökümü)
+- Döküm `openfoodfacts-products.jsonl.gz` **13 GB** (sıkıştırılmış), 4.879.695 ürün. Türkiye etiketli ya da 869 önekli: **28.050**.
+  Ad + dört besin (kcal, protein, karbonhidrat, yağ / 100 g) dolu: **3.010** (%10,7); yalnız kJ'si olan 35. İçe aktarılan alt küme ≈3.000 ürün.
+- Akışla indirme SSH oturumuna bağlı koşunca oturum kopunca boru hattı öldü: `fetch-off.sh` oturumdan bağımsız (`setsid`/zamanlayıcı) koşar.
+- Sonuç: barkod kapsamı Türkiye'de sınırlı ama sıfırdan anlamlı; besin değeri eksik ürünler alınmaz (U5 aralığı kurulamaz). Kapsam yetmezse sonraki adım
+  USDA Branded ya da kullanıcının etiketten girdiği ürün (ayrı karar).
+- Üretim (2026-10-29 03:22 UTC): süzme 27.987 Türkiye ürününden 2.897'sini tuttu (ad + dört besin + makul değer), içe aktarım 2.897 / 0 atlandı.
+  Süzme bitmeden açılan backend içe aktarmaz: `fetch-off.sh` sonrası backend yeniden başlatılır (ya da sonraki dağıtım).

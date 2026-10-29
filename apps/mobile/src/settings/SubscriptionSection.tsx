@@ -1,10 +1,11 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
-import { ProblemText } from '@/components/ProblemText';
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
+import { ListGroup, ListRow } from '@/components/ListGroup';
+import { ProblemText } from '@/components/ProblemText';
 import { t } from '@/copy';
 import { useAppServices } from '@/services/ServicesProvider';
 import { restorePurchases, wait } from '@/subscription/paywall';
@@ -29,11 +30,12 @@ function stateWords(subscription: Subscription): string {
 }
 
 /**
- * Settings › Subscription (K-702, prototype 5.2, ADR-057 D4). The server's word on the subscription (K-705), said plainly.
- * Cancelling is two taps: "Cancel or change plan" opens Apple's own page at once — no screen of ours between, no "are you
- * sure", nothing said about what would be lost (U7; ADR-012: cancelling is visible). No pause button: the App Store has no
- * pause (ADR-057). Without a subscription, the way to the plans. Restore always, where the store is in the build; nothing
- * is pressed under an account the server did not name.
+ * Settings › Subscription (K-702, prototype 5.2, ADR-057 D4; a grouped list, ADR-070 Ek 2 #2). The server's word on the
+ * subscription (K-705), said plainly in the first row. Cancelling is two taps: "Cancel or change plan" opens Apple's own page
+ * at once — no screen of ours between, no "are you sure", nothing said about what would be lost (U7; ADR-012: cancelling is
+ * visible). It leaves the app, so it is a row with no chevron. No pause button: the App Store has no pause (ADR-057). Without
+ * a subscription, the way to the plans. Restore always, where the store is in the build, as a text button under the list;
+ * nothing is pressed under an account the server did not name.
  */
 export function SubscriptionSection() {
   const { api, purchases } = useAppServices();
@@ -91,26 +93,32 @@ export function SubscriptionSection() {
       'subscription.restoreFailed',
     );
 
-  const manageButton = <Button label={t('settings.subscription.manage')} variant="ghost" size="sm" disabled={busy} onPress={manage} />;
-  const plansButton = <Button label={t('subscription.seePlans')} variant="ghost" size="sm" onPress={() => router.push('/paywall')} />;
-  const restoreButton = <Button label={t('subscription.restore')} variant="ghost" size="sm" disabled={busy} onPress={restore} />;
-
+  // Built before the JSX: a literal inside a JSX child is read as text by the copy guard (copy-literals.test.ts).
+  const manageRow =
+    manageable && purchases.available ? (
+      <ListRow icon="creditcard" label={t('settings.subscription.manage')} accessibilityHint={t('settings.subscription.manageNote')} disabled={busy} onPress={manage} />
+    ) : null;
+  const plansRow = manageable ? null : <ListRow icon="sparkles" label={t('subscription.seePlans')} navigates onPress={() => router.push('/paywall')} />;
+  const restoreButton = purchases.available ? <Button label={t('subscription.restore')} variant="text" size="sm" disabled={busy} onPress={restore} /> : null;
   return (
-    <Section title={t('settings.subscription.title')}>
-      <Text style={[styles.label, { color: color.text }]}>{stateWords(subscription)}</Text>
+    <View style={styles.stack}>
+      <ListGroup
+        title={t('settings.subscription.title')}
+        footer={manageable && !purchases.available ? t('settings.subscription.unavailable') : undefined}
+        testID="group-subscription">
+        <ListRow icon="star" label={stateWords(subscription)} />
+        {manageRow}
+        {plansRow}
+      </ListGroup>
       <TrialReminderOffer subscription={subscription} />
-      {manageable && purchases.available && manageButton}
-      {manageable && purchases.available && note(t('settings.subscription.manageNote'))}
-      {manageable && !purchases.available && note(t('settings.subscription.unavailable'))}
-      {!manageable && plansButton}
-      {purchases.available && restoreButton}
+      {restoreButton}
       {restoreWaiting && note(t('subscription.restoreWaiting'), 'text')}
       {problem !== null && <ProblemText style={[styles.note, { color: color.text }]}>{problem}</ProblemText>}
-    </Section>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  label: { fontSize: tokens.type.body },
+  stack: { gap: tokens.space.sm },
   note: { fontSize: tokens.type.bodySmall },
 });

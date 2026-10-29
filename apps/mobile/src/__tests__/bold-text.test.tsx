@@ -23,8 +23,8 @@ import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
 import { DecisionBlock } from '@/components/DecisionBlock';
 import { FitText } from '@/components/FitText';
+import { ListRow } from '@/components/ListGroup';
 import { OptionCard } from '@/components/OptionCard';
-import { SettingsRow } from '@/settings/SettingsRow';
 import { CallCard } from '@/today/CallCard';
 import { ThemeProvider } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
@@ -183,10 +183,10 @@ describe('texts in a row take the room the row has', () => {
     expect(screen.getByText('Add a day')).toHaveStyle({ flexGrow: 1, flexShrink: 1 });
   });
 
-  test('a Settings row: label and value', async () => {
-    await renderIt(<SettingsRow label="Training days" value="Mon, Wed, Fri" onPress={() => {}} />);
-    expect(screen.getByText('Training days')).toHaveStyle({ flexGrow: 1, flexShrink: 1 });
-    expect(screen.getByText('Mon, Wed, Fri')).toHaveStyle({ flexGrow: 1, flexShrink: 1 });
+  test('a Settings row (a list row, K-1043): the label takes the room, the value shrinks and wraps before it', async () => {
+    await renderIt(<ListRow label="Training days" value="Mon, Wed, Fri" onPress={() => {}} />);
+    expect(screen.getByText('Training days')).toHaveStyle({ flex: 1, minWidth: 0 });
+    expect(screen.getByText('Mon, Wed, Fri')).toHaveStyle({ flexShrink: 1 });
   });
 
   test('the call card line: its eyebrow and its confidence, the confidence still at the end', async () => {

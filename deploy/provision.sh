@@ -54,10 +54,12 @@ echo "restrict,command=\"$rrsync -ro /var/backups/keel\" $backup_pubkey" > /home
 chown keel-backup:keel-backup /home/keel-backup/.ssh/authorized_keys
 chmod 600 /home/keel-backup/.ssh/authorized_keys
 
-# /opt/keel: the compose project (deploy/ synced in, .env written by init-env.sh, fdc/ by fetch-fdc.sh). fdc/ is read
-# through a bind mount by the backend's user (uid 10001, backend.Dockerfile), neither owner nor group: 755 (public data).
+# /opt/keel: the compose project (deploy/ synced in, .env written by init-env.sh, fdc/ by fetch-fdc.sh, off/ by fetch-off.sh).
+# fdc/ and off/ are read through a bind mount by the backend's user (uid 10001, backend.Dockerfile), neither owner nor
+# group: 755 (public data).
 install -d -m 750 -o keel -g keel /opt/keel
 install -d -m 755 -o keel -g keel /opt/keel/fdc
+install -d -m 755 -o keel -g keel /opt/keel/off
 chown -R keel:keel /opt/keel/deploy
 
 # Logs: every container's goes to journald (compose.yaml) and only there; kept LOG_KEEP_DAYS (retention.env). Ubuntu

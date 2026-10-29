@@ -1,9 +1,10 @@
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router/stack';
 import * as SplashScreen from 'expo-splash-screen';
-import { type ReactNode, useEffect } from 'react';
+import { type ComponentProps, type ReactNode, useEffect } from 'react';
 import { Appearance, StyleSheet, View } from 'react-native';
 
+import { previousScreenName, pushedScreen } from '@/navigation/pushed';
 import { SavedBanner, SavedProvider } from '@/saved/saved';
 import { ServicesProvider, useAppearance, useOnboarding, useSignedIn, useSubscriptionGate } from '@/services/ServicesProvider';
 import { fontAssets } from '@/theme/fonts';
@@ -25,11 +26,16 @@ export const unstable_settings = { anchor: '(tabs)' };
 // session ends (sign-out, a refused refresh) the guarded screens leave the history and sign-in takes their place.
 // Signed in without a profile, the only screens are onboarding's (K-306); not known yet, the one that asks the server.
 // Onboarded but never subscribed, the only screen is the gate (K-706, ADR-058 › 107); not known yet, the gate asks.
+type ScreenOptions = ComponentProps<typeof Stack.Screen>['options'];
+type PushedOptions = Extract<ScreenOptions, (...args: never[]) => unknown>;
+
 function AppStack() {
   const { color } = useTheme();
   const signedIn = useSignedIn();
   const onboarding = useOnboarding();
   const gate = useSubscriptionGate();
+  // A pushed screen has the system header with its back button, named for the screen before it (ADR-070 Ek 2 #4).
+  const pushed: PushedOptions = ({ route, navigation }) => pushedScreen(color, previousScreenName(navigation.getState(), route.key));
   // Mounted only once the services are ready (ServicesProvider renders nothing before).
   useEffect(() => {
     void SplashScreen.hideAsync();
@@ -41,9 +47,10 @@ function AppStack() {
         <Stack.Screen name="plus" options={{ presentation: 'formSheet', sheetAllowedDetents: 'fitToContents', sheetGrabberVisible: true }} />
         <Stack.Screen name="today-change" options={{ presentation: 'formSheet', sheetAllowedDetents: 'fitToContents', sheetGrabberVisible: true }} />
         <Stack.Screen name="swap" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="edit-program" />
-        <Stack.Screen name="build-program" />
-        <Stack.Screen name="settings" />
+        <Stack.Screen name="edit-program" options={pushed} />
+        <Stack.Screen name="build-program" options={pushed} />
+        <Stack.Screen name="settings" options={pushed} />
+        <Stack.Screen name="settings-detail" options={pushed} />
         <Stack.Screen name="weigh-in" options={{ presentation: 'modal' }} />
         <Stack.Screen name="food" />
         <Stack.Screen name="meal" options={{ presentation: 'modal' }} />
@@ -53,8 +60,8 @@ function AppStack() {
         <Stack.Screen name="exercise-history" />
         <Stack.Screen name="exercise" />
         <Stack.Screen name="workout-edit" />
-        <Stack.Screen name="gyms" />
-        <Stack.Screen name="gym" />
+        <Stack.Screen name="gyms" options={pushed} />
+        <Stack.Screen name="gym" options={pushed} />
         <Stack.Screen name="check-in" />
         <Stack.Screen name="call" />
         <Stack.Screen name="state" options={{ presentation: 'modal' }} />
@@ -63,7 +70,7 @@ function AppStack() {
         <Stack.Screen name="photo-capture" options={{ presentation: 'modal' }} />
         <Stack.Screen name="compare" />
         <Stack.Screen name="share" />
-        <Stack.Screen name="import" />
+        <Stack.Screen name="import" options={pushed} />
         <Stack.Screen name="paywall" options={{ presentation: 'modal' }} />
       </Stack.Protected>
       {/* Taken off the surface (ADR-069 #3, navigation/tabs RETIRED): the code stays, nothing opens them, a link neither. */}

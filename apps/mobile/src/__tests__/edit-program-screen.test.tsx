@@ -99,6 +99,19 @@ const mockDismissTo = jest.fn();
 let mockParams: Record<string, string> = {};
 /** The options the screen gave its Stack.Screen last (the iOS edge swipe back is one of them). */
 let mockScreenOptions: { gestureEnabled?: boolean } | undefined;
+/**
+ * The system back (the header's button, the edge swipe) asks the screen through `beforeRemove` (ADR-070 Ek 2 #4): a listener
+ * that calls `preventDefault` stops it. `systemBack()` is that press.
+ */
+let mockBeforeRemove: ((event: { preventDefault: () => void }) => void)[] = [];
+const mockNavigation = {
+  addListener: (_type: string, listener: (event: { preventDefault: () => void }) => void) => {
+    mockBeforeRemove.push(listener);
+    return () => {
+      mockBeforeRemove = mockBeforeRemove.filter((l) => l !== listener);
+    };
+  },
+};
 jest.mock('expo-router', () => ({
   Stack: {
     Screen: ({ options }: { options?: { gestureEnabled?: boolean } }) => {
@@ -106,6 +119,7 @@ jest.mock('expo-router', () => ({
       return null;
     },
   },
+  useNavigation: () => mockNavigation,
   router: { push: (...args: unknown[]) => mockPush(...args), back: jest.fn(), dismissTo: (...args: unknown[]) => mockDismissTo(...args) },
   useLocalSearchParams: () => mockParams,
   useFocusEffect: (effect: () => void) => {
@@ -114,8 +128,18 @@ jest.mock('expo-router', () => ({
   },
 }));
 
+/** Presses the system back; says whether the screen let it through ('left') or stopped it ('stopped'). */
+async function systemBack(): Promise<'left' | 'stopped'> {
+  let stopped = false;
+  await act(async () => {
+    mockBeforeRemove.forEach((listener) => listener({ preventDefault: () => (stopped = true) }));
+  });
+  return stopped ? 'stopped' : 'left';
+}
+
 beforeEach(() => {
   jest.clearAllMocks();
+  mockBeforeRemove = [];
   mockGet.mockImplementation(profileAnswer);
   mockData = { program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: [] }, kept: false };
   mockParams = {};
@@ -149,10 +173,11 @@ describe('an account with no program (K-1037, ADR-084)', () => {
     expect(mockPush).toHaveBeenCalledWith('/build-program');
   });
 
-  test('Back is still there', async () => {
+  test('there is no Back in the page: the way back is the system header, which nothing stops here', async () => {
     await show();
     expect(await screen.findByText(t('buildProgram.line'))).toBeOnTheScreen();
-    expect(screen.getByText(t('editProgram.back'))).toBeOnTheScreen();
+    expect(screen.queryByText('Back')).toBeNull();
+    expect(await systemBack()).toBe('left');
   });
 
   test('not while the program is still being read, and not when it failed to load', async () => {
@@ -599,15 +624,17 @@ describe('training days and moves: edited here (ADR-073 #4)', () => {
       editable();
       await show();
       await rename('Chest day');
-      await fireEvent.press(screen.getByText(t('editProgram.back')));
+      expect(await systemBack()).toBe('stopped');
       expect(router.back).not.toHaveBeenCalled();
       expect(screen.getByText(t('editProgram.leaveWarn'))).toBeTruthy();
       await fireEvent.press(screen.getByText(t('editProgram.keepEditing')));
       expect(screen.queryByText(t('editProgram.leaveWarn'))).toBeNull();
       expect(screen.getByLabelText(t('programEditor.dayName'))).toHaveProp('value', 'Chest day');
-      await fireEvent.press(screen.getByText(t('editProgram.back')));
+      expect(await systemBack()).toBe('stopped');
       await fireEvent.press(screen.getByText(t('editProgram.leave')));
       expect(router.back).toHaveBeenCalledTimes(1);
+      // "Leave without saving" is the one way out that lets the system back through.
+      expect(await systemBack()).toBe('left');
     });
 
     test('Back warned, then Save: the warning goes (a failed save keeps the edits, and the warning is stale)', async () => {
@@ -618,7 +645,7 @@ describe('training days and moves: edited here (ADR-073 #4)', () => {
       });
       await show();
       await rename('Chest day');
-      await fireEvent.press(screen.getByText(t('editProgram.back')));
+      await systemBack();
       expect(screen.getByText(t('editProgram.leaveWarn'))).toBeTruthy();
       await save();
       expect(await screen.findByText(t('editProgram.offline'))).toBeTruthy();
@@ -631,7 +658,7 @@ describe('training days and moves: edited here (ADR-073 #4)', () => {
       editable();
       await show();
       await rename('Chest day');
-      await fireEvent.press(screen.getByText(t('editProgram.back')));
+      await systemBack();
       expect(screen.getByText(t('editProgram.leaveWarn'))).toBeTruthy();
       await rename('Chest day 2');
       expect(screen.queryByText(t('editProgram.leaveWarn'))).toBeNull();
@@ -651,15 +678,26 @@ describe('training days and moves: edited here (ADR-073 #4)', () => {
       expect(mockScreenOptions?.gestureEnabled).toBe(true);
     });
 
-    test('nothing to lose: Back goes at once', async () => {
+    test('nothing to lose: the system back goes at once, with no question', async () => {
       mockParams = { part: 'days' };
       editable();
       await show();
       await screen.findByText('Upper');
       await rename('Upper ');
-      await fireEvent.press(screen.getByText(t('editProgram.back')));
-      expect(router.back).toHaveBeenCalledTimes(1);
+      expect(await systemBack()).toBe('left');
       expect(screen.queryByText(t('editProgram.leaveWarn'))).toBeNull();
+    });
+
+    test('once saved there is nothing to lose: the system back goes at once', async () => {
+      mockParams = { part: 'days' };
+      editable();
+      mockPatch.mockImplementationOnce(async () => ({ data: AFTER, response: { status: 200 } }));
+      await show();
+      await rename('Chest day');
+      expect(await systemBack()).toBe('stopped');
+      await save();
+      expect(await screen.findByText(t('editProgram.saved'))).toBeTruthy();
+      expect(await systemBack()).toBe('left');
     });
   });
 
@@ -1115,7 +1153,7 @@ describe('walkthrough round 3: Edit program (K-1013)', () => {
       // The mocked ScrollView's scrollTo is a jest.fn shared by its instances.
       const scrolled = ScrollView.prototype.scrollTo as unknown as jest.Mock;
       scrolled.mockClear();
-      await fireEvent.press(screen.getByText(t('editProgram.back')));
+      await systemBack();
       expect(order().indexOf(t('editProgram.leaveWarn'))).toBeLessThan(order().indexOf(t('editProgram.save')));
       expect(order().indexOf(t('editProgram.leaveWarn'))).toBeLessThan(order().indexOf('Lower'));
       expect(screen.queryByText(t('editProgram.unsavedNote'))).toBeNull(); // not said twice
