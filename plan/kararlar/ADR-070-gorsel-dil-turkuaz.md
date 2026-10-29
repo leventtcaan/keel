@@ -70,3 +70,35 @@ dokunacaktı. Koyu temada `decisionText` zeminle aynı (`#0E1010`): sayfadaki se
 Tema tercihi telefonda (`appearance` anahtarı, veri envanteri) ve oturum kapanınca silinir: sonraki kişi Light ile başlar.
 Uygulama seçimi iOS'a da bildirir (`Appearance.setColorScheme`; System → `unspecified`): durum çubuğu, sekme çubuğu ve sayfalar sayfayla aynı
 temada. Levent `#007C8C`'yi dolgu için korumak isterse ayrı bir metin token'ı eklenir (vurgu metni ~20 dosyada).
+
+## Ek 2 · Tek bileşen sistemi (yeniden yapım Evre 2, 2026-10-29, agent; Levent: ara kapı yok, tasarım kararı agent'ta)
+Envanter (`plan/envanter-2026-10-29.md` T-1..T-6, T-11, T-13, T-14): düğme dili ekrandan ekrana değişiyor; `Button` birincil varyantı açık temada
+turkuaz dolgu (bu ADR'nin #2'si siyah diyor, `cta` token'ı tanımlı ama kullanılmıyor); kodda 164 `ghost` (çerçeveli hap) düğme, "her şey hap"
+izleniminin kaynağı; yıkıcı eylemler kırmızı değil; üç ayrı stepper; dört geri dönüş biçimi; ayarlar ayrık haplar; ikon yok.
+Karar, sistem önce (bileşenler), ekranlar sonra:
+1. **Düğme rolleri dört, görünüm rolden gelir:**
+   - **Birincil** (`cta`: açıkta siyah, koyuda turkuaz; koyu odak modunda turkuaz): ekranda en çok bir tane, ekranın asıl eylemi. Boy 54 pt,
+     tam genişlik, ekranın altında (dock) ya da kendi kartının altında.
+   - **İkincil** (yüzey dolgu, çerçevesiz, mürekkep metin): birincilin yanındaki alternatif ("Not now", "Change", "Skip"). 54 pt yanında, 44 pt tek başına.
+   - **Metin** (turkuaz metin, dolgu ve çerçeve yok, en az 44 pt dokunma): satır içi eylemler ("Edit", "Undo", "View", "How to", "Restore purchases").
+   - **Yıkıcı** (uyarı rengi metin, dolgu yok): yıkıcı eylemi başlatır ("Delete account", "Discard workout", "Remove"); onayı sistem uyarısıdır (ADR-087).
+     Dolu kırmızı düğme yok.
+   Çerçeveli hap (`ghost`) kalkar; seçim çipi (`Chip`) ayrı bileşendir ve yalnız seçim içindir (öğün, birim, süre), eylem için değil.
+2. **Liste:** Ayarlar ve benzeri yerlerde **gruplu liste**: bölüm başlığı (küçük, yarı kalın, mürekkep), altında tek yüzey kartı, satırlar ince
+   çizgiyle ayrılır. Satır: sol ikon (isteğe bağlı) + etiket + sağda değer; gezinen satırda chevron, gezinmeyende yok; açma/kapama `Switch`.
+   Açıklama paragrafı satırın altında en çok bir satır, gerisi alt sayfaya.
+3. **İkon:** SF Symbols (`expo-symbols`), tek ağırlık (medium), tek boy ailesi (20/24). "+" sayfası ve Log seçenekleri, hedef/deneyim/aktivite
+   seçenekleri, gruplu liste satırları ikonlu. Hareket ikonu yalnız ekipman sınıfını söyler (barbell, dumbbell, makine, kablo, vücut ağırlığı); emin
+   olunmayan hareket ikonsuz kalır, rastgele ikon yok.
+4. **Geri dönüş tek biçim:** yığın ekranında sistem geri düğmesi (başlık çubuğu, "‹" + önceki ekranın adı); sheet'te sağ üstte "Done" (metin düğme)
+   ya da aşağı kaydırma. Ekran içinde "Back" düğmesi yok.
+5. **Stepper tek bileşen:** − değer + ; değere dokununca sayı klavyesi açılır (yazılabilir, virgül ve nokta); adımlar parametreden.
+   Başlangıç ağırlığı "+" ile 20 kg'dan değil, hareketin tipik başlangıç değerinden (parametre) başlar.
+6. **Onay ve geri al tek desen:** kayıt (tartı, kardiyo, yemek, set) sonrası ekranın altında kısa bant "Saved · Undo" (birkaç saniye), sayfa kapanır;
+   ayrı "Saved" sayfası yok.
+7. **Boşluk ve yazı ölçeği** mevcut token'lar (space xs-xl, type), yeni değer yok; ekran başlığı Barlow Condensed büyük harf, bölüm başlığı sistem
+   yarı kalın 13 pt mürekkep (gri değil).
+8. **Kart yalnız rolüyle:** karar bloğu (ters), bugünün antrenmanı, bir grup liste; her bölüm kart değil. Bölüm başlığı + içerik kartsız durabilir.
+Uygulama sırası: `Button` rolleri + `ListGroup/ListRow` + `Stepper` + `Icon` + `UndoBanner` bileşenleri ve testleri, sonra ekranlar (Ayarlar ve Account,
+"+" sayfası, This Week bölümleri, antrenman başlığı, yemek, onaylar). Prototip (`prototip/yeni-yuz.html` › Evre 2 ekranları) önce, kod sonra;
+her ekran simülatör görüntüsü prototiple yan yana envanterde.
