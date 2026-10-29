@@ -78,3 +78,9 @@ gram), kayıt hatırlatması yok, 7 gün antrenman akışı yok.
 - **Bilinen sınırlar (Ek 3):** This week'teki "Food left" satırı hâlâ aralık gösterir (karar/özet yüzeyi, #5'in "karar ekranında" kapsamı; Levent isterse tek sayıya çevrilir) ·
   öğün hatırlatması öğrenmesi geçmiş güne yazılan kayıtları da sayar (sabit saatle yazıldıkları için medyanı biraz çeker) · hatırlatma yalnız uygulama açılınca tazelenir
   (bugün ve yarın tarihle planlıdır; birkaç gün açılmazsa son bilinen öğünlerle çalar) · gün toplamı ve öğün başı ipucu hedef yoksa gösterilmez (yalnız yenen).
+
+## Ek 4 · Levent onayları (30 Eki 2026, build 9)
+- Antrenman hatırlatmasının varsayılan saati 18:00 kalır (`default_training_time`); onboarding saat sormaz, Ayarlar › Your routine değiştirir.
+- 7 günlük şablon ve 40 hareketin kendine ait ipuçları v1'de bu hâliyle çıkar; koçluk gözden geçirmesi sonra.
+- Kullanıcının kendi programına "Add a day" ile gün eklenir (ADR-073 Ek 9'daki 409 kalkar); sunucu yeni günü doldurur, mevcut günlere dokunmaz.
+- Evre 6 K1 test beklentisi değişiklikleri (#676 #677 #681 #683 #685 #686 #687) onaylı (Levent 29 Eki genel onayı, `.envanter/notes.md`).
