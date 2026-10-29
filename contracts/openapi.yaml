@@ -845,21 +845,23 @@ paths:
     post:
       tags: [training]
       operationId: addProgramDay
-      summary: Add a training day on a weekday; the server fills it from the program's own generator (K-1012)
+      summary: Add a training day on a weekday; the server fills it from the program's own generator (K-1012, K-1060)
       description: |
-        One more training day on the weekday (ADR-073 Ek 9), for the first week's "add a day" call (ADR-077 Ek 1): the user picks
-        the day, the server has the content (the app never makes it up). Only a generated program of two days gets its day
-        here, to three (`add_day_from_days`): the day is what the generator gives that weekday for the program's weekdays plus
-        this one, picked by its place in the week and not by what the program already trains, and only that step was checked to
-        come out balanced. The day is the program template for one more day at this weekday's place in the week, with its name
-        (`nameKey`), moves, sets, rep ranges and RIR target; a move the program has a starting weight for has it as its first
-        target in the day too, and one without has none. Every day the program has, and each of its moves' rows, targets and
-        starting weights, stay as they are (ids too); the program keeps its id and source. It is a change of the change log
-        (`Program.review.edits`), undone with POST /v1/program/review/undo by its id, which takes the day out again; the review
-        runs again on the program with the day. The call it came from stays as it was (NOT_NEEDED): the day is the user's touch.
-        CONFLICT (409), nothing changed: the program does not have two days (add the day with PATCH /v1/program, Edit), the
-        weekday is already a day of the program, the program has a day on no weekday, or it is the user's own program
-        (`Program.source` OWN: the generator has no split of theirs to fill from; add the day with PATCH /v1/program).
+        One more training day on the weekday (ADR-073 Ek 9, ADR-090 Ek 1): the one way a day is added, from the Train tab, from
+        Edit and from the first week's "add a day" call (ADR-077 Ek 1). The user picks the weekday, the server has the content (the
+        app never makes it up): the generator's, with its name (`nameKey`), moves, sets, rep ranges and RIR target.
+        A program as the generator made it (nobody changed its days or moves) becomes the program for one more day on its weekdays
+        and this one, since the day is picked by its place in the week and adding it to the old split alone can leave two lower days
+        in a row; each of its days stays on its weekday with its id, and a move the new program has again keeps its row, target and
+        starting weight. A program the user changed or brought (`Program.source` OWN, an edit, a swap from now on, a review change)
+        keeps every day, move, target and starting weight as it is, and the new day is the generator's day for one more day at this
+        weekday's place in the week. In both, a move the program has a starting weight for has it as its first target in the new day
+        too, and one without has none. The program keeps its id and source. It is a change of the change log (`Program.review.edits`),
+        undone with POST /v1/program/review/undo by its id, which takes the day out (a replanned program: back whole, as it was); the
+        review runs again. The call it came from stays as it was (NOT_NEEDED): the day is the user's touch. The profile's
+        `schedule.trainingDays` follows the program's weekdays.
+        CONFLICT (409), nothing changed: the weekday is already a day of the program, the program has a day on no weekday, there is no
+        program for one more day (seven days are the most), or a workout of a day the add would change was started today.
         VALIDATION_FAILED: no weekday. NOT_FOUND: no program.
       requestBody:
         required: true
@@ -2379,6 +2381,10 @@ components:
       properties:
         trainingDays:
           type: array
+          description: |
+            The weekdays the user trains. Once there is a program, the program is where they are made and changed, and this list
+            follows the program's weekdays on every change of its days (ADR-090 Ek 1), so a profile read never disagrees with the
+            program. Saved before the program is made, it is what the program is built from.
           uniqueItems: true
           items:
             $ref: "#/components/schemas/Weekday"
@@ -2997,11 +3003,11 @@ components:
         canAddDay:
           type: boolean
           description: |
-            Whether POST /v1/program/days can add a day to this program (K-1013, ADR-073 Ek 9): a generated program of
-            `add_day_from_days` days, each on its own weekday. The same rule that endpoint answers with, so the app offers
-            "add a day" only where it works and sends the user to Edit otherwise (the app holds no rule of its own). The
-            endpoint can still answer CONFLICT for a weekday the program trains already. This server always sends it; absent
-            (an older server) means not known: the app adds the day in Edit.
+            Whether POST /v1/program/days can add a day to this program (K-1013, K-1060, ADR-073 Ek 9, ADR-090 Ek 1): each of its days
+            on its own weekday and a program for one more day (below seven days). The same rule that endpoint answers with, so the app
+            offers "add a day" only where it works (the app holds no rule of its own). The endpoint can still answer CONFLICT for a
+            weekday the program trains already. This server always sends it; absent (an older server) means not known: the app adds the
+            day in Edit.
     ProgramReview:
       type: object
       description: |
@@ -3721,9 +3727,9 @@ components:
       properties:
         trainingDays:
           type: array
-          description: 1 to 6 days; seven leave no rest day (G1 K-70).
+          description: 1 to 7 days; seven is the user's choice, with a short note on the screen (ADR-090 #3).
           minItems: 1
-          maxItems: 6
+          maxItems: 7
           uniqueItems: true
           items:
             $ref: "#/components/schemas/Weekday"
