@@ -141,6 +141,22 @@ class MealSuggestionsTests {
     }
 
     @Test
+    void theUsualFoodsOfASlotCountOnlyTheMealsHadThereAndASlotNobodyAteInHasNone() {
+        List<MealStore.Meal> meals = List.of(
+                meal(1, MealStore.Slot.BREAKFAST, item("oats", "Oats", "50", "g")),
+                meal(2, MealStore.Slot.BREAKFAST, item("oats", "Oats", "50", "g"), item("egg", "Egg", "2", "piece")),
+                meal(3, MealStore.Slot.DINNER, item("rice", "Rice", "150", "g"), item("egg", "Egg", "3", "piece")),
+                meal(4, MealStore.Slot.DINNER, item("rice", "Rice", "150", "g")));
+
+        List<MealSuggestions.Usual> breakfast = MealSuggestions.usual(meals, Optional.of(MealStore.Slot.BREAKFAST), List.of(), id -> List.of());
+
+        assertThat(breakfast).extracting(MealSuggestions.Usual::foodId).as("only what was had at breakfast, the most often first").containsExactly("oats", "egg");
+        assertThat(breakfast.get(1).amount().quantity()).as("the egg's amount at breakfast, not the dinner's 3").isEqualByComparingTo("2");
+        assertThat(MealSuggestions.usual(meals, Optional.of(MealStore.Slot.SNACK), List.of(), id -> List.of())).isEmpty();
+        assertThat(MealSuggestions.usual(meals, Optional.empty(), List.of(), id -> List.of())).hasSize(3);
+    }
+
+    @Test
     void noMealsIsNoRecentFoods() {
         assertThat(MealSuggestions.recent(List.of(), Optional.of(MealStore.Slot.LUNCH), List.of(), id -> List.of())).isEmpty();
     }

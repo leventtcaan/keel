@@ -854,7 +854,14 @@ paths:
       description: |
         From the meals of the last `suggestion-days` (28): the most logged first (then the latest), each food once, in the amount it
         was most often had, with its kcal as the database estimates it now (a range, the phone shows the middle). Never a food in the
-        profile's foods to avoid. A few at most (`recent-foods`).
+        profile's foods to avoid. A few at most (`recent-foods`). With `slot`, only the meals had in that slot count ("Usually at
+        breakfast"): each food with the amount and the times it had there; a slot nobody ate in has none (no fallback to the others).
+      parameters:
+        - name: slot
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/MealSlot"
       responses:
         "200":
           description: The frequent foods, in order
@@ -3059,6 +3066,10 @@ components:
         kcal:
           $ref: "#/components/schemas/KcalRange"
         proteinG:
+          $ref: "#/components/schemas/GramRange"
+        carbsG:
+          $ref: "#/components/schemas/GramRange"
+        fatG:
           $ref: "#/components/schemas/GramRange"
     EstimatedItem:
       type: object
