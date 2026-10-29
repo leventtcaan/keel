@@ -218,6 +218,15 @@ describe('a result row', () => {
   });
 });
 
+// K-1052: a value sent back on every key raced fast typing and dropped letters on the phone (14 typed, 1 kept). The field
+// holds the words itself; only an empty box is sent, so a pick still empties it.
+test('the field keeps the words itself while it holds any; the screen only empties it', async () => {
+  await show();
+  expect(field().props.value).toBe('');
+  await type('chicken breast');
+  expect(field().props.value).toBeUndefined();
+});
+
 describe('the buttons', () => {
   test('there is no Search button any more; Scan stays', async () => {
     await show();
