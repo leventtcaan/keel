@@ -100,5 +100,5 @@ Karar, sistem önce (bileşenler), ekranlar sonra:
    yarı kalın 13 pt mürekkep (gri değil).
 8. **Kart yalnız rolüyle:** karar bloğu (ters), bugünün antrenmanı, bir grup liste; her bölüm kart değil. Bölüm başlığı + içerik kartsız durabilir.
 Uygulama sırası: `Button` rolleri + `ListGroup/ListRow` + `Stepper` + `Icon` + `UndoBanner` bileşenleri ve testleri, sonra ekranlar (Ayarlar ve Account,
-"+" sayfası, This Week bölümleri, antrenman başlığı, yemek, onaylar). Prototip (`prototip/yeni-yuz.html` › Evre 2 ekranları) önce, kod sonra;
+"+" sayfası, This Week bölümleri, antrenman başlığı, yemek, onaylar). Prototip önce, kod sonra: Evre 2 ekranları `prototip/yeniden-yapim.html` (bu ekranlarda `yeni-yuz.html`in yerine geçer; 28 çerçeve, açık/koyu);
 her ekran simülatör görüntüsü prototiple yan yana envanterde.
