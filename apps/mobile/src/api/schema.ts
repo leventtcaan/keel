@@ -693,12 +693,13 @@ export interface paths {
          * @description One more training day on the weekday (ADR-073 Ek 9, ADR-090 Ek 1): the one way a day is added, from the Train tab, from
          *     Edit and from the first week's "add a day" call (ADR-077 Ek 1). The user picks the weekday, the server has the content (the
          *     app never makes it up): the generator's, with its name (`nameKey`), moves, sets, rep ranges and RIR target.
-         *     A program as the generator made it (nobody changed its days or moves) becomes the program for one more day on its weekdays
-         *     and this one, since the day is picked by its place in the week and adding it to the old split alone can leave two lower days
-         *     in a row; each of its days stays on its weekday with its id, and a move the new program has again keeps its row, target and
-         *     starting weight. A program the user changed or brought (`Program.source` OWN, an edit, a swap from now on, a review change)
-         *     keeps every day, move, target and starting weight as it is, and the new day is the generator's day for one more day at this
-         *     weekday's place in the week. In both, a move the program has a starting weight for has it as its first target in the new day
+         *     A program as the generator made it (nobody changed its days or moves), other than one of two days (`add_day_balanced_days`:
+         *     the first week's step, measured to balance as an add), becomes the program for one more day on its weekdays and this one,
+         *     since the day is picked by its place in the week and adding it to the old split alone can leave two lower days in a row or
+         *     a muscle short of sets; each of its days stays on its weekday with its id, and a move the new program has again keeps its
+         *     row, target and starting weight. A program of two days, one the user changed or brought (`Program.source` OWN, an edit, a
+         *     swap from now on, a review change), or any program while a workout of today is started, keeps every day, move, target and
+         *     starting weight as it is, and the new day is the generator's day for one more day at this weekday's place in the week. In both, a move the program has a starting weight for has it as its first target in the new day
          *     too, and one without has none. The program keeps its id and source. It is a change of the change log (`Program.review.edits`),
          *     undone with POST /v1/program/review/undo by its id, which takes the day out (a replanned program: back whole, as it was); the
          *     review runs again. The call it came from stays as it was (NOT_NEEDED): the day is the user's touch. The profile's
