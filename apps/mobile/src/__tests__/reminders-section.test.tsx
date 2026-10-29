@@ -245,3 +245,43 @@ describe('the routine page (RoutineEditor)', () => {
     expect(mockBack).not.toHaveBeenCalled();
   });
 });
+
+// The fourth kind (ADR-090 #2, K-1063).
+describe('the meal reminder, the fourth kind', () => {
+  const meals = () => screen.getByRole('switch', { name: t('settings.reminders.meals') });
+
+  test('the list says four kinds in one line, and the meal reminder has its own row', async () => {
+    await show();
+    expect(screen.getByText(t('settings.reminders.kinds'))).toBeTruthy();
+    expect(t('settings.reminders.kinds')).toMatch(/meals/);
+    expect(t('settings.reminders.what', { minutes: P.trainingLeadMinutes })).toMatch(/^Four reminders/);
+    expect(meals()).toBeTruthy();
+  });
+
+  test('with reminders off the meal row is off and cannot be switched; it waits for the rest', async () => {
+    await show();
+    expect(meals()).toHaveProp('value', false);
+    expect(meals()).toHaveProp('disabled', true);
+  });
+
+  test('with reminders on it is on with them, and off on its own it leaves the other kinds alone', async () => {
+    mockSettings = { enabled: true, cue: '' };
+    mockPermission = { granted: true, canAskAgain: false };
+    const setMeals = jest.fn(async (on: boolean) => mockChange(on ? { mealsOff: undefined } : { mealsOff: true }));
+    (mockServices.reminders as unknown as { setMeals: typeof setMeals }).setMeals = setMeals;
+    await show();
+    expect(meals()).toHaveProp('value', true);
+    await act(async () => fireEvent(meals(), 'valueChange', false));
+    expect(setMeals).toHaveBeenCalledWith(false);
+    expect(meals()).toHaveProp('value', false);
+    expect(reminders()).toHaveProp('value', true);
+  });
+
+  test('"Turn on all four" names the kinds when the check-in morning was on alone', async () => {
+    mockSettings = { enabled: true, cue: '', only: 'check_in' };
+    mockPermission = { granted: true, canAskAgain: false };
+    await show();
+    expect(screen.getByRole('button', { name: t('settings.reminders.turnOnAll') })).toBeTruthy();
+    expect(t('settings.reminders.turnOnAll')).toBe('Turn on all four');
+  });
+});

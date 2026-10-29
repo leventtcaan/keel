@@ -1,8 +1,8 @@
 /**
  * Correcting a meal is first class (K-407; I2 A0: one log in five was corrected, and being able to was what users
- * trusted). A logged meal opens with its items and amounts; saving replaces it — the old one deleted on the server first,
- * then the new one saved on the phone with the same time, so a failure never leaves two. Deleting asks first, in the
- * system's alert (ADR-087 #1, K-1048). The contract has no update, and the delete needs the server: offline it says so and
+ * trusted). A logged meal opens with its items and amounts; saving changes it where it stands (K-1063: PATCH /v1/meals/{id},
+ * nothing deleted and logged again, so a change the server refuses leaves the meal as it was). Deleting asks first, in the
+ * system's alert (ADR-087 #1, K-1048), and the app's banner offers Undo. Changing needs the server: offline it says so and
  * changes nothing.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
@@ -14,7 +14,7 @@ import { t } from '@/copy';
 import { handOffMeal, takeMeal } from '@/food/handoff';
 import { ThemeProvider } from '@/theme/theme';
 
-import { WithSaved, banner } from './support/saved';
+import { WithSaved, banner, undoButton } from './support/saved';
 
 type Schemas = components['schemas'];
 type Answer = { data?: unknown; error?: { code: string; message: string }; response: Response };
@@ -39,13 +39,20 @@ const MEAL: Schemas['Meal'] = {
 const calls: string[] = [];
 let mockDelete: () => Promise<Answer> = async () => ({ response: new Response(null, { status: 204 }) });
 const mockPUT = jest.fn(async (_path: string, _init?: unknown) => ok({ kind: 'HEALTH_DATA', status: 'GRANTED' }));
-const mockGET = jest.fn(async (_path: string, _init?: unknown) => ok([MEAL]));
+// K1 (K-1063): the screen reads more than the meal (the foods, the starred, the most logged); only /v1/meals answers with meals.
+const answerGet = async (path: string, _init?: unknown): Promise<Answer> => (path === '/v1/meals' ? ok([MEAL]) : path.startsWith('/v1/foods/') && path !== '/v1/foods/{id}' ? ok([]) : refused(404, 'NOT_FOUND'));
+const mockGET = jest.fn(answerGet);
 const mockDELETE = jest.fn(async (path: string, _init?: unknown) => {
   calls.push(path);
   return mockDelete();
 });
 let mockEstimate: () => Promise<Answer> = async () => ok({ items: [], kcal: R(1, 2), proteinG: R(0, 1) });
 const mockPOST = jest.fn(async (_path: string, _init?: unknown) => mockEstimate());
+let mockPatch: () => Promise<Answer> = async () => ok(MEAL);
+const mockPATCH = jest.fn(async (path: string, _init?: unknown) => {
+  calls.push(`PATCH ${path}`);
+  return mockPatch();
+});
 const mockForget = jest.fn(async (_clientId: string) => {});
 const mockRecord = jest.fn(async (_record: unknown) => {
   calls.push('record');
@@ -57,7 +64,7 @@ let mockGranted = true;
 jest.mock('expo-crypto', () => ({ randomUUID: () => jest.requireActual<typeof import('node:crypto')>('node:crypto').randomUUID() }));
 jest.mock('expo-router', () => ({ router: { back: () => mockBack(), push: jest.fn() }, useLocalSearchParams: () => mockParams }));
 const mockServices = {
-  api: { GET: mockGET, POST: mockPOST, PUT: mockPUT, DELETE: mockDELETE },
+  api: { GET: mockGET, POST: mockPOST, PUT: mockPUT, DELETE: mockDELETE, PATCH: mockPATCH },
   queue: { record: mockRecord },
   forgetRecord: mockForget,
   consents: { granted: async () => mockGranted, remember: jest.fn() },
@@ -71,10 +78,12 @@ beforeEach(() => {
   jest.clearAllMocks();
   calls.length = 0;
   mockDelete = async () => ({ response: new Response(null, { status: 204 }) });
-  mockParams = { edit: 'm1', day: '2026-09-29' };
+  mockPatch = async () => ok(MEAL);
+  // K1 (K-1063): items fold but the one opened; the correction opens on the first item.
+  mockParams = { edit: 'm1', day: '2026-09-29', item: '0' };
   mockGranted = true;
   mockEstimate = async () => ok({ items: [], kcal: R(1, 2), proteinG: R(0, 1) });
-  mockGET.mockImplementation(async () => ok([MEAL]));
+  mockGET.mockImplementation(answerGet);
   mockPUT.mockImplementation(async () => ok({ kind: 'HEALTH_DATA', status: 'GRANTED' }));
 });
 
@@ -109,31 +118,32 @@ async function show() {
   );
   await act(async () => {});
 }
+/** Opens a folded item (only the open one shows its amount). */
+const openItem = async (name: string) => act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.item.open', { name }) })));
 const amountField = (name: string) => screen.getByLabelText(t('meal.item.amount', { name }));
 
-test('the meal opens as it was logged: its slot, its items, their amounts, units and weighing', async () => {
+test('the meal opens as it was logged: its slot, its items, their amounts, units and weighing; the others fold to a line', async () => {
   await show();
   expect(mockGET).toHaveBeenCalledWith('/v1/meals', { params: { query: { day: '2026-09-29' } } });
   expect(screen.getByText(t('meal.editTitle'))).toBeOnTheScreen();
   expect(screen.getByRole('button', { name: t('food.slot.BREAKFAST') })).toBeSelected();
   expect(amountField('Oats, rolled').props.value).toBe('80');
-  expect(amountField('Milk, whole').props.value).toBe('1');
   expect(screen.getByRole('switch', { name: t('meal.item.weighedSpoken', { name: 'Oats, rolled' }) }).props.value).toBe(true);
+  expect(screen.queryByLabelText(t('meal.item.amount', { name: 'Milk, whole' }))).toBeNull();
+  await openItem('Milk, whole');
+  expect(amountField('Milk, whole').props.value).toBe('1');
   expect(screen.getByRole('button', { name: t('meal.item.unitSpoken', { name: 'Milk, whole', unit: '1 cup' }) })).toBeSelected();
 });
 
-test('saving replaces it: the old one deleted on the server first, then the new one saved with the same time; a correction closes with no banner (K-1044)', async () => {
+test('saving changes it where it stands: one PATCH with the items and the slot; nothing deleted, nothing logged again; no banner (K-1063)', async () => {
   await show();
   await act(async () => fireEvent.changeText(amountField('Oats, rolled'), '60'));
   await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.edit.save') })));
   expect(banner()).toBeNull();
-  expect(calls).toEqual(['/v1/meals/{id}', 'record']);
-  expect(mockDELETE).toHaveBeenCalledWith('/v1/meals/{id}', { params: { path: { id: 'm1' } } });
-  expect(mockRecord).toHaveBeenCalledWith({
-    kind: 'meal',
+  expect(calls).toEqual(['PATCH /v1/meals/{id}']);
+  expect(mockPATCH).toHaveBeenCalledWith('/v1/meals/{id}', {
+    params: { path: { id: 'm1' } },
     body: {
-      clientId: expect.any(String),
-      eatenAt: EATEN_AT,
       slot: 'BREAKFAST',
       items: [
         { foodId: 'fdc-1', amount: { quantity: 60, unit: 'g', certainty: 'WEIGHED' } },
@@ -141,29 +151,34 @@ test('saving replaces it: the old one deleted on the server first, then the new 
       ],
     },
   });
+  expect(mockDELETE).not.toHaveBeenCalled();
+  expect(mockRecord).not.toHaveBeenCalled();
   expect(mockBack).toHaveBeenCalled();
 });
 
-test('already gone on the server (deleted elsewhere): the corrected one is still saved', async () => {
-  mockDelete = async () => refused(404, 'NOT_FOUND');
+test('already gone on the server (deleted elsewhere): it says so and saves nothing', async () => {
+  mockPatch = async () => refused(404, 'NOT_FOUND');
   await show();
   await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.edit.save') })));
-  expect(mockRecord).toHaveBeenCalledTimes(1);
+  expect(screen.getByText(t('meal.edit.gone'))).toBeOnTheScreen();
+  expect(mockRecord).not.toHaveBeenCalled();
+  expect(mockBack).not.toHaveBeenCalled();
 });
 
-test('the delete not done (offline, a server error): nothing saved, it says a connection is needed, and stays', async () => {
-  mockDelete = async () => {
+test('the change not done (offline, a server error): it says a connection is needed, or that it could not be saved, and stays', async () => {
+  mockPatch = async () => {
     throw new TypeError('Network request failed');
   };
   await show();
   await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.edit.save') })));
-  expect(mockRecord).not.toHaveBeenCalled();
   expect(screen.getByText(t('meal.edit.needsConnection'))).toBeOnTheScreen();
   expect(mockBack).not.toHaveBeenCalled();
 
-  mockDelete = async () => refused(500, 'INTERNAL');
+  mockPatch = async () => refused(500, 'INTERNAL');
   await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.edit.save') })));
+  expect(screen.getByText(t('meal.saveFailed'))).toBeOnTheScreen();
   expect(mockRecord).not.toHaveBeenCalled();
+  expect(mockDELETE).not.toHaveBeenCalled();
 });
 
 test('deleting asks first, in a system alert: nothing is deleted until the destructive button; Keep it changes nothing', async () => {
@@ -185,7 +200,7 @@ test('deleting asks first, in a system alert: nothing is deleted until the destr
   expect(screen.getByRole('button', { name: t('meal.edit.delete') })).toBeOnTheScreen();
 });
 
-test('the destructive button deletes and goes back; nothing is saved', async () => {
+test('the destructive button deletes and goes back; the banner says Deleted and Undo logs the meal again as it was (K-1063)', async () => {
   await show();
   await askToDelete();
   expect(mockDELETE).not.toHaveBeenCalled();
@@ -193,15 +208,36 @@ test('the destructive button deletes and goes back; nothing is saved', async () 
   expect(mockDELETE).toHaveBeenCalledWith('/v1/meals/{id}', { params: { path: { id: 'm1' } } });
   expect(mockRecord).not.toHaveBeenCalled();
   expect(mockBack).toHaveBeenCalled();
+  expect(screen.getByText(t('food.deleted.detail', { slot: t('food.slot.BREAKFAST') }))).toBeOnTheScreen();
+  await act(async () => fireEvent.press(undoButton()));
+  expect(mockRecord).toHaveBeenCalledWith({
+    kind: 'meal',
+    body: {
+      clientId: expect.any(String),
+      eatenAt: EATEN_AT,
+      slot: 'BREAKFAST',
+      items: [
+        { foodId: 'fdc-1', amount: { quantity: 80, unit: 'g', certainty: 'WEIGHED' } },
+        { foodId: 'fdc-2', amount: { quantity: 1, unit: '1 cup' } },
+      ],
+    },
+  });
 });
 
-test('a delete that fails says so and stays', async () => {
+test('a delete that fails says so and stays; one that cannot reach the server says a connection is needed', async () => {
   mockDelete = async () => refused(500, 'INTERNAL');
   await show();
   await askToDelete();
   await confirmDelete();
-  expect(screen.getByText(t('meal.edit.needsConnection'))).toBeOnTheScreen();
+  expect(screen.getByText(t('food.deleted.failed'))).toBeOnTheScreen();
   expect(mockBack).not.toHaveBeenCalled();
+  mockDelete = async () => {
+    throw new TypeError('Network request failed');
+  };
+  alert.mockClear();
+  await askToDelete();
+  await confirmDelete();
+  expect(screen.getByText(t('meal.edit.needsConnection'))).toBeOnTheScreen();
 });
 
 test('a meal no longer there says so, with nothing to save', async () => {
@@ -228,48 +264,32 @@ test('a new meal has no delete', async () => {
   mockParams = {};
   await show();
   expect(screen.queryByRole('button', { name: t('meal.edit.delete') })).toBeNull();
-  expect(mockGET).not.toHaveBeenCalled();
+  expect(mockGET).not.toHaveBeenCalledWith('/v1/meals', { params: { query: { day: '2026-09-29' } } });
 });
 
 describe('review', () => {
-  test('a serving amount the server would refuse deletes nothing: saving waits for the server to take these amounts', async () => {
+  test('an amount the server would refuse changes nothing: the meal stays as it was, and it says it could not be saved', async () => {
     mockEstimate = async () => refused(400, 'VALIDATION_FAILED'); // 100 cups of milk: past 5000 g, the phone does not know a cup's grams here
+    mockPatch = async () => refused(400, 'VALIDATION_FAILED');
     await show();
+    await openItem('Milk, whole');
     await act(async () => fireEvent.changeText(amountField('Milk, whole'), '100'));
     await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.edit.save') })));
     expect(mockDELETE).not.toHaveBeenCalled();
     expect(mockRecord).not.toHaveBeenCalled();
-    expect(screen.getByText(t('meal.edit.notChecked'))).toBeOnTheScreen();
+    expect(screen.getByText(t('meal.saveFailed'))).toBeOnTheScreen();
+    expect(mockBack).not.toHaveBeenCalled();
   });
 
-  test('a delete whose answer was lost, but which the server did: the day read again shows it gone, so the correction is saved', async () => {
-    mockDelete = async () => {
-      throw new TypeError('Network request failed');
-    };
-    await show();
-    mockGET.mockImplementation(async () => ok([]));
-    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.edit.save') })));
-    expect(mockRecord).toHaveBeenCalledTimes(1);
-    expect(mockBack).toHaveBeenCalled();
-  });
-
-  test("the phone's copy of the replaced or deleted meal is forgotten, so it does not come back offline", async () => {
-    await show();
-    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.edit.save') })));
-    expect(mockForget).toHaveBeenCalledWith('c1');
-
-    jest.clearAllMocks();
+  test("the phone's copy of a deleted meal is forgotten, so it does not come back offline", async () => {
     await show();
     await act(async () => fireEvent.press(screen.getAllByRole('button', { name: t('meal.edit.delete') })[0]));
     await confirmDelete();
     expect(mockForget).toHaveBeenCalledWith('c1');
   });
 
-  test('the delete done but the phone could not save: it says so and stays; saving again saves it, with the same time and amounts', async () => {
-    mockRecord.mockImplementationOnce(async () => {
-      calls.push('record');
-      throw new Error('disk');
-    });
+  test('a change that failed can be saved again, with the same amounts: one meal, changed once', async () => {
+    mockPatch = async () => refused(500, 'INTERNAL');
     await show();
     await act(async () => fireEvent.changeText(amountField('Oats, rolled'), '60'));
     await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.edit.save') })));
@@ -277,21 +297,19 @@ describe('review', () => {
     expect(mockBack).not.toHaveBeenCalled();
     expect(amountField('Oats, rolled').props.value).toBe('60');
 
-    mockDelete = async () => refused(404, 'NOT_FOUND');
+    mockPatch = async () => ok(MEAL);
     await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.edit.save') })));
-    expect(calls).toEqual(['/v1/meals/{id}', 'record', '/v1/meals/{id}', 'record']);
-    expect(mockRecord).toHaveBeenLastCalledWith(expect.objectContaining({ body: expect.objectContaining({ eatenAt: EATEN_AT }) }));
+    expect(mockPATCH).toHaveBeenCalledTimes(2);
     expect(mockBack).toHaveBeenCalledTimes(1);
   });
 
-  test('save pressed twice while the delete is on its way: one delete, one meal', async () => {
+  test('save pressed twice while the change is on its way: one change', async () => {
     const answer = held<Answer>();
-    mockDelete = () => answer.promise;
+    mockPatch = () => answer.promise;
     await show();
     await pressTwice(t('meal.edit.save'));
-    await act(async () => answer.release({ response: new Response(null, { status: 204 }) }));
-    expect(mockDELETE).toHaveBeenCalledTimes(1);
-    expect(mockRecord).toHaveBeenCalledTimes(1);
+    await act(async () => answer.release(ok(MEAL)));
+    expect(mockPATCH).toHaveBeenCalledTimes(1);
     expect(mockBack).toHaveBeenCalledTimes(1);
   });
 
@@ -336,7 +354,7 @@ describe('a meal with a recipe in it (K-423)', () => {
   };
 
   test('the recipe since deleted: the item says so; nothing is saved and the logged meal is not deleted', async () => {
-    mockGET.mockImplementation(async (path: string) => (path === '/v1/recipes' ? ok([]) : ok([RECIPE_MEAL])));
+    mockGET.mockImplementation(async (path: string) => (path === '/v1/recipes' ? ok([]) : path === '/v1/meals' ? ok([RECIPE_MEAL]) : refused(404, 'NOT_FOUND')));
     mockEstimate = async () => ({ error: { code: 'VALIDATION_FAILED', message: 'x' }, response: new Response(null, { status: 400 }) });
     await render(
       <ThemeProvider>

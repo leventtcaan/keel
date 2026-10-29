@@ -69,9 +69,15 @@ export function parseQuantity(text: string): number | null {
   return Math.abs(value * factor - Math.round(value * factor)) < 1e-9 ? value : null;
 }
 
-/** The grams an amount makes: grams as they are, a serving by its own grams; null for a unit the food does not have. */
+/** What an ounce of weight is in grams (a physical constant): for a food read without portions, the server's own list has it. */
+const GRAMS_PER_OUNCE = 28.349523125;
+
+/** The grams an amount makes: by the food's own portion when it has one, else grams as they are, ounces, a serving by its own grams; null for a unit the food does not have. */
 export function amountGrams(food: Schemas['Food'], amount: Schemas['Amount']): number | null {
+  const portion = food.portions?.find((p) => p.unit === amount.unit);
+  if (portion !== undefined) return portion.grams * amount.quantity;
   if (amount.unit === 'g') return amount.quantity;
+  if (amount.unit === 'oz') return amount.quantity * GRAMS_PER_OUNCE;
   const serving = food.servings?.find((s) => s.name === amount.unit);
   return serving === undefined ? null : serving.grams * amount.quantity;
 }

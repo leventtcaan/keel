@@ -155,6 +155,15 @@ class MealSuggestionsTests {
     }
 
     @Test
+    void aQuickAddIsNeverOfferedAgainAsRecentOrUsual() {
+        // K-1063: a quick add has no food behind it; offering it would only fail when it is estimated again.
+        List<MealStore.Meal> meals = List.of(meal(1, item("quick", "Quick add", "1", "serving"), item("rice", "Rice", "100", "g")));
+
+        assertThat(ids(MealSuggestions.recent(meals, Optional.empty(), List.of(), id -> List.of()))).containsExactly("rice");
+        assertThat(MealSuggestions.usual(meals, List.of(), id -> List.of())).extracting(MealSuggestions.Usual::foodId).containsExactly("rice");
+    }
+
+    @Test
     void withNothingToAvoidNoRecipeIsLookedInto() {
         java.util.function.Function<String, List<String>> never = id -> {
             throw new AssertionError("a recipe's ingredients were read for a list that excludes nothing: " + id);

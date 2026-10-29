@@ -107,9 +107,9 @@ async function show() {
   );
   await act(async () => {});
 }
-const range = (low: number, high: number) => `${t('format.range', { low, high })} ${t('food.budget.kcalUnit')}`;
+const single = (low: number, high: number) => t('food.single.kcal', { value: Math.round((low + high) / 2) });
 
-test("today's meals with what is in them and their range; what the phone holds goes to the server first", async () => {
+test("today's meals with what is in them and their kcal as one number; what the phone holds goes to the server first", async () => {
   mockRecords = [
     {
       seq: 1,
@@ -126,11 +126,14 @@ test("today's meals with what is in them and their range; what the phone holds g
   await show();
   expect(calls.indexOf('drain')).toBeLessThan(calls.indexOf('/v1/meals'));
   expect(mockGET).toHaveBeenCalledWith('/v1/meals', { params: { query: { day: '2026-09-29' } } });
-  expect(screen.getByText(t('food.meals.title'))).toBeOnTheScreen();
+  // K1 (K-1063, ADR-090 #5): a meal is its slot (a heading) with its items under it, each with its amount and one kcal number; the
+  // "Today's meals" title is gone (the day navigator says the day).
+  expect(screen.getByRole('header', { name: t('food.slot.BREAKFAST') })).toBeOnTheScreen();
   // Food names carry commas ("Oats, rolled"): each item is its own line, so none runs into the next (simulator).
   expect(screen.getByText('Oats, rolled')).toBeOnTheScreen();
   expect(screen.getByText('Milk, whole')).toBeOnTheScreen();
-  expect(screen.getByText(range(380, 450))).toBeOnTheScreen();
+  expect(screen.getByText(single(380, 450))).toBeOnTheScreen();
+  expect(screen.getAllByText('1 g')).toHaveLength(2);
   expect(screen.getByText(t('food.meals.waiting'))).toBeOnTheScreen();
   expect(screen.getByText(t('food.slot.SNACK'))).toBeOnTheScreen();
 });
@@ -279,10 +282,10 @@ test("offline: the meals the phone holds, and no offers (yesterday's list is not
 test('a meal is logged from here: the way to the meal screen', async () => {
   await show();
   await act(async () => fireEvent.press(screen.getByRole('button', { name: t('food.log') })));
-  expect(mockPush).toHaveBeenCalledWith('/meal');
+  expect(mockPush).toHaveBeenCalledWith({ pathname: '/meal', params: { day: '2026-09-29' } });
 });
 
-test("a logged meal is one tap from its correction; one not sent yet is not (the server doesn't have it)", async () => {
+test("a logged item is one tap from its correction, in place; one not sent yet is not (the server doesn't have it)", async () => {
   mockRecords = [
     {
       seq: 1,
@@ -297,9 +300,9 @@ test("a logged meal is one tap from its correction; one not sent yet is not (the
     },
   ];
   await show();
-  // Spoken with what is in it and its range (review: the label had dropped both).
-  const spoken = t('food.meals.correct', { slot: t('food.slot.BREAKFAST'), items: 'Oats, rolled; Milk, whole', kcal: range(380, 450) });
+  // K1 (K-1063): the correction is per item now, and opens on it. Spoken with its slot, its name and its kcal.
+  const spoken = t('food.meals.correct', { slot: t('food.slot.BREAKFAST'), items: 'Milk, whole', kcal: single(1, 2) });
   await act(async () => fireEvent.press(screen.getByRole('button', { name: spoken })));
-  expect(mockPush).toHaveBeenCalledWith({ pathname: '/meal', params: { edit: 'm1', day: '2026-09-29' } });
+  expect(mockPush).toHaveBeenCalledWith({ pathname: '/meal', params: { edit: 'm1', day: '2026-09-29', item: '1' } });
   expect(screen.queryByRole('button', { name: /^Correct Snack/ })).toBeNull();
 });

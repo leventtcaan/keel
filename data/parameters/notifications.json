@@ -47,6 +47,46 @@
       "tag": "urun",
       "source": "arastirma/04-faz3-urun.md#7.4",
       "note": "During a week off (Program.restUntil) training reminders stop (ADR-037 #51b); the training days of this many weeks after it are scheduled by date, so they come back without the app being opened. The next open turns them weekly again."
+    },
+    {
+      "key": "meal_reminder_window_days",
+      "value": 14,
+      "unit": "days",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-090-evre-6-kararlari.md#Ek 3",
+      "note": "The meal reminder (the fourth kind, ADR-090 #2) learns the user's usual meal times from the logs of this many days: the median time of day of each slot's logs. Product choice, no source gives a window."
+    },
+    {
+      "key": "meal_reminder_min_logs",
+      "value": 3,
+      "unit": "count",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-090-evre-6-kararlari.md#Ek 3",
+      "note": "A slot needs at least this many logs in the window before its time counts as a habit; fewer, and the reminder says nothing about it."
+    },
+    {
+      "key": "meal_reminder_max_per_day",
+      "value": 2,
+      "unit": "count",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-090-evre-6-kararlari.md#Ek 3",
+      "note": "At most this many meal reminders a day (ADR-090 #2: a day with two prompts is a nudge, more is nagging). The slots with the most logs win."
+    },
+    {
+      "key": "meal_reminder_after_minutes",
+      "value": 30,
+      "unit": "minutes",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-090-evre-6-kararlari.md#Ek 3",
+      "note": "The reminder comes this long after the slot's usual time, and only while the slot is still empty as of the last time the app was open: a meal logged on time makes it go quiet."
+    },
+    {
+      "key": "meal_reminder_days_ahead",
+      "value": 2,
+      "unit": "days",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-090-evre-6-kararlari.md#Ek 3",
+      "note": "Meal reminders are planned by date for today and the day after, so they ring with no open needed; every open (a log, the app to the front) plans them again from what is known."
     }
   ]
 }

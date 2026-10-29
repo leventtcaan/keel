@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 class NutritionLimitsTests {
 
     private static FoodController.NutritionLimits limits(int candidates, int recent) {
-        return new FoodController.NutritionLimits(20, 50, 100, 50, new BigDecimal(5000), 50, 80, 100, 3, 28, candidates, recent);
+        return new FoodController.NutritionLimits(20, 50, 100, 50, new BigDecimal(5000), 50, 80, 100, 3, 28, candidates, recent, 62, 200, 200, 80);
     }
 
     @Test

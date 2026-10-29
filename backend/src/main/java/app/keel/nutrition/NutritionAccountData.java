@@ -12,7 +12,7 @@ import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
 /**
- * Nutrition's part of the user's data (K-214, K-209, K-413): every meal with its items, every recipe with its ingredients.
+ * Nutrition's part of the user's data (K-214, K-209, K-413): every meal with its items, every recipe with its ingredients, the user's own foods and starred foods.
  * The food database is nobody's data.
  */
 @Component
@@ -21,8 +21,12 @@ class NutritionAccountData implements AccountDataExport {
     private final JdbcClient jdbc;
     private final MealStore meals;
     private final RecipeStore recipes;
+    private final OwnFoods ownFoods;
+    private final FoodFavorites favorites;
 
-    NutritionAccountData(JdbcClient jdbc, MealStore meals, RecipeStore recipes) {
+    NutritionAccountData(JdbcClient jdbc, MealStore meals, RecipeStore recipes, OwnFoods ownFoods, FoodFavorites favorites) {
+        this.ownFoods = ownFoods;
+        this.favorites = favorites;
         this.jdbc = jdbc;
         this.meals = meals;
         this.recipes = recipes;
@@ -47,6 +51,9 @@ class NutritionAccountData implements AccountDataExport {
         jdbc.sql("delete from nutrition.meal where account_id = :account").param("account", account.value()).update();
         jdbc.sql("delete from nutrition.recipe_item where account_id = :account").param("account", account.value()).update();
         jdbc.sql("delete from nutrition.recipe where account_id = :account").param("account", account.value()).update();
+        // The user's own foods and stars are food-log data too (K-1063).
+        ownFoods.deleteAll(account);
+        favorites.deleteAll(account);
     }
 
     @Override
@@ -56,6 +63,7 @@ class NutritionAccountData implements AccountDataExport {
 
     @Override
     public Object export(AccountId account) {
-        return Map.of("meals", meals.all(account), "recipes", recipes.all(account));
+        return Map.of("meals", meals.all(account), "recipes", recipes.all(account), "ownFoods", ownFoods.all(account),
+                "favoriteFoods", favorites.all(account));
     }
 }

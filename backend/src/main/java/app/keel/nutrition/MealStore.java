@@ -42,23 +42,54 @@ class MealStore {
                 .param("id", id).param("account", account.value()).param("client", clientId)
                 .param("at", eatenAt.atOffset(ZoneOffset.UTC)).param("day", day).param("slot", slot.name()).update();
         if (created == 1) {
-            for (int i = 0; i < items.size(); i++) {
-                FoodEstimator.EstimatedItem item = items.get(i);
-                jdbc.sql("""
-                        insert into nutrition.meal_item (meal_id, account_id, seq, food_id, name, quantity, unit, certainty, kcal_low, kcal_high,
-                        protein_low, protein_high, carbs_low, carbs_high, fat_low, fat_high)
-                        values (:meal, :account, :seq, :food, :name, :quantity, :unit, :certainty, :kl, :kh, :pl, :ph, :cl, :ch, :fl, :fh)""")
-                        .param("meal", id).param("account", account.value()).param("seq", i).param("food", item.foodId())
-                        .param("name", item.name()).param("quantity", item.amount().quantity()).param("unit", item.amount().unit())
-                        .param("certainty", item.amount().certainty() == null ? null : item.amount().certainty().name())
-                        .param("kl", item.kcal().low()).param("kh", item.kcal().high()).param("pl", item.proteinG().low())
-                        .param("ph", item.proteinG().high()).param("cl", item.carbsG().low()).param("ch", item.carbsG().high())
-                        .param("fl", item.fatG().low()).param("fh", item.fatG().high()).update();
-            }
+            insertItems(account, id, items);
         }
         Meal meal = meals("m.account_id = :account and m.client_id = :client", Map.of("account", account.value(), "client", clientId))
                 .getFirst();
         return new Stored(meal, created == 1);
+    }
+
+    /**
+     * Changes a meal in place (K-1063): the new items replace the old ones (the whole list, as estimated now), the slot and the moment
+     * (with its local day) change when given. The meal keeps its id and clientId. Empty: not this account's meal.
+     */
+    @Transactional
+    Optional<Meal> update(AccountId account, UUID id, Optional<List<FoodEstimator.EstimatedItem>> items, Optional<Slot> slot,
+            Optional<Instant> eatenAt, Optional<LocalDate> day) {
+        if (find(account, id).isEmpty()) {
+            return Optional.empty();
+        }
+        if (slot.isPresent()) {
+            jdbc.sql("update nutrition.meal set slot = :slot where id = :id and account_id = :account").param("slot", slot.get().name())
+                    .param("id", id).param("account", account.value()).update();
+        }
+        if (eatenAt.isPresent() && day.isPresent()) {
+            jdbc.sql("update nutrition.meal set eaten_at = :at, day = :day where id = :id and account_id = :account")
+                    .param("at", eatenAt.get().atOffset(ZoneOffset.UTC)).param("day", day.get()).param("id", id).param("account", account.value())
+                    .update();
+        }
+        if (items.isPresent()) {
+            jdbc.sql("delete from nutrition.meal_item where meal_id = :id and account_id = :account").param("id", id).param("account", account.value())
+                    .update();
+            insertItems(account, id, items.get());
+        }
+        return find(account, id);
+    }
+
+    private void insertItems(AccountId account, UUID id, List<FoodEstimator.EstimatedItem> items) {
+        for (int i = 0; i < items.size(); i++) {
+            FoodEstimator.EstimatedItem item = items.get(i);
+            jdbc.sql("""
+                    insert into nutrition.meal_item (meal_id, account_id, seq, food_id, name, quantity, unit, certainty, kcal_low, kcal_high,
+                    protein_low, protein_high, carbs_low, carbs_high, fat_low, fat_high)
+                    values (:meal, :account, :seq, :food, :name, :quantity, :unit, :certainty, :kl, :kh, :pl, :ph, :cl, :ch, :fl, :fh)""")
+                    .param("meal", id).param("account", account.value()).param("seq", i).param("food", item.foodId())
+                    .param("name", item.name()).param("quantity", item.amount().quantity()).param("unit", item.amount().unit())
+                    .param("certainty", item.amount().certainty() == null ? null : item.amount().certainty().name())
+                    .param("kl", item.kcal().low()).param("kh", item.kcal().high()).param("pl", item.proteinG().low())
+                    .param("ph", item.proteinG().high()).param("cl", item.carbsG().low()).param("ch", item.carbsG().high())
+                    .param("fl", item.fatG().low()).param("fh", item.fatG().high()).update();
+        }
     }
 
     Optional<Meal> findByClient(AccountId account, UUID clientId) {

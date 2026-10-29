@@ -110,6 +110,12 @@ final class AccountFixture {
         // A recipe and its ingredients (K-413): health data, as meals are.
         send(account, "POST", "/v1/recipes", Map.of("clientId", UUID.randomUUID(), "name", "Chicken bowl", "portions", 2,
                 "items", List.of(Map.of("foodId", "fdc:171477", "amount", Map.of("quantity", 300, "unit", "g")))));
+        // A food of the user's own, and a star on it and on a database food (K-1063): food-log data, kept with the account as meals are.
+        MvcTestResult own = send(account, "POST", "/v1/foods", Map.of("name", "Protein bar", "servingGrams", 50, "kcal", 200, "proteinG", 20,
+                "carbsG", 20, "fatG", 6));
+        String ownFood = (String) JSON.readValue(own.getResponse().getContentAsString(), Map.class).get("id");
+        send(account, "PUT", "/v1/foods/" + ownFood + "/favorite", Map.of());
+        send(account, "PUT", "/v1/foods/fdc:171477/favorite", Map.of());
         // A state declared (K-516): sickness is health data (traveling, a busy week and a new gym are not, K-1021).
         send(account, "PUT", "/v1/state", Map.of("kind", "SICK"));
         // A day's use of the coach (K-508): a count, the account's.

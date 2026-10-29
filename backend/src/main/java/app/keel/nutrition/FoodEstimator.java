@@ -31,8 +31,17 @@ class FoodEstimator {
     record Amount(BigDecimal quantity, String unit, AmountCertainty certainty) {
     }
 
+    /** Contract QuickEntry: calories (and macros, if known) typed in with no food behind them. */
+    record QuickEntry(Integer kcal, Integer proteinG, Integer carbsG, Integer fatG) {
+    }
+
     /** Contract ItemRequest. */
-    record ItemRequest(String foodId, Amount amount) {
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    record ItemRequest(String foodId, Amount amount, QuickEntry quick) {
+
+        ItemRequest(String foodId, Amount amount) {
+            this(foodId, amount, null);
+        }
     }
 
     /** Contract EstimatedItem. */
@@ -56,6 +65,13 @@ class FoodEstimator {
     /** A recipe as an item (ADR-034): "recipe:<id>", by the portion. Contract ItemRequest.foodId. */
     static final String RECIPE = "recipe:";
     static final String PORTION = "portion";
+    /** A quick add (ADR-090): "quick", one "serving", the numbers the user typed. Contract ItemRequest.foodId. */
+    static final String QUICK = "quick";
+    static final String QUICK_NAME = "Quick add";
+    static final String QUICK_UNIT = "serving";
+    /** Physical bounds of a quick add (a day's worth of food at most; macros are grams). */
+    private static final int QUICK_KCAL_MAX = 10_000;
+    private static final int QUICK_GRAMS_MAX = 1_000;
     private static final int QUANTITY_DECIMALS = 2;
 
     private final FoodStore foods;
@@ -63,9 +79,12 @@ class FoodEstimator {
     private final Profiles profiles;
     private final FoodController.NutritionLimits limits;
     private final RecipeStore recipes;
+    private final OwnFoods ownFoods;
 
-    FoodEstimator(FoodStore foods, ParameterSet parameters, Profiles profiles, FoodController.NutritionLimits limits, RecipeStore recipes) {
+    FoodEstimator(FoodStore foods, ParameterSet parameters, Profiles profiles, FoodController.NutritionLimits limits, RecipeStore recipes,
+            OwnFoods ownFoods) {
         this.foods = foods;
+        this.ownFoods = ownFoods;
         this.recipes = recipes;
         this.parameters = parameters;
         this.profiles = profiles;
@@ -85,7 +104,12 @@ class FoodEstimator {
                 items.add(recipeItem(account, item));
                 continue;
             }
-            FoodStore.Food food = foods.find(item.foodId()).orElseThrow(() -> new ApiException(ErrorCode.VALIDATION_FAILED));
+            if (QUICK.equals(item.foodId())) {
+                // The user's own numbers: exact, and no question to ask about them.
+                items.add(quickItem(item));
+                continue;
+            }
+            FoodStore.Food food = food(account, item.foodId()).orElseThrow(() -> new ApiException(ErrorCode.VALIDATION_FAILED));
             Measured measured = measure(food, item.amount());
             FoodRanges.Nutrients nutrients = FoodRanges.item(food.per100g(), food.source(), measured.grams(), measured.certainty(), p);
             items.add(new EstimatedItem(food.id(), food.name(), item.amount(), nutrients.kcal(), nutrients.proteinG(), nutrients.carbsG(),
@@ -96,9 +120,34 @@ class FoodEstimator {
                 FoodRanges.question(forQuestion, p).map(food -> new AmountQuestion(food, GRAMS_QUESTION)));
     }
 
+    /** A food of the database, or the user's own (own:<id>; another user's is not there). */
+    Optional<FoodStore.Food> food(AccountId account, String id) {
+        return id.startsWith(OwnFoods.PREFIX) ? ownFoods.find(account, id) : foods.find(id);
+    }
+
+    /** A quick add: kcal and the macros the user knows (the rest 0), as ranges of one number each (U5: nothing is estimated). */
+    private EstimatedItem quickItem(ItemRequest item) {
+        QuickEntry quick = item.quick();
+        require(quick != null && quick.kcal() != null && quick.kcal() > 0 && quick.kcal() <= QUICK_KCAL_MAX && grams(quick.proteinG())
+                && grams(quick.carbsG()) && grams(quick.fatG()) && item.amount().quantity() != null
+                && item.amount().quantity().compareTo(BigDecimal.ONE) == 0 && QUICK_UNIT.equals(item.amount().unit()));
+        return new EstimatedItem(QUICK, QUICK_NAME, new Amount(BigDecimal.ONE, QUICK_UNIT, null), exact(quick.kcal()), exact(quick.proteinG()),
+                exact(quick.carbsG()), exact(quick.fatG()));
+    }
+
+    private static boolean grams(Integer value) {
+        return value == null || (value >= 0 && value <= QUICK_GRAMS_MAX);
+    }
+
+    private static FoodRanges.Range exact(Integer value) {
+        int v = value == null ? 0 : value;
+        return new FoodRanges.Range(v, v);
+    }
+
     /** A recipe's ingredients (ADR-034): database foods only — no recipe in a recipe. */
     Estimate ingredients(AccountId account, List<ItemRequest> requested) {
-        require(requested != null && requested.stream().allMatch(item -> item != null && item.foodId() != null && !item.foodId().startsWith(RECIPE)));
+        require(requested != null && requested.stream().allMatch(item -> item != null && item.foodId() != null && !item.foodId().startsWith(RECIPE)
+                && !QUICK.equals(item.foodId())));
         return estimate(account, requested);
     }
 

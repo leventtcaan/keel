@@ -1,5 +1,5 @@
 /**
- * The Food tab's day (K-409): what is left of today's budget as a range (U5), and the targets the calls set (K-216) —
+ * The Food page's day (K-409, K-1063): what is left of today's budget as one number (ADR-090 #5), and the targets the calls set (K-216) —
  * carbs and fat only when a split fits (no number made up), and without a calorie target only steps and training.
  */
 import { router } from 'expo-router';
@@ -92,25 +92,43 @@ test("today's day is asked for, on the phone's calendar", async () => {
   expect(mockGET).toHaveBeenCalledWith('/v1/days/{day}/budget', { params: { path: { day: '2026-09-29' } } });
 });
 
-test('what is left, as ranges (U5)', async () => {
+// K1 (ADR-090 #5, K-1063): the day's numbers are single ones where a person logs; the ranges moved into "Details". Each test below
+// keeps its question (what is left; the first day; past the target; across zero) and asks it of the single number.
+test('what is left is one number, the middle of the server range; protein, carbs and fat are eaten over target (U5 as amended)', async () => {
   await show();
-  expect(screen.getByText(range(780, 950, t('food.budget.kcalUnit')))).toBeOnTheScreen();
-  expect(screen.getByText(range(64, 80, t('food.budget.proteinUnit')))).toBeOnTheScreen();
+  expect(screen.getByText(t('food.totals.left', { value: '865', unit: t('food.budget.kcalUnit') }))).toBeOnTheScreen();
+  expect(screen.getByText('88 / 140 g')).toBeOnTheScreen();
+  // The carbs and fat targets are the plan's (Targets): 250 and 70.
+  expect(screen.getByText('115 / 250 g')).toBeOnTheScreen();
+  expect(screen.getByText('48 / 70 g')).toBeOnTheScreen();
+  expect(screen.queryByText(range(780, 950, t('food.budget.kcalUnit')))).toBeNull();
 });
 
-test('nothing logged yet: what is left is the target itself, one number, not a range of two equal ends (K-409 review)', async () => {
-  mockAnswers['/v1/days/{day}/budget'] = ok({ ...BUDGET(2300, 2300), left: { kcal: { low: 2300, high: 2300 }, proteinG: { low: 160, high: 160 } } });
+test('the ranges the numbers are the middle of open under Details, and close again', async () => {
   await show();
-  expect(screen.getByText(t('food.budget.single', { value: '2,300', unit: t('food.budget.kcalUnit') }))).toBeOnTheScreen();
-  expect(screen.getByText(t('food.budget.single', { value: '160', unit: t('food.budget.proteinUnit') }))).toBeOnTheScreen();
-  expect(screen.queryByText(range(2300, 2300, t('food.budget.kcalUnit')))).toBeNull();
+  await act(async () => fireEvent.press(screen.getByTestId('totals-detail')));
+  expect(screen.getByText(/1350-1520 kcal/)).toBeOnTheScreen();
+  expect(screen.getByText(/Left: 780-950 kcal/)).toBeOnTheScreen();
+  await act(async () => fireEvent.press(screen.getByTestId('totals-detail')));
+  expect(screen.queryByText(/1350-1520 kcal/)).toBeNull();
+});
+
+test('nothing logged yet: what is left is the target itself, one number (K-409 review)', async () => {
+  mockAnswers['/v1/days/{day}/budget'] = ok({
+    ...BUDGET(2300, 2300),
+    eaten: { kcal: { low: 0, high: 0 }, proteinG: { low: 0, high: 0 }, carbsG: { low: 0, high: 0 }, fatG: { low: 0, high: 0 } },
+    left: { kcal: { low: 2300, high: 2300 }, proteinG: { low: 160, high: 160 } },
+  });
+  await show();
+  expect(screen.getByText(t('food.totals.left', { value: '2,300', unit: t('food.budget.kcalUnit') }))).toBeOnTheScreen();
+  expect(screen.getByText('0 / 140 g')).toBeOnTheScreen();
 });
 
 test('past the target it says so plainly, by how much, and asks nothing back (U7)', async () => {
   mockAnswers['/v1/days/{day}/budget'] = ok(BUDGET(-400, -150));
   await show();
   expect(screen.getByText(t('food.budget.over'))).toBeOnTheScreen();
-  expect(screen.getByText(range(150, 400, t('food.budget.kcalUnit')))).toBeOnTheScreen();
+  expect(screen.getByText(t('food.budget.single', { value: '275', unit: t('food.budget.kcalUnit') }))).toBeOnTheScreen();
 });
 
 test('across zero, about at the target', async () => {
@@ -167,12 +185,12 @@ test('without the health data consent: one line and the way to Settings', async 
   expect(screen.getByRole('button', { name: t('today.consent.open') })).toBeOnTheScreen();
 });
 
-test("today's food: the title, the day's budget and the way to log a meal (ADR-086)", async () => {
+test("today's food: the title, the day's budget and the way to log a meal into today (ADR-086, K-1063)", async () => {
   await show();
   expect(screen.getByRole('header', { name: t('screens.food.title') })).toBeOnTheScreen();
-  expect(screen.getByText(range(780, 950, t('food.budget.kcalUnit')))).toBeOnTheScreen();
+  expect(screen.getByText(t('food.totals.left', { value: '865', unit: t('food.budget.kcalUnit') }))).toBeOnTheScreen();
   await act(async () => fireEvent.press(screen.getByRole('button', { name: t('food.log') })));
-  expect(jest.mocked(router.push)).toHaveBeenCalledWith('/meal');
+  expect(jest.mocked(router.push)).toHaveBeenCalledWith({ pathname: '/meal', params: { day: '2026-09-29' } });
 });
 
 test('a way back, as on the other screens opened from a screen', async () => {
@@ -211,7 +229,8 @@ describe('what the day can still hold (K-507)', () => {
     expect(mockGET).toHaveBeenCalledWith('/v1/days/{day}/suggestions', { params: { path: { day: '2026-09-29' } } });
     expect(screen.getByText(t('food.suggestions.title'))).toBeOnTheScreen();
     expect(screen.getByText(t('food.suggestions.item', { name: RICE.name, quantity: '150', unit: 'g' }))).toBeOnTheScreen();
-    expect(screen.getByText(range(170, 240, t('food.budget.kcalUnit')))).toBeOnTheScreen();
+    // K1 (ADR-090 #5): the middle of the range, one number.
+    expect(screen.getByText(t('food.single.kcal', { value: 205 }))).toBeOnTheScreen();
   });
 
   test('one tap: the meal screen with that food and amount, handed over in memory (V3)', async () => {

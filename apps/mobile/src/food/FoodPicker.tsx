@@ -1,18 +1,23 @@
-import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
 import type { components } from '@/api/schema';
+import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
 import { ListGroup, ListRow } from '@/components/ListGroup';
 import { t } from '@/copy';
 import { useAppServices } from '@/services/ServicesProvider';
+import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { load } from '@/today/today';
 
 import { BarcodeScanner } from './BarcodeScanner';
-import { kcalPer100g } from './kcalLine';
+import { FoodList, type FoodRowData } from './FoodList';
+import { OwnFoodForm } from './OwnFoodForm';
 import { foodParams } from './params';
 import { type RecipeMatch, recipeMatches } from './recipes';
 import { SearchField } from './SearchField';
+import { foodDetail } from './foodRows';
 
 type Schemas = components['schemas'];
 type Found =
@@ -24,8 +29,8 @@ type Found =
   | { state: 'failed' }
   | { state: 'serverError' }
   | { state: 'found'; foods: Schemas['Food'][] }
-  // A barcode not in the database (FDC is mostly US products, ADR-008), or not looked up.
-  | { state: 'notInDatabase' }
+  // A barcode not in the database, or not looked up: the product can be added by hand (never a dead end, K-1063).
+  | { state: 'notInDatabase'; gtin: string }
   // A number the server refuses as a barcode (a wrong check digit, 400): the digits, not the connection.
   | { state: 'badNumber' }
   | { state: 'barcodeFailed' };
@@ -33,25 +38,37 @@ type Found =
 type Props = {
   /** The list holds as many items as the server takes: nothing more is offered, from a barcode either. */
   full: boolean;
+  /** A food picked: added to the meal on its natural portion, open as the portion step. */
   onFood: (food: Schemas['Food']) => void;
+  /** A food logged as it stands, in one tap (the plus on a result); absent: results have no plus. */
+  onLogNow?: (food: Schemas['Food']) => void;
+  /** A quick add asked for (calories and macros typed, no food). Absent: no such button. */
+  onQuickAdd?: () => void;
+  /** What to show while the search box is empty: Recent, Frequent, Favorites, past meals (FoodBrowse). */
+  idle?: ReactNode;
   /** The user's recipes, read when a search needs them (K-423); absent where a recipe cannot be an item (a recipe's own ingredients, ADR-034 #4). */
   recipes?: () => Promise<Schemas['Recipe'][]>;
   onRecipe?: (recipe: Schemas['Recipe']) => void;
 };
 
 /**
- * Finding a food (K-407): by name in the database (ADR-008), or by a barcode read by the camera or typed — and, where
+ * Finding a food (K-407, K-1063): by name in the database (ADR-008), or by a barcode read by the camera or typed — and, where
  * it can be one, the user's own recipe by name (K-423). It searches as the user types (ADR-085): a short wait after the
  * last key, the old list gone at once, the keyboard's Search key without the wait. Each answer belongs to the search that
- * asked: a late one (slow network) never replaces a newer list, and none comes back once something was picked. Shared by
- * the meal and the recipe entry (the same item flow, K-423).
+ * asked: a late one (slow network) never replaces a newer list, and none comes back once something was picked. A result says what
+ * one portion of the food holds as single numbers ("1 large · 72 kcal · P 6 · C 0 · F 5", ADR-090 #5), with a plus that logs it
+ * as it stands. A barcode that is found goes straight to the portion step; one that is not offers "Add it" (the product from its
+ * label, the barcode filled in) and "Search instead" — never a dead end. Shared by the meal and the recipe entry (the same item flow, K-423).
  */
-export function FoodPicker({ full, onFood, recipes, onRecipe }: Props) {
+export function FoodPicker({ full, onFood, onLogNow, onQuickAdd, idle, recipes, onRecipe }: Props) {
   const { api } = useAppServices();
+  const { color } = useTheme();
   const [query, setQuery] = useState('');
   const [found, setFound] = useState<Found>({ state: 'idle' });
   const [recipeHits, setRecipeHits] = useState<RecipeMatch[]>([]);
   const [scanning, setScanning] = useState(false);
+  // The form for a food of the user's own, open from "Create my own food" or "Add it" (with the barcode that was not found).
+  const [creating, setCreating] = useState<{ gtin?: string } | null>(null);
   const searchSeq = useRef(0);
   const waiting = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -124,6 +141,10 @@ export function FoodPicker({ full, onFood, recipes, onRecipe }: Props) {
     clear();
     onFood(food);
   };
+  const logFood = (food: Schemas['Food']) => {
+    clear();
+    onLogNow?.(food);
+  };
   const pickRecipe = (recipe: Schemas['Recipe']) => {
     clear();
     onRecipe?.(recipe);
@@ -137,11 +158,12 @@ export function FoodPicker({ full, onFood, recipes, onRecipe }: Props) {
     let answer: Found | Schemas['Food'];
     try {
       const { data, response } = await api.POST('/v1/foods/barcode-lookup', { body: { gtin } });
-      answer = data ?? { state: response.status === 404 ? 'notInDatabase' : response.status === 400 ? 'badNumber' : 'barcodeFailed' };
+      answer = data ?? (response.status === 404 ? { state: 'notInDatabase', gtin } : { state: response.status === 400 ? 'badNumber' : 'barcodeFailed' });
     } catch {
       answer = { state: 'barcodeFailed' };
     }
     if (mine !== searchSeq.current) return;
+    // Found: straight to the portion step, the product on its label serving.
     if ('id' in answer) pickFood(answer);
     else setFound(answer);
   };
@@ -170,27 +192,53 @@ export function FoodPicker({ full, onFood, recipes, onRecipe }: Props) {
                       : null;
 
   // Built outside the JSX children (the raw-text guard reads them).
-  const resultList =
-    results.length === 0 ? null : (
-      <ListGroup testID="results">
-        {results.map((food) => {
-          const kcal = kcalPer100g(food);
-          return (
-            <ListRow
-              key={food.id}
-              testID={`result-${food.id}`}
-              label={food.name}
-              detail={food.brand === undefined ? kcal.written : `${food.brand} · ${kcal.written}`}
-              trailing="plus.circle.fill"
-              accessibilityLabel={t('meal.search.add', { name: food.name })}
-              // The range in words, read after the name: the label stays "Add {name}", the button's name.
-              accessibilityHint={kcal.spoken}
-              onPress={() => pickFood(food)}
-            />
-          );
-        })}
-      </ListGroup>
+  const rows: FoodRowData[] = results.map((food) => ({
+    key: food.id,
+    testID: `result-${food.id}`,
+    name: food.name,
+    detail: foodDetail(food),
+    ...(food.avoided === true ? { marker: t('meal.search.avoided') } : {}),
+    onOpen: () => pickFood(food),
+    ...(onLogNow === undefined ? {} : { onLog: () => logFood(food) }),
+    openLabel: t('meal.search.add', { name: food.name }),
+    logLabel: t('meal.search.logNow', { name: food.name }),
+  }));
+  const resultList = <FoodList testID="results" rows={rows} />;
+  // A barcode that was not found: the two ways on, in place of a dead end (K-1063).
+  const missed =
+    found.state === 'notInDatabase' && !full ? (
+      <Card testID="barcode-miss">
+        <Text style={[styles.text, { color: color.text }]}>{t('meal.barcode.missTitle')}</Text>
+        <View style={styles.buttons}>
+          <Button label={t('meal.barcode.addIt')} onPress={() => setCreating({ gtin: found.gtin })} />
+          <Button label={t('meal.barcode.searchInstead')} variant="secondary" onPress={clear} />
+        </View>
+      </Card>
+    ) : null;
+  const quickButton = onQuickAdd === undefined ? null : <Button label={t('meal.quickAdd.open')} variant="text" size="sm" onPress={onQuickAdd} />;
+  const tools =
+    full || creating !== null ? null : (
+      <View style={styles.buttons}>
+        {quickButton}
+        <Button label={t('meal.own.open')} variant="text" size="sm" onPress={() => setCreating({})} />
+      </View>
     );
+  const recipeList = recipeHits.length > 0 && !full ? <RecipeHits hits={recipeHits} onAdd={pickRecipe} /> : null;
+  const idleView = found.state === 'idle' && !full ? idle : null;
+  const scanner = scanning ? <BarcodeScanner onCode={(gtin) => void lookUpBarcode(gtin)} onClose={() => setScanning(false)} /> : null;
+  if (creating !== null) {
+    return (
+      <OwnFoodForm
+        {...(creating.gtin === undefined ? {} : { gtin: creating.gtin })}
+        initialName={creating.gtin === undefined ? query.trim() : ''}
+        onCancel={() => setCreating(null)}
+        onCreated={(food) => {
+          setCreating(null);
+          pickFood(food);
+        }}
+      />
+    );
+  }
   return (
     <View style={styles.search}>
       {/* A full list takes no more, from a barcode either. "Scan" on the screen (the meal's words are few, K-980); VoiceOver says all of it. */}
@@ -199,13 +247,16 @@ export function FoodPicker({ full, onFood, recipes, onRecipe }: Props) {
         value={query}
         onChangeText={type}
         onSearch={searchNow}
-        hint={note ?? undefined}
+        hint={missed === null ? (note ?? undefined) : undefined}
         maxLength={foodParams.searchMaxChars}
         onScan={full ? undefined : () => setScanning(true)}
       />
-      {recipeHits.length > 0 && !full && <RecipeHits hits={recipeHits} onAdd={pickRecipe} />}
+      {missed}
+      {tools}
+      {recipeList}
       {resultList}
-      {scanning && <BarcodeScanner onCode={(gtin) => void lookUpBarcode(gtin)} onClose={() => setScanning(false)} />}
+      {idleView}
+      {scanner}
     </View>
   );
 }
@@ -234,4 +285,6 @@ function RecipeHits({ hits, onAdd }: { hits: RecipeMatch[]; onAdd: (recipe: Sche
 
 const styles = StyleSheet.create({
   search: { gap: tokens.space.md },
+  buttons: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm },
+  text: { fontSize: tokens.type.body },
 });

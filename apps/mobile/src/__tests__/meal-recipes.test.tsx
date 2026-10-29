@@ -153,7 +153,8 @@ test('recipes that cannot be read (offline): the foods alone', async () => {
 
 test('read at the first search only — none without a search; unread (offline), the next search asks again', async () => {
   await show();
-  expect(mockServices.api.GET).not.toHaveBeenCalled();
+  // K1 (K-1063): the screen reads other things when it opens (the most logged, the starred, the past meals); recipes wait for a search.
+  expect(mockServices.api.GET.mock.calls.filter(([path]) => path === '/v1/recipes')).toHaveLength(0);
   mockRecipes = async () => {
     throw new TypeError('Network request failed');
   };

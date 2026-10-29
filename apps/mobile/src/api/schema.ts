@@ -477,6 +477,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * The meals of one day, or of a range of days
+         * @description Either `day`, or `from` and `to` (both included, at most 62 days apart; VALIDATION_FAILED otherwise): the phone reads
+         *     the days it shows, and the times a user usually eats (the meal reminder, ADR-090 #2), from this.
+         */
         get: operations["listMeals"];
         put?: never;
         /**
@@ -506,7 +511,13 @@ export interface paths {
         delete: operations["deleteMeal"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Change a logged meal in place (its items, slot or time); nothing is deleted and logged again
+         * @description Any of `items` (the whole new list, estimated now; exactly as when logging), `slot` and `eatenAt` (the meal moves to
+         *     that moment's local day). The meal keeps its id and clientId, so a replay of the first log still answers with it.
+         *     NOT_FOUND for a meal that is not the user's.
+         */
+        patch: operations["updateMeal"];
         trace?: never;
     };
     "/v1/days/{day}/budget": {
@@ -551,6 +562,133 @@ export interface paths {
          *     NOT_FOUND until the user has a target; CONSENT_REQUIRED without the HEALTH_DATA consent.
          */
         get: operations["getDaySuggestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/days": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Each day with a meal in a range, with what was eaten (the day strip and the past days, ADR-090)
+         * @description The days from `from` to `to` (both included, at most 62 days) that have a meal, oldest first, with the meals' count and
+         *     the day's eaten nutrients as ranges (U5; the phone shows the middle, ADR-090 #5). A day without a meal is absent.
+         *     CONSENT_REQUIRED without the HEALTH_DATA consent.
+         */
+        get: operations["listDays"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/foods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * The user's own food, from a label (name and the numbers per serving), searchable and loggable like any food
+         * @description For a product the database does not have (a barcode that was not found, a dish of one's own). Numbers are for one serving
+         *     of `servingGrams`; the server stores them per 100 g. Only the user sees it (search, barcode, estimate, favorites); it is
+         *     deleted with the account and with the HEALTH_DATA consent. Its numbers are the user's label values, so its ranges are
+         *     narrow like a product's. A barcode (`gtin`) makes the scanner find it next time.
+         */
+        post: operations["createFood"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/foods/favorites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The foods the user starred, newest star first
+         * @description CONSENT_REQUIRED without the HEALTH_DATA consent; a food gone from the database is left out.
+         */
+        get: operations["listFavoriteFoods"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/foods/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One food with its portions (to change the portion of a logged item)
+         * @description A database food, or the user's own ("own:<id>"). NOT_FOUND for a food that is not there, and for another user's own food.
+         */
+        get: operations["getFood"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/foods/{id}/favorite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Star a food (again is the same) */
+        put: operations["addFavoriteFood"];
+        post?: never;
+        /** Take the star off (not starred is the same) */
+        delete: operations["removeFavoriteFood"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/foods/frequent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The foods the user logs most often, each in its usual amount
+         * @description From the meals of the last `suggestion-days` (28): the most logged first (then the latest), each food once, in the amount it
+         *     was most often had, with its kcal as the database estimates it now (a range, the phone shows the middle). Never a food in the
+         *     profile's foods to avoid. A few at most (`recent-foods`).
+         */
+        get: operations["getFrequentFoods"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2080,6 +2218,10 @@ export interface components {
              */
             portions?: components["schemas"]["Portion"][];
             defaultAmount?: components["schemas"]["Amount"];
+            /** @description Present (true) when the name or brand holds a word of the profile's foods to avoid. The app marks it; it is not hidden. */
+            avoided?: boolean;
+            /** @description Present (true) for the user's own food (POST /v1/foods). */
+            own?: boolean;
         };
         Nutrients: {
             kcal: components["schemas"]["KcalRange"];
@@ -2149,10 +2291,48 @@ export interface components {
             /**
              * @description A food of the database, or one of the user's recipes as "recipe:<id>" (ADR-034) — then the unit is "portion"
              *     and the quantity is the portions eaten, at most the portions the recipe makes. A recipe's ingredients are
-             *     database foods only.
+             *     database foods only. The user's own food (POST /v1/foods) is "own:<id>". "quick" is a quick add (below).
              */
             foodId: string;
             amount: components["schemas"]["Amount"];
+            quick?: components["schemas"]["QuickEntry"];
+        };
+        /**
+         * @description A quick add (ADR-090): calories, and the macros if the user knows them, typed in with no food behind them. Sent with
+         *     foodId "quick" and an amount of 1 "serving". The numbers are the user's own, so they are exact (a range of one number),
+         *     and a quick add never appears in Recent or Frequent. Put back on a change, the numbers are the item's own (low = high).
+         */
+        QuickEntry: {
+            kcal: number;
+            proteinG?: number;
+            carbsG?: number;
+            fatG?: number;
+        };
+        /** @description At least one of the three. */
+        MealChange: {
+            items?: components["schemas"]["ItemRequest"][];
+            slot?: components["schemas"]["MealSlot"];
+            /** Format: date-time */
+            eatenAt?: string;
+        };
+        DaySummary: {
+            /** Format: date */
+            day: string;
+            meals: number;
+            eaten: components["schemas"]["Nutrients"];
+        };
+        /** @description A label's numbers for one serving. */
+        NewFood: {
+            name: string;
+            brand?: string;
+            /** @description The barcode the user scanned, so that it is found next time. */
+            gtin?: string;
+            /** @description What one serving weighs, from the label. */
+            servingGrams: number;
+            kcal: number;
+            proteinG: number;
+            carbsG: number;
+            fatG: number;
         };
         /** @description A food the user eats, in their usual amount, as the database estimates it now (K-507). */
         Suggestion: {
@@ -2175,6 +2355,8 @@ export interface components {
             items: components["schemas"]["EstimatedItem"][];
             kcal: components["schemas"]["KcalRange"];
             proteinG: components["schemas"]["GramRange"];
+            carbsG?: components["schemas"]["GramRange"];
+            fatG?: components["schemas"]["GramRange"];
             question?: components["schemas"]["AmountQuestion"];
         };
         /** @description The one question that would narrow the range most, about the item that dominates it. */
@@ -2204,6 +2386,8 @@ export interface components {
             items: components["schemas"]["EstimatedItem"][];
             kcal: components["schemas"]["KcalRange"];
             proteinG: components["schemas"]["GramRange"];
+            carbsG?: components["schemas"]["GramRange"];
+            fatG?: components["schemas"]["GramRange"];
         };
         NewRecipe: {
             clientId: components["schemas"]["ClientId"];
@@ -4674,8 +4858,10 @@ export interface operations {
     };
     listMeals: {
         parameters: {
-            query: {
-                day: components["parameters"]["Day"];
+            query?: {
+                day?: string;
+                from?: string;
+                to?: string;
             };
             header?: never;
             path?: never;
@@ -4683,7 +4869,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The day's meals, in time order */
+            /** @description The meals, in time order */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -4734,6 +4920,33 @@ export interface operations {
             default: components["responses"]["Error"];
         };
     };
+    updateMeal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MealChange"];
+            };
+        };
+        responses: {
+            /** @description The meal as it is now */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Meal"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
     getDayBudget: {
         parameters: {
             query?: never;
@@ -4769,6 +4982,162 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description The suggestions, in order */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Suggestion"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    listDays: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The days with meals */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DaySummary"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    createFood: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewFood"];
+            };
+        };
+        responses: {
+            /** @description The food, ready to log (`defaultAmount` is one serving) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Food"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    listFavoriteFoods: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The favorites, each with its portions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Food"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getFood: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The food */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Food"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    addFavoriteFood: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Starred */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    removeFavoriteFood: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Not starred */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getFrequentFoods: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The frequent foods, in order */
             200: {
                 headers: {
                     [name: string]: unknown;

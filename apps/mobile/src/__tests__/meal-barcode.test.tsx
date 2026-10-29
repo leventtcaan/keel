@@ -124,12 +124,69 @@ test('the same code seen many times in a moment is looked up once', async () => 
   expect(lookups()).toHaveLength(1);
 });
 
-test('not in the database: it says so and points to the search; nothing is added', async () => {
+// K1 (K-1063): a miss was a line pointing to the search; it is never a dead end now: "Add it" (the product from its label, the barcode
+// filled in) and "Search instead". The line still says the product is not in the database.
+test('not in the database: it says so, nothing is added, and offers to add the product or to search instead', async () => {
   mockLookup = async () => refused(404, 'NOT_FOUND');
   await openScanner();
   await scan('8690504000000');
-  expect(screen.getByText(t('meal.barcode.notFound'))).toBeOnTheScreen();
+  expect(screen.getByText(t('meal.barcode.missTitle'))).toBeOnTheScreen();
+  expect(screen.getByRole('button', { name: t('meal.barcode.addIt') })).toBeOnTheScreen();
+  expect(screen.getByRole('button', { name: t('meal.barcode.searchInstead') })).toBeOnTheScreen();
   expect(screen.queryByLabelText(t('meal.item.amount', { name: YOGURT.name }))).toBeNull();
+});
+
+test('Search instead clears the miss and leaves the search box ready', async () => {
+  mockLookup = async () => refused(404, 'NOT_FOUND');
+  await openScanner();
+  await scan('8690504000000');
+  await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.barcode.searchInstead') })));
+  expect(screen.queryByText(t('meal.barcode.missTitle'))).toBeNull();
+  expect(screen.getByLabelText(t('meal.search.label'))).toBeOnTheScreen();
+});
+
+test('Add it: the form with the barcode filled in; saved from the label, the product comes into the meal on its serving', async () => {
+  mockLookup = async () => refused(404, 'NOT_FOUND');
+  const created: Schemas['Food'] = {
+    id: 'own:1',
+    name: 'Zork bar',
+    own: true,
+    per100g: { kcal: R(380, 460), proteinG: R(35, 45), carbsG: R(35, 45), fatG: R(10, 14) },
+    servings: [{ name: '1 serving (50 g)', grams: 50 }],
+    portions: [{ unit: '1 serving (50 g)', label: '1 serving (50 g)', kind: 'SERVING', grams: 50, kcal: 200, proteinG: 20, carbsG: 20, fatG: 6 }],
+    defaultAmount: { quantity: 1, unit: '1 serving (50 g)' },
+  };
+  mockPOST.mockImplementation(async (path: string) => {
+    if (path === '/v1/foods/barcode-lookup') return mockLookup();
+    if (path === '/v1/foods') return ok(created);
+    return refused(404, 'NOT_FOUND');
+  });
+  await openScanner();
+  await scan('8690504000000');
+  await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.barcode.addIt') })));
+  expect(screen.getByText(t('meal.own.barcode', { gtin: '8690504000000' }))).toBeOnTheScreen();
+  await act(async () => fireEvent.changeText(screen.getByLabelText(t('meal.own.name')), 'Zork bar'));
+  await act(async () => fireEvent.changeText(screen.getByLabelText(t('meal.own.serving')), '50'));
+  await act(async () => fireEvent.changeText(screen.getByLabelText(t('meal.own.kcal')), '200'));
+  await act(async () => fireEvent.changeText(screen.getByLabelText(t('meal.own.protein')), '20'));
+  await act(async () => fireEvent.changeText(screen.getByLabelText(t('meal.own.carbs')), '20'));
+  await act(async () => fireEvent.changeText(screen.getByLabelText(t('meal.own.fat')), '6'));
+  await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.own.save') })));
+  expect(mockPOST).toHaveBeenCalledWith('/v1/foods', {
+    body: { name: 'Zork bar', gtin: '8690504000000', servingGrams: 50, kcal: 200, proteinG: 20, carbsG: 20, fatG: 6 },
+  });
+  expect(screen.getByLabelText(t('meal.item.amount', { name: 'Zork bar' })).props.value).toBe('1');
+  expect(screen.getByTestId('numbers-0')).toHaveTextContent('200 kcal');
+});
+
+test('an own food with nothing in it is not sent: the form says to check the name and the numbers', async () => {
+  mockLookup = async () => refused(404, 'NOT_FOUND');
+  await openScanner();
+  await scan('8690504000000');
+  await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.barcode.addIt') })));
+  await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.own.save') })));
+  expect(screen.getByText(t('meal.own.invalid'))).toBeOnTheScreen();
+  expect(mockPOST.mock.calls.filter(([path]) => path === '/v1/foods')).toHaveLength(0);
 });
 
 test('not looked up (offline, a code the server refuses): it says so', async () => {

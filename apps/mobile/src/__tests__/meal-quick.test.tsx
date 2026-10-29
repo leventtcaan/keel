@@ -1,7 +1,7 @@
 /**
  * A meal in two or three taps (K-980, ADR-018 Ek 1 and 3, prototype `#meal`): "Same as yesterday" for the slot, and the foods
- * eaten lately ("Recent", `GET /v1/foods/recent?slot=`, K-1025), each one tap, ranges only (U5) and no colour that judges
- * (neutral). "Same as yesterday" is yesterday's meal for a slot today has nothing in (`repeatOffers`). The first day has
+ * eaten lately ("Recent", `GET /v1/foods/recent?slot=`, K-1025, now one of four tabs, K-1063), each one tap, one kcal number
+ * (ADR-090 #5: the middle of the server's range) and no colour that judges (neutral). "Same as yesterday" is yesterday's meal for a slot today has nothing in (`repeatOffers`). The first day has
  * neither, so nothing is shown. A tap keeps the meal, leaves the sheet and the app's one banner says "Saved" with Undo
  * (K-1044; there is no "Logged" page). The full form (search, barcode, amounts) is below, as it was.
  */
@@ -23,6 +23,7 @@ type Answer = { data?: unknown; error?: { code: string; message: string }; respo
 const ok = (data: unknown): Answer => ({ data, response: new Response(null, { status: 200 }) });
 const refused = (status: number): Answer => ({ error: { code: 'X', message: 'x' }, response: new Response(null, { status }) });
 const R = (low: number, high: number) => ({ low, high });
+const single = (low: number, high: number) => t('food.single.kcal', { value: Math.round((low + high) / 2) });
 
 const YESTERDAY_LUNCH: Schemas['Meal'] = {
   id: 'm-lunch',
@@ -132,7 +133,7 @@ describe('Same as yesterday', () => {
     await show();
     expect(screen.getByText(t('food.repeat.title'))).toBeOnTheScreen();
     expect(screen.getByText('Chicken rice bowl')).toBeOnTheScreen();
-    expect(screen.getByText(`${t('format.range', { low: 610, high: 720 })} ${t('food.budget.kcalUnit')}`)).toBeOnTheScreen();
+    expect(screen.getByText(single(610, 720))).toBeOnTheScreen();
 
     await press(t('food.repeat.spoken', { slot: t('food.slot.LUNCH'), items: 'Chicken rice bowl' }));
 
@@ -166,7 +167,7 @@ describe('Same as yesterday', () => {
     mockRecent = [];
     await show();
     expect(screen.queryByText(t('food.repeat.title'))).toBeNull();
-    expect(screen.queryByText(t('meal.quick.recent'))).toBeNull();
+    expect(screen.queryByRole('button', { name: t('meal.browse.recent') })).toBeNull();
   });
 
   test('two taps at once log one meal', async () => {
@@ -183,11 +184,11 @@ describe('Same as yesterday', () => {
 });
 
 describe('the foods eaten lately', () => {
-  test('a few, each with its amount and range; one tap logs it in the slot', async () => {
+  test('a few, each with its amount and one kcal number; the plus logs it in the slot', async () => {
     await show();
-    expect(screen.getByText(t('meal.quick.recent'))).toBeOnTheScreen();
-    expect(screen.getByText(t('food.suggestions.item', { name: 'Greek yogurt', quantity: '170', unit: 'g' }))).toBeOnTheScreen();
-    expect(screen.getByText(`${t('format.range', { low: 150, high: 170 })} ${t('food.budget.kcalUnit')}`)).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: t('meal.browse.recent') })).toBeSelected();
+    expect(screen.getByText('Greek yogurt')).toBeOnTheScreen();
+    expect(screen.getByText(new RegExp(`^170 g · ${single(150, 170)} · P 16`))).toBeOnTheScreen();
 
     await press(t('food.suggestions.log', { name: 'Greek yogurt' }));
 
@@ -203,11 +204,19 @@ describe('the foods eaten lately', () => {
     expect(mockBack).toHaveBeenCalledTimes(1); // the sheet closes; the banner is the confirmation (K-1044)
   });
 
-  test('no more than the screen has room for (food.json › quick_recent_max)', async () => {
+  test('the row itself opens the portion step in the amount of its last time instead of logging', async () => {
     await show();
-    const rows = [YOGURT, BANANA, OATS].filter((s) => screen.queryByRole('button', { name: t('food.suggestions.log', { name: s.name }) }) !== null);
+    await press(t('meal.search.add', { name: 'Greek yogurt' }));
+    expect(mockRecord).not.toHaveBeenCalled();
+    expect(screen.getByLabelText(t('meal.item.amount', { name: 'Greek yogurt' })).props.value).toBe('170');
+  });
+
+  test('no more than the screen has room for (food.json › quick_recent_max): a dozen, not two', async () => {
+    expect(foodParams.quickRecentMax).toBe(12);
+    mockRecent = Array.from({ length: 14 }, (_, i) => ({ ...YOGURT, foodId: `fdc-${i}`, name: `Food ${i}` }));
+    await show();
+    const rows = screen.getAllByRole('button', { name: /^Log Food / });
     expect(rows).toHaveLength(foodParams.quickRecentMax);
-    expect(rows.map((s) => s.name)).toEqual([YOGURT, BANANA, OATS].slice(0, foodParams.quickRecentMax).map((s) => s.name));
   });
 
   test('the slot chosen is the slot logged', async () => {
@@ -225,7 +234,7 @@ describe('the foods eaten lately', () => {
     await press(t('food.slot.SNACK'));
 
     expect(mockGET).toHaveBeenCalledWith('/v1/foods/recent', { params: { query: { slot: 'SNACK' } } });
-    const shown = screen.getAllByRole('button', { name: /^Log / }).map((row) => row.props.accessibilityLabel as string);
+    const shown = screen.getAllByRole('button', { name: /^Log (Banana|Greek yogurt|Oats)$/ }).map((row) => row.props.accessibilityLabel as string);
     expect(shown[0]).toBe(t('food.suggestions.log', { name: 'Banana' }));
     expect(shown[1]).toBe(t('food.suggestions.log', { name: 'Greek yogurt' }));
   });
@@ -240,10 +249,10 @@ describe('the foods eaten lately', () => {
     expect(ids[1]).toBe(ids[0]);
   });
 
-  test('ranges only, in a neutral colour: no word or colour that judges the number (U5, U7)', async () => {
+  test('one number, in a neutral colour: no word or colour that judges the number (ADR-090 #5, U7)', async () => {
     await show();
     expect(screen.queryByText(/over|under|good|bad|too (much|many)/i)).toBeNull();
-    const range = screen.getByText(`${t('format.range', { low: 150, high: 170 })} ${t('food.budget.kcalUnit')}`);
+    const range = screen.getByText(new RegExp(single(150, 170)));
     expect(range).toHaveStyle({ color: palettes.light.muted });
     expect(range).not.toHaveStyle({ color: palettes.light.warn });
   });
@@ -342,14 +351,15 @@ describe('the amount reads clearly (K-1029, Tour 4 B10)', () => {
   test('a serving whose name starts with its count is not run together with the quantity: "Potato, baked · 1 medium"', async () => {
     mockRecent = [{ foodId: 'fdc-potato', name: 'Potato, baked', amount: { quantity: 1, unit: '1 medium', certainty: 'ESTIMATED' } as never, kcal: R(150, 170), proteinG: R(3, 5) }];
     await show();
-    expect(screen.getByText('Potato, baked · 1 medium')).toBeOnTheScreen();
+    expect(screen.getByText('Potato, baked')).toBeOnTheScreen();
+    expect(screen.getByText(/^1 medium · /)).toBeOnTheScreen();
     expect(screen.queryByText(/1 1 medium/)).toBeNull();
   });
 
   test('two of such a serving: "2 × 1 medium"', async () => {
     mockRecent = [{ foodId: 'fdc-potato', name: 'Potato, baked', amount: { quantity: 2, unit: '1 medium', certainty: 'ESTIMATED' } as never, kcal: R(300, 340), proteinG: R(6, 10) }];
     await show();
-    expect(screen.getByText('Potato, baked · 2 × 1 medium')).toBeOnTheScreen();
+    expect(screen.getByText(/^2 × 1 medium · /)).toBeOnTheScreen();
   });
 
   test('a serving named without a count keeps the quantity before it; grams stay as they are', async () => {
@@ -358,8 +368,8 @@ describe('the amount reads clearly (K-1029, Tour 4 B10)', () => {
       YOGURT,
     ];
     await show();
-    expect(screen.getByText('Chicken rice bowl · 1 bowl')).toBeOnTheScreen();
-    expect(screen.getByText('Greek yogurt · 170 g')).toBeOnTheScreen();
+    expect(screen.getByText(/^1 bowl · /)).toBeOnTheScreen();
+    expect(screen.getByText(/^170 g · /)).toBeOnTheScreen();
   });
 });
 
@@ -369,7 +379,7 @@ describe('where it is not shown', () => {
     mockRecent = refused(500);
     await show();
     expect(screen.queryByText(t('food.repeat.title'))).toBeNull();
-    expect(screen.queryByText(t('meal.quick.recent'))).toBeNull();
+    expect(screen.queryByRole('button', { name: t('meal.browse.recent') })).toBeNull();
     expect(screen.getByLabelText(t('meal.search.label'))).toBeOnTheScreen();
   });
 
@@ -384,7 +394,7 @@ describe('where it is not shown', () => {
     mockEdit = 'm-1';
     await show();
     expect(screen.queryByText(t('food.repeat.title'))).toBeNull();
-    expect(screen.queryByText(t('meal.quick.recent'))).toBeNull();
+    expect(screen.queryByRole('button', { name: t('meal.browse.recent') })).toBeNull();
   });
 
   test('once a food is being put together by hand, the quick adds step aside', async () => {
@@ -394,7 +404,7 @@ describe('where it is not shown', () => {
     await act(async () => fireEvent(screen.getByLabelText(t('meal.search.label')), 'submitEditing'));
     await press(t('meal.search.add', { name: 'Rice, white, cooked' }));
     expect(screen.queryByText(t('food.repeat.title'))).toBeNull();
-    expect(screen.queryByText(t('meal.quick.recent'))).toBeNull();
+    expect(screen.queryByRole('button', { name: t('meal.browse.recent') })).toBeNull();
   });
 });
 

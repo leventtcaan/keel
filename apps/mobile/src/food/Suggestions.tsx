@@ -9,12 +9,13 @@ import { tokens } from '@/theme/tokens';
 
 import { amountLine } from './amountText';
 import { handOffMeal } from './handoff';
+import { kcalText, mid } from './single';
 
 type Suggestion = components['schemas']['Suggestion'];
 
 /**
  * What the day can still hold (K-507, Ö-17): the user's own foods, each in their usual amount with its range from the
- * database (U1, U5). One tap opens the meal screen with it, handed over in memory (V3) — the user saves it there.
+ * database (U1), as one number (ADR-090 #5). One tap opens the meal screen with it, handed over in memory (V3) — the user saves it there.
  * Nothing fits, nothing shown: no word of a day past its target (U7).
  */
 export function Suggestions({ suggestions }: { suggestions: Suggestion[] }) {
@@ -40,7 +41,7 @@ export function Suggestions({ suggestions }: { suggestions: Suggestion[] }) {
             </Text>
           </View>
           <Text style={[styles.kcal, { color: color.text }]}>
-            {`${t('format.range', { low: suggestion.kcal.low, high: suggestion.kcal.high })} ${t('food.budget.kcalUnit')}`}
+            {kcalText(mid(suggestion.kcal))}
           </Text>
         </Pressable>
       ))}

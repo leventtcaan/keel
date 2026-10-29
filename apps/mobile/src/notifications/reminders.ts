@@ -10,6 +10,7 @@
 import type { KeyValue } from '@/units/preference';
 
 import { notificationParams as P } from './params';
+import type { MealRhythm } from './mealRhythm';
 import { type FirstCall, type Reminder, type ReminderKind, type Schedule, type WeighInFacts, planReminders } from './plan';
 
 /** What iOS answers about notifications: allowed or not, and whether its sheet can still be shown. */
@@ -26,10 +27,11 @@ export type NotificationAccess = {
 };
 
 /**
- * `only`: one kind alone, turned on that way (the plan's Monday morning switch, K-967); absent, all three. `noCalls`: the
+ * `only`: one kind alone, turned on that way (the plan's Monday morning switch, K-967); absent, all four. `mealsOff`: the meal reminder
+ * (ADR-090 #2) switched off on its own; absent, it follows the rest. `noCalls`: the
  * server makes no calls (no health data consent, K-992), so no check-in morning is planned whatever is on.
  */
-export type ReminderSettings = { enabled: boolean; cue: string; only?: ReminderKind; noCalls?: true };
+export type ReminderSettings = { enabled: boolean; cue: string; only?: ReminderKind; noCalls?: true; mealsOff?: true };
 
 type Options = {
   kv: KeyValue;
@@ -53,6 +55,8 @@ const KEY = {
   restUntil: 'reminders.restUntil',
   firstCall: 'reminders.firstCall',
   weighIns: 'reminders.weighIns',
+  meals: 'reminders.meals',
+  mealsOff: 'reminders.mealsOff',
 };
 const ON = 'on';
 
@@ -98,6 +102,17 @@ function weighInsOf(kept: string | null): WeighInFacts | null {
   }
 }
 
+/** The meal rhythm kept by an earlier run; anything that is not one counts as none. */
+function rhythmOf(kept: string | null): MealRhythm | null {
+  if (kept === null) return null;
+  try {
+    const v = JSON.parse(kept) as Partial<MealRhythm> | null;
+    return v !== null && typeof v.day === 'string' && Array.isArray(v.slots) && Array.isArray(v.loggedToday) ? (v as MealRhythm) : null;
+  } catch {
+    return null;
+  }
+}
+
 function dateOf(kept: string | null): Date | null {
   const date = kept === null ? null : new Date(kept);
   return date !== null && !Number.isNaN(date.getTime()) ? date : null;
@@ -112,6 +127,7 @@ export async function createReminders({ kv, access, now, report, muted = async (
     cue: (await kv.getItemAsync(KEY.cue)) ?? '',
     ...(keptOnly === 'check_in' ? { only: keptOnly } : {}),
     ...(firstCallOf(await kv.getItemAsync(KEY.firstCall)) === 'off' ? { noCalls: true as const } : {}),
+    ...((await kv.getItemAsync(KEY.mealsOff)) === ON ? { mealsOff: true as const } : {}),
   };
   const listeners = new Set<() => void>();
 
@@ -159,6 +175,8 @@ export async function createReminders({ kv, access, now, report, muted = async (
       restUntil: await kv.getItemAsync(KEY.restUntil),
       firstCall: firstCallOf(await kv.getItemAsync(KEY.firstCall)),
       weighInWeek: weighInsOf(await kv.getItemAsync(KEY.weighIns)),
+      meals: rhythmOf(await kv.getItemAsync(KEY.meals)),
+      mealsOff: settings.mealsOff === true,
     });
     await access.replace(settings.only === undefined ? plan : plan.filter((reminder) => reminder.kind === settings.only));
   }
@@ -295,6 +313,34 @@ export async function createReminders({ kv, access, now, report, muted = async (
         else await kv.setItemAsync(KEY.weighIns, kept);
         await reschedule();
       }),
+
+    /**
+     * The user's usual meal times and which slots today already has (ADR-090 #2, the fourth kind), learned from the meals read and
+     * kept at each read — Today, and again after a meal is saved. No permission asked and nothing sent: the plan only gains meal
+     * reminders. `era` as keepRestUntil's; the same facts again change nothing.
+     */
+    keepMealRhythm: (rhythm: MealRhythm | null, era: number = generation): Promise<void> =>
+      inTurn(async () => {
+        if (era !== generation) return;
+        const kept = rhythm === null ? null : JSON.stringify(rhythm);
+        if ((await kv.getItemAsync(KEY.meals)) === kept) return;
+        if (kept === null) await kv.removeItemAsync(KEY.meals);
+        else await kv.setItemAsync(KEY.meals, kept);
+        await reschedule();
+      }),
+
+    /** The meal reminder on or off on its own (Settings › Reminders); the others stay as they are. */
+    setMeals: (on: boolean): Promise<void> =>
+      inTurn(
+        async () => {
+          if (on) await kv.removeItemAsync(KEY.mealsOff);
+          else await kv.setItemAsync(KEY.mealsOff, ON);
+          const { mealsOff: _, ...rest } = settings;
+          become(on ? rest : { ...rest, mealsOff: true });
+          await quietly(reschedule());
+        },
+        { rethrow: true },
+      ),
 
     /** Something the plan reads changed outside this service — a state declared or ended (K-518): plan again. */
     refresh: (): Promise<void> => inTurn(() => reschedule()),
