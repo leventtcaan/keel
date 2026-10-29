@@ -1,12 +1,11 @@
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ProblemText } from '@/components/ProblemText';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
-import { CoachEntry } from '@/components/CoachEntry';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
 import type { components } from '@/api/schema';
@@ -21,9 +20,11 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
 /**
- * The Food tab's day (K-409, K-407): what is left of today's budget, as ranges (U5), today's meals, "same as yesterday"
- * one tap away, and the targets the calls set (K-216). Health data: without the consent, one line and the way to Settings;
- * nothing is logged and nothing kept on the phone without it (ADR-030 #25).
+ * Today's food (K-409, K-407; a page again, ADR-086): what is left of today's budget, as ranges (U5), today's meals, each
+ * opening its correction and delete (/meal?edit=), "same as yesterday" one tap away, and the targets the calls set (K-216).
+ * Opened from This week's food line. The AI is off on this surface (ADR-069 #3, K-909): no coach bar, no meal from a photo,
+ * no recipes; they led to screens taken off the surface. Health data: without the consent, one line and the way to
+ * Settings; nothing is logged and nothing kept on the phone without it (ADR-030 #25).
  */
 export default function FoodScreen() {
   const { color } = useTheme();
@@ -97,25 +98,22 @@ export default function FoodScreen() {
   const repeatNote = repeatProblem !== null ? <ProblemText style={[styles.text, { color: color.text }]}>{repeatProblem}</ProblemText> : null;
 
   return (
-    // Bottom edge too: inside native tabs the bottom inset includes the tab bar, so the coach bar sits above it.
     <SafeAreaView testID="screen" style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.body}>
+        <Pressable accessibilityRole="button" onPress={() => router.back()} hitSlop={tokens.space.md}>
+          <Text style={[styles.text, { color: color.text }]}>{t('food.back')}</Text>
+        </Pressable>
         <ScreenTitle>{t('screens.food.title')}</ScreenTitle>
         {problem}
         {consent}
         {budget}
         {!needsConsent && data !== null && <Suggestions suggestions={data.suggestions} />}
         {!needsConsent && data !== null && <Button label={t('food.log')} onPress={() => router.push('/meal')} />}
-        {!needsConsent && data !== null && <PhotoEntry />}
-        <Button label={t('food.recipes')} variant="ghost" size="sm" onPress={() => router.push('/recipes')} />
         {meals}
         {offers}
         {repeatNote}
         {targets}
       </ScrollView>
-      <View style={styles.coach}>
-        <CoachEntry />
-      </View>
     </SafeAreaView>
   );
 }
@@ -126,10 +124,4 @@ const styles = StyleSheet.create({
   note: { gap: tokens.space.sm },
   label: { fontSize: tokens.type.label, fontWeight: tokens.weight.bold },
   text: { fontSize: tokens.type.body },
-  coach: { paddingHorizontal: tokens.space.lg, paddingBottom: tokens.space.sm },
 });
-
-/** A meal from a photo (K-408): beside logging by name, behind the same consent. */
-function PhotoEntry() {
-  return <Button label={t('food.photo')} variant="ghost" size="sm" onPress={() => router.push('/meal-photo')} />;
-}

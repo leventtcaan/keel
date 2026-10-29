@@ -193,6 +193,24 @@ test.each(RETIRED.map((name) => `/${name}`))('a link straight to %s opens This w
   expect(screen.getByRole('header', { name: t('screens.today.title') })).toBeOnTheScreen();
 });
 
+test("today's food is a route, not a tab and not retired (ADR-086): a link opens it, back returns to This week", async () => {
+  expect(RETIRED as readonly string[]).not.toContain('food');
+  expect(TABS.map((tab) => tab.name)).not.toContain('food');
+  const router = renderRouter(APP, { initialUrl: '/food' });
+  await router;
+  await act(async () => {
+    jest.runAllTimers();
+  });
+  expect(router.getPathname()).toBe('/food');
+  expect(screen.getByRole('header', { name: t('screens.food.title') })).toBeOnTheScreen();
+  // The tabs sit underneath (the anchor): back lands on This week.
+  await act(async () => {
+    appRouter.back();
+    jest.runAllTimers();
+  });
+  expect(router.getPathname()).toBe('/');
+});
+
 test('opened cold from a link (keel://settings), the tabs are underneath (the anchor)', async () => {
   const router = renderRouter(APP, { initialUrl: '/settings' });
   await router;

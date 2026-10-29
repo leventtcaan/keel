@@ -51,7 +51,7 @@
       "title": "Train"
     },
     "food": {
-      "title": "Food"
+      "title": "Today's food"
     },
     "progress": {
       "title": "Progress"
@@ -235,8 +235,9 @@
       "over": "Over by",
       "around": "Around target",
       "log": "Log",
-      "lineLabel": "{lead} {amount}. Log a meal",
-      "lineLabelAround": "{lead}. Log a meal",
+      "lineLabel": "Today's food. {lead} {amount}",
+      "lineLabelAround": "Today's food. {lead}",
+      "logLabel": "Log a meal",
       "locked": "Needs your OK for health data",
       "allow": "Settings",
       "allowLabel": "Health data consent in Settings"
@@ -989,6 +990,7 @@
       "log": "Log {name}"
     },
     "log": "Log a meal",
+    "back": "Back",
     "photo": "Log from a photo",
     "recipes": "Your recipes",
     "budget": {
