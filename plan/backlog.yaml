@@ -5239,6 +5239,22 @@ tasks:
     tests: ["jest settings + paywall + workout", "tools/anayasa-denetimi.sh"]
     refs: ["plan/kararlar/ADR-087-kirik-gorunum-duzeltmeleri.md"]
 
+  - id: K-1041
+    title: "Yeniden yapım Evre 2.1: tek bileşen sistemi (düğme rolleri, gruplu liste, stepper, ikon, geri al bandı)"
+    milestone: M10
+    module: mobile
+    type: feature
+    size: M
+    status: doing
+    depends_on: []
+    why: "Düğme dili ekrandan ekrana değişiyor, birincil düğme ADR-070 #2'ye aykırı turkuaz, 164 çerçeveli hap, üç stepper, ikon yok (envanter T-1..T-6, T-11). ADR-070 Ek 2"
+    acceptance:
+      - "Button rolleri primary (cta), secondary (yüzey), text (vurgu metin), destructive (uyarı metin); ghost görünümü secondary'ye, warn destructive'e eşlenir"
+      - "ListGroup + ListRow (ikon, etiket, değer, chevron yalnız gezinmede, Switch satırı), Stepper (yazılabilir değer, virgül/nokta), Icon (expo-symbols, tek ağırlık), UndoBanner"
+      - "Prototip (prototip/yeniden-yapim.html › System) ile uyumlu; kontrast testleri yeşil; anayasa denetimi yeşil"
+    tests: ["jest components (button, list, stepper, icon, undo-banner) + non-text-contrast + accessibility", "tools/anayasa-denetimi.sh"]
+    refs: ["plan/kararlar/ADR-070-gorsel-dil-turkuaz.md", "prototip/yeniden-yapim.html"]
+
   - id: K-1010
     title: "Sunucudaki ek siteler: Caddy /opt/sites altındaki *.caddy dosyalarını içeri alır"
     milestone: M9
