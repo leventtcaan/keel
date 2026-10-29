@@ -94,3 +94,15 @@ gram), kayıt hatırlatması yok, 7 gün antrenman akışı yok.
   bir hafta günü iki günün olamaz. Yeni koçluk kuralı yok (U14): içerik hep üretecin şablonu.
 - **Etki:** sözleşme metni (`/v1/program/days`, `Program.canAddDay`); `ProgramDayAdds.canAdd/added`; K1: `ProgramDayAddsTests` ve `ProgramEditApiTests`'te "hafta gününe bağlı olmayan gün reddedilir"
   beklentisi (ADR'den doğan, gevşeten değil, Ek 4'ü tamamlayan değişiklik) yeni davranışa çevrildi.
+
+## Ek 6 · Yemek kaydı yeniden kurulumu: öğüne göre alışkanlık (Evre 7 A, #684; agent, teknik; ürün tarafı Levent'in 30 Eki maddeleri 1-6)
+- **Bulgu:** Levent build 9'da Log a meal'i eski ve dağınık buldu (dört sekme, favoriyi bulamadı, "Recent" öğüne göre değişiyor ama bunu söylemiyor, Today's food'a gidilemiyor).
+  Rakip araştırması (`arastirma/ham/evre7-rakip-kaliplari.md` §1): MacroFactor boş aramada Favorites, saat önerileri, Latest; MFP öğün satırından girer. Bizde öğüne göre veri vardı
+  (`/v1/foods/recent?slot=`) ama "sık yenen" öğünden bağımsızdı.
+- **Karar 1, sunucu:** `GET /v1/foods/frequent` isteğe bağlı `slot` alır: yalnız o öğünde yenen öğünler sayılır ("Usually at breakfast"); hiç yenmeyen öğünün listesi boştur (`recent`
+  gibi diğer öğünlere düşmez: boş bölüm gizlenir, yalan öneri verilmez). `Suggestion`a isteğe bağlı `carbsG` ve `fatG` eklendi (aynı tahminin parçası; sıra satırlarında üç makro).
+  Yeni koçluk kuralı ya da yeni tahmin yok (U1, U14): yalnız kullanıcının kendi geçmişi, mevcut yiyecek tahmincisiyle.
+- **Karar 2, arayüz (ayrıntı mobil PR'larında):** tek liste, bölümlerle: Favorites (kalp) › Usually at <öğün> › Recent; tam öğün tekrarı tek satır ("Same as yesterday's breakfast"). Her satırda
+  tek dokunuşla "+" kayıt (hatırlanan porsiyon), satıra dokunmak porsiyon adımını açar. Kalp satırda ve porsiyon adımında. "Log a meal" açık kalır, o öğünde bugün olanları gösterir ve
+  "View day" ile Today's food'a geçer. Makro renkleri uygulama genelinde tek (`macroProtein`, `macroCarbs`, `macroFat` token'ları).
+- **Reddedilen:** "Usually"yi telefonda geçmişten hesaplamak (kaçınılan besinleri süzmek sunucunun işi, ADR-090 Ek 3) · öğün kimliği için yeni alan (`slot` zaten sözleşmede).
