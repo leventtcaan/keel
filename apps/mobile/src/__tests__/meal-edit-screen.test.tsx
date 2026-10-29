@@ -125,7 +125,7 @@ test('the meal opens as it was logged: its slot, its items, their amounts, units
 test('saving replaces it: the old one deleted on the server first, then the new one saved with the same time; a correction closes with no banner (K-1044)', async () => {
   await show();
   await act(async () => fireEvent.changeText(amountField('Oats, rolled'), '60'));
-  await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.save') })));
+  await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.edit.save') })));
   expect(banner()).toBeNull();
   expect(calls).toEqual(['/v1/meals/{id}', 'record']);
   expect(mockDELETE).toHaveBeenCalledWith('/v1/meals/{id}', { params: { path: { id: 'm1' } } });
@@ -147,7 +147,7 @@ test('saving replaces it: the old one deleted on the server first, then the new 
 test('already gone on the server (deleted elsewhere): the corrected one is still saved', async () => {
   mockDelete = async () => refused(404, 'NOT_FOUND');
   await show();
-  await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.save') })));
+  await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.edit.save') })));
   expect(mockRecord).toHaveBeenCalledTimes(1);
 });
 
@@ -156,13 +156,13 @@ test('the delete not done (offline, a server error): nothing saved, it says a co
     throw new TypeError('Network request failed');
   };
   await show();
-  await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.save') })));
+  await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.edit.save') })));
   expect(mockRecord).not.toHaveBeenCalled();
   expect(screen.getByText(t('meal.edit.needsConnection'))).toBeOnTheScreen();
   expect(mockBack).not.toHaveBeenCalled();
 
   mockDelete = async () => refused(500, 'INTERNAL');
-  await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.save') })));
+  await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.edit.save') })));
   expect(mockRecord).not.toHaveBeenCalled();
 });
 
@@ -208,13 +208,19 @@ test('a meal no longer there says so, with nothing to save', async () => {
   mockGET.mockResolvedValueOnce(ok([]));
   await show();
   expect(screen.getByText(t('meal.edit.gone'))).toBeOnTheScreen();
-  expect(screen.queryByRole('button', { name: t('meal.save') })).toBeNull();
+  expect(screen.queryByRole('button', { name: t('meal.edit.save') })).toBeNull();
 });
 
 test('the list not readable (offline): it says a connection is needed', async () => {
   mockGET.mockRejectedValueOnce(new TypeError('Network request failed'));
   await show();
   expect(screen.getByText(t('meal.edit.needsConnection'))).toBeOnTheScreen();
+  expect(screen.queryByRole('button', { name: t('meal.edit.save') })).toBeNull();
+});
+
+test('correcting a meal: the primary button says Save, not Log it (a new meal keeps Log it)', async () => {
+  await show();
+  expect(screen.getByRole('button', { name: t('meal.edit.save') })).toBeOnTheScreen();
   expect(screen.queryByRole('button', { name: t('meal.save') })).toBeNull();
 });
 
@@ -230,7 +236,7 @@ describe('review', () => {
     mockEstimate = async () => refused(400, 'VALIDATION_FAILED'); // 100 cups of milk: past 5000 g, the phone does not know a cup's grams here
     await show();
     await act(async () => fireEvent.changeText(amountField('Milk, whole'), '100'));
-    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.save') })));
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.edit.save') })));
     expect(mockDELETE).not.toHaveBeenCalled();
     expect(mockRecord).not.toHaveBeenCalled();
     expect(screen.getByText(t('meal.edit.notChecked'))).toBeOnTheScreen();
@@ -242,14 +248,14 @@ describe('review', () => {
     };
     await show();
     mockGET.mockImplementation(async () => ok([]));
-    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.save') })));
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.edit.save') })));
     expect(mockRecord).toHaveBeenCalledTimes(1);
     expect(mockBack).toHaveBeenCalled();
   });
 
   test("the phone's copy of the replaced or deleted meal is forgotten, so it does not come back offline", async () => {
     await show();
-    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.save') })));
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.edit.save') })));
     expect(mockForget).toHaveBeenCalledWith('c1');
 
     jest.clearAllMocks();
@@ -266,13 +272,13 @@ describe('review', () => {
     });
     await show();
     await act(async () => fireEvent.changeText(amountField('Oats, rolled'), '60'));
-    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.save') })));
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.edit.save') })));
     expect(screen.getByText(t('meal.saveFailed'))).toBeOnTheScreen();
     expect(mockBack).not.toHaveBeenCalled();
     expect(amountField('Oats, rolled').props.value).toBe('60');
 
     mockDelete = async () => refused(404, 'NOT_FOUND');
-    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.save') })));
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.edit.save') })));
     expect(calls).toEqual(['/v1/meals/{id}', 'record', '/v1/meals/{id}', 'record']);
     expect(mockRecord).toHaveBeenLastCalledWith(expect.objectContaining({ body: expect.objectContaining({ eatenAt: EATEN_AT }) }));
     expect(mockBack).toHaveBeenCalledTimes(1);
@@ -282,7 +288,7 @@ describe('review', () => {
     const answer = held<Answer>();
     mockDelete = () => answer.promise;
     await show();
-    await pressTwice(t('meal.save'));
+    await pressTwice(t('meal.edit.save'));
     await act(async () => answer.release({ response: new Response(null, { status: 204 }) }));
     expect(mockDELETE).toHaveBeenCalledTimes(1);
     expect(mockRecord).toHaveBeenCalledTimes(1);
@@ -312,7 +318,7 @@ describe('review', () => {
   test('while the meal is read: no save, no delete', async () => {
     mockGET.mockImplementation(() => new Promise(() => {}));
     await show();
-    expect(screen.queryByRole('button', { name: t('meal.save') })).toBeNull();
+    expect(screen.queryByRole('button', { name: t('meal.edit.save') })).toBeNull();
     expect(screen.queryByRole('button', { name: t('meal.edit.delete') })).toBeNull();
   });
 
@@ -341,7 +347,7 @@ describe('a meal with a recipe in it (K-423)', () => {
     await act(async () => {});
     expect(screen.getByText(t('meal.item.recipeGone'))).toBeTruthy();
     expect(screen.queryByText(t('meal.edit.notChecked'))).toBeNull(); // the item's own reason, not "check your connection"
-    expect(screen.getByRole('button', { name: t('meal.save') }).props.accessibilityState.disabled).toBe(true);
+    expect(screen.getByRole('button', { name: t('meal.edit.save') }).props.accessibilityState.disabled).toBe(true);
     expect(mockDELETE).not.toHaveBeenCalled();
   });
 });
