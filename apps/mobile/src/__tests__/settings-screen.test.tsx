@@ -101,11 +101,18 @@ async function press(name: string) {
   await fireEvent.press(button(name));
   await act(async () => {});
 }
-/** Buttons drawn in the warn colour: the rule is none but a confirming step's. */
+/**
+ * Buttons drawn in the warn colour: the rule is none but a confirming step's. A warn button is the destructive role now
+ * (ADR-070 Ek 2 #1): words in the warning colour with no fill, so it is found by its label's colour, not by a fill.
+ */
 const warnButtons = () =>
   screen.queryAllByRole('button').filter((b) => {
-    const flat = [b.props.style].flat(Infinity) as ({ backgroundColor?: string } | undefined)[];
-    return flat.some((style) => style?.backgroundColor === palettes.light.warn);
+    const warned = (node: { props: { style?: unknown }; children?: unknown[] }): boolean => {
+      const flat = [node.props.style].flat(Infinity) as ({ color?: string } | undefined)[];
+      if (flat.some((style) => style?.color === palettes.light.warn)) return true;
+      return (node.children ?? []).some((child) => typeof child === 'object' && child !== null && warned(child as never));
+    };
+    return warned(b as never);
   });
 // The destructive questions are system alerts (ADR-087 #1): the spy stands in for the system, and a tap on one of its buttons is its onPress.
 const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});

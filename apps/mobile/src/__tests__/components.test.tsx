@@ -62,24 +62,23 @@ describe.each(schemes)('%s theme', (scheme) => {
     expect(screen.getByText('Apply')).toHaveStyle({ color: p.onAccentInk });
   });
 
-  test.each([
-    ['primary', 'accent', 'onAccent'],
-    ['warn', 'warn', 'onWarn'],
-  ] as const)('a %s Button fills with %s and labels with %s', async (variant, fill, ink) => {
-    await renderIn(scheme, <Button label="Go" variant={variant} onPress={() => {}} />);
+  // ADR-070 Ek 2 #1 (K-1041): the primary button is the cta (black on light), not the accent. The warn fill is gone: the old
+  // `warn` is the destructive role now, words in the warning colour (button-roles.test.tsx holds every role).
+  test('a primary Button fills with cta and labels with onCta', async () => {
+    await renderIn(scheme, <Button label="Go" variant="primary" onPress={() => {}} />);
     expect(screen.getByRole('button', { name: 'Go' })).toHaveStyle({
-      backgroundColor: p[fill],
+      backgroundColor: p.cta,
       borderRadius: tokens.radius.button,
     });
-    expect(screen.getByText('Go')).toHaveStyle({ color: p[ink], fontSize: tokens.type.button });
+    expect(screen.getByText('Go')).toHaveStyle({ color: p.onCta, fontSize: tokens.type.button });
   });
 
-  test('a ghost Button is outlined in the text colour', async () => {
+  // ADR-070 Ek 2 #1: the outlined pill is gone; the old ghost is the secondary role, a surface with ink words.
+  test('a ghost Button is the secondary look: a surface fill, ink words, no outline', async () => {
     await renderIn(scheme, <Button label="Later" variant="ghost" onPress={() => {}} />);
-    expect(screen.getByRole('button', { name: 'Later' })).toHaveStyle({
-      borderColor: p.text,
-      borderWidth: tokens.border.outline,
-    });
+    const later = screen.getByRole('button', { name: 'Later' });
+    expect(later).toHaveStyle({ backgroundColor: p.surface });
+    expect(later).not.toHaveStyle({ borderWidth: tokens.border.outline });
     expect(screen.getByText('Later')).toHaveStyle({ color: p.text });
   });
 

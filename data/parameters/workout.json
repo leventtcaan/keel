@@ -16,6 +16,14 @@
       "source": "arastirma/ham/guray/G1-antrenman.md#K-49"
     },
     {
+      "key": "undo_banner_ms",
+      "value": 5000,
+      "unit": "milliseconds",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-070-gorsel-dil-turkuaz.md#Ek 2",
+      "note": "ADR-070 Ek 2 #6: after a save (a weigh-in, cardio, a meal, a set) a band at the bottom says Saved with Undo for this long, then goes by itself; there is no separate Saved page. A few seconds, long enough to read and reach for Undo."
+    },
+    {
       "key": "rir_choices",
       "value": [
         0,

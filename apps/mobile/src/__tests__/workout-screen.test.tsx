@@ -5,7 +5,7 @@
  * through the phone's queue (K-304), so it all works offline.
  */
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
-import { AccessibilityInfo, AppState } from 'react-native';
+import { AccessibilityInfo, AppState, StyleSheet } from 'react-native';
 
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
@@ -2314,13 +2314,14 @@ describe('End: finish and save, fill in the rest later, or discard (K-972, ADR-0
       await show();
       await end();
       await choose('workout.ending.discard');
-      // The medium button: a vertical padding that, with its text, is past 44 pt; the small one is about 34.
-      for (const name of [t('workout.ending.confirm'), t('workout.ending.keep')]) {
-        expect(screen.getByRole('button', { name })).toHaveStyle({ paddingVertical: tokens.space.md });
-      }
+      // The medium button, not the small one (about 34 pt): the destructive and the secondary roles are at least size.touch tall by
+      // their own minimum height (ADR-070 Ek 2 #1: the old warn is words with no box, so the padding no longer makes the height).
+      const touchTall = (name: string) =>
+        expect(StyleSheet.flatten(screen.getByRole('button', { name }).props.style).minHeight).toBeGreaterThanOrEqual(tokens.size.touch);
+      for (const name of [t('workout.ending.confirm'), t('workout.ending.keep')]) touchTall(name);
       await fireEvent.press(screen.getByRole('button', { name: t('workout.ending.confirm') }));
       await screen.findByText(t('workout.ending.discarded'));
-      expect(screen.getByRole('button', { name: t('workout.ending.close') })).toHaveStyle({ paddingVertical: tokens.space.md });
+      touchTall(t('workout.ending.close'));
     });
 
     test("discarded, it is said for VoiceOver, and the clock's Pause is not live on the Undo screen", async () => {

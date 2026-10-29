@@ -123,6 +123,8 @@ export const tokens = {
     tile: 56,
     button: 16,
     buttonSmall: 14,
+    /** The stepper's value, in the display face (prototype `.stp .sv b`). */
+    stepperValue: 36,
     /** ADR-070 #5. */
     body: 17,
     bodySmall: 15,
@@ -161,6 +163,12 @@ export const tokens = {
     touch: 44,
     /** The screen's one primary button (ADR-070 #6). */
     primaryButton: 54,
+    /** A grouped list's row (ADR-070 Ek 2 #2, prototype `.row`): taller than size.touch, so a row is never a squeeze. */
+    row: 52,
+    /** The stepper's - and + (prototype `.stp .sb2`). */
+    stepperButton: 48,
+    /** The undo banner's least height (prototype `.bnr`). */
+    banner: 52,
     /** Progress (ADR-078, prototype `.tgt`): a target box's least height; a week of the 12 weeks grid; a weigh-in dot; a legend swatch. */
     targetBox: 104,
     weekCell: 24,
@@ -175,6 +183,12 @@ export const tokens = {
     barName: 92,
     barCount: 44,
   },
+  /** SF Symbols (ADR-070 Ek 2 #3): one weight, two sizes. */
+  icon: {
+    small: 20,
+    regular: 24,
+    weight: 'medium',
+  },
   opacity: {
     /** Pressed and disabled controls. */
     dim: 0.5,
@@ -187,6 +201,8 @@ export const tokens = {
     revealMs: 450,
     /** How far below its place the call starts. */
     revealRise: 24,
+    /** The undo banner coming in (UndoBanner), in milliseconds. */
+    bannerMs: 200,
   },
 } as const;
 
