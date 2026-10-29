@@ -102,3 +102,9 @@ Karar, sistem önce (bileşenler), ekranlar sonra:
 Uygulama sırası: `Button` rolleri + `ListGroup/ListRow` + `Stepper` + `Icon` + `UndoBanner` bileşenleri ve testleri, sonra ekranlar (Ayarlar ve Account,
 "+" sayfası, This Week bölümleri, antrenman başlığı, yemek, onaylar). Prototip önce, kod sonra: Evre 2 ekranları `prototip/yeniden-yapim.html` (bu ekranlarda `yeni-yuz.html`in yerine geçer; 28 çerçeve, açık/koyu);
 her ekran simülatör görüntüsü prototiple yan yana envanterde.
+
+## Ek 3 · Onboarding'de prototipten bilinçli sapmalar (2026-10-29, agent; yeniden yapım Evre 4.2, #645)
+- Cinsiyet varsayılanı **yok** (prototipte Male): seçilmeden geçilirse enerji hesabı ve gözlem süresi yanlış cinsiyetle kurulur; sağlıkla ilgili varsayılan
+  verilmez, Continue seçimle açılır.
+- Boy tekerleği **100-250 cm** kalır (prototipte 140-210): profil bu aralığı kabul eder, dar aralık kısa ve uzun boyluları dışarıda bırakır.
+- Plan ekranında "Decide for me"nin seçtiği hedefin adı sözleşmede alan bekler (`StartingTarget.phase`); telefon kendi hesaplamaz (U1). Ayrı iş.
