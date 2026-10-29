@@ -7,6 +7,7 @@ import { load } from '@/today/today';
 import { useReadOnFocus } from '@/today/useReadOnFocus';
 
 import { openDetail } from './detail';
+import { COMMON_AVOIDS } from './foodChoices';
 
 /**
  * Settings › Food (K-982, ADR-069 #3; moved here from onboarding): the foods the user does not or cannot eat, in their own
@@ -29,8 +30,13 @@ const locked = () => undefined;
 
 /** The foods on the row: up to two by name, then how many. The page behind it has them all. */
 const SHOWN = 2;
+const named = (food: string) => (COMMON_AVOIDS.some((common) => common === food.toLowerCase()) ? t(`settings.food.common.${food.toLowerCase()}`) : food);
 const said = (foods: string[]) =>
-  foods.length === 0 ? t('settings.food.none') : foods.length <= SHOWN ? foods.join(t('editProgram.listJoin')) : t('settings.food.count', { count: foods.length });
+  foods.length === 0
+    ? t('settings.food.none')
+    : foods.length <= SHOWN
+      ? foods.map(named).join(t('editProgram.listJoin'))
+      : t('settings.food.count', { count: foods.length });
 
 function FoodRow({ granted }: { granted: boolean | null }) {
   const { api } = useAppServices();

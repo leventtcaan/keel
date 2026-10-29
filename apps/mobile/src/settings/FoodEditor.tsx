@@ -93,7 +93,7 @@ export function FoodEditor() {
   const addField = adding ? (
     <View style={styles.add}>
       <TextField label={t('settings.food.label')} value={own} onChangeText={setOwn} maxLength={60} />
-      <Button label={t('settings.food.add')} size="touch" disabled={avoidList(own).length === 0} onPress={addOwn} />
+      <Button label={t('settings.food.add')} variant="secondary" size="touch" disabled={avoidList(own).length === 0} onPress={addOwn} />
     </View>
   ) : (
     <Chip label={t('settings.food.addOwn')} touch onPress={() => setAdding(true)} />
@@ -107,7 +107,7 @@ export function FoodEditor() {
         {adding ? null : addField}
       </View>
       {adding ? addField : null}
-      <Button label={t('settings.food.save')} size="touch" disabled={busy || !changed} onPress={save} />
+      <Button label={t('settings.food.save')} disabled={busy || !changed} onPress={save} />
       {problem !== null && <ProblemText style={styles.note}>{problem}</ProblemText>}
     </View>
   );

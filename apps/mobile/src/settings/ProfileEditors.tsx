@@ -67,7 +67,7 @@ function Page({ page, changed, onSave, children }: { page: ReturnType<typeof use
   return (
     <View style={styles.stack}>
       {children}
-      <Button label={t('settings.profile.save')} size="touch" disabled={page.busy || !changed} onPress={onSave} />
+      <Button label={t('settings.profile.save')} disabled={page.busy || !changed} onPress={onSave} />
       {page.problem !== null && <ProblemText style={[styles.note, { color: color.text }]}>{page.problem}</ProblemText>}
     </View>
   );

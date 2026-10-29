@@ -342,10 +342,16 @@ describe('training', () => {
 describe('food', () => {
   test('the foods to avoid come from the profile, on the row; the row opens the page that edits them', async () => {
     await show();
-    await press(`${t('settings.food.avoid')}, peanuts, shellfish`);
+    await press(`${t('settings.food.avoid')}, Peanuts, Shellfish`);
     expect(mockPush).toHaveBeenCalledWith({ pathname: '/settings-detail', params: { part: 'food' } });
     // The editor is not inline: nothing to type into on Settings itself.
     expect(screen.queryByLabelText(t('settings.food.label'))).toBeNull();
+  });
+
+  test('three or more foods say how many; the page has them all', async () => {
+    profile = { ...PROFILE, food: { avoid: ['peanuts', 'shellfish', 'Kiwi'] } };
+    await show();
+    expect(button(`${t('settings.food.avoid')}, ${t('settings.food.count', { count: 3 })}`)).toBeOnTheScreen();
   });
 
   test('none avoided says None', async () => {
@@ -650,7 +656,7 @@ describe('without the health data consent', () => {
     expect(screen.getAllByText(t('settings.consents.allowed'))).toHaveLength(1);
     await screen.unmount();
     await show();
-    expect(button(`${t('settings.food.avoid')}, peanuts, shellfish`)).toBeEnabled();
+    expect(button(`${t('settings.food.avoid')}, Peanuts, Shellfish`)).toBeEnabled();
     expect(button(t('settings.import.title'))).toBeEnabled();
     await press(t('settings.import.title'));
     expect(mockPush).toHaveBeenCalledWith({ pathname: '/settings-detail', params: { part: 'import' } });
@@ -684,7 +690,7 @@ describe('without the health data consent', () => {
     expect(screen.queryByText(/peanuts|shellfish/)).toBeNull();
     expect(calls.some((c) => c.method === 'GET' && c.path === '/v1/profile')).toBe(true);
     await act(async () => release());
-    expect(button(`${t('settings.food.avoid')}, eggs`)).toBeOnTheScreen();
+    expect(button(`${t('settings.food.avoid')}, Eggs`)).toBeOnTheScreen();
   });
 
   test('training, reminders, the subscription and the account do not wait for the consent', async () => {

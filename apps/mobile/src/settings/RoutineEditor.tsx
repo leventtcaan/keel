@@ -49,7 +49,6 @@ export function RoutineEditor() {
       <Button
         label={t('settings.reminders.cue.save')}
         accessibilityLabel={t('settings.reminders.cue.saveLabel')}
-        size="touch"
         disabled={busy || cue.trim() === settings.cue}
         onPress={saveCue}
       />
