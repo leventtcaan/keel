@@ -223,6 +223,20 @@ describe('what can be logged without typing', () => {
   });
 });
 
+describe('the plus of a past meal (Evre 7, issue 684: "I press the plus on Log again and it never logs")', () => {
+  test('the plus at the end of the row logs the meal, as the row does: the plus is part of the row, not a picture beside it', async () => {
+    mockHistory = [meal('a', 1, 'LUNCH', 'Chicken bowl'), meal('c', 3, 'DINNER', 'Soup')];
+    await show();
+    await press(t('meal.browse.again'));
+    await fireEvent.press(screen.getByTestId('again-c-log'));
+    await act(async () => {});
+    expect(lastMeal()).toMatchObject({ repeatOf: 'c' });
+    expect(mockRecord).toHaveBeenCalledTimes(1);
+    expect(mockBack).toHaveBeenCalledTimes(1);
+    expect(banner()).toBeOnTheScreen();
+  });
+});
+
 describe('a star on a food', () => {
   test('a food in the meal can be starred and unstarred; the server is told, and the star follows its answer', async () => {
     await show();

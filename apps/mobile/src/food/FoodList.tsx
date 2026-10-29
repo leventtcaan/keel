@@ -64,9 +64,11 @@ function FoodRow({ row, first }: { row: FoodRowData; first: boolean }) {
         <Icon name="plus.circle.fill" tone="accent" />
       </Pressable>
     );
+  // A past meal has no portion step, so its whole row logs it, and the plus at its end is part of that one target: drawn inside
+  // the row's own press, never as a picture beside it (a tap on the plus then reached nothing: Evre 7, issue 684).
   const drawnPlus =
     row.logOnOpen === true && row.onLog === undefined ? (
-      <View style={styles.plus}>
+      <View testID={logId} style={styles.drawnPlus}>
         <Icon name="plus.circle.fill" tone="accent" />
       </View>
     ) : null;
@@ -75,12 +77,14 @@ function FoodRow({ row, first }: { row: FoodRowData; first: boolean }) {
     <View style={styles.row}>
       {line}
       <Pressable testID={row.testID} accessibilityRole="button" accessibilityLabel={row.openLabel} onPress={row.onOpen} style={styles.main}>
-        <Text style={[styles.name, { color: color.text }]}>{row.name}</Text>
-        <Text style={[styles.detail, { color: color.muted }]}>{row.detail}</Text>
-        {marker}
+        <View style={styles.texts}>
+          <Text style={[styles.name, { color: color.text }]}>{row.name}</Text>
+          <Text style={[styles.detail, { color: color.muted }]}>{row.detail}</Text>
+          {marker}
+        </View>
+        {drawnPlus}
       </Pressable>
       {plus}
-      {drawnPlus}
     </View>
   );
 }
@@ -91,9 +95,11 @@ const styles = StyleSheet.create({
   card: { borderRadius: tokens.radius.card, overflow: 'hidden' },
   row: { flexDirection: 'row', alignItems: 'center', minHeight: tokens.size.touch },
   line: { position: 'absolute', top: 0, left: tokens.space.md, right: 0, height: StyleSheet.hairlineWidth },
-  main: { flex: 1, minWidth: 0, minHeight: tokens.size.row, justifyContent: 'center', paddingVertical: tokens.space.sm, paddingHorizontal: tokens.space.md, gap: 2 },
+  main: { flex: 1, minWidth: 0, minHeight: tokens.size.row, flexDirection: 'row', alignItems: 'center', paddingVertical: tokens.space.sm, paddingLeft: tokens.space.md },
+  texts: { flex: 1, minWidth: 0, justifyContent: 'center', gap: 2, paddingRight: tokens.space.md },
   name: { fontSize: tokens.type.body },
   detail: { fontSize: tokens.type.bodySmall, fontVariant: ['tabular-nums'] },
   marker: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.semibold },
   plus: { paddingHorizontal: tokens.space.md, alignSelf: 'stretch', justifyContent: 'center' },
+  drawnPlus: { paddingRight: tokens.space.md, justifyContent: 'center' },
 });
