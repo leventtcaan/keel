@@ -4,7 +4,7 @@
  */
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { useState } from 'react';
-import { FlatList } from 'react-native';
+import { FlatList, ScrollView, VirtualizedList } from 'react-native';
 
 import { t } from '@/copy';
 import { Wheel } from '@/onboarding/Wheel';
@@ -118,7 +118,7 @@ describe('a fling coasts to its own row (review #463)', () => {
   });
 
   test('a row picked by the column itself is not scrolled to again; a step from VoiceOver moves the column', async () => {
-    const scrolls = jest.spyOn(FlatList.prototype, 'scrollToOffset');
+    const scrolls = jest.spyOn(ScrollView.prototype, 'scrollTo');
     try {
       await show();
       scrolls.mockClear();
@@ -126,7 +126,7 @@ describe('a fling coasts to its own row (review #463)', () => {
       expect(changes).toEqual([1994]);
       expect(scrolls).not.toHaveBeenCalled();
       await act('decrement');
-      expect(scrolls).toHaveBeenCalledWith({ offset: tokens.size.touch * 3, animated: false });
+      expect(scrolls).toHaveBeenCalledWith({ y: tokens.size.touch * 3, animated: false });
     } finally {
       scrolls.mockRestore();
     }
@@ -145,4 +145,24 @@ describe('not set yet, VoiceOver says so (review #463)', () => {
     expect(wheel().props.accessibilityValue).toEqual({ text: '1992 year' });
     expect(wheel().props.accessibilityHint).toBeUndefined();
   });
+});
+
+test('the column is not a list: on the About you step it sits in a ScrollView, where a list warns it can break windowing (K-1057 #14)', async () => {
+  const lists = jest.spyOn(VirtualizedList.prototype, 'render');
+  const flatLists = jest.spyOn(FlatList.prototype, 'render');
+  try {
+    await show();
+    expect(lists).not.toHaveBeenCalled();
+    expect(flatLists).not.toHaveBeenCalled();
+  } finally {
+    lists.mockRestore();
+    flatLists.mockRestore();
+  }
+});
+
+test('every value is a row of the column, in order, the one it starts on at its place', async () => {
+  await show({ start: 1993 });
+  const column = screen.getByTestId('wheel-Born');
+  expect(column.props.contentOffset).toEqual({ x: 0, y: tokens.size.touch * 3 });
+  expect(YEARS.map((year) => screen.getByText(String(year)))).toHaveLength(YEARS.length);
 });

@@ -2,10 +2,12 @@
  * A scroll wheel (prototype `.wheel`, #ob-about): a column of values that snaps to a row; the row in the middle is the
  * value. VoiceOver reaches the whole wheel as one adjustable control and steps it with a swipe up or down (Apple: the
  * adjustable trait). `unset`: the middle row is only a suggestion, drawn quietly, until the person moves the wheel or
- * comes to rest on it; VoiceOver hears that it is not set, and how to set it.
+ * comes to rest on it; VoiceOver hears that it is not set, and how to set it. The column is a plain ScrollView, not a list:
+ * its screen is a ScrollView itself, and a list inside one warns that it can break windowing (K-1057 #14). The rows are
+ * a few hundred small views at most (the weight's), mounted once.
  */
 import { useEffect, useRef } from 'react';
-import { FlatList, type NativeScrollEvent, type NativeSyntheticEvent, StyleSheet, Text, View } from 'react-native';
+import { type NativeScrollEvent, type NativeSyntheticEvent, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
@@ -30,7 +32,7 @@ const AROUND = Math.floor(ROWS_SHOWN / 2);
 
 export function Wheel({ label, unit, values, value, format, onChange, unset = false }: Props) {
   const { color } = useTheme();
-  const list = useRef<FlatList<number>>(null);
+  const list = useRef<ScrollView>(null);
   const index = Math.max(0, values.indexOf(value));
   // A row the column came to rest on is already in place: moving it there again would stop a list still coasting.
   const fromColumn = useRef(false);
@@ -41,7 +43,7 @@ export function Wheel({ label, unit, values, value, format, onChange, unset = fa
       fromColumn.current = false;
       return;
     }
-    list.current?.scrollToOffset({ offset: index * ROW, animated: false });
+    list.current?.scrollTo({ y: index * ROW, animated: false });
   }, [index]);
 
   const pick = (at: number, byColumn = false) => {
@@ -75,30 +77,27 @@ export function Wheel({ label, unit, values, value, format, onChange, unset = fa
         onAccessibilityAction={(event) => step(event.nativeEvent.actionName === 'increment' ? 1 : -1)}
         style={[styles.window, { backgroundColor: color.surface }]}>
         <View style={[styles.band, { backgroundColor: color.background }]} />
-        <FlatList
+        <ScrollView
           ref={list}
           testID={`wheel-${label}`}
-          data={values}
-          keyExtractor={String}
-          getItemLayout={(_, at) => ({ length: ROW, offset: ROW * at, index: at })}
-          initialScrollIndex={index}
+          contentOffset={{ x: 0, y: index * ROW }}
           snapToInterval={ROW}
           decelerationRate="fast"
           showsVerticalScrollIndicator={false}
           nestedScrollEnabled
           contentContainerStyle={styles.column}
           onMomentumScrollEnd={rest}
-          onScrollEndDrag={lift}
-          renderItem={({ item }) => {
+          onScrollEndDrag={lift}>
+          {values.map((item) => {
             const middle = item === value;
             const ink = middle && !unset ? color.text : color.muted;
             return (
-              <View style={styles.row}>
+              <View key={item} style={styles.row}>
                 <Text style={[middle ? styles.middle : styles.value, { color: ink }]}>{format(item)}</Text>
               </View>
             );
-          }}
-        />
+          })}
+        </ScrollView>
       </View>
       {unit !== undefined && <Text style={[styles.unit, { color: color.muted }]}>{unit}</Text>}
     </View>
