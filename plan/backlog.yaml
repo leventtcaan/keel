@@ -5509,6 +5509,40 @@ tasks:
     tests: ["./gradlew test --tests '*GoldenScenarioTests*'"]
     refs: ["plan/son-kontrol-2026-10-29.md", "data/parameters/windows.yaml"]
 
+  - id: K-1057
+    title: "Son kontrol küçük düzeltmeler: fotoğraf silme sistem uyarısı, düzeltmede Save, sabit ilerleme çubuğu, row simgesi, About you liste uyarısı"
+    milestone: M10
+    module: mobile
+    type: fix
+    size: S
+    status: doing
+    depends_on: []
+    why: "Persona yürüyüşü (plan/son-kontrol-2026-10-29.md bulgu 6, 8, 10, 12, 14): yeni tasarım istemeyen, mevcut kararlarla (ADR-087) tutarsız ya da kırık görünen küçük şeyler; Levent 29 Eki onayı"
+    acceptance:
+      - "#6 Progress fotoğraflarını silme onayı sistem uyarısı (ADR-087, Sign out / Delete account gibi); satır içi onay ve sekme çubuğunun altında kalan Keep them yok"
+      - "#8 Öğün düzeltme ekranında birincil düğme Save (yeni kayıtta Log it kalır)"
+      - "#10 Onboarding ilerleme çubuğu baştan son parça sayısıyla açılır; Goal'den sonra sayı değişmez"
+      - "#12 Chest-supported row ayar dişlisi değil, ekipmanına uygun simgeyle görünür; aynı hata başka hareketlerde varsa onlar da"
+      - "#14 About you ekranında VirtualizedList ScrollView içinde uyarısı yok, tekerlekler aynı davranır"
+      - "npm run check + tools/anayasa-denetimi.sh yeşil; her biri simülatörde ekran görüntüsüyle"
+    tests: ["npm run check", "tools/anayasa-denetimi.sh"]
+    refs: ["plan/son-kontrol-2026-10-29.md", "plan/kararlar/ADR-087-kirik-gorunum-duzeltmeleri.md"]
+
+  - id: K-1058
+    title: "Son kontrol prototip bölüm 11: ilk haftaların tartı sayacı, plan ekranı sırası, başlangıç ağırlıkları tekerleği, kişisel paywall"
+    milestone: M10
+    module: mobile
+    type: feature
+    size: M
+    status: doing
+    depends_on: []
+    why: "Persona yürüyüşü bulgu 1 (P0: bir kısa tartı haftası ilk kararı hafta 3'ten 5'e atar, GS-39, kullanıcı görmez), 2, 3, 4 (P1); arayüz önce prototip + Levent onayı"
+    acceptance:
+      - "prototip/yeniden-yapim.html bölüm 11: This week kararsız hafta kartında tartı sayacı (yeterli / geride / bugün son şans), hafta içi tek hatırlatma metni; Your plan sırası (kalori + protein + ilk karar üstte, antrenman kısaltılmış); Working weights tekerlek; paywall üst kartı kullanıcının kendi başlangıcıyla"
+      - "Levent onayı, sonra kod (ayrı PR'lar), test, simülatör kanıtı"
+    tests: ["prototip gözden geçirme"]
+    refs: ["plan/son-kontrol-2026-10-29.md", "prototip/yeniden-yapim.html"]
+
   - id: K-1010
     title: "Sunucudaki ek siteler: Caddy /opt/sites altındaki *.caddy dosyalarını içeri alır"
     milestone: M9
