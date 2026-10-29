@@ -220,15 +220,17 @@ export function sessionMoves(day: Schemas['ProgramDay'], week: Schemas['WeekSess
 
 /**
  * The finish to record (K-217: the moves whose form was not clean hold their load and reps — G6 K-31), with the time
- * paused (K-998), whole seconds, when there was any.
+ * paused (K-998), whole seconds, when there was any, and the moves found taken (K-1064) when there were any.
  */
-export function finishRecord(workoutClientId: string, clientId: string, at: Date, unclean: string[], note?: string, pausedSeconds = 0): Outbound {
+export function finishRecord(workoutClientId: string, clientId: string, at: Date, unclean: string[], note?: string, pausedSeconds = 0, taken: string[] = []): Outbound {
   const words = noteOf(note);
   const body = {
     endedAt: at.toISOString(),
     uncleanExerciseIds: [...new Set(unclean)],
     ...(words === null ? {} : { note: words }),
     ...(pausedSeconds > 0 ? { pausedSeconds } : {}),
+    // The moves found taken (Taken, ADR-090 Ek 2): kept with the session for later suggestions.
+    ...(taken.length > 0 ? { takenExerciseIds: [...new Set(taken)] } : {}),
   };
   return { kind: 'finish', clientId, workoutClientId, body };
 }

@@ -2678,8 +2678,10 @@ export interface components {
             nextLoadAtTopKg?: number;
             /**
              * @description The moves this one can be swapped for (K-964, ADR-073 #6): the catalog's alternatives, then the moves of the same
-             *     primary muscle and kind (G6 K-35), each the current gym has the equipment for (ADR-032; any without a gym), none
-             *     already on the day. Empty for the user's own move. This server always sends it.
+             *     primary muscle and kind (G6 K-35), then the moves of the same kind whose primary muscle stands in for it
+             *     (data/muscles.yaml swap_groups: a vertical pull and a row, ADR-090 Ek 2), each the current gym has the equipment
+             *     for (ADR-032; any without a gym), none already on the day. Empty for the user's own move. This server always
+             *     sends it.
              */
             swapOptions?: string[];
             /**
@@ -2805,6 +2807,14 @@ export interface components {
              *     VALIDATION_FAILED. Absent: 0, or, on a later finish, the one given before.
              */
             pausedSeconds?: number;
+            /**
+             * @description The moves found taken in this session ("Taken" in the workout, ADR-090 Ek 2): the planned moves the user could not
+             *     do because the equipment was busy, whether they did it later or something else in its place. Kept with the
+             *     session so a later suggestion can read it; the engine does not read it yet. Each id once, from the catalog or one
+             *     of the user's own moves, else VALIDATION_FAILED. Absent: the one given before is kept (a replayed finish); an
+             *     empty list clears it.
+             */
+            takenExerciseIds?: string[];
         };
         Workout: {
             /** Format: uuid */

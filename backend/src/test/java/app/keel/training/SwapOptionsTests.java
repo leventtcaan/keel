@@ -58,9 +58,34 @@ class SwapOptionsTests {
         // without a stack step, a machine listed, plates or dumbbells, those moves stay.
         Optional<GymStore.Gym> barOnly = gym(kg("20"), List.of(), List.of(), null, Map.of());
 
-        assertThat(SwapOptions.of("lat_pulldown", List.of(), catalog, barOnly)).containsExactly("pull_up", "close_grip_lat_pulldown");
+        assertThat(SwapOptions.of("lat_pulldown", List.of(), catalog, barOnly)).startsWith("pull_up", "close_grip_lat_pulldown").contains("chest_supported_row");
         assertThat(SwapOptions.of("squat", List.of(), catalog, barOnly)).containsExactly("hack_squat", "leg_press", "bulgarian_split_squat");
         assertThat(SwapOptions.of("pec_deck", List.of(), catalog, barOnly)).containsExactly("cable_fly");
+    }
+
+    @Test
+    void aTakenPulldownIsOfferedRowsOnOtherEquipmentAfterItsOwnAlternatives() {
+        // ADR-090 Ek 2, G1 K-77: the lat pulldown's own alternatives first (one is the same cable station), then the rows whose
+        // primary muscle stands in for the lats (data/muscles.yaml swap_groups), by id.
+        List<String> options = SwapOptions.of("lat_pulldown", List.of("lat_pulldown"), catalog, Optional.empty());
+
+        assertThat(options).containsExactly("pull_up", "close_grip_lat_pulldown", "barbell_row", "chest_supported_row", "one_arm_dumbbell_row",
+                "seated_row", "t_bar_row");
+        // Other equipment than the taken cable machine: a bar, a machine, a dumbbell, the body.
+        assertThat(options.stream().map(id -> catalog.find(id).orElseThrow().equipment()).distinct())
+                .contains(ExerciseCatalog.Equipment.BODYWEIGHT, ExerciseCatalog.Equipment.MACHINE, ExerciseCatalog.Equipment.DUMBBELL);
+        // And the other way: a taken row is offered the pulls.
+        assertThat(SwapOptions.of("seated_row", List.of("seated_row"), catalog, Optional.empty())).contains("pull_up", "lat_pulldown");
+    }
+
+    @Test
+    void aMuscleOutsideAGroupKeepsToItsOwnMuscle() {
+        // A chest press is not offered for a shoulder press although the chest moves train the front delts too.
+        List<String> options = SwapOptions.of("dumbbell_shoulder_press", List.of(), catalog, Optional.empty());
+
+        assertThat(options).containsExactly("overhead_press");
+        // An isolation move is not offered a compound one of its group: a seated row for a rear delt move.
+        assertThat(SwapOptions.of("face_pull", List.of(), catalog, Optional.empty())).containsExactly("rear_delt_fly", "reverse_pec_deck");
     }
 
     @Test

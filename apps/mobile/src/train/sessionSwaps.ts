@@ -18,6 +18,18 @@ const KEY = 'train.swaps';
 
 export type SessionSwaps = ReturnType<typeof createSessionSwaps>;
 
+/** A list of move ids kept under `field` for the workout; none for another workout or what cannot be read. */
+function readIds(raw: string | null, workout: string, field: 'behind' | 'taken'): string[] {
+  try {
+    const kept = JSON.parse(raw ?? 'null') as ({ workout?: unknown } & Record<string, unknown>) | null;
+    const ids = kept?.[field];
+    if (kept === null || kept.workout !== workout || !Array.isArray(ids)) return [];
+    return ids.filter((id): id is string => typeof id === 'string' && id !== '');
+  } catch {
+    return [];
+  }
+}
+
 export function createSessionSwaps(kv: KeyValue) {
   return {
     /** The workout's swaps as kept; none for another workout, nothing kept, or what cannot be read. */
@@ -43,8 +55,19 @@ export function createSessionSwaps(kv: KeyValue) {
         return [];
       }
     },
-    async keep(workout: string, swaps: Swaps, left: string[] = []): Promise<void> {
-      await kv.setItemAsync(KEY, JSON.stringify({ workout, swaps, left }));
+    /**
+     * The planned moves put behind in this workout ("Do it later", ADR-090 Ek 2, K-1064), in the order they were put there:
+     * kept in the same record. None for another workout, nothing kept, or what cannot be read.
+     */
+    async readBehind(workout: string): Promise<string[]> {
+      return readIds(await kv.getItemAsync(KEY), workout, 'behind');
+    },
+    /** The moves found taken in this workout (Taken, K-1064): kept in the same record, sent with the finish. */
+    async readTaken(workout: string): Promise<string[]> {
+      return readIds(await kv.getItemAsync(KEY), workout, 'taken');
+    },
+    async keep(workout: string, swaps: Swaps, left: string[] = [], more: { behind?: string[]; taken?: string[] } = {}): Promise<void> {
+      await kv.setItemAsync(KEY, JSON.stringify({ workout, swaps, left, behind: more.behind ?? [], taken: more.taken ?? [] }));
     },
     async forget(): Promise<void> {
       await kv.removeItemAsync(KEY);

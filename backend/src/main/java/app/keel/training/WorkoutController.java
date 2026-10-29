@@ -88,9 +88,10 @@ class WorkoutController {
 
     /**
      * {@code uncleanExerciseIds}: the moves whose form was not clean (G6 K-31) — their load and reps are held (K-217).
-     * {@code pausedSeconds}: how long it was paused (K-998), within its length.
+     * {@code pausedSeconds}: how long it was paused (K-998), within its length. {@code takenExerciseIds}: the moves found
+     * taken in the session (#674, ADR-090 Ek 2); absent keeps what was given before.
      */
-    record Finish(Instant endedAt, List<String> uncleanExerciseIds, String note, Integer pausedSeconds) {
+    record Finish(Instant endedAt, List<String> uncleanExerciseIds, String note, Integer pausedSeconds, List<String> takenExerciseIds) {
     }
 
     /** {@code supersetId}: the superset the set belongs to, made by the phone (K-424, ADR-035). */
@@ -179,6 +180,13 @@ class WorkoutController {
         // A catalog move, or one of the user's own (K-424): an off-program move is accepted and has no target to hold.
         require(unclean.stream().allMatch(exercise -> exercise != null && (catalog.find(exercise).isPresent() || customs.find(account, exercise).isPresent()))
                 && Set.copyOf(unclean).size() == unclean.size());
+        // The moves found taken (#674): each once, from the catalog or one of the user's own, like the unclean ones.
+        List<String> taken = finish.takenExerciseIds();
+        require(taken == null || (taken.stream().allMatch(exercise -> exercise != null && (catalog.find(exercise).isPresent() || customs.find(account, exercise).isPresent()))
+                && Set.copyOf(taken).size() == taken.size()));
+        if (taken != null) {
+            store.keepTaken(account, id, Set.copyOf(taken));
+        }
         // Kept with the next session's load and reps of the day's planned moves (K-217).
         progress.finish(account, workout, finish.endedAt(), TrainingLimits.note(finish.note()), Set.copyOf(unclean), finish.pausedSeconds());
         return read(account, owned(account, id));

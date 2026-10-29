@@ -630,6 +630,23 @@
     "offline": "No connection. Try again when you're online.",
     "failed": "Something went wrong on our side. Try again in a moment."
   },
+  "taken": {
+    "open": "Taken",
+    "openLabel": "{move} is taken",
+    "next": "Taken?",
+    "nextLabel": "Up next is taken: {move}",
+    "title": "{move} is taken",
+    "later": "Do it later",
+    "laterNote": "It moves to the end of today.",
+    "laterLabel": "Do {move} later",
+    "laterSaid": "{name} is at the end of today.",
+    "instead": "Or do instead",
+    "done": "You've done this one",
+    "none": "Nothing else for these muscles on other equipment.",
+    "more": "More swaps",
+    "why": "Same muscles, other equipment. Today only.",
+    "whySingle": "Same muscles, on other equipment than {move}."
+  },
   "swap": {
     "title": "Swap {move}",
     "titleGeneric": "Swap a move",
@@ -641,7 +658,7 @@
     "back": "Back to the planned move",
     "none": "No other move for these muscles in your gym.",
     "which": "Which one is taken?",
-    "whichWhy": "Pick the move to swap, today only.",
+    "whichWhy": "Pick the move that is taken. Today only.",
     "scopeTitle": "{move} instead of {current}",
     "today": "Today only",
     "todayBody": "Next time it's {current} again.",
@@ -669,7 +686,7 @@
   },
   "todayChange": {
     "title": "Change today",
-    "busy": { "title": "Gym is busy", "body": "Swap a move for one that is free." },
+    "busy": { "title": "Gym is busy", "body": "Pick what is taken. You get moves on other equipment." },
     "short": { "title": "Short on time", "body": "Just the top moves. Cardio is optional." },
     "shortNow": "This is the short version.",
     "full": { "title": "Full workout", "body": "Every move back for today." },

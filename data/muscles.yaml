@@ -21,3 +21,9 @@ muscles:
 # Muscles with their own weekly minimum of work sets (arm_weekly_sets_min, Güray G1 K-61: biceps and triceps 6-8 a week,
 # split over two sessions). The program review (K-955) reads it through the catalog.
 arm_muscles: [biceps, triceps]
+# Muscles whose compound moves stand in for each other when a move is taken (Güray G1 K-77: a machine that is busy is not
+# waited for, you go to an alternative you know; K-37: 3-4 moves per muscle group). A vertical pull (lats) and a row
+# (upper_back, with the lats second) are one group: a taken lat pulldown is replaced by a row, and the other way round.
+# Same kind only (G6 K-35); a chest press is never offered for a shoulder press, whatever muscles they share.
+swap_groups:
+  - [lats, upper_back]

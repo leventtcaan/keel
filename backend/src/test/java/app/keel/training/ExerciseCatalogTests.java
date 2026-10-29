@@ -48,6 +48,31 @@ class ExerciseCatalogTests {
     }
 
     @Test
+    void theLatsAndTheUpperBackStandInForEachOtherAndNothingElseDoes() throws IOException {
+        // ADR-090 Ek 2, G1 K-77: a taken pulldown is replaced by a row; the vocabulary's swap_groups say so.
+        ExerciseCatalog catalog = ExerciseCatalog.of(repository(), vocabulary());
+
+        assertThat(catalog.standsIn("lats", "upper_back")).isTrue();
+        assertThat(catalog.standsIn("upper_back", "lats")).isTrue();
+        assertThat(catalog.standsIn("lats", "lats")).isTrue();
+        assertThat(catalog.standsIn("chest", "front_delts")).isFalse();
+        assertThat(catalog.standsIn("quads", "glutes")).isFalse();
+    }
+
+    @Test
+    void aSwapGroupNeedsTwoMusclesThatAreMuscles() {
+        Map<String, Object> squat = Map.of("squat.yaml", move("squat", "compound", List.of("quads"), List.of()));
+        Map<String, Object> vocabulary = new HashMap<>(MUSCLES);
+
+        vocabulary.put("swap_groups", List.of(List.of("quads")));
+        assertThatIllegalArgumentException().isThrownBy(() -> ExerciseCatalog.of(squat, vocabulary));
+        vocabulary.put("swap_groups", List.of(List.of("quads", "wings")));
+        assertThatIllegalArgumentException().isThrownBy(() -> ExerciseCatalog.of(squat, vocabulary));
+        vocabulary.put("swap_groups", List.of(List.of("quads", "chest")));
+        assertThat(ExerciseCatalog.of(squat, vocabulary).standsIn("quads", "chest")).isTrue();
+    }
+
+    @Test
     void anArmThatIsNotAMuscleIsRefused() {
         Map<String, Object> vocabulary = new HashMap<>(MUSCLES);
         vocabulary.put("arm_muscles", List.of("triceps", "biceps"));
