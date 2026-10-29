@@ -5375,6 +5375,24 @@ tasks:
     tests: ["jest today + workout + meal-edit + saved-banner + weigh-in", "tools/anayasa-denetimi.sh"]
     refs: ["plan/kararlar/ADR-070-gorsel-dil-turkuaz.md", "plan/kararlar/ADR-087-kirik-gorunum-duzeltmeleri.md", "prototip/yeniden-yapim.html"]
 
+  - id: K-1049
+    title: "Yeniden yapım Evre 4.2: onboarding prototip farkları (karşılama yasal satırı, ikonlar, varsayılanlar, plan hedefi)"
+    milestone: M10
+    module: mobile
+    type: fix
+    size: S
+    status: doing
+    depends_on: [K-1041]
+    why: "Karşılamada 18+ · Terms · Privacy yok; deneyim/aktivite/rıza ikonları yok; gün ve cinsiyet varsayılanı yok; plan seçilen hedefi söylemiyor (envanter T-15, T-12; denetim C9-C13)"
+    acceptance:
+      - "Karşılama: 18+ · Terms · Privacy satırı (bağlantılar mevcut yasal adreslerden)"
+      - "Deneyim, aktivite, hedef seçeneklerinde ve rıza maddelerinde SF Symbol ikonları (prototip)"
+      - "Gün sorusunda 3 seçili başlar (onaylamak için yine dokunulur ya da Continue); cinsiyet Male varsayılan, boy tekerleği 140-210"
+      - "Plan ekranı Decide for me ise seçilen hedefi adıyla söyler (ADR-072 #6); ilk antrenman kartında süre varsa"
+      - "jest + anayasa denetimi yeşil"
+    tests: ["jest onboarding-* + sign-in + copy", "tools/anayasa-denetimi.sh"]
+    refs: ["prototip/yeni-yuz.html", "plan/denetim-2026-10-29.md", "plan/envanter-2026-10-29.md"]
+
   - id: K-1010
     title: "Sunucudaki ek siteler: Caddy /opt/sites altındaki *.caddy dosyalarını içeri alır"
     milestone: M9
