@@ -19,6 +19,8 @@ Levent TestFlight'ta denedi: programsız kalan hesapta antrenman yok, yemek aram
 - Simülatör hesabı: aynı Apple ID ile yeni hesap (Levent'in eski hesabı silindi), programı var (4 gün), RevenueCat promosyon premium 29 Kas'a kadar.
 **05:35 UTC:** #643 (Evre 4.1 tutarlılık) birleşti, sahte sunucu görsel turunda doğrulandı; #644 onboarding prototip farkları ajanda. Metro gerçek sunucuda,
 keel-main kendi node_modules'u ile (eski kopya bağı yok); uygulama main d1f0dc15 ile karşılama ekranında, Levent'in Apple girişini bekliyor.
+**08:55 UTC:** kanıt turu tamam (envanter sayfası sürüm 3), build 6 EAS'te bitti ve ASC'ye yüklendi (TestFlight işleniyor). Kalan: ASC'de 1.0'ı incelemeden
+geri çek → build 5 çıkar → build 6 bağla → yeniden gönder (ego lite ASC oturumu düşmüş; Levent girişi bekleniyor). Sonra döngü durur, Levent'e özet.
 **Metro dersi:** `git pull` ile gelen `data/parameters/*.json` değişikliklerini çalışan Metro görmez (eski JSON sunar) → main değişince Metro'yu durdur,
 `metro-tmp`'yi sil, yeniden başlat, uygulamayı kapat-aç; bunu OTURUM AÇIKKEN yapma (çift yenileme oturumu düşürür). Kanıt turunda main'i çekme.
 **Sabah sırası (Evre 4):** (1) `.envanter/metro.sh` arka planda (keel-main artık kendi node_modules'u: eski kopya bağı kalktı), uygulamayı BİR kez
