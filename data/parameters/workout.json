@@ -335,6 +335,14 @@
       "note": "OwnProgram day name maxLength, the server's keel.training.max-day-name (counted in UTF-16 units there): a longer routine name is cut to fit in the draft (K-957)."
     },
     {
+      "key": "session_added_move_sets",
+      "value": 3,
+      "unit": "sets",
+      "tag": "urun",
+      "source": "plan/yeni-yuz-kurallar.md#R6",
+      "note": "Product choice (Evre 7, issue 684), the same three as a move added to a typed program: how many sets a move added in a workout, outside the day's plan, has. A move with no count was never done (a session of 29 Oct held 41 sets of one), so the card never said Next or Finish; after these the move is done, and One more set adds a row."
+    },
+    {
       "key": "program_new_move_sets",
       "value": 3,
       "unit": "sets",

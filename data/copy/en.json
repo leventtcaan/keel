@@ -937,6 +937,7 @@
     },
     "add": {
       "open": "Add a move",
+      "oneMore": "One more set",
       "search": "Find a move",
       "pick": "Add {name}",
       "close": "Close",

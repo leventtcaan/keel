@@ -755,13 +755,63 @@ describe('a move added to the session, outside the plan (K-416)', () => {
   };
   const sideButton = (side: 'LEFT' | 'RIGHT') => t('workout.logSide', { number: 1, side: t(`workout.sideName.${side}`) });
 
-  test("after a set of the added move its card stays: there is no planned count to finish it, the plan's moves wait", async () => {
+  test("after a set of the added move its card stays for the sets it has, the plan's moves wait", async () => {
     await show();
     await addByName('lat', latName);
     await logTyped('50', '10', t('workout.log', { number: 1 }));
     expect(await screen.findByText(t('workout.log', { number: 2 }))).toBeOnTheScreen();
     await fireEvent.press(screen.getByText(t('workout.log', { number: 2 })));
     expect(sets().map((s) => s.body.exerciseId)).toEqual(['lat_pulldown', 'lat_pulldown']);
+  });
+
+  // Evre 7 (issue 684): Levent's workout of 29 Oct had 41 work sets of one added move (standing calf raise), the plan's last two moves never
+  // done, no finish. A move added outside the plan had no set count ("as many as the user does"), so the card never said done, the
+  // dock never offered Next or Finish, and the only way out was the grey End.
+  test('an added move has the sets of an added move, like any move: after the last, no more Log set; Next names the plan\'s next move', async () => {
+    await show();
+    await addByName('lat', latName);
+    await logTyped('50', '10', t('workout.log', { number: 1 }));
+    expect(await screen.findByText(t('workout.setOf', { number: 2, count: workoutParams.addedMoveSets }))).toBeOnTheScreen();
+    await fireEvent.press(screen.getByText(t('workout.log', { number: 2 })));
+    await fireEvent.press(await screen.findByText(t('workout.log', { number: 3 })));
+    expect(screen.queryByText(t('workout.log', { number: 4 }))).toBeNull();
+    const next = await screen.findByRole('button', { name: /^Next: / });
+    expect(sets().map((s) => s.body.exerciseId)).toEqual(['lat_pulldown', 'lat_pulldown', 'lat_pulldown']);
+    await fireEvent.press(next);
+    expect(await screen.findByText(t('workout.log', { number: 1 }))).toBeOnTheScreen();
+    expect(screen.getAllByText('Bench press').length).toBeGreaterThan(0);
+  });
+
+  test('"One more set" gives the added move one more row, and after it the move is done again', async () => {
+    await show();
+    await addByName('lat', latName);
+    await logTyped('50', '10', t('workout.log', { number: 1 }));
+    await fireEvent.press(screen.getByText(t('workout.log', { number: 2 })));
+    await fireEvent.press(await screen.findByText(t('workout.log', { number: 3 })));
+    await fireEvent.press(await screen.findByRole('button', { name: t('workout.add.oneMore') }));
+    await fireEvent.press(await screen.findByText(t('workout.log', { number: 4 })));
+    expect(screen.queryByText(t('workout.log', { number: 5 }))).toBeNull();
+    expect(await screen.findByRole('button', { name: /^Next: / })).toBeOnTheScreen();
+  });
+
+  test('a session that already holds 41 sets of one added move (the phone of 29 Oct): the move is done, the plan goes on, Finish is there', async () => {
+    mockRecords = [
+      ...mockRecords,
+      ...Array.from({ length: 41 }, (_, i) => record('set', `c${i}`, { clientId: `c${i}`, exerciseId: 'lat_pulldown', setType: 'WORKING', loadKg: 7.5, reps: 4 + (i % 3), rir: 1 }, 'w1')),
+    ];
+    await show();
+    // The added move is done (its dot says so); the plan's first move is the set under way, and Finish is on the page.
+    expect(await screen.findByRole('button', { name: t('workout.dot', { name: latName, status: t('workout.allDone') }) })).toBeOnTheScreen();
+    expect(await screen.findByText(t('workout.log', { number: 1 }))).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: t('workout.finish') })).toBeOnTheScreen();
+  });
+
+  test('Finish workout is on the page whenever something is logged, not only under End: visible mid-session, and it asks about form', async () => {
+    await show();
+    expect(screen.queryByRole('button', { name: t('workout.finish') })).toBeNull(); // nothing logged: End closes it, nothing to finish
+    await fireEvent.press(await screen.findByText(t('workout.log', { number: 1 })));
+    await fireEvent.press(await screen.findByRole('button', { name: t('workout.finish') }));
+    expect(await screen.findByText('How was your form?')).toBeOnTheScreen();
   });
 
   test('two moves added: the second keeps its card through both sides, though its first set puts it before the other', async () => {
@@ -784,12 +834,12 @@ describe('a move added to the session, outside the plan (K-416)', () => {
     expect(listed).toEqual(names);
   });
 
-  test("the progress counts the plan's moves only; an added move says its set with no count to reach", async () => {
+  test("the progress counts the plan's moves only; an added move says its set and how many it has", async () => {
     await show();
     await addByName('lat', latName);
     await logTyped('50', '10', t('workout.log', { number: 1 }));
     expect(await screen.findByText(t('workout.progress', { done: 0, count: 2 }))).toBeOnTheScreen();
-    expect(screen.getByText(t('workout.setNumber', { number: 2 }))).toBeOnTheScreen();
+    expect(screen.getByText(t('workout.setOf', { number: 2, count: workoutParams.addedMoveSets }))).toBeOnTheScreen();
   });
 
   test('the panel closes without adding anything', async () => {

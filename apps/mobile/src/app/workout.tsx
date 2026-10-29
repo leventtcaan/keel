@@ -133,6 +133,8 @@ function Session() {
   // cardio, never another), and counts as logged the moment the phone has it, whether or not the records read back (review).
   const [cardioId, setCardioId] = useState<string | null>(null);
   const [cardioDone, setCardioDone] = useState(false);
+  // The rows an added move was given past its sets ("One more set"), by move: this screen's only, a session opened again has them as sets done.
+  const [moreSets, setMoreSets] = useState<Record<string, number>>({});
   // The moves swapped away from in this session: they stay in it with what was done on them, but are no longer the
   // superset's members (its place is the planned move's, whoever stands in it) and have nothing left to do. Kept with the
   // swaps (K-973, ADR-075 Ek 8): opened again, a superset read back from sets would list the moves its sets were done on.
@@ -262,7 +264,7 @@ function Session() {
             ? null
             : planned === undefined
               ? // A move swapped away from keeps its sets but has none left to do; added again (addMove) it is not one left.
-                extraPlan(move, last, done, left.includes(exerciseId))
+                extraPlan(move, last, done, left.includes(exerciseId), moreSets[exerciseId] ?? 0)
               : planExercise(planned, move, last, done, skips[exerciseId] ?? NONE_SKIPPED);
         });
   const firstOpen = plans.findIndex((plan) => plan !== null && plan.current !== null);
@@ -319,7 +321,7 @@ function Session() {
   // After the set under way: whether a move still has sets left (the one under way, unless this is its last).
   const leftAfterThis = (id: string) =>
     id === moveId
-      ? plan !== null && (plan.open === true || (plan.current ?? 0) < plan.rows.length - 1)
+      ? plan !== null && (plan.current ?? 0) < plan.rows.length - 1
       : (plans[entries.findIndex((e) => e.exerciseId === id)]?.current ?? null) !== null;
   // Warm-ups come before the move's first work set; the day's first move is the one picked before any work set at all.
   const worked = [...new Set(done.filter((s) => s.setType === 'WORKING').map((s) => s.exerciseId))];
@@ -423,8 +425,8 @@ function Session() {
       // Paused while the set was being kept: no rest starts inside the pause (nor its alert).
       const resting = pauseRef.current.pausedAt === null;
       if (group === undefined) {
-        // The move's last set (C4, ADR-075 #1): no rest, the move stays with Next. A move outside the plan is never done.
-        if (planned !== undefined && plan.current === plan.rows.length - 1) {
+        // The move's last set (C4, ADR-075 #1): no rest, the move stays with Next. A move added outside the plan has its sets too.
+        if (plan.current === plan.rows.length - 1) {
           endRest();
           setPicked(move.id);
         } else if (resting) setRest(new Date().getTime());
@@ -979,9 +981,7 @@ function Session() {
   const heading =
     plan === null || plan.current === null
       ? ''
-      : plan.open === true
-        ? t('workout.setNumber', { number: Math.floor(plan.current / sides) + 1 })
-        : t('workout.setOf', { number: Math.floor(plan.current / sides) + 1, count: plan.rows.length / sides });
+      : t('workout.setOf', { number: Math.floor(plan.current / sides) + 1, count: plan.rows.length / sides });
   // An added load left empty is none added: 0, the body alone (parseEntry logs it so).
   const noAddedLoad = move?.load === 'BODYWEIGHT_PLUS_EXTERNAL' && entry.load.trim() === '';
   const typedKg = row === null ? null : (parseLoad(entry.load, units, entry.loadKg) ?? (noAddedLoad ? 0 : null));
@@ -1420,6 +1420,25 @@ function Session() {
         {cardioProblem}
       </>
     );
+  // A move added outside the plan has its sets and is done after them; one more is asked for here (Evre 7, issue 684).
+  const addedDone = planned === undefined && plan !== null && plan.current === null && moveId !== undefined && !left.includes(moveId);
+  const oneMore =
+    !addedDone || moveId === undefined ? null : (
+      <Button
+        label={t('workout.add.oneMore')}
+        variant="ghost"
+        size="sm"
+        onPress={() => {
+          setMoreSets((before) => ({ ...before, [moveId]: (before[moveId] ?? 0) + 1 }));
+          setPicked(moveId);
+        }}
+      />
+    );
+  // Finish is on the page whenever something is logged, not only under End: the dock shows the set or Next, and a session that
+  // goes on and on (a move that is never done) would have no visible way out (Evre 7, issue 684).
+  const dockOffersFinish = !finishing && !cardioShown && ((move !== undefined && row !== null) || nextId !== undefined);
+  const finishLink =
+    active === null || worked.length === 0 || !dockOffersFinish ? null : <Button label={t('workout.finish')} variant="ghost" size="sm" onPress={onFinish} />;
   const session = (
     <>
       {entries.length > 0 && dots}
@@ -1427,7 +1446,9 @@ function Session() {
       {head}
       {card}
       {upNext}
+      {oneMore}
       {addPanel}
+      {finishLink}
       {dayGone}
       {finishProblem}
     </>

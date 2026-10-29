@@ -39,6 +39,8 @@ export const workoutParams = {
   healthWorkoutMaxMinutes: param<number>('health_workout_max_minutes'),
   evaluationWindowDays: param<number>('evaluation_window_days'),
   effortCallWindowWeeks: param<number>('effort_call_window_weeks'),
+  /** The sets a move added in a workout, outside the day's plan, has (Evre 7, issue 684): after them it is done. */
+  addedMoveSets: param<number>('session_added_move_sets'),
   /** The user's own program as the contract takes it (OwnProgram). */
   programDaysMax: param<number>('program_days_max'),
   /** A program of more days than this carries the short rest-day note (ADR-090 #3). */
