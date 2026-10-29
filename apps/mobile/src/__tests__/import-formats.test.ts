@@ -1,6 +1,7 @@
 /**
- * Reading another app's export on the phone (K-609, ADR-053, arastirma/ham/H13): only the headers verified from real
- * files are read — Strong's comma file, Hevy's in kg or lb — and nothing else is guessed. A session is its rows with the
+ * Reading another app's export on the phone (K-609, ADR-053, arastirma/ham/H13; tolerant headers, K-1062): a file is read by
+ * the names of its columns — Strong's comma file, its semicolon file with the unit in the weight header, Hevy's in kg or lb,
+ * in any order, case or delimiter — and a file without what a set needs is not guessed at. A session is its rows with the
  * same start; times are the phone's local time (the files carry no zone). Notes, RPE, distance and time are not read.
  */
 import fs from 'node:fs';
@@ -112,11 +113,10 @@ describe('Hevy', () => {
 });
 
 describe('what is not read', () => {
-  test("a header we have not seen in a real export is not guessed at — Strong's semicolon form included", () => {
-    expect(readExport('Workout #;Date;Workout Name;Duration (sec);Exercise Name;Set Order;Weight (kg);Reps\n1;2025-01-18;A;60;Squat;1;100;5')).toEqual({
-      kind: 'unknown',
-    });
+  test('a header without what a set needs is not guessed at', () => {
     expect(readExport('date,exercise,kg,reps\n2025-01-18,Squat,100,5')).toEqual({ kind: 'unknown' });
+    // Reps and a weight, but no move name.
+    expect(readExport('Date;Workout Name;Set Order;Weight (kg);Reps\n2025-01-18 07:30:00;A;1;100;5')).toEqual({ kind: 'unknown' });
     expect(readExport('')).toEqual({ kind: 'unknown' });
     expect(readExport('not a csv "at all')).toEqual({ kind: 'unknown' });
   });
@@ -160,8 +160,9 @@ describe('after the review (K-609)', () => {
     expect(read.kind === 'read' && read.leftOut).toBe(1);
   });
 
-  test('a cut-off header is not the form', () => {
-    expect(readExport('Date,Workout Name,Duration,Exercise Name,Set Order,Weight,Reps\n2025-01-20 07:30:00,A,45m,Squat,1,100,5').kind).toBe('unknown');
+  test('a header that lacks only columns we do not read is still the form (K-1062); one that lacks a column a set needs is not', () => {
+    expect(readExport('Date,Workout Name,Duration,Exercise Name,Set Order,Weight,Reps\n2025-01-20 07:30:00,A,45m,Squat,1,100,5').kind).toBe('read');
+    expect(readExport('Date,Workout Name,Duration,Exercise Name,Set Order,Weight\n2025-01-20 07:30:00,A,45m,Squat,1,100').kind).toBe('unknown');
   });
 
   const hevy = (rows: string[]) => [fixture('hevy.csv').split('\r\n')[0], ...rows].join('\r\n');
@@ -223,5 +224,83 @@ describe('the routine names, for the program draft only (K-957, ADR-073 Ek 2)', 
     const read = readExport(fixture(file));
 
     expect(read.kind === 'read' && read.sessions.every((s) => !('routine' in s))).toBe(true);
+  });
+});
+
+describe('tolerant headers (K-1062)', () => {
+  test("Strong's semicolon file: a byte-order mark, quoted fields, the unit in the weight header, a decimal comma, seconds for a duration", () => {
+    const read = readExport(fixture('strong-semicolon.csv'));
+
+    expect(read.kind).toBe('read');
+    if (read.kind !== 'read') return;
+    expect(read.source).toBe('STRONG');
+    expect(read.unit).toBe('kg'); // the header says it: the user is not asked
+    expect(read.sessions).toHaveLength(2);
+    const [chest, legs] = read.sessions;
+    expect(chest.startedAt).toEqual(local(2025, 4, 29, 12, 0));
+    expect(chest.endedAt).toEqual(local(2025, 4, 29, 12, 10)); // 600 s
+    expect(chest.sets).toEqual([
+      { name: 'Bench Press (Barbell)', warmUp: false, weight: 100, reps: 10 },
+      { name: 'Bench Press (Barbell)', warmUp: false, weight: 62.5, reps: 8 },
+      { name: 'Triceps Pushdown (Cable)', warmUp: false, weight: 27.5, reps: 12 },
+    ]);
+    expect(legs.endedAt).toEqual(local(2025, 5, 1, 19, 32)); // 3720 s
+    expect(read.leftOut).toBe(1); // the plank, held for 60 seconds, no reps
+  });
+
+  test('a decimal comma is a number only where commas do not split the fields', () => {
+    const comma = 'Date,Workout Name,Duration,Exercise Name,Set Order,Weight,Reps\n2025-01-20 07:30:00,A,45m,Squat,1,"62,5",5';
+    expect(readExport(comma)).toEqual({ kind: 'empty' }); // the only set is left out, never sent to be refused
+    const semicolon = 'Date;Workout Name;Duration;Exercise Name;Set Order;Weight;Reps\n2025-01-20 07:30:00;A;45m;Squat;1;62,5;5';
+    expect(readExport(semicolon)).toMatchObject({ kind: 'read', leftOut: 0 });
+  });
+
+  test('Strong with the unit in the weight header: lb', () => {
+    const csv = 'Date,Workout Name,Duration (sec),Exercise Name,Set Order,Weight (lb),Reps\n2025-01-20 07:30:00,A,2700,Squat (Barbell),1,225,5';
+    const read = readExport(csv);
+
+    expect(read.kind === 'read' && read.unit).toBe('lb');
+    expect(read.kind === 'read' && read.sessions[0].sets[0].weight).toBe(225);
+    expect(read.kind === 'read' && read.sessions[0].endedAt).toEqual(local(2025, 1, 20, 8, 15));
+  });
+
+  test('columns in another order, other case, extra columns, tabs between fields', () => {
+    const csv = ['Reps\tExercise Name\tDATE\tweight\tSet Order\tWorkout Name\tSomething Else', '5\tSquat (Barbell)\t2025-01-20T07:30:00\t100\t1\tA\tx'].join('\r\n');
+    const read = readExport(csv);
+
+    expect(read.kind === 'read' && read.sessions[0].startedAt).toEqual(local(2025, 1, 20, 7, 30));
+    expect(read.kind === 'read' && read.sessions[0].sets).toEqual([{ name: 'Squat (Barbell)', warmUp: false, weight: 100, reps: 5 }]);
+  });
+
+  test("Hevy in lb with seconds in its times, 'warm up' set type spelled apart, a different order and extra columns", () => {
+    const csv = [
+      'exercise_title,Title,set_type,weight_lbs,reps,start_time,end_time,notes_extra',
+      'Bench Press (Barbell),Push,warm up,95,10,"30 Jun 2025, 19:56:30","30 Jun 2025, 20:58:10",',
+      'Bench Press (Barbell),Push,normal,135,8,"30 Jun 2025, 19:56:30","30 Jun 2025, 20:58:10",',
+    ].join('\n');
+    const read = readExport(csv);
+
+    expect(read.kind).toBe('read');
+    if (read.kind !== 'read') return;
+    expect(read.source).toBe('HEVY');
+    expect(read.unit).toBe('lb');
+    expect(read.sessions[0].startedAt).toEqual(local(2025, 6, 30, 19, 56, 30));
+    expect(read.sessions[0].sets.map((s) => [s.warmUp, s.weight])).toEqual([
+      [true, 95],
+      [false, 135],
+    ]);
+  });
+
+  test("Hevy's real kg file with a byte-order mark and Windows line ends is the same read", () => {
+    const plain = readExport(fixture('hevy.csv'));
+    const marked = readExport('﻿' + fixture('hevy.csv').replace(/\r?\n/g, '\r\n'));
+
+    expect(marked).toEqual(plain);
+  });
+
+  test('a Hevy file does not read as Strong, nor Strong as Hevy', () => {
+    expect(readExport(fixture('hevy.csv'))).toMatchObject({ kind: 'read', source: 'HEVY' });
+    expect(readExport(fixture('strong.csv'))).toMatchObject({ kind: 'read', source: 'STRONG' });
+    expect(readExport(fixture('strong-semicolon.csv'))).toMatchObject({ kind: 'read', source: 'STRONG' });
   });
 });

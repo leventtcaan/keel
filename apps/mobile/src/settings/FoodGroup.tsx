@@ -11,8 +11,8 @@ import { openDetail } from './detail';
 /**
  * Settings › Food (K-982, ADR-069 #3; moved here from onboarding): the foods the user does not or cannot eat, in their own
  * words. They can say something about health (an allergy), so they are kept and shown only with the health data consent
- * (FoodPreferences.avoid, K-225): without it the row is locked and the profile is not asked for them. The row says what is
- * kept and opens the page that edits it (`FoodEditor`), so the list is never long under a row.
+ * (FoodPreferences.avoid, K-225): without it the row says so and the profile is not asked for them, and its page offers the
+ * consent. The row says what is kept and opens the page that edits it (`FoodEditor`), so the list is never long under a row.
  */
 export function FoodGroup({ granted }: { granted: boolean | null }) {
   // Keyed by the consent: when it goes or comes back, what was read under the last yes is dropped with the component, so a
@@ -27,6 +27,11 @@ export function FoodGroup({ granted }: { granted: boolean | null }) {
 /** A row that cannot be opened is still a (disabled) button, so a screen reader finds it and hears why. */
 const locked = () => undefined;
 
+/** The foods on the row: up to two by name, then how many. The page behind it has them all. */
+const SHOWN = 2;
+const said = (foods: string[]) =>
+  foods.length === 0 ? t('settings.food.none') : foods.length <= SHOWN ? foods.join(t('editProgram.listJoin')) : t('settings.food.count', { count: foods.length });
+
 function FoodRow({ granted }: { granted: boolean | null }) {
   const { api } = useAppServices();
   const label = t('settings.food.avoid');
@@ -34,7 +39,8 @@ function FoodRow({ granted }: { granted: boolean | null }) {
   const read = useCallback(async () => (granted === true ? await load(() => api.GET('/v1/profile')) : null), [api, granted]);
   const { data } = useReadOnFocus(read);
 
-  if (granted === false) return <ListRow icon="nosign" label={label} value={t('settings.food.locked')} onPress={locked} disabled />;
+  // Locked, the row still opens its page: the consent can be given there (not a dead end).
+  if (granted === false) return <ListRow icon="nosign" label={label} value={t('settings.food.locked')} navigates onPress={() => openDetail('food')} />;
   if (granted !== true || data === null || data === undefined) return <ListRow icon="nosign" label={label} />;
   if (data.state !== 'ready') return <ListRow icon="nosign" label={label} value={t('settings.food.unread')} onPress={locked} disabled />;
   const foods = data.value.food?.avoid ?? [];
@@ -42,7 +48,7 @@ function FoodRow({ granted }: { granted: boolean | null }) {
     <ListRow
       icon="nosign"
       label={label}
-      value={foods.length === 0 ? t('settings.food.none') : foods.join(t('editProgram.listJoin'))}
+      value={said(foods)}
       navigates
       onPress={() => openDetail('food')}
     />

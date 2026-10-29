@@ -1,6 +1,6 @@
 /**
- * Settings, grouped lists (K-982, K-1043; ADR-070 #3, Ek 2 #2, #4; ADR-074 #4, ADR-036, ADR-069 #3, ADR-088 #3): nine groups
- * in one order, each row going to the endpoint or the route that already does the work (Edit program, the gyms, the workout
+ * Settings, grouped lists (K-982, K-1043, K-1062; ADR-070 #3, Ek 2 #2, #4; ADR-074 #4, ADR-036, ADR-069 #3, ADR-088 #3): the
+ * groups in one order, each row going to the endpoint or the route that already does the work (Edit program, the workout
  * import, the profile, the consents, the subscription, the account), a chevron on a row only where it opens a page, and the
  * health rows locked while the health data consent is not given. The pages under Settings (`settings-detail`: foods you
  * avoid, your routine, the consents, Add to Apple Health, bringing in weigh-ins, data sources) are here too: they hold what
@@ -44,13 +44,13 @@ const PROGRAM: Schemas['Program'] = {
   days: [day('d1', 'MONDAY'), day('d2', 'WEDNESDAY'), day('d3', 'FRIDAY')],
   cardio: { source: 'GENERATED', minutes: 30, sessionsPerWeek: 3, sessions: [], doneThisWeek: 0, afterLiftOverLine: false },
 } as Schemas['Program'];
-const GYM = { id: 'g1', name: 'Club', current: true, platesKg: [], dumbbellsKg: [], machines: [] } as Schemas['Gym'];
 // The profile's training days differ from the program's on purpose: the program's days are the one source.
 const PROFILE: Schemas['Profile'] = {
   goal: 'BUILD_MUSCLE',
   sex: 'MALE',
   heightCm: 180,
   birthYear: 1990,
+  activityLevel: 'LOW_ACTIVE',
   programChoice: 'BUILD_ONE_FOR_ME',
   schedule: { trainingDays: ['TUESDAY', 'THURSDAY'], checkInDay: 'MONDAY', timeZone: 'Europe/Istanbul' },
   food: { avoid: ['peanuts', 'shellfish'], budgetNote: 'kept' },
@@ -61,7 +61,6 @@ const SUBSCRIPTION: Schemas['Subscription'] = { active: true, appUserId: '0b6f2a
 type Call = { method: string; path: string; body: unknown };
 let calls: Call[] = [];
 let program: Schemas['Program'] | null;
-let gyms: Schemas['Gym'][];
 let profile: Schemas['Profile'];
 let consent: 'GRANTED' | 'NEVER_ASKED';
 let profileRefused = false;
@@ -75,7 +74,6 @@ const api = createApiClient({
     const path = new URL(request.url).pathname;
     calls.push({ method: request.method, path, body: text === '' ? null : JSON.parse(text) });
     if (path === '/v1/program') return program === null ? json({ code: 'NOT_FOUND' }, 404) : json(program);
-    if (path === '/v1/gyms') return json(gyms);
     if (path === '/v1/subscription') return json(SUBSCRIPTION);
     if (path === '/v1/profile' && request.method === 'GET') {
       await profileGate;
@@ -138,6 +136,7 @@ const mockServices = {
     turnOn: jest.fn(async () => ({ granted: true, canAskAgain: false })),
     turnOff: jest.fn(async () => {}),
     setCue: jest.fn(async (_text: string) => {}),
+    keepSchedule: jest.fn(async (_schedule: unknown) => {}),
   },
   healthWriting: { current: () => mockHealthWriteOff, subscribe: () => () => {}, shown: () => 'off', turnOn: jest.fn(async (_which: string) => true), turnOff: jest.fn(async (_which: string) => {}) },
 };
@@ -154,7 +153,6 @@ beforeEach(() => {
   jest.clearAllMocks();
   calls = [];
   program = PROGRAM;
-  gyms = [GYM];
   profile = PROFILE;
   consent = 'GRANTED';
   profileRefused = false;
@@ -192,13 +190,14 @@ async function press(name: string) {
   await fireEvent.press(button(name));
   await act(async () => {});
 }
-const GROUPS = ['appearance', 'units', 'training', 'food', 'reminders', 'health', 'subscription', 'sources', 'account'] as const;
+const GROUPS = ['appearance', 'units', 'training', 'food', 'profile', 'reminders', 'health', 'subscription', 'sources', 'account'] as const;
 const GROUP_TITLE: Record<(typeof GROUPS)[number], string> = {
   appearance: t('settings.appearance.title'),
   units: t('settings.units.title'),
   sources: t('settings.sources.title'),
   training: t('settings.training.title'),
   food: t('settings.food.title'),
+  profile: t('settings.profile.title'),
   reminders: t('settings.reminders.title'),
   health: t('settings.health.title'),
   subscription: t('settings.subscription.title'),
@@ -207,7 +206,7 @@ const GROUP_TITLE: Record<(typeof GROUPS)[number], string> = {
 const headers = () => screen.getAllByRole('header').map((h) => within(h).queryByText(/./)?.props.children ?? h.props.children);
 
 describe('the groups', () => {
-  test('nine groups, in this order: Appearance, Units, Training, Food, Reminders, Health and data, Subscription, Data sources, Account', async () => {
+  test('the groups, in this order: Appearance, Units, Training, Food, About you, Reminders, Health and data, Subscription, Data sources, Account', async () => {
     await show();
     const seen = headers().filter((name) => (Object.values(GROUP_TITLE) as string[]).includes(name));
     expect(seen).toEqual(GROUPS.map((g) => GROUP_TITLE[g]));
@@ -233,8 +232,8 @@ describe('the groups', () => {
     // Opens a page.
     for (const name of [
       new RegExp(`^${t('settings.training.days')},`),
-      new RegExp(`^${t('settings.gyms')},`),
       new RegExp(`^${t('settings.food.avoid')},`),
+      ...['goal', 'checkIn', 'height', 'activity', 'born'].map((row) => new RegExp(`^${t(`settings.profile.${row}`)},`)),
       new RegExp(`^${t('settings.reminders.routine')}`),
       new RegExp(`^${t('settings.health.consent')},`),
       new RegExp(`^${t('settings.healthWrite.title')}`),
@@ -319,27 +318,18 @@ describe('training', () => {
     expect(mockPush).toHaveBeenCalledWith({ pathname: '/edit-program', params: { part: 'cardio' } });
   });
 
-  test('Gyms shows the one in use and opens the gyms', async () => {
-    await show();
-    await press(`${t('settings.gyms')}, Club`);
-    expect(mockPush).toHaveBeenCalledWith('/gyms');
-  });
-
-  test('with no gym yet, Gyms says so', async () => {
-    gyms = [];
-    await show();
-    expect(button(`${t('settings.gyms')}, ${t('settings.training.noGym')}`)).toBeOnTheScreen();
-  });
-
   test('Import workouts opens the workout import (Strong, Hevy)', async () => {
     await show();
     await press(`${t('settings.training.import')}, ${t('settings.training.importFrom')}`);
     expect(mockPush).toHaveBeenCalledWith('/import');
   });
 
-  test('the program and the gyms come from the server, read when Settings opens', async () => {
+  test('the program comes from the server, read when Settings opens; the gyms are not asked for (K-1062)', async () => {
     await show();
-    expect(calls.filter((c) => c.method === 'GET').map((c) => c.path)).toEqual(expect.arrayContaining(['/v1/program', '/v1/gyms']));
+    const paths = calls.filter((c) => c.method === 'GET').map((c) => c.path);
+    expect(paths).toContain('/v1/program');
+    expect(paths).not.toContain('/v1/gyms');
+    expect(screen.queryByText(/gym/i)).toBeNull();
   });
 
   test('a program that cannot be read: the rows say so and do not show a guess', async () => {
@@ -365,53 +355,246 @@ describe('food', () => {
   });
 
   describe('the page Foods you avoid', () => {
-    test('is titled by its row and holds the list as one line to edit', async () => {
+    const chip = (name: string) => screen.getByRole('button', { name });
+    const chipLabel = (food: string) => t(`settings.food.common.${food}`);
+
+    test('is titled by its row and holds the foods as chips: the common ones, the stored ones selected, no field to fill', async () => {
       await showDetail('food');
       expect(screen.getByRole('header', { name: t('settings.food.avoid') })).toBeOnTheScreen();
-      expect(screen.getByLabelText(t('settings.food.label'))).toHaveProp('value', 'peanuts, shellfish');
+      for (const food of ['pork', 'beef', 'shellfish', 'fish', 'dairy', 'eggs', 'gluten', 'nuts', 'peanuts', 'soy', 'alcohol']) {
+        expect(chip(chipLabel(food))).toBeOnTheScreen();
+      }
+      expect(chip(chipLabel('peanuts'))).toBeSelected();
+      expect(chip(chipLabel('shellfish'))).toBeSelected();
+      expect(chip(chipLabel('pork'))).not.toBeSelected();
+      expect(screen.queryByLabelText(t('settings.food.label'))).toBeNull();
+      expect(chip(t('settings.food.save'))).toBeDisabled(); // nothing is different yet
     });
 
-    test('saving sends the whole profile back with the new list, keeping the rest of what the profile holds, and closes the page', async () => {
+    test('tapping chips then Save sends the whole profile back with the new list, keeping the rest, and closes the page', async () => {
       await showDetail('food');
-      await fireEvent.changeText(screen.getByLabelText(t('settings.food.label')), ' peanuts, Gluten ,, gluten ');
+      await fireEvent.press(chip(chipLabel('gluten')));
+      await fireEvent.press(chip(chipLabel('peanuts'))); // taken off
       await press(t('settings.food.save'));
       const put = calls.find((c) => c.method === 'PUT' && c.path === '/v1/profile');
-      expect(put?.body).toEqual({ ...PROFILE, food: { avoid: ['peanuts', 'Gluten', 'gluten'], budgetNote: 'kept' } });
+      expect(put?.body).toEqual({ ...PROFILE, food: { avoid: ['shellfish', 'gluten'], budgetNote: 'kept' } });
       expect(mockBack).toHaveBeenCalledTimes(1);
     });
 
-    test('emptying the field saves an empty list', async () => {
+    test('"Add your own" opens one small field; what is added is a selected chip beside the common ones, once however it is written', async () => {
       await showDetail('food');
-      await fireEvent.changeText(screen.getByLabelText(t('settings.food.label')), '');
+      await press(t('settings.food.addOwn'));
+      await fireEvent.changeText(screen.getByLabelText(t('settings.food.label')), ' Kiwi ');
+      await press(t('settings.food.add'));
+      expect(chip('Kiwi')).toBeSelected();
+      await press(t('settings.food.addOwn'));
+      await fireEvent.changeText(screen.getByLabelText(t('settings.food.label')), 'kiwi, PEANUTS');
+      await press(t('settings.food.add'));
+      await press(t('settings.food.save'));
+      expect(calls.find((c) => c.method === 'PUT' && c.path === '/v1/profile')?.body).toMatchObject({ food: { avoid: ['peanuts', 'shellfish', 'Kiwi'] } });
+    });
+
+    test('a food stored in other words is a chip of its own, taken off with a tap', async () => {
+      profile = { ...PROFILE, food: { avoid: ['Peanuts', 'kiwi'] } };
+      await showDetail('food');
+      expect(chip(chipLabel('peanuts'))).toBeSelected(); // case does not matter
+      await fireEvent.press(chip('kiwi'));
+      await press(t('settings.food.save'));
+      expect(calls.find((c) => c.method === 'PUT' && c.path === '/v1/profile')?.body).toMatchObject({ food: { avoid: ['Peanuts'] } });
+    });
+
+    test('taking every chip off saves an empty list', async () => {
+      await showDetail('food');
+      await fireEvent.press(chip(chipLabel('peanuts')));
+      await fireEvent.press(chip(chipLabel('shellfish')));
       await press(t('settings.food.save'));
       expect(calls.find((c) => c.method === 'PUT' && c.path === '/v1/profile')?.body).toMatchObject({ food: { avoid: [] } });
     });
 
-    test('a save that does not reach the server says so, keeps what was typed, and stays', async () => {
+    test('a save that does not reach the server says so, keeps the chips as they were set, and stays', async () => {
       await showDetail('food');
-      await fireEvent.changeText(screen.getByLabelText(t('settings.food.label')), 'eggs');
+      await fireEvent.press(chip(chipLabel('eggs')));
       profileRefused = true;
       await press(t('settings.food.save'));
       expect(screen.getByText(t('settings.food.failed'))).toBeOnTheScreen();
       expect(profile.food?.avoid).toEqual(['peanuts', 'shellfish']);
-      expect(screen.getByLabelText(t('settings.food.label'))).toHaveProp('value', 'eggs');
+      expect(chip(chipLabel('eggs'))).toBeSelected();
       expect(mockBack).not.toHaveBeenCalled();
     });
 
-    test('Cancel sends nothing and closes the page', async () => {
-      await showDetail('food');
-      await press(t('settings.food.cancel'));
-      expect(calls.some((c) => c.method === 'PUT')).toBe(false);
-      expect(mockBack).toHaveBeenCalledTimes(1);
-    });
-
-    test('without the health data consent the page says what it needs and asks the profile for nothing', async () => {
+    test('without the health data consent the page says what it needs, gives the consent right there, and asks the profile for nothing', async () => {
       consent = 'NEVER_ASKED';
       await showDetail('food');
       expect(screen.getByText(t('settings.food.locked'))).toBeOnTheScreen();
-      expect(screen.queryByLabelText(t('settings.food.label'))).toBeNull();
+      expect(screen.queryByRole('button', { name: t('settings.food.common.pork') })).toBeNull();
       expect(calls.some((c) => c.path === '/v1/profile')).toBe(false);
+      // The button that grants it: the page then opens the chips, with the list read afresh.
+      await press(`${t('settings.consents.allow')} ${t('settings.consents.HEALTH_DATA')}`);
+      expect(chip(chipLabel('peanuts'))).toBeSelected();
     });
+  });
+});
+
+describe('about you (K-1062)', () => {
+  const rowName = (key: string, value: string) => `${t(`settings.profile.${key}`)}, ${value}`;
+  const put = () => calls.filter((c) => c.method === 'PUT' && c.path === '/v1/profile');
+
+  test('five rows, each with its answer from the profile, each opening a page of its own', async () => {
+    await show();
+    const group = within(screen.getByTestId('group-profile-card'));
+    expect(group.getAllByRole('button').map((row) => row.props.accessibilityLabel)).toEqual([
+      rowName('goal', t('onboarding.goal.build_muscle.title')),
+      rowName('checkIn', t('onboarding.schedule.dayName.MONDAY')),
+      rowName('height', '180 cm'),
+      rowName('activity', t('onboarding.activity.LOW_ACTIVE')),
+      rowName('born', '1990'),
+    ]);
+    await press(rowName('checkIn', t('onboarding.schedule.dayName.MONDAY')));
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/settings-detail', params: { part: 'checkin' } });
+  });
+
+  test('the height reads in the user\'s units', async () => {
+    mockUnits = 'IMPERIAL';
+    await show();
+    expect(button(rowName('height', t('units.feetInches', { feet: 5, inches: 11 })))).toBeOnTheScreen();
+  });
+
+  test('a profile that cannot be read says so and shows no guess; an activity never asked says Not set', async () => {
+    profile = { ...PROFILE, activityLevel: undefined };
+    await show();
+    expect(button(rowName('activity', t('settings.profile.notSet')))).toBeOnTheScreen();
+    await screen.unmount();
+    profileRefused = false;
+    const failing = jest.spyOn(api, 'GET').mockResolvedValue({ data: undefined, error: {}, response: new Response(null, { status: 500 }) } as never);
+    try {
+      await show();
+      expect(within(screen.getByTestId('group-profile-card')).getByText(t('settings.profile.unread'))).toBeOnTheScreen();
+      expect(screen.queryByText(t('onboarding.goal.build_muscle.title'))).toBeNull();
+    } finally {
+      failing.mockRestore();
+    }
+  });
+
+  test.each([
+    ['goal', 'onboarding.goal.lose_fat.title', { goal: 'LOSE_FAT' }],
+    ['goal', 'onboarding.goal.decide_for_me.title', { goal: 'DECIDE_FOR_ME' }],
+    ['activity', 'onboarding.activity.VERY_ACTIVE', { activityLevel: 'VERY_ACTIVE' }],
+  ])('the %s page: a choice, then Save writes it into the profile as it stands now, and closes the page', async (part, choice, change) => {
+    await showDetail(part);
+    expect(button(t('settings.profile.save'))).toBeDisabled(); // nothing is different yet
+    await fireEvent.press(screen.getByRole('radio', { name: new RegExp(`^${t(choice)}`) }));
+    await press(t('settings.profile.save'));
+    expect(put()).toHaveLength(1);
+    expect(put()[0].body).toEqual({ ...PROFILE, ...change });
+    expect(mockBack).toHaveBeenCalledTimes(1);
+  });
+
+  test('the check-in day: seven days to tap; the choice goes into the schedule only, and the reminders keep the new schedule', async () => {
+    await showDetail('checkin');
+    expect(screen.getAllByRole('button').filter((b) => b.props.accessibilityState?.selected === true)).toHaveLength(1);
+    expect(button(t('onboarding.schedule.dayName.MONDAY'))).toBeSelected();
+    await press(t('onboarding.schedule.dayName.SUNDAY'));
+    await press(t('settings.profile.save'));
+    expect(put()[0].body).toEqual({ ...PROFILE, schedule: { ...PROFILE.schedule, checkInDay: 'SUNDAY' } });
+    expect(mockServices.reminders.keepSchedule).toHaveBeenCalledWith(expect.objectContaining({ checkInDay: 'SUNDAY', trainingDays: ['TUESDAY', 'THURSDAY'] }));
+    expect(mockBack).toHaveBeenCalledTimes(1);
+  });
+
+  test('a change never writes from a copy the page read earlier: the profile is read again at Save, so another edit made meanwhile is kept', async () => {
+    await showDetail('goal');
+    await fireEvent.press(screen.getByRole('radio', { name: new RegExp(`^${t('onboarding.goal.lose_fat.title')}`) }));
+    // Meanwhile the training days (the program's owner), the foods and the units changed on the server.
+    profile = { ...PROFILE, units: 'IMPERIAL', food: { avoid: ['eggs'] }, schedule: { ...PROFILE.schedule, trainingDays: ['MONDAY', 'FRIDAY', 'SUNDAY'] } };
+    await press(t('settings.profile.save'));
+    expect(put()[0].body).toEqual({ ...profileBefore(), goal: 'LOSE_FAT' });
+  });
+
+  const profileBefore = () => ({ ...PROFILE, units: 'IMPERIAL', food: { avoid: ['eggs'] }, schedule: { ...PROFILE.schedule, trainingDays: ['MONDAY', 'FRIDAY', 'SUNDAY'] } });
+
+  test('Save is off while it works, and a save the server refuses says so, keeps the choice and stays', async () => {
+    await showDetail('goal');
+    await fireEvent.press(screen.getByRole('radio', { name: new RegExp(`^${t('onboarding.goal.lose_fat.title')}`) }));
+    profileRefused = true;
+    await press(t('settings.profile.save'));
+    expect(screen.getByText(t('settings.profile.failed'))).toBeOnTheScreen();
+    expect(screen.getByRole('radio', { name: new RegExp(`^${t('onboarding.goal.lose_fat.title')}`) })).toBeChecked();
+    expect(profile.goal).toBe('BUILD_MUSCLE');
+    expect(mockBack).not.toHaveBeenCalled();
+  });
+
+  test('the height page: a wheel in the user\'s units; Save stays off until the wheel is moved; metric saves whole centimetres', async () => {
+    await showDetail('height');
+    expect(button(t('settings.profile.save'))).toBeDisabled();
+    const wheel = screen.getByLabelText(t('settings.profile.height'));
+    expect(wheel).toHaveProp('accessibilityValue', { text: '180 cm' });
+    await act(async () => wheel.props.onAccessibilityAction({ nativeEvent: { actionName: 'increment' } }));
+    await press(t('settings.profile.save'));
+    expect(put()[0].body).toEqual({ ...PROFILE, heightCm: 181 });
+  });
+
+  test('the height page in imperial: feet and inches, saved as the centimetres the profile keeps', async () => {
+    mockUnits = 'IMPERIAL';
+    await showDetail('height');
+    const wheel = screen.getByLabelText(t('settings.profile.height'));
+    expect(wheel).toHaveProp('accessibilityValue', { text: t('units.feetInches', { feet: 5, inches: 11 }) });
+    await act(async () => wheel.props.onAccessibilityAction({ nativeEvent: { actionName: 'increment' } }));
+    await press(t('settings.profile.save'));
+    expect(put()[0].body).toMatchObject({ heightCm: 183 }); // 6 ft 0 in
+  });
+
+  test('the year of birth page: a wheel of the years an adult can be born in; saved as that year', async () => {
+    await showDetail('born');
+    const wheel = screen.getByLabelText(t('settings.profile.born'));
+    expect(wheel).toHaveProp('accessibilityValue', { text: '1990 year' });
+    await act(async () => wheel.props.onAccessibilityAction({ nativeEvent: { actionName: 'decrement' } }));
+    await press(t('settings.profile.save'));
+    expect(put()[0].body).toEqual({ ...PROFILE, birthYear: 1989 });
+  });
+
+  test('a profile that cannot be read: the page says so and offers nothing to save', async () => {
+    const failing = jest.spyOn(api, 'GET').mockResolvedValue({ data: undefined, error: {}, response: new Response(null, { status: 500 }) } as never);
+    try {
+      await showDetail('goal');
+      expect(screen.getByText(t('settings.profile.unread'))).toBeOnTheScreen();
+      expect(screen.queryByRole('button', { name: t('settings.profile.save') })).toBeNull();
+    } finally {
+      failing.mockRestore();
+    }
+  });
+
+  test.each(['goal', 'checkin', 'height', 'activity', 'born'])('the %s page is titled by its row', async (part) => {
+    await showDetail(part);
+    const key = { goal: 'goal', checkin: 'checkIn', height: 'height', activity: 'activity', born: 'born' }[part];
+    expect(screen.getByRole('header', { name: t(`settings.profile.${key}`) })).toBeOnTheScreen();
+  });
+});
+
+describe('legal (K-1062)', () => {
+  const OLD = { terms: process.env.EXPO_PUBLIC_TERMS_URL, privacy: process.env.EXPO_PUBLIC_PRIVACY_URL };
+  afterEach(() => {
+    process.env.EXPO_PUBLIC_TERMS_URL = OLD.terms;
+    process.env.EXPO_PUBLIC_PRIVACY_URL = OLD.privacy;
+  });
+
+  test('the Privacy Policy and the Terms of Use are rows that open their addresses', async () => {
+    process.env.EXPO_PUBLIC_TERMS_URL = 'https://example.test/terms/';
+    process.env.EXPO_PUBLIC_PRIVACY_URL = 'https://example.test/privacy/';
+    const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    await show();
+    expect(headers()).toContain(t('settings.legal.title'));
+    await press(t('subscription.privacy'));
+    expect(open).toHaveBeenLastCalledWith('https://example.test/privacy/');
+    await press(t('subscription.terms'));
+    expect(open).toHaveBeenLastCalledWith('https://example.test/terms/');
+    open.mockRestore();
+  });
+
+  test('an address the build does not have is left out, never a dead link', async () => {
+    process.env.EXPO_PUBLIC_TERMS_URL = 'https://example.test/terms/';
+    delete process.env.EXPO_PUBLIC_PRIVACY_URL;
+    await show();
+    expect(screen.queryByRole('button', { name: t('subscription.privacy') })).toBeNull();
+    expect(button(t('subscription.terms'))).toBeOnTheScreen();
   });
 });
 
@@ -420,13 +603,14 @@ describe('without the health data consent', () => {
     consent = 'NEVER_ASKED';
   });
 
-  test('Food is locked: it says what it needs, cannot be opened, and the profile is not asked for the list', async () => {
+  test('Food says what it needs and still opens its page, where the consent is a button; the profile is not asked for the list', async () => {
     await show();
     const row = button(`${t('settings.food.avoid')}, ${t('settings.food.locked')}`);
-    expect(row).toBeDisabled();
+    expect(row).toBeEnabled();
     await fireEvent.press(row);
-    expect(mockPush).not.toHaveBeenCalled();
-    expect(calls.some((c) => c.path === '/v1/profile')).toBe(false);
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/settings-detail', params: { part: 'food' } });
+    // About you reads the profile, but it never asks for the foods: the server leaves them out without the consent.
+    expect(calls.filter((c) => c.path === '/v1/profile').every((c) => c.method === 'GET')).toBe(true);
   });
 
   test('Health and data: the consent says Not allowed and opens its page, where it can be allowed; the weigh-in import row is locked', async () => {
@@ -434,16 +618,18 @@ describe('without the health data consent', () => {
     await press(`${t('settings.health.consent')}, ${t('settings.consents.notAllowed')}`);
     expect(mockPush).toHaveBeenCalledWith({ pathname: '/settings-detail', params: { part: 'consent' } });
     const importRow = button(`${t('settings.import.title')}, ${t('settings.health.needsConsent')}`);
-    expect(importRow).toBeDisabled();
+    expect(importRow).toBeEnabled(); // it opens a page that gives the consent, not a dead end
     await screen.unmount();
     await showDetail('consent');
     expect(button(`${t('settings.consents.allow')} ${t('settings.consents.HEALTH_DATA')}`)).toBeEnabled();
   });
 
-  test('the weigh-in import page says why it is not offered, and does not offer it', async () => {
+  test('the weigh-in import page says why it is not offered, does not offer it, and gives the consent as a button', async () => {
     await showDetail('import');
     expect(screen.getByText(t('settings.health.locked'))).toBeOnTheScreen();
-    expect(screen.queryByText(t('settings.import.weighIns'))).toBeNull();
+    expect(screen.queryByRole('button', { name: t('settings.import.importLabel', { what: t('settings.import.weighIns') }) })).toBeNull();
+    await press(`${t('settings.consents.allow')} ${t('settings.consents.HEALTH_DATA')}`);
+    expect(screen.getByRole('button', { name: t('settings.import.importLabel', { what: t('settings.import.weighIns') }) })).toBeEnabled();
   });
 
   test('the Apple Health write switches do not wait for the read consent (ADR-018 §1): their row opens, and a switch left on can always be turned off', async () => {
@@ -453,7 +639,8 @@ describe('without the health data consent', () => {
     expect(mockPush).toHaveBeenCalledWith({ pathname: '/settings-detail', params: { part: 'write' } });
     await screen.unmount();
     await showDetail('write');
-    await press(t('settings.healthWrite.turnOnLabel', { what: t('settings.healthWrite.workouts') }));
+    await fireEvent(screen.getByRole('switch', { name: t('settings.healthWrite.switchLabel', { what: t('settings.healthWrite.workouts') }) }), 'valueChange', true);
+    await act(async () => {});
     expect(mockServices.healthWriting.turnOn).toHaveBeenCalledWith('workouts');
   });
 
@@ -469,7 +656,7 @@ describe('without the health data consent', () => {
     expect(mockPush).toHaveBeenCalledWith({ pathname: '/settings-detail', params: { part: 'import' } });
     await screen.unmount();
     await showDetail('import');
-    expect(screen.getByText(t('settings.import.weighIns'))).toBeOnTheScreen();
+    expect(screen.getByText(t('settings.import.note'))).toBeOnTheScreen();
   });
 
   test('withdrawing on the consent page locks Food again; allowed again, the profile is read afresh, never the old list', async () => {
@@ -484,7 +671,7 @@ describe('without the health data consent', () => {
     await press(t('settings.withdrawConfirm.confirm'));
     await screen.unmount();
     await show();
-    expect(button(`${t('settings.food.avoid')}, ${t('settings.food.locked')}`)).toBeDisabled();
+    expect(button(`${t('settings.food.avoid')}, ${t('settings.food.locked')}`)).toBeEnabled();
 
     // Allowed again, the new read is held back: until it answers, the old list must not be on the screen.
     await screen.unmount();
@@ -523,7 +710,6 @@ describe('health and data, with the consent', () => {
     ]);
     // Their controls are on the pages, not under the rows; and the workout import is a Training row, not here twice.
     expect(screen.queryByText(t('settings.healthWrite.workouts'))).toBeNull();
-    expect(screen.queryAllByText(t('settings.import.workouts'))).toHaveLength(0);
     await press(t('settings.import.title'));
     expect(mockPush).toHaveBeenLastCalledWith({ pathname: '/settings-detail', params: { part: 'import' } });
   });
@@ -547,10 +733,11 @@ describe('health and data, with the consent', () => {
     expect(screen.getByText(t('settings.healthWrite.note'))).toBeOnTheScreen();
     expect(screen.getByText(t('settings.healthWrite.workouts'))).toBeOnTheScreen();
     expect(screen.getByText(t('settings.healthWrite.weighIns'))).toBeOnTheScreen();
+    expect(screen.getAllByRole('switch')).toHaveLength(2); // iOS switches, not Turn on / Turn off buttons (K-1062)
     await screen.unmount();
     await showDetail('import');
-    expect(screen.getByText(t('settings.import.weighIns'))).toBeOnTheScreen();
-    expect(screen.queryAllByText(t('settings.import.workouts'))).toHaveLength(0);
+    expect(screen.getByText(t('settings.import.note'))).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: t('settings.import.importLabel', { what: t('settings.import.weighIns') }) })).toBeOnTheScreen();
   });
 });
 
@@ -570,14 +757,15 @@ describe('reminders (ADR-036)', () => {
     expect(screen.queryByRole('adjustable')).toBeNull();
   });
 
-  test('Your routine opens its page, where the three kinds are said in full and the sentence is kept', async () => {
+  test('Your routine opens its page: one line, sentences to tap, and the sentence kept', async () => {
     await show();
     await press(t('settings.reminders.routine'));
     expect(mockPush).toHaveBeenCalledWith({ pathname: '/settings-detail', params: { part: 'routine' } });
     await screen.unmount();
     await showDetail('routine');
     expect(screen.getByRole('header', { name: t('settings.reminders.routine') })).toBeOnTheScreen();
-    expect(screen.getByText(/before your usual training time/)).toBeOnTheScreen();
+    expect(screen.getByText(t('settings.reminders.cue.hint'))).toBeOnTheScreen();
+    expect(screen.queryByText(/before your usual training time/)).toBeNull();
     await fireEvent.changeText(screen.getByLabelText(t('settings.reminders.cue.label')), 'After work');
     await press(t('settings.reminders.cue.saveLabel'));
     expect(mockServices.reminders.setCue).toHaveBeenCalledWith('After work');
@@ -649,7 +837,7 @@ describe('account', () => {
 describe('every row can be reached with a screen reader', () => {
   test('rows are buttons at least as tall as a touch target, named with their value', async () => {
     await show();
-    const rows = [t('settings.training.days'), t('editProgram.cardio.title'), t('settings.gyms'), t('settings.training.import'), t('settings.food.avoid')];
+    const rows = [t('settings.training.days'), t('editProgram.cardio.title'), t('settings.training.import'), t('settings.food.avoid'), t('settings.profile.goal'), t('settings.profile.checkIn')];
     for (const name of rows) {
       const row = screen.getByRole('button', { name: new RegExp(`^${name},`) });
       const flat = [row.props.style].flat(Infinity) as ({ minHeight?: number } | undefined)[];

@@ -8,6 +8,8 @@ import { AppearanceSection } from '@/settings/AppearanceSection';
 import { DataSourcesGroup } from '@/settings/DataSources';
 import { FoodGroup } from '@/settings/FoodGroup';
 import { HealthGroup } from '@/settings/HealthGroup';
+import { LegalGroup } from '@/settings/LegalGroup';
+import { ProfileGroup } from '@/settings/ProfileGroup';
 import { RemindersSection } from '@/settings/RemindersSection';
 import { SubscriptionSection } from '@/settings/SubscriptionSection';
 import { TrainingGroup } from '@/settings/TrainingGroup';
@@ -17,13 +19,14 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
 /**
- * Settings (K-309, K-982, K-1043; prototype `yeniden-yapim.html` › 2, ADR-069 #3, ADR-070 Ek 2), opened from This week. Nine
- * groups in one order, each a titled card of rows with the value on the right and a chevron only where a row opens a page:
- * Appearance and Units (segmented), Training (days, cardio, gyms, the workout import), Food (what the user avoids),
- * Reminders (ADR-036: a switch, and the routine), Health and data (the consents, Apple Health, the import), Subscription
- * (K-702), Data sources (ADR-088 #3) and Account (export, sign out, delete). Under a row there is one line at most; whatever
- * is longer is on the page the row opens (`settings-detail`). The way back is the system's, in the header. Food and Health
- * and data follow the health data consent.
+ * Settings (K-309, K-982, K-1043, K-1062; prototype `yeniden-yapim.html` › 2, ADR-069 #3, ADR-070 Ek 2), opened from This week.
+ * Eleven groups in one order, each a titled card of rows with the value on the right and a chevron only where a row opens a
+ * page: Appearance and Units (segmented), Training (days, cardio, the workout import), Food (what the user avoids: chips),
+ * About you (goal, check-in day, height, activity, birth year: buttons and wheels), Reminders (ADR-036: a switch, the routine,
+ * the trial's), Health and data (the consents, Apple Health, the import), Subscription (K-702), Data sources (ADR-088 #3),
+ * Legal (the privacy policy and the terms) and Account (export, sign out, delete). Under a row there is one line at most;
+ * whatever is longer is on the page the row opens (`settings-detail`). The way back is the system's, in the header. Food and
+ * Health and data follow the health data consent.
  */
 export default function SettingsScreen() {
   const { color } = useTheme();
@@ -36,10 +39,12 @@ export default function SettingsScreen() {
         <UnitsSection />
         <TrainingGroup />
         <FoodGroup granted={granted} />
+        <ProfileGroup />
         <RemindersSection />
         <HealthGroup granted={granted} />
         <SubscriptionSection />
         <DataSourcesGroup />
+        <LegalGroup />
         <AccountSection title={t('settings.account.title')} />
       </ScrollView>
     </SafeAreaView>

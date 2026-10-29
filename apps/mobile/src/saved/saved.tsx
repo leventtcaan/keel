@@ -72,6 +72,14 @@ export function useSavedChanges(): number {
   return useContext(Changes);
 }
 
+/**
+ * A setting was saved on a page of its own (the profile's answers, the foods): no banner and nothing to take back, but the
+ * screens that read it read again (the same count `useSavedChanges` watches).
+ */
+export function useSavedSignal(): () => void {
+  return useContext(Saved).changed;
+}
+
 /** The screen's way to say "this was saved, and this takes it back". */
 export function useSaved(): (save: Save) => void {
   return useContext(Saved).publish;

@@ -14,7 +14,6 @@ type RouteState = { key: string; name: string; state?: { index?: number; routes:
 const NAMED: Record<string, string> = {
   settings: 'settings.title',
   'settings-detail': 'settings.title',
-  gyms: 'gyms.title',
   'edit-program': 'editProgram.title',
 };
 

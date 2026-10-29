@@ -21,11 +21,11 @@ const nameOf = (error: unknown) => (error instanceof Error ? error.name : 'Unkno
  * The trial reminder's offer (K-707, ADR-058 › 105): during a trial, "Remind me before it ends" — iOS is asked on this tap, the
  * reminder set; once set, the day it comes. Not a trial (or too late for one): nothing. Given the subscription (Settings) or
  * reading it (the paywall's "you're subscribed" step, which knows only that access is on). Each read lets a reminder asked for
- * follow the trial (`keep`).
+ * follow the trial (`keep`). `useTrialReminder` is the state and the tap; Settings draws it as a row of the Reminders group
+ * (K-1062), the paywall as this offer.
  */
-export function TrialReminderOffer({ subscription }: { subscription?: Subscription }) {
+export function useTrialReminder(subscription?: Subscription) {
   const { api, trialReminder, report } = useAppServices();
-  const { color } = useTheme();
   const [shown, setShown] = useState<Shown | null>(null);
   const [note, setNote] = useState<Note>(null);
   const [busy, setBusy] = useState(false);
@@ -48,15 +48,10 @@ export function TrialReminderOffer({ subscription }: { subscription?: Subscripti
     };
   }, [api, report, subscription, trialReminder]);
 
-  if (shown === null || shown.subscription.status !== 'TRIAL') return null;
-  // Too late for one (the trial ends sooner than it would come), and none set: no offer that would do nothing.
-  if (shown.at === null && !trialReminder.canRemind(shown.subscription)) return null;
-  const words = (key: string, tone: 'text' | 'muted' = 'text', values?: Record<string, string>) => (
-    <Text style={[styles.note, { color: color[tone] }]}>{t(key, values)}</Text>
-  );
-  if (shown.at !== null) return words('subscription.reminder.set', 'muted', { date: dayWords(shown.at) });
-
+  // Not a trial: nothing. Too late for one (the trial ends sooner than it would come), and none set: no offer that would do nothing.
+  const offered = shown !== null && shown.subscription.status === 'TRIAL' && (shown.at !== null || trialReminder.canRemind(shown.subscription));
   const ask = async () => {
+    if (shown === null) return;
     setBusy(true);
     setNote(null);
     try {
@@ -70,6 +65,17 @@ export function TrialReminderOffer({ subscription }: { subscription?: Subscripti
       setBusy(false);
     }
   };
+  return { offered, at: shown?.at ?? null, note, busy, ask };
+}
+
+export function TrialReminderOffer({ subscription }: { subscription?: Subscription }) {
+  const { color } = useTheme();
+  const { offered, at, note, busy, ask } = useTrialReminder(subscription);
+  if (!offered) return null;
+  const words = (key: string, tone: 'text' | 'muted' = 'text', values?: Record<string, string>) => (
+    <Text style={[styles.note, { color: color[tone] }]}>{t(key, values)}</Text>
+  );
+  if (at !== null) return words('subscription.reminder.set', 'muted', { date: dayWords(at) });
   const button = <Button label={t('subscription.reminder.ask')} variant="ghost" size="sm" disabled={busy} onPress={() => void ask()} />;
   const said = note === null ? null : words(`subscription.reminder.${note}`);
   return (
