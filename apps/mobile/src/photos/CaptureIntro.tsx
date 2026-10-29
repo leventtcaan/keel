@@ -11,6 +11,7 @@ import { tokens } from '@/theme/tokens';
 
 import type { IconName } from './CameraChrome';
 import { photoParams } from './params';
+import { Silhouette } from './Silhouette';
 
 /** How the photos will be taken: the phone on a stand (a timer, the front camera) or in someone's hands. */
 export type Setup = 'stand' | 'hand';
@@ -33,6 +34,15 @@ export function CaptureIntro({ setup, onSetup, onStart, onClose }: Props) {
     <SafeAreaView style={[styles.fill, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.body}>
         <ScreenTitle>{t('capture.intro.title')}</ScreenTitle>
+        {/* What is coming, at a glance: the two outlines the camera will show (decorative; the tips say it). */}
+        <View style={[styles.art, { backgroundColor: color.surface }]} accessible={false}>
+          <View style={styles.figure}>
+            <Silhouette pose="front" straight mirrored={false} testID="capture-intro-front" />
+          </View>
+          <View style={styles.figure}>
+            <Silhouette pose="side" straight mirrored testID="capture-intro-side" />
+          </View>
+        </View>
         {TIPS.map(({ icon, key }) => (
           <View key={key} style={styles.tip}>
             <Icon name={icon} tone="accent" />
@@ -61,6 +71,8 @@ export function CaptureIntro({ setup, onSetup, onStart, onClose }: Props) {
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   body: { paddingHorizontal: tokens.space.lg, paddingTop: tokens.space.xl, gap: tokens.space.lg },
+  art: { flexDirection: 'row', justifyContent: 'center', gap: tokens.space.xl, borderRadius: tokens.radius.card, paddingVertical: tokens.space.lg, height: tokens.size.introArt },
+  figure: { width: tokens.size.introArt / 2, height: '100%' },
   tip: { flexDirection: 'row', alignItems: 'flex-start', gap: tokens.space.md },
   tipText: { flex: 1 },
   text: { fontSize: tokens.type.body },

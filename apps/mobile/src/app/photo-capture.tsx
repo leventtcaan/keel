@@ -15,6 +15,7 @@ import { summarise } from '@/photos/result';
 import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { localDay } from '@/today/today';
+import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 
 /** The last photo of a pose, newest day first; none before the first. */
 function lastOf(checks: PhotoCheck[], pose: Pose): string | null {
@@ -44,7 +45,22 @@ type Shot = { uri: string; day: string };
  * front camera, back camera or library alike, so sets taken a different way still compare. The faded photo is turned over
  * with the front camera, to match the mirrored picture it is lined up with.
  */
-export default function PhotoCaptureScreen() {
+/**
+ * Presented full screen (a native full-screen modal), which keeps the insets of the app around it from reaching in: the
+ * title sat under the status bar and the Dynamic Island. Its own provider measures this screen's safe area (build 7 QA),
+ * starting from the window's (the screen covers the window); none known (tests) draws at once with no insets.
+ */
+const NO_INSETS = { frame: { x: 0, y: 0, width: 0, height: 0 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } };
+
+export default function PhotoCaptureRoute() {
+  return (
+    <SafeAreaProvider initialMetrics={initialWindowMetrics ?? NO_INSETS}>
+      <PhotoCaptureScreen />
+    </SafeAreaProvider>
+  );
+}
+
+function PhotoCaptureScreen() {
   const { photos, report } = useAppServices();
   const { color } = useTheme();
   const [permission, requestPermission] = useCameraPermissions();

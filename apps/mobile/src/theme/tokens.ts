@@ -178,6 +178,8 @@ export const tokens = {
     stepperButton: 48,
     /** The undo banner's least height (prototype `.bnr`). */
     banner: 52,
+    /** The progress photo intro's drawing of the two outlines (K-1055). */
+    introArt: 200,
     /** The iOS tab bar above the home indicator, which the banner at the root of the app sits over (prototype `.bnr.up`). */
     tabBar: 49,
     /** Progress (ADR-078, prototype `.tgt`): a target box's least height; a week of the 12 weeks grid; a weigh-in dot; a legend swatch. */
