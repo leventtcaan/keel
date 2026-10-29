@@ -48,8 +48,17 @@ Tek oturum, `/loop` (kendi hızında). Hafıza dosyadadır: her tur `DURUM.md �
 paketini bitirir, ikisini günceller. Bağlam özetlense de iş kaybolmaz.
 
 ## İlerleme
-- [ ] Evre 0 — envanter
-- [ ] Evre 1 — kırık mantık
+- [x] Evre 0 — envanter (29 Eki): `plan/envanter-2026-10-29.md` · sayfa https://claude.ai/artifact/7Ew5GE2C1uECT7dYaCofKb (özel; önce şeritleri dolu,
+  sonra şeritleri Evre 4'te). Yerel kaynak: `.envanter/` (inventory.json → build_page.py → page/; görüntüler shots/). 8 kırık, 17 kötü satır.
+- [ ] Evre 1 — kırık mantık (sıra; her biri kendi dalı + PR + gerçek sunucu kanıtı; kanıt görüntüsü inventory.json › after'a, bulguya `fixed`):
+  - [ ] 1. K-1 + K-2 programsız hesap: açılışta profil var + program yok → hazırlık yeniden koşar (resume); Train, This Week, Training days/Cardio'da
+        "Build my program" çıkışı (Edit program'daki "Rebuild for me" mantığı); sign-out onboarding işaretini silmez.
+  - [ ] 2. K-4 yemek arama: istemci (yazarken gecikmeli arama, eski sonuç temizlenir, aranıyor durumu, bağlantı ≠ sunucu hatası, satırda kcal,
+        makul varsayılan birim) + sunucu (kelime başı önce, ı/İ katlama, ilgi sıralaması, aynı adlı kayıtları ayırt etme ya da birleştirme).
+  - [ ] 3. K-3 kaydedilen yemeği görme / düzeltme / silme yolu (emekli food ekranı yerine; ADR-069 #3 Ek).
+  - [ ] 4. K-5 Sign out / Delete account onayı görünür yerde (sheet ya da sistem uyarısı).
+  - [ ] 5. K-6 paywall üst güvenli alan · K-7 antrenman ilerleme çubuğu taşması.
+  - (K-8 yemek verisi → Evre 3.)
 - [ ] Evre 2 — görsel sistem + ekranlar
 - [ ] Evre 3 — yemek verisi
 - [ ] Evre 4 — son tur + build 6

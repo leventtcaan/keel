@@ -10,10 +10,11 @@ Levent TestFlight'ta denedi: programsız kalan hesapta antrenman yok, yemek aram
 **1.0 (5) incelemede ama yayın şekli ELLE (29 Eki, Levent kararı):** onay gelse de mağazaya çıkmaz. Düzeltilmiş build ile güncellenir.
 **Kapsam büyüdü (Levent, 29 Eki):** düğmeler, Log ikonları, "+" sayfası, Ayarlar, Account, paywall Account dahil her sayfa acımasız tur + AI slop analiziyle baştan. Plan: `plan/yeniden-yapim.md` (Evre 0 envanter → 1 kırık mantık → 2 görsel sistem, prototip önce → 3 yemek verisi → 4 son tur, build 6).
 **Levent (29 Eki): ara kapı yok, döngü bitene kadar otonom.** Döngü talimatı `plan/oturum-promptlari/yeniden-yapim-dongu.md`; ilerleme `plan/yeniden-yapim.md › İlerleme`.
-**Evre 0 sürüyor (29 Eki gece):** simülatörde Apple ID girildi (Levent; Apple her girişte parola ister, Levent ekran klavyesiyle ⌘K girer).
-Metro gerçek sunucuya: `.envanter/metro.sh` (yerel, gitignore). Hesap (b) Levent turu bitti (This Week, yemek, tartı, kardiyo, duraklat, Ayarlar,
-Progress, paywall, koyu tema, çıkış, dışa aktarma); hesap silindi (202). Sıradaki: yeni hesapla onboarding üç dal → envanter sayfası.
-Çalışma notları `.envanter/notes.md`, görüntüler `.envanter/shots/` (kişisel veri, depoya girmez).
+**Evre 0 BİTTİ (29 Eki gece):** `plan/envanter-2026-10-29.md` (8 kırık, 17 kötü) · sayfa https://claude.ai/artifact/7Ew5GE2C1uECT7dYaCofKb (özel).
+Levent hesabı turdan sonra silindi; şimdiki simülatör hesabı = aynı Apple ID ile yeni hesap (onboarding deneyimli dalı, 3 gün, RevenueCat'te 29 Kas'a
+kadar promosyon premium). Simülatör düzeneği: Metro gerçek sunucuya `.envanter/metro.sh` (arka planda koş), görüntü `.envanter/shot.sh <ad>`,
+sunucu logu `.envanter/slog.sh [süre]`, sayfa `python3 .envanter/build_page.py` + aynı dosya yoluyla yayın. Apple girişi her seferinde parola ister
+(Levent, ekran klavyesi ⌘K) → çıkış/silme gerektiren denemeleri topla. **Sıradaki: Evre 1 paket 1** (K-1 + K-2 programsız hesap), `plan/yeniden-yapim.md › İlerleme`.
 
 ## (önceki) DEVAM NOKTASI (28 Eki — 1.0 REDDEDİLDİ, düzeltildi, build 5 ile YENİDEN GÖNDERİLDİ: Waiting for Review)
 **Red (28 Eki, gönderim 87ef804d, inceleme cihazı iPad Air 11" M3):** (1) **2.3.7** 6. mağaza karesinde "Try it free for 2 weeks" (ücretsiz/deneme atfı da fiyat sayılır);
