@@ -81,14 +81,14 @@ class FdcBrandedTests {
     @Test
     void theLabelServingKeepsTheHouseholdTextWithTheMetricAmount() {
         // "1 CUP (28g)" already says its weight; "2 tbsp" does not, so it is added.
-        assertThat(food("fdc:2001").serving()).isEqualTo(new FdcImport.Serving("1 cup (28g)", new BigDecimal("28.0")));
-        assertThat(food("fdc:2002").serving()).isEqualTo(new FdcImport.Serving("1 container (150g)", new BigDecimal("150.0")));
-        assertThat(food("fdc:2008").serving()).isEqualTo(new FdcImport.Serving("2 tbsp (32 g)", new BigDecimal("32.0")));
+        assertThat(food("fdc:2001").serving()).isEqualTo(new FdcImport.Serving("1 cup (28g)", new BigDecimal("28.00")));
+        assertThat(food("fdc:2002").serving()).isEqualTo(new FdcImport.Serving("1 container (150g)", new BigDecimal("150.00")));
+        assertThat(food("fdc:2008").serving()).isEqualTo(new FdcImport.Serving("2 tbsp (32 g)", new BigDecimal("32.00")));
     }
 
     @Test
     void householdTextThatIsNotAMeasureFallsBackToOneServingInGramsAndNoSizeIsNoServing() {
-        assertThat(food("fdc:2004").serving()).as("\"PER CONTAINER\"").isEqualTo(new FdcImport.Serving("1 serving (440 g)", new BigDecimal("440.0")));
+        assertThat(food("fdc:2004").serving()).as("\"PER CONTAINER\"").isEqualTo(new FdcImport.Serving("1 serving (440 g)", new BigDecimal("440.00")));
         assertThat(food("fdc:2010").serving()).as("no serving size").isNull();
     }
 
@@ -96,7 +96,7 @@ class FdcBrandedTests {
     void aServingInMillilitresIsWeighedAsWaterAndItsHouseholdVolumeGivesTheDensity() {
         FdcBranded.Food oil = food("fdc:2003");
 
-        assertThat(oil.serving()).isEqualTo(new FdcImport.Serving("1 tbsp (15 ml)", new BigDecimal("15.0")));
+        assertThat(oil.serving()).isEqualTo(new FdcImport.Serving("1 tbsp (15 ml)", new BigDecimal("15.00")));
         // 15 g in a US tablespoon of 14.7868 mL
         assertThat(oil.gramsPerMl()).isEqualByComparingTo("1.014");
     }

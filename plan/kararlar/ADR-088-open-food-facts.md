@@ -43,8 +43,8 @@ Karar 4'teki "USDA Branded şimdilik alınmaz" kalktı (ADR-090 #1): ABD kullan�
 - **Bölge modeli:** `nutrition.food.region` (ISO ülke kodu; USDA satırları `US`), `import_release` (satırı yazan sürüm ya da dosya özeti). OFF her bölge için **ayrı dosya
   ve ayrı satırlar**: `off:<kod>` Türkiye (K-1042'den beri, öğünler bu kimliği tutar), `off-us:<kod>` ABD; her bölgenin içe aktarımı yalnız kendi satırlarını siler;
   `food_import.dataset` Türkiye için `OFF`, ABD için `OFF_US`. Barkod artık tablo çapında **tekil değil** (V52): aynı ürün iki bölgede iki satırdır.
-- **İçe aktarma ölçeği:** CSV akış hâlinde okunur (`Csv`; 1,5 GB'lık `food_nutrient.csv` bellekte tutulmaz). Branded üç geçiş: `branded_food.csv` (ürün başına küçük kayıt,
-  ~430.000 ürün için yaklaşık 70-110 MB [ölçülmedi]) → `food_nutrient.csv` (yalnız enerji/protein/yağ/karbonhidrat) → `food.csv` (ad; tam ürünler yazıcıya akar).
+- **İçe aktarma ölçeği:** CSV akış hâlinde okunur (`Csv`; 1,5 GB'lık `food_nutrient.csv` bellekte tutulmaz). Branded (~1,9 milyon ürün, 26 milyon besin satırı) üç geçiş: `branded_food.csv` (ürün başına ~64 baytlık kayıt, değerler yüzde birlik int, id'ye göre sıralı dizi;
+  ~150 MB; sentetik 1 milyon ürünle 536 MB yığında 17 sn'de okundu) → `food_nutrient.csv` (yalnız enerji/protein/yağ/karbonhidrat) → `food.csv` (ad; tam ürünler yazıcıya akar).
   2.000'erlik işlemlerle yazılır; her satır sürümle damgalanır, **başka sürümün satırları en sonda silinir**; `food_import` yalnız bitmiş sürümü kaydeder → yarıda kalan
   (dağıtım arka plan içe aktarımını keser) sonraki açılışta aynı sürümle tamamlanır. Büyük içe aktarımlar `FoodImportQueue`'da **tek arka plan iş parçacığında**
   sırayla koşar (Branded, sonra OFF dosyaları), sunucu içe aktarma sürerken yanıt verir. Etiket enerjisi/makrosu 100 g başına; ml porsiyonlu ürünlerde FDC değerleri

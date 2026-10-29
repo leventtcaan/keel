@@ -8,7 +8,7 @@ import java.util.concurrent.Executors;
 import org.springframework.stereotype.Component;
 
 /**
- * The big food imports (K-1061): USDA Branded (430,000 products) and an Open Food Facts region run one after the other on a
+ * The big food imports (K-1061): USDA Branded (1.9 million products) and an Open Food Facts region run one after the other on a
  * thread of their own, after the application has started — the server answers while they run, and a deploy that restarts it
  * in the middle only stops the import, which every importer can resume (batches, stamped rows). A failure is logged as a
  * failure of this task (SafeLog: its type and place, never a value) and the next job still runs.

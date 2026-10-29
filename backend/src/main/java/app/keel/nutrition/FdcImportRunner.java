@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
  * Imports the FoodData Central releases unzipped under {@code keel.fdc.import-dir} at startup (K-226, K-1061): each folder
  * that holds foundation_food.csv, sr_legacy_food.csv, survey_fndds_food.csv or branded_food.csv, its release read from FDC's
  * folder name (FoodData_Central_foundation_food_csv_2025-12-18 → 2025-12-18). The three small datasets are imported here, as
- * before; Branded (430,000 products) is queued behind them on the import thread (FoodImportQueue) and skipped when that
+ * before; Branded (1.9 million products) is queued behind them on the import thread (FoodImportQueue) and skipped when that
  * release was imported to the end. Off unless the property is set; the files are not in the repository.
  */
 @Component

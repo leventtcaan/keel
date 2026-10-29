@@ -26,7 +26,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 /**
  * Loads a FoodData Central release into nutrition.food (K-226, K-1061): each food upserted by its FDC id and its servings
  * replaced, the dataset's foods the release no longer has removed — so importing a release gives exactly its rows, again and
- * again. Foundation, SR Legacy and Survey (FNDDS) are a few thousand foods: one transaction. Branded is 430,000 products with
+ * again. Foundation, SR Legacy and Survey (FNDDS) are a few thousand foods: one transaction. Branded is 1.9 million products with
  * their barcodes, read as a stream and written in batches of {@value #BATCH}, each its own transaction, so the import can be
  * stopped (a deploy restarts the backend) and run again: the upserts change nothing for a food already there, every food of the
  * release is stamped with the release, and only at the end are the foods of another release removed — a stopped import leaves
@@ -91,13 +91,12 @@ class FdcImporter {
         }
         List<MapSqlParameterSource> rows = new ArrayList<>();
         List<MapSqlParameterSource> servings = new ArrayList<>();
-        List<MapSqlParameterSource> ids = new ArrayList<>();
+        String[] ids = foods.stream().map(FdcBranded.Food::id).toArray(String[]::new);
         for (FdcBranded.Food food : foods) {
             rows.add(new MapSqlParameterSource("id", food.id()).addValue("name", food.name()).addValue("brand", food.brand())
                     .addValue("gtin", food.gtin()).addValue("kcal", two(food.kcal())).addValue("protein", two(food.proteinG()))
                     .addValue("carbs", two(food.carbsG())).addValue("fat", two(food.fatG())).addValue("gml", food.gramsPerMl())
                     .addValue("release", release));
-            ids.add(new MapSqlParameterSource("id", food.id()));
             if (food.serving() != null) {
                 servings.add(new MapSqlParameterSource("food", food.id()).addValue("seq", 1).addValue("name", food.serving().name())
                         .addValue("grams", two(food.serving().grams())));
@@ -110,7 +109,7 @@ class FdcImporter {
                     on conflict (id) do update set name = excluded.name, brand = excluded.brand, source = excluded.source, kcal = excluded.kcal,
                     protein_g = excluded.protein_g, carbs_g = excluded.carbs_g, fat_g = excluded.fat_g, gtin = excluded.gtin,
                     grams_per_ml = excluded.grams_per_ml, import_release = excluded.import_release""", rows.toArray(MapSqlParameterSource[]::new));
-            jdbc.batchUpdate("delete from nutrition.food_serving where food_id = :id", ids.toArray(MapSqlParameterSource[]::new));
+            jdbc.update("delete from nutrition.food_serving where food_id = any (cast(:ids as text[]))", new MapSqlParameterSource("ids", ids));
             jdbc.batchUpdate("insert into nutrition.food_serving (food_id, seq, name, grams) values (:food, :seq, :name, :grams)",
                     servings.toArray(MapSqlParameterSource[]::new));
         });

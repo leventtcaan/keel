@@ -163,7 +163,7 @@ class FoodUsSearchTests {
         var found = mvc.post().uri("/v1/foods/barcode-lookup").header("Authorization", TestSessions.bearer(context, account))
                 .header("Accept-Language", "en-US").contentType(MediaType.APPLICATION_JSON).content("{\"gtin\":\"036000291452\"}").exchange();
         var missing = mvc.post().uri("/v1/foods/barcode-lookup").header("Authorization", TestSessions.bearer(context, account))
-                .contentType(MediaType.APPLICATION_JSON).content("{\"gtin\":\"012345678905\"}").exchange();
+                .contentType(MediaType.APPLICATION_JSON).content("{\"gtin\":\"4006381333931\"}").exchange();
 
         assertThat(found).hasStatusOk();
         @SuppressWarnings("unchecked")
@@ -171,7 +171,7 @@ class FoodUsSearchTests {
         assertThat(food.get("id")).isEqualTo(MINE + "yogurt");
         assertThat(food.get("brand")).isEqualTo("Chobani");
         assertThat(food).containsKey("portions");
-        assertThat(missing).hasStatus(404);
+        assertThat(missing).as("a valid EAN-13 no database has").hasStatus(404);
     }
 
     @Test

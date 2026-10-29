@@ -1,7 +1,9 @@
 package app.keel.nutrition;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -13,13 +15,14 @@ import java.util.regex.Pattern;
 /**
  * Reading USDA FoodData Central's Branded Foods release (K-1061, ADR-008 and ADR-090 #1: CC0): a product's label, with its
  * barcode (gtin_upc), brand, and the serving the label gives (serving_size with its unit, and the household text, "1 Tbsp
- * (15 ml)"). The release is 2.8 GB of CSV (food_nutrient.csv alone 1.5 GB), so nothing is held but a small entry per product
- * (barcode as a number, brand, serving, four nutrient values): about 430,000 products, some 70 MB, never a file's text.
- * Three streaming passes, each file read once:
+ * (15 ml)"). The release is 2.8 GB of CSV with about 1.9 million products (food_nutrient.csv alone 1.5 GB, 26 million rows), so
+ * nothing is held but a small entry per product — the barcode as a number, the brand, the serving and the label's nutrients in
+ * hundredths as ints: about 64 bytes and an id slot each, some 150 MB in all, never a file's text. Three streaming passes, each
+ * file read once:
  *
  * <ol>
  *   <li>branded_food.csv: the entry of each product (barcode, brand, serving). A product on a market other than the United
- *       States is left out (market_country; blank counts as US).</li>
+ *       States is left out (market_country; blank counts as US). The entries are then sorted by id (no hash table).</li>
  *   <li>food_nutrient.csv: the entry's energy, protein, fat and carbohydrate (nutrient ids as {@link FdcImport}), per 100 g.</li>
  *   <li>food.csv: the product's description; each complete product is handed to the sink as it is read.</li>
  * </ol>
@@ -41,27 +44,74 @@ final class FdcBranded {
 
     private static final int GTIN_LENGTH = 14;
     private static final String UNITED_STATES = "United States";
+    // The columns hold two decimals (V9), so a label's value is kept as hundredths: exact, and an int.
+    private static final int HUNDREDTHS = 2;
+    private static final int ABSENT = Integer.MIN_VALUE;
+    // A value beyond this is no nutrient amount: kept as this, so the plausibility checks below refuse it.
+    private static final int SATURATED = 2_000_000_000;
     // More than this in 100 g is a mistyped label: nothing has more than 900 kcal (pure fat), and 100 g holds at most 100 g.
-    private static final BigDecimal MAX_KCAL = new BigDecimal("900");
-    private static final BigDecimal MAX_MACRO_G = new BigDecimal("100");
-    private static final BigDecimal MAX_SERVING_G = new BigDecimal("5000");
+    private static final int MAX_KCAL = 900_00;
+    private static final int MAX_MACRO_G = 100_00;
+    private static final int MAX_SERVING_G = 5000_00;
     private static final int MAX_SERVING_NAME = 60;
+    private static final int INITIAL_ENTRIES = 1 << 20;
     // A weight or volume the household text already states ("1 cup (28g)", "2 tbsp (30 mL)").
     private static final Pattern STATES_METRIC = Pattern.compile("(?i)\\(\\s*\\d[\\d.,]*\\s*(g|gm|grams?|ml|oz|fl\\.? ?oz)\\b");
 
     private static final class Entry {
         String brand;
         long gtin = -1;
-        double servingSize;
+        int servingSize = ABSENT;
         boolean millilitres;
         String household;
-        double kcal = Double.NaN;
-        double kcalAtwaterSpecific = Double.NaN;
-        double kcalAtwaterGeneral = Double.NaN;
-        double protein = Double.NaN;
-        double fat = Double.NaN;
-        double carbsByDifference = Double.NaN;
-        double carbsBySummation = Double.NaN;
+        int kcal = ABSENT;
+        int kcalAtwaterSpecific = ABSENT;
+        int kcalAtwaterGeneral = ABSENT;
+        int protein = ABSENT;
+        int fat = ABSENT;
+        int carbsByDifference = ABSENT;
+        int carbsBySummation = ABSENT;
+    }
+
+    /** The entries by FDC id: filled in file order, sorted once, then looked up by binary search. */
+    private static final class Entries {
+        private int[] ids = new int[INITIAL_ENTRIES];
+        private Entry[] entries = new Entry[INITIAL_ENTRIES];
+        private int size;
+
+        void add(int id, Entry entry) {
+            if (size == ids.length) {
+                ids = Arrays.copyOf(ids, size * 2);
+                entries = Arrays.copyOf(entries, size * 2);
+            }
+            ids[size] = id;
+            entries[size++] = entry;
+        }
+
+        void sort() {
+            long[] keys = new long[size];
+            for (int i = 0; i < size; i++) {
+                keys[i] = ((long) ids[i] << Integer.SIZE) | i;
+            }
+            Arrays.sort(keys);
+            int[] sortedIds = new int[size];
+            Entry[] sortedEntries = new Entry[size];
+            for (int i = 0; i < size; i++) {
+                int from = (int) keys[i];
+                sortedIds[i] = ids[from];
+                sortedEntries[i] = entries[from];
+            }
+            ids = sortedIds;
+            entries = sortedEntries;
+        }
+
+        Entry get(Integer id) {
+            if (id == null) {
+                return null;
+            }
+            int at = Arrays.binarySearch(ids, 0, size, id);
+            return at < 0 ? null : entries[at];
+        }
     }
 
     private FdcBranded() {
@@ -72,39 +122,37 @@ final class FdcBranded {
         requireColumns(folder.resolve("branded_food.csv"), "fdc_id", "gtin_upc", "serving_size", "serving_size_unit", "household_serving_fulltext");
         requireColumns(folder.resolve("food_nutrient.csv"), "fdc_id", "nutrient_id", "amount");
         requireColumns(folder.resolve("food.csv"), "fdc_id", "data_type", "description");
-        Map<Integer, Entry> entries = new HashMap<>();
-        // Brands and household texts repeat across thousands of products: one String each, not 430,000.
+        Entries entries = new Entries();
+        // Brands and household texts repeat across thousands of products: one String each, not 1.9 million.
         Map<String, String> shared = new HashMap<>();
         Csv.forEach(folder.resolve("branded_food.csv"), row -> {
             String market = row.text("market_country");
-            if (market != null && !UNITED_STATES.equalsIgnoreCase(market)) {
+            Integer id = id(row.get("fdc_id"));
+            if (id == null || (market != null && !UNITED_STATES.equalsIgnoreCase(market))) {
                 return;
             }
             Entry entry = new Entry();
             String brand = row.text("brand_name") != null ? row.text("brand_name") : row.text("brand_owner");
             entry.brand = brand == null ? null : shared.computeIfAbsent(tidyCase(brand), text -> text);
             entry.gtin = gtin(row.text("gtin_upc"));
-            entry.servingSize = number(row.text("serving_size"));
             String unit = row.text("serving_size_unit") == null ? "" : row.text("serving_size_unit").toLowerCase(Locale.ROOT);
             entry.millilitres = unit.equals("ml") || unit.equals("mlt");
-            if (!entry.millilitres && !unit.equals("g") && !unit.equals("grm")) {
-                entry.servingSize = Double.NaN;
+            if (entry.millilitres || unit.equals("g") || unit.equals("grm")) {
+                entry.servingSize = hundredths(row.text("serving_size"));
             }
             String household = row.text("household_serving_fulltext");
             entry.household = household != null && Measures.parse(household).isPresent() ? shared.computeIfAbsent(household, text -> text) : null;
-            Integer id = id(row.get("fdc_id"));
-            if (id != null) {
-                entries.put(id, entry);
-            }
+            entries.add(id, entry);
         });
+        entries.sort();
         Csv.forEach(folder.resolve("food_nutrient.csv"), row -> {
             String nutrient = row.get("nutrient_id");
             if (!FdcImport.NUTRIENTS.contains(nutrient)) {
                 return;
             }
             Entry entry = entries.get(id(row.get("fdc_id")));
-            double amount = number(row.text("amount"));
-            if (entry == null || Double.isNaN(amount)) {
+            int amount = hundredths(row.text("amount"));
+            if (entry == null || amount == ABSENT) {
                 return;
             }
             switch (nutrient) {
@@ -145,18 +193,15 @@ final class FdcBranded {
     }
 
     private static Optional<Food> food(String id, String description, Entry entry) {
-        double energy = firstNumber(entry.kcal, entry.kcalAtwaterSpecific, entry.kcalAtwaterGeneral);
-        double carbs = firstNumber(entry.carbsByDifference, entry.carbsBySummation);
-        if (description == null || Double.isNaN(energy) || Double.isNaN(carbs) || Double.isNaN(entry.protein) || Double.isNaN(entry.fat)) {
+        int energy = firstPresent(entry.kcal, entry.kcalAtwaterSpecific, entry.kcalAtwaterGeneral);
+        int carbs = firstPresent(entry.carbsByDifference, entry.carbsBySummation);
+        if (description == null || energy == ABSENT || carbs == ABSENT || entry.protein == ABSENT || entry.fat == ABSENT) {
             return Optional.empty();
         }
-        BigDecimal kcal = BigDecimal.valueOf(energy);
-        BigDecimal protein = BigDecimal.valueOf(entry.protein);
-        BigDecimal fat = BigDecimal.valueOf(entry.fat);
         // By difference can come out a little under zero by FDC's rounding: no carbohydrate (as FdcImport reads it).
-        BigDecimal carbsG = BigDecimal.valueOf(carbs).max(BigDecimal.ZERO);
-        if (kcal.signum() < 0 || protein.signum() < 0 || fat.signum() < 0 || kcal.compareTo(MAX_KCAL) > 0 || protein.compareTo(MAX_MACRO_G) > 0
-                || fat.compareTo(MAX_MACRO_G) > 0 || carbsG.compareTo(MAX_MACRO_G) > 0) {
+        carbs = Math.max(carbs, 0);
+        if (energy < 0 || entry.protein < 0 || entry.fat < 0 || energy > MAX_KCAL || entry.protein > MAX_MACRO_G || entry.fat > MAX_MACRO_G
+                || carbs > MAX_MACRO_G) {
             return Optional.empty();
         }
         FdcImport.Serving serving = serving(entry);
@@ -164,22 +209,18 @@ final class FdcBranded {
         if (density == null && serving != null && entry.millilitres) {
             density = BigDecimal.ONE.setScale(3);
         }
-        return Optional.of(new Food("fdc:" + id, tidyCase(description), entry.brand, entry.gtin < 0 ? null : gtin14(entry.gtin), kcal, protein, carbsG, fat,
-                density, serving));
+        return Optional.of(new Food("fdc:" + id, tidyCase(description), entry.brand, entry.gtin < 0 ? null : gtin14(entry.gtin), amount(energy),
+                amount(entry.protein), amount(carbs), amount(entry.fat), density, serving));
     }
 
     /** The label's serving: its household text with the metric amount, else "1 serving (30 g)"; null without a usable size. */
     private static FdcImport.Serving serving(Entry entry) {
-        if (Double.isNaN(entry.servingSize) || entry.servingSize <= 0) {
+        if (entry.servingSize == ABSENT || entry.servingSize <= 0 || entry.servingSize > MAX_SERVING_G) {
             return null;
         }
-        BigDecimal size = BigDecimal.valueOf(entry.servingSize);
         // Millilitres are weighed as water, 1 g/mL (see the class note).
-        BigDecimal grams = size;
-        if (grams.compareTo(MAX_SERVING_G) > 0) {
-            return null;
-        }
-        String metric = size.stripTrailingZeros().toPlainString() + (entry.millilitres ? " ml" : " g");
+        BigDecimal grams = amount(entry.servingSize);
+        String metric = grams.stripTrailingZeros().toPlainString() + (entry.millilitres ? " ml" : " g");
         String name = null;
         if (entry.household != null) {
             String household = entry.household.strip().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
@@ -196,24 +237,32 @@ final class FdcBranded {
         return text != null && text.strip().matches("[0-9]{1,9}") ? Integer.valueOf(text.strip()) : null;
     }
 
-    private static double firstNumber(double... values) {
-        for (double value : values) {
-            if (!Double.isNaN(value)) {
+    private static int firstPresent(int... values) {
+        for (int value : values) {
+            if (value != ABSENT) {
                 return value;
             }
         }
-        return Double.NaN;
+        return ABSENT;
     }
 
-    private static double number(String text) {
+    private static BigDecimal amount(int hundredths) {
+        return BigDecimal.valueOf(hundredths, HUNDREDTHS);
+    }
+
+    /** A decimal text in hundredths, rounded half up (the columns' two decimals); ABSENT when it is no number. */
+    private static int hundredths(String text) {
         if (text == null) {
-            return Double.NaN;
+            return ABSENT;
         }
         try {
-            double value = Double.parseDouble(text);
-            return Double.isFinite(value) ? value : Double.NaN;
-        } catch (NumberFormatException notANumber) {
-            return Double.NaN;
+            BigDecimal scaled = new BigDecimal(text.strip()).movePointRight(HUNDREDTHS).setScale(0, RoundingMode.HALF_UP);
+            if (scaled.compareTo(BigDecimal.valueOf(SATURATED)) > 0) {
+                return SATURATED;
+            }
+            return scaled.compareTo(BigDecimal.valueOf(-SATURATED)) < 0 ? -SATURATED : scaled.intValueExact();
+        } catch (NumberFormatException | ArithmeticException notANumber) {
+            return ABSENT;
         }
     }
 

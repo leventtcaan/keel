@@ -133,13 +133,12 @@ class OffImporter {
         List<OffImport.Food> foods = batch.stream().filter(food -> !held.contains(food.gtin())).toList();
         counts[1] += batch.size() - foods.size();
         List<MapSqlParameterSource> rows = new ArrayList<>();
-        List<MapSqlParameterSource> ids = new ArrayList<>();
+        String[] ids = foods.stream().map(OffImport.Food::id).toArray(String[]::new);
         List<MapSqlParameterSource> servings = new ArrayList<>();
         for (OffImport.Food food : foods) {
             rows.add(new MapSqlParameterSource("id", food.id()).addValue("name", food.name()).addValue("brand", food.brand())
                     .addValue("gtin", food.gtin()).addValue("kcal", food.kcal()).addValue("protein", food.proteinG())
                     .addValue("carbs", food.carbsG()).addValue("fat", food.fatG()).addValue("region", region).addValue("sha", sha));
-            ids.add(new MapSqlParameterSource("id", food.id()));
             if (food.serving() != null) {
                 servings.add(new MapSqlParameterSource("food", food.id()).addValue("seq", 1).addValue("name", food.serving().name())
                         .addValue("grams", food.serving().grams()));
@@ -152,7 +151,7 @@ class OffImporter {
                     on conflict (id) do update set name = excluded.name, brand = excluded.brand, kcal = excluded.kcal, protein_g = excluded.protein_g,
                     carbs_g = excluded.carbs_g, fat_g = excluded.fat_g, gtin = excluded.gtin, region = excluded.region,
                     import_release = excluded.import_release""", rows.toArray(MapSqlParameterSource[]::new));
-            jdbc.batchUpdate("delete from nutrition.food_serving where food_id = :id", ids.toArray(MapSqlParameterSource[]::new));
+            jdbc.update("delete from nutrition.food_serving where food_id = any (cast(:ids as text[]))", new MapSqlParameterSource("ids", ids));
             jdbc.batchUpdate("insert into nutrition.food_serving (food_id, seq, name, grams) values (:food, :seq, :name, :grams)",
                     servings.toArray(MapSqlParameterSource[]::new));
         });

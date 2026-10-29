@@ -43,7 +43,7 @@ services:
       # FoodData Central's releases, imported at start (ADR-008; the same release again changes nothing).
       KEEL_FDC_IMPORT_DIR: /fdc
       # The Open Food Facts subsets by region (ADR-088, ADR-090): off-tr.jsonl, off-us.jsonl, each imported at start when it changed;
-      # no file there, nothing happens. USDA Branded (430,000 products) and these run after start, one after the other, in the background.
+      # no file there, nothing happens. USDA Branded (1.9 million products) and these run after start, one after the other, in the background.
       KEEL_OFF_IMPORT_DIR: /off
     volumes:
       - ./fdc:/fdc:ro
