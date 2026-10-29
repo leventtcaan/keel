@@ -1,10 +1,12 @@
 /**
  * Correcting a meal is first class (K-407; I2 A0: one log in five was corrected, and being able to was what users
  * trusted). A logged meal opens with its items and amounts; saving replaces it — the old one deleted on the server first,
- * then the new one saved on the phone with the same time, so a failure never leaves two. Deleting asks once more. The
- * contract has no update, and the delete needs the server: offline it says so and changes nothing.
+ * then the new one saved on the phone with the same time, so a failure never leaves two. Deleting asks first, in the
+ * system's alert (ADR-087 #1, K-1048). The contract has no update, and the delete needs the server: offline it says so and
+ * changes nothing.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { Alert, type AlertButton } from 'react-native';
 
 import MealScreen from '@/app/meal';
 import type { components } from '@/api/schema';
@@ -63,6 +65,8 @@ const mockServices = {
 };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => 'METRIC' }));
 
+const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
 beforeEach(() => {
   jest.clearAllMocks();
   calls.length = 0;
@@ -79,6 +83,14 @@ function held<T>() {
   const promise = new Promise<T>((resolve) => (release = resolve));
   return { promise, release };
 }
+/** The question the alert asked, and its two buttons: "Keep it" (cancel) and "Delete" (destructive). */
+const question = () => {
+  expect(alert).toHaveBeenCalledTimes(1);
+  const [title, message, buttons] = alert.mock.calls[0] as [string, string, AlertButton[]];
+  return { title, message, keep: buttons.find((b) => b.style === 'cancel')!, confirm: buttons.find((b) => b.style === 'destructive')!, buttons };
+};
+const askToDelete = async () => act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.edit.delete') })));
+const confirmDelete = async () => act(async () => question().confirm.onPress?.());
 const pressTwice = async (name: string) => {
   const press = (screen.getByRole('button', { name }).props as { onClick: (event: object) => void }).onClick;
   await act(async () => {
@@ -154,11 +166,30 @@ test('the delete not done (offline, a server error): nothing saved, it says a co
   expect(mockRecord).not.toHaveBeenCalled();
 });
 
-test('deleting asks once more, then deletes and goes back; nothing is saved', async () => {
+test('deleting asks first, in a system alert: nothing is deleted until the destructive button; Keep it changes nothing', async () => {
   await show();
-  await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.edit.delete') })));
+  await askToDelete();
+  const { title, message, buttons, keep } = question();
+  expect(title).toBe(t('meal.edit.confirmTitle'));
+  expect(message).toBe(t('meal.edit.confirmBody'));
+  expect(buttons.map((b) => [b.text, b.style])).toEqual([
+    [t('meal.edit.keep'), 'cancel'],
+    [t('meal.edit.confirm'), 'destructive'],
+  ]);
+  // Nothing inline: no second button on the page to find at the foot of a long list.
+  expect(screen.queryByRole('button', { name: t('meal.edit.confirm') })).toBeNull();
   expect(mockDELETE).not.toHaveBeenCalled();
-  await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.edit.confirmDelete') })));
+  await act(async () => keep.onPress?.());
+  expect(mockDELETE).not.toHaveBeenCalled();
+  expect(mockBack).not.toHaveBeenCalled();
+  expect(screen.getByRole('button', { name: t('meal.edit.delete') })).toBeOnTheScreen();
+});
+
+test('the destructive button deletes and goes back; nothing is saved', async () => {
+  await show();
+  await askToDelete();
+  expect(mockDELETE).not.toHaveBeenCalled();
+  await confirmDelete();
   expect(mockDELETE).toHaveBeenCalledWith('/v1/meals/{id}', { params: { path: { id: 'm1' } } });
   expect(mockRecord).not.toHaveBeenCalled();
   expect(mockBack).toHaveBeenCalled();
@@ -167,8 +198,8 @@ test('deleting asks once more, then deletes and goes back; nothing is saved', as
 test('a delete that fails says so and stays', async () => {
   mockDelete = async () => refused(500, 'INTERNAL');
   await show();
-  await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.edit.delete') })));
-  await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.edit.confirmDelete') })));
+  await askToDelete();
+  await confirmDelete();
   expect(screen.getByText(t('meal.edit.needsConnection'))).toBeOnTheScreen();
   expect(mockBack).not.toHaveBeenCalled();
 });
@@ -224,7 +255,7 @@ describe('review', () => {
     jest.clearAllMocks();
     await show();
     await act(async () => fireEvent.press(screen.getAllByRole('button', { name: t('meal.edit.delete') })[0]));
-    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.edit.confirmDelete') })));
+    await confirmDelete();
     expect(mockForget).toHaveBeenCalledWith('c1');
   });
 
@@ -258,10 +289,14 @@ describe('review', () => {
     expect(mockBack).toHaveBeenCalledTimes(1);
   });
 
-  test('"delete it" pressed twice: one delete', async () => {
+  test('the alert\'s Delete pressed twice: one delete', async () => {
     await show();
-    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.edit.delete') })));
-    await pressTwice(t('meal.edit.confirmDelete'));
+    await askToDelete();
+    const { confirm } = question();
+    await act(async () => {
+      confirm.onPress?.();
+      confirm.onPress?.();
+    });
     expect(mockDELETE).toHaveBeenCalledTimes(1);
     expect(mockBack).toHaveBeenCalledTimes(1);
   });

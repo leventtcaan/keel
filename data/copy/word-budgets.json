@@ -1235,7 +1235,7 @@
         "meal.consent.notNow",
         "meal.consent.failed",
         "meal.edit.delete",
-        "meal.edit.confirmDelete",
+        "meal.edit.confirmTitle", "meal.edit.confirmBody", "meal.edit.confirm", "meal.edit.keep",
         "meal.edit.needsConnection",
         "meal.estimate.question",
         "meal.photo.why",

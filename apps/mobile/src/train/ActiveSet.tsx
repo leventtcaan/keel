@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { type LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ProblemText } from '@/components/ProblemText';
 import type { components } from '@/api/schema';
@@ -42,6 +42,8 @@ type Props = {
   problem: string | null;
   /** Which showing of the problem this is: the same failure again is said again (K-815). */
   problemOccurrence?: unknown;
+  /** The card's place on the page, as it changes: the screen brings it above the dock when a small phone would hide its end. */
+  onLayout?: (event: LayoutChangeEvent) => void;
 };
 
 /**
@@ -49,7 +51,7 @@ type Props = {
  * be typed too, filled with the suggestion; reps left picked from 0, 1 and 2+. A bodyweight move has no weight; a weighted
  * one steps what is added. The button that logs it is the screen's, in its dock, so it never moves.
  */
-export function ActiveSet({ move, heading, range, aim, gym, plates, entry, onChange, onTooHeavy, problem, problemOccurrence }: Props) {
+export function ActiveSet({ move, heading, range, aim, gym, plates, entry, onChange, onTooHeavy, problem, problemOccurrence, onLayout }: Props) {
   const { color } = useTheme();
   const units = useUnits();
   const unit = t(units === 'METRIC' ? 'units.kgUnit' : 'units.lbUnit');
@@ -68,23 +70,22 @@ export function ActiveSet({ move, heading, range, aim, gym, plates, entry, onCha
     return next === null ? null : () => onChange({ reps: String(next) });
   };
   const loadLabel = t(move.load === 'BODYWEIGHT_PLUS_EXTERNAL' ? 'workout.addedLabel' : 'workout.loadLabel', { unit });
+  // Compact steppers (prototype `.stp.c`): each names its field inside its box, so there is no label line over it.
   const load =
     move.load === 'BODYWEIGHT' ? null : (
-      <View style={styles.field}>
-        <Text style={[styles.small, { color: color.muted }]}>{loadLabel}</Text>
-        <Stepper
-          label={loadLabel}
-          value={numberOf(entry.load)}
-          onChange={(number) => onChange({ load: String(number), loadKg: null })}
-          onEmpty={() => onChange({ load: '', loadKg: null })}
-          step={units === 'METRIC' ? workoutParams.loadStep.kg : workoutParams.loadStep.lb}
-          decimals={loadInputDecimals}
-          min={0}
-          unit={picking ? t('workout.pick.caption') : unit}
-          placeholder={t('workout.pick.placeholder')}
-          steps={loadStep}
-        />
-      </View>
+      <Stepper
+        compact
+        label={loadLabel}
+        value={numberOf(entry.load)}
+        onChange={(number) => onChange({ load: String(number), loadKg: null })}
+        onEmpty={() => onChange({ load: '', loadKg: null })}
+        step={units === 'METRIC' ? workoutParams.loadStep.kg : workoutParams.loadStep.lb}
+        decimals={loadInputDecimals}
+        min={0}
+        unit={picking ? t('workout.pick.caption') : unit}
+        placeholder={t('workout.pick.placeholder')}
+        steps={loadStep}
+      />
     );
   const last = workoutParams.rirChoices.length - 1;
   const said =
@@ -94,7 +95,7 @@ export function ActiveSet({ move, heading, range, aim, gym, plates, entry, onCha
       </ProblemText>
     );
   // Closed until asked for: one tap stays one tap.
-  // Closed, a small link on the set's own line (no row of its own: the set stays in the first view on a small phone).
+  // Closed, a small link on the set's own head line (no row of its own: the set stays in the first view on a small phone).
   const addNote =
     entry.note === null ? (
       <Pressable accessibilityRole="button" onPress={() => onChange({ note: '' })} style={styles.link}>
@@ -111,43 +112,39 @@ export function ActiveSet({ move, heading, range, aim, gym, plates, entry, onCha
         multiline
       />
     );
-  // Under the weight it is about, far from both skips (Skip set is the dock's, Skip move the head's): why the button waits,
-  // or the plates a side, and "Too heavy?" where the server has a lighter load.
+  // On the card's head line with the other link, far from both skips (Skip set is the dock's, Skip move the move head's):
+  // "Too heavy?" where the server has a lighter load.
   const tooHeavy =
     onTooHeavy === null ? null : (
       <Pressable accessibilityRole="button" accessibilityLabel={t('workout.tooHeavy.label')} onPress={onTooHeavy} style={styles.link}>
         <Text style={[styles.small, { color: color.accent }]}>{t('workout.tooHeavy.link')}</Text>
       </Pressable>
     );
+  // Under the weight it is about, as text only (a link would make it a row a touch target tall): why the button waits, or the
+  // plates a side.
   const weightLine =
-    !picking && plates === null && tooHeavy === null ? null : (
-      <View style={styles.weightLine}>
-        <Text style={[styles.small, styles.grow, { color: color.muted }]}>{picking ? t('workout.pick.why') : plates}</Text>
-        {tooHeavy}
-      </View>
-    );
+    !picking && plates === null ? null : <Text style={[styles.small, { color: color.muted }]}>{picking ? t('workout.pick.why') : plates}</Text>;
   return (
-    <View style={[styles.entry, { borderColor: color.text }]}>
-      <View style={styles.head}>
+    <View testID="active-set" onLayout={onLayout} style={[styles.entry, { borderColor: color.text }]}>
+      <View testID="set-head" style={styles.head}>
         <Text style={[styles.heading, styles.grow, { color: color.text }]}>{heading}</Text>
         {range !== null && <Text style={[styles.small, { color: color.muted }]}>{range}</Text>}
+        {tooHeavy}
         {addNote}
       </View>
       <View style={styles.steppers}>
         {load}
-        <View style={styles.field}>
-          <Text style={[styles.small, { color: color.muted }]}>{t('workout.repsLabel')}</Text>
-          <Stepper
-            label={t('workout.repsLabel')}
-            value={numberOf(entry.reps)}
-            onChange={(number) => onChange({ reps: String(number) })}
-            onEmpty={() => onChange({ reps: '' })}
-            step={1}
-            decimals={0}
-            min={0}
-            steps={repsStep}
-          />
-        </View>
+        <Stepper
+          compact
+          label={t('workout.repsLabel')}
+          value={numberOf(entry.reps)}
+          onChange={(number) => onChange({ reps: String(number) })}
+          onEmpty={() => onChange({ reps: '' })}
+          step={1}
+          decimals={0}
+          min={0}
+          steps={repsStep}
+        />
       </View>
       {weightLine}
       <View style={styles.rir}>
@@ -178,12 +175,11 @@ const styles = StyleSheet.create({
   grow: { flexGrow: 1 },
   link: { minHeight: tokens.size.touch, justifyContent: 'center' },
   heading: { fontSize: tokens.type.body, fontWeight: tokens.weight.bold },
-  // One under the other (prototype `.setc`): the shared Stepper is wide enough for "102.5 kg" between its buttons.
+  // One under the other (prototype `.setc`): the shared Stepper is wide enough for "102.5 kg" between its buttons, which two
+  // side by side on a 375 pt phone are not (about 54 pt left for the number between four 48 pt buttons).
   steppers: { gap: tokens.space.sm },
-  field: { gap: tokens.space.xs },
   rir: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: tokens.space.sm },
   rirLabel: { flex: 1, minWidth: tokens.size.primaryButton * 2 },
-  weightLine: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },
 });

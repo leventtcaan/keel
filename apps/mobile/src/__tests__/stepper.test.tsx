@@ -2,7 +2,7 @@
  * Stepper (ADR-070 Ek 2 #5, K-1041): − value + with the value a field one can type into (a comma or a dot), clamped to
  * its range, stepped by the caller's step, and one adjustable control for VoiceOver (swipe up or down to step).
  */
-import { fireEvent, render, screen, userEvent } from '@testing-library/react-native';
+import { fireEvent, render, screen, userEvent, within } from '@testing-library/react-native';
 import { type ComponentProps, type ReactElement, useState } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 
@@ -301,5 +301,51 @@ describe('what is typed is old once the value is another one (K-1047)', () => {
     await fireEvent(field(), 'focus');
     await fireEvent.changeText(field(), '62.');
     expect(field().props.value).toBe('62.');
+  });
+});
+
+// K-1048 (prototype `.stp.c`): the set card holds two steppers and the reps-left row above the dock of an iPhone SE, so its steppers
+// are compact: the field's name sits inside the box, over the number, instead of a line of its own above it.
+describe('compact', () => {
+  const HIDDEN = { includeHiddenElements: true };
+  const box = () => screen.getByTestId('stepper-box');
+  const buttons = () => [t('stepper.decrease', { label: 'Weight' }), t('stepper.increase', { label: 'Weight' })].map((name) => screen.getByRole('button', { name }));
+
+  test('says its name inside the box, over the number, and keeps the field spoken as before', async () => {
+    await renderIt(<Held compact />);
+    expect(within(box()).getByText('Weight', HIDDEN)).toBeOnTheScreen(); // the field itself is spoken once, by its own label
+    expect(within(box()).getByText('kg')).toBeOnTheScreen();
+    expect(field().props.accessibilityLabel).toBe('Weight');
+    expect(field().props.accessibilityRole).toBe('adjustable');
+    expect(field().props.accessibilityValue).toEqual({ text: '72.5 kg' });
+  });
+
+  test('the plain stepper has no caption in its box: its name is the screen\'s to put above it', async () => {
+    await renderIt(<Held />);
+    expect(within(box()).queryByText('Weight', HIDDEN)).toBeNull();
+  });
+
+  test('its buttons stay a full touch target, and its box is tighter than the plain one', async () => {
+    await renderIt(<Held compact />);
+    for (const button of buttons()) {
+      const style = StyleSheet.flatten(button.props.style);
+      expect(style.width).toBeGreaterThanOrEqual(tokens.size.touch);
+      expect(style.height).toBeGreaterThanOrEqual(tokens.size.touch);
+    }
+    expect(StyleSheet.flatten(box().props.style).padding).toBe(tokens.space.xs);
+  });
+
+  test('the plain box keeps its padding', async () => {
+    await renderIt(<Held />);
+    expect(StyleSheet.flatten(box().props.style).padding).toBe(tokens.space.sm);
+  });
+
+  test('steps and types as the plain one does', async () => {
+    await renderIt(<Held compact />);
+    await userEvent.setup().press(screen.getByRole('button', { name: t('stepper.increase', { label: 'Weight' }) }));
+    expect(heard).toEqual([75]);
+    await fireEvent(field(), 'focus');
+    await fireEvent.changeText(field(), '80');
+    expect(heard).toEqual([75, 80]);
   });
 });

@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
-import { Chip } from '@/components/Chip';
+import { Segmented } from '@/components/Segmented';
 import { ProblemText, useProblem } from '@/components/ProblemText';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { Stepper } from '@/components/Stepper';
@@ -235,17 +235,22 @@ export default function WeighInScreen() {
 
 type Range = 'weeks' | 'year';
 
+/** The chart's range: two exclusive choices, so the segmented control Settings uses (ADR-070 Ek 2 #2), not two chips. */
 function RangeChoice({ range, onChange }: { range: Range; onChange: (range: Range) => void }) {
   return (
-    <View style={styles.choice}>
-      <Chip label={t('weighIn.chart.weeks')} selected={range === 'weeks'} onPress={() => onChange('weeks')} />
-      <Chip label={t('weighIn.chart.year')} selected={range === 'year'} onPress={() => onChange('year')} />
-    </View>
+    <Segmented
+      testID="weigh-in-range"
+      options={[
+        { value: 'weeks', label: t('weighIn.chart.weeks') },
+        { value: 'year', label: t('weighIn.chart.year') },
+      ]}
+      value={range}
+      onChange={onChange}
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  choice: { flexDirection: 'row', gap: tokens.space.sm },
   safe: { flex: 1 },
   body: { padding: tokens.space.lg, gap: tokens.space.lg },
   part: { gap: tokens.space.sm },

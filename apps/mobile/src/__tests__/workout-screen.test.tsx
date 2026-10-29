@@ -5,7 +5,7 @@
  * through the phone's queue (K-304), so it all works offline.
  */
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
-import { AccessibilityInfo, AppState, Keyboard, StyleSheet } from 'react-native';
+import { AccessibilityInfo, AppState, Keyboard, ScrollView, StyleSheet } from 'react-native';
 
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
@@ -1344,16 +1344,18 @@ describe('the focus mode session (K-971, ADR-075 #1-#2, ADR-070 #4)', () => {
     expect(mockStatusBars.mounted).toBe(0);
   });
 
-  test('the rest has a place of its own at the top, the same size with or without it, so the page does not move', async () => {
+  // K-1048 (changed from "the rest has a place of its own at the top, the same size with or without it"): that reserved ~60 pt
+  // under the header on every first view, an empty band over the progress dots. The rest takes room only while it shows.
+  test('the rest takes room only while it shows: no slot, no band, with none; it is there with the rest and goes with it', async () => {
     await show();
     await screen.findByText(t('workout.log', { number: 1 }));
-    const slot = () => screen.getByTestId('rest-slot');
-    expect(slot()).toHaveStyle({ minHeight: tokens.size.touch + tokens.space.sm * 2 });
-    expect(within(slot()).queryByTestId('rest')).toBeNull();
+    expect(screen.queryByTestId('rest-slot')).toBeNull();
     await fireEvent.press(screen.getByText(t('workout.log', { number: 1 })));
     await screen.findByText(t('workout.log', { number: 2 }));
-    expect(within(slot()).getByTestId('rest')).toBeOnTheScreen();
-    expect(slot()).toHaveStyle({ minHeight: tokens.size.touch + tokens.space.sm * 2 });
+    expect(within(screen.getByTestId('rest-slot')).getByTestId('rest')).toBeOnTheScreen();
+    expect(StyleSheet.flatten(screen.getByTestId('rest-slot').props.style)?.minHeight).toBeUndefined();
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.rest.endLabel') }));
+    expect(screen.queryByTestId('rest-slot')).toBeNull();
   });
 
   test("the superset link is a row of the move's More menu, with the move and not over the set (K-1047)", async () => {
@@ -4438,6 +4440,106 @@ describe('the workout screen on the system (K-1047)', () => {
       } finally {
         dismiss.mockRestore();
       }
+    });
+  });
+});
+
+// K-1048 (ADR-070 Ek 2 #1; prototype 8): the first view of a set. The set card through "Reps left" is above the dock on an
+// iPhone SE (375 x 667), where the page had a band for a rest that was not there, labels over the steppers, and Skip set
+// under Log set. Layout is not measured in Jest: these hold the structure that makes the room, and the reveal that is the
+// guarantee when the room is still short (a move with warm-ups, a larger text size).
+describe('the first view of a set (K-1048)', () => {
+  const dock = () => within(screen.getByTestId('dock'));
+  const card = () => within(screen.getByTestId('active-set'));
+  const TARGET: Schemas['PlannedExercise'] = { ...DAY.exercises[0], lighterLoadKg: 60, heavierLoadKg: 65 };
+  const layout = (testID: string, frame: { y?: number; height: number }) =>
+    act(async () => {
+      fireEvent(screen.getByTestId(testID), 'layout', { nativeEvent: { layout: { x: 0, y: frame.y ?? 0, width: 375, height: frame.height } } });
+    });
+  const scrolls = jest.spyOn(ScrollView.prototype, 'scrollTo');
+  beforeEach(() => scrolls.mockClear());
+
+  test('Log set and Skip set share one row of the dock: the dock is one button tall, not two', async () => {
+    await show();
+    const log = await screen.findByRole('button', { name: t('workout.log', { number: 1 }) });
+    const skip = dock().getByRole('button', { name: t('workout.skipSetLabel') });
+    const row = within(screen.getByTestId('dock-row'));
+    expect(row.getByRole('button', { name: t('workout.log', { number: 1 }) })).toBe(log);
+    expect(row.getByRole('button', { name: t('workout.skipSetLabel') })).toBe(skip);
+    expect(StyleSheet.flatten(screen.getByTestId('dock-row').props.style)).toMatchObject({ flexDirection: 'row' });
+    expect(skip).toHaveStyle({ minHeight: tokens.size.touch });
+  });
+
+  test('the weight and the reps are compact steppers: the field is named in the box, with no label line above it', async () => {
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    const boxes = card().getAllByTestId('stepper-box');
+    expect(boxes).toHaveLength(2);
+    for (const box of boxes) expect(StyleSheet.flatten(box.props.style).padding).toBe(tokens.space.xs);
+    const weight = t('workout.loadLabel', { unit: t('units.kgUnit') });
+    expect(within(boxes[0]).getByText(weight, { includeHiddenElements: true })).toBeOnTheScreen();
+    expect(within(boxes[1]).getByText(t('workout.repsLabel'), { includeHiddenElements: true })).toBeOnTheScreen();
+    // The name is said once, by the field; the buttons are still full touch targets.
+    expect(screen.getAllByText(weight, { includeHiddenElements: true })).toHaveLength(1);
+    expect(screen.getByRole('button', { name: stepName('moreLoad') })).toHaveStyle({ width: tokens.size.stepperButton, height: tokens.size.stepperButton });
+    expect(screen.getByRole('button', { name: stepName('lessReps') })).toHaveStyle({ width: tokens.size.stepperButton, height: tokens.size.stepperButton });
+  });
+
+  test('"Reps left" is under the steppers in the card, before the dock', async () => {
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    expect(card().getByText(t('workout.rir.short'))).toBeOnTheScreen();
+    expect(card().getByText(t('workout.targetRir', { max: 1 }))).toBeOnTheScreen();
+  });
+
+  test('"Too heavy?" and "Add note" are links of the card\'s head row; the line under the weight is text only', async () => {
+    mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, days: [{ ...DAY, exercises: [TARGET, DAY.exercises[1]] }] } } };
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    const head = within(screen.getByTestId('set-head'));
+    expect(head.getByText(t('workout.setOf', { number: 1, count: 3 }))).toBeOnTheScreen();
+    expect(head.getByRole('button', { name: t('workout.tooHeavy.label') })).toHaveStyle({ minHeight: tokens.size.touch });
+    expect(head.getByRole('button', { name: t('workout.note.add') })).toHaveStyle({ minHeight: tokens.size.touch });
+    expect(StyleSheet.flatten(screen.getByTestId('set-head').props.style)).toMatchObject({ flexDirection: 'row', flexWrap: 'wrap' });
+  });
+
+  describe('the set card is brought into view when it would end under the dock', () => {
+    const SE_VIEWPORT = 478; // 667 - status bar 20 - header 54 - dock 115, by the tokens (the dock is one button tall now)
+    test('hidden by 120 pt: the page scrolls by that, with a little air', async () => {
+      await show();
+      await screen.findByText(t('workout.log', { number: 1 }));
+      await layout('session-scroll', { height: SE_VIEWPORT });
+      await layout('active-set', { y: 230, height: 340 }); // ends at 570, 92 under the viewport's bottom
+      expect(scrolls).toHaveBeenLastCalledWith({ y: 570 + tokens.space.sm - SE_VIEWPORT, animated: false });
+    });
+
+    test('it fits: the page is not moved', async () => {
+      await show();
+      await screen.findByText(t('workout.log', { number: 1 }));
+      await layout('session-scroll', { height: 691 }); // a Pro Max
+      await layout('active-set', { y: 230, height: 340 });
+      expect(scrolls).not.toHaveBeenCalled();
+    });
+
+    test('the viewport shrinks (the rest shows, the keyboard comes): it is brought into view again', async () => {
+      await show();
+      await screen.findByText(t('workout.log', { number: 1 }));
+      await layout('session-scroll', { height: 640 });
+      await layout('active-set', { y: 230, height: 340 });
+      expect(scrolls).not.toHaveBeenCalled();
+      await layout('session-scroll', { height: 500 });
+      expect(scrolls).toHaveBeenLastCalledWith({ y: 570 + tokens.space.sm - 500, animated: false });
+    });
+
+    test('a person who scrolled it into view already is not pulled', async () => {
+      await show();
+      await screen.findByText(t('workout.log', { number: 1 }));
+      await layout('session-scroll', { height: SE_VIEWPORT });
+      await act(async () => {
+        fireEvent.scroll(screen.getByTestId('session-scroll'), { nativeEvent: { contentOffset: { x: 0, y: 300 } } });
+      });
+      await layout('active-set', { y: 230, height: 340 });
+      expect(scrolls).not.toHaveBeenCalled();
     });
   });
 });

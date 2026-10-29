@@ -33,7 +33,12 @@ export function DecisionBlock({ eyebrow, aside, title, children, onPress, pressL
         eyebrow !== undefined && <Text style={[styles.eyebrow, { color: color.accentInk }]}>{eyebrow}</Text>
       ) : (
         <View style={styles.top}>
-          <Text style={[styles.eyebrow, styles.eyebrowBeside, { color: color.accentInk }]}>{eyebrow}</Text>
+          {/* A mark with no label keeps to the right; no empty text is laid out beside it. */}
+          {eyebrow === undefined ? (
+            <View style={styles.eyebrowBeside} />
+          ) : (
+            <Text style={[styles.eyebrow, styles.eyebrowBeside, { color: color.accentInk }]}>{eyebrow}</Text>
+          )}
           <InverseSurface>{aside}</InverseSurface>
         </View>
       )}

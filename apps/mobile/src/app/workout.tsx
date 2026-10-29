@@ -1,7 +1,7 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, type LayoutChangeEvent, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ProblemText, announce } from '@/components/ProblemText';
@@ -158,6 +158,9 @@ function Session() {
   const [problem, setProblem] = useState<{ row: string; text: string } | null>(null);
   // Two taps in one frame, before `busy` disables the button, must not log the set twice.
   const saving = useRef(false);
+  // The page's frame (K-1048): where its viewport ends, how far it is scrolled, and where the set card ends in it.
+  const scroller = useRef<ScrollView>(null);
+  const frame = useRef<{ viewport: number; scrolled: number; cardBottom: number | null }>({ viewport: 0, scrolled: 0, cardBottom: null });
   const [failed, setFailed] = useState(false);
   // The "Add a move" search: null while closed, what is typed while open.
   const [adding, setAdding] = useState<string | null>(null);
@@ -253,6 +256,27 @@ function Session() {
   const planned = entry_?.planned;
   const base = entry_?.base;
   const moveId = entry_?.exerciseId;
+  // The set card must end above the dock. The room is made in the layout (no empty rest slot, compact steppers, Skip set beside
+  // Log set); this is what holds when it is still short (a move with warm-ups on an iPhone SE, a larger text size, the number
+  // pad over the page): the page scrolls by what is hidden, and by that only, so the dots and the move's head give way, not
+  // the set. A page the person scrolled to show it is left alone.
+  const reveal = () => {
+    const { viewport, scrolled, cardBottom } = frame.current;
+    if (viewport <= 0 || cardBottom === null) return;
+    const to = cardBottom + tokens.space.sm - viewport;
+    if (to <= scrolled) return;
+    frame.current.scrolled = to;
+    scroller.current?.scrollTo({ y: to, animated: false });
+  };
+  // Another move is another page: from its top, and its card brought into view again (its frame may not change, and then no
+  // layout event comes to say so).
+  useEffect(() => {
+    if (frame.current.scrolled !== 0) {
+      frame.current.scrolled = 0;
+      scroller.current?.scrollTo({ y: 0, animated: false });
+    }
+    reveal();
+  }, [moveId]); // `reveal` reads refs only: the move is what this follows.
   const menuOpen = menu !== null && menu.move === moveId && !menu.choosing;
   const choosing = menu !== null && menu.move === moveId && menu.choosing;
   const move = moveId === undefined ? undefined : moves.get(moveId);
@@ -966,6 +990,11 @@ function Session() {
         onTooHeavy={lighter === null ? null : askTooHeavy}
         problem={said}
         problemOccurrence={problem}
+        onLayout={(event: LayoutChangeEvent) => {
+          const { y, height } = event.nativeEvent.layout;
+          frame.current.cardBottom = y + height;
+          reveal();
+        }}
       />
     );
   // The planned move whose place a move holds (itself when it is not swapped in or is outside the plan).
@@ -1130,7 +1159,7 @@ function Session() {
         accessibilityLabel={t('workout.skipSetLabel')}
         onPress={() => skipThisSet(plan.current ?? 0)}
         disabled={busy}
-        style={styles.link}>
+        style={styles.skipSet}>
         <Text style={[styles.small, { color: color.muted }]}>{t('workout.skipSet')}</Text>
       </Pressable>
     );
@@ -1164,10 +1193,14 @@ function Session() {
     finishing ? null : cardioShown ? (
       cardioDock
     ) : move !== undefined && row !== null ? (
-      <>
-        <Button label={logLabel} onPress={() => void log()} disabled={busy || needsWeight} />
+      // Log set and Skip set side by side (K-1048): the dock is one button tall, and Skip set is still under the thumb's reach of
+      // Log set and far from Skip move at the top.
+      <View testID="dock-row" style={styles.logRow}>
+        <View style={styles.grow}>
+          <Button label={logLabel} onPress={() => void log()} disabled={busy || needsWeight} />
+        </View>
         {skipSetLink}
-      </>
+      </View>
     ) : nextId !== undefined ? (
       <Button label={t('workout.next', { name: name(nextId) })} onPress={() => setPicked(nextId)} />
     ) : day === null && active === null ? null : cardioDue ? (
@@ -1231,6 +1264,9 @@ function Session() {
       </View>
     </View>
   );
+  const restShown = pause.pausedAt !== null && discarded === null ? pausedBar : rest !== null ? <RestTimer since={rest} onEnd={endRest} /> : null;
+  // Built outside the JSX (the raw-text guard reads what is inside it).
+  const restSlot = restShown === null ? null : <View testID="rest-slot">{restShown}</View>;
   const swapSheet =
     moveId === undefined ? null : <SwapSheet move={name(moveId)} options={swapOptions} onPick={swapTo} onClose={() => setSwapping(false)} />;
   const dock =
@@ -1297,12 +1333,22 @@ function Session() {
       <KeyboardAvoidingView testID="keyboard-avoiding" style={styles.safe} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.top}>
           <SessionHeader since={stale ? null : (startedAt ?? openedAt)} onEnd={onEnd} pause={discarded === null ? pause : NOT_PAUSED} onPause={discarded === null ? togglePause : null} subtitle={dayLine} />
-          {/* Its place is kept with no rest in it, so the page under it does not move when one starts. */}
-          <View testID="rest-slot" style={styles.restSlot}>
-            {pause.pausedAt !== null && discarded === null ? pausedBar : rest !== null && <RestTimer since={rest} onEnd={endRest} />}
-          </View>
+          {/* Room only while a rest (or the pause) shows: no empty band between the header and the progress (K-1048). */}
+          {restSlot}
         </View>
-        <ScrollView testID="session-scroll" contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          ref={scroller}
+          testID="session-scroll"
+          contentContainerStyle={styles.body}
+          keyboardShouldPersistTaps="handled"
+          scrollEventThrottle={16}
+          onScroll={(event) => {
+            frame.current.scrolled = event.nativeEvent.contentOffset.y;
+          }}
+          onLayout={(event) => {
+            frame.current.viewport = event.nativeEvent.layout.height;
+            reveal();
+          }}>
           {data?.kept === true && <Text style={[styles.small, { color: color.muted }]}>{t('workout.kept')}</Text>}
           {loadFailed}
           {discarded !== null ? discardedPanel : ending ? endSheet : swapping ? swapSheet : finishing ? form : cardioShown ? cardioPage : session}
@@ -1328,7 +1374,6 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   top: { paddingHorizontal: tokens.space.lg, gap: tokens.space.xs },
   pausedBar: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, padding: tokens.space.sm, borderRadius: tokens.radius.card },
-  restSlot: { minHeight: tokens.size.touch + tokens.space.sm * 2, justifyContent: 'center' },
   body: { padding: tokens.space.lg, gap: tokens.space.sm },
   cardioDock: { gap: tokens.space.sm },
   pair: { flexDirection: 'row', gap: tokens.space.sm },
@@ -1342,6 +1387,8 @@ const styles = StyleSheet.create({
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.md },
   links: { flexDirection: 'row', alignItems: 'center', columnGap: tokens.space.sm },
   link: { minHeight: tokens.size.touch, justifyContent: 'center' },
+  logRow: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
+  skipSet: { minHeight: tokens.size.touch, justifyContent: 'center', paddingHorizontal: tokens.space.sm },
   move: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, padding: tokens.space.sm, borderRadius: tokens.radius.button },
   grow: { flex: 1 },
   name: { fontFamily: tokens.font.display, fontSize: tokens.type.heading },
