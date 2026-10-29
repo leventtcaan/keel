@@ -142,3 +142,51 @@ test('every free day next to a trained one: no "good spot" claim', async () => {
   expect(await screen.findByText(t('addDay.addOn', { day: 'Monday' }))).toBeTruthy();
   expect(screen.queryByText(t('addDay.suggested'))).toBeNull();
 });
+
+describe('the day always comes from the server, with its moves (Evre 7 B1)', () => {
+  test.each([['canAddDay false', false], ['canAddDay absent', undefined]])(
+    'the server not saying it can add (%s: an older server, the copy kept offline) still asks: the server decides, the phone never opens an empty day',
+    async (_name, canAddDay) => {
+      const { canAddDay: _gone, ...older } = program(['MONDAY', 'THURSDAY']);
+      mockData = { ...mockData, program: { state: 'ready', value: canAddDay === undefined ? older : { ...older, canAddDay } }, kept: true };
+      await show();
+      await fireEvent.press(await screen.findByLabelText(t('addDay.addOnLabel', { day: 'Saturday' })));
+      expect(mockPost).toHaveBeenCalledWith('/v1/program/days', { body: { weekday: 'SATURDAY' } });
+    },
+  );
+
+  test('a failure is a retry state: the reason, and the button reads "Try again" for the same day, which sends it again and closes on success', async () => {
+    mockAnswer = () => {
+      throw new TypeError('Network request failed');
+    };
+    await show();
+    await fireEvent.press(await screen.findByText(t('addDay.addOn', { day: 'Saturday' })));
+    expect(await screen.findByText(t('addDay.offline'))).toBeTruthy();
+    expect(screen.queryByText(t('addDay.addOn', { day: 'Saturday' }))).toBeNull();
+    mockAnswer = () => ({ data: program(['MONDAY', 'THURSDAY', 'SATURDAY']), response: { status: 200 } });
+    await fireEvent.press(screen.getByLabelText(t('addDay.retryLabel', { day: 'Saturday' })));
+    expect(mockPost).toHaveBeenCalledTimes(2);
+    expect(mockPost).toHaveBeenLastCalledWith('/v1/program/days', { body: { weekday: 'SATURDAY' } });
+    expect(mockBack).toHaveBeenCalledTimes(1);
+  });
+
+  test('after a failure another day can still be picked, and the retry state goes with the pick', async () => {
+    mockAnswer = () => ({ error: { code: 'X' }, response: { status: 500 } });
+    await show();
+    await fireEvent.press(await screen.findByText(t('addDay.addOn', { day: 'Saturday' })));
+    await screen.findByText(t('addDay.failed'));
+    mockAnswer = () => ({ data: program(['MONDAY', 'TUESDAY', 'THURSDAY']), response: { status: 200 } });
+    await fireEvent.press(screen.getByLabelText(t('addDay.addOnLabel', { day: 'Tuesday' })));
+    expect(mockPost).toHaveBeenLastCalledWith('/v1/program/days', { body: { weekday: 'TUESDAY' } });
+    expect(mockBack).toHaveBeenCalledTimes(1);
+  });
+
+  test('the program not read at all (no connection, nothing kept): a retry state that reads again, never a blank sheet', async () => {
+    mockData = { program: { state: 'failed', problem: 'NoConnection' }, exercises: { state: 'ready', value: [] }, kept: false } as TrainData;
+    await show();
+    expect(await screen.findByText(t('addDay.offline'))).toBeTruthy();
+    mockData = { program: { state: 'ready', value: program(['MONDAY', 'THURSDAY']) }, exercises: { state: 'ready', value: [] }, kept: false };
+    await fireEvent.press(screen.getByText(t('addDay.retry')));
+    expect(await screen.findByText(t('addDay.addOn', { day: 'Saturday' }))).toBeTruthy();
+  });
+});
