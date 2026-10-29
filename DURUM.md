@@ -14,7 +14,10 @@ Levent TestFlight'ta denedi: programsız kalan hesapta antrenman yok, yemek aram
 Levent hesabı turdan sonra silindi; şimdiki simülatör hesabı = aynı Apple ID ile yeni hesap (onboarding deneyimli dalı, 3 gün, RevenueCat'te 29 Kas'a
 kadar promosyon premium). Simülatör düzeneği: Metro gerçek sunucuya `.envanter/metro.sh` (arka planda koş), görüntü `.envanter/shot.sh <ad>`,
 sunucu logu `.envanter/slog.sh [süre]`, sayfa `python3 .envanter/build_page.py` + aynı dosya yoluyla yayın. Apple girişi her seferinde parola ister
-(Levent, ekran klavyesi ⌘K) → çıkış/silme gerektiren denemeleri topla. **Sıradaki: Evre 1 paket 1** (K-1 + K-2 programsız hesap), `plan/yeniden-yapim.md › İlerleme`.
+(Levent, ekran klavyesi ⌘K) → çıkış/silme gerektiren denemeleri topla. **Levent gece yok (29 Eki 01:00 UTC): oturum düşerse giriş yapılamaz** →
+uygulamayı kapatıp açma (çift yükleme çift yenileme yapıp oturumu düşürdü, K-9 adayı); Metro'da yeniden yükle ya da arka plan/ön plan.
+Evre 1 paket 1 BİTTİ (#619, ADR-084). **Sıradaki: Evre 1 paket 2** (K-4 yemek arama: istemci + sunucu), `plan/yeniden-yapim.md › İlerleme`.
+K1 listesi (sabah Levent'e toplu): `.envanter/notes.md › K1 listesi`.
 
 ## (önceki) DEVAM NOKTASI (28 Eki — 1.0 REDDEDİLDİ, düzeltildi, build 5 ile YENİDEN GÖNDERİLDİ: Waiting for Review)
 **Red (28 Eki, gönderim 87ef804d, inceleme cihazı iPad Air 11" M3):** (1) **2.3.7** 6. mağaza karesinde "Try it free for 2 weeks" (ücretsiz/deneme atfı da fiyat sayılır);

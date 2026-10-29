@@ -5177,7 +5177,7 @@ tasks:
     module: mobile
     type: fix
     size: M
-    status: doing
+    status: done
     depends_on: []
     why: "Profili olup programı olmayan hesap hiçbir ekrandan program yaptıramıyor (envanter K-1, K-2; denetim A1, A2). ADR-084"
     acceptance:
