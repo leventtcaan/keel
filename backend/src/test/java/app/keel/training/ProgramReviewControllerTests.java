@@ -442,6 +442,7 @@ class ProgramReviewControllerTests {
         var request = switch (method) {
             case "GET" -> mvc.get();
             case "PUT" -> mvc.put();
+            case "PATCH" -> mvc.patch();
             case "DELETE" -> mvc.delete();
             default -> mvc.post();
         };

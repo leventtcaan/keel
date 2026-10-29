@@ -151,7 +151,7 @@ final class AccountFixture {
     }
 
     MvcTestResult send(AccountId account, String method, String uri, Object body) {
-        var request = "PUT".equals(method) ? mvc.put() : mvc.post();
+        var request = "PUT".equals(method) ? mvc.put() : "PATCH".equals(method) ? mvc.patch() : mvc.post();
         MvcTestResult result = request.uri(uri).header("Authorization", bearer(account)).contentType(MediaType.APPLICATION_JSON)
                 .content(JSON.writeValueAsString(body)).exchange();
         assertThat(result.getResponse().getStatus()).as(method + " " + uri).isLessThan(300);
