@@ -5,7 +5,16 @@ guncelleme: 2026-10-10
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (29 Eki ~14:30 UTC — Evre 6: ortalamayı yakala, `plan/evre-6-ortalamayi-yakala.md`)
+## ▶ DEVAM NOKTASI (29 Eki ~23:00 UTC — Evre 6 bitti, build 9 TestFlight yolunda)
+Evre 6 (`plan/evre-6-ortalamayi-yakala.md`, denetim `plan/evre-6-denetim.md`) parçaları birleşti: #677 antrenman günleri tek kaynak + 7 gün + Train'den
+gün ekleme · #679 #682 ABD yemek verisi (sunucuda 1,8 M USDA markalı, 5,4 bin FNDDS ev ölçüsü, 286 bin OFF ABD, pg_trgm arama) · #676 ayarlar (Gyms
+yok, düzenlenebilir profil, çipler, rıza düğmesi) · #678 ilk kullanım rehberi, hareket ekranı, Progress animasyonu, klavye · #681 dolu alet · #683 yemek
+kaydı (porsiyon, tek sayı + makrolar, düzelt/sil, 30 gün, son/sık/favori, hızlı ekleme, barkod kaçınca, öğün hatırlatması 4. tür) · #685 #686 #687 cila
+ve persona turu (G/ 82 ekran). Build 9 (EAS 8ae4d687) otomatik TestFlight. Sırada: Levent TestFlight'ta bakar → ASC 1.0'a build 9 → Submit (Levent).
+Levent onayı bekleyenler: default_training_time 18:00, 7 günlük şablon + 40 hareket ipucu (koçluk taslağı), kendi programa gün ekleme (ADR-073 Ek 9
+tersine), K1 listesi `.envanter/notes.md`. P2 kalanlar G raporunda.
+
+## (önceki) DEVAM NOKTASI (29 Eki ~14:30 UTC — Evre 6: ortalamayı yakala, `plan/evre-6-ortalamayi-yakala.md`)
 Build 8 TestFlight'ta ama **App Review'a gönderilmeyecek**: Levent "MVP olarak dahi hazır değil" dedi (yemek kaydı, ayarlar, bağlantılar, mock). Kararlar
 ADR-090 (USDA + OFF ABD, öğün hatırlatması dördüncü tür, 7 gün uyarıyla, prototipsiz arayüz). Sıra: denetim → yemek verisi → yemek kaydı → antrenman/ayarlar/
 bağlantılar → rehber/cila → build 9.

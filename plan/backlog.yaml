@@ -5655,7 +5655,7 @@ tasks:
     module: mobile
     type: fix
     size: M
-    status: doing
+    status: done
     depends_on: []
     why: "Evre 6 parçaları birleşti; build 9 öncesi kalan kusurlar ve bütün akışın bir ABD kullanıcısı gözüyle son turu"
     acceptance:
