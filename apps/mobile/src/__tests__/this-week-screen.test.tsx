@@ -233,19 +233,21 @@ describe('an ordinary week', () => {
     expect(screen.getByText(t('thisWeek.hero.inDays', { count: 3 }))).toBeOnTheScreen();
   });
 
-  // K-1048 (prototype 5, `.mt`): the small label top-left on the row the arrow is on; no empty band with only an arrow in it.
-  test('the hero\'s top row is "This week\'s call" with the arrow beside it, not an arrow alone in an empty band', async () => {
+  // K-1048: no empty band over the title. The arrow is the block's mark, not a control, so it is the height of its glyph, not of a
+  // touch target; the prototype's "This week's call" label is left out to hold the home first view to 40 words (ADR-069 #4).
+  test("the hero's top row is only as tall as the arrow: it reserves no touch target's height, and no empty text is laid out beside it", async () => {
     await show();
-    const label = within(screen.getByTestId('hero')).getByText(t('today.call.eyebrow'));
-    expect(label).toBeOnTheScreen();
-    const mark = within(screen.getByTestId('hero')).getByTestId('decision-mark');
-    // Same row: the label and the arrow are the two children of one row.
-    expect(label.parent).toBe(mark.parent);
-    expect(StyleSheet.flatten(label.parent?.props.style)).toMatchObject({ flexDirection: 'row' });
-    // The arrow is not a control (the block is), so it does not reserve a touch target's height of its own.
-    expect(StyleSheet.flatten(mark.props.style).minHeight).toBeUndefined();
-    // The call's label is still the block's title, under the row.
-    expect(screen.getByText(t('decision.stop_load_increase.label'))).toBeOnTheScreen();
+    const hero = within(screen.getByTestId('hero'));
+    const mark = hero.getByTestId('decision-mark');
+    const style = StyleSheet.flatten(mark.props.style);
+    expect(style.minHeight).toBeUndefined();
+    expect(style.minWidth).toBeUndefined();
+    // The row holds the arrow and a plain spacer, not an empty label.
+    expect(StyleSheet.flatten(mark.parent?.props.style)).toMatchObject({ flexDirection: 'row' });
+    expect(hero.queryByText(t('today.call.eyebrow'))).toBeNull();
+    expect(hero.queryByText('')).toBeNull();
+    // The call's label is the block's title, directly under the row.
+    expect(hero.getByText(t('decision.stop_load_increase.label'))).toBeOnTheScreen();
   });
 
   test('the next call tomorrow and today are said so', async () => {
