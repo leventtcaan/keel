@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { DecisionBlock } from '@/components/DecisionBlock';
+import { ListGroup, ListRow } from '@/components/ListGroup';
 import { PLUS_CLEARANCE, PlusEntry } from '@/components/PlusEntry';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
@@ -151,19 +152,16 @@ export default function ProgressScreen() {
   );
 }
 
-/** Share your progress (K-612): only when the user asks — a card of weeks and calls, made on this phone. */
+/** Share your progress (K-612): only when the user asks — a card of weeks and calls, made on this phone. A grouped row (K-1054). */
 function ShareEntry() {
-  const { color } = useTheme();
   return (
-    <View style={styles.share}>
-      <Button label={t('share.open')} variant="ghost" onPress={() => router.push('/share')} />
-      <Text style={[styles.small, { color: color.muted }]}>{t('share.openNote')}</Text>
-    </View>
+    <ListGroup footer={t('share.openNote')}>
+      <ListRow label={t('share.open')} icon="square.and.arrow.up" navigates onPress={() => router.push('/share')} />
+    </ListGroup>
   );
 }
 
 const styles = StyleSheet.create({
-  share: { gap: tokens.space.xs },
   safe: { flex: 1 },
   body: { paddingHorizontal: tokens.space.lg, paddingTop: tokens.space.md, paddingBottom: PLUS_CLEARANCE, gap: tokens.space.md },
   note: { gap: tokens.space.sm },

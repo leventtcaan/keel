@@ -102,7 +102,7 @@ export function PhotoCard({ today, flowWeek }: Props) {
     );
 
   return (
-    <Section testID="photo-card" title={t('photos.title')}>
+    <Section card testID="photo-card" title={t('photos.title')}>
       <Text style={[styles.text, { color: color.textSecondary }]}>{windowText(photoWindow(last, today, flowWeek))}</Text>
       {count}
       <Button label={t('photos.take')} onPress={() => router.push('/photo-capture')} />

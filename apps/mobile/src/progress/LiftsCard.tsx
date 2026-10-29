@@ -70,7 +70,7 @@ export function LiftsCard({ lifts, moves, units }: { lifts: Lift[]; moves: Reado
   );
 
   return (
-    <Section testID="section-strength" title={t('progress.strength.title')} aside={t('progress.strength.bestSet')}>
+    <Section card testID="section-strength" title={t('progress.strength.title')} aside={t('progress.strength.bestSet')}>
       {chips}
       <View style={styles.top}>
         <Text testID="strength-best" style={[styles.big, { color: color.text }]}>

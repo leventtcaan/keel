@@ -1012,10 +1012,10 @@ describe('on the system (K-1045, T-8, ADR-070 Ek 2 #7, #8)', () => {
     mockPhotoChecks = [{ takenOn: '2026-09-20', photos: { front: 'file:///docs/2026-09-20-front.jpg' } }];
   });
 
-  test('the sections are a heading and content, not each a grey card: no surface fill behind strength, sets, weight, consistency or photos', async () => {
+  test('the sections are surface cards, as the target boxes above them (ADR-070 Ek 4, K-1054): strength, sets, weight, consistency, photos', async () => {
     await show();
     for (const id of ['section-strength', 'section-sets', 'section-weight', 'section-consistency', 'photo-card']) {
-      expect(flatten(screen.getByTestId(id)).backgroundColor).toBeUndefined();
+      expect(flatten(screen.getByTestId(id)).backgroundColor).toBe(palettes.light.surface);
     }
   });
 
@@ -1023,7 +1023,8 @@ describe('on the system (K-1045, T-8, ADR-070 Ek 2 #7, #8)', () => {
     await show();
     const heading = (id: string) => flatten(within(screen.getByTestId(id)).getAllByRole('header')[0]);
     const first = heading('section-strength');
-    expect(first).toMatchObject({ fontSize: tokens.type.label, fontWeight: tokens.weight.semibold, color: palettes.light.text });
+    // Inside the card, the target boxes' title (ADR-070 Ek 4, K-1054).
+    expect(first).toMatchObject({ fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.bold, color: palettes.light.muted });
     for (const id of ['section-sets', 'section-weight', 'section-consistency', 'section-calls', 'photo-card']) expect(heading(id)).toEqual(first);
   });
 
