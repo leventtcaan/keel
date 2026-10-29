@@ -5565,7 +5565,7 @@ tasks:
     module: engine
     type: fix
     size: L
-    status: doing
+    status: done
     depends_on: []
     why: "Levent build 8 incelemesi (29 Eki): MVP olarak dahi hazır değil; denetim plan/evre-6-denetim.md A; ADR-090 #3"
     acceptance:
@@ -5580,7 +5580,7 @@ tasks:
     module: nutrition
     type: fix
     size: L
-    status: doing
+    status: done
     depends_on: []
     why: "Levent build 8 incelemesi (29 Eki): MVP olarak dahi hazır değil; denetim plan/evre-6-denetim.md C; ADR-090 #1"
     acceptance:
@@ -5595,7 +5595,7 @@ tasks:
     module: mobile
     type: fix
     size: L
-    status: doing
+    status: done
     depends_on: []
     why: "Levent build 8 incelemesi (29 Eki): MVP olarak dahi hazır değil; denetim plan/evre-6-denetim.md E"
     acceptance:
@@ -5610,7 +5610,7 @@ tasks:
     module: mobile
     type: fix
     size: L
-    status: doing
+    status: done
     depends_on: []
     why: "Levent build 8 incelemesi (29 Eki): MVP olarak dahi hazır değil; denetim plan/evre-6-denetim.md D; ADR-090 #2 #5"
     acceptance:
@@ -5625,7 +5625,7 @@ tasks:
     module: mobile
     type: fix
     size: L
-    status: doing
+    status: done
     depends_on: []
     why: "Levent build 8 incelemesi (29 Eki): MVP olarak dahi hazır değil; denetim plan/evre-6-denetim.md B"
     acceptance:
@@ -5640,7 +5640,7 @@ tasks:
     module: mobile
     type: fix
     size: L
-    status: doing
+    status: done
     depends_on: []
     why: "Levent build 8 incelemesi (29 Eki): MVP olarak dahi hazır değil; denetim plan/evre-6-denetim.md F"
     acceptance:
@@ -5648,6 +5648,22 @@ tasks:
       - "npm run check + anayasa denetimi + ilgili backend testleri yeşil; simülatör ekran görüntüleri"
     tests: ["npm run check", "tools/anayasa-denetimi.sh"]
     refs: ["plan/evre-6-denetim.md", "plan/kararlar/ADR-090-evre-6-kararlari.md"]
+
+  - id: K-1066
+    title: "Evre 6 G: son cila ve uçtan uca persona turu (harekete özel ipuçları, Food left tek sayı, Log a meal başlığı, tek Back, tekerlekte Not set)"
+    milestone: M10
+    module: mobile
+    type: fix
+    size: M
+    status: doing
+    depends_on: []
+    why: "Evre 6 parçaları birleşti; build 9 öncesi kalan kusurlar ve bütün akışın bir ABD kullanıcısı gözüyle son turu"
+    acceptance:
+      - "40 hareketin her birine kendine özgü 3 ipucu (koçluk taslağı işaretli); genel ipucu kalmaz"
+      - "This week Food left tek sayı; Log a meal başlığı kesilmez; call/check-in/share/food/state sistem geri düğmesi; ağırlık tekerleğinde Not set"
+      - "Uçtan uca persona turu: onboarding → plan → paywall → This week → antrenman (dolu alet dahil) → yemek kaydı (arama, barkod, geçmiş gün) → Progress → Ayarlar; bulunan P0/P1 düzeltilir"
+    tests: ["npm run check", "tools/anayasa-denetimi.sh"]
+    refs: ["plan/evre-6-denetim.md", "plan/evre-6-ortalamayi-yakala.md"]
 
   - id: K-1010
     title: "Sunucudaki ek siteler: Caddy /opt/sites altındaki *.caddy dosyalarını içeri alır"
