@@ -1359,7 +1359,8 @@ export interface paths {
          *     just over is week 5 to 8 (G2 K-63), `risk` lists that week's signals, each with its source — any one is a risk,
          *     none weighed; empty when none, or when the week was paused (a declared state, the ladder's week off). Week 9 is
          *     open for week 8's risk alone, without words. `firstCallOn` until the first call is made: the day the plan, the
-         *     paywall and Today name for it. NOT_FOUND once the flow is over. Health data: CONSENT_REQUIRED
+         *     paywall and Today name for it. `weighInWeek` (ADR-089) until a call has read the scale: this check-in week's weigh-ins
+         *     against what the next call needs. NOT_FOUND once the flow is over. Health data: CONSENT_REQUIRED
          *     without the HEALTH_DATA consent; CONFLICT without a profile. It never changes a call (U1).
          */
         get: operations["getFirstWeeks"];
@@ -3509,7 +3510,43 @@ export interface components {
              *     phone shows it and counts the days to it; it never works it out.
              */
             firstCallOn?: string;
+            weighInWeek?: components["schemas"]["WeighInWeek"];
             risk: components["schemas"]["Reason"][];
+        };
+        /**
+         * @description This check-in week's weigh-ins against what the next call needs (ADR-089 #1): the engine's own block, the seven days
+         *     that end on the day of the next call, and which of them have a weigh-in. Present only while the account has no call
+         *     yet or its latest call is "no decision yet" (the first read of the scale is still ahead; the call that closes the
+         *     first week reads sessions, not the scale, and does not end it); absent once a call has read the weight. The phone
+         *     shows the count and the date and works none of it out (U1).
+         */
+        WeighInWeek: {
+            /**
+             * Format: date
+             * @description The block's first day on the user's calendar, six days before `to`.
+             */
+            from: string;
+            /**
+             * Format: date
+             * @description The block's last day, the day of the next call: `firstCallOn` before the first call; after one, the day the latest
+             *     call opens the next on, or today once that has come.
+             */
+            to: string;
+            /**
+             * @description The days of the block with a weigh-in, oldest first: the day's first weigh-in, a manual one or Apple Health's; an
+             *     imported history does not count (ADR-053). Never a day after today.
+             */
+            weighedDays: string[];
+            /** @description The weigh-ins a block needs for the call to read it (`min_weighins_per_week`, H1 §3.4). */
+            needed: number;
+            /**
+             * Format: date
+             * @description Only when the block cannot reach `needed` any more (the days weighed plus the days left from today on, today
+             *     included while it is not weighed, are fewer than `needed`): the first day the call can read the data if the user
+             *     weighs in every morning from tomorrow, the same day the call's own `nextReview` names (DataSufficiency). The
+             *     phone shows it and never works it out. Absent while the block can still reach `needed`.
+             */
+            callsFrom?: string;
         };
         /**
          * @description What the user picked on coming back (K-1020, ADR-077
