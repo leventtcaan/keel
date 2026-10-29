@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 
+import { keepMealRhythm } from '@/notifications/keepMealRhythm';
 import { weighInFactsOf } from '@/notifications/plan';
 import { useAppServices } from '@/services/ServicesProvider';
 
@@ -78,6 +79,8 @@ export function useToday(): { day: string; data: TodayData | null; reload: () =>
           const counted = firstWeeks.state === 'ready' ? firstWeeks.value.weighInWeek : undefined;
           void remind.keepWeighInWeek(counted === undefined ? null : weighInFactsOf(counted), era);
         }
+        // The user's usual meal times, for the meal reminder (ADR-090 #2): learned from the last weeks' logs at each read.
+        void keepMealRhythm(api, remind, readAt, era).catch(named);
         // A state declared, kept on the phone for the reminders (K-518) — not for an account that left during the read.
         if (today.state !== undefined && remind.era() === era) await declared.keep(today.state).catch(named);
         // Today's open counted, the one before read (K-521): the week-5 risk's "the app not opened", on the phone only.

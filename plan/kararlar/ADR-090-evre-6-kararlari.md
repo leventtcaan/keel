@@ -55,3 +55,23 @@ gram), kayıt hatırlatması yok, 7 gün antrenman akışı yok.
 - **Karar 4, "dolu" sinyali sunucuda:** `WorkoutFinish.takenExerciseIds` (isteğe bağlı) kaydedilir: `training.workout.taken_exercise_ids text[]` (V53, ADR-023: kendi şemamızda tek sütun, yabancı anahtar yok). Yalnız saklanır; motor henüz okumaz (sonraki öneriler için). Alan yazılmayan finish önceki değeri korur, boş liste temizler. Oturum başka yoldan kapanırsa (otomatik kapanış) yazılmaz; kayıp sinyal, hata değil.
 - **Karar 5, Today › Change › Gym is busy:** aynı mantık (`takenChoices`): "Which one is taken?" sonra başka ekipmandan en çok 3 seçenek, bugünlük. Metinler Taken akışıyla aynı sözcüklerle ("Pick what is taken.", "Same muscles, other equipment. Today only."). Antrenman başlayınca bu yol kapanır (Short/Full dışı gizlenir); takas antrenmandaki Taken'dır.
 - **Reddedilen:** kataloğa elle `station` alanı (40 hareket için içerik işi; ekipman sınıfı şimdilik yeter, yanlış elenen hareket "More swaps"ta durur) · "Do it later"ı sunucuya yazmak (sırayı yalnız telefon bilir, takas gibi oturumluk) · "sona al" için tüm programı yeniden sıralamak.
+
+## Ek 3 · Yemek kaydı: gün gezgini, yerinde düzeltme, porsiyon adımı, öğün hatırlatması (K-1063, #673, agent, teknik; ürün tarafı #2 ve #5 Levent'in)
+- **Denetim (`plan/evre-6-denetim/yemek.md`, D):** geçmiş gün ve başka güne kayıt yoktu; düzeltme sil + yeniden kaydetti; satırda miktar yoktu; Recent 2 öğeydi; favori, sık
+  yenen, kendi besini, hızlı kalori yoktu; barkod kaçınca çıkmaz sokaktı; öğün hatırlatması yoktu; her sayı aralıktı (100 g başına).
+- **Karar 1, sunucu (sözleşme önce):** `PATCH /v1/meals/{id}` (öğeler, öğün, an; öğün kimliğini ve clientId'sini korur, silip yeniden kaydetmez) · `GET /v1/meals?from&to` ve
+  `GET /v1/days?from&to` (en çok 62 gün; gün şeridi, geçmiş günler, öğrenme) · `POST /v1/foods` (etiketten kendi besini; porsiyon başına sayılar, sunucu 100 g'a çevirir, yalnız
+  sahibi görür, `own:<id>`) · `GET /v1/foods/{id}` · favoriler (`GET /v1/foods/favorites`, `PUT/DELETE /v1/foods/{id}/favorite`) · `GET /v1/foods/frequent` · `quick` öğesi
+  (kcal + isteğe bağlı makro, aralık tek sayı, Recent'a girmez) · `Food.avoided` (aranan besin kaçınılanlardaysa işaret; gizlenmez) · `recent-foods` 5 → 12. Göç V54
+  (`own_food`, `food_favorite`; sağlık verisi: hesapla ve rızanın geri çekilmesiyle silinir, dışa aktarılır, envantere işlendi).
+- **Karar 2, tek sayı (#5 uygulaması):** kayıt ekranlarında porsiyon başına tek sayı (`Portion`), kayıtlı öğede ve günde aralığın ortası; aralık "Details" dokunuşunda
+  (`/v1/food-estimates`). Hesap ve saklama aralık kalır. Kalan kcal tek sayı; protein, karb, yağ yenen / hedef.
+- **Karar 3, öğün hatırlatması dördüncü tür (#2 uygulaması):** telefonda saf fonksiyon (ADR-036 #2). Son 14 günde her öğünün günlük zamanının medyanı, en az 3 kayıtla; günde en
+  çok 2 öğün (en çok kayıtlı olanlar); öğünün olağan saatinden 30 dakika sonra, o öğün hâlâ boşsa (son açılıştaki bilgiyle); bugün ve yarın tarihle planlanır. Ana anahtar
+  kapalıyken ya da izin yokken hiçbir şey planlanmaz; kendi anahtarı da var. Parametreler `notifications.json` (`meal_reminder_*`, tag `urun`: kaynak yok, ürün seçimi).
+  Geçmiş güne yazılan kayıtlar öğünün varsayılan saatiyle (`past_day_slot_hours`) yazılır ve öğrenmeye karışır; bilinen sınırlama, medyan bunu sönümler.
+- **Karar 4, arayüz:** gün gezgini (ok + 30 günlük şerit) Food sayfasında; öğün listesinde kaydırarak silme, dokununca yerinde düzeltme, Undo; seçilen güne kayıt. Öğün
+  ekranında Recent / Frequent / Favorites sekmeleri, "Log again", "Copy a day's meal", Quick add, Create my own food; barkod kaçırınca "Add it" ve "Search instead".
+  "Günde N öğün": yalnız kullanıcının kullandığı öğünler gösterilir, bir tane eklenebilir; kalori hedefi varsa öğün başına ipucu yalnız küçük bir satırdır.
+- **Reddedilen:** favoriyi telefonda tutmak (cihazlar arası kaybolur, dışa aktarma ve silme dışında kalır) · hızlı kaloriyi "Quick add" adlı gizli bir besin satırıyla yapmak (veritabanını kirletir,
+  aramada çıkar) · gün toplamını telefonda toplamak (sunucunun `eaten` aralığı var).

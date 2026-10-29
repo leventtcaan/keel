@@ -1,6 +1,6 @@
 /**
- * The reminders the phone schedules (K-410): three kinds and never a fourth (arastirma/04-faz3-urun.md §7.4, product
- * decision 29 Sep: the budget is kinds, not a weekly count). Pure — what is planned from what is known — so the slots are tested
+ * The reminders the phone schedules (K-410): four kinds (arastirma/04-faz3-urun.md §7.4, product decision 29 Sep: the budget is kinds,
+ * not a weekly count; the fourth, the meal reminder, is ADR-090 #2). Pure — what is planned from what is known — so the slots are tested
  * without a phone; reminders.ts hands the plan to the device.
  *
  * 1. Training: each training day of the PROGRAM (ADR-090 Ek 1: the program is where the days are made; the profile's list is only
@@ -10,14 +10,17 @@
  *    (ADR-089 Ek 2): the weigh-in count rides this reminder, it is no fourth kind (ADR-036).
  * 2. Check-in: the check-in day, in the morning (I1 F4, D1).
  * 3. Quiet: once, a quiet spell after the app was last opened, framed in self-compassion (I1 F4, C6; U7: no blame).
+ * 4. Meal (ADR-090 #2, K-1063): learned from the user's own meal times (mealRhythm.ts), at most `meal_reminder_max_per_day` a
+ *    day, only for a slot still empty, planned by date for today and the day after.
  */
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 
+import { type MealRhythm, mealMoments } from './mealRhythm';
 import { notificationParams as P } from './params';
 
 export type Schedule = components['schemas']['Schedule'];
-export type ReminderKind = 'training' | 'check_in' | 'quiet';
+export type ReminderKind = 'training' | 'check_in' | 'quiet' | 'meal';
 /** Weekly: the phone's calendar, weekday 1 = Sunday … 7 = Saturday (expo-notifications' WeeklyTriggerInput). Once: a moment. */
 export type ReminderTime = { weekday: number; hour: number; minute: number } | { at: Date };
 export type Reminder = { id: string; kind: ReminderKind; when: ReminderTime; title: string; body: string };
@@ -64,6 +67,10 @@ export type PlanInput = {
   firstCall: FirstCall;
   /** The week's weigh-ins, while no call has read the scale (ADR-089 Ek 2); none or absent: no line. */
   weighInWeek?: WeighInFacts | null;
+  /** The user's usual meal times, learned from their logs and kept from the last read (ADR-090 #2); none: no meal reminder. */
+  meals?: MealRhythm | null;
+  /** The meal reminder switched off on its own (the other kinds stay). */
+  mealsOff?: boolean;
 };
 
 const WEEKDAYS: Schedule['checkInDay'][] = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
@@ -117,7 +124,7 @@ function weighInLine(facts: PlanInput['weighInWeek'], firstCall: FirstCall, day:
   return t(missing === 1 ? 'reminders.training.weighIns.one' : 'reminders.training.weighIns.other', { count: missing, day: t(`onboarding.schedule.dayName.${weekday}`) });
 }
 
-export function planReminders({ schedule: kept, programDays, cue, lastOpened, now, muted, mutedUntil, restUntil, firstCall, weighInWeek }: PlanInput): Reminder[] {
+export function planReminders({ schedule: kept, programDays, cue, lastOpened, now, muted, mutedUntil, restUntil, firstCall, weighInWeek, meals, mealsOff }: PlanInput): Reminder[] {
   // The program's weekdays are the training days (one source, ADR-090 Ek 1); the schedule keeps the rest (check-in day, time).
   const schedule: Schedule | null = kept === null ? null : { ...kept, trainingDays: programDays != null && programDays.length > 0 ? programDays : kept.trainingDays };
   if (muted && mutedUntil === null) return [];
@@ -185,6 +192,14 @@ export function planReminders({ schedule: kept, programDays, cue, lastOpened, no
     // Not inside a state still on: the user said why the app is quiet (K-518).
     if (at > now && (until === null || dayOf(at) > until)) {
       plan.push({ id: 'quiet', kind: 'quiet', when: { at }, title: t('reminders.quiet.title'), body: t('reminders.quiet.body') });
+    }
+  }
+
+  // The meal reminder: a slot still empty, near its usual time. Not inside a state still on (the user said why the app is quiet).
+  if (mealsOff !== true) {
+    for (const { slot, at, day } of mealMoments(meals ?? null, now)) {
+      if (until !== null && day <= until) continue;
+      plan.push({ id: `meal-${day}-${slot}`, kind: 'meal', when: { at }, title: t('reminders.meal.title', { slot: t(`food.slot.${slot}`) }), body: t('reminders.meal.body') });
     }
   }
 

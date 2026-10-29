@@ -2716,6 +2716,10 @@
     "quiet": {
       "title": "It's been a week",
       "body": "One quiet week doesn't undo what you've built. When you're ready, one short session picks it back up."
+    },
+    "meal": {
+      "title": "{slot} time?",
+      "body": "Log it in a few taps."
     }
   },
   "subscription": {
@@ -2912,13 +2916,14 @@
     },
     "reminders": {
       "title": "Reminders",
-      "kinds": "Training day, check-in morning, a note after a quiet week.",
+      "kinds": "Training day, check-in morning, your meals, a note after a quiet week.",
       "routine": "Your routine",
-      "what": "Three reminders: training ({minutes} minutes before), the check-in morning, and a note after a quiet week. All stay on this phone.",
+      "what": "Four reminders: training ({minutes} minutes before), the check-in morning, your usual meal times, and a note after a quiet week. All stay on this phone.",
+      "meals": "Meal reminders",
       "turnOn": "Turn on reminders",
     "onlyCheckIn": "Only the check-in morning reminder is on.",
     "noCalls": "No weekly calls without your OK for health data, so the check-in morning reminder waits.",
-    "turnOnAll": "Turn on all three",
+    "turnOnAll": "Turn on all four",
       "blocked": "Notifications for Next Call are off in iOS Settings.",
       "openSettings": "Open iOS Settings",
       "failed": "Couldn't change reminders. Try again.",

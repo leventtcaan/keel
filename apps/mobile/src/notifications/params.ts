@@ -16,4 +16,10 @@ export const notificationParams = {
   quietDays: param<number>('quiet_days'),
   cueMaxChars: param<number>('cue_max_chars'),
   restResumeWeeks: param<number>('rest_resume_weeks'),
+  /** The meal reminder, the fourth kind (ADR-090 #2): learned from the logs of a window, at most a few a day. */
+  mealWindowDays: param<number>('meal_reminder_window_days'),
+  mealMinLogs: param<number>('meal_reminder_min_logs'),
+  mealMaxPerDay: param<number>('meal_reminder_max_per_day'),
+  mealAfterMinutes: param<number>('meal_reminder_after_minutes'),
+  mealDaysAhead: param<number>('meal_reminder_days_ahead'),
 };
