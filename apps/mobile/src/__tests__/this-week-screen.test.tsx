@@ -1200,3 +1200,128 @@ describe('on the system (K-1045, ADR-070 Ek 2 #7, #8; prototype yeniden-yapim 5)
     expect(weekRecordText({ onTrack: 0, counted: 1 })).toBe('0/1 week on track');
   });
 });
+
+describe("this week's weigh-ins before the first calls (ADR-089, K-1058, prototype 11.1-11.4)", () => {
+  // Monday 2 Nov 2026 is the call day: the block runs Tuesday 27 Oct to Monday 2 Nov.
+  const weighInWeek = (weighedDays: string[], extra: Partial<Schemas['WeighInWeek']> = {}): Schemas['WeighInWeek'] => ({
+    from: '2026-10-27',
+    to: '2026-11-02',
+    weighedDays,
+    needed: 4,
+    ...extra,
+  });
+  const WEEK_ONE = { week: 2, risk: [], readsRisk: false, training: true, firstCallOn: '2026-11-02' };
+  const counter = () => within(screen.getByTestId('weigh-in-counter'));
+  const firstWeeksWith = (week: Schemas['WeighInWeek'] | undefined) => {
+    mockAnswers['/v1/first-weeks'] = ok({ ...WEEK_ONE, ...(week === undefined ? {} : { weighInWeek: week }) });
+  };
+
+  // Friday 30 Oct, the week after onboarding: no call yet, the hero is "Your start".
+  beforeEach(() => {
+    firstWeek();
+    onPhone(new Date(2026, 9, 30, 9, 0));
+    mockAnswers['/v1/program'] = ok({ ...PROGRAM, today: '2026-10-30', weekOf: '2026-10-26' });
+  });
+
+  test('behind: the days from the block (Tuesday first), the count, the line, and Weigh in, which opens the weigh-in screen', async () => {
+    firstWeeksWith(weighInWeek(['2026-10-27', '2026-10-29']));
+    await show();
+    expect(screen.getByText(t('thisWeek.hero.start'))).toBeOnTheScreen();
+    expect(counter().getByText(t('thisWeek.counter.title'))).toBeOnTheScreen();
+    expect(counter().getByText(t('thisWeek.counter.of', { count: 2, needed: 4 }))).toBeOnTheScreen();
+    expect(counter().getByText(t('thisWeek.counter.behind', { count: 2, day: 'Monday' }))).toBeOnTheScreen();
+    expect(counter().getAllByText(/^[MTWFS]$/).map((l) => l.props.children)).toEqual(['T', 'W', 'T', 'F', 'S', 'S', 'M']);
+    // Filled = weighed, ring = today (Friday).
+    expect(screen.getByTestId('counter-day-2026-10-27')).toHaveStyle({ backgroundColor: palettes.light.accentInk });
+    expect(screen.getByTestId('counter-day-2026-10-28')).not.toHaveStyle({ backgroundColor: palettes.light.accentInk });
+    expect(screen.getByTestId('counter-day-2026-10-30')).toHaveStyle({ borderColor: palettes.light.decisionText });
+    // The line that told the same thing without a number is gone; the first call's day stays.
+    expect(screen.queryByText(t('thisWeek.hero.weighIn'))).toBeNull();
+    expect(screen.getByText(t('thisWeek.hero.firstCall', { day: 'Monday' }))).toBeOnTheScreen();
+    await press(t('thisWeek.counter.weighIn'));
+    expect(mockPush).toHaveBeenCalledWith('/weigh-in');
+  });
+
+  test('enough: a check beside the count, no button, the call named', async () => {
+    firstWeeksWith(weighInWeek(['2026-10-27', '2026-10-28', '2026-10-29', '2026-10-30']));
+    await show();
+    expect(counter().getByText(t('thisWeek.counter.of', { count: 4, needed: 4 }))).toBeOnTheScreen();
+    expect(counter().getByTestId('counter-reached')).toBeOnTheScreen();
+    expect(counter().getByText(t('thisWeek.counter.enough', { day: 'Monday' }))).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: t('thisWeek.counter.weighIn') })).toBeNull();
+  });
+
+  test('today already weighed: the count shows it, there is no button', async () => {
+    firstWeeksWith(weighInWeek(['2026-10-27', '2026-10-30']));
+    await show();
+    expect(counter().getByText(t('thisWeek.counter.behind', { count: 2, day: 'Monday' }))).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: t('thisWeek.counter.weighIn') })).toBeNull();
+  });
+
+  test('the last chance: today and tomorrow, with the button', async () => {
+    onPhone(new Date(2026, 10, 1, 9, 0)); // Sunday 1 Nov
+    mockAnswers['/v1/program'] = ok({ ...PROGRAM, today: '2026-11-01', weekOf: '2026-10-26' });
+    firstWeeksWith(weighInWeek(['2026-10-27', '2026-10-29']));
+    await show();
+    expect(counter().getByText(t('thisWeek.counter.last.todayTomorrow', { day: 'Monday' }))).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: t('thisWeek.counter.weighIn') })).toBeOnTheScreen();
+  });
+
+  test("a short week: the server's date, no button, the training line, and no first call's day beside it", async () => {
+    onPhone(new Date(2026, 10, 1, 9, 0));
+    mockAnswers['/v1/program'] = ok({ ...PROGRAM, today: '2026-11-01', weekOf: '2026-10-26' });
+    firstWeeksWith(weighInWeek(['2026-10-27', '2026-10-29'], { callsFrom: '2026-11-18' }));
+    await show();
+    expect(counter().getByText(t('thisWeek.counter.short', { day: 'Monday', date: 'Wed, Nov 18' }))).toBeOnTheScreen();
+    expect(screen.getByText(t('thisWeek.counter.shortFoot'))).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: t('thisWeek.counter.weighIn') })).toBeNull();
+    expect(screen.queryByText(t('thisWeek.hero.firstCall', { day: 'Monday' }))).toBeNull();
+  });
+
+  test('no weighInWeek: no counter, the hero as before', async () => {
+    firstWeeksWith(undefined);
+    await show();
+    expect(screen.queryByTestId('weigh-in-counter')).toBeNull();
+    expect(screen.getByText(t('thisWeek.hero.weighIn'))).toBeOnTheScreen();
+  });
+
+  test('a call card (the call that closes week 1 does not read the scale): the counter is there too, outside the one control', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(decision());
+    firstWeeksWith(weighInWeek(['2026-10-27', '2026-10-29']));
+    await show();
+    expect(hero()).toBeOnTheScreen();
+    expect(counter().getByText(t('thisWeek.counter.behind', { count: 2, day: 'Monday' }))).toBeOnTheScreen();
+    // Not inside the call's control: its Weigh in is a button of its own.
+    expect(within(hero()).queryByTestId('weigh-in-counter')).toBeNull();
+    await press(t('thisWeek.counter.weighIn'));
+    expect(mockPush).toHaveBeenCalledWith('/weigh-in');
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  test('a call card with no weighInWeek (a call has read the scale): no counter', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(decision());
+    firstWeeksWith(undefined);
+    await show();
+    expect(hero()).toBeOnTheScreen();
+    expect(screen.queryByTestId('weigh-in-counter')).toBeNull();
+  });
+
+  test('read again after a weigh-in is saved: the new count is on the card', async () => {
+    firstWeeksWith(weighInWeek(['2026-10-27', '2026-10-29']));
+    await render(
+      <ThemeProvider scheme="light">
+        <WithSaved>
+          <Saver />
+          <TodayScreen />
+        </WithSaved>
+      </ThemeProvider>,
+    );
+    await act(async () => {});
+    expect(counter().getByText(t('thisWeek.counter.of', { count: 2, needed: 4 }))).toBeOnTheScreen();
+    firstWeeksWith(weighInWeek(['2026-10-27', '2026-10-29', '2026-10-30']));
+    await publishSave({ detail: '80.2 kg', undo: async () => ({ done: true as const }) });
+    await act(async () => {});
+    expect(counter().getByText(t('thisWeek.counter.of', { count: 3, needed: 4 }))).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: t('thisWeek.counter.weighIn') })).toBeNull();
+  });
+});
