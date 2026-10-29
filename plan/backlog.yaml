@@ -5255,6 +5255,23 @@ tasks:
     tests: ["jest components (button, list, stepper, icon, undo-banner) + non-text-contrast + accessibility", "tools/anayasa-denetimi.sh"]
     refs: ["plan/kararlar/ADR-070-gorsel-dil-turkuaz.md", "prototip/yeniden-yapim.html"]
 
+  - id: K-1042
+    title: "Yeniden yapım Evre 3: Open Food Facts Türkiye alt kümesi, barkod ve marka (K-8)"
+    milestone: M10
+    module: nutrition
+    type: feature
+    size: M
+    status: doing
+    depends_on: []
+    why: "Yemek verisi yalnız USDA: marka 0, barkod 0, Türkiye ürünleri yok (envanter K-8; denetim B6). ADR-088"
+    acceptance:
+      - "deploy/fetch-off.sh: OFF JSONL dökümünü akışla süzer (Türkiye etiketi ya da 869 öneki, ad ve dört besin dolu), /opt/keel/off altına küçük JSONL yazar"
+      - "Migration: nutrition.food.dataset (FDC, OFF); sunucu açılışta OFF dosyasını içe aktarır (off:<barkod>, BRANDED, gtin 14 hane, marka, porsiyon)"
+      - "Barkod araması ve adla arama OFF ürünlerini bulur; DB testleri CI'da; deploy testleri yeşil"
+      - "Kanıt: VPS'te süzme koşar, adet envantere; gerçek sunucuda bir Türk ürünü barkod ve adla bulunur"
+    tests: ["gradle OffImport testleri (CI)", "tools/test_deploy.py", "tools/anayasa-denetimi.sh"]
+    refs: ["plan/kararlar/ADR-088-open-food-facts.md", "arastirma/ham/yemek-verisi-kaynaklari-2026-10-29.md"]
+
   - id: K-1010
     title: "Sunucudaki ek siteler: Caddy /opt/sites altındaki *.caddy dosyalarını içeri alır"
     milestone: M9
