@@ -11,6 +11,8 @@ function param<T>(key: string): T {
 export const workoutParams = {
   restSecondsMin: param<number>('rest_seconds_min'),
   restSecondsMax: param<number>('rest_seconds_max'),
+  /** How long the undo banner stays after a save (ADR-070 Ek 2 #6, UndoBanner). */
+  undoBannerMs: param<number>('undo_banner_ms'),
   rirChoices: param<number[]>('rir_choices'),
   /** Reps left from which a first-session set says its weight is light (ADR-075 #3, Ek 1; the picker's last choice, "2+"). */
   calibrationRirMin: param<number>('calibration_rir_min'),

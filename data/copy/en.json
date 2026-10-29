@@ -37,6 +37,16 @@
     "undoFailed": "Couldn't take it back. Check your connection and try again.",
     "done": "Done"
   },
+  "undoBanner": {
+    "saved": "Saved",
+    "undo": "Undo",
+    "announce": "Saved, {detail}. Undo is available.",
+    "announceBare": "Saved. Undo is available."
+  },
+  "stepper": {
+    "increase": "Increase {label}",
+    "decrease": "Decrease {label}"
+  },
   "tabs": {
     "today": "This week",
     "train": "Train",

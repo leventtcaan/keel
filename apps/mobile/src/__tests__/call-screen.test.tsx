@@ -132,21 +132,22 @@ describe("this week's call", () => {
     const p = palettes.light;
     mockAnswers['/v1/decisions/current'] = ok(decision({ application: { state: 'PENDING' }, declinable: false }));
     await show();
-    expect(screen.getByRole('button', { name: t('callScreen.use') })).toHaveStyle({ backgroundColor: p.accent });
-    expect(screen.getByRole('button', { name: t('callScreen.gotIt') })).not.toHaveStyle({ backgroundColor: p.accent });
+    // ADR-070 Ek 2 #1: the primary button is the cta (black on light), no longer the turquoise accent.
+    expect(screen.getByRole('button', { name: t('callScreen.use') })).toHaveStyle({ backgroundColor: p.cta });
+    expect(screen.getByRole('button', { name: t('callScreen.gotIt') })).not.toHaveStyle({ backgroundColor: p.cta });
   });
 
   test('a call the user kept off the plan (declined) is not pressed on them (U2): "Use this call" stays the second way, "Got it" the primary', async () => {
     const p = palettes.light;
     mockAnswers['/v1/decisions/current'] = ok(decision({ application: { state: 'DECLINED' }, declinable: false }));
     await show();
-    expect(screen.getByRole('button', { name: t('callScreen.use') })).not.toHaveStyle({ backgroundColor: p.accent });
-    expect(screen.getByRole('button', { name: t('callScreen.gotIt') })).toHaveStyle({ backgroundColor: p.accent });
+    expect(screen.getByRole('button', { name: t('callScreen.use') })).not.toHaveStyle({ backgroundColor: p.cta });
+    expect(screen.getByRole('button', { name: t('callScreen.gotIt') })).toHaveStyle({ backgroundColor: p.cta });
   });
 
   test('a call in the plan keeps "Got it" as its primary action', async () => {
     await show();
-    expect(screen.getByRole('button', { name: t('callScreen.gotIt') })).toHaveStyle({ backgroundColor: palettes.light.accent });
+    expect(screen.getByRole('button', { name: t('callScreen.gotIt') })).toHaveStyle({ backgroundColor: palettes.light.cta });
   });
 
   test('pending says it is not applied yet, in the foot where "In this week\'s plan" would be; it is not read as in the plan', async () => {
