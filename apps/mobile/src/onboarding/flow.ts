@@ -46,6 +46,20 @@ const BRANCHES: Record<Branch, readonly Question[]> = {
   ownProgram: [...START, 'ownProgram', 'review', ...YOU, 'weights'],
 };
 
+/**
+ * How many segments the step indicator draws: the longest walk, from the first screen on. The branch is only known after
+ * the experience and program answers, so a count that followed it grew mid-way (7, then 8; K-1057 #10).
+ */
+export const SEGMENTS = Math.max(...Object.values(BRANCHES).map((questions) => questions.length));
+
+/**
+ * The segments filled at a step (index in the walk, -1 off it) of a walk of this length: proportional, so the last
+ * question of a short walk fills the bar as the last one of a long walk does. Integer maths: no rounding error at 3/9.
+ */
+export function filledSegments(index: number, walkLength: number): number {
+  return Math.ceil(((index + 1) * SEGMENTS) / walkLength);
+}
+
 /** Every question of a branch, in order, whether or not its screen is built yet. */
 export function questionsOf(branch: Branch): readonly Question[] {
   return BRANCHES[branch];

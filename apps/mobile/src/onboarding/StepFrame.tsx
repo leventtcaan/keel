@@ -19,7 +19,7 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
 import { type Draft, stepComplete } from './draft';
-import { type RetiredStep, type Step, nextStep, walk } from './flow';
+import { type RetiredStep, SEGMENTS, type Step, filledSegments, nextStep, walk } from './flow';
 import { useDraft } from './OnboardingContext';
 
 /** Each step's screen. Typed routes check every entry against src/app/onboarding, so a missing screen fails typecheck. */
@@ -88,6 +88,7 @@ export function StepFrame({ step, title, why, children, chosen = false, continue
   // The steps this user walks: the branch follows the experience and program answers.
   const steps = walk(draft);
   const index = (steps as readonly string[]).indexOf(step);
+  const filled = filledSegments(index, steps.length);
   const ready = stepComplete(step, draft, units, new Date().getFullYear());
   const next = nextStep(step, draft);
 
@@ -123,13 +124,13 @@ export function StepFrame({ step, title, why, children, chosen = false, continue
       <Stack.Screen options={{ gestureEnabled: !backDisabled }} />
       <View style={styles.top}>
         {back}
-        {/* One segment per step of this walk, filled up to this one (prototype `.steps`); said as one line. */}
+        {/* A fixed number of segments (the longest walk), filled in proportion to this walk (prototype `.steps`); said as one line, with this walk's own count. */}
         <View
           accessible
           accessibilityLabel={t('onboarding.progress', { step: index + 1, total: steps.length })}
           style={styles.steps}>
-          {steps.map((s, i) => (
-            <View key={s} style={[styles.segment, { backgroundColor: i <= index ? color.text : color.edge }]} />
+          {Array.from({ length: SEGMENTS }, (_, i) => (
+            <View key={i} testID="onboarding-segment" style={[styles.segment, { backgroundColor: i < filled ? color.text : color.edge }]} />
           ))}
         </View>
       </View>
