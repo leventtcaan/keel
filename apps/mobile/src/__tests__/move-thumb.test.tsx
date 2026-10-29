@@ -64,3 +64,9 @@ test('no equipment known: nothing is drawn, not even an empty tile, and no barbe
   expect(screen.queryByTestId(/^move-thumb-/, HIDDEN)).toBeNull();
   expect(screen.queryByTestId('symbol', HIDDEN)).toBeNull();
 });
+
+test('a machine move (the chest-supported row among them) is not shown with the settings gear, the icon of Settings (K-1057 #12)', async () => {
+  await shown('MACHINE');
+  expect(symbol().props.name).not.toMatch(/^gear/);
+  expect(symbol().props.name).not.toMatch(/^figure\./);
+});
