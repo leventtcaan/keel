@@ -5543,6 +5543,22 @@ tasks:
     tests: ["prototip gözden geçirme"]
     refs: ["plan/son-kontrol-2026-10-29.md", "prototip/yeniden-yapim.html"]
 
+  - id: K-1059
+    title: "v1.1: onboarding gün sorusuna 6 gün (itiş/çekiş/bacak ×2)"
+    milestone: M10
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: []
+    why: "Persona yürüyüşü bulgu 11: ABD'de sık salona giden kitle 6 gün PPL kullanır; motor ve sözleşme 6 günü destekliyor (max_training_days 6) ama onboarding 2-5 soruyor. Levent 29 Eki: v1 build 8 ile çıksın, 6 gün sonraya"
+    acceptance:
+      - "Levent data/programs/6-days.yaml şablonunu onaylar (koçluk içeriği, taslak)"
+      - "onboarding default_day_sets 6 gün yerleşimi; days ekranında 6; ADR-072 #4 eki"
+      - "npm run check + simülatörde 6 günle onboarding → plan"
+    tests: ["npm run check"]
+    refs: ["data/programs/6-days.yaml", "data/parameters/onboarding.json", "plan/kararlar/ADR-072-teklif-ve-onboarding.md"]
+
   - id: K-1010
     title: "Sunucudaki ek siteler: Caddy /opt/sites altındaki *.caddy dosyalarını içeri alır"
     milestone: M9
