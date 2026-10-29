@@ -3,7 +3,7 @@
  * falls back to the system face instead of leaving the app on the splash screen. It themes the app with the person's
  * appearance choice, and tells iOS the same so its own parts (status bar, tab bar, sheets) match (ADR-070 #3).
  */
-import { render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 import { Appearance } from 'react-native';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
@@ -16,11 +16,17 @@ jest.mock('expo-splash-screen', () => ({
   hideAsync: jest.fn(() => Promise.resolve()),
 }));
 jest.mock('expo-router/stack', () => {
-  const { View } = jest.requireActual<typeof import('react-native')>('react-native');
-  // The screens' theme, shown where a test can read it.
+  const { Pressable, View } = jest.requireActual<typeof import('react-native')>('react-native');
+  // The screens' theme, shown where a test can read it; and a screen that saves something (the banner is the layout's).
   function Stack() {
     const { useTheme } = jest.requireActual<typeof import('@/theme/theme')>('@/theme/theme');
-    return <View testID="app" accessibilityLabel={useTheme().scheme} />;
+    const { useSaved } = jest.requireActual<typeof import('@/saved/saved')>('@/saved/saved');
+    const saved = useSaved();
+    return (
+      <View testID="app" accessibilityLabel={useTheme().scheme}>
+        <Pressable accessibilityRole="button" accessibilityLabel="save something" onPress={() => saved({ detail: '80.2 kg', undo: async () => ({ done: true }) })} />
+      </View>
+    );
   }
   Stack.Screen = function Screen() {
     return null;
@@ -66,6 +72,18 @@ test('font loaded: splash hidden, app rendered', async () => {
   await render(<RootLayout />);
   expect(screen.getByTestId('app')).toBeOnTheScreen();
   expect(hide).toHaveBeenCalled();
+});
+
+test('the banner of a save is the layout\'s: a save made anywhere in the app is shown over it, with Undo (K-1044)', async () => {
+  fonts.mockReturnValue([true, null]);
+  await render(<RootLayout />);
+  expect(screen.queryByTestId('undo-banner')).toBeNull();
+
+  await fireEvent.press(screen.getByRole('button', { name: 'save something' }));
+
+  expect(screen.getByTestId('undo-banner')).toBeOnTheScreen();
+  expect(screen.getByText('80.2 kg')).toBeOnTheScreen();
+  expect(screen.getByRole('button', { name: 'Undo' })).toBeOnTheScreen();
 });
 
 test('font failed: splash hidden, app rendered anyway, failure reported', async () => {

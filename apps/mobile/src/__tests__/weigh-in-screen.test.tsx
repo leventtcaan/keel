@@ -1,12 +1,13 @@
 /**
- * The weigh-in (K-402, K-980): the day's one required ten seconds. The last weight is filled in and moves a tenth at a time
- * (or is typed), in the user's unit, kept in kg, saved on the phone first (K-304) and taken back from the screen it was saved
- * on; the health data consent is asked before anything is typed when it is not given — nothing health is kept on the phone
- * without it (ADR-030 #25). The trend is drawn only when the server says it is ready (7 weigh-in days, K-1018); before that
- * the screen says when it starts. Apple Health is asked under the first weigh-in, once (ADR-018 Ek 1).
+ * The weigh-in (K-402, K-980, K-1044): the day's one required ten seconds. The last weight is filled in the shared Stepper and
+ * moves a tenth at a time (or is typed), in the user's unit, kept in kg, saved on the phone first (K-304); saved, the sheet
+ * closes and the app's one banner says "Saved" with Undo (ADR-070 Ek 2 #6) — there is no Saved page. The health data consent
+ * is asked before anything is typed when it is not given — nothing health is kept on the phone without it (ADR-030 #25). The
+ * trend is drawn only when the server says it is ready (7 weigh-in days, K-1018); before that the screen counts the weigh-ins
+ * toward it ("3 of 7"). Apple Health is asked under the entry, once (ADR-018 Ek 1).
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
-import { AccessibilityInfo } from 'react-native';
+import { AccessibilityInfo, Alert } from 'react-native';
 
 import type { components } from '@/api/schema';
 import WeighInScreen from '@/app/weigh-in';
@@ -18,6 +19,7 @@ import { createTakeBack } from '@/sync/takeBack';
 import { ThemeProvider } from '@/theme/theme';
 
 import { nodeSqlite } from './support/nodeSqlite';
+import { WithSaved, banner, undoButton } from './support/saved';
 
 type Schemas = components['schemas'];
 type Answer = { data?: unknown; error?: { code: string; message: string }; response: Response };
@@ -94,6 +96,7 @@ afterAll(() => jest.useRealTimers());
 
 beforeEach(() => {
   jest.clearAllMocks();
+  alerted.mockClear();
   mockGranted = true;
   mockUnits = 'METRIC';
   mockAnswers = {};
@@ -113,11 +116,15 @@ const ready = { weighInCount: 9, trendReady: true };
 async function show() {
   await render(
     <ThemeProvider scheme="light">
-      <WeighInScreen />
+      <WithSaved>
+        <WeighInScreen />
+      </WithSaved>
     </ThemeProvider>,
   );
   await act(async () => {});
 }
+const alerted = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+const stepLabel = (direction: 'increase' | 'decrease') => t(`stepper.${direction}`, { label: unitLabel() });
 const unitLabel = () => t('weighIn.label', { unit: t(mockUnits === 'METRIC' ? 'units.kgUnit' : 'units.lbUnit') });
 const press = async (name: string) => {
   await fireEvent.press(screen.getByRole('button', { name }));
@@ -128,7 +135,7 @@ const type = async (text: string) => {
 };
 const field = () => screen.getByLabelText(unitLabel()).props.value as string;
 
-test('typed in kg, kept in kg, saved on the phone as a manual weigh-in of now; then it says so (K-402, K-980)', async () => {
+test('typed in kg, kept in kg, saved on the phone as a manual weigh-in of now; the sheet closes and the banner says so (K-402, K-980, K-1044)', async () => {
   await show();
   await type('82,4');
   await press(t('weighIn.save'));
@@ -136,9 +143,42 @@ test('typed in kg, kept in kg, saved on the phone as a manual weigh-in of now; t
     kind: 'weighIn',
     body: { clientId: expect.any(String), measuredAt: '2026-10-01T05:30:00.000Z', kg: 82.4, source: 'MANUAL' },
   });
-  expect(screen.getByText(t('weighIn.savedLine', { value: t('units.kg', { value: '82.4' }) }))).toBeOnTheScreen();
-  expect(screen.getByRole('button', { name: t('weighIn.undoLabel') })).toBeOnTheScreen();
-  expect(screen.queryByRole('button', { name: t('weighIn.save') })).toBeNull();
+  expect(mockBack).toHaveBeenCalledTimes(1);
+  expect(screen.getByText(t('undoBanner.saved'))).toBeOnTheScreen();
+  expect(screen.getByText(t('units.kg', { value: '82.4' }))).toBeOnTheScreen();
+  expect(undoButton()).toBeOnTheScreen();
+});
+
+test('nothing kept (not a weight, or the phone could not keep it): the sheet stays, no banner', async () => {
+  await show();
+  await type('abc');
+  await press(t('weighIn.save'));
+  expect(mockBack).not.toHaveBeenCalled();
+  expect(banner()).toBeNull();
+  mockServices.queue.record.mockRejectedValueOnce(Object.assign(new Error('disk'), { name: 'StoreFailed' }));
+  await type('82,4');
+  await press(t('weighIn.save'));
+  expect(mockBack).not.toHaveBeenCalled();
+  expect(banner()).toBeNull();
+});
+
+test('two taps on Save while the sheet goes keep one weigh-in (the lock stays on once it is kept)', async () => {
+  await show();
+  await type('82,4');
+  const save = screen.getByRole('button', { name: t('weighIn.save') });
+  await fireEvent.press(save);
+  await fireEvent.press(save);
+  await act(async () => {});
+  expect(mockServices.queue.record).toHaveBeenCalledTimes(1);
+  expect(mockBack).toHaveBeenCalledTimes(1);
+});
+
+test('the detail is in the user\'s unit: pounds typed, pounds on the banner', async () => {
+  mockUnits = 'IMPERIAL';
+  await show();
+  await type('180');
+  await press(t('weighIn.save'));
+  expect(screen.getByText(t('units.lb', { value: '180.0' }))).toBeOnTheScreen();
 });
 
 test('typed in lb, kept in kg at the precision the server keeps', async () => {
@@ -176,22 +216,48 @@ describe('the last weight filled in, and a tenth at a time (K-980, ADR-018 Ek 1:
     await show();
     expect(screen.getByText(lastLine())).toBeOnTheScreen();
     expect(field()).toBe('');
-    expect(screen.getByRole('button', { name: t('weighIn.plus', { step: '0.1', unit: t('units.kgSpoken') }) })).toBeDisabled();
+    expect(screen.getByRole('button', { name: stepLabel('increase') })).toBeDisabled();
   });
 
   test('in pounds: the last weigh-in in the user\'s unit', async () => {
     mockUnits = 'IMPERIAL';
     mockAnswers = { '/v1/weigh-ins/summary': summary({ last: { ...LAST, kg: 81.65 } }) };
     await show();
-    expect(field()).toBe('180.0');
+    expect(field()).toBe('180'); // the Stepper writes a whole number without a trailing zero
+  });
+
+  test('the step is the weigh-in\'s own tenth (units.json), the same in pounds', async () => {
+    mockUnits = 'IMPERIAL';
+    mockAnswers = { '/v1/weigh-ins/summary': summary({ last: { ...LAST, kg: 81.65 } }) };
+    await show();
+    await press(stepLabel('increase'));
+    expect(field()).toBe('180.1');
+  });
+
+  test('the number is a field: a tap types over it, with the decimal keyboard, a comma or a dot', async () => {
+    mockAnswers = { '/v1/weigh-ins/summary': summary() };
+    await show();
+    expect(screen.getByLabelText(unitLabel()).props.keyboardType).toBe('decimal-pad');
+    await type('79.9');
+    await press(t('weighIn.save'));
+    expect(mockServices.queue.record).toHaveBeenCalledWith(expect.objectContaining({ body: expect.objectContaining({ kg: 79.9 }) }));
+  });
+
+  test('a field cleared is no weight: Save says so rather than keeping the old number under an empty field', async () => {
+    mockAnswers = { '/v1/weigh-ins/summary': summary() };
+    await show();
+    await type('');
+    await press(t('weighIn.save'));
+    expect(screen.getByText(t('weighIn.invalid'))).toBeOnTheScreen();
+    expect(mockServices.queue.record).not.toHaveBeenCalled();
   });
 
   test('plus and minus move it a tenth, and Save keeps what the field says', async () => {
     mockAnswers = { '/v1/weigh-ins/summary': summary() };
     await show();
-    await press(t('weighIn.plus', { step: '0.1', unit: t('units.kgSpoken') }));
-    await press(t('weighIn.plus', { step: '0.1', unit: t('units.kgSpoken') }));
-    await press(t('weighIn.minus', { step: '0.1', unit: t('units.kgSpoken') }));
+    await press(stepLabel('increase'));
+    await press(stepLabel('increase'));
+    await press(stepLabel('decrease'));
     expect(field()).toBe('80.5');
     await press(t('weighIn.save'));
     expect(mockServices.queue.record).toHaveBeenCalledWith(expect.objectContaining({ body: expect.objectContaining({ kg: 80.5 }) }));
@@ -209,7 +275,8 @@ describe('the last weight filled in, and a tenth at a time (K-980, ADR-018 Ek 1:
     await show();
     expect(field()).toBe('');
     expect(screen.queryByText(/^Last/)).toBeNull();
-    expect(screen.getByRole('button', { name: t('weighIn.plus', { step: '0.1', unit: t('units.kgSpoken') }) })).toBeDisabled();
+    expect(screen.getByRole('button', { name: stepLabel('increase') })).toBeDisabled();
+    expect(screen.getByRole('button', { name: stepLabel('decrease') })).toBeDisabled();
   });
 
   test('the filled-in weight does not overwrite what was typed while the summary was coming', async () => {
@@ -223,10 +290,12 @@ describe('the last weight filled in, and a tenth at a time (K-980, ADR-018 Ek 1:
 });
 
 describe('the trend, only when the server says it is ready (K-1018, ADR-078 Ek 2)', () => {
-  test('before the trend is ready: the line that says when, and no chart is asked for', async () => {
+  test('before the trend is ready: how many weigh-ins it has so far ("3 of 7"), and no chart is asked for', async () => {
     mockAnswers = { '/v1/weigh-ins/summary': summary() };
     await show();
-    expect(screen.getByText(t('weighIn.trendSoon', { count: 7 }))).toBeOnTheScreen();
+    expect(screen.getByText(t('weighIn.trendCount', { count: 3, min: 7 }))).toBeOnTheScreen();
+    expect(screen.getAllByTestId('trend-segment-filled')).toHaveLength(3);
+    expect(screen.getAllByTestId('trend-segment-empty')).toHaveLength(4);
     expect(screen.queryByText(t('weighIn.chart.title'))).toBeNull();
     expect(mockServices.api.GET.mock.calls.map(([path]) => path)).not.toContain('/v1/weigh-ins');
   });
@@ -249,7 +318,28 @@ describe('the trend, only when the server says it is ready (K-1018, ADR-078 Ek 2
     expect(screen.getAllByTestId('raw-point')).toHaveLength(3);
     expect(screen.getAllByTestId('trend-point')).toHaveLength(3);
     expect(screen.getByText(t('weighIn.earlyNote'))).toBeOnTheScreen();
-    expect(screen.queryByText(t('weighIn.trendSoon', { count: 7 }))).toBeNull();
+    expect(screen.queryByText(/weigh-ins for your trend/)).toBeNull();
+    expect(screen.queryByTestId('trend-segment-filled')).toBeNull();
+  });
+
+  test('the count is the server\'s: another count and another minimum are drawn as they come', async () => {
+    mockAnswers = { '/v1/weigh-ins/summary': summary({ weighInCount: 6, trendMinWeighIns: 10 }) };
+    await show();
+    expect(screen.getByText(t('weighIn.trendCount', { count: 6, min: 10 }))).toBeOnTheScreen();
+    expect(screen.getAllByTestId('trend-segment-filled')).toHaveLength(6);
+    expect(screen.getAllByTestId('trend-segment-empty')).toHaveLength(4);
+  });
+
+  test('the first weigh-in: 0 of 7, all empty', async () => {
+    mockAnswers = { '/v1/weigh-ins/summary': summary({ last: undefined, weighInCount: 0 }) };
+    await show();
+    expect(screen.getByText(t('weighIn.trendCount', { count: 0, min: 7 }))).toBeOnTheScreen();
+    expect(screen.queryByTestId('trend-segment-filled')).toBeNull();
+  });
+
+  test('the summary could not be read (offline): no count, nothing made up', async () => {
+    await show();
+    expect(screen.queryByText(/weigh-ins for your trend/)).toBeNull();
   });
 
   test('after 14 days of weigh-ins, no early note', async () => {
@@ -298,60 +388,54 @@ describe('the trend, only when the server says it is ready (K-1018, ADR-078 Ek 2
   });
 });
 
-describe('taken back from the screen it was saved on (K-980)', () => {
-  test('saved: what was kept is said, with Undo and Done; Done leaves', async () => {
+describe('saved: the banner takes it back (K-980, K-1044, ADR-070 Ek 2 #6)', () => {
+  test('the sheet closes and the banner is the one confirmation: what was kept, and Undo', async () => {
     mockAnswers = { '/v1/weigh-ins/summary': summary() };
     await show();
     await press(t('weighIn.save'));
-    expect(screen.getByText(t('weighIn.savedLine', { value: t('units.kg', { value: '80.4' }) }))).toBeOnTheScreen();
-    expect(screen.getByText(t('weighIn.trendSoon', { count: 7 }))).toBeOnTheScreen();
-    await press(t('weighIn.done'));
-    expect(mockBack).toHaveBeenCalled();
+    expect(mockBack).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(t('undoBanner.saved'))).toBeOnTheScreen();
+    expect(screen.getByText(t('units.kg', { value: '80.4' }))).toBeOnTheScreen();
+    expect(undoButton()).toBeOnTheScreen();
   });
 
-  test('Undo deletes it on the server by the id it got, through the held queue, and the entry is back with the number kept', async () => {
+  test('Undo deletes it on the server by the id it got, through the held queue, and the banner goes', async () => {
     mockAnswers = { '/v1/weigh-ins/summary': summary() };
     await show();
-    await press(t('weighIn.plus', { step: '0.1', unit: t('units.kgSpoken') }));
+    await press(stepLabel('increase'));
     await press(t('weighIn.save'));
     const [{ body }] = mockServices.queue.record.mock.calls[0] as [{ body: { clientId: string } }];
 
-    await press(t('weighIn.undoLabel'));
+    await fireEvent.press(undoButton());
+    await act(async () => {});
 
     expect(mockServices.takeBack).toHaveBeenCalledWith(body.clientId, expect.any(Function));
     expect(mockServices.api.DELETE).toHaveBeenCalledWith('/v1/weigh-ins/{id}', { params: { path: { id: 'srv-1' } } });
-    expect(screen.getByRole('button', { name: t('weighIn.save') })).toBeOnTheScreen();
-    expect(field()).toBe('80.5');
+    expect(banner()).toBeNull();
   });
 
-  test('taken back, it can be saved again as a new weigh-in', async () => {
-    mockAnswers = { '/v1/weigh-ins/summary': summary() };
-    await show();
-    await press(t('weighIn.save'));
-    await press(t('weighIn.undoLabel'));
-    await press(t('weighIn.save'));
-    const ids = mockServices.queue.record.mock.calls.map(([record]) => (record as { body: { clientId: string } }).body.clientId);
-    expect(ids).toHaveLength(2);
-    expect(ids[0]).not.toBe(ids[1]);
-  });
-
-  test('Undo with no way to reach the server says it is the connection, and the weigh-in stays saved', async () => {
+  test('Undo with no way to reach the server says it is the connection (aloud and in an alert), keeps the weigh-in, and the banner is back', async () => {
+    const announced = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
     mockAnswers = { '/v1/weigh-ins/summary': summary() };
     mockServices.takeBack.mockResolvedValueOnce('offline');
     await show();
     await press(t('weighIn.save'));
-    await press(t('weighIn.undoLabel'));
-    expect(screen.getByText(t('weighIn.undoOffline'))).toBeOnTheScreen();
-    expect(screen.getByRole('button', { name: t('weighIn.undoLabel') })).toBeOnTheScreen();
+    await press(t('undoBanner.undo'));
+    expect(alerted).toHaveBeenCalledWith(t('weighIn.undoOffline'));
+    expect(announced).toHaveBeenCalledWith(t('weighIn.undoOffline'));
+    expect(undoButton()).toBeOnTheScreen();
   });
 
-  test('a refusal that is not the connection keeps the general words', async () => {
+  test('a refusal that is not the connection keeps the general words, and Undo can be tried again', async () => {
     mockAnswers = { '/v1/weigh-ins/summary': summary() };
     mockServices.takeBack.mockResolvedValueOnce('conflict');
     await show();
     await press(t('weighIn.save'));
-    await press(t('weighIn.undoLabel'));
-    expect(screen.getByText(t('weighIn.undoFailed'))).toBeOnTheScreen();
+    await press(t('undoBanner.undo'));
+    expect(alerted).toHaveBeenCalledWith(t('weighIn.undoFailed'));
+    await press(t('undoBanner.undo'));
+    expect(mockServices.takeBack).toHaveBeenCalledTimes(2);
+    expect(banner()).toBeNull();
   });
 
   describe('with the real queue and the real take-back (the drain starts the moment it is saved)', () => {
@@ -376,15 +460,15 @@ describe('taken back from the screen it was saved on (K-980)', () => {
       await show();
       await press(t('weighIn.save'));
 
-      await press(t('weighIn.undoLabel'));
-      expect(screen.getByText(t('weighIn.undoOffline'))).toBeOnTheScreen();
+      await press(t('undoBanner.undo'));
+      expect(alerted).toHaveBeenCalledWith(t('weighIn.undoOffline'));
       expect(mockServices.api.DELETE).not.toHaveBeenCalled();
       expect((await store.all()).filter((r) => r.kind === 'weighIn')).toHaveLength(1);
 
       goOnline();
-      await press(t('weighIn.undoLabel'));
+      await press(t('undoBanner.undo'));
       expect(mockServices.api.DELETE).toHaveBeenCalledWith('/v1/weigh-ins/{id}', { params: { path: { id: 'srv-7' } } });
-      expect(screen.getByRole('button', { name: t('weighIn.save') })).toBeOnTheScreen();
+      expect(banner()).toBeNull();
       expect((await store.all()).filter((r) => r.kind === 'weighIn')).toHaveLength(0);
     });
 
@@ -394,7 +478,7 @@ describe('taken back from the screen it was saved on (K-980)', () => {
       mockAnswers = { '/v1/weigh-ins/summary': summary() };
       await show();
       await press(t('weighIn.save'));
-      await press(t('weighIn.undoLabel'));
+      await press(t('undoBanner.undo'));
       expect(mockServices.api.DELETE).toHaveBeenCalledWith('/v1/weigh-ins/{id}', { params: { path: { id: 'srv-7' } } });
       expect((await store.all()).filter((r) => r.kind === 'weighIn')).toHaveLength(0);
     });
@@ -406,62 +490,56 @@ describe('taken back from the screen it was saved on (K-980)', () => {
     mockAnswers = { '/v1/weigh-ins/summary': summary() };
     await show();
     await press(t('weighIn.save'));
-    await press(t('weighIn.undoLabel'));
-    expect(screen.getByText(t('weighIn.undoneHealth'))).toBeOnTheScreen();
+    await press(t('undoBanner.undo'));
     expect(announced).toHaveBeenCalledWith(t('weighIn.undoneHealth'));
   });
 
   test.each(['off', 'refused'] as const)('Apple Health writing %s: no word of a Health copy', async (shown) => {
+    const announced = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
     mockHealthWrite = shown;
     mockAnswers = { '/v1/weigh-ins/summary': summary() };
     await show();
     await press(t('weighIn.save'));
-    await press(t('weighIn.undoLabel'));
-    expect(screen.queryByText(t('weighIn.undoneHealth'))).toBeNull();
+    await press(t('undoBanner.undo'));
+    expect(announced).toHaveBeenCalledWith(t('weighIn.undoneSaid'));
+    expect(announced).not.toHaveBeenCalledWith(t('weighIn.undoneHealth'));
   });
 
-  test('saved and taken back are said to VoiceOver (K-815)', async () => {
+  test('saved and taken back are said to VoiceOver (K-815): the banner says the save, the take-back says itself', async () => {
     const announced = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
     mockAnswers = { '/v1/weigh-ins/summary': summary() };
     await show();
     await press(t('weighIn.save'));
-    expect(announced).toHaveBeenCalledWith(t('weighIn.savedSaid', { value: t('units.kg', { value: '80.4' }) }));
-    await press(t('weighIn.undoLabel'));
+    expect(announced).toHaveBeenCalledWith(t('undoBanner.announce', { detail: t('units.kg', { value: '80.4' }) }));
+    await press(t('undoBanner.undo'));
     expect(announced).toHaveBeenCalledWith(t('weighIn.undoneSaid'));
   });
 });
 
-describe('Apple Health under the first weigh-in (K-980, ADR-018 Ek 1)', () => {
-  test('the card is under the saved weigh-in, which is already kept: Continue is Apple\'s sheet, and the weigh-in stays', async () => {
+describe('Apple Health under the entry, the first time (K-980, ADR-018 Ek 1; no Saved page to put it under, K-1044)', () => {
+  test('the card is under Save: Continue is Apple\'s sheet, and nothing is kept by it', async () => {
     mockHealthAvailable = true;
     mockAnswers = { '/v1/weigh-ins/summary': summary() };
     await show();
-    await press(t('weighIn.save'));
     expect(screen.getByRole('header', { name: t('health.jit.title') })).toBeOnTheScreen();
-    expect(mockServices.queue.record).toHaveBeenCalledTimes(1);
+    expect(mockServices.queue.record).not.toHaveBeenCalled();
 
     await press(t('health.jit.continue'));
 
     expect(mockRequestRead).toHaveBeenCalled();
     expect(screen.queryByRole('header', { name: t('health.jit.title') })).toBeNull();
-    expect(screen.getByRole('button', { name: t('weighIn.undoLabel') })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: t('weighIn.save') })).toBeOnTheScreen();
+    expect(mockServices.queue.record).not.toHaveBeenCalled();
   });
 
   test('Not now is free, and the card does not come back on the next weigh-in', async () => {
     mockHealthAvailable = true;
     mockAnswers = { '/v1/weigh-ins/summary': summary() };
     await show();
-    await press(t('weighIn.save'));
     await press(t('health.jit.notNow'));
     expect(mockRequestRead).not.toHaveBeenCalled();
-    await press(t('weighIn.undoLabel'));
-    await press(t('weighIn.save'));
     expect(screen.queryByRole('header', { name: t('health.jit.title') })).toBeNull();
-  });
-
-  test('before the save, there is no card in the way of the entry', async () => {
-    mockHealthAvailable = true;
-    mockAnswers = { '/v1/weigh-ins/summary': summary() };
+    await screen.unmount();
     await show();
     expect(screen.queryByRole('header', { name: t('health.jit.title') })).toBeNull();
   });

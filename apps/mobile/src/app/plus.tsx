@@ -1,9 +1,12 @@
 import { router } from 'expo-router';
+import type { SFSymbol } from 'expo-symbols';
 import { useCallback } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { components } from '@/api/schema';
+import { Icon } from '@/components/Icon';
+import { ListGroup, ListRow } from '@/components/ListGroup';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
 import { useAppServices } from '@/services/ServicesProvider';
@@ -15,12 +18,13 @@ import { dayName } from '@/train/program';
 import { activeWorkout } from '@/train/workout';
 
 type Schemas = components['schemas'];
-type Tile = { key: string; detail: string | null; onPress: () => void; waiting?: boolean };
+type Tile = { key: string; icon: SFSymbol; detail: string | null; onPress: () => void; waiting?: boolean };
 
 /**
  * The "+" sheet (K-953, K-980, ADR-069 #4, prototype #plus): log a weigh-in, a meal, today's workout, a cardio session, or say life got in the way.
- * Each choice takes the sheet's place. The workout is today's session by name, a workout under way is continued, and with
- * nothing planned today the Train tab opens to pick a day. Cardio and life are rows under the tiles.
+ * Each choice takes the sheet's place. Three tiles, the icon top left and the label bottom left (ADR-070 Ek 2 #3, K-1044):
+ * the workout is today's session by name, a workout under way is continued, and with nothing planned today the Train tab
+ * opens to pick a day. Cardio and life are the rows of a grouped list under the tiles.
  */
 export default function PlusScreen() {
   const { api, training, workoutRecords } = useAppServices();
@@ -45,14 +49,14 @@ export default function PlusScreen() {
   };
 
   const tiles: Tile[] = [
-    { key: 'plus.weighIn', detail: null, onPress: () => router.replace('/weigh-in') },
-    { key: 'plus.meal', detail: null, onPress: () => router.replace('/meal') },
-    { key: 'plus.workout', detail: shown === null ? null : dayName(shown), onPress: workout, waiting: data === null },
+    { key: 'plus.weighIn', icon: 'scalemass', detail: null, onPress: () => router.replace('/weigh-in') },
+    { key: 'plus.meal', icon: 'fork.knife', detail: null, onPress: () => router.replace('/meal') },
+    { key: 'plus.workout', icon: 'dumbbell', detail: shown === null ? null : dayName(shown), onPress: workout, waiting: data === null },
   ];
 
   const rows = [
-    { key: 'plus.cardio', route: '/cardio' },
-    { key: 'plus.life', route: '/state' },
+    { key: 'plus.cardio', icon: 'figure.run', route: '/cardio' },
+    { key: 'plus.life', icon: 'pause.circle', route: '/state' },
   ] as const;
 
   return (
@@ -68,23 +72,19 @@ export default function PlusScreen() {
             disabled={tile.waiting === true}
             onPress={tile.onPress}
             style={({ pressed }) => [styles.tile, { backgroundColor: color.surface }, pressed && styles.pressed]}>
-            <Text style={[styles.tileLabel, { color: color.text }]}>{t(tile.key)}</Text>
-            {tile.detail !== null && (
-              <Text style={[styles.detail, { color: color.muted }]}>{tile.detail}</Text>
-            )}
+            <Icon name={tile.icon} />
+            <View style={styles.words}>
+              <Text style={[styles.tileLabel, { color: color.text }]}>{t(tile.key)}</Text>
+              {tile.detail !== null && <Text style={[styles.detail, { color: color.muted }]}>{tile.detail}</Text>}
+            </View>
           </Pressable>
         ))}
       </View>
-      {rows.map((row) => (
-        <Pressable
-          key={row.key}
-          accessibilityRole="button"
-          accessibilityLabel={t(row.key)}
-          onPress={() => router.replace(row.route)}
-          style={({ pressed }) => [styles.row, { borderColor: color.line }, pressed && styles.pressed]}>
-          <Text style={[styles.rowLabel, { color: color.text }]}>{t(row.key)}</Text>
-        </Pressable>
-      ))}
+      <ListGroup>
+        {rows.map((row) => (
+          <ListRow key={row.key} label={t(row.key)} icon={row.icon} navigates onPress={() => router.replace(row.route)} />
+        ))}
+      </ListGroup>
     </SafeAreaView>
   );
 }
@@ -97,12 +97,11 @@ const styles = StyleSheet.create({
     minHeight: tokens.size.primaryButton * 2,
     borderRadius: tokens.radius.card,
     padding: tokens.space.md,
-    justifyContent: 'flex-end',
-    gap: tokens.space.xs,
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
+  words: { gap: tokens.space.xs },
   tileLabel: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
   detail: { fontSize: tokens.type.label },
-  row: { minHeight: tokens.size.touch, justifyContent: 'center', borderTopWidth: tokens.border.hairline },
-  rowLabel: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
   pressed: { opacity: tokens.opacity.dim },
 });

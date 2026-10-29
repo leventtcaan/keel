@@ -19,7 +19,9 @@ import { defaultSlot } from '@/food/meals';
 import { QuickAdds } from '@/food/QuickAdds';
 import { useMealStart, useRecentFoods } from '@/food/useMealStart';
 import { clearMeal, handedFrom, peekMeal } from '@/food/handoff';
+import { savedMeal } from '@/food/savedMeal';
 import { foodParams } from '@/food/params';
+import { useSaved } from '@/saved/saved';
 import { useAppServices } from '@/services/ServicesProvider';
 import { newClientId } from '@/sync/send';
 import { useTheme } from '@/theme/theme';
@@ -45,15 +47,14 @@ const SLOTS: Schemas['MealSlot'][] = ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK'];
  * The delete needs the server; offline it says so and changes nothing.
  */
 export default function MealScreen() {
-  const { api, queue, consents, forgetRecord, report } = useAppServices();
+  const { api, queue, consents, forgetRecord, report, takeBack } = useAppServices();
+  const saved = useSaved();
   const { edit, day } = useLocalSearchParams<{ edit?: string; day?: string }>();
   // A correction link without its day has nothing to find the meal in: not there, rather than an endless wait.
   const [original, setOriginal] = useState<Original | null>(() =>
     edit === undefined ? null : day === undefined ? { state: 'gone' } : { state: 'loading' },
   );
   const [confirming, setConfirming] = useState(false);
-  // A quick add logged and shown with Undo and Done (K-1029): the rest of the sheet is away meanwhile, so no second Save is a second meal.
-  const [quickLogged, setQuickLogged] = useState(false);
   const { color } = useTheme();
   const [step, setStep] = useState<Step>('checking');
   const [slot, setSlot] = useState<Schemas['MealSlot']>(() => defaultSlot(new Date()));
@@ -192,20 +193,30 @@ export default function MealScreen() {
     if (saving.current || requests === null || !checked || (original !== null && original.state !== 'ready')) return;
     saving.current = true;
     setBusy(true);
+    let closing = false;
     try {
       const eatenAt = original === null ? new Date().toISOString() : original.meal.eatenAt;
       if (original !== null && !(await removeOriginal(original.meal))) {
         setProblem(t('meal.edit.needsConnection'));
         return;
       }
-      await queue.record({ kind: 'meal', body: { clientId: newClientId(), eatenAt, slot, items: requests } });
+      const clientId = newClientId();
+      await queue.record({ kind: 'meal', body: { clientId, eatenAt, slot, items: requests } });
       router.back();
+      // A new meal is confirmed by the app's one banner, with Undo (K-1044); a corrected one just closes, as before.
+      // The lock stays on while a new meal's sheet goes: a second tap would keep a second meal.
+      if (original === null) {
+        closing = true;
+        saved(savedMeal({ clientId, slot, items: requests.length }, { api, takeBack, report }));
+      }
     } catch (error) {
       report({ name: error instanceof Error ? error.name : 'Unknown' });
       setProblem(t('meal.saveFailed'));
     } finally {
-      saving.current = false;
-      setBusy(false);
+      if (!closing) {
+        saving.current = false;
+        setBusy(false);
+      }
     }
   };
 
@@ -260,36 +271,30 @@ export default function MealScreen() {
   const entry =
     step === 'entry' && (original === null || original.state === 'ready') ? (
       <View style={styles.part}>
-        {!quickLogged && (
-          <View style={styles.chips}>
-            {SLOTS.map((option) => (
-              <Chip key={option} label={t(`food.slot.${option}`)} selected={slot === option} onPress={() => setSlot(option)} />
-            ))}
-          </View>
-        )}
+        <View style={styles.chips}>
+          {SLOTS.map((option) => (
+            <Chip key={option} label={t(`food.slot.${option}`)} selected={slot === option} onPress={() => setSlot(option)} />
+          ))}
+        </View>
 
-        {original === null && !fromCoach && items.length === 0 && start !== null && <QuickAdds slot={slot} start={start} recent={recent} onDone={() => router.back()} onLoggedChange={setQuickLogged} />}
+        {original === null && !fromCoach && items.length === 0 && start !== null && <QuickAdds slot={slot} start={start} recent={recent} onDone={() => router.back()} />}
 
-        {!quickLogged && (
-          <>
-            <ItemRows
-              items={items}
-              known={known}
-              recipes={knownRecipes}
-              onChange={change}
-              onRemove={(index) => setItems((before) => before.filter((_, i) => i !== index))}
-            />
+        <ItemRows
+          items={items}
+          known={known}
+          recipes={knownRecipes}
+          onChange={change}
+          onRemove={(index) => setItems((before) => before.filter((_, i) => i !== index))}
+        />
 
-            <FoodPicker full={full} onFood={add} recipes={readRecipes} onRecipe={addOwnRecipe} />
+        <FoodPicker full={full} onFood={add} recipes={readRecipes} onRecipe={addOwnRecipe} />
 
-            {shown !== null && <EstimateCard estimate={shown} question={question} />}
-            {fromPhoto && question !== null && <Text style={[styles.text, { color: color.textSecondary }]}>{t('meal.photo.why')}</Text>}
-            {problem !== null && <ProblemText style={[styles.text, { color: color.text }]}>{problem}</ProblemText>}
-            {unchecked && <Text style={[styles.text, { color: color.text }]}>{t(fromCoach ? 'meal.fromCoach.notChecked' : 'meal.edit.notChecked')}</Text>}
-            <Button label={t('meal.save')} onPress={() => void save()} disabled={busy || requests === null || !checked} />
-            {deleting}
-          </>
-        )}
+        {shown !== null && <EstimateCard estimate={shown} question={question} />}
+        {fromPhoto && question !== null && <Text style={[styles.text, { color: color.textSecondary }]}>{t('meal.photo.why')}</Text>}
+        {problem !== null && <ProblemText style={[styles.text, { color: color.text }]}>{problem}</ProblemText>}
+        {unchecked && <Text style={[styles.text, { color: color.text }]}>{t(fromCoach ? 'meal.fromCoach.notChecked' : 'meal.edit.notChecked')}</Text>}
+        <Button label={t('meal.save')} onPress={() => void save()} disabled={busy || requests === null || !checked} />
+        {deleting}
       </View>
     ) : null;
 

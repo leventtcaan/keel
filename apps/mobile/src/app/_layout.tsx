@@ -2,9 +2,10 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router/stack';
 import * as SplashScreen from 'expo-splash-screen';
 import { type ComponentProps, type ReactNode, useEffect } from 'react';
-import { Appearance } from 'react-native';
+import { Appearance, StyleSheet, View } from 'react-native';
 
 import { previousScreenName, pushedScreen } from '@/navigation/pushed';
+import { SavedBanner, SavedProvider } from '@/saved/saved';
 import { ServicesProvider, useAppearance, useOnboarding, useSignedIn, useSubscriptionGate } from '@/services/ServicesProvider';
 import { fontAssets } from '@/theme/fonts';
 import { ThemeProvider, useTheme } from '@/theme/theme';
@@ -130,9 +131,17 @@ export default function RootLayout() {
     <ThemeProvider>
       <ServicesProvider>
         <ChosenTheme>
-          <AppStack />
+          {/* The one confirmation of a save (weigh-in, cardio, meal) lives over the whole app, so it is on any tab. */}
+          <SavedProvider>
+            <View style={styles.root}>
+              <AppStack />
+              <SavedBanner />
+            </View>
+          </SavedProvider>
         </ChosenTheme>
       </ServicesProvider>
     </ThemeProvider>
   );
 }
+
+const styles = StyleSheet.create({ root: { flex: 1 } });

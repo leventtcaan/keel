@@ -1,8 +1,9 @@
 /**
  * The logging flows, walked tap by tap (K-980; prototip/akis-testi.md A2: "+ → weigh-in → Apple Health, just in time →
  * This week; add a meal"). ADR-018 Ek 1 sets the count: a weigh-in in four taps at most, the first one included, with Apple
- * Health asked on the way, and a meal in two or three. The screens are the real ones; only the navigator and the services
- * are stand-ins.
+ * Health asked on the way, and a meal in two or three. A save closes its sheet and the app's one banner confirms it (K-1044,
+ * ADR-070 Ek 2 #6): no Done to tap after a save. The screens are the real ones; only the navigator and the services are
+ * stand-ins.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { useEffect, useState } from 'react';
@@ -15,6 +16,8 @@ import { PlusEntry } from '@/components/PlusEntry';
 import { t } from '@/copy';
 import { createHealthAsk } from '@/health/justInTime';
 import { ThemeProvider } from '@/theme/theme';
+
+import { WithSaved, banner } from './support/saved';
 
 const ok = (data: unknown) => ({ data, response: new Response(null, { status: 200 }) });
 
@@ -94,17 +97,19 @@ function Harness() {
   const top = stack[stack.length - 1];
   return (
     <ThemeProvider scheme="light">
-      {top === '/plus' ? (
-        <PlusScreen />
-      ) : top === '/weigh-in' ? (
-        <WeighInScreen />
-      ) : top === '/meal' ? (
-        <MealScreen />
-      ) : top === '/cardio' ? (
-        <CardioScreen />
-      ) : (
-        <PlusEntry />
-      )}
+      <WithSaved>
+        {top === '/plus' ? (
+          <PlusScreen />
+        ) : top === '/weigh-in' ? (
+          <WeighInScreen />
+        ) : top === '/meal' ? (
+          <MealScreen />
+        ) : top === '/cardio' ? (
+          <CardioScreen />
+        ) : (
+          <PlusEntry />
+        )}
+      </WithSaved>
     </ThemeProvider>
   );
 }
@@ -151,21 +156,22 @@ const show = async () => {
   await act(async () => {});
 };
 
-test('A2: "+" → Weigh-in → Save → Apple Health, asked on the way → back on the page it began from, in four taps', async () => {
+test('A2: "+" → Weigh-in → Apple Health, asked on the way → Save → back on the page it began from with "Saved · Undo", in four taps', async () => {
   await show();
 
   await tap(t('plus.entry')); // 1 · the "+"
   await tap(new RegExp(`^${t('plus.weighIn')}`)); // 2 · the weigh-in
   expect(mockStack).toEqual(['/', '/weigh-in']); // the sheet gave way to it
-  await tap(t('weighIn.save')); // 3 · the last weight was filled in
-  expect(mockServices.queue.record).toHaveBeenCalledWith(expect.objectContaining({ kind: 'weighIn', body: expect.objectContaining({ kg: 80.4 }) }));
-  await tap(t('health.jit.continue')); // 4 · Apple's sheet, just in time
-
+  await tap(t('health.jit.continue')); // 3 · Apple's sheet, just in time (under the entry now: no Saved page to put it under)
   expect(requestRead).toHaveBeenCalled();
+  await tap(t('weighIn.save')); // 4 · the last weight was filled in
+  expect(mockServices.queue.record).toHaveBeenCalledWith(expect.objectContaining({ kind: 'weighIn', body: expect.objectContaining({ kg: 80.4 }) }));
+
   expect(taps).toBeLessThanOrEqual(4);
-  // Done is the way out, not a step of logging: the weigh-in is kept and Apple Health asked before it.
-  await tap(t('weighIn.done'));
+  // The sheet closed by itself: the page it began from, and the banner on it. No Done to tap.
   expect(mockStack).toEqual(['/']);
+  expect(screen.getByText(t('undoBanner.saved'))).toBeOnTheScreen();
+  expect(screen.getByText(t('units.kg', { value: '80.4' }))).toBeOnTheScreen();
 
   // ... and then a meal, from the same page (A2's last step).
   taps = 0;
@@ -177,10 +183,11 @@ test('A2: "+" → Weigh-in → Save → Apple Health, asked on the way → back 
     body: expect.objectContaining({ slot: 'LUNCH', repeatOf: 'm-lunch' }),
   });
   expect(taps).toBe(3);
-  // The meal says it is logged and offers Undo (K-1029); Done is the way out, not a step of logging, as the weigh-in's.
-  expect(screen.getByText(t('meal.quick.logged', { slot: t('food.slot.LUNCH') }))).toBeOnTheScreen();
-  await tap(t('meal.quick.done'));
+  // The meal closes the sheet too, and its banner replaces the weigh-in's: one confirmation at a time.
   expect(mockStack).toEqual(['/']);
+  expect(screen.getAllByTestId('undo-banner')).toHaveLength(1);
+  expect(screen.getByText(t('meal.saved.one', { slot: t('food.slot.LUNCH') }))).toBeOnTheScreen();
+  expect(screen.queryByText(t('units.kg', { value: '80.4' }))).toBeNull();
 });
 
 test('the next weigh-in is three taps: Apple Health is not asked twice', async () => {
@@ -194,6 +201,7 @@ test('the next weigh-in is three taps: Apple Health is not asked twice', async (
   expect(mockServices.queue.record).toHaveBeenCalledTimes(1);
   expect(screen.queryByRole('header', { name: t('health.jit.title') })).toBeNull();
   expect(taps).toBe(3);
+  expect(banner()).toBeOnTheScreen();
 });
 
 test('the sheet names every way to log, each one tap from the "+"', async () => {
@@ -204,7 +212,7 @@ test('the sheet names every way to log, each one tap from the "+"', async () => 
   }
 });
 
-test('a meal: "+", Meal, "Same as yesterday" Add — three taps, logged with Undo, and Done takes the page it began from back', async () => {
+test('a meal: "+", Meal, "Same as yesterday" Add — three taps, the sheet closes on its own and the banner offers Undo', async () => {
   await show();
   await tap(t('plus.entry'));
   await tap(new RegExp(`^${t('plus.meal')}`));
@@ -213,13 +221,13 @@ test('a meal: "+", Meal, "Same as yesterday" Add — three taps, logged with Und
 
   expect(mockServices.queue.record).toHaveBeenCalledWith({ kind: 'meal', body: expect.objectContaining({ repeatOf: 'm-lunch', slot: 'LUNCH' }) });
   expect(taps).toBeLessThanOrEqual(3);
-  // Logged, with Undo (K-1029); Done is the way out, not a step of logging.
-  expect(screen.getByText(t('meal.quick.logged', { slot: t('food.slot.LUNCH') }))).toBeOnTheScreen();
-  await tap(t('meal.quick.done'));
+  // Saved, with Undo (K-1029, K-1044): the page it began from, and the banner on it.
   expect(mockStack).toEqual(['/']);
+  expect(screen.getByText(t('meal.saved.one', { slot: t('food.slot.LUNCH') }))).toBeOnTheScreen();
+  expect(screen.getByRole('button', { name: t('undoBanner.undo') })).toBeOnTheScreen();
 });
 
-test('cardio: "+", Cardio, Log — three taps; opened again the same day it shows the record instead of asking', async () => {
+test('cardio: "+", Cardio, Log — three taps, the sheet closes with the banner; opened again the same day it shows the record instead of asking', async () => {
   const records: unknown[] = [];
   mockServices.queue.record.mockImplementation(async (record: unknown) => {
     records.push(record);
@@ -235,8 +243,9 @@ test('cardio: "+", Cardio, Log — three taps; opened again the same day it show
   await tap(t('cardioLog.log'));
   expect(taps).toBe(3);
   expect(records).toHaveLength(1);
+  expect(mockStack).toEqual(['/']);
+  expect(screen.getByText(t('cardioLog.savedDetail', { minutes: 30 }))).toBeOnTheScreen();
 
-  await tap(t('cardioLog.done'));
   await tap(t('plus.entry'));
   await tap(t('plus.cardio'));
   expect(screen.getByText(t('workout.cardio.loggedSaid', { minutes: 30 }))).toBeOnTheScreen();

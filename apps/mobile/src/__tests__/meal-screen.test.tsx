@@ -1,7 +1,8 @@
 /**
  * Logging a meal (K-407): the health data consent first when it is not given (ADR-030 #25); then the slot, foods found by
  * name in the database, an amount for each (filled with 1 serving or 100 g, ADR-085), and the server's estimate as ranges before
- * saving (U1, U5) — with its one question when one item dominates the range. Saved on the phone first (K-304).
+ * saving (U1, U5) — with its one question when one item dominates the range. Saved on the phone first (K-304); a new meal
+ * closes the sheet and the app's one banner says "Saved · Lunch, 2 items" with Undo (K-1044).
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
@@ -10,6 +11,8 @@ import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { handOffMeal, takeMeal } from '@/food/handoff';
 import { ThemeProvider } from '@/theme/theme';
+
+import { WithSaved, banner, undoButton } from './support/saved';
 
 /** Fifty items, each with its estimate asked at once (ADR-085 #5): longer than jest's 5 s default on a CI runner. */
 const FIFTY_ITEMS_MS = 30_000;
@@ -62,8 +65,13 @@ const mockBack = jest.fn();
 jest.mock('expo-crypto', () => ({ randomUUID: () => jest.requireActual<typeof import('node:crypto')>('node:crypto').randomUUID() }));
 jest.mock('expo-router', () => ({ router: { back: () => mockBack(), push: jest.fn() }, useLocalSearchParams: () => ({}) }));
 const mockServices = {
-  api: { POST: mockPOST, PUT: mockPUT, GET: jest.fn(), DELETE: jest.fn() },
+  api: { POST: mockPOST, PUT: mockPUT, GET: jest.fn(), DELETE: jest.fn(async (_path: string, _init?: unknown) => ({ response: new Response(null, { status: 204 }) })) },
   queue: { record: mockRecord },
+  // The real take-back is tested on its own (sync-take-back.test.ts): here it only runs the server delete it is given.
+  takeBack: jest.fn(async (_clientId: string, remove: (serverId: string) => Promise<number>) => {
+    await remove('srv-meal-1');
+    return 'taken' as const;
+  }),
   consents: { granted: async () => mockGranted, remember: mockRemember },
   report: jest.fn(),
 };
@@ -111,7 +119,9 @@ function held<T>() {
 async function show() {
   await render(
     <ThemeProvider scheme="light">
-      <MealScreen />
+      <WithSaved>
+        <MealScreen />
+      </WithSaved>
     </ThemeProvider>,
   );
   await act(async () => {});
@@ -361,6 +371,48 @@ describe('saving', () => {
       },
     });
     expect(mockBack).toHaveBeenCalled();
+  });
+
+  test('a new meal: the banner says Saved with the slot and how many items, and Undo takes it back through the meal delete (K-1044)', async () => {
+    await show();
+    await search('rice');
+    await add(RICE);
+    await search('chicken');
+    await add(CHICKEN);
+    await amount(RICE, '1');
+    await amount(CHICKEN, '150');
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.save') })));
+    const [{ body }] = mockRecord.mock.calls[0] as [{ body: { clientId: string } }];
+
+    expect(screen.getByText(t('undoBanner.saved'))).toBeOnTheScreen();
+    expect(screen.getByText(t('meal.saved.other', { slot: t('food.slot.LUNCH'), count: 2 }))).toBeOnTheScreen();
+
+    await fireEvent.press(undoButton());
+    await act(async () => {});
+
+    expect(mockServices.takeBack).toHaveBeenCalledWith(body.clientId, expect.any(Function));
+    expect(mockServices.api.DELETE).toHaveBeenCalledWith('/v1/meals/{id}', { params: { path: { id: 'srv-meal-1' } } });
+    expect(banner()).toBeNull();
+  });
+
+  test('one item says "1 item", and the slot is the one chosen', async () => {
+    await show();
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('food.slot.SNACK') })));
+    await search('rice');
+    await add(RICE);
+    await amount(RICE, '1');
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.save') })));
+    expect(screen.getByText(t('meal.saved.one', { slot: t('food.slot.SNACK') }))).toBeOnTheScreen();
+  });
+
+  test('a phone that could not keep it: no banner (nothing was saved to take back)', async () => {
+    mockRecord.mockRejectedValueOnce(new Error('disk'));
+    await show();
+    await search('rice');
+    await add(RICE);
+    await amount(RICE, '1');
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.save') })));
+    expect(banner()).toBeNull();
   });
 
   test('another slot is one tap', async () => {

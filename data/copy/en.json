@@ -31,6 +31,7 @@
   "cardioLog": {
     "title": "Cardio",
     "log": "Log cardio",
+    "savedDetail": "Cardio {minutes} min",
     "fromHealth": "From Apple Health",
     "watch": "Apple Watch measured {kcal} kcal.",
     "undo": "Undo",
@@ -41,7 +42,8 @@
     "saved": "Saved",
     "undo": "Undo",
     "announce": "Saved, {detail}. Undo is available.",
-    "announceBare": "Saved. Undo is available."
+    "announceBare": "Saved. Undo is available.",
+    "failed": "Couldn't take it back. Try again."
   },
   "stepper": {
     "increase": "Increase {label}",
@@ -1085,14 +1087,13 @@
     "quick": {
       "recent": "Recent",
       "add": "Add",
-      "logged": "Logged to {slot}",
-      "loggedSaid": "Logged to {slot}.",
-      "undo": "Undo",
-      "undoLabel": "Take back this meal",
       "undoneSaid": "Meal taken back.",
       "undoFailed": "Couldn't take it back. Try again.",
-      "undoOffline": "You're offline. Take it back once you're online.",
-      "done": "Done"
+      "undoOffline": "You're offline. Take it back once you're online."
+    },
+    "saved": {
+      "one": "{slot}, 1 item",
+      "other": "{slot}, {count} items"
     },
     "editTitle": "Correct a meal",
     "consent": {
@@ -1327,19 +1328,12 @@
     "label": "Weight ({unit})",
     "last": "Last: {value}",
     "lastOn": "Last: {value}, {date}",
-    "trendSoon": "Trend starts after {count} weigh-ins.",
-    "minus": "Lower by {step} {unit}",
-    "plus": "Raise by {step} {unit}",
+    "trendCount": "{count} of {min} weigh-ins for your trend",
     "save": "Save",
-    "savedLine": "Saved: {value}",
-    "savedSaid": "Saved. {value}.",
-    "undo": "Undo",
-    "undoLabel": "Take back this weigh-in",
     "undoneSaid": "Weigh-in taken back.",
     "undoFailed": "Couldn't take it back. Try again.",
     "undoOffline": "You're offline. Take it back once you're online.",
     "undoneHealth": "Taken back. Your Apple Health copy stays.",
-    "done": "Done",
     "invalid": "That doesn't look like a weight. Check the number.",
     "saveFailed": "Couldn't save it on this phone. Try again.",
     "consent": {
@@ -2304,6 +2298,7 @@
     "inUnit": "in",
     "kgUnit": "kg",
     "lbUnit": "lb",
+    "minUnit": "min",
     "kgSpoken": "kilograms",
     "lbSpoken": "pounds"
   },
