@@ -5272,6 +5272,23 @@ tasks:
     tests: ["gradle OffImport testleri (CI)", "tools/test_deploy.py", "tools/anayasa-denetimi.sh"]
     refs: ["plan/kararlar/ADR-088-open-food-facts.md", "arastirma/ham/yemek-verisi-kaynaklari-2026-10-29.md"]
 
+  - id: K-1043
+    title: "Yeniden yapım Evre 2.2: Ayarlar ve Account gruplu liste, veri kaynakları satırı"
+    milestone: M10
+    module: mobile
+    type: feature
+    size: M
+    status: doing
+    depends_on: [K-1041]
+    why: "Ayarlar üç ekran boyu, ayrık haplar, paragraf yükü, tutarsız başlıklar; Account düğmeleri birebir aynı (envanter T-5, T-6, T-2). ADR-070 Ek 2 #2, #4; ADR-088 #3 atıf"
+    acceptance:
+      - "Ayarlar prototip/yeniden-yapim.html › 2 Ayarlar gibi: gruplu listeler, ikonlu satırlar, değer sağda, chevron yalnız gezinmede, hatırlatma Switch, paragraf en çok bir satır"
+      - "Account bölümü ve paywall Account sheet'i aynı grup: Export satırı, Sign out ve Delete account yıkıcı metin satırları (onay ADR-087 uyarısı)"
+      - "Veri kaynakları satırı: USDA FoodData Central, Open Food Facts (ODbL) ve bağlantılar"
+      - "Ekran içi Back düğmeleri yok (Gyms, Edit program, Import): sistem geri; jest + anayasa denetimi yeşil; kanıt simülatörde prototiple yan yana"
+    tests: ["jest settings + account + gyms + edit-program + import", "tools/anayasa-denetimi.sh"]
+    refs: ["plan/kararlar/ADR-070-gorsel-dil-turkuaz.md", "prototip/yeniden-yapim.html", "plan/kararlar/ADR-088-open-food-facts.md"]
+
   - id: K-1010
     title: "Sunucudaki ek siteler: Caddy /opt/sites altındaki *.caddy dosyalarını içeri alır"
     milestone: M9
