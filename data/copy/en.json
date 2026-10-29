@@ -11,6 +11,12 @@
       "rep": "Add one rep",
       "lighter": "Lighter week",
       "eat": "Eat a little more"
+    },
+    "legal": {
+      "age": "18+",
+      "dot": "·",
+      "terms": "Terms",
+      "privacy": "Privacy"
     }
   },
   "signIn": {

@@ -14,6 +14,10 @@ import { defaultTrainingDays, onboardingParams } from '@/onboarding/params';
 import type { OnboardingState } from '@/onboarding/profileStatus';
 
 jest.mock('expo-font', () => ({ useFonts: () => [true, null] }));
+jest.mock('expo-symbols', () => {
+  const { createElement } = jest.requireActual<typeof import('react')>('react');
+  return { SymbolView: (props: { name: string }) => createElement('SymbolView', { ...props, testID: `symbol-${props.name}` }) };
+});
 jest.mock('expo-crypto', () => ({ randomUUID: () => jest.requireActual<typeof import('node:crypto')>('node:crypto').randomUUID() }));
 
 let mockSignedIn = true;
@@ -615,6 +619,28 @@ describe('days (ADR-072 #4)', () => {
     expect(screen.queryByRole('button', { name: t('onboarding.continue') })).toBeNull();
   });
 
+  test('three is chosen when the question opens (prototype #ob-days); the way on is still a tap on a box', async () => {
+    const router = await walkTo('days');
+    expect(screen.getByRole('radio', { name: t('onboarding.days.label', { count: 3 }) })).toBeChecked();
+    for (const count of [2, 4, 5]) expect(screen.getByRole('radio', { name: t('onboarding.days.label', { count }) })).not.toBeChecked();
+    // One way on, as before: the box. Tapping the one chosen confirms it.
+    expect(screen.queryByRole('button', { name: t('onboarding.continue') })).toBeNull();
+    await choose(t('onboarding.days.label', { count: 3 }));
+    expect(router.getPathname()).toBe('/onboarding/health-data');
+  });
+
+  test('another box replaces the three, and the days sent are that count\'s', async () => {
+    await walkTo('days');
+    await choose(t('onboarding.days.label', { count: 5 }));
+    await press(t('onboarding.healthData.notNow'));
+    await press(t('onboarding.consent.continueWithout'));
+    await press(t('onboarding.about.male'));
+    await press(t('onboarding.continue'));
+    await endWalk();
+    const sent = mockProfile.store.mock.calls[0][0] as { schedule: { trainingDays: unknown } };
+    expect(sent.schedule.trainingDays).toEqual(defaultTrainingDays(5));
+  });
+
   test('a box places the days itself, from the parameter, and moves on (We place the days)', async () => {
     const router = await walkTo('activity', { days: 4 });
     expect(router.getPathname()).toBe('/onboarding/activity');
@@ -958,6 +984,12 @@ describe('#ob-about (ADR-072 #2)', () => {
     expect(continueButton()).toBeEnabled();
   });
 
+  test('neither sex is chosen when the question opens: it feeds the energy math, so it is always the answer given', async () => {
+    await walkTo('about');
+    expect(screen.getByRole('button', { name: t('onboarding.about.male') })).not.toBeSelected();
+    expect(screen.getByRole('button', { name: t('onboarding.about.female') })).not.toBeSelected();
+  });
+
   test('a year under 18 cannot be chosen: the wheel ends on the youngest adult year (ADR-027 #13)', async () => {
     await walkTo('about');
     await turn(t('onboarding.about.born'), 'increment', onboardingParams.wheelStart.age_years);
@@ -971,6 +1003,40 @@ describe('#ob-about (ADR-072 #2)', () => {
     await press(t('onboarding.about.imperial'));
     expect(mockKeepOnPhone).toHaveBeenCalledWith('IMPERIAL'); // no profile yet: no network needed
     expect(wheel(t('onboarding.about.height')).props.accessibilityValue.text).toMatch(new RegExp(t('units.ftUnit')));
+  });
+});
+
+describe('icons on the answers (prototype #ob-exp, #ob-activity, #ob-consent; ADR-070 Ek 2 #3, K-1049)', () => {
+  const icons = () => screen.getAllByTestId(/^symbol-/).map((icon) => icon.props.name);
+
+  test('experience: a seed to a flame, one for each answer, in the answers\' order', async () => {
+    await walkTo('experience');
+    expect(icons()).toEqual(['leaf', 'dumbbell', 'chart.line.uptrend.xyaxis', 'flame']);
+    // Decoration: each radio is still named by its words alone.
+    expect(screen.getAllByRole('radio').map((option) => option.props.accessibilityLabel)).toEqual(
+      ['NEW', 'UNDER_1Y', 'Y1_3', 'Y3_PLUS'].map((level) => t(`onboarding.experience.${level}`)),
+    );
+  });
+
+  test('activity: sitting, walking, standing, hard work', async () => {
+    await walkTo('activity');
+    expect(icons()).toEqual(['chair', 'figure.walk', 'figure.stand', 'hammer']);
+  });
+
+  test('the health data: a lock, a crossed-out sale, a bin, one for each of the three lines', async () => {
+    await walkTo('consent');
+    expect(icons()).toEqual(['lock', 'nosign', 'trash']);
+  });
+
+  test('the goal and the program choice carry none: the prototype has none there', async () => {
+    await open();
+    expect(screen.queryAllByTestId(/^symbol-/)).toEqual([]);
+  });
+
+  test('bringing a program: importing and typing each have theirs', async () => {
+    await walkTo('program');
+    await choose(t('onboarding.program.bring_my_own.title'));
+    expect(icons()).toEqual(['square.and.arrow.down', 'square.and.pencil']);
   });
 });
 

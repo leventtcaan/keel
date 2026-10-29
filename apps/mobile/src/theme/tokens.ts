@@ -176,6 +176,8 @@ export const tokens = {
     weekCell: 24,
     dot: 14,
     swatch: 10,
+    /** An onboarding answer's or point's icon tile (prototype `.opt .oi`, `.bullets .bi`). */
+    optionIcon: 40,
     /** The paywall (ADR-072 Ek 3, prototype paywall-v2): the app icon in its header, a value's icon tile, a timeline's dot, a plan's radio. */
     brandMark: 30,
     valueTile: 36,

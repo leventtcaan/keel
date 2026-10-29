@@ -62,6 +62,14 @@
       "note": "Where the about-you wheels start (prototype #ob-about: 178 cm, 84 kg, born 1999 in 2026). Height and year start as the answer, so Continue is open; the weight goes out as the first weigh-in, so it counts only once the person moves its wheel."
     },
     {
+      "key": "default_training_days",
+      "value": 3,
+      "unit": "days_per_week",
+      "tag": "urun",
+      "source": "plan/yeni-yuz-kurallar.md#R6",
+      "note": "How many days the days question opens on (prototip/yeni-yuz.html S.ob.daysN: 3, #ob-days), one of default_day_sets. A tap on a box still confirms it; the engine never proposes fewer than three (ADR-071 #8) (K-1049)."
+    },
+    {
       "key": "weight_wheel",
       "value": { "min_kg": 30, "step_kg": 0.5, "step_lb": 1 },
       "unit": "kg, lb",

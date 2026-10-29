@@ -7,7 +7,7 @@ import type { components } from '@/api/schema';
 import { type UnitSystem, heightCmFromImperial, parseWaistCm, parseWeightKg, roundTo } from '@/units/units';
 
 import { type RetiredStep, type Step, walk } from './flow';
-import { onboardingParams as P } from './params';
+import { defaultTrainingDays, onboardingParams as P } from './params';
 import type { StartingWeights } from './weights';
 
 type Schemas = components['schemas'];
@@ -66,6 +66,15 @@ export const emptyDraft: Draft = {
   ownProgram: null,
   reviewed: false,
 };
+
+/**
+ * Where the walk's own answers start (prototype S.ob.daysN: 3): the days question opens on three boxes' worth of days, a tap
+ * away from another count. Not in `emptyDraft`, which asks everything. The sex has no start: it feeds the energy math and the
+ * observation days, so it is always the person's own answer (K-1049, orchestrator decision).
+ */
+export function startingAnswers(): Pick<Draft, 'trainingDays'> {
+  return { trainingDays: defaultTrainingDays(P.defaultTrainingDays) ?? [] };
+}
 
 /**
  * A program brought in (ADR-073 #1) answers the days question: its weekdays are the training days, Monday first. A day

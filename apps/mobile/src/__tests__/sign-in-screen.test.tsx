@@ -4,7 +4,7 @@
  * (Stack.Protected), not this screen's.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
-import { AccessibilityInfo } from 'react-native';
+import { AccessibilityInfo, Linking } from 'react-native';
 
 import SignInScreen from '@/app/sign-in';
 import { t } from '@/copy';
@@ -15,7 +15,16 @@ import { ThemeProvider } from '@/theme/theme';
 const mockServices = {
   signInWithApple: jest.fn(),
   appleAvailable: jest.fn(async () => true),
+  report: jest.fn(),
 };
+const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+// The build's legal addresses (subscription/links.ts): both set, or none, as a build without them leaves them out.
+const BOTH = [
+  { key: 'subscription.terms', url: 'https://example.test/terms' },
+  { key: 'subscription.privacy', url: 'https://example.test/privacy' },
+];
+let mockLinks: { key: string; url: string }[] = BOTH;
+jest.mock('@/subscription/links', () => ({ ...jest.requireActual('@/subscription/links'), configuredLegalLinks: () => mockLinks }));
 
 let mockApplePress: () => void = () => {};
 
@@ -42,6 +51,9 @@ async function show() {
 }
 
 beforeEach(() => {
+  mockLinks = BOTH;
+  openURL.mockClear();
+  mockServices.report.mockClear();
   mockServices.signInWithApple.mockReset();
   mockServices.appleAvailable.mockResolvedValue(true);
 });
@@ -53,6 +65,40 @@ test('says the promise, with the product name and the Apple button (ADR-072 #1)'
   expect(screen.getByText(t('welcome.lead'))).toBeOnTheScreen();
   expect(screen.getByText(t('app.name'))).toBeOnTheScreen();
   expect(screen.getByTestId('apple-button')).toBeOnTheScreen();
+});
+
+describe('the legal line under the button (prototype #welcome, audit C9)', () => {
+  test('"18+ · Terms · Privacy": the age, and the two documents as links', async () => {
+    await show();
+    expect(screen.getByText(t('welcome.legal.age'))).toBeOnTheScreen();
+    expect(t('welcome.legal.age')).toBe('18+');
+    expect(screen.getByRole('link', { name: t('welcome.legal.terms') })).toBeOnTheScreen();
+    expect(screen.getByRole('link', { name: t('welcome.legal.privacy') })).toBeOnTheScreen();
+  });
+
+  test('each link opens its address from the build, the one the paywall links to', async () => {
+    await show();
+    await fireEvent.press(screen.getByRole('link', { name: t('welcome.legal.terms') }));
+    expect(openURL).toHaveBeenLastCalledWith('https://example.test/terms');
+    await fireEvent.press(screen.getByRole('link', { name: t('welcome.legal.privacy') }));
+    expect(openURL).toHaveBeenLastCalledWith('https://example.test/privacy');
+  });
+
+  test('an address the build does not have is left out, never a dead link; the age stays', async () => {
+    mockLinks = [BOTH[1]];
+    await show();
+    expect(screen.queryByRole('link', { name: t('welcome.legal.terms') })).toBeNull();
+    expect(screen.getByRole('link', { name: t('welcome.legal.privacy') })).toBeOnTheScreen();
+    expect(screen.getByText(t('welcome.legal.age'))).toBeOnTheScreen();
+  });
+
+  test('a link that cannot be opened is reported by name, not left unhandled', async () => {
+    openURL.mockRejectedValueOnce(Object.assign(new Error('x'), { name: 'NoBrowser' }));
+    await show();
+    await fireEvent.press(screen.getByRole('link', { name: t('welcome.legal.terms') }));
+    await act(async () => {});
+    expect(mockServices.report).toHaveBeenCalledWith({ name: 'NoBrowser' });
+  });
 });
 
 describe('example calls', () => {

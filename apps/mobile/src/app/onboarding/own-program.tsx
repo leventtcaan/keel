@@ -29,6 +29,7 @@ export default function OwnProgramStep() {
     <StepFrame step="ownProgram" title={t('onboarding.own.title')} why={t('onboarding.own.why')} chosen={draft.ownProgram === null}>
       <OptionCard
         title={t('onboarding.own.import.title')}
+        icon="square.and.arrow.down"
         tag={t('onboarding.own.import.tag')}
         body={t('onboarding.own.import.body')}
         selected={false}
@@ -36,6 +37,7 @@ export default function OwnProgramStep() {
       />
       <OptionCard
         title={t('onboarding.own.type.title')}
+        icon="square.and.pencil"
         body={t('onboarding.own.type.body')}
         selected={false}
         onPress={() => open('/onboarding/program-type')}
