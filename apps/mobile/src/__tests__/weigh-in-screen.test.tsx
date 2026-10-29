@@ -6,8 +6,8 @@
  * trend is drawn only when the server says it is ready (7 weigh-in days, K-1018); before that the screen counts the weigh-ins
  * toward it ("3 of 7"). Apple Health is asked under the entry, once (ADR-018 Ek 1).
  */
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
-import { AccessibilityInfo, Alert } from 'react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
+import { AccessibilityInfo, Alert, StyleSheet } from 'react-native';
 
 import type { components } from '@/api/schema';
 import WeighInScreen from '@/app/weigh-in';
@@ -17,6 +17,7 @@ import { NoAnswer, type SendResult, createSyncQueue } from '@/sync/queue';
 import { openRecordStore } from '@/sync/store';
 import { createTakeBack } from '@/sync/takeBack';
 import { ThemeProvider } from '@/theme/theme';
+import { tokens } from '@/theme/tokens';
 
 import { nodeSqlite } from './support/nodeSqlite';
 import { WithSaved, banner, undoButton } from './support/saved';
@@ -371,6 +372,26 @@ describe('the trend, only when the server says it is ready (K-1018, ADR-078 Ek 2
 
     await press(t('weighIn.chart.weeks'));
     expect(asked(mockServices.api.GET.mock.calls.length - 1)).toEqual({ from: '2026-09-04', to: '2026-10-01' });
+  });
+
+  // K-1048 (ADR-070 Ek 2 #2, #3): two exclusive ranges are one segmented control, as Light/Dark/System are, not two chips (a chip is
+  // for a choice among many, or one that starts an action).
+  test('the range is the segmented control: one track holding the four weeks and the year, the chosen one selected, each a full touch target', async () => {
+    mockAnswers = {
+      '/v1/weigh-ins/summary': summary(ready),
+      '/v1/weigh-ins': ok([{ id: 'a', clientId: 'a', measuredAt: '2026-09-10T05:00:00Z', kg: 82.6, source: 'MANUAL' }]),
+      '/v1/weight-trend': ok([{ day: '2026-09-10', kg: 82.6 }]),
+    };
+    await show();
+    const track = screen.getByTestId('weigh-in-range');
+    const weeks = within(track).getByRole('button', { name: t('weighIn.chart.weeks') });
+    const year = within(track).getByRole('button', { name: t('weighIn.chart.year') });
+    expect(weeks).toBeSelected();
+    expect(year).not.toBeSelected();
+    for (const segment of [weeks, year]) expect(StyleSheet.flatten(segment.props.style).minHeight).toBeGreaterThanOrEqual(tokens.size.touch);
+    await press(t('weighIn.chart.year'));
+    expect(within(screen.getByTestId('weigh-in-range')).getByRole('button', { name: t('weighIn.chart.year') })).toBeSelected();
+    expect(within(screen.getByTestId('weigh-in-range')).getByRole('button', { name: t('weighIn.chart.weeks') })).not.toBeSelected();
   });
 
   test('weigh-ins brought in from before do not end the first 14 days (U8, ADR-053)', async () => {

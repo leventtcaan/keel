@@ -105,9 +105,10 @@ export function Hero({ hero, today, onChanged }: Props) {
     case 'call': {
       const { decision, declined } = hero;
       const pending = decision.application.state === 'PENDING';
-      // The arrow is the block's mark: the whole block opens the call (K-1013), the arrow is not a control of its own.
+      // The arrow is the block's mark: the whole block opens the call (K-1013), the arrow is not a control of its own, so it
+      // takes no touch target's height: the top row is the label's line (prototype 5 `.mt`), not a band with only an arrow.
       const chevron = (
-        <View style={styles.chevron}>
+        <View testID="decision-mark" style={styles.chevron}>
           <SymbolView name="chevron.right" size={tokens.type.body} tintColor={color.decisionText} weight="bold" />
         </View>
       );
@@ -123,6 +124,7 @@ export function Hero({ hero, today, onChanged }: Props) {
       return (
         <DecisionBlock
           testID="hero"
+          eyebrow={t('today.call.eyebrow')}
           aside={chevron}
           title={t(labelKey(decision.copyKey))}
           // navigate, not push: a second tap before the screen is up goes to the same one, it stacks no second call.
@@ -181,7 +183,7 @@ const styles = StyleSheet.create({
   line: { fontSize: tokens.type.body },
   center: { textAlign: 'center' },
   count: { fontFamily: tokens.font.displayBold, fontSize: tokens.type.number },
-  chevron: { minWidth: tokens.size.touch, minHeight: tokens.size.touch, alignItems: 'flex-end', justifyContent: 'center' },
+  chevron: { alignItems: 'flex-end', justifyContent: 'center' },
   ritual: {
     alignSelf: 'center',
     width: tokens.size.primaryButton * 2,

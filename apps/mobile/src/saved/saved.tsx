@@ -56,9 +56,16 @@ export function useSaved(): (save: Save) => void {
 }
 
 /**
- * The banner of the last save, over the tab bar. Mounted once, at the root of the app, so it is the same on every tab and
- * after any sheet closes. Its time is the parameter `undo_banner_ms`; while it is up, Undo is there, and once it is gone the
- * save cannot be taken back from here.
+ * How high above the safe area's bottom edge the "+" ends: the tab bar, the screen's small gap under the button
+ * (PlusEntry's place in each tab), and the button's own height. The banner stands above it, not at the tab bar's height,
+ * where it would cover the "+" for its whole time (prototype `.bnr.up`, K-1048).
+ */
+const PLUS_TOP = tokens.size.tabBar + tokens.space.sm + tokens.size.primaryButton;
+
+/**
+ * The banner of the last save, over the tab bar and the "+". Mounted once, at the root of the app, so it is the same on
+ * every tab and after any sheet closes. Its time is the parameter `undo_banner_ms`; while it is up, Undo is there, and once
+ * it is gone the save cannot be taken back from here.
  */
 export function SavedBanner() {
   const { shown, publish, dismiss } = useContext(Saved);
@@ -88,7 +95,7 @@ export function SavedBanner() {
       detail={shown.detail}
       onUndo={() => void undo()}
       onDismiss={() => dismiss(shown.id)}
-      bottomOffset={(insets?.bottom ?? 0) + tokens.size.tabBar + tokens.space.sm}
+      bottomOffset={(insets?.bottom ?? 0) + PLUS_TOP + tokens.space.sm}
     />
   );
 }

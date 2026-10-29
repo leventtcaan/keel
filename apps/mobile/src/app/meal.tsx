@@ -23,6 +23,7 @@ import { savedMeal } from '@/food/savedMeal';
 import { foodParams } from '@/food/params';
 import { useSaved } from '@/saved/saved';
 import { useAppServices } from '@/services/ServicesProvider';
+import { askFirst } from '@/settings/askFirst';
 import { newClientId } from '@/sync/send';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
@@ -54,7 +55,6 @@ export default function MealScreen() {
   const [original, setOriginal] = useState<Original | null>(() =>
     edit === undefined ? null : day === undefined ? { state: 'gone' } : { state: 'loading' },
   );
-  const [confirming, setConfirming] = useState(false);
   const { color } = useTheme();
   const [step, setStep] = useState<Step>('checking');
   const [slot, setSlot] = useState<Schemas['MealSlot']>(() => defaultSlot(new Date()));
@@ -260,13 +260,18 @@ export default function MealScreen() {
     step === 'entry' && original !== null && (original.state === 'gone' || original.state === 'unreachable') ? (
       <Text style={[styles.text, { color: color.text }]}>{t(original.state === 'gone' ? 'meal.edit.gone' : 'meal.edit.needsConnection')}</Text>
     ) : null;
+  // The question is the system's alert (ADR-087 #1): on the screen wherever the list is scrolled, with Keep it as its way out.
+  const askToDelete = () =>
+    askFirst({
+      title: t('meal.edit.confirmTitle'),
+      body: t('meal.edit.confirmBody'),
+      confirmLabel: t('meal.edit.confirm'),
+      keepLabel: t('meal.edit.keep'),
+      onConfirm: () => void remove(),
+    });
   const deleting =
     original !== null && original.state === 'ready' ? (
-      confirming ? (
-        <Button label={t('meal.edit.confirmDelete')} variant="destructive" onPress={() => void remove()} disabled={busy} />
-      ) : (
-        <Button label={t('meal.edit.delete')} variant="destructive" onPress={() => setConfirming(true)} disabled={busy} />
-      )
+      <Button label={t('meal.edit.delete')} variant="destructive" onPress={askToDelete} disabled={busy} />
     ) : null;
   const entry =
     step === 'entry' && (original === null || original.state === 'ready') ? (

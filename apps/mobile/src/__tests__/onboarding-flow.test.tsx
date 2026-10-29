@@ -1246,10 +1246,12 @@ describe('#ob-plan: the starting call in U3\'s parts (ADR-072 #6)', () => {
     expect(screen.getByText(t('onboarding.plan.findsWeights'))).toBeOnTheScreen();
     for (const move of ['squat', 'bench_press', 'lat_pulldown']) expect(screen.getByText(t(`exercises.${move}.name`))).toBeOnTheScreen();
     expect(screen.getAllByText(t('onboarding.plan.setsReps', { sets: 3, reps: t('format.range', { low: 6, high: 10 }) }))).toHaveLength(3);
-    // The image is what the move is lifted with (the catalog's equipment); one the catalog does not name gets the bar.
+    // The image is what the move is lifted with (the catalog's equipment); one the catalog does not name has none (K-1048).
     // Decorative, so hidden from VoiceOver: found among hidden elements.
-    expect(screen.getAllByTestId('move-thumb-BARBELL', { includeHiddenElements: true })).toHaveLength(2);
+    // The bench press is not in this catalog: it has no image, where it once got a guessed bar (K-1048).
+    expect(screen.getAllByTestId('move-thumb-BARBELL', { includeHiddenElements: true })).toHaveLength(1);
     expect(screen.getAllByTestId('move-thumb-CABLE', { includeHiddenElements: true })).toHaveLength(1);
+    expect(screen.getAllByTestId(/^move-thumb-/, { includeHiddenElements: true })).toHaveLength(2);
   });
 
   test('a fixed rep target is its reps on the plan, never "5-5" (K-991)', async () => {

@@ -57,7 +57,9 @@ test('a save shows "Saved" with its detail and Undo', async () => {
   expect(undoButton()).toBeOnTheScreen();
 });
 
-test('it sits above the tab bar: the home indicator, the bar, and a little air', async () => {
+// K-1048 (prototype `.bnr.up`): the "+" sits at the bottom right just above the tab bar, a primary button's size with the screen's
+// small gap under it; a banner at the tab bar's height covered it for its whole time. The banner stands over the "+" instead.
+test('it sits above the tab bar and above the "+": the home indicator, the bar, the gap, the button, and a little air', async () => {
   await render(
     <ThemeProvider scheme="light">
       <SafeAreaInsetsContext.Provider value={{ top: 0, left: 0, right: 0, bottom: 34 }}>
@@ -68,7 +70,10 @@ test('it sits above the tab bar: the home indicator, the bar, and a little air',
     </ThemeProvider>,
   );
   await save('80.2 kg');
-  expect(StyleSheet.flatten(screen.getByTestId('undo-banner').props.style).bottom).toBe(34 + tokens.size.tabBar + tokens.space.sm);
+  const bottom = StyleSheet.flatten(screen.getByTestId('undo-banner').props.style).bottom as number;
+  const plusTop = 34 + tokens.size.tabBar + tokens.space.sm + tokens.size.primaryButton; // the "+": its gap above the bar, then its own height
+  expect(bottom).toBe(plusTop + tokens.space.sm);
+  expect(bottom).toBeGreaterThan(plusTop); // clear of the button's top edge, so it stays visible and tappable
 });
 
 test('Undo takes the save back through its own undo, once, and the banner goes', async () => {

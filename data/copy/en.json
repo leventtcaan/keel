@@ -1156,7 +1156,10 @@
     },
     "edit": {
       "delete": "Delete this meal",
-      "confirmDelete": "Delete it",
+      "confirmTitle": "Delete this meal?",
+      "confirmBody": "It comes out of your day's total. This can't be undone.",
+      "confirm": "Delete",
+      "keep": "Keep it",
       "needsConnection": "Changing a meal needs a connection. Try again when you're online.",
       "gone": "This meal is no longer there.",
       "notChecked": "The server hasn't checked these amounts yet. Check them, or try again when you're online."

@@ -226,11 +226,26 @@ describe('an ordinary week', () => {
 
   test("the hero: the call's label and one line, the next call's day and the days to it, from the server's date", async () => {
     await show();
-    expect(hero()).toBeOnTheScreen(); // the label is the block's head, no eyebrow (word budget)
+    expect(hero()).toBeOnTheScreen();
     expect(screen.getByText(t('decision.stop_load_increase.label'))).toBeOnTheScreen();
     expect(screen.getByText(t('decision.stop_load_increase.plateau.title'))).toBeOnTheScreen();
     expect(screen.getByText(t('thisWeek.hero.nextCall', { day: 'Monday' }))).toBeOnTheScreen();
     expect(screen.getByText(t('thisWeek.hero.inDays', { count: 3 }))).toBeOnTheScreen();
+  });
+
+  // K-1048 (prototype 5, `.mt`): the small label top-left on the row the arrow is on; no empty band with only an arrow in it.
+  test('the hero\'s top row is "This week\'s call" with the arrow beside it, not an arrow alone in an empty band', async () => {
+    await show();
+    const label = within(screen.getByTestId('hero')).getByText(t('today.call.eyebrow'));
+    expect(label).toBeOnTheScreen();
+    const mark = within(screen.getByTestId('hero')).getByTestId('decision-mark');
+    // Same row: the label and the arrow are the two children of one row.
+    expect(label.parent).toBe(mark.parent);
+    expect(StyleSheet.flatten(label.parent?.props.style)).toMatchObject({ flexDirection: 'row' });
+    // The arrow is not a control (the block is), so it does not reserve a touch target's height of its own.
+    expect(StyleSheet.flatten(mark.props.style).minHeight).toBeUndefined();
+    // The call's label is still the block's title, under the row.
+    expect(screen.getByText(t('decision.stop_load_increase.label'))).toBeOnTheScreen();
   });
 
   test('the next call tomorrow and today are said so', async () => {

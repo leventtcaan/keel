@@ -30,6 +30,12 @@ type Props = {
    * buttons and VoiceOver's swipe alike; with it an empty value can be stepped from. `step` still sets the decimals and the keyboard.
    */
   steps?: (direction: 1 | -1) => (() => void) | null;
+  /**
+   * The tight box (prototype `.stp.c`, K-1048): the field's name sits inside it, over the number, and not on a line of its own
+   * above, and the padding is the small one. Buttons keep their full size. For a screen with little height to spare (the
+   * set card, with two steppers and the reps-left row above the dock of an iPhone SE).
+   */
+  compact?: boolean;
 };
 
 const ACTIONS = [{ name: 'increment' }, { name: 'decrement' }];
@@ -61,7 +67,7 @@ function parse(text: string): number | null {
  * − value + as one component (ADR-070 Ek 2 #5): the value is a field one taps and types into (decimal keyboard, a comma or
  * a dot), the buttons step it. One adjustable control for VoiceOver: swipe up or down to step.
  */
-export function Stepper({ label, value, onChange, onEmpty, step, min = Number.NEGATIVE_INFINITY, max = Number.POSITIVE_INFINITY, unit, decimals, placeholder = '-', steps }: Props) {
+export function Stepper({ label, value, onChange, onEmpty, step, min = Number.NEGATIVE_INFINITY, max = Number.POSITIVE_INFINITY, unit, decimals, placeholder = '-', steps, compact = false }: Props) {
   const { color } = useTheme();
   const places = decimals ?? decimalsOf(step);
   // What is on the screen while the field is being typed in: "5" on its way to "55" is not yet below the minimum. It holds
@@ -98,30 +104,44 @@ export function Stepper({ label, value, onChange, onEmpty, step, min = Number.NE
   };
   const shown = value === null ? '' : show(value, places);
   const typing = draft !== null && draft.value === value;
+  const field = (
+    <View style={styles.value}>
+      <TextInput
+        accessibilityLabel={label}
+        // One adjustable control: a swipe up or down steps it, a double tap types (VoiceOver).
+        accessibilityRole="adjustable"
+        accessibilityValue={{ text: unit === undefined ? shown : `${shown} ${unit}` }}
+        accessibilityActions={ACTIONS}
+        onAccessibilityAction={adjusted}
+        value={typing ? draft.text : shown}
+        onChangeText={typed}
+        onFocus={() => setDraft({ text: shown, value })}
+        onBlur={() => setDraft(null)}
+        onSubmitEditing={() => setDraft(null)}
+        placeholder={placeholder}
+        placeholderTextColor={color.muted}
+        keyboardType={places > 0 ? 'decimal-pad' : 'number-pad'}
+        selectTextOnFocus
+        style={[styles.input, compact && styles.inputCompact, { color: color.text, borderBottomColor: color.edge }]}
+      />
+      {unit !== undefined && <Text style={[styles.unit, { color: color.muted }]}>{unit}</Text>}
+    </View>
+  );
+  // Compact: its name over the number, inside the box. The input says its name to a screen reader, so the caption is not read again.
+  const middle = compact ? (
+    <View style={styles.middle}>
+      <Text accessibilityElementsHidden importantForAccessibility="no" style={[styles.caption, { color: color.muted }]}>
+        {label}
+      </Text>
+      {field}
+    </View>
+  ) : (
+    field
+  );
   return (
-    <View style={[styles.box, { backgroundColor: color.surface }]}>
+    <View testID="stepper-box" style={[styles.box, compact && styles.boxCompact, { backgroundColor: color.surface }]}>
       <StepButton direction={-1} label={t('stepper.decrease', { label })} disabled={stepTo(-1) === null} onPress={() => stepBy(-1)} />
-      <View style={styles.value}>
-        <TextInput
-          accessibilityLabel={label}
-          // One adjustable control: a swipe up or down steps it, a double tap types (VoiceOver).
-          accessibilityRole="adjustable"
-          accessibilityValue={{ text: unit === undefined ? shown : `${shown} ${unit}` }}
-          accessibilityActions={ACTIONS}
-          onAccessibilityAction={adjusted}
-          value={typing ? draft.text : shown}
-          onChangeText={typed}
-          onFocus={() => setDraft({ text: shown, value })}
-          onBlur={() => setDraft(null)}
-          onSubmitEditing={() => setDraft(null)}
-          placeholder={placeholder}
-          placeholderTextColor={color.muted}
-          keyboardType={places > 0 ? 'decimal-pad' : 'number-pad'}
-          selectTextOnFocus
-          style={[styles.input, { color: color.text, borderBottomColor: color.edge }]}
-        />
-        {unit !== undefined && <Text style={[styles.unit, { color: color.muted }]}>{unit}</Text>}
-      </View>
+      {middle}
       <StepButton direction={1} label={t('stepper.increase', { label })} disabled={stepTo(1) === null} onPress={() => stepBy(1)} />
     </View>
   );
@@ -150,6 +170,10 @@ const styles = StyleSheet.create({
     padding: tokens.space.sm,
     borderRadius: tokens.radius.card,
   },
+  // The tight box: the small padding and gap; the buttons are the same, so a thumb finds them where it did.
+  boxCompact: { padding: tokens.space.xs, gap: tokens.space.xs },
+  middle: { flex: 1, minWidth: 0, alignItems: 'center' },
+  caption: { fontSize: tokens.type.label, fontWeight: tokens.weight.semibold },
   button: {
     width: tokens.size.stepperButton,
     height: tokens.size.stepperButton,
@@ -169,5 +193,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: tokens.border.outline,
     borderStyle: 'dotted',
   },
+  // The number's line is its size and its air above and below goes, so the caption and the number are as tall as a button.
+  inputCompact: { lineHeight: tokens.type.stepperValue, paddingVertical: 0 },
   unit: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.semibold },
 });
