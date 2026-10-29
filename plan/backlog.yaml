@@ -5171,6 +5171,23 @@ tasks:
     tests: ["jest onboarding-flow + settings + weigh-in + meal + state + photo-capture", "tools/anayasa-denetimi.sh"]
     refs: ["plan/kararlar/ADR-083-izin-dugmeleri-ve-magaza-gorseli.md", "data/copy/en.json", "docs/magaza/marketing/panorama.html"]
 
+  - id: K-1037
+    title: "Yeniden yapım Evre 1: programsız hesabın çıkışı, Build my program (K-1, K-2)"
+    milestone: M10
+    module: mobile
+    type: fix
+    size: M
+    status: doing
+    depends_on: []
+    why: "Profili olup programı olmayan hesap hiçbir ekrandan program yaptıramıyor (envanter K-1, K-2; denetim A1, A2). ADR-084"
+    acceptance:
+      - "Program 404 iken Train boş durumu, This Week'teki antrenman yeri ve /edit-program (days, cardio) 'Build my program' birincil çıkışını gösterir"
+      - "/build-program: onboarding gün sorusunun aynısı (2-5, defaultTrainingDays) → POST /v1/program/generate → Train; bağlantı yok ile sunucu hatası ayrı metin, yeniden dene"
+      - "Metinler data/copy/en.json'da (K2); ilgili jest testleri ve anayasa denetimi yeşil"
+      - "Kanıt: gerçek sunucuya karşı simülatörde programsız hesap → Build my program → Train'de program (ekran görüntüsü envanterde)"
+    tests: ["jest build-program + train + today + edit-program", "tools/anayasa-denetimi.sh"]
+    refs: ["plan/kararlar/ADR-084-programsiz-hesap-cikisi.md", "plan/envanter-2026-10-29.md"]
+
   - id: K-1010
     title: "Sunucudaki ek siteler: Caddy /opt/sites altındaki *.caddy dosyalarını içeri alır"
     milestone: M9
