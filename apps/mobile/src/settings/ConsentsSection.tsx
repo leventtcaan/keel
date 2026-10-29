@@ -33,7 +33,7 @@ const WORDS = { NoConnection: 'settings.consents.failed', HealthSheetFailed: 'se
  * question says so and offers the export before. Apple Health brings in health data, so it needs the health data consent, and HealthKit in the
  * build. After every change the states are read again from the server, the truth; `onChanged` then tells the screen it holds (K-982).
  */
-export function ConsentsSection({ onChanged }: { onChanged?: () => void } = {}) {
+export function ConsentsSection({ onChanged, only, bare = false }: { onChanged?: () => void; only?: Kind; bare?: boolean } = {}) {
   const { api, health, consents, withdrawHealthData, exportData } = useAppServices();
   const { color } = useTheme();
   const [states, setStates] = useState<Partial<Record<Kind, PhoneConsentStatus>> | null>(null);
@@ -41,6 +41,8 @@ export function ConsentsSection({ onChanged }: { onChanged?: () => void } = {}) 
   const [open, setOpen] = useState<Kind | null>(null);
   const [asking, setAsking] = useState<Kind | null>(null);
   const { busy, problem, run } = useAction();
+  // On its own page (Settings › Health data consent) the page's title is the heading, and only that consent is shown.
+  const heading = bare ? undefined : t('settings.consents.title');
 
   const load = useCallback(
     () =>
@@ -72,7 +74,7 @@ export function ConsentsSection({ onChanged }: { onChanged?: () => void } = {}) 
   if (states === null) {
     const retry = loadFailed ? <Button label={t('settings.consents.retry')} variant="ghost" size="sm" onPress={() => void load()} /> : null;
     return (
-      <Section title={t('settings.consents.title')}>
+      <Section title={heading}>
         {loadFailed && <Text style={[styles.text, { color: color.text }]}>{t('settings.consents.loadFailed')}</Text>}
         {retry}
       </Section>
@@ -80,7 +82,7 @@ export function ConsentsSection({ onChanged }: { onChanged?: () => void } = {}) 
   }
 
   const healthGranted = states.HEALTH_DATA === 'GRANTED';
-  const rows = KINDS.map((kind) => {
+  const rows = (only === undefined ? KINDS : [only]).map((kind) => {
     const name = t(`settings.consents.${kind}`);
     const granted = states[kind] === 'GRANTED';
     // Given to a text since revised (K-429): not given, and both ways open — allow the text shown now, or withdraw.
@@ -183,7 +185,7 @@ export function ConsentsSection({ onChanged }: { onChanged?: () => void } = {}) 
     </View>
   ) : null;
   return (
-    <Section title={t('settings.consents.title')}>
+    <Section title={heading}>
       {rows}
       {problem !== null && <ProblemText style={[styles.text, { color: color.text }]}>{problem}</ProblemText>}
       {reloadFailed}

@@ -1,12 +1,14 @@
 /**
  * The account behind the paywall's "Account" button (paywall v2, ADR-072 Ek 3, ADR-058 107; App Review 5.1.1(v)): export, delete
- * and sign out, reachable without paying, in a sheet over the plans. The account section is Settings' own, unchanged.
+ * and sign out, reachable without paying, in a sheet over the plans. The list is Settings' own (ADR-070 Ek 2 #2): the title on
+ * the left, "Done" as a text button on the right, then the same Account group with its one line about deleting.
  */
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { Button } from '@/components/Button';
+import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
 import { AccountSection } from '@/settings/AccountSection';
 import { useReduceMotion } from '@/theme/useReduceMotion';
@@ -41,9 +43,10 @@ export function AccountSheet({ visible, onClose }: { visible: boolean; onClose: 
       <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
         <ScrollView contentContainerStyle={styles.sheet}>
           <View style={styles.head}>
-            <Button label={t('subscription.accountDone')} variant="ghost" size="sm" onPress={onClose} />
+            <ScreenTitle>{t('subscription.account')}</ScreenTitle>
+            <Button label={t('subscription.accountDone')} variant="text" onPress={onClose} />
           </View>
-          <AccountSection />
+          <AccountSection footer={t('settings.account.footer')} />
         </ScrollView>
       </SafeAreaView>
     </Modal>
@@ -56,5 +59,5 @@ const styles = StyleSheet.create({
   pillText: { fontSize: tokens.type.buttonSmall, fontWeight: tokens.weight.bold },
   safe: { flex: 1 },
   sheet: { padding: tokens.space.lg, gap: tokens.space.md },
-  head: { alignItems: 'flex-end' },
+  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space.md },
 });

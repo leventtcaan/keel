@@ -49,11 +49,8 @@ export default function GymsScreen() {
     ) : null;
 
   return (
-    <SafeAreaView testID="screen" style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
+    <SafeAreaView testID="screen" style={[styles.safe, { backgroundColor: color.background }]} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.body}>
-        <Pressable accessibilityRole="button" onPress={() => router.back()} hitSlop={tokens.space.md}>
-          <Text style={[styles.text, { color: color.text }]}>{t('gyms.back')}</Text>
-        </Pressable>
         <ScreenTitle>{t('gyms.title')}</ScreenTitle>
         <Text style={[styles.small, { color: color.muted }]}>{t('gyms.note')}</Text>
         {gyms}

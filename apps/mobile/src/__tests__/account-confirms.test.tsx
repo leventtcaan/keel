@@ -3,14 +3,15 @@
  * screen: the tap showed nothing. The alert is where the user is looking; the destructive button runs the old flow, the
  * cancel one does nothing. Settings and the paywall's Account sheet are the same section.
  */
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
-import { Alert, type AlertButton } from 'react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
+import { Alert, type AlertButton, StyleSheet } from 'react-native';
 
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { AccountSection } from '@/settings/AccountSection';
 import { AccountSheet } from '@/subscription/AccountSheet';
 import { ThemeProvider } from '@/theme/theme';
+import { palettes } from '@/theme/tokens';
 
 type Subscription = components['schemas']['Subscription'];
 const ID = '0b6f2a8e-1c3d-4e5f-8a9b-0c1d2e3f4a5b';
@@ -133,5 +134,60 @@ describe.each([
       await act(async () => buttons.find((b) => b.style === 'destructive')!.onPress?.());
       expect(mockServices.deleteAccount).toHaveBeenCalledTimes(1);
     });
+  });
+});
+
+// The paywall's Account sheet and Settings' Account group are the same list (ADR-070 Ek 2 #2, K-1043): the title on the left and
+// "Done" as a text button on the right, then Export my data, Sign out and Delete account, the last two in the warning colour.
+describe('the paywall account sheet', () => {
+  const rowsOf = (group: ReturnType<typeof screen.getByTestId>) => within(group).getAllByRole('button').map((row) => row.props.accessibilityLabel as string);
+
+  test('Done is a text button at the top right, on the same line as the title; it closes the sheet', async () => {
+    const close = jest.fn();
+    await render(
+      <ThemeProvider scheme="light">
+        <AccountSheet visible onClose={close} />
+      </ThemeProvider>,
+    );
+    const title = screen.getByRole('header', { name: t('subscription.account') });
+    const done = screen.getByRole('button', { name: t('subscription.accountDone') });
+    // Same row, title first, Done last: Done sits at the right of the title.
+    expect(title.parent).toBe(done.parent);
+    const siblings = title.parent!.children;
+    expect(siblings.indexOf(title as never)).toBeLessThan(siblings.indexOf(done as never));
+    // The text role: the accent as words, no fill.
+    expect(within(done).getByText(t('subscription.accountDone'))).toHaveStyle({ color: palettes.light.accent });
+    expect(StyleSheet.flatten(done.props.style as never)).not.toHaveProperty('backgroundColor');
+    await fireEvent.press(done);
+    expect(close).toHaveBeenCalledTimes(1);
+  });
+
+  test('the same three rows as Settings, in the same order, Sign out and Delete account in the warning colour, and one line about deleting', async () => {
+    await render(
+      <ThemeProvider scheme="light">
+        <AccountSheet visible onClose={() => {}} />
+      </ThemeProvider>,
+    );
+    const sheet = rowsOf(screen.getByTestId('group-account-card')).filter((name) => name !== t('subscription.accountDone'));
+    await screen.unmount();
+    await render(
+      <ThemeProvider scheme="light">
+        <AccountSection title={t('settings.account.title')} />
+      </ThemeProvider>,
+    );
+    expect(rowsOf(screen.getByTestId('group-account-card'))).toEqual(sheet);
+    expect(sheet).toEqual([t('settings.export.title'), t('settings.signOut.title'), t('settings.delete.title')]);
+    expect(within(screen.getByRole('button', { name: t('settings.signOut.title') })).getByText(t('settings.signOut.title'))).toHaveStyle({ color: palettes.light.warn });
+    expect(within(screen.getByRole('button', { name: t('settings.delete.title') })).getByText(t('settings.delete.title'))).toHaveStyle({ color: palettes.light.warn });
+    expect(screen.queryByText(t('settings.account.footer'))).toBeNull(); // Settings has the title, the sheet the footer
+  });
+
+  test('the sheet says in one line that deleting removes everything, on every device', async () => {
+    await render(
+      <ThemeProvider scheme="light">
+        <AccountSheet visible onClose={() => {}} />
+      </ThemeProvider>,
+    );
+    expect(screen.getByText(t('settings.account.footer'))).toBeOnTheScreen();
   });
 });

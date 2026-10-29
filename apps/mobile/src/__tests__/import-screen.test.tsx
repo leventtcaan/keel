@@ -106,6 +106,12 @@ async function strongIn(unit: 'kg' | 'lb' = 'kg') {
   await press(t(`import.unit.${unit}`));
 }
 
+test('the screen draws no Back of its own: the system header has it (ADR-070 Ek 2 #4)', async () => {
+  await show();
+  expect(screen.queryByRole('button', { name: /^Back$/ })).toBeNull();
+  expect(screen.queryByText(/^Back$/)).toBeNull();
+});
+
 test('without the health data consent it says so and offers no file', async () => {
   mockGranted = false;
   await show();

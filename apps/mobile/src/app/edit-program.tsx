@@ -1,4 +1,4 @@
-import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { Stack, router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -55,6 +55,9 @@ export default function EditProgramScreen() {
   const { api, training, workoutRecords, report } = useAppServices();
   const { color } = useTheme();
   const params = useLocalSearchParams<{ part?: string; adding?: string }>();
+  const navigation = useNavigation();
+  // Set when the page is left on purpose ("Leave without saving", a rebuild that moves on), so the stop on unsaved edits lets it through.
+  const leaveFreely = useRef(false);
   const part = PARTS.find((p) => p === params.part) ?? null;
   const { data, reload } = useReadOnFocus(
     useCallback(async () => {
@@ -263,6 +266,7 @@ export default function EditProgramScreen() {
       () => rebuild(api, days),
       () => {
         rebuilt = true;
+        leaveFreely.current = true;
         router.dismissTo('/train');
       },
       // Which days the server builds for is its rule: the phone only says how many it was asked for.
@@ -379,16 +383,34 @@ export default function EditProgramScreen() {
   // The page is long and Back is at its foot: the question is asked at the top, so the page goes up to it, without
   // motion (Reduce Motion, accessibility.test.ts).
   const scroller = useRef<ScrollView>(null);
-  const announceLeaving = () => {
+  const announceLeaving = useCallback(() => {
     setLeaving(true);
     announce(t('editProgram.leaveWarn'));
     scroller.current?.scrollTo({ y: 0, animated: false });
-  };
+  }, []);
+  // The way back is the system's (the header's button, the edge swipe, ADR-070 Ek 2 #4). With edits not saved it is stopped
+  // and the question is asked instead; "Leave without saving" is the one way out that lets it through.
+  useEffect(
+    () =>
+      navigation.addListener('beforeRemove', (event) => {
+        if (leaveFreely.current || !dirty) return;
+        event.preventDefault();
+        announceLeaving();
+      }),
+    [navigation, dirty, announceLeaving],
+  );
   const leave =
     leaving && dirty ? (
       <View style={[styles.flag, { backgroundColor: color.accentSoft }]}>
         <Text style={[styles.text, { color: color.text }]}>{t('editProgram.leaveWarn')}</Text>
-        <Button label={t('editProgram.leave')} variant="warn" onPress={() => router.back()} />
+        <Button
+          label={t('editProgram.leave')}
+          variant="warn"
+          onPress={() => {
+            leaveFreely.current = true;
+            router.back();
+          }}
+        />
         <Button label={t('editProgram.keepEditing')} variant="ghost" onPress={() => setLeaving(false)} />
       </View>
     ) : null;
@@ -405,7 +427,7 @@ export default function EditProgramScreen() {
       <Button label={t('editProgram.undo')} accessibilityLabel={t('editProgram.undoEditLabel')} variant="ghost" disabled={busy} onPress={() => undoOf(savedEdit)} />
     );
   return (
-    <SafeAreaView edges={['top', 'bottom']} style={[styles.safe, { backgroundColor: color.background }]}>
+    <SafeAreaView edges={['bottom']} style={[styles.safe, { backgroundColor: color.background }]}>
       {/* The iOS edge swipe back would drop unsaved edits without the question Back asks. */}
       <Stack.Screen options={{ gestureEnabled: !dirty }} />
       <ScrollView ref={scroller} contentContainerStyle={styles.body}>
@@ -420,7 +442,6 @@ export default function EditProgramScreen() {
             {problem}
           </ProblemText>
         )}
-        <Button label={t('editProgram.back')} variant="ghost" onPress={() => (dirty ? announceLeaving() : router.back())} />
       </ScrollView>
     </SafeAreaView>
   );

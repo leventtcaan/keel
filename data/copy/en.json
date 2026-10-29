@@ -497,8 +497,7 @@
     "building": "Building your program…",
     "offline": "No connection. Try again when you're online.",
     "failed": "Your program couldn't be built. Try again.",
-    "retry": "Try again",
-    "back": "Back"
+    "retry": "Try again"
   },
   "editProgram": {
     "title": "Edit program",
@@ -565,8 +564,7 @@
     "rebuildConfirm": "Rebuild my program",
     "noDays": "Your training days couldn't load. Try again.",
     "offline": "No connection. Try again when you're online.",
-    "failed": "Something went wrong on our side. Try again in a moment.",
-    "back": "Back"
+    "failed": "Something went wrong on our side. Try again in a moment."
   },
   "swap": {
     "title": "Swap {move}",
@@ -2791,14 +2789,13 @@
     },
     "reminders": {
       "title": "Reminders",
+      "kinds": "Training day, check-in morning, a note after a quiet week.",
+      "routine": "Your routine",
       "what": "Three kinds, never more: {minutes} minutes before your usual training time, in your own words; your weekly check-in morning; and one note if a week goes by without the app. They're set on this phone and nothing is sent anywhere.",
       "turnOn": "Turn on reminders",
-      "turnOff": "Turn off",
-      "turnOffLabel": "Turn off reminders",
     "onlyCheckIn": "Only the check-in morning reminder is on.",
     "noCalls": "No weekly calls without your OK for health data, so the check-in morning reminder waits.",
     "turnOnAll": "Turn on all three",
-      "on": "On",
       "blocked": "Notifications for Next Call are off in iOS Settings.",
       "openSettings": "Open iOS Settings",
       "failed": "Couldn't change reminders. Try again.",
@@ -2834,7 +2831,7 @@
       "found": "{count} older weigh-ins found. See them on Weigh-in under Year once they're sent.",
       "foundOne": "1 older weigh-in found. See it on Weigh-in under Year once it's sent.",
       "noneNew": "Nothing new to bring in.",
-      "needsConsent": "This needs the health data and Apple Health consents above.",
+      "needsConsent": "This needs the health data and Apple Health consents. Give them under Health and data in Settings.",
       "failed": "Couldn't read Apple Health. Try again.",
       "unavailable": "Bringing in Apple Health history works in the app's device build.",
       "workouts": "Workouts from Strong or Hevy",
@@ -2848,6 +2845,7 @@
       "APPLE_HEALTH": "Apple Health",
       "allowed": "Allowed",
       "notAllowed": "Not allowed",
+      "outdatedShort": "Allow again",
     "outdated": "The text has changed since you allowed this. Allow it again to go on.",
       "view": "View",
       "hide": "Hide",
@@ -2896,11 +2894,10 @@
       "confirm": "Sign out anyway",
       "keep": "Stay signed in"
     },
-    "back": "Today",
     "backMark": "‹",
-    "forwardMark": "›",
     "account": {
-      "title": "Account"
+      "title": "Account",
+      "footer": "Delete account removes everything, on every device."
     },
     "gyms": "Gyms",
     "training": {
@@ -2926,7 +2923,31 @@
     },
     "health": {
       "title": "Health and data",
+      "consent": "Health data consent",
+      "needsConsent": "Needs your OK for health data",
       "locked": "Bringing in Apple Health history needs your OK for health data."
+    },
+    "sources": {
+      "title": "Data sources",
+      "food": "Food data",
+      "foodValue": "USDA, Open Food Facts",
+      "failed": "Couldn't open that link. Try again.",
+      "website": "Website",
+      "license": "License",
+      "usda": {
+        "name": "USDA FoodData Central",
+        "note": "Public domain (CC0).",
+        "url": "https://fdc.nal.usda.gov/",
+        "site": "fdc.nal.usda.gov"
+      },
+      "off": {
+        "name": "Open Food Facts",
+        "note": "Contains information from Open Food Facts, made available under the Open Database License (ODbL).",
+        "url": "https://world.openfoodfacts.org/",
+        "site": "world.openfoodfacts.org",
+        "licenseName": "ODbL 1.0",
+        "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/"
+      }
     }
   },
   "permissions": {
@@ -3042,8 +3063,7 @@
     "inUse": "In use",
     "add": "Add a gym",
     "loadFailed": "Your gyms couldn't load. Try again when you're online.",
-    "retry": "Try again",
-    "back": "Back"
+    "retry": "Try again"
   },
   "gym": {
     "title": "Gym",
