@@ -84,3 +84,13 @@ gram), kayıt hatırlatması yok, 7 gün antrenman akışı yok.
 - 7 günlük şablon ve 40 hareketin kendine ait ipuçları v1'de bu hâliyle çıkar; koçluk gözden geçirmesi sonra.
 - Kullanıcının kendi programına "Add a day" ile gün eklenir (ADR-073 Ek 9'daki 409 kalkar); sunucu yeni günü doldurur, mevcut günlere dokunmaz.
 - Evre 6 K1 test beklentisi değişiklikleri (#676 #677 #681 #683 #685 #686 #687) onaylı (Levent 29 Eki genel onayı, `.envanter/notes.md`).
+
+## Ek 5 · "Any day" günü olan programa da gün eklenir (Evre 7, #684; agent, teknik; Ek 4'ün tamamlanışı)
+- **Bulgu:** Levent build 9'da "Add a day'de hareketler gelmedi" dedi. Kök neden: sunucu, günlerinden biri hafta gününe bağlı olmayan ("any day") programa gün eklemeyi
+  reddediyordu (`ProgramDayAdds.canAdd`, `Program.canAddDay` false, POST 409); telefon bu durumda sunucuya gitmeyip Edit'in kendi **boş** gününü açıyordu ("Day 4 · No moves yet").
+  Elle yazılan ya da içe aktarılan programlar tam da bu günlerle gelir. Ek 4'ün "kendi programına gün eklenir, sunucu doldurur" kararı bu programlar için çalışmıyordu.
+- **Karar:** hafta gününe bağlı olmayan gün artık engel değildir. Yeni gün, N+1 günlük şablonun seçilen hafta gününe düşen günüdür; şablon programın hafta günleri, seçilen gün ve
+  (bağlı olmayan her gün için) haftanın ilk boş günleri üzerine kurulur, yalnız seçilen günün içeriği alınır. Bağlı olmayan günler olduğu gibi, yerlerinde kalır. Yedi gün yine en çok,
+  bir hafta günü iki günün olamaz. Yeni koçluk kuralı yok (U14): içerik hep üretecin şablonu.
+- **Etki:** sözleşme metni (`/v1/program/days`, `Program.canAddDay`); `ProgramDayAdds.canAdd/added`; K1: `ProgramDayAddsTests` ve `ProgramEditApiTests`'te "hafta gününe bağlı olmayan gün reddedilir"
+  beklentisi (ADR'den doğan, gevşeten değil, Ek 4'ü tamamlayan değişiklik) yeni davranışa çevrildi.

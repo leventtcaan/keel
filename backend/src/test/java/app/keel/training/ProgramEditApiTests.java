@@ -518,6 +518,7 @@ class ProgramEditApiTests {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void theProgramSaysWhetherADayCanBeAddedByTheRuleTheAddUses() throws Exception {
         // K-1013, K-1060: Program.canAddDay is true exactly where POST /v1/program/days would add (a free weekday given).
         AccountId account = TestSessions.newAccount();
@@ -535,8 +536,15 @@ class ProgramEditApiTests {
         AccountId floating = TestSessions.newAccount();
         assertThat(send(floating, "PUT", "/v1/program", Map.of("days", List.of(
                 Map.of("name", "Upper", "exercises", List.of(Map.of("exerciseId", "bench_press", "sets", 3, "reps", Map.of("min", 6, "max", 10)))))))).hasStatusOk();
-        assertThat(map(send(floating, "GET", "/v1/program", null))).as("a day on no weekday").containsEntry("canAddDay", false);
-        assertThat(send(floating, "POST", "/v1/program/days", Map.of("weekday", "TUESDAY"))).hasStatus(409);
+        // Evre 7 (issue 684): a day on no weekday does not stop it: the day comes filled by the generator, the user's own day stays on none.
+        assertThat(map(send(floating, "GET", "/v1/program", null))).as("a day on no weekday").containsEntry("canAddDay", true);
+        MvcTestResult floated = send(floating, "POST", "/v1/program/days", Map.of("weekday", "TUESDAY"));
+        assertThat(floated).hasStatusOk();
+        List<Map<String, Object>> floatedDays = (List<Map<String, Object>>) map(floated).get("days");
+        assertThat(floatedDays).hasSize(2);
+        assertThat(floatedDays.getFirst()).containsEntry("name", "Upper").doesNotContainKey("weekday");
+        assertThat(floatedDays.get(1)).containsEntry("weekday", "TUESDAY");
+        assertThat((List<?>) floatedDays.get(1).get("exercises")).as("the added day comes with moves").isNotEmpty();
 
         AccountId seven = TestSessions.newAccount();
         assertThat(send(seven, "POST", "/v1/program/generate", Map.of("trainingDays",
