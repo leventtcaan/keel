@@ -1564,16 +1564,19 @@ describe('#ob-plan: the starting call in U3\'s parts (ADR-072 #6)', () => {
     expect(mockKeepPreview).toHaveBeenLastCalledWith(expect.objectContaining({ firstCall: null }));
   });
 
-  test('the first call reaches the reminders (K-992): its day with the consent, weekly without a day, off without the consent', async () => {
+  // The first call reaches the reminders (K-992), one case a test: three walks to the plan in one test ran past CI's 5 s.
+  test('the first call reaches the reminders (K-992): its day with the consent', async () => {
     await toPlan({ experience: 'NEW', allow: true });
     expect(mockKeepFirstCall).toHaveBeenLastCalledWith({ on: '2026-10-19' });
-    await screen.unmount();
-    jest.clearAllMocks();
+  });
+
+  test('the first call reaches the reminders (K-992): weekly without a day', async () => {
     mockFirstCall = 404;
     await toPlan({ experience: 'NEW', allow: true });
     expect(mockKeepFirstCall).toHaveBeenLastCalledWith('weekly');
-    await screen.unmount();
-    jest.clearAllMocks();
+  });
+
+  test('the first call reaches the reminders (K-992): off without the consent', async () => {
     await toPlan({ experience: 'NEW' });
     expect(mockKeepFirstCall).toHaveBeenLastCalledWith('off');
   });
