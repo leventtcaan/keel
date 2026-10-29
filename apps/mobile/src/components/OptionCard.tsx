@@ -1,6 +1,8 @@
+import type { SFSymbol } from 'expo-symbols';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { FitText } from '@/components/FitText';
+import { Icon } from '@/components/Icon';
 import { InverseSurface, useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
@@ -13,6 +15,8 @@ type Props = {
   tag?: string;
   /** The answer the app recommends: drawn as the decision block (prototype `.opt.hero`). */
   hero?: boolean;
+  /** An SF Symbol in a tile before the words (prototype `.oi`); decoration, so the answer is still named by its words. */
+  icon?: SFSymbol;
   selected: boolean;
   /** Can't be chosen now (an answer on its way); shown dimmed. */
   disabled?: boolean;
@@ -23,13 +27,13 @@ type Props = {
  * One answer of a single-choice question (prototype `.opt`). A radio for screen readers: its words are read together,
  * and whether it is the one chosen. The recommended answer stands out as a block; chosen, it gets the accent's ring.
  */
-export function OptionCard({ title, body, tag, hero = false, selected, disabled = false, onPress }: Props) {
+export function OptionCard({ title, body, tag, hero = false, icon, selected, disabled = false, onPress }: Props) {
   const { color } = useTheme();
   const label = [title, tag, body].filter((part) => part !== undefined).join(', ');
   const ring = hero
     ? { backgroundColor: color.decisionBackground, borderColor: selected ? color.accent : color.decisionBackground }
     : { backgroundColor: color.surface, borderColor: selected ? color.text : color.surface };
-  const content = <Content title={title} body={body} tag={tag} hero={hero} selected={selected} />;
+  const content = <Content title={title} body={body} tag={tag} hero={hero} icon={icon} selected={selected} />;
   return (
     <Pressable
       accessibilityRole="radio"
@@ -43,10 +47,10 @@ export function OptionCard({ title, body, tag, hero = false, selected, disabled 
   );
 }
 
-function Content({ title, body, tag, hero, selected }: Required<Pick<Props, 'title' | 'hero' | 'selected'>> & Pick<Props, 'body' | 'tag'>) {
+function Content({ title, body, tag, hero, icon, selected }: Required<Pick<Props, 'title' | 'hero' | 'selected'>> & Pick<Props, 'body' | 'tag' | 'icon'>) {
   const { color } = useTheme();
-  return (
-    <>
+  const words = (
+    <View style={[styles.words, icon !== undefined && styles.beside]}>
       {tag !== undefined && (
         <View style={[styles.tag, { backgroundColor: color.accent }]}>
           <FitText style={[styles.tagText, { color: color.onAccent }]}>{tag}</FitText>
@@ -59,7 +63,16 @@ function Content({ title, body, tag, hero, selected }: Required<Pick<Props, 'tit
         </View>
       </View>
       {body !== undefined && <Text style={[styles.body, { color: color.muted }]}>{body}</Text>}
-    </>
+    </View>
+  );
+  if (icon === undefined) return words;
+  return (
+    <View style={styles.withIcon}>
+      <View testID="option-icon" style={[styles.tile, { backgroundColor: color.background }]}>
+        <Icon name={icon} />
+      </View>
+      {words}
+    </View>
   );
 }
 
@@ -76,6 +89,11 @@ const styles = StyleSheet.create({
   dim: { opacity: tokens.opacity.dim },
   hero: { padding: tokens.space.lg, gap: tokens.space.sm, borderWidth: tokens.border.ring },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: tokens.space.sm },
+  words: { gap: tokens.space.xs },
+  /** Beside the icon's tile: takes the rest of the row. */
+  beside: { flex: 1 },
+  withIcon: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.md },
+  tile: { width: tokens.size.optionIcon, height: tokens.size.optionIcon, borderRadius: tokens.radius.button, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold, flexGrow: 1, flexShrink: 1 },
   heroTitle: { fontFamily: tokens.font.display, fontSize: tokens.type.decisionTitle, flexGrow: 1, flexShrink: 1 },
   body: { fontSize: tokens.type.bodySmall },

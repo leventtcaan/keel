@@ -1,8 +1,10 @@
 import { router } from 'expo-router';
+import type { SFSymbol } from 'expo-symbols';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
+import { Icon } from '@/components/Icon';
 import { ProblemText, useProblem } from '@/components/ProblemText';
 import { ConsentText } from '@/consent/ConsentText';
 import { grantConsent } from '@/consent/consents';
@@ -144,6 +146,15 @@ export default function HealthDataStep() {
       <Text style={[styles.linkText, { color: color.accent }]}>{t('onboarding.consent.fullText')}</Text>
     </Pressable>
   );
+  // One of the three lines, with its icon in the tile (prototype `.bullets`, ADR-070 Ek 2 #3). Built outside the JSX, like the rest.
+  const point = (icon: SFSymbol, words: string) => (
+    <View key={words} style={styles.point}>
+      <View style={[styles.tile, { backgroundColor: color.surface }]}>
+        <Icon name={icon} />
+      </View>
+      <Text style={[styles.pointText, { color: color.text }]}>{words}</Text>
+    </View>
+  );
   const note = granted ? t('onboarding.healthData.allowed') : declined ? t('onboarding.healthData.declinedNote') : null;
 
   return (
@@ -154,9 +165,9 @@ export default function HealthDataStep() {
       actions={actions}
       backDisabled={busy}>
       <View style={styles.points}>
-        <Text style={[styles.point, { color: color.text }]}>{t('onboarding.consent.kept')}</Text>
-        <Text style={[styles.point, { color: color.text }]}>{t('onboarding.consent.sold')}</Text>
-        <Text style={[styles.point, { color: color.text }]}>{t('onboarding.consent.deleted')}</Text>
+        {point('lock', t('onboarding.consent.kept'))}
+        {point('nosign', t('onboarding.consent.sold'))}
+        {point('trash', t('onboarding.consent.deleted'))}
       </View>
       {text}
       {note !== null && <Text style={[styles.note, { color: color.textSecondary, backgroundColor: color.surface }]}>{note}</Text>}
@@ -168,7 +179,9 @@ const styles = StyleSheet.create({
   actions: { gap: tokens.space.sm },
   text: { fontSize: tokens.type.body },
   points: { gap: tokens.space.md },
-  point: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
+  point: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.md },
+  tile: { width: tokens.size.optionIcon, height: tokens.size.optionIcon, borderRadius: tokens.radius.button, alignItems: 'center', justifyContent: 'center' },
+  pointText: { flex: 1, fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
   link: { minHeight: tokens.size.touch, justifyContent: 'center', alignSelf: 'flex-start' },
   linkText: { fontSize: tokens.type.body, fontWeight: tokens.weight.bold },
   full: { padding: tokens.space.md, borderRadius: tokens.radius.button },

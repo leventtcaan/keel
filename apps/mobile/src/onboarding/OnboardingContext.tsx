@@ -10,7 +10,7 @@ import type { components } from '@/api/schema';
 
 import { newClientId } from '@/sync/send';
 
-import { type Draft, emptyDraft } from './draft';
+import { type Draft, emptyDraft, startingAnswers } from './draft';
 import type { Progress } from './prepare';
 import { suggestedAnswers } from './wheels';
 
@@ -32,9 +32,10 @@ type Props = {
 
 export function OnboardingProvider({ children, resumed = null }: Props) {
   // The records' ids are made once for the draft, so a retry sends the same records (ADR-024). Height and year start on
-  // the about-you wheels' suggestion (wheels.ts).
+  // the about-you wheels' suggestion (wheels.ts); the days and the sex on theirs (draft.ts).
   const [draft, setDraft] = useState<Draft>(() => ({
     ...emptyDraft,
+    ...startingAnswers(),
     ...suggestedAnswers(new Date().getFullYear()),
     ids: { weighIn: newClientId(), waist: newClientId() },
   }));

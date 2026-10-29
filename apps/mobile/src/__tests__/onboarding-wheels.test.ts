@@ -19,15 +19,18 @@ const SYSTEMS = ['METRIC', 'IMPERIAL'] as const;
 const NO_HEIGHT = { cm: '', feet: '', inches: '' };
 
 describe('height', () => {
-  test('metric: every whole centimetre the profile accepts, shortest to tallest', () => {
+  test('metric: every whole centimetre from 140 to 210 (the prototype\'s wheel), shortest to tallest, all of them heights the profile keeps', () => {
     const values = heightValues('METRIC');
-    expect(values[0]).toBe(P.heightMinCm);
-    expect(values[values.length - 1]).toBe(P.heightMaxCm);
-    expect(values).toHaveLength(P.heightMaxCm - P.heightMinCm + 1);
+    expect(P.heightWheel).toEqual({ min_cm: 140, max_cm: 210 });
+    expect(values[0]).toBe(140);
+    expect(values[values.length - 1]).toBe(210);
+    expect(values).toHaveLength(71);
+    expect(P.heightWheel.min_cm).toBeGreaterThanOrEqual(P.heightMinCm);
+    expect(P.heightWheel.max_cm).toBeLessThanOrEqual(P.heightMaxCm);
   });
 
   test.each(SYSTEMS)('%s: every row is a height the profile keeps, and reads back as the same row', (system) => {
-    expect(heightValues(system).length).toBeGreaterThan(50);
+    expect(heightValues(system).length).toBeGreaterThan(25); // 71 rows in cm, 28 in inches (140-210 cm)
     for (const value of heightValues(system)) {
       const height = heightFromWheel(value, system, NO_HEIGHT);
       expect(heightCm(height, system)).not.toBeNull();
@@ -35,13 +38,14 @@ describe('height', () => {
     }
   });
 
-  test('imperial: in inches, the first and last rows as close to the profile\'s bounds as whole inches get', () => {
+  test('imperial: in inches, the first and last rows as close to the wheel\'s 140-210 cm as whole inches get', () => {
     const values = heightValues('IMPERIAL');
-    expect(heightCm(heightFromWheel(values[0], 'IMPERIAL', NO_HEIGHT), 'IMPERIAL')).not.toBeNull();
-    const below = heightFromWheel(values[0] - 1, 'IMPERIAL', NO_HEIGHT);
-    const above = heightFromWheel(values[values.length - 1] + 1, 'IMPERIAL', NO_HEIGHT);
-    expect(heightCm(below, 'IMPERIAL')).toBeNull();
-    expect(heightCm(above, 'IMPERIAL')).toBeNull();
+    const cm = (inches: number) => heightCm(heightFromWheel(inches, 'IMPERIAL', NO_HEIGHT), 'IMPERIAL');
+    expect(cm(values[0])).toBeGreaterThanOrEqual(P.heightWheel.min_cm);
+    expect(cm(values[values.length - 1])).toBeLessThanOrEqual(P.heightWheel.max_cm);
+    // One inch more at either end would leave the wheel's range, though the profile would keep it.
+    expect(cm(values[0] - 1)).toBeLessThan(P.heightWheel.min_cm);
+    expect(cm(values[values.length - 1] + 1)).toBeGreaterThan(P.heightWheel.max_cm);
   });
 
   test('a height not answered yet shows on the suggestion', () => {

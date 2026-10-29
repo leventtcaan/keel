@@ -1,3 +1,5 @@
+import type { SFSymbol } from 'expo-symbols';
+
 import type { components } from '@/api/schema';
 import { OptionCard } from '@/components/OptionCard';
 import { t } from '@/copy';
@@ -7,6 +9,13 @@ import { StepFrame, useChoose } from '@/onboarding/StepFrame';
 // The four NASEM 2023 levels (H6 A3-c), each a day people recognise (ADR-027 #6), in the prototype's few words. It only
 // sets the starting calories; the weight trend corrects them (NASEM's own step 2, K-114).
 const LEVELS: components['schemas']['ActivityLevel'][] = ['INACTIVE', 'LOW_ACTIVE', 'ACTIVE', 'VERY_ACTIVE'];
+// The prototype's icon for each: a chair, a walker, someone standing, a hammer (ADR-070 Ek 2 #3).
+const ICONS: Record<components['schemas']['ActivityLevel'], SFSymbol> = {
+  INACTIVE: 'chair',
+  LOW_ACTIVE: 'figure.walk',
+  ACTIVE: 'figure.stand',
+  VERY_ACTIVE: 'hammer',
+};
 
 /**
  * #ob-activity: the last question of the new lifter's walk, before the starting weights for the others. The answer moves
@@ -21,6 +30,7 @@ export default function ActivityStep() {
         <OptionCard
           key={level}
           title={t(`onboarding.activity.${level}`)}
+          icon={ICONS[level]}
           selected={draft.activityLevel === level}
           onPress={() => choose({ activityLevel: level })}
         />

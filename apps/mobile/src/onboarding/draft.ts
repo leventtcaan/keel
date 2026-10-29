@@ -7,7 +7,7 @@ import type { components } from '@/api/schema';
 import { type UnitSystem, heightCmFromImperial, parseWaistCm, parseWeightKg, roundTo } from '@/units/units';
 
 import { type RetiredStep, type Step, walk } from './flow';
-import { onboardingParams as P } from './params';
+import { defaultTrainingDays, onboardingParams as P } from './params';
 import type { StartingWeights } from './weights';
 
 type Schemas = components['schemas'];
@@ -66,6 +66,14 @@ export const emptyDraft: Draft = {
   ownProgram: null,
   reviewed: false,
 };
+
+/**
+ * Where the walk's own answers start (prototype S.ob: 3 days, male): the days question opens on three boxes' worth of days
+ * and about-you on one sex, each still a tap away from another. Not in `emptyDraft`, which asks everything.
+ */
+export function startingAnswers(): Pick<Draft, 'trainingDays' | 'sex'> {
+  return { trainingDays: defaultTrainingDays(P.defaultTrainingDays) ?? [], sex: P.defaultSex };
+}
 
 /**
  * A program brought in (ADR-073 #1) answers the days question: its weekdays are the training days, Monday first. A day

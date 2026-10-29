@@ -14,7 +14,11 @@
         "welcome.examplesLabel",
         ["welcome.examples.hold", "welcome.examples.rep", "welcome.examples.lighter", "welcome.examples.eat"],
         "welcome.headline",
-        "welcome.lead"
+        "welcome.lead",
+        "welcome.legal.age",
+        "welcome.legal.dot",
+        "welcome.legal.terms",
+        "welcome.legal.privacy"
       ],
       "notFirstView": ["signIn.failed", "signIn.offline", "signIn.unavailable"]
     },
