@@ -17,8 +17,8 @@ backend (`prod` profile, K-907) and Caddy (HTTPS, the only open ports). Everythi
 | `mac/pull-backups.sh`, `mac/install-pull.sh` | The Mac pulls the encrypted backups hourly while awake (out of Time Machine); a notification when the newest is over 26 h old |
 | `restore-drill.sh` | Restores the newest backup into a throwaway database and compares every table's row count with the counts the backup took |
 | `weekly-report.sh`, `weekly-report.sql` | The weekly leading indicators (K-905, ADR-081): time to first value, week-2 retention, share who saw their plan change; read-only, aggregates only |
-| `fetch-fdc.sh` | Downloads FoodData Central's releases (ADR-008) for the backend to import |
-| `fetch-off.sh`, `off_filter.py` | Streams Open Food Facts' nightly dump through the filter (Turkish products with a name and the four nutrients, ADR-088) into `/opt/keel/off/off-tr.jsonl`; the backend imports it at start when the file changed |
+| `fetch-fdc.sh` | Downloads FoodData Central's releases (Foundation, SR Legacy, Survey/FNDDS, Branded; ADR-008, ADR-090) for the backend to import; `prune` deletes an imported Branded release's CSV files (2.8 GB) |
+| `fetch-off.sh`, `off_filter.py` | Streams Open Food Facts' nightly dump once through the filter (products of each region with a name and the four nutrients, ADR-088, ADR-090) into `/opt/keel/off/off-tr.jsonl` and `off-us.jsonl`; the backend imports each at start when the file changed |
 | `ci-deploy.sh`, `authorize-ci.sh` | The CI key's only command on the server, installed root's (K-902); letting that key in |
 
 ## First setup (once)

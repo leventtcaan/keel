@@ -46,7 +46,7 @@ class UnknownSql(ValueError):
 
 
 IDENT = r"[a-z_][a-z0-9_]*(?:\.[a-z_][a-z0-9_]*)?"  # unquoted, lower case: Postgres folds the rest, quoted names are refused
-KNOWN_STATEMENTS = [r"create\s+schema\b", r"create\s+(unique\s+)?index\b", rf"create\s+table\s+(if\s+not\s+exists\s+)?{IDENT}\s*\(",
+KNOWN_STATEMENTS = [r"create\s+schema\b", r"create\s+extension\b", r"create\s+(unique\s+)?index\b", rf"create\s+table\s+(if\s+not\s+exists\s+)?{IDENT}\s*\(",
                     rf"alter\s+table\s+{IDENT}\s", rf"drop\s+table\s+(if\s+exists\s+)?{IDENT}\s*$", r"drop\s+index\b",
                     r"insert\s+into\b", rf"update\s+{IDENT}\s+set\b", r"delete\s+from\b", r"comment\s+on\b"]
 KNOWN_ACTIONS = [r"add\s+column\s", r"drop\s+column\s", r"rename\s+column\s", r"alter\s+column\s",

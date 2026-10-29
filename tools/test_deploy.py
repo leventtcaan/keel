@@ -752,13 +752,20 @@ class WeeklyReport(unittest.TestCase):
 
 
 class TheOpenFoodFactsFile(unittest.TestCase):
-    """K-1042, ADR-088: the filtered Turkey subset the backend imports; the dump is streamed, never kept."""
+    """K-1042, K-1061, ADR-088, ADR-090 #1: the filtered region subsets the backend imports; the dump is streamed, never kept."""
 
     FILTER = DEPLOY / "off_filter.py"
 
-    def run_filter(self, *lines):
-        result = subprocess.run(["python3", "-I", str(self.FILTER)], input="\n".join(lines) + "\n", capture_output=True, text=True, check=True)
-        return [json.loads(line) for line in result.stdout.splitlines()], result.stderr
+    def run_filter(self, *lines, regions=("TR",)):
+        """The filter's output: {region: [products]}, and what it wrote on stderr."""
+        with tempfile.TemporaryDirectory() as out:
+            result = subprocess.run(["python3", "-I", str(self.FILTER), out, *regions], input="\n".join(lines) + "\n",
+                                    capture_output=True, text=True, check=True)
+            written = {r: [json.loads(line) for line in (Path(out) / f"off-{r.lower()}.jsonl").read_text().splitlines()] for r in regions}
+        return written, result.stderr
+
+    def kept(self, *lines):
+        return self.run_filter(*lines)[0]["TR"]
 
     @staticmethod
     def product(code="8690504012345", **fields):
@@ -769,39 +776,82 @@ class TheOpenFoodFactsFile(unittest.TestCase):
         return json.dumps(p)
 
     def test_a_turkish_product_comes_out_with_only_the_fields_the_import_reads(self):
-        kept, errors = self.run_filter(self.product())
-        self.assertEqual(kept, [{"code": "8690504012345", "name": "Gofret", "name_en": None, "brand": "Ülker", "kcal": 520.0, "protein": 6.5,
-                                 "carbs": 60.0, "fat": 28.0, "serving_g": 30.0, "serving": "30 g"}])
-        self.assertIn("seen=1 turkey=1 kept=1", errors)
+        written, errors = self.run_filter(self.product())
+        self.assertEqual(written["TR"], [{"code": "8690504012345", "region": "TR", "name": "Gofret", "name_en": None, "brand": "Ülker",
+                                          "kcal": 520.0, "protein": 6.5, "carbs": 60.0, "fat": 28.0, "serving_g": 30.0, "serving": "30 g"}])
+        self.assertIn("seen=1 TR:matched=1,kept=1", errors)
 
     def test_turkey_by_country_tag_or_by_the_869_prefix_and_nothing_else(self):
-        kept, _ = self.run_filter(self.product("12345670", countries_tags=["en:france"]),
-                                  self.product("12345678", countries_tags=["en:france"]),
-                                  self.product("8691234567890", countries_tags=["en:france"]),
-                                  self.product("12345679", countries_tags=["en:turkiye"]))
+        kept = self.kept(self.product("12345670", countries_tags=["en:france"]),
+                         self.product("12345678", countries_tags=["en:france"]),
+                         self.product("8691234567890", countries_tags=["en:france"]),
+                         self.product("12345679", countries_tags=["en:turkiye"]))
         self.assertEqual([p["code"] for p in kept], ["8691234567890", "12345679"])
 
     def test_a_product_without_a_name_or_a_nutrient_or_with_an_impossible_one_is_dropped(self):
         full = {"energy-kcal_100g": 100, "proteins_100g": 1, "carbohydrates_100g": 1, "fat_100g": 1}
-        kept, _ = self.run_filter("not json", self.product(product_name=""),
-                                  self.product(nutriments={**full, "fat_100g": None}),
-                                  self.product(nutriments={k: v for k, v in full.items() if k != "proteins_100g"}),
-                                  self.product(nutriments={**full, "energy-kcal_100g": 901}),
-                                  self.product(nutriments={**full, "fat_100g": -1}),
-                                  self.product(code="86905040123x5"))
+        kept = self.kept("not json", self.product(product_name=""),
+                         self.product(nutriments={**full, "fat_100g": None}),
+                         self.product(nutriments={k: v for k, v in full.items() if k != "proteins_100g"}),
+                         self.product(nutriments={**full, "energy-kcal_100g": 901}),
+                         self.product(nutriments={**full, "fat_100g": -1}),
+                         self.product(code="86905040123x5"))
         self.assertEqual(kept, [])
 
-    def test_the_fetch_streams_the_dump_through_the_filter_and_moves_the_file_in_whole(self):
-        script = (DEPLOY / "fetch-off.sh").read_text()
-        self.assertIn("curl -fsSL https://static.openfoodfacts.org/data/openfoodfacts-products.jsonl.gz | gunzip -c | python3 -I /opt/keel/deploy/off_filter.py", script)
-        self.assertRegex(script, r"> \"\$part\"")
-        self.assertRegex(script, r"mv \"\$part\" off-tr\.jsonl")
-        self.assertLess(script.index('> "$part"'), script.index('mv "$part"'))
-        self.assertNotRegex(script, r"curl [^\n]*-o ", "the dump is not written to disk")
+    def test_one_pass_writes_every_region_and_a_product_sold_in_two_is_in_both(self):
+        written, errors = self.run_filter(
+            self.product("8690000000001"),
+            self.product("0049000028911", countries_tags=["en:united-states"], product_name="Coca-Cola", brands="Coca-Cola",
+                         product_name_en="Coca-Cola"),
+            self.product("0016000275287", countries_tags=["en:united-states", "en:turkey"], product_name="Cheerios Cereal"),
+            self.product("8691111111111", countries_tags=["en:france"], product_name="Bu Türk değil"),
+            self.product("0070847811169", countries_tags=["en:canada"]),
+            regions=("TR", "US"))
+        self.assertEqual([p["code"] for p in written["TR"]], ["8690000000001", "0016000275287", "8691111111111"])
+        self.assertEqual([p["code"] for p in written["US"]], ["0049000028911", "0016000275287"])
+        self.assertTrue(all(p["region"] == "US" for p in written["US"]))
+        self.assertTrue(all(p["region"] == "TR" for p in written["TR"]))
+        self.assertIn("seen=5 TR:matched=3,kept=3 US:matched=2,kept=2", errors)
 
-    def test_the_backend_reads_the_file_from_the_mount_the_fetch_writes_to(self):
+    def test_the_barcode_prefix_makes_a_turkish_product_but_never_an_american_one(self):
+        written, _ = self.run_filter(self.product("8691234567890", countries_tags=["en:france"]),
+                                     self.product("0012345678905", countries_tags=["en:france"]), regions=("TR", "US"))
+        self.assertEqual([p["code"] for p in written["TR"]], ["8691234567890"])
+        self.assertEqual(written["US"], [])
+
+    def test_the_name_is_in_the_language_of_the_region(self):
+        both = self.product("0016000275287", countries_tags=["en:united-states", "en:turkey"], product_name="Original", product_name_tr="Türkçe ad",
+                            product_name_en="English name")
+        written, _ = self.run_filter(both, regions=("TR", "US"))
+        self.assertEqual(written["TR"][0]["name"], "Türkçe ad")
+        self.assertEqual(written["US"][0]["name"], "English name")
+        # Without a name in the region's language, the product's own.
+        written, _ = self.run_filter(self.product("0016000275287", countries_tags=["en:united-states"], product_name="Original"),
+                                     regions=("US",))
+        self.assertEqual(written["US"][0]["name"], "Original")
+
+    def test_an_unknown_region_or_no_directory_is_refused(self):
+        with tempfile.TemporaryDirectory() as out:
+            unknown = subprocess.run(["python3", "-I", str(self.FILTER), out, "XX"], input="", capture_output=True, text=True)
+            nothing = subprocess.run(["python3", "-I", str(self.FILTER)], input="", capture_output=True, text=True)
+        self.assertEqual(unknown.returncode, 2)
+        self.assertIn("unknown region: XX", unknown.stderr)
+        self.assertEqual(nothing.returncode, 2)
+
+    def test_the_fetch_streams_the_dump_through_the_filter_and_moves_each_file_in_whole(self):
+        script = (DEPLOY / "fetch-off.sh").read_text()
+        self.assertIn("curl -fsSL https://static.openfoodfacts.org/data/openfoodfacts-products.jsonl.gz | gunzip -c | "
+                      'python3 -I /opt/keel/deploy/off_filter.py "$work" "${regions[@]}"', script)
+        self.assertRegex(script, r'mv "\$work/\$file" "\$file"')
+        self.assertLess(script.index("off_filter.py"), script.index('mv "$work/$file"'))
+        self.assertIn("mktemp -d", script, "written aside, then moved: the backend never sees half a file")
+        self.assertNotRegex(script, r"curl [^\n]*-o ", "the dump is not written to disk")
+        self.assertIn("TR US", script, "both regions by default")
+
+    def test_the_backend_reads_the_files_from_the_mount_the_fetch_writes_to(self):
         compose = (DEPLOY / "compose.yaml").read_text()
-        self.assertIn("KEEL_OFF_IMPORT_FILE: /off/off-tr.jsonl", compose)
+        self.assertIn("KEEL_OFF_IMPORT_DIR: /off", compose)
+        self.assertNotIn("KEEL_OFF_IMPORT_FILE", compose)
         self.assertIn("./off:/off:ro", compose)
         self.assertIn("dir=/opt/keel/off", (DEPLOY / "fetch-off.sh").read_text())
 
@@ -809,6 +859,43 @@ class TheOpenFoodFactsFile(unittest.TestCase):
         readme = (DEPLOY / "README.md").read_text()
         self.assertIn("`fetch-off.sh`", readme)
         self.assertIn("`off_filter.py`", readme)
+
+
+class TheFoodDataCentralFetch(unittest.TestCase):
+    """K-1061, ADR-090 #1: USDA's four datasets, release names in one place, the disk checked before the big one."""
+
+    SCRIPT = (DEPLOY / "fetch-fdc.sh").read_text()
+
+    def test_all_four_datasets_are_fetched(self):
+        for dataset in ("foundation_food_csv_", "sr_legacy_food_csv_", "survey_food_csv_", "branded_food_csv_"):
+            self.assertIn(dataset, self.SCRIPT)
+
+    def test_the_release_names_are_the_scripts_own_variable_not_code(self):
+        self.assertIn("FDC_RELEASES", self.SCRIPT, "a newer release is a setting, not an edit")
+        self.assertEqual(len(re.findall(r"\d{4}-\d{2}(-\d{2})?", self.SCRIPT.split("releases=")[1].splitlines()[0])), 4)
+        # The dates are in that one line (and the comment that says when it was checked), not in the commands below it.
+        commands = self.SCRIPT.split("for release in")[1]
+        self.assertNotRegex(commands, r"20\d\d-\d\d")
+
+    def test_branded_unzips_only_the_three_files_the_import_reads_and_checks_the_disk_first(self):
+        self.assertIn('"$folder/food.csv" "$folder/branded_food.csv" "$folder/food_nutrient.csv"', self.SCRIPT)
+        self.assertLess(self.SCRIPT.index("min_free_gb"), self.SCRIPT.index("curl -fSL"))
+        self.assertIn("df -Pk", self.SCRIPT)
+
+    def test_the_zip_is_written_aside_and_removed_after_unzipping(self):
+        self.assertIn('-o "$folder.zip.part"', self.SCRIPT)
+        self.assertIn('rm "$folder.zip"', self.SCRIPT)
+
+    def test_prune_leaves_a_marker_so_the_next_fetch_does_not_download_again(self):
+        prune = self.SCRIPT.split("== prune")[1].split("fi\n")[0]
+        self.assertIn(': > "$folder/.fetched"', prune)
+        self.assertIn("food_nutrient.csv", prune)
+        self.assertIn("[[ -d $folder ]] && continue", self.SCRIPT)
+
+    def test_the_script_is_valid_bash(self):
+        for script in ("fetch-fdc.sh", "fetch-off.sh"):
+            result = subprocess.run(["bash", "-n", str(DEPLOY / script)], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
 
 
 if __name__ == "__main__":
