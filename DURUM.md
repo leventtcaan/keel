@@ -16,7 +16,12 @@ kadar promosyon premium). Simülatör düzeneği: Metro gerçek sunucuya `.envan
 sunucu logu `.envanter/slog.sh [süre]`, sayfa `python3 .envanter/build_page.py` + aynı dosya yoluyla yayın. Apple girişi her seferinde parola ister
 (Levent, ekran klavyesi ⌘K) → çıkış/silme gerektiren denemeleri topla. **Levent gece yok (29 Eki 01:00 UTC): oturum düşerse giriş yapılamaz** →
 uygulamayı kapatıp açma (çift yükleme çift yenileme yapıp oturumu düşürdü, K-9 adayı); Metro'da yeniden yükle ya da arka plan/ön plan.
-Evre 1 paket 1 BİTTİ (#619, ADR-084). **Sıradaki: Evre 1 paket 2** (K-4 yemek arama: istemci + sunucu), `plan/yeniden-yapim.md › İlerleme`.
+Evre 1 paket 1 BİTTİ (#619, ADR-084). Paket 2 kodu birleşti (#621, #622, ADR-085), sunucu sıralaması üretim verisinde doğru.
+**Simülatör oturumu 01:29 UTC'de düştü** (dev HMR çift servis örneği çift yenileme yaptı → aile iptal; üretimde görülmedi, K-9 kırık değil).
+**Sabah Levent tek giriş yapınca toplu kanıt:** paket 2 (egg/rice/chıcken yazarak, satır kcal, varsayılan birim) + gece biten paketler.
+Dev düzeneği sorunu: `apps/mobile/node_modules` eski `keel` kopyasına sembolik bağ; Metro bir kez eski `data/parameters/food.json` sundu →
+kanıttan önce düzeneği temizle (yerel `npm ci` ya da bağı kaldır, Metro `--clear`), dal değiştirdikten sonra uygulamayı tam yeniden yükle.
+Gece işi: Evre 1 paket 3-5 kodu (kanıt sabah), sonra Evre 2 tasarım (prototip, kanıt gerektirmez).
 K1 listesi (sabah Levent'e toplu): `.envanter/notes.md › K1 listesi`.
 
 ## (önceki) DEVAM NOKTASI (28 Eki — 1.0 REDDEDİLDİ, düzeltildi, build 5 ile YENİDEN GÖNDERİLDİ: Waiting for Review)

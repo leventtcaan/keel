@@ -53,7 +53,7 @@ paketini bitirir, ikisini günceller. Bağlam özetlense de iş kaybolmaz.
 - [ ] Evre 1 — kırık mantık (sıra; her biri kendi dalı + PR + gerçek sunucu kanıtı; kanıt görüntüsü inventory.json › after'a, bulguya `fixed`):
   - [x] 1. K-1 + K-2 programsız hesap (29 Eki, #619, ADR-084; kanıt: gerçek sunucuda programsız hesap → Build my program → 4 gün → Train/This Week'te program): açılışta profil var + program yok → hazırlık yeniden koşar (resume); Train, This Week, Training days/Cardio'da
         "Build my program" çıkışı (Edit program'daki "Rebuild for me" mantığı); sign-out onboarding işaretini silmez.
-  - [ ] 2. K-4 yemek arama: istemci (yazarken gecikmeli arama, eski sonuç temizlenir, aranıyor durumu, bağlantı ≠ sunucu hatası, satırda kcal,
+  - [~] 2. K-4 yemek arama (kod birleşti: #621 sunucu, #622 istemci; sunucu sıralaması üretim verisinde doğrulandı 29 Eki 01:22 — egg/rice/chicken; **simülatör kanıtı sabah**: oturum düştü, dev düzeneği eski food.json sundu): istemci (yazarken gecikmeli arama, eski sonuç temizlenir, aranıyor durumu, bağlantı ≠ sunucu hatası, satırda kcal,
         makul varsayılan birim) + sunucu (kelime başı önce, ı/İ katlama, ilgi sıralaması, aynı adlı kayıtları ayırt etme ya da birleştirme).
   - [ ] 3. K-3 kaydedilen yemeği görme / düzeltme / silme yolu (emekli food ekranı yerine; ADR-069 #3 Ek).
   - [ ] 4. K-5 Sign out / Delete account onayı görünür yerde (sheet ya da sistem uyarısı).
