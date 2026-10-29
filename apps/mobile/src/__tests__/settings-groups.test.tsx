@@ -6,6 +6,7 @@
  */
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { useSyncExternalStore as mockUseSyncExternalStore } from 'react';
+import { Alert } from 'react-native';
 
 import { createApiClient } from '@/api/client';
 import type { components } from '@/api/schema';
@@ -130,6 +131,9 @@ jest.mock('@/services/ServicesProvider', () => ({
   useUnits: () => mockUnits,
   useAppearance: () => mockUseSyncExternalStore(mockServices.appearance.subscribe, mockServices.appearance.current),
 }));
+
+// Delete account asks in a system alert (ADR-087 #1).
+const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -446,7 +450,7 @@ describe('account', () => {
     await press(t('settings.signOut.title'));
     expect(mockServices.signOut).toHaveBeenCalledTimes(1);
     await press(t('settings.delete.title'));
-    expect(screen.getByText(t('settings.delete.confirmTitle'))).toBeOnTheScreen();
+    expect(alert).toHaveBeenCalledWith(t('settings.delete.confirmTitle'), expect.any(String), expect.any(Array));
     expect(mockServices.deleteAccount).not.toHaveBeenCalled();
   });
 });

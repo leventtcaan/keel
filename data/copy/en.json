@@ -2870,16 +2870,17 @@
       "title": "Delete account",
       "note": "Removes everything, on every device.",
       "confirmTitle": "Delete your account and all data?",
-      "confirmBody": "Your logs, calls, consents and profile are deleted on our side, and this phone forgets you. This can't be undone. Export first if you want a copy. Apple then asks you to confirm once more, to end Sign in with Apple for this app; closing Apple's screen doesn't stop the deletion.",
-      "subscription": "If you have a subscription, Apple goes on charging for it after your account is deleted. Cancel it first if you don't want to be charged.",
+      "confirmBody": "Your logs, calls, consents and profile are deleted on every device. This can't be undone. Export first if you want a copy.",
+      "subscription": "A subscription keeps billing through Apple until you cancel it in Settings › Subscription.",
       "confirm": "Delete everything",
       "keep": "Keep my account",
       "failed": "Couldn't delete your account. Check your connection and try again."
     },
     "signOut": {
       "title": "Sign out",
+      "confirmTitle": "Sign out?",
       "pending": "{count} entries haven't reached our server yet and will be lost if you sign out now.",
-      "photos": "Your progress photos are only on this phone. Signing out deletes them from it.",
+      "photos": "Your progress photos are only on this phone. Signing out removes them from it.",
       "confirm": "Sign out anyway",
       "keep": "Stay signed in"
     },

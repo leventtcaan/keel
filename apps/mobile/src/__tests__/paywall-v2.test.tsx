@@ -5,6 +5,7 @@
  * 5.1.1(v): reachable without paying) — on the gate that cannot be closed.
  */
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
+import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 
 import SubscribeScreen from '@/app/subscribe';
 import type { components } from '@/api/schema';
@@ -172,6 +173,32 @@ describe('the bottom that stays', () => {
     expect(screen.getAllByText('$12.99 a month, renewing every month until you cancel.')).toHaveLength(2);
     await press(t('subscription.subscribe'));
     expect(mockStore.buy).toHaveBeenCalledWith('$rc_monthly');
+  });
+});
+
+describe('the status bar (ADR-087 #2, K-6)', () => {
+  test('a band of the top inset sits above the scrolling page, so scrolled content never passes under the clock', async () => {
+    await render(
+      <SafeAreaInsetsContext.Provider value={{ top: 59, bottom: 34, left: 0, right: 0 }}>
+        <ThemeProvider scheme="light">
+          <SubscribeScreen />
+        </ThemeProvider>
+      </SafeAreaInsetsContext.Provider>,
+    );
+    await act(async () => {});
+    const band = screen.getByTestId('status-bar-band');
+    expect(band).toHaveStyle({ height: 59, backgroundColor: palettes.light.accentSoft });
+    // Not inside the scroll: it stays put while the page moves.
+    expect(within(screen.getByTestId('paywall-scroll')).queryByTestId('status-bar-band')).toBeNull();
+    // Above the page in the column, not laid over it.
+    const column = screen.getByTestId('paywall').children.map((child) => (typeof child === 'string' ? '' : child.props.testID));
+    expect(column.indexOf('status-bar-band')).toBeLessThan(column.indexOf('paywall-scroll'));
+    expect(column.indexOf('status-bar-band')).toBe(0);
+  });
+
+  test('no inset known (no safe area): no band, nothing to clear', async () => {
+    await show();
+    expect(screen.getByTestId('status-bar-band')).toHaveStyle({ height: 0 });
   });
 });
 

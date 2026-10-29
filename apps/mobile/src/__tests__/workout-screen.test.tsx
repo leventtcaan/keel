@@ -1353,11 +1353,11 @@ describe('the focus mode session (K-971, ADR-075 #1-#2, ADR-070 #4)', () => {
     expect(within(screen.getByTestId('up-next')).getByText(t('exercises.lateral_raise.name'))).toBeOnTheScreen();
   });
 
-  test('with many moves each dot stays a full touch target, and the dots wrap', async () => {
+  test('each dot stays a full-height touch target, and the dots share one line, never wrapped (ADR-087 #3)', async () => {
     await show();
     await screen.findByText(t('workout.log', { number: 1 }));
-    expect(dot('Bench press')).toHaveStyle({ minWidth: tokens.size.touch });
-    expect(screen.getByTestId('move-dots')).toHaveStyle({ flexWrap: 'wrap' });
+    expect(dot('Bench press')).toHaveStyle({ minHeight: tokens.size.touch, flex: 1 });
+    expect(screen.getByTestId('move-dots')).not.toHaveStyle({ flexWrap: 'wrap' });
   });
 
   test('opened again (the app closed mid-session), the session goes on: its real time, its sets done, the next set', async () => {
