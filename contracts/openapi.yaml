@@ -583,11 +583,32 @@ paths:
     get:
       tags: [nutrition]
       operationId: listMeals
+      summary: The meals of one day, or of a range of days
+      description: |
+        Either `day`, or `from` and `to` (both included, at most 62 days apart; VALIDATION_FAILED otherwise): the phone reads
+        the days it shows, and the times a user usually eats (the meal reminder, ADR-090 #2), from this.
       parameters:
-        - $ref: "#/components/parameters/Day"
+        - name: day
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
       responses:
         "200":
-          description: The day's meals, in time order
+          description: The meals, in time order
           content:
             application/json:
               schema:
@@ -619,6 +640,29 @@ paths:
   /v1/meals/{id}:
     parameters:
       - $ref: "#/components/parameters/Id"
+    patch:
+      tags: [nutrition]
+      operationId: updateMeal
+      summary: Change a logged meal in place (its items, slot or time); nothing is deleted and logged again
+      description: |
+        Any of `items` (the whole new list, estimated now; exactly as when logging), `slot` and `eatenAt` (the meal moves to
+        that moment's local day). The meal keeps its id and clientId, so a replay of the first log still answers with it.
+        NOT_FOUND for a meal that is not the user's.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MealChange"
+      responses:
+        "200":
+          description: The meal as it is now
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Meal"
+        default:
+          $ref: "#/components/responses/Error"
     delete:
       tags: [nutrition]
       operationId: deleteMeal
@@ -673,6 +717,126 @@ paths:
       responses:
         "200":
           description: The suggestions, in order
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Suggestion"
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/days:
+    get:
+      tags: [nutrition]
+      operationId: listDays
+      summary: Each day with a meal in a range, with what was eaten (the day strip and the past days, ADR-090)
+      description: |
+        The days from `from` to `to` (both included, at most 62 days) that have a meal, oldest first, with the meals' count and
+        the day's eaten nutrients as ranges (U5; the phone shows the middle, ADR-090 #5). A day without a meal is absent.
+        CONSENT_REQUIRED without the HEALTH_DATA consent.
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: The days with meals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DaySummary"
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/foods:
+    post:
+      tags: [nutrition]
+      operationId: createFood
+      summary: The user's own food, from a label (name and the numbers per serving), searchable and loggable like any food
+      description: |
+        For a product the database does not have (a barcode that was not found, a dish of one's own). Numbers are for one serving
+        of `servingGrams`; the server stores them per 100 g. Only the user sees it (search, barcode, estimate, favorites); it is
+        deleted with the account and with the HEALTH_DATA consent. Its numbers are the user's label values, so its ranges are
+        narrow like a product's. A barcode (`gtin`) makes the scanner find it next time.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewFood"
+      responses:
+        "201":
+          description: The food, ready to log (`defaultAmount` is one serving)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Food"
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/foods/favorites:
+    get:
+      tags: [nutrition]
+      operationId: listFavoriteFoods
+      summary: The foods the user starred, newest star first
+      description: CONSENT_REQUIRED without the HEALTH_DATA consent; a food gone from the database is left out.
+      responses:
+        "200":
+          description: The favorites, each with its portions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Food"
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/foods/{id}/favorite:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    put:
+      tags: [nutrition]
+      operationId: addFavoriteFood
+      summary: Star a food (again is the same)
+      responses:
+        "204":
+          description: Starred
+        default:
+          $ref: "#/components/responses/Error"
+    delete:
+      tags: [nutrition]
+      operationId: removeFavoriteFood
+      summary: Take the star off (not starred is the same)
+      responses:
+        "204":
+          description: Not starred
+        default:
+          $ref: "#/components/responses/Error"
+  /v1/foods/frequent:
+    get:
+      tags: [nutrition]
+      operationId: getFrequentFoods
+      summary: The foods the user logs most often, each in its usual amount
+      description: |
+        From the meals of the last `suggestion-days` (28): the most logged first (then the latest), each food once, in the amount it
+        was most often had, with its kcal as the database estimates it now (a range, the phone shows the middle). Never a food in the
+        profile's foods to avoid. A few at most (`recent-foods`).
+      responses:
+        "200":
+          description: The frequent foods, in order
           content:
             application/json:
               schema:
@@ -2643,6 +2807,12 @@ components:
             $ref: "#/components/schemas/Portion"
         defaultAmount:
           $ref: "#/components/schemas/Amount"
+        avoided:
+          type: boolean
+          description: Present (true) when the name or brand holds a word of the profile's foods to avoid. The app marks it; it is not hidden.
+        own:
+          type: boolean
+          description: Present (true) for the user's own food (POST /v1/foods).
     Nutrients:
       type: object
       required: [kcal, proteinG, carbsG, fatG]
@@ -2757,9 +2927,100 @@ components:
           description: |
             A food of the database, or one of the user's recipes as "recipe:<id>" (ADR-034) — then the unit is "portion"
             and the quantity is the portions eaten, at most the portions the recipe makes. A recipe's ingredients are
-            database foods only.
+            database foods only. The user's own food (POST /v1/foods) is "own:<id>". "quick" is a quick add (below).
         amount:
           $ref: "#/components/schemas/Amount"
+        quick:
+          $ref: "#/components/schemas/QuickEntry"
+    QuickEntry:
+      type: object
+      description: |
+        A quick add (ADR-090): calories, and the macros if the user knows them, typed in with no food behind them. Sent with
+        foodId "quick" and an amount of 1 "serving". The numbers are the user's own, so they are exact (a range of one number),
+        and a quick add never appears in Recent or Frequent. Put back on a change, the numbers are the item's own (low = high).
+      required: [kcal]
+      properties:
+        kcal:
+          type: integer
+          minimum: 1
+          maximum: 10000
+        proteinG:
+          type: integer
+          minimum: 0
+          maximum: 1000
+        carbsG:
+          type: integer
+          minimum: 0
+          maximum: 1000
+        fatG:
+          type: integer
+          minimum: 0
+          maximum: 1000
+    MealChange:
+      type: object
+      description: At least one of the three.
+      minProperties: 1
+      properties:
+        items:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            $ref: "#/components/schemas/ItemRequest"
+        slot:
+          $ref: "#/components/schemas/MealSlot"
+        eatenAt:
+          type: string
+          format: date-time
+    DaySummary:
+      type: object
+      required: [day, meals, eaten]
+      properties:
+        day:
+          type: string
+          format: date
+        meals:
+          type: integer
+          minimum: 1
+        eaten:
+          $ref: "#/components/schemas/Nutrients"
+    NewFood:
+      type: object
+      description: A label's numbers for one serving.
+      required: [name, servingGrams, kcal, proteinG, carbsG, fatG]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        brand:
+          type: string
+          maxLength: 80
+        gtin:
+          type: string
+          pattern: "^[0-9]{8,14}$"
+          description: The barcode the user scanned, so that it is found next time.
+        servingGrams:
+          type: number
+          exclusiveMinimum: 0
+          maximum: 5000
+          description: What one serving weighs, from the label.
+        kcal:
+          type: number
+          minimum: 0
+          maximum: 10000
+        proteinG:
+          type: number
+          minimum: 0
+          maximum: 1000
+        carbsG:
+          type: number
+          minimum: 0
+          maximum: 1000
+        fatG:
+          type: number
+          minimum: 0
+          maximum: 1000
     Suggestion:
       type: object
       description: A food the user eats, in their usual amount, as the database estimates it now (K-507).
@@ -2868,6 +3129,10 @@ components:
         kcal:
           $ref: "#/components/schemas/KcalRange"
         proteinG:
+          $ref: "#/components/schemas/GramRange"
+        carbsG:
+          $ref: "#/components/schemas/GramRange"
+        fatG:
           $ref: "#/components/schemas/GramRange"
     NewRecipe:
       type: object
