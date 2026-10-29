@@ -275,7 +275,7 @@ const topHeader = () => {
   const found = screen.root!.queryAll((n) => n.type === 'RNSScreenStackHeaderConfig');
   return found[found.length - 1]!.props as { hidden: boolean; backTitle?: string; title: string };
 };
-const inScreenBack = () => screen.queryAllByRole('button', { name: /^(‹ )?(Back|Today)$/ });
+const inScreenBack = () => screen.queryAllByRole('button', { name: /^(‹ )?(Back|This week)$/ });
 
 test('Settings opens from Today, over the tabs (K-309, prototype 5.2); its way back is the system header, named for This week (ADR-070 Ek 2 #4)', async () => {
   const router = renderRouter(APP, { initialUrl: '/' });
@@ -299,7 +299,7 @@ test('Settings opens from Today, over the tabs (K-309, prototype 5.2); its way b
 
 // One back pattern for the screens pushed onto the stack: the system header with a back button naming the screen before it; no "Back" in the
 // screen. Each is opened cold from a link, so the tabs (This week) sit underneath, and each can be left.
-test.each(['/settings', '/settings-detail?part=sources', '/edit-program', '/build-program', '/import'])(
+test.each(['/settings', '/settings-detail?part=sources', '/edit-program', '/build-program', '/import', '/call', '/check-in', '/share', '/food', '/state'])(
   'a pushed screen (%s) has the system back, named for the screen before it, and none of its own',
   async (url) => {
     const router = renderRouter(APP, { initialUrl: url });

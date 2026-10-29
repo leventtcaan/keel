@@ -10,7 +10,6 @@ import { FormScroll } from '@/components/FormScroll';
 import { KeyboardFrame } from '@/components/KeyboardFrame';
 import { ModalClose } from '@/components/ModalClose';
 import { ProblemText, useProblem } from '@/components/ProblemText';
-import { ScreenTitle } from '@/components/ScreenTitle';
 import { ConsentText } from '@/consent/ConsentText';
 import { grantConsent } from '@/consent/consents';
 import { has, t } from '@/copy';
@@ -422,10 +421,9 @@ export default function MealScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
-      <ModalClose accessibilityLabel={t('meal.closeLabel')} />
+      <ModalClose title={t(original === null ? 'meal.title' : 'meal.editTitle')} accessibilityLabel={t('meal.closeLabel')} />
       <KeyboardFrame>
         <FormScroll contentContainerStyle={styles.body}>
-          <ScreenTitle>{t(original === null ? 'meal.title' : 'meal.editTitle')}</ScreenTitle>
           {consentStep}
           {originalNote}
           {entry}

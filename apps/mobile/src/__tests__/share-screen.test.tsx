@@ -218,19 +218,17 @@ test('while the sticker is being prepared the button says so in words and is bus
   expect(screen.queryByText(t('share.preparing'))).toBeNull();
 });
 
-test('the screen has a visible way out at the top, which goes back (B25)', async () => {
+test('the way out is the system header\'s back at the top (B25, ADR-070 Ek 2 #4): the screen draws none of its own', async () => {
   await show();
-  const back = screen.getByRole('button', { name: t('share.back') });
-  expect(back).toBeOnTheScreen();
-  await fireEvent.press(back);
-  expect(jest.requireMock('expo-router').router.back).toHaveBeenCalledTimes(1);
+  expect(screen.queryByRole('button', { name: /^(‹ )?(Back|This week)$/ })).toBeNull();
+  expect(jest.requireMock('expo-router').router.back).not.toHaveBeenCalled();
 });
 
-test('the way out is there before the numbers are in, and a failed one still shows it', async () => {
+test('a failed read leaves the screen without a back of its own too: the header has the way out', async () => {
   mockAnswers = {};
   mockServices.training.read.mockRejectedValueOnce(new Error('x'));
   await show();
-  expect(screen.getByRole('button', { name: t('share.back') })).toBeOnTheScreen();
+  expect(screen.queryByRole('button', { name: /^(‹ )?(Back|This week)$/ })).toBeNull();
 });
 
 test('a share that fails says so by name only, and trying again clears it', async () => {

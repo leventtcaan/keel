@@ -110,7 +110,9 @@ test('pick a lift, open a call that was not applied (read only), come back to Pr
   expect(screen.queryByRole('button', { name: t('callScreen.use') })).toBeNull();
   expect(screen.queryByRole('button', { name: t('callScreen.keep') })).toBeNull();
 
-  await act(async () => fireEvent.press(screen.getByRole('button', { name: t('callScreen.backProgress') })));
+  // The way back is the system header's (none drawn in the screen); the stack pops as the header's button would.
+  expect(screen.queryByRole('button', { name: /^(‹ )?(Back|Progress)$/ })).toBeNull();
+  await act(async () => jest.requireMock('expo-router').router.back());
   expect(mockStack).toEqual([{ pathname: '/progress' }]);
   expect(screen.queryByText(t('callScreen.notApplied'))).toBeNull();
   expect(screen.getByTestId('strength-best')).toHaveTextContent('60 kg × 10');

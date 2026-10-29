@@ -1,6 +1,6 @@
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import type Svg from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -197,11 +197,8 @@ export default function ShareScreen() {
     );
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.body}>
-        <Pressable accessibilityRole="button" accessibilityLabel={t('share.back')} onPress={() => router.back()} style={styles.back}>
-          <Text style={[styles.backText, { color: color.text }]}>{`${t('settings.backMark')} ${t('share.back')}`}</Text>
-        </Pressable>
         <ScreenTitle>{t('share.title')}</ScreenTitle>
         {facts?.waiting === true && <Text style={[styles.small, { color: color.muted }]}>{t('workoutEnd.pending')}</Text>}
         {facts?.partial === true && <Text style={[styles.small, { color: color.muted }]}>{t('share.partial')}</Text>}
@@ -230,8 +227,6 @@ const styles = StyleSheet.create({
   part: { gap: tokens.space.md, alignItems: 'stretch' },
   hidden: { height: 0, overflow: 'hidden' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm, justifyContent: 'center' },
-  back: { minHeight: tokens.size.touch, justifyContent: 'center', alignSelf: 'flex-start' },
-  backText: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },
 });

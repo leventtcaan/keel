@@ -179,18 +179,17 @@ describe('"Change it" (prototype #w1change)', () => {
     expect(screen.getByRole('button', { name: w('soundsRight') })).toBeOnTheScreen();
   });
 
-  test('the way out of the call is its back link: nothing is saved; "Keep last week\'s plan" is nowhere on the first week\'s call', async () => {
+  test('the way out of the call is the system header\'s back (none drawn here): nothing is saved; "Keep last week\'s plan" is nowhere on the first week\'s call', async () => {
     await show();
     expect(screen.queryByRole('button', { name: t('callScreen.keep') })).toBeNull();
-    await press(t('callScreen.back'));
-    expect(mockBack).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('button', { name: /^(‹ )?(Back|This week)$/ })).toBeNull();
     expect(mockPATCH).not.toHaveBeenCalled();
     // "Change it" and back to the suggestion: still no way to keep the old plan, and still nothing saved.
     await press(w('changeIt'));
     expect(screen.queryByRole('button', { name: t('callScreen.keep') })).toBeNull();
     await press(w('keepSuggestion'));
     expect(mockPATCH).not.toHaveBeenCalled();
-    expect(mockBack).toHaveBeenCalledTimes(1);
+    expect(mockBack).not.toHaveBeenCalled();
   });
 
   test('two missed days: each its own day, and no day twice', async () => {
@@ -531,11 +530,10 @@ describe('one more day (K-1012): the suggestion comes filled, like the move', ()
     expect(mockPOST).toHaveBeenCalledWith('/v1/program/days', { body: { weekday: 'FRIDAY' } });
   });
 
-  test('no "Got it" under the day: the call is left by the back link, nothing is added', async () => {
+  test('no "Got it" under the day: the call is left by the system back, nothing is added', async () => {
     await show();
     expect(screen.queryByRole('button', { name: t('callScreen.gotIt') })).toBeNull();
-    await press(t('callScreen.back'));
-    expect(mockBack).toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: /^(‹ )?(Back|This week)$/ })).toBeNull();
     expect(mockPOST).not.toHaveBeenCalled();
   });
 });

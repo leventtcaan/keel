@@ -88,28 +88,30 @@ test('what the move is, its cues as short bullets, the muscles it works as chips
   await show();
   expect(await screen.findByText(t('ownMove.equipments.MACHINE'))).toBeOnTheScreen();
   expect(screen.getByText(t('demo.kind.COMPOUND'))).toBeOnTheScreen();
-  expect(screen.getByText(t('demo.tip.fullRange'))).toBeOnTheScreen();
-  expect(screen.getByText(t('demo.tip.lastRep'))).toBeOnTheScreen();
+  // The move's OWN three cues (Evre 6 G, K-1066), none of the general ones.
+  for (const cue of ['cue1', 'cue2', 'cue3']) expect(screen.getByText(t(`exercises.leg_press.${cue}`))).toBeOnTheScreen();
+  expect(screen.queryByText(t('demo.tip.fullRange'))).toBeNull();
+  expect(screen.queryByText(t('demo.tip.lastRep'))).toBeNull();
   expect(screen.getByText(t('demo.muscle.quads'))).toBeOnTheScreen();
   expect(screen.getByText(t('demo.muscle.glutes'))).toBeOnTheScreen();
   expect(screen.queryByText(/film/i)).toBeNull();
   // Every line the screen says of the move is a few words (the setup's one note aside).
   const words = (key: string) => t(key).split(/\s+/).length;
-  expect(['demo.tip.fullRange', 'demo.tip.backRange', 'demo.tip.tempo', 'demo.tip.lastRep'].map(words).every((n) => n <= 10)).toBe(true);
+  expect(['cue1', 'cue2', 'cue3'].map((cue) => words(`exercises.leg_press.${cue}`)).every((n) => n <= 8)).toBe(true);
 });
 
 test('the way back is the system header: the screen draws no Done of its own', async () => {
   await show();
-  await screen.findByText(t('demo.tip.tempo'));
+  await screen.findByText(t('exercises.leg_press.cue1'));
   expect(screen.queryByRole('button', { name: t('history.done') })).toBeNull();
 });
 
-test('a move with nothing to set: no setup card; an isolation move: no last-rep tip', async () => {
+test("a move with nothing to set: no setup card; it says its own cues, not leg press's", async () => {
   mockParams = { exercise: 'lateral_raise' };
   await show();
-  expect(await screen.findByText(t('demo.tip.tempo'))).toBeOnTheScreen();
+  expect(await screen.findByText(t('exercises.lateral_raise.cue1'))).toBeOnTheScreen();
   expect(screen.queryByText(t('demo.setup'))).toBeNull();
-  expect(screen.queryByText(t('demo.tip.lastRep'))).toBeNull();
+  expect(screen.queryByText(t('exercises.leg_press.cue1'))).toBeNull();
 });
 
 test('a move not in the catalog on this phone says so', async () => {
@@ -175,7 +177,7 @@ test('every muscle the catalog may name has its words; the back muscles are musc
 
 test('the muscle map: front and back, the move\'s areas marked; a move with no muscles has none', async () => {
   await show();
-  await screen.findByText(t('demo.tip.tempo'));
+  await screen.findByText(t('exercises.leg_press.cue1'));
   const sides = mockBody.mock.calls.map(([props]) => props.side);
   expect(new Set(sides)).toEqual(new Set(['front', 'back']));
   // Every area of the drawing is coloured from the theme (the drawing's own grey is not): the move's in the accent.
@@ -202,7 +204,7 @@ describe('the figure follows the profile (ADR-037 › 49)', () => {
   test("the profile's sex: a female figure, every one of its areas coloured", async () => {
     mockServices.bodyFigure.mockResolvedValueOnce('female');
     await show();
-    await screen.findByText(t('demo.tip.tempo'));
+    await screen.findByText(t('exercises.leg_press.cue1'));
     await act(async () => {});
     const last = mockBody.mock.calls.at(-1)?.[0];
     expect(last?.gender).toBe('female');
@@ -212,7 +214,7 @@ describe('the figure follows the profile (ADR-037 › 49)', () => {
   test('not known (offline, never read): the figure drawn until now', async () => {
     mockServices.bodyFigure.mockRejectedValueOnce(new Error('kv'));
     await show();
-    await screen.findByText(t('demo.tip.tempo'));
+    await screen.findByText(t('exercises.leg_press.cue1'));
     await act(async () => {});
     expect(mockBody.mock.calls.at(-1)?.[0].gender).toBe('male');
   });

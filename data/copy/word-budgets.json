@@ -262,7 +262,7 @@
         "onboarding.weights.skip",
         "onboarding.continue"
       ],
-      "notFirstView": ["onboarding.weights.rowHint", "units.kgUnit", "units.lbUnit"]
+      "notFirstView": ["onboarding.weights.rowHint", "onboarding.weights.clear", "onboarding.weights.clearLabel", "units.kgUnit", "units.lbUnit"]
     },
     {
       "screen": "ob-preparing",
@@ -639,7 +639,7 @@
         { "what": "the next call's weekday (Monday)", "words": 1 }
       ],
       "uncounted": ["thisWeek.strip.letter.MONDAY", "thisWeek.strip.letter.TUESDAY", "thisWeek.strip.letter.WEDNESDAY", "thisWeek.strip.letter.THURSDAY", "thisWeek.strip.letter.FRIDAY", "thisWeek.strip.letter.SATURDAY", "thisWeek.strip.letter.SUNDAY"],
-      "notFirstView": ["today.failed", "today.retry", "thisWeek.counter.label", "thisWeek.counter.labelReached", "thisWeek.settings", "thisWeek.strip.label", "thisWeek.strip.mark", "thisWeek.hero.settingsLabel", "thisWeek.hero.openCall", "thisWeek.hero.monday.openLabel", "thisWeek.today.label", "thisWeek.today.changeLabel", "thisWeek.today.restWeek", "thisWeek.today.startLabel", "thisWeek.today.doneLabel", "thisWeek.food.allowLabel", "thisWeek.food.lineLabel", "thisWeek.food.lineLabelAround", "thisWeek.food.logLabel", "food.budget.single", "format.range", "today.state.declare", "thisWeek.hero.monday.readyNoWeek", "thisWeek.hero.monday.ready", "thisWeek.hero.monday.one", "thisWeek.hero.monday.other", "thisWeek.hero.monday.open", "thisWeek.hero.monday.yourCall", "openElsewhere.continue", "openElsewhere.continueLabel", "openElsewhere.later", "openElsewhere.laterLabel", "openElsewhere.laterSaid", "openElsewhere.discard", "openElsewhere.discardLabel", "openElsewhere.discarded", "openElsewhere.discardOffline", "openElsewhere.offline", "openElsewhere.failed", "openElsewhere.closed", "openElsewhere.gone", "workout.ending.discardAsk", "workout.ending.discardNote", "workout.ending.confirm", "workout.ending.keep", "workout.ending.failed"],
+      "notFirstView": ["today.failed", "today.retry", "thisWeek.counter.label", "thisWeek.counter.labelReached", "thisWeek.settings", "thisWeek.strip.label", "thisWeek.strip.mark", "thisWeek.hero.settingsLabel", "thisWeek.hero.openCall", "thisWeek.hero.monday.openLabel", "thisWeek.today.label", "thisWeek.today.changeLabel", "thisWeek.today.restWeek", "thisWeek.today.startLabel", "thisWeek.today.doneLabel", "thisWeek.food.allowLabel", "thisWeek.food.lineLabel", "thisWeek.food.lineLabelAround", "thisWeek.food.logLabel", "thisWeek.food.range", "thisWeek.food.showRange", "thisWeek.food.hideRange", "food.budget.single", "format.range", "today.state.declare", "thisWeek.hero.monday.readyNoWeek", "thisWeek.hero.monday.ready", "thisWeek.hero.monday.one", "thisWeek.hero.monday.other", "thisWeek.hero.monday.open", "thisWeek.hero.monday.yourCall", "openElsewhere.continue", "openElsewhere.continueLabel", "openElsewhere.later", "openElsewhere.laterLabel", "openElsewhere.laterSaid", "openElsewhere.discard", "openElsewhere.discardLabel", "openElsewhere.discarded", "openElsewhere.discardOffline", "openElsewhere.offline", "openElsewhere.failed", "openElsewhere.closed", "openElsewhere.gone", "workout.ending.discardAsk", "workout.ending.discardNote", "workout.ending.confirm", "workout.ending.keep", "workout.ending.failed"],
       "parts": ["src/today/Hero.tsx", "src/today/WeighInCounter.tsx", "src/today/WeekStrip.tsx", "src/today/TodayCard.tsx", "src/today/FoodLine.tsx", "src/today/StateCard.tsx", "src/train/OpenElsewhere.tsx"],
       "faces": [
         {
@@ -937,7 +937,7 @@
         "thisWeek.food.log"
       ],
       "uncounted": ["thisWeek.strip.letter.MONDAY", "thisWeek.strip.letter.TUESDAY", "thisWeek.strip.letter.WEDNESDAY", "thisWeek.strip.letter.THURSDAY", "thisWeek.strip.letter.FRIDAY", "thisWeek.strip.letter.SATURDAY", "thisWeek.strip.letter.SUNDAY"],
-      "notFirstView": ["today.failed", "today.retry", "thisWeek.counter.title", "thisWeek.counter.of", "thisWeek.counter.weighIn", "thisWeek.counter.shortFoot", "thisWeek.counter.label", "thisWeek.counter.labelReached", "thisWeek.settings", "thisWeek.strip.label", "thisWeek.strip.mark", "thisWeek.hero.settingsLabel", "thisWeek.hero.openCall", "thisWeek.hero.monday.openLabel", "thisWeek.today.label", "thisWeek.today.changeLabel", "thisWeek.today.startLabel", "thisWeek.today.doneLabel", "thisWeek.food.allowLabel", "thisWeek.food.lineLabel", "thisWeek.food.lineLabelAround", "thisWeek.food.logLabel", "food.budget.single", "format.range", "today.state.declare", "thisWeek.food.allow", "thisWeek.food.locked", "thisWeek.hero.callsOff", "thisWeek.hero.firstCall", "thisWeek.hero.firstWeek", "thisWeek.hero.inDays", "thisWeek.hero.nextCall", "thisWeek.hero.notApplied", "thisWeek.hero.notAppliedShort", "thisWeek.hero.pending", "thisWeek.hero.settings", "thisWeek.hero.start", "thisWeek.hero.today", "thisWeek.hero.tomorrow", "thisWeek.hero.train", "thisWeek.hero.useCall", "thisWeek.hero.weighIn", "thisWeek.hero.yourWeek", "thisWeek.today.continue", "thisWeek.today.done", "thisWeek.today.doneStats.one", "thisWeek.today.doneStats.other", "thisWeek.today.full", "thisWeek.today.movedTo", "thisWeek.today.open", "thisWeek.today.openElsewhere", "thisWeek.today.openSets.none", "thisWeek.today.openSets.one", "thisWeek.today.openSets.other", "thisWeek.today.rest", "thisWeek.today.restWeek", "thisWeek.today.next", "thisWeek.today.skipped", "thisWeek.today.skippedNoDay", "thisWeek.today.undo", "today.state.back", "today.state.paused"],
+      "notFirstView": ["today.failed", "today.retry", "thisWeek.counter.title", "thisWeek.counter.of", "thisWeek.counter.weighIn", "thisWeek.counter.shortFoot", "thisWeek.counter.label", "thisWeek.counter.labelReached", "thisWeek.settings", "thisWeek.strip.label", "thisWeek.strip.mark", "thisWeek.hero.settingsLabel", "thisWeek.hero.openCall", "thisWeek.hero.monday.openLabel", "thisWeek.today.label", "thisWeek.today.changeLabel", "thisWeek.today.startLabel", "thisWeek.today.doneLabel", "thisWeek.food.allowLabel", "thisWeek.food.lineLabel", "thisWeek.food.lineLabelAround", "thisWeek.food.logLabel", "thisWeek.food.range", "thisWeek.food.showRange", "thisWeek.food.hideRange", "food.budget.single", "format.range", "today.state.declare", "thisWeek.food.allow", "thisWeek.food.locked", "thisWeek.hero.callsOff", "thisWeek.hero.firstCall", "thisWeek.hero.firstWeek", "thisWeek.hero.inDays", "thisWeek.hero.nextCall", "thisWeek.hero.notApplied", "thisWeek.hero.notAppliedShort", "thisWeek.hero.pending", "thisWeek.hero.settings", "thisWeek.hero.start", "thisWeek.hero.today", "thisWeek.hero.tomorrow", "thisWeek.hero.train", "thisWeek.hero.useCall", "thisWeek.hero.weighIn", "thisWeek.hero.yourWeek", "thisWeek.today.continue", "thisWeek.today.done", "thisWeek.today.doneStats.one", "thisWeek.today.doneStats.other", "thisWeek.today.full", "thisWeek.today.movedTo", "thisWeek.today.open", "thisWeek.today.openElsewhere", "thisWeek.today.openSets.none", "thisWeek.today.openSets.one", "thisWeek.today.openSets.other", "thisWeek.today.rest", "thisWeek.today.restWeek", "thisWeek.today.next", "thisWeek.today.skipped", "thisWeek.today.skippedNoDay", "thisWeek.today.undo", "today.state.back", "today.state.paused"],
       "parts": ["src/today/Hero.tsx", "src/today/WeighInCounter.tsx", "src/today/WeekStrip.tsx", "src/today/TodayCard.tsx", "src/today/FoodLine.tsx", "src/today/StateCard.tsx"],
       "faces": []
     },
@@ -1493,7 +1493,6 @@
       ],
       "notFirstView": [
         "settings.backMark",
-        "checkIn.screen.back",
         "checkIn.screen.none",
         "checkIn.screen.answered",
         "checkIn.screen.sendFailed",
@@ -1542,7 +1541,6 @@
       "note": "The budget stays 45, the prototype's target. The kind of source of a reason (EXPERIENCE, LITERATURE, PRODUCT) is a symbol on the screen with its full words as the VoiceOver label (today.call.source.<tag>), so it is not a line of words and U14 stays said for everyone; with no sentence to read (the safety call) the words themselves show, and are counted in that face. The back label is counted. Reason lines that ran over were shortened (decision.ruleShort.cut_step, adherence_low), not the budget raised.",
       "file": "src/app/call.tsx",
       "keys": [
-        ["callScreen.back", "callScreen.backProgress"],
         "callScreen.inPlan",
         "decision.adjust_calories.label",
         "decision.adjust_calories.not_toward_goal.title",
@@ -1586,7 +1584,6 @@
         {
           "face": "kept off the plan",
           "keys": [
-            ["callScreen.back", "callScreen.backProgress"],
             "callScreen.notApplied",
             "decision.adjust_calories.label",
             "decision.adjust_calories.not_toward_goal.title",
@@ -1606,7 +1603,6 @@
         {
           "face": "the call that closes the first week",
           "keys": [
-            ["callScreen.back", "callScreen.backProgress"],
             "decision.continue.label",
             "decision.continue.first_week_on_track.title",
             "decision.ruleShort.first_week_on_track",
@@ -1621,7 +1617,6 @@
         {
           "face": "a hold of the load on a move",
           "keys": [
-            ["callScreen.back", "callScreen.backProgress"],
             "decision.stop_load_increase.label",
             "decision.stop_load_increase.plateau.title",
             "callScreen.inPlan",
@@ -1644,7 +1639,6 @@
         {
           "face": "the safety call",
           "keys": [
-            ["callScreen.back", "callScreen.backProgress"],
             "decision.change_phase.label",
             "decision.change_phase.low_energy_safety.title",
             "callScreen.inPlan",
@@ -1662,7 +1656,6 @@
         {
           "face": "wait for weigh-ins",
           "keys": [
-            ["callScreen.back", "callScreen.backProgress"],
             "decision.no_decision_yet.label",
             "decision.no_decision_yet.data_insufficient.title",
             "decision.ruleShort.data_insufficient",
@@ -1879,7 +1872,6 @@
       "note": "The five tiles carry their label only (the earlier line under each state left the first view to stay in the prototype's budget). The consent step, shown for Sick and In pain without the health data consent, is its own view and not the first.",
       "file": "src/app/state.tsx",
       "keys": [
-        "state.screen.back",
         "state.screen.title",
         "state.screen.intro",
         "state.tile.traveling",

@@ -193,10 +193,10 @@ test("today's food: the title, the day's budget and the way to log a meal into t
   expect(jest.mocked(router.push)).toHaveBeenCalledWith({ pathname: '/meal', params: { day: '2026-09-29' } });
 });
 
-test('a way back, as on the other screens opened from a screen', async () => {
+test('the way back is the system header\'s, as on the other screens opened from a screen: the screen draws no Back of its own', async () => {
   await show();
-  await act(async () => fireEvent.press(screen.getByRole('button', { name: t('food.back') })));
-  expect(jest.mocked(router.back)).toHaveBeenCalledTimes(1);
+  expect(screen.queryByRole('button', { name: /^(‹ )?(Back|This week)$/ })).toBeNull();
+  expect(jest.mocked(router.back)).not.toHaveBeenCalled();
 });
 
 test('the AI is off on this surface (ADR-069 #3, K-909): no coach bar, no meal from a photo, no recipes; each led to a retired screen', async () => {

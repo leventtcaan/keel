@@ -124,7 +124,6 @@
       "untilBack": "Until I'm back",
       "forDays": "{days} days",
       "pause": "Pause my week",
-      "back": "Today",
       "noConnection": "Couldn't send this. Check your connection and try again.",
       "refused": "Something went wrong on our side. Try again in a moment."
     },
@@ -304,6 +303,9 @@
       "log": "Log",
       "lineLabel": "Today's food. {lead} {amount}",
       "lineLabelAround": "Today's food. {lead}",
+      "showRange": "Show the range",
+      "hideRange": "Hide the range",
+      "range": "Range {range}",
       "logLabel": "Log a meal",
       "locked": "Needs your OK for health data",
       "allow": "Settings",
@@ -311,8 +313,6 @@
     }
   },
   "callScreen": {
-    "back": "This week",
-    "backProgress": "Progress",
     "inPlan": "In this week's plan",
     "applied": "Applied",
     "subscription": "Your weekly call comes with a subscription.",
@@ -1140,7 +1140,6 @@
       "log": "Log {name}"
     },
     "log": "Log a meal",
-    "back": "Back",
     "photo": "Log from a photo",
     "recipes": "Your recipes",
     "budget": {
@@ -1439,7 +1438,6 @@
     "photoFailed": "That photo couldn't be opened. Try another.",
     "share": "Share",
     "preparing": "Getting your sticker ready",
-    "back": "Back",
     "note": "Made on this phone. No body weight. Your photo stays yours. Save, TikTok and more are in the share sheet.",
     "nothing": "Nothing to share yet. A workout, a week on track or a stronger lift gives you a sticker.",
     "failed": "Couldn't make the sticker. Try again.",
@@ -2092,163 +2090,283 @@
   "exercises": {
     "bench_press": {
       "name": "Bench press",
-      "aliases": "Barbell bench press, Flat bench"
+      "aliases": "Barbell bench press, Flat bench",
+      "cue1": "Shoulder blades back and down.",
+      "cue2": "Lower to mid-chest, elbows tucked.",
+      "cue3": "Press up, feet planted."
     },
     "dumbbell_bench_press": {
       "name": "Dumbbell bench press",
-      "aliases": "DB bench press, Flat dumbbell press"
+      "aliases": "DB bench press, Flat dumbbell press",
+      "cue1": "Shoulder blades back, feet planted.",
+      "cue2": "Lower until elbows pass the bench.",
+      "cue3": "Press up and slightly in."
     },
     "incline_dumbbell_press": {
       "name": "Incline dumbbell press",
-      "aliases": "Incline DB press"
+      "aliases": "Incline DB press",
+      "cue1": "Set the bench to a low incline.",
+      "cue2": "Lower to upper chest, elbows angled.",
+      "cue3": "Press up without shrugging."
     },
     "machine_chest_press": {
       "name": "Machine chest press",
-      "aliases": "Chest press, Seated chest press"
+      "aliases": "Chest press, Seated chest press",
+      "cue1": "Seat so handles meet mid-chest.",
+      "cue2": "Back flat against the pad.",
+      "cue3": "Press out, don't lock hard."
     },
     "cable_fly": {
       "name": "Cable fly",
-      "aliases": "Cable crossover, Cable chest fly"
+      "aliases": "Cable crossover, Cable chest fly",
+      "cue1": "Soft bend in the elbows.",
+      "cue2": "Hug forward in a wide arc.",
+      "cue3": "Control the stretch on the way back."
     },
     "pec_deck": {
       "name": "Pec deck",
-      "aliases": "Machine fly, Butterfly"
+      "aliases": "Machine fly, Butterfly",
+      "cue1": "Seat so arms are chest height.",
+      "cue2": "Chest up, shoulders down.",
+      "cue3": "Squeeze in front, return slowly."
     },
     "dip": {
       "name": "Dip",
-      "aliases": "Chest dip, Parallel bar dip"
+      "aliases": "Chest dip, Parallel bar dip",
+      "cue1": "Lean slightly forward, chest up.",
+      "cue2": "Lower until shoulders reach elbow height.",
+      "cue3": "Press up without shrugging."
     },
     "push_up": {
       "name": "Push-up",
-      "aliases": "Press-up"
+      "aliases": "Press-up",
+      "cue1": "Hands under shoulders, body in a line.",
+      "cue2": "Lower chest to just above the floor.",
+      "cue3": "Elbows about 45 degrees from your sides."
     },
     "overhead_press": {
       "name": "Overhead press",
-      "aliases": "Military press, Standing barbell press, OHP"
+      "aliases": "Military press, Standing barbell press, OHP",
+      "cue1": "Squeeze glutes, ribs down.",
+      "cue2": "Press straight up, head moves through.",
+      "cue3": "Stop short of locking out hard."
     },
     "dumbbell_shoulder_press": {
       "name": "Dumbbell shoulder press",
-      "aliases": "Seated DB press"
+      "aliases": "Seated DB press",
+      "cue1": "Back against the pad, ribs down.",
+      "cue2": "Start with elbows just below shoulders.",
+      "cue3": "Press up, stop short of lockout."
     },
     "lateral_raise": {
       "name": "Lateral raise",
-      "aliases": "Dumbbell lateral raise, Side raise"
+      "aliases": "Dumbbell lateral raise, Side raise",
+      "cue1": "Slight bend in the elbows.",
+      "cue2": "Lift out to shoulder height.",
+      "cue3": "Lower slowly, no swinging."
     },
     "cable_lateral_raise": {
       "name": "Cable lateral raise",
-      "aliases": "Single-arm cable raise"
+      "aliases": "Single-arm cable raise",
+      "cue1": "Stand tall, slight elbow bend.",
+      "cue2": "Lift out to shoulder height.",
+      "cue3": "Lower slowly, keep the tension."
     },
     "rear_delt_fly": {
       "name": "Rear delt fly",
-      "aliases": "Reverse fly, Bent-over reverse fly"
+      "aliases": "Reverse fly, Bent-over reverse fly",
+      "cue1": "Hinge forward, back flat.",
+      "cue2": "Lift arms out wide, elbows soft.",
+      "cue3": "Squeeze shoulder blades, lower slowly."
     },
     "face_pull": {
       "name": "Face pull",
-      "aliases": "Cable face pull, Rope face pull"
+      "aliases": "Cable face pull, Rope face pull",
+      "cue1": "Set the rope at face height.",
+      "cue2": "Pull toward your eyes, elbows high.",
+      "cue3": "Squeeze, then return slowly."
     },
     "lat_pulldown": {
       "name": "Lat pulldown",
-      "aliases": "Pulldown, Cable pulldown"
+      "aliases": "Pulldown, Cable pulldown",
+      "cue1": "Chest up, lean back slightly.",
+      "cue2": "Pull the bar to upper chest.",
+      "cue3": "Let the bar rise with control."
     },
     "pull_up": {
       "name": "Pull-up",
-      "aliases": "Chin-up bar pull-up, Weighted pull-up"
+      "aliases": "Chin-up bar pull-up, Weighted pull-up",
+      "cue1": "Start from a full hang.",
+      "cue2": "Pull until your chin clears the bar.",
+      "cue3": "Lower all the way down slowly."
     },
     "seated_row": {
       "name": "Seated row",
-      "aliases": "Seated cable row, Cable row"
+      "aliases": "Seated cable row, Cable row",
+      "cue1": "Sit tall, chest up.",
+      "cue2": "Pull elbows back toward your hips.",
+      "cue3": "Return slowly, no rocking."
     },
     "barbell_row": {
       "name": "Barbell row",
-      "aliases": "Bent-over row, BB row"
+      "aliases": "Bent-over row, BB row",
+      "cue1": "Hinge at the hips, back flat.",
+      "cue2": "Pull the bar to your lower ribs.",
+      "cue3": "Lower with control, torso still."
     },
     "t_bar_row": {
       "name": "T-bar row",
-      "aliases": "Landmine row"
+      "aliases": "Landmine row",
+      "cue1": "Hinge at the hips, back flat.",
+      "cue2": "Pull the handle toward your chest.",
+      "cue3": "Squeeze your back, lower with control."
     },
     "chest_supported_row": {
       "name": "Chest-supported row",
-      "aliases": "Machine row, Chest-supported machine row"
+      "aliases": "Machine row, Chest-supported machine row",
+      "cue1": "Chest firmly on the pad.",
+      "cue2": "Pull elbows back past your torso.",
+      "cue3": "Lower slowly to a full stretch."
     },
     "one_arm_dumbbell_row": {
       "name": "One-arm dumbbell row",
-      "aliases": "Single-arm DB row, Dumbbell row"
+      "aliases": "Single-arm DB row, Dumbbell row",
+      "cue1": "Hand on the bench, back flat.",
+      "cue2": "Pull the dumbbell toward your hip.",
+      "cue3": "Lower slowly, keep hips square."
     },
     "barbell_curl": {
       "name": "Barbell curl",
-      "aliases": "BB curl, Straight bar curl"
+      "aliases": "BB curl, Straight bar curl",
+      "cue1": "Elbows pinned to your sides.",
+      "cue2": "Curl up without swinging.",
+      "cue3": "Lower slowly to full stretch."
     },
     "dumbbell_curl": {
       "name": "Dumbbell curl",
-      "aliases": "DB curl, Alternating curl"
+      "aliases": "DB curl, Alternating curl",
+      "cue1": "Elbows pinned to your sides.",
+      "cue2": "Curl up, turn palms to the ceiling.",
+      "cue3": "Lower slowly, no swinging."
     },
     "hammer_curl": {
       "name": "Hammer curl",
-      "aliases": "Neutral-grip curl"
+      "aliases": "Neutral-grip curl",
+      "cue1": "Palms face each other throughout.",
+      "cue2": "Elbows pinned to your sides.",
+      "cue3": "Lower slowly, no swinging."
     },
     "reverse_curl": {
       "name": "Reverse curl",
-      "aliases": "Reverse barbell curl, Overhand curl"
+      "aliases": "Reverse barbell curl, Overhand curl",
+      "cue1": "Overhand grip, wrists straight.",
+      "cue2": "Elbows pinned to your sides.",
+      "cue3": "Use a lighter weight, move slowly."
     },
     "triceps_pushdown": {
       "name": "Triceps pushdown",
-      "aliases": "Cable pushdown, Rope pushdown"
+      "aliases": "Cable pushdown, Rope pushdown",
+      "cue1": "Elbows pinned to your sides.",
+      "cue2": "Press down until arms are straight.",
+      "cue3": "Let the handle rise slowly."
     },
     "overhead_triceps_extension": {
       "name": "Overhead triceps extension",
-      "aliases": "Cable overhead extension, French press"
+      "aliases": "Cable overhead extension, French press",
+      "cue1": "Elbows forward, close to your head.",
+      "cue2": "Lower behind your head with control.",
+      "cue3": "Extend fully without arching your back."
     },
     "squat": {
       "name": "Squat",
-      "aliases": "Back squat, Barbell squat"
+      "aliases": "Back squat, Barbell squat",
+      "cue1": "Feet shoulder-width, toes slightly out.",
+      "cue2": "Brace your core, chest up.",
+      "cue3": "Knees track over your toes."
     },
     "hack_squat": {
       "name": "Hack squat",
-      "aliases": "Machine hack squat"
+      "aliases": "Machine hack squat",
+      "cue1": "Back flat against the pad.",
+      "cue2": "Feet shoulder-width, mid-platform.",
+      "cue3": "Knees track over your toes."
     },
     "leg_press": {
       "name": "Leg press",
-      "aliases": "45-degree leg press, Sled press"
+      "aliases": "45-degree leg press, Sled press",
+      "cue1": "Feet shoulder-width, mid-platform.",
+      "cue2": "Knees track over toes.",
+      "cue3": "Stop short of locking out."
     },
     "bulgarian_split_squat": {
       "name": "Bulgarian split squat",
-      "aliases": "Rear-foot elevated split squat, BSS"
+      "aliases": "Rear-foot elevated split squat, BSS",
+      "cue1": "Back foot on the bench behind you.",
+      "cue2": "Lower straight down, torso upright.",
+      "cue3": "Front knee tracks over your toes."
     },
     "romanian_deadlift": {
       "name": "Romanian deadlift",
-      "aliases": "RDL, Stiff-leg deadlift"
+      "aliases": "RDL, Stiff-leg deadlift",
+      "cue1": "Soft knees, hips push back.",
+      "cue2": "Bar slides close along your legs.",
+      "cue3": "Stop when hamstrings stretch."
     },
     "lying_leg_curl": {
       "name": "Lying leg curl",
-      "aliases": "Leg curl, Prone leg curl"
+      "aliases": "Leg curl, Prone leg curl",
+      "cue1": "Hips stay down on the pad.",
+      "cue2": "Curl heels toward your glutes.",
+      "cue3": "Lower slowly to a full stretch."
     },
     "leg_extension": {
       "name": "Leg extension",
-      "aliases": "Quad extension"
+      "aliases": "Quad extension",
+      "cue1": "Pad sits just above your ankles.",
+      "cue2": "Extend until your legs are straight.",
+      "cue3": "Lower slowly, no swinging."
     },
     "hip_thrust": {
       "name": "Hip thrust",
-      "aliases": "Barbell hip thrust"
+      "aliases": "Barbell hip thrust",
+      "cue1": "Upper back on the bench.",
+      "cue2": "Drive through your heels.",
+      "cue3": "Squeeze glutes at the top, ribs down."
     },
     "standing_calf_raise": {
       "name": "Standing calf raise",
-      "aliases": "Calf raise, Machine calf raise"
+      "aliases": "Calf raise, Machine calf raise",
+      "cue1": "Rise as high as you can.",
+      "cue2": "Pause briefly at the top.",
+      "cue3": "Lower to a full stretch."
     },
     "seated_calf_raise": {
       "name": "Seated calf raise",
-      "aliases": "Seated calf machine"
+      "aliases": "Seated calf machine",
+      "cue1": "Pad sits just above your knees.",
+      "cue2": "Rise as high as you can.",
+      "cue3": "Lower to a full stretch."
     },
     "close_grip_lat_pulldown": {
       "name": "Close-grip lat pulldown",
-      "aliases": "Narrow-grip pulldown, V-bar pulldown"
+      "aliases": "Narrow-grip pulldown, V-bar pulldown",
+      "cue1": "Chest up, lean back slightly.",
+      "cue2": "Pull the handle to upper chest.",
+      "cue3": "Let the handle rise with control."
     },
     "reverse_pec_deck": {
       "name": "Reverse pec deck",
-      "aliases": "Rear delt machine, Reverse machine fly"
+      "aliases": "Rear delt machine, Reverse machine fly",
+      "cue1": "Chest against the pad.",
+      "cue2": "Sweep arms back, elbows soft.",
+      "cue3": "Squeeze shoulder blades, return slowly."
     },
     "seated_leg_curl": {
       "name": "Seated leg curl",
-      "aliases": "Seated hamstring curl"
+      "aliases": "Seated hamstring curl",
+      "cue1": "Pad sits just above your heels.",
+      "cue2": "Curl heels under the seat.",
+      "cue3": "Return slowly, hips stay down."
     }
   },
   "exerciseSetup": {
@@ -2383,7 +2501,6 @@
       "moved": "Your check-in week has changed. Here it is again.",
       "failed": "Couldn't load this week's check-in. Check your connection.",
       "retry": "Try again",
-      "back": "Today",
       "scaleSpoken": "{n} of 10",
       "centimetres": "Centimetres",
       "inches": "Inches"
@@ -2758,6 +2875,8 @@
       "title": "Your working weights",
       "why": "A weight you lift about {reps} times. Skip any.",
       "unset": "Not set",
+      "clear": "Clear",
+      "clearLabel": "Clear {name}, back to Not set",
       "tap": "Tap a lift, flick to your number. Your first session checks it.",
       "rowHint": "Opens a wheel of weights.",
       "skip": "Skip, find them in session 1"

@@ -98,15 +98,10 @@ export default function StateScreen() {
     });
 
   const said = problem === null ? null : <ProblemText style={[styles.text, { color: color.text }]}>{t(problem)}</ProblemText>;
-  const back = (
-    <Pressable accessibilityRole="button" accessibilityLabel={t('state.screen.back')} onPress={() => router.back()} hitSlop={tokens.space.md}>
-      <Text style={[styles.back, { color: color.text }]}>{`${t('settings.backMark')} ${t('state.screen.back')}`}</Text>
-    </Pressable>
-  );
 
   if (step === 'consent') {
     return (
-      <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
+      <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.body}>
           <Text accessibilityRole="header" style={[styles.heading, { color: color.text }]}>
             {t('consent.health_data.title')}
@@ -132,9 +127,8 @@ export default function StateScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.body}>
-        {back}
         <ScreenTitle>{t('state.screen.title')}</ScreenTitle>
         <Text style={[styles.text, { color: color.textSecondary }]}>{t('state.screen.intro')}</Text>
         <View style={styles.tiles}>
@@ -191,5 +185,4 @@ const styles = StyleSheet.create({
   tileLabel: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm },
   footer: { paddingHorizontal: tokens.space.lg, paddingBottom: tokens.space.lg, gap: tokens.space.sm },
-  back: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
 });

@@ -1169,6 +1169,28 @@ describe('#ob-weights: the starting weights (ADR-072 #3, #5)', () => {
     ]);
   });
 
+  test('a lift set by mistake goes back to "Not set" with Clear; nothing is sent for it, and Continue waits again', async () => {
+    await walkTo('activity', { experience: 'Y3_PLUS' });
+    await choose(t('onboarding.activity.ACTIVE'));
+    const squat = name('squat');
+    // Not set: nothing to clear.
+    await fireEvent.press(screen.getByRole('button', { name: new RegExp(`^${squat}, `) }));
+    await settle();
+    expect(screen.queryByRole('button', { name: t('onboarding.weights.clearLabel', { name: squat }) })).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: new RegExp(`^${squat}, `) }));
+    await settle();
+    await pickLoad('squat', 3);
+    expect(screen.getByLabelText(`${squat}, ${KG(S.start_kg + 3 * S.step_kg)}`)).toBeOnTheScreen();
+    expect(continueButton()).toBeEnabled();
+    await press(t('onboarding.weights.clearLabel', { name: squat }));
+    expect(screen.getByLabelText(`${squat}, ${t('onboarding.weights.unset')}`)).toBeOnTheScreen();
+    expect(continueButton()).toBeDisabled();
+    // The others are as they were.
+    await pickLoad('bench_press');
+    await press(t('onboarding.continue'));
+    expect(startingWeightsSent()).toEqual([['/v1/program/starting-weights', { body: { weights: [{ exerciseId: 'bench_press', kg: S.start_kg }] } }]]);
+  });
+
   test('"Skip" goes on with none: no weight is sent, even one set before', async () => {
     const router = await walkTo('activity', { experience: 'UNDER_1Y' });
     await choose(t('onboarding.activity.ACTIVE'));

@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { components } from '@/api/schema';
@@ -188,11 +188,8 @@ export default function FoodScreen() {
     );
 
   return (
-    <SafeAreaView testID="screen" style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
+    <SafeAreaView testID="screen" style={[styles.safe, { backgroundColor: color.background }]} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.body}>
-        <Pressable accessibilityRole="button" onPress={() => router.back()} hitSlop={tokens.space.md}>
-          <Text style={[styles.text, { color: color.text }]}>{t('food.back')}</Text>
-        </Pressable>
         <ScreenTitle>{t('screens.food.title')}</ScreenTitle>
         <DayStrip day={day} today={today} logged={data?.loggedDays ?? new Set<string>()} onChange={(next) => setSelected(next === today ? null : next)} />
         {retry}
