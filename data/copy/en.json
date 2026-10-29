@@ -2560,6 +2560,7 @@
     "plan": {
       "title": "Your plan",
       "reflectLabel": "Built from your answers",
+      "callTitle": "Your starting call",
       "goal": "Goal: {goal}",
       "goalName": {
         "LOSE_FAT": "Lose fat",
@@ -2579,8 +2580,12 @@
       "food": "Food to start",
       "foodKcal": "{kcal} kcal a day",
       "foodNote": "Your scale corrects it in {days} days.",
+      "protein": "Protein",
+      "proteinG": "{grams} g a day",
       "firstCall": "First call",
       "inDays": "in {count} days",
+      "callNote": "{when}, then every {day}",
+      "more": "and {count} more",
       "tomorrow": "tomorrow",
       "remind": "Tell me {day} morning",
       "finishFailed": "Couldn't finish on this phone. Try again."

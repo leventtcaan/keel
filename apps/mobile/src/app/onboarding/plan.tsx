@@ -13,6 +13,7 @@ import { MondayReminder } from '@/onboarding/MondayReminder';
 import { useDraft } from '@/onboarding/OnboardingContext';
 import { sendPlanSeen } from '@/onboarding/planSeen';
 import { daysTo, firstWorkout } from '@/onboarding/prepare';
+import { StartingCall, type StartingCallRow } from '@/onboarding/StartingCall';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
@@ -27,6 +28,9 @@ type Schemas = components['schemas'];
 // "2,450": a whole number of kcal as the app writes it, in English like every word of the app.
 const KCAL = new Intl.NumberFormat('en-US');
 
+/** The first workout shows this many moves; the rest are counted ("and 6 more"), not listed (K-1058). */
+const FIRST_MOVES = 3;
+
 const WEEK: Schemas['Weekday'][] = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
 /** "Mon, Wed, Fri": the training days in the week's order. */
 const daysWords = (days: Schemas['Weekday'][]) =>
@@ -34,11 +38,13 @@ const daysWords = (days: Schemas['Weekday'][]) =>
 
 /**
  * #ob-plan (ADR-072 #6): the starting call in U3's parts, from the server's answers (#ob-preparing). The reason: the
- * answers reflected (goal, days, which days). The action: the first workout — each move's image, sets × range and, where
- * known, its weight, else "Session 1 finds your weights" — and the cardio as the program sets it (ADR-074: a dose, never
- * a measured burn) and, when the server has one, where the calories start (K-989: one number, and the days the scale
- * corrects it in; no row without the consent or a weigh-in). The date: the server's first call (K-990) and the days to it, only with the health data consent (without it there
- * are no calls). The Monday morning reminder is offered here (K-434's place). Continue ends onboarding: the paywall, or
+ * answers reflected (goal, days, which days). The news first (K-1058, prototype section 11 frame 6): the starting call in one
+ * dark card — where the calories start (K-989: one number, and the days the scale corrects it in), the protein (the server's
+ * figure for the day) and the server's first call (K-990), its day and the days to it, then every check-in day; none of it
+ * without the health data consent (there are no calls), nor the food without a weigh-in. Then the action: the first workout
+ * cut to its first three moves — each move's image, sets × range and, where known, its weight; "and N more", and "Session 1
+ * finds your weights" when none is known — and the cardio as the program sets it (ADR-074: a dose, never a measured burn).
+ * The Monday morning reminder is offered here (K-434's place). Continue ends onboarding: the paywall, or
  * the tabs. No way back: the answers are saved.
  */
 export default function PlanScreen() {
@@ -129,6 +135,29 @@ export default function PlanScreen() {
   const cardio = program.cardio;
   const afterLift = cardio?.sessions.every((session) => session.place === 'AFTER_LIFT') ?? true;
   const when = workout.inDays === 0 ? t('onboarding.plan.today') : workout.day.weekday === undefined ? null : t(`onboarding.schedule.dayName.${workout.day.weekday}`);
+  // The workout is cut to its first moves; the rest are counted, not listed.
+  const leading = workout.day.exercises.slice(0, FIRST_MOVES);
+  const hidden = workout.day.exercises.length - leading.length;
+
+  // The starting call (K-1058): the food and the protein (the server's starting target), the first call and the days to it.
+  const callRows: StartingCallRow[] = [];
+  if (starting !== null) {
+    callRows.push({
+      label: t('onboarding.plan.food'),
+      value: t('onboarding.plan.foodKcal', { kcal: KCAL.format(starting.targetKcal) }),
+      // The days the scale watches it before a calorie call: the engine's, by sex (never written here, ADR-072 Ek 1).
+      note: t('onboarding.plan.foodNote', { days: starting.observationDays }),
+    });
+    callRows.push({ label: t('onboarding.plan.protein'), value: t('onboarding.plan.proteinG', { grams: starting.proteinG }) });
+  }
+  if (call !== null) {
+    const soon = call.inDays <= 0 ? t('onboarding.plan.today') : call.inDays === 1 ? t('onboarding.plan.tomorrow') : t('onboarding.plan.inDays', { count: call.inDays });
+    callRows.push({
+      label: t('onboarding.plan.firstCall'),
+      value: weekdayDate(call.day),
+      note: t('onboarding.plan.callNote', { when: soon, day: t(`onboarding.schedule.dayName.${schedule.checkInDay}`) }),
+    });
+  }
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
@@ -147,15 +176,14 @@ export default function PlanScreen() {
           ))}
         </View>
 
+        <StartingCall rows={callRows} />
+
         <View style={[styles.card, { backgroundColor: color.decisionBackground }]} accessibilityLabel={t('onboarding.plan.workoutLabel')}>
           {when !== null && (
             <Text style={[styles.small, { color: color.decisionMuted }]}>{t('onboarding.plan.firstWorkout', { day: when })}</Text>
           )}
           <Text style={[styles.dayName, { color: color.decisionText }]}>{dayName(workout.day)}</Text>
-          {!known && (
-            <Text style={[styles.tag, { color: color.onAccentInk, backgroundColor: color.accentInk }]}>{t('onboarding.plan.findsWeights')}</Text>
-          )}
-          {workout.day.exercises.map((move) => (
+          {leading.map((move) => (
             <View key={move.exerciseId} style={styles.move}>
               <MoveThumb equipment={moves.get(move.exerciseId)?.equipment} />
               <View style={styles.moveText}>
@@ -169,6 +197,14 @@ export default function PlanScreen() {
               )}
             </View>
           ))}
+          {(hidden > 0 || !known) && (
+            <View style={styles.rest}>
+              {hidden > 0 && <Text style={[styles.small, { color: color.decisionMuted }]}>{t('onboarding.plan.more', { count: hidden })}</Text>}
+              {!known && (
+                <Text style={[styles.tag, { color: color.onAccentInk, backgroundColor: color.accentInk }]}>{t('onboarding.plan.findsWeights')}</Text>
+              )}
+            </View>
+          )}
         </View>
 
         {cardio !== undefined &&
@@ -177,19 +213,6 @@ export default function PlanScreen() {
             t('onboarding.plan.cardio'),
             t('onboarding.plan.cardioDose', { sessions: cardio.sessionsPerWeek, minutes: cardio.minutes }),
             t(afterLift ? 'onboarding.plan.cardioAfter' : 'onboarding.plan.cardioMixed'),
-          )}
-        {starting !== null &&
-          row(
-            t('onboarding.plan.food'),
-            t('onboarding.plan.foodKcal', { kcal: KCAL.format(starting.targetKcal) }),
-            // The days the scale watches it before a calorie call: the engine's, by sex (never written here, ADR-072 Ek 1).
-            t('onboarding.plan.foodNote', { days: starting.observationDays }),
-          )}
-        {call !== null &&
-          row(
-            t('onboarding.plan.firstCall'),
-            weekdayDate(call.day),
-            call.inDays <= 0 ? t('onboarding.plan.today') : call.inDays === 1 ? t('onboarding.plan.tomorrow') : t('onboarding.plan.inDays', { count: call.inDays }),
           )}
         {/* Without the consent there are no calls, so no morning to be told of one (K-992, user test). */}
         {progress.consented === true && <MondayReminder day={t(`onboarding.schedule.dayName.${schedule.checkInDay}`)} />}
@@ -229,6 +252,7 @@ const styles = StyleSheet.create({
     borderRadius: tokens.radius.chip,
     overflow: 'hidden',
   },
+  rest: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: tokens.space.sm },
   move: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
   moveText: { flex: 1 },
   moveName: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
