@@ -7,7 +7,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { ProblemText, announce, useProblem } from '@/components/ProblemText';
 import { ScreenTitle } from '@/components/ScreenTitle';
+import { Stepper } from '@/components/Stepper';
 import { t } from '@/copy';
+import { useSaved } from '@/saved/saved';
+import { undoThrough } from '@/saved/undo';
 import { useAppServices } from '@/services/ServicesProvider';
 import { newClientId } from '@/sync/send';
 import { useTheme } from '@/theme/theme';
@@ -15,19 +18,20 @@ import { tokens } from '@/theme/tokens';
 import { useReadOnFocus } from '@/today/useReadOnFocus';
 import { cardioDraft } from '@/train/cardio';
 import { type TodaysCardio, todaysCardio } from '@/train/cardioToday';
-import { MinutesStepper } from '@/train/MinutesStepper';
 import { workoutParams } from '@/train/params';
 
 /**
- * "+ > Cardio" (K-980, ADR-074 #6, Ek 2): the minutes of a cardio session, nothing else — no pace, no calories (a watch's
- * energy comes from Apple Health, never typed). The minutes start at the program's own. A day that has a record already is
- * not asked again: the record is shown (K-1019: the server's `loggedToday`, and what this phone holds that the server may
- * not have yet). A typed record has Undo — deleted on the server by its id, and the same clientId's waiting send dropped so
- * it cannot write the row again (`takeBack`); Apple Health's record is the watch's and stays. Training, not health data:
- * no consent is asked. Saved on the phone first and sent when it can be (K-304).
+ * "+ > Cardio" (K-980, K-1044, ADR-074 #6, Ek 2): the minutes of a cardio session, nothing else — no pace, no calories (a
+ * watch's energy comes from Apple Health, never typed). The minutes, in the shared Stepper, start at the program's own. Logged,
+ * the sheet closes and the app's one banner says "Saved" with Undo (ADR-070 Ek 2 #6). A day that has a record already is not
+ * asked again: the record is shown (K-1019: the server's `loggedToday`, and what this phone holds that the server may not
+ * have yet). A typed record has Undo — deleted on the server by its id, and the same clientId's waiting send dropped so it
+ * cannot write the row again (`takeBack`); Apple Health's record is the watch's and stays. Training, not health data: no
+ * consent is asked. Saved on the phone first and sent when it can be (K-304).
  */
 export default function CardioScreen() {
   const { api, training, workoutRecords, queue, takeBack, report } = useAppServices();
+  const saved = useSaved();
   const { color } = useTheme();
   const { day, data, reload } = useReadOnFocus(
     useCallback(async () => {
@@ -38,17 +42,13 @@ export default function CardioScreen() {
     }, [api, training, workoutRecords]),
   );
   const [typedMinutes, setMinutes] = useState<number | null>(null);
-  // What was just kept: shown at once, while the read that follows the save is still on its way (a second tap on a slow
-  // network would otherwise find the entry again and write a second session).
-  const [kept, setKept] = useState<{ clientId: string; minutes: number } | null>(null);
   const [problem, setProblem, occurrence] = useProblem();
   const [busy, setBusy] = useState(false);
   // One id until it is kept: a try that said it failed may have been kept all the same, and the same clientId is saved once.
   const attempt = useRef<string | null>(null);
   const working = useRef(false); // two taps in the same moment must not log twice
 
-  const read: TodaysCardio | null = data === null ? null : todaysCardio({ program: data.program, kept: data.kept, records: data.records, day });
-  const today: TodaysCardio | null = read !== null && read.kind === 'none' && kept !== null ? { kind: 'typed', ...kept } : read;
+  const today: TodaysCardio | null = data === null ? null : todaysCardio({ program: data.program, kept: data.kept, records: data.records, day });
   const minutes = typedMinutes ?? (data?.program == null ? workoutParams.cardioMinutesStart : cardioDraft(data.program).minutes);
 
   const log = async () => {
@@ -57,16 +57,22 @@ export default function CardioScreen() {
     setBusy(true);
     setProblem(null);
     try {
-      attempt.current ??= newClientId();
-      await queue.record({ kind: 'cardio', body: { clientId: attempt.current, day, minutes, source: 'MANUAL' } });
-      setKept({ clientId: attempt.current, minutes });
+      const clientId = (attempt.current ??= newClientId());
+      await queue.record({ kind: 'cardio', body: { clientId, day, minutes, source: 'MANUAL' } });
       attempt.current = null;
-      announce(t('workout.cardio.loggedSaid', { minutes }));
-      reload();
+      // The sheet closes and the banner takes over. The lock stays on: a second tap while the sheet goes would keep a second session.
+      router.back();
+      saved({
+        detail: t('cardioLog.savedDetail', { minutes }),
+        undo: undoThrough(
+          () => takeBack(clientId, async (id) => (await api.DELETE('/v1/cardio-sessions/{id}', { params: { path: { id } } })).response.status),
+          report,
+          { said: t('workout.cardio.undoneSaid'), offline: t('cardioLog.undoFailed'), failed: t('cardioLog.undoFailed'), conflict: t('workout.cardio.undoLate') },
+        ),
+      });
     } catch (error) {
       report({ name: error instanceof Error ? error.name : 'Unknown' });
       setProblem(t('workout.cardio.failed'));
-    } finally {
       working.current = false;
       setBusy(false);
     }
@@ -84,7 +90,6 @@ export default function CardioScreen() {
         today.serverId,
       );
       if (result === 'taken') {
-        setKept(null);
         setMinutes(null);
         announce(t('workout.cardio.undoneSaid'));
         reload();
@@ -110,7 +115,15 @@ export default function CardioScreen() {
   if (today !== null && today.kind === 'none') {
     body = (
       <View style={styles.part}>
-        <MinutesStepper minutes={minutes} onChange={setMinutes} />
+        <Stepper
+          label={t('editProgram.cardio.minutesLabel')}
+          value={minutes}
+          unit={t('units.minUnit')}
+          step={workoutParams.cardioMinutesStep}
+          min={workoutParams.cardioMinutesStep}
+          max={workoutParams.cardioMinutesMax}
+          onChange={setMinutes}
+        />
         {problemLine}
         <Button label={t('cardioLog.log')} onPress={() => void log()} disabled={busy} />
       </View>

@@ -2,9 +2,11 @@
  * A meal in two or three taps (K-980, ADR-018 Ek 1 and 3, prototype `#meal`): "Same as yesterday" for the slot, and the foods
  * eaten lately ("Recent", `GET /v1/foods/recent?slot=`, K-1025), each one tap, ranges only (U5) and no colour that judges
  * (neutral). "Same as yesterday" is yesterday's meal for a slot today has nothing in (`repeatOffers`). The first day has
- * neither, so nothing is shown. The full form (search, barcode, amounts) is below, as it was.
+ * neither, so nothing is shown. A tap keeps the meal, leaves the sheet and the app's one banner says "Saved" with Undo
+ * (K-1044; there is no "Logged" page). The full form (search, barcode, amounts) is below, as it was.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { Alert } from 'react-native';
 
 import type { components } from '@/api/schema';
 import MealScreen from '@/app/meal';
@@ -13,6 +15,8 @@ import { readMealStart, readRecentFoods } from '@/food/mealStart';
 import { foodParams } from '@/food/params';
 import { ThemeProvider } from '@/theme/theme';
 import { palettes } from '@/theme/tokens';
+
+import { WithSaved, banner, undoButton } from './support/saved';
 
 type Schemas = components['schemas'];
 type Answer = { data?: unknown; error?: { code: string; message: string }; response: Response };
@@ -97,8 +101,10 @@ beforeAll(() => {
 });
 afterAll(() => jest.useRealTimers());
 
+const alerted = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 beforeEach(() => {
   jest.clearAllMocks();
+  alerted.mockClear();
   mockGranted = true;
   mockEdit = undefined;
   mockYesterday = [YESTERDAY_LUNCH, YESTERDAY_DINNER];
@@ -109,7 +115,9 @@ beforeEach(() => {
 async function show() {
   await render(
     <ThemeProvider scheme="light">
-      <MealScreen />
+      <WithSaved>
+        <MealScreen />
+      </WithSaved>
     </ThemeProvider>,
   );
   await act(async () => {});
@@ -132,7 +140,7 @@ describe('Same as yesterday', () => {
       kind: 'meal',
       body: { clientId: expect.any(String), eatenAt: expect.any(String), slot: 'LUNCH', repeatOf: 'm-lunch' },
     });
-    expect(mockBack).not.toHaveBeenCalled(); // the confirmation first (K-1029): Done leaves
+    expect(mockBack).toHaveBeenCalledTimes(1); // the sheet closes; the banner is the confirmation (K-1044)
   });
 
   test('only the slot being logged: the dinner of yesterday is not offered at lunch', async () => {
@@ -192,7 +200,7 @@ describe('the foods eaten lately', () => {
         items: [{ foodId: 'fdc-yogurt', amount: { quantity: 170, unit: 'g', certainty: 'ESTIMATED' } }],
       },
     });
-    expect(mockBack).not.toHaveBeenCalled(); // the confirmation first (K-1029): Done leaves
+    expect(mockBack).toHaveBeenCalledTimes(1); // the sheet closes; the banner is the confirmation (K-1044)
   });
 
   test('no more than the screen has room for (food.json › quick_recent_max)', async () => {
@@ -241,93 +249,92 @@ describe('the foods eaten lately', () => {
   });
 });
 
-describe('logged, with Undo (K-1029, Tour 4 B9)', () => {
+describe('logged: the banner, with Undo (K-1029, Tour 4 B9; K-1044, ADR-070 Ek 2 #6)', () => {
   const clientIdOfLast = () => (mockRecord.mock.calls.at(-1)?.[0] as { body: { clientId: string } }).body.clientId;
 
-  test('a recent food: the sheet stays and says it is logged, with Undo and Done; it does not close by itself', async () => {
+  test('a recent food: the sheet closes and the banner says Saved with the slot and one item, and Undo', async () => {
     await show();
     await press(t('food.suggestions.log', { name: 'Greek yogurt' }));
-    expect(screen.getByText(t('meal.quick.logged', { slot: t('food.slot.LUNCH') }))).toBeOnTheScreen();
-    expect(screen.getByRole('button', { name: t('meal.quick.undoLabel') })).toBeOnTheScreen();
-    expect(screen.queryByRole('button', { name: t('food.suggestions.log', { name: 'Banana' }) })).toBeNull(); // the list steps aside: no second tap by accident
-    expect(mockBack).not.toHaveBeenCalled();
-
-    await press(t('meal.quick.done'));
     expect(mockBack).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(t('undoBanner.saved'))).toBeOnTheScreen();
+    expect(screen.getByText(t('meal.saved.one', { slot: t('food.slot.LUNCH') }))).toBeOnTheScreen();
+    expect(undoButton()).toBeOnTheScreen();
   });
 
-  test('same as yesterday: the same confirmation', async () => {
+  test('same as yesterday: the same confirmation, with the number of items it had', async () => {
     await show();
     await press(t('food.repeat.spoken', { slot: t('food.slot.LUNCH'), items: 'Chicken rice bowl' }));
-    expect(screen.getByText(t('meal.quick.logged', { slot: t('food.slot.LUNCH') }))).toBeOnTheScreen();
-    expect(mockBack).not.toHaveBeenCalled();
+    expect(mockBack).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(t('meal.saved.one', { slot: t('food.slot.LUNCH') }))).toBeOnTheScreen();
   });
 
-  test('Undo takes the meal back through the existing delete (by the clientId it was logged with), and the list is offered again', async () => {
+  test('a meal of three items says "3 items"', async () => {
+    const item = YESTERDAY_LUNCH.items[0];
+    mockYesterday = [{ ...YESTERDAY_LUNCH, items: [item, item, item] }, YESTERDAY_DINNER];
+    await show();
+    await press(t('food.repeat.spoken', { slot: t('food.slot.LUNCH'), items: 'Chicken rice bowl; Chicken rice bowl; Chicken rice bowl' }));
+    expect(screen.getByText(t('meal.saved.other', { slot: t('food.slot.LUNCH'), count: 3 }))).toBeOnTheScreen();
+    expect(t('meal.saved.other', { slot: 'Lunch', count: 3 })).toBe('Lunch, 3 items');
+  });
+
+  test('Undo takes the meal back through the existing delete (by the clientId it was logged with), and the banner goes', async () => {
     await show();
     await press(t('food.suggestions.log', { name: 'Greek yogurt' }));
     const logged = clientIdOfLast();
-    await press(t('meal.quick.undoLabel'));
+    await press(t('undoBanner.undo'));
 
     expect(mockTakeBack).toHaveBeenCalledWith(logged, expect.any(Function));
     expect(mockServices.api.DELETE).toHaveBeenCalledWith('/v1/meals/{id}', { params: { path: { id: 'srv-meal-1' } } });
-    expect(screen.queryByText(t('meal.quick.logged', { slot: t('food.slot.LUNCH') }))).toBeNull();
-    expect(screen.getByRole('button', { name: t('food.suggestions.log', { name: 'Greek yogurt' }) })).toBeOnTheScreen();
-    expect(mockBack).not.toHaveBeenCalled();
+    expect(banner()).toBeNull();
   });
 
-  test('after Undo, logging the same food again is a new meal (a new clientId)', async () => {
+  test('a meal logged again on a fresh sheet after Undo is a new meal (a new clientId)', async () => {
     await show();
     await press(t('food.suggestions.log', { name: 'Greek yogurt' }));
     const first = clientIdOfLast();
-    await press(t('meal.quick.undoLabel'));
+    await press(t('undoBanner.undo'));
+    await screen.unmount();
+    await show();
     await press(t('food.suggestions.log', { name: 'Greek yogurt' }));
     expect(clientIdOfLast()).not.toBe(first);
   });
 
-  test('offline: Undo says so, changes nothing, and can be tried again', async () => {
+  test('offline: Undo says so in an alert, changes nothing, and the banner is back to try again', async () => {
     mockTakeBack.mockResolvedValueOnce('offline');
     await show();
     await press(t('food.suggestions.log', { name: 'Greek yogurt' }));
-    await press(t('meal.quick.undoLabel'));
-    expect(screen.getByText(t('meal.quick.undoOffline'))).toBeOnTheScreen();
-    expect(screen.getByText(t('meal.quick.logged', { slot: t('food.slot.LUNCH') }))).toBeOnTheScreen();
-    await press(t('meal.quick.undoLabel'));
-    expect(screen.queryByText(t('meal.quick.logged', { slot: t('food.slot.LUNCH') }))).toBeNull();
+    await press(t('undoBanner.undo'));
+    expect(alerted).toHaveBeenCalledWith(t('meal.quick.undoOffline'));
+    expect(banner()).toBeOnTheScreen();
+    await press(t('undoBanner.undo'));
+    expect(banner()).toBeNull();
   });
 
   test('a refused delete says it could not be taken back', async () => {
     mockTakeBack.mockResolvedValueOnce('conflict');
     await show();
     await press(t('food.suggestions.log', { name: 'Greek yogurt' }));
-    await press(t('meal.quick.undoLabel'));
-    expect(screen.getByText(t('meal.quick.undoFailed'))).toBeOnTheScreen();
-    expect(screen.getByText(t('meal.quick.logged', { slot: t('food.slot.LUNCH') }))).toBeOnTheScreen();
+    await press(t('undoBanner.undo'));
+    expect(alerted).toHaveBeenCalledWith(t('meal.quick.undoFailed'));
+    expect(banner()).toBeOnTheScreen();
   });
 
-  test('while it shows Logged, the rest of the sheet is away: no chips, no form, no Save (a second Save would be a second meal)', async () => {
+  test('the lock stays on once a meal is kept: a tap while the sheet goes does not log a second one', async () => {
     await show();
-    expect(screen.getByLabelText(t('meal.search.label'))).toBeOnTheScreen();
     await press(t('food.suggestions.log', { name: 'Greek yogurt' }));
-
-    expect(screen.queryByRole('button', { name: t('food.slot.DINNER') })).toBeNull();
-    expect(screen.queryByLabelText(t('meal.search.label'))).toBeNull();
-    expect(screen.queryByRole('button', { name: t('meal.save') })).toBeNull();
-    expect(screen.getByRole('button', { name: t('meal.quick.undoLabel') })).toBeOnTheScreen();
-    expect(screen.getByRole('button', { name: t('meal.quick.done') })).toBeOnTheScreen();
-
-    await press(t('meal.quick.undoLabel')); // taken back: the sheet is whole again
-    expect(screen.getByRole('button', { name: t('food.slot.DINNER') })).toBeOnTheScreen();
-    expect(screen.getByLabelText(t('meal.search.label'))).toBeOnTheScreen();
-    expect(screen.getByRole('button', { name: t('meal.save') })).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: t('food.suggestions.log', { name: 'Banana' }) }));
+    await act(async () => {});
+    expect(mockRecord).toHaveBeenCalledTimes(1);
   });
 
-  test('it is said aloud (VoiceOver)', async () => {
+  test('it is said aloud (VoiceOver): the banner says the save, the take-back says itself', async () => {
     const { AccessibilityInfo } = jest.requireActual<typeof import('react-native')>('react-native');
     const announced = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
     await show();
     await press(t('food.suggestions.log', { name: 'Greek yogurt' }));
-    expect(announced).toHaveBeenCalledWith(t('meal.quick.loggedSaid', { slot: t('food.slot.LUNCH') }));
+    expect(announced).toHaveBeenCalledWith(t('undoBanner.announce', { detail: t('meal.saved.one', { slot: t('food.slot.LUNCH') }) }));
+    await press(t('undoBanner.undo'));
+    expect(announced).toHaveBeenCalledWith(t('meal.quick.undoneSaid'));
   });
 });
 
@@ -429,4 +436,5 @@ test('a meal that could not be kept on the phone says so and does not leave', as
   await press(t('food.repeat.spoken', { slot: t('food.slot.LUNCH'), items: 'Chicken rice bowl' }));
   expect(screen.getByText(t('food.repeat.failed'))).toBeOnTheScreen();
   expect(mockBack).not.toHaveBeenCalled();
+  expect(banner()).toBeNull();
 });

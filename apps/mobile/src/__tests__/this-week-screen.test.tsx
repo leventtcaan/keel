@@ -12,6 +12,8 @@ import { ThemeProvider } from '@/theme/theme';
 import { palettes } from '@/theme/tokens';
 import { workoutParams } from '@/train/params';
 
+import { Saver, WithSaved, banner, publishSave, undoButton } from './support/saved';
+
 type Schemas = components['schemas'];
 type Answer = { data?: unknown; error?: { code: string; message: string }; response: Response };
 const ok = (data: unknown): Answer => ({ data, response: new Response(null, { status: 200 }) });
@@ -1049,5 +1051,37 @@ describe('the food line', () => {
     await show();
     expect(screen.queryByTestId('food-line')).toBeNull();
     expect(screen.queryByTestId('food-locked')).toBeNull();
+  });
+});
+
+describe('after a save elsewhere (K-1044, ADR-070 Ek 2 #6)', () => {
+  // The week as the app draws it, with the layout's banner over it; the weigh-in sheet that just closed is the one the Saver stands for.
+  const showWithBanner = async () => {
+    await render(
+      <ThemeProvider scheme="light">
+        <WithSaved>
+          <Saver />
+          <TodayScreen />
+        </WithSaved>
+      </ThemeProvider>,
+    );
+    await act(async () => {});
+  };
+
+  test('This week shows "Saved" with what was saved and Undo, on top of the week; Undo takes it back and the banner goes', async () => {
+    ordinaryWeek();
+    const undo = jest.fn(async () => ({ done: true as const }));
+    await showWithBanner();
+    expect(banner()).toBeNull();
+
+    await publishSave({ detail: '80.2 kg', undo });
+
+    expect(screen.getByText(t('undoBanner.saved'))).toBeOnTheScreen();
+    expect(screen.getByText('80.2 kg')).toBeOnTheScreen();
+    expect(screen.getByTestId('screen')).toBeOnTheScreen(); // the week is still there under it
+    await fireEvent.press(undoButton());
+    await act(async () => {});
+    expect(undo).toHaveBeenCalledTimes(1);
+    expect(banner()).toBeNull();
   });
 });

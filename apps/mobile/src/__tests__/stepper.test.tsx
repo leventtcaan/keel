@@ -162,3 +162,55 @@ describe('VoiceOver', () => {
     expect(heard).toEqual([]);
   });
 });
+
+describe('no value yet (a first weigh-in has no last one to start from, K-1044)', () => {
+  function Empty({ onEmpty }: { onEmpty?: () => void }) {
+    const [value, setValue] = useState<number | null>(null);
+    return (
+      <Stepper
+        label="Weight"
+        unit="kg"
+        step={0.1}
+        value={value}
+        onChange={(next) => {
+          heard.push(next);
+          setValue(next);
+        }}
+        onEmpty={() => {
+          onEmpty?.();
+          setValue(null);
+        }}
+      />
+    );
+  }
+
+  test('the field is empty, nothing is made up, and the buttons wait for a number', async () => {
+    await renderIt(<Empty />);
+    expect(field().props.value).toBe('');
+    expect(screen.getByRole('button', { name: t('stepper.increase', { label: 'Weight' }) })).toBeDisabled();
+    expect(screen.getByRole('button', { name: t('stepper.decrease', { label: 'Weight' }) })).toBeDisabled();
+  });
+
+  test('a number typed is the value, and the buttons work from it', async () => {
+    await renderIt(<Empty />);
+    await fireEvent.changeText(field(), '82,4');
+    expect(heard).toEqual([82.4]);
+    await userEvent.setup().press(screen.getByRole('button', { name: t('stepper.increase', { label: 'Weight' }) }));
+    expect(heard).toEqual([82.4, 82.5]);
+  });
+
+  test('clearing the field is said, so the screen does not keep the old number under an empty field', async () => {
+    const onEmpty = jest.fn();
+    await renderIt(<Empty onEmpty={onEmpty} />);
+    await fireEvent.changeText(field(), '82');
+    await fireEvent.changeText(field(), '');
+    expect(onEmpty).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: t('stepper.increase', { label: 'Weight' }) })).toBeDisabled();
+  });
+
+  test('a stepper that is not told of empty fields ignores them, as before', async () => {
+    await renderIt(<Held />);
+    await fireEvent.changeText(field(), '');
+    expect(heard).toEqual([]);
+  });
+});

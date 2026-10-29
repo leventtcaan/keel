@@ -12,6 +12,8 @@ import { t } from '@/copy';
 import { handOffMeal, takeMeal } from '@/food/handoff';
 import { ThemeProvider } from '@/theme/theme';
 
+import { WithSaved, banner } from './support/saved';
+
 type Schemas = components['schemas'];
 type Answer = { data?: unknown; error?: { code: string; message: string }; response: Response };
 const ok = (data: unknown, status = 200): Answer => ({ data, response: new Response(null, { status }) });
@@ -88,7 +90,9 @@ const pressTwice = async (name: string) => {
 async function show() {
   await render(
     <ThemeProvider scheme="light">
-      <MealScreen />
+      <WithSaved>
+        <MealScreen />
+      </WithSaved>
     </ThemeProvider>,
   );
   await act(async () => {});
@@ -106,10 +110,11 @@ test('the meal opens as it was logged: its slot, its items, their amounts, units
   expect(screen.getByRole('button', { name: t('meal.item.unitSpoken', { name: 'Milk, whole', unit: '1 cup' }) })).toBeSelected();
 });
 
-test('saving replaces it: the old one deleted on the server first, then the new one saved with the same time', async () => {
+test('saving replaces it: the old one deleted on the server first, then the new one saved with the same time; a correction closes with no banner (K-1044)', async () => {
   await show();
   await act(async () => fireEvent.changeText(amountField('Oats, rolled'), '60'));
   await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.save') })));
+  expect(banner()).toBeNull();
   expect(calls).toEqual(['/v1/meals/{id}', 'record']);
   expect(mockDELETE).toHaveBeenCalledWith('/v1/meals/{id}', { params: { path: { id: 'm1' } } });
   expect(mockRecord).toHaveBeenCalledWith({

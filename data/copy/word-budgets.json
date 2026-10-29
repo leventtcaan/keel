@@ -1076,10 +1076,10 @@
       "budget": 15,
       "source": "prototip/yeni-yuz.html",
       "task": "K-980",
-      "note": "The first view is the entry before the trend is ready (the user's first seven weigh-ins): the number with its unit, 'Last: 80.4 kg', when the trend starts, Save. The faces are the entry with the trend drawn (its title, the two range chips, the short early note), the weigh-in just saved (what was kept, when the trend starts, Undo, Done) and the consent (its title and text are legal lines, off the first view, ADR-072 #9). The unit after the number and in 'Last' is the one word the phone writes (kg or lb); the plus and minus buttons are spoken, not read. Apple Health under the first weigh-in is its own screen, health-jit.",
+      "note": "The first view is the entry before the trend is ready (the user's first seven weigh-ins): the number with its unit, 'Last: 80.4 kg', how many weigh-ins the trend has so far ('3 of 7 weigh-ins for your trend'), Save. Saved, the sheet closes and the app's one banner says it (undoBanner, off this screen). The faces are the entry with the trend drawn (its title, the two range chips, the short early note), the consent (its title and text are legal lines, off the first view, ADR-072 #9). The unit after the number and in 'Last' is the one word the phone writes (kg or lb); the stepper's buttons are spoken, not read. Apple Health under the first weigh-in is its own screen, health-jit.",
       "file": "src/app/weigh-in.tsx",
-      "parts": ["src/weighIn/ScaleRow.tsx"],
-      "keys": ["weighIn.title", ["weighIn.last", "weighIn.lastOn"], "weighIn.trendSoon", "weighIn.save"],
+      "parts": ["src/weighIn/TrendCount.tsx"],
+      "keys": ["weighIn.title", ["weighIn.last", "weighIn.lastOn"], "weighIn.trendCount", "weighIn.save"],
       "dynamic": [
         { "what": "the unit after the number (kg or lb)", "words": 1 },
         { "what": "the unit in the last weight (80.4 kg)", "words": 1 },
@@ -1089,9 +1089,8 @@
         "weighIn.label",
         "weighIn.invalid",
         "weighIn.saveFailed",
-        "weighIn.savedSaid",
-        "weighIn.undoLabel",
         "weighIn.undoneSaid",
+        "weighIn.undoneHealth",
         "weighIn.undoFailed",
         "weighIn.undoOffline",
         "weighIn.consent.failed",
@@ -1120,20 +1119,6 @@
           ]
         },
         {
-          "face": "taken back, Apple Health copy stays",
-          "keys": ["weighIn.title", ["weighIn.last", "weighIn.lastOn"], "weighIn.undoneHealth", "weighIn.save"],
-          "dynamic": [
-            { "what": "the unit after the number (kg or lb)", "words": 1 },
-            { "what": "the unit in the last weight (80.4 kg)", "words": 1 },
-            { "what": "the month in the date of the last weigh-in (Oct 14)", "words": 1 }
-          ]
-        },
-        {
-          "face": "saved",
-          "keys": ["weighIn.title", "weighIn.savedLine", "weighIn.trendSoon", "weighIn.undo", "weighIn.done"],
-          "dynamic": [{ "what": "the unit in what was kept (80.4 kg)", "words": 1 }]
-        },
-        {
           "face": "consent",
           "keys": ["weighIn.title", "weighIn.consent.allow", "weighIn.consent.notNow"]
         }
@@ -1156,7 +1141,7 @@
       "task": "K-980",
       "note": "The first view is the first day's: the title, the four slots, the search (it searches as you type, ADR-085: no Search button) with its hint for an empty box and its Scan button, Log it; nothing is offered when there is no yesterday and no recent food. The face with the quick adds is the ordinary day: 'Same as yesterday' with Add, 'Recent' (at most quick_recent_max, data/parameters/food.json). Food names are the person's and the database's own words, as the prototype leaves them out of its count; the unit of an amount (g) and the kcal after each range are counted as listed. The plus on a recent food and the barcode button are spoken, not read.",
       "file": "src/app/meal.tsx",
-      "parts": ["src/food/QuickAdds.tsx", "src/food/FoodPicker.tsx"],
+      "parts": ["src/food/QuickAdds.tsx", "src/food/FoodPicker.tsx", "src/food/savedMeal.ts"],
       "keys": [
         "meal.title",
         "food.slot.BREAKFAST",
@@ -1205,14 +1190,11 @@
         "food.suggestions.itemServing",
         "food.suggestions.itemServings",
         "food.suggestions.log",
-        "meal.quick.logged",
-        "meal.quick.loggedSaid",
+        "meal.saved.one",
+        "meal.saved.other",
         "meal.quick.undoneSaid",
-        "meal.quick.undo",
-        "meal.quick.undoLabel",
         "meal.quick.undoFailed",
         "meal.quick.undoOffline",
-        "meal.quick.done",
         "food.budget.kcalUnit",
         "format.range",
         "format.rangeSpoken"

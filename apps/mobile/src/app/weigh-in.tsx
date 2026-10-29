@@ -6,23 +6,25 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
-import { ProblemText, announce, useProblem } from '@/components/ProblemText';
+import { ProblemText, useProblem } from '@/components/ProblemText';
 import { ScreenTitle } from '@/components/ScreenTitle';
+import { Stepper } from '@/components/Stepper';
 import { ConsentText } from '@/consent/ConsentText';
 import { grantConsent } from '@/consent/consents';
 import { t } from '@/copy';
 import { HealthJit } from '@/health/HealthJit';
 import { healthParams } from '@/health/params';
 import { onboardingParams } from '@/onboarding/params';
+import { useSaved } from '@/saved/saved';
+import { undoThrough } from '@/saved/undo';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { newClientId } from '@/sync/send';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { type Loaded, load, localDay } from '@/today/today';
-import { formatWeight, parseWeightKg, weightDecimals, weightInput } from '@/units/units';
+import { formatWeight, parseWeightKg, weightDecimals, weightInput, weightStep } from '@/units/units';
 import { lastWeighInDate, prefillKg } from '@/weighIn/last';
-import { ScaleRow } from '@/weighIn/ScaleRow';
-import { canStepWeight, stepWeightText } from '@/weighIn/step';
+import { TrendCount } from '@/weighIn/TrendCount';
 import { WeightChart } from '@/weighIn/WeightChart';
 
 type Schemas = components['schemas'];
@@ -30,29 +32,28 @@ type Step = 'checking' | 'consent' | 'entry';
 const DAY_MS = 24 * 3600 * 1000;
 
 /**
- * The weigh-in (K-402, K-980, prototype `#weigh`): the day's one required ten seconds. The last weigh-in is filled in
- * (the server's `last`, in the user's unit), moves a tenth at a time or is typed over, and is kept in kg at the server's
- * precision (K-310), saved on the phone first and sent when it can be (K-304). Saved, the screen says so and offers Undo — the
- * weigh-in deleted on the server and forgotten here, a copy still waiting dropped (ADR-074 Ek 2) — and, the first time,
- * Apple Health under it (ADR-018 Ek 1). Health data: when the consent is not given, the consent comes first and nothing can
- * be typed — nothing health is kept on the phone without it (ADR-030 #25). The trend is drawn when the server says it is
- * ready (7 weigh-in days, `trendReady`, K-1018); before that the screen says when it starts, and in the first 14 days the
- * chart carries a short note instead of any word on the trend (U8).
+ * The weigh-in (K-402, K-980, K-1044, prototype `#weigh`): the day's one required ten seconds. The last weigh-in is filled in
+ * (the server's `last`, in the user's unit) in the shared Stepper: it moves a tenth at a time or is typed over, and is kept
+ * in kg at the server's precision (K-310), saved on the phone first and sent when it can be (K-304). Saved, the sheet closes
+ * and the app's one banner says "Saved" with Undo (ADR-070 Ek 2 #6) — the weigh-in deleted on the server and forgotten
+ * here, a copy still waiting dropped (ADR-074 Ek 2). Apple Health is asked under the entry, the first time (ADR-018 Ek 1).
+ * Health data: when the consent is not given, the consent comes first and nothing can be typed — nothing health is kept on
+ * the phone without it (ADR-030 #25). The trend is drawn when the server says it is ready (7 weigh-in days, `trendReady`,
+ * K-1018); before that the screen counts the weigh-ins toward it, and in the first 14 days the chart carries a short note
+ * instead of any word on the trend (U8).
  */
 export default function WeighInScreen() {
   const { api, queue, consents, report, healthWriting, takeBack } = useAppServices();
+  const saved = useSaved();
   const units = useUnits();
   const { color } = useTheme();
   const [step, setStep] = useState<Step>('checking');
-  const [text, setText] = useState('');
+  // The number in the Stepper, in the user's unit; null: nothing filled in and nothing typed.
+  const [value, setValue] = useState<number | null>(null);
   const [problem, setProblem, occurrence] = useProblem();
   const [busy, setBusy] = useState(false);
   const [summary, setSummary] = useState<Loaded<Schemas['WeighInSummary']> | null>(null);
   const [history, setHistory] = useState<{ weighIns: Schemas['WeighIn'][]; trend: Schemas['TrendPoint'][] } | null>(null);
-  // The weigh-in just kept, while the screen offers to take it back; `health`: a copy was written to Apple Health (it stays).
-  const [saved, setSaved] = useState<{ clientId: string; kg: number; health: boolean } | null>(null);
-  // After a take-back with a copy in Apple Health: said in place of the trend line until the next save.
-  const [healthStays, setHealthStays] = useState(false);
   const saving = useRef(false); // two taps at once must not save twice
 
   // The window is fixed when the screen opens: the chart's days and "the first 14 days" are counted from that moment.
@@ -78,9 +79,9 @@ export default function WeighInScreen() {
       setSummary(read);
       const kg = read.state === 'ready' ? prefillKg(read.value.last) : null;
       if (kg === null) return;
-      const filled = weightInput(kg, units);
+      const filled = Number(weightInput(kg, units));
       // What was typed while the answer was coming stays.
-      setText((typed) => (typed === '' ? filled : typed));
+      setValue((typed) => typed ?? filled);
     });
     return () => {
       live = false;
@@ -114,7 +115,7 @@ export default function WeighInScreen() {
 
   const save = async () => {
     if (saving.current) return;
-    const kg = parseWeightKg(text, units);
+    const kg = value === null ? null : parseWeightKg(String(value), units);
     if (kg === null || !(kg > 0 && kg <= onboardingParams.weighInMaxKg)) {
       setProblem(t('weighIn.invalid'));
       return;
@@ -122,43 +123,27 @@ export default function WeighInScreen() {
     saving.current = true;
     setBusy(true);
     setProblem(null);
-    setHealthStays(false);
     try {
       const weighIn = { clientId: newClientId(), measuredAt: new Date().toISOString(), kg, source: 'MANUAL' as const };
       await queue.record({ kind: 'weighIn', body: weighIn });
       // To Apple Health too, if that switch is on (K-412); not waited for — it reports its own failure.
       void healthWriting.weighInSaved({ id: weighIn.clientId, kg, at: new Date(weighIn.measuredAt) });
       // Whether the Health switch is on and iOS allows it now: that copy is Health's, and Undo leaves it.
-      setSaved({ clientId: weighIn.clientId, kg, health: healthWriting.shown('weighIns') === 'on' });
-      announce(t('weighIn.savedSaid', { value: formatWeight(kg, units) }));
+      const health = healthWriting.shown('weighIns') === 'on';
+      // The sheet closes and the banner takes over: it keeps the weigh-in to take back, for the time of the parameter. The
+      // lock stays on: a second tap while the sheet goes would keep a second weigh-in.
+      router.back();
+      saved({
+        detail: formatWeight(kg, units),
+        undo: undoThrough(
+          () => takeBack(weighIn.clientId, async (id) => (await api.DELETE('/v1/weigh-ins/{id}', { params: { path: { id } } })).response.status),
+          report,
+          { said: t(health ? 'weighIn.undoneHealth' : 'weighIn.undoneSaid'), offline: t('weighIn.undoOffline'), failed: t('weighIn.undoFailed') },
+        ),
+      });
     } catch (error) {
       report({ name: error instanceof Error ? error.name : 'Unknown' });
       setProblem(t('weighIn.saveFailed'));
-    } finally {
-      saving.current = false;
-      setBusy(false);
-    }
-  };
-
-  const undo = async () => {
-    if (saving.current || saved === null) return;
-    saving.current = true;
-    setBusy(true);
-    setProblem(null);
-    try {
-      const result = await takeBack(saved.clientId, async (id) => (await api.DELETE('/v1/weigh-ins/{id}', { params: { path: { id } } })).response.status);
-      if (result === 'taken') {
-        setSaved(null);
-        setHealthStays(saved.health);
-        announce(t(saved.health ? 'weighIn.undoneHealth' : 'weighIn.undoneSaid'));
-      } else {
-        // Offline is the connection, said as that; the button stays and is tried again when it is back.
-        setProblem(t(result === 'offline' ? 'weighIn.undoOffline' : 'weighIn.undoFailed'));
-      }
-    } catch (error) {
-      report({ name: error instanceof Error ? error.name : 'Unknown' });
-      setProblem(t('weighIn.undoFailed'));
-    } finally {
       saving.current = false;
       setBusy(false);
     }
@@ -172,13 +157,9 @@ export default function WeighInScreen() {
   const early = firstDay != null && now - Date.parse(firstDay) < onboardingParams.noInterpretationDays * DAY_MS;
   const last = summary?.state === 'ready' ? summary.value.last : undefined;
   const lastDate = last === undefined ? null : lastWeighInDate(last.measuredAt, new Date(now));
-  const trendLine = healthStays ? (
-    <Text style={[styles.small, { color: color.muted }]}>{t('weighIn.undoneHealth')}</Text>
-  ) : (
-    summary?.state === 'ready' && !summary.value.trendReady ? (
-      <Text style={[styles.small, { color: color.muted }]}>{t('weighIn.trendSoon', { count: summary.value.trendMinWeighIns })}</Text>
-    ) : null
-  );
+  // Before the trend is ready: how many of the weigh-ins it needs are in (T-9). Ready, the chart below says it.
+  const counting = summary?.state === 'ready' && !summary.value.trendReady ? summary.value : null;
+  const trendLine = counting === null ? null : <TrendCount count={counting.weighInCount} min={counting.trendMinWeighIns} />;
 
   const consentStep =
     step === 'consent' ? (
@@ -195,7 +176,6 @@ export default function WeighInScreen() {
       </View>
     ) : null;
 
-  const step1 = String(10 ** -weightDecimals);
   const problemLine =
     problem !== null ? (
       <ProblemText style={[styles.text, { color: color.text }]} occurrence={occurrence}>
@@ -203,22 +183,19 @@ export default function WeighInScreen() {
       </ProblemText>
     ) : null;
   const entry =
-    step === 'entry' && saved === null ? (
+    step === 'entry' ? (
       <View style={styles.part}>
-        <ScaleRow
+        <Stepper
           label={t('weighIn.label', { unit })}
-          value={text}
-          onChangeText={(next) => {
-            setText(next);
+          value={value}
+          unit={unit}
+          step={weightStep}
+          decimals={weightDecimals}
+          onChange={(next) => {
+            setValue(next);
             setProblem(null);
           }}
-          unit={unit}
-          spokenUnit={t(units === 'METRIC' ? 'units.kgSpoken' : 'units.lbSpoken')}
-          step={step1}
-          canLower={canStepWeight(text, -1, units)}
-          canRaise={canStepWeight(text, 1, units)}
-          onLower={() => setText(stepWeightText(text, -1, units))}
-          onRaise={() => setText(stepWeightText(text, 1, units))}
+          onEmpty={() => setValue(null)}
         />
         {last !== undefined && (
           <Text style={[styles.last, { color: color.muted }]}>
@@ -230,20 +207,7 @@ export default function WeighInScreen() {
         {problemLine}
         {trendLine}
         <Button label={t('weighIn.save')} onPress={() => void save()} disabled={busy} />
-      </View>
-    ) : null;
-
-  const savedStep =
-    step === 'entry' && saved !== null ? (
-      <View style={styles.part}>
-        <Text accessibilityRole="header" style={[styles.heading, { color: color.text }]}>
-          {t('weighIn.savedLine', { value: formatWeight(saved.kg, units) })}
-        </Text>
-        {trendLine}
-        {problemLine}
         <HealthJit />
-        <Button label={t('weighIn.undo')} variant="ghost" accessibilityLabel={t('weighIn.undoLabel')} onPress={() => void undo()} disabled={busy} />
-        <Button label={t('weighIn.done')} onPress={() => router.back()} />
       </View>
     ) : null;
 
@@ -263,7 +227,6 @@ export default function WeighInScreen() {
         <ScreenTitle>{t('weighIn.title')}</ScreenTitle>
         {consentStep}
         {entry}
-        {savedStep}
         {chart}
       </ScrollView>
     </SafeAreaView>

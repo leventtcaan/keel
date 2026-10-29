@@ -1,11 +1,13 @@
 /**
- * "+ > Cardio" (K-980, ADR-074 #6, Ek 2; prototype "+" sheet): the minutes of a cardio session, nothing else — no pace
- * (#6). The minutes start at the program's own (`Program.cardio.minutes`). A day that has a record already is not asked
- * again: the record is shown (the typed one first; Apple Health's is the watch's and stays). A typed record is taken back
- * with Undo: deleted on the server by its id and the same clientId's waiting send dropped (ADR-074 Ek 2), a 404 meaning
+ * "+ > Cardio" (K-980, K-1044, ADR-074 #6, Ek 2; prototype "+" sheet): the minutes of a cardio session in the shared Stepper,
+ * nothing else — no pace (#6). The minutes start at the program's own (`Program.cardio.minutes`). Logged, the sheet closes and
+ * the app's one banner says "Saved · Cardio 30 min" with Undo (ADR-070 Ek 2 #6); there is no "Cardio logged" page after the
+ * save. A day that has a record already is not asked again: the record is shown (the typed one first; Apple Health's is the
+ * watch's and stays). A typed record is taken back with Undo, from the banner or, opened again, from the record: deleted on the server by its id and the same clientId's waiting send dropped (ADR-074 Ek 2), a 404 meaning
  * it was gone already. It is training, not health data: no consent stands in the way.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { AccessibilityInfo, Alert } from 'react-native';
 
 import type { components } from '@/api/schema';
 import CardioScreen from '@/app/cardio';
@@ -13,6 +15,8 @@ import { t } from '@/copy';
 import type { LocalRecord } from '@/sync/store';
 import { ThemeProvider } from '@/theme/theme';
 import { workoutParams } from '@/train/params';
+
+import { WithSaved, banner, undoButton } from './support/saved';
 import type { TrainData } from '@/train/trainData';
 
 type Schemas = components['schemas'];
@@ -93,6 +97,7 @@ afterAll(() => jest.useRealTimers());
 
 beforeEach(() => {
   jest.clearAllMocks();
+  alerted.mockClear();
   mockCardio = cardio();
   mockKept = false;
   mockRecords = [];
@@ -101,11 +106,17 @@ beforeEach(() => {
 async function show() {
   await render(
     <ThemeProvider scheme="light">
-      <CardioScreen />
+      <WithSaved>
+        <CardioScreen />
+      </WithSaved>
     </ThemeProvider>,
   );
   await act(async () => {});
 }
+const alerted = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+const minutesLabel = t('editProgram.cardio.minutesLabel');
+const minutesField = () => screen.getByLabelText(minutesLabel);
+const stepLabel = (direction: 'increase' | 'decrease') => t(`stepper.${direction}`, { label: minutesLabel });
 const press = async (name: string | RegExp) => {
   await fireEvent.press(screen.getByRole('button', { name }));
   await act(async () => {});
@@ -113,12 +124,12 @@ const press = async (name: string | RegExp) => {
 const logged = (minutes: number) => t('workout.cardio.loggedSaid', { minutes });
 
 describe('asking for the minutes', () => {
-  test('the program\'s own minutes, a step of them at a time, and Log keeps them as a typed session of today', async () => {
+  test('the program\'s own minutes in the shared Stepper, a step of them at a time, and Log keeps them as a typed session of today', async () => {
     await show();
-    expect(screen.getByText(t('train.cardioMinutes', { minutes: 30 }))).toBeOnTheScreen();
+    expect(minutesField().props.value).toBe('30');
 
-    await press(t('programEditor.moreLabel', { what: t('editProgram.cardio.minutesLabel') }));
-    expect(screen.getByText(t('train.cardioMinutes', { minutes: 30 + workoutParams.cardioMinutesStep }))).toBeOnTheScreen();
+    await press(stepLabel('increase'));
+    expect(minutesField().props.value).toBe(String(30 + workoutParams.cardioMinutesStep));
 
     await press(t('cardioLog.log'));
 
@@ -126,8 +137,32 @@ describe('asking for the minutes', () => {
       kind: 'cardio',
       body: { clientId: expect.any(String), day: '2026-09-29', minutes: 30 + workoutParams.cardioMinutesStep, source: 'MANUAL' },
     });
-    expect(screen.getByText(logged(30 + workoutParams.cardioMinutesStep))).toBeOnTheScreen();
-    expect(screen.queryByRole('button', { name: t('cardioLog.log') })).toBeNull();
+  });
+
+  test('the minutes can be typed over (a tap on the number), and the step and the bounds are the parameters\'', async () => {
+    await show();
+    expect(minutesField().props.keyboardType).toBe('number-pad');
+    await fireEvent.changeText(minutesField(), '45');
+    await press(t('cardioLog.log'));
+    expect(mockServices.queue.record).toHaveBeenCalledWith({ kind: 'cardio', body: expect.objectContaining({ minutes: 45 }) });
+    await screen.unmount();
+
+    // over what the server takes: the most it takes (a fresh sheet, a day without a record yet)
+    mockRecords = [];
+    await show();
+    await fireEvent.changeText(minutesField(), String(workoutParams.cardioMinutesMax + 100));
+    await press(t('cardioLog.log'));
+    expect(mockServices.queue.record).toHaveBeenLastCalledWith({ kind: 'cardio', body: expect.objectContaining({ minutes: workoutParams.cardioMinutesMax }) });
+  });
+
+  test('logged: the sheet closes and the banner says "Saved" with the minutes and Undo; the page does not say it again', async () => {
+    await show();
+    await press(t('cardioLog.log'));
+    expect(mockBack).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(t('undoBanner.saved'))).toBeOnTheScreen();
+    expect(screen.getByText(t('cardioLog.savedDetail', { minutes: 30 }))).toBeOnTheScreen();
+    expect(undoButton()).toBeOnTheScreen();
+    expect(screen.queryByText(logged(30))).toBeNull();
   });
 
   test('no pace to enter, no calories to enter: minutes only (ADR-074 #6)', async () => {
@@ -139,44 +174,42 @@ describe('asking for the minutes', () => {
   test('a program with no cardio (very active work): the start the coaching rules give', async () => {
     mockCardio = undefined;
     await show();
-    expect(screen.getByText(t('train.cardioMinutes', { minutes: workoutParams.cardioMinutesStart }))).toBeOnTheScreen();
+    expect(minutesField().props.value).toBe(String(workoutParams.cardioMinutesStart));
   });
 
   test('the number never goes under one step or over what the server takes', async () => {
     mockCardio = cardio({ minutes: workoutParams.cardioMinutesStep });
     await show();
-    expect(screen.getByRole('button', { name: t('programEditor.lessLabel', { what: t('editProgram.cardio.minutesLabel') }) })).toBeDisabled();
+    expect(screen.getByRole('button', { name: stepLabel('decrease') })).toBeDisabled();
+    expect(screen.getByRole('button', { name: stepLabel('increase') })).toBeEnabled();
   });
 
-  test('slow network: what was just kept is shown at once, so there is no Log to tap a second time while the read comes back', async () => {
+  test('slow network: logging does not wait for the read of the day, and the sheet closing does not offer Log a second time', async () => {
     await show();
-    let release: (data: TrainData) => void = () => {};
-    mockServices.training.read.mockImplementationOnce(() => new Promise<TrainData>((resolve) => (release = resolve)));
     await press(t('cardioLog.log'));
 
-    // the read after the save has not come back
-    expect(screen.getByText(logged(30))).toBeOnTheScreen();
-    expect(screen.queryByRole('button', { name: t('cardioLog.log') })).toBeNull();
-    expect(mockServices.queue.record).toHaveBeenCalledTimes(1);
-
-    await act(async () => release({ program: { state: 'ready', value: { id: 'p', source: 'GENERATED', days: [], cardio: cardio() } }, exercises: { state: 'none' }, kept: false }));
-    expect(screen.getByText(logged(30))).toBeOnTheScreen();
+    expect(mockBack).toHaveBeenCalledTimes(1);
+    expect(mockServices.training.read).toHaveBeenCalledTimes(1); // the one read of the screen opening
+    await fireEvent.press(screen.getByRole('button', { name: t('cardioLog.log') }));
+    await act(async () => {});
     expect(mockServices.queue.record).toHaveBeenCalledTimes(1);
   });
 
-  test('the optimistic record can be taken back at once', async () => {
+  test('the session just logged can be taken back at once from the banner, by its clientId', async () => {
     await show();
-    mockServices.training.read.mockImplementationOnce(() => new Promise<TrainData>(() => {}));
     await press(t('cardioLog.log'));
-    await press(t('workout.cardio.undoLabel'));
-    expect(mockServices.takeBack).toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: t('cardioLog.log') })).toBeOnTheScreen();
+    const [{ body }] = mockServices.queue.record.mock.calls[0] as [{ body: { clientId: string } }];
+
+    await press(t('undoBanner.undo'));
+
+    expect(mockServices.takeBack).toHaveBeenCalledWith(body.clientId, expect.any(Function));
+    expect(banner()).toBeNull();
   });
 
   test('a read of the program that fails does not break the screen: it asks for the minutes', async () => {
     mockServices.training.read.mockRejectedValueOnce(new Error('offline'));
     await show();
-    expect(screen.getByText(t('train.cardioMinutes', { minutes: workoutParams.cardioMinutesStart }))).toBeOnTheScreen();
+    expect(minutesField().props.value).toBe(String(workoutParams.cardioMinutesStart));
     expect(screen.getByRole('button', { name: t('cardioLog.log') })).toBeOnTheScreen();
   });
 
@@ -205,6 +238,8 @@ describe('asking for the minutes', () => {
     await press(t('cardioLog.log'));
     expect(screen.getByText(t('workout.cardio.failed'))).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: t('cardioLog.log') })).toBeOnTheScreen();
+    expect(mockBack).not.toHaveBeenCalled();
+    expect(banner()).toBeNull();
   });
 });
 
@@ -267,18 +302,48 @@ describe('Undo (ADR-074 Ek 2)', () => {
     expect(screen.queryByText(logged(45))).toBeNull();
   });
 
-  test('just logged here: taken back by its clientId, and it can be logged again as a new one', async () => {
+  test('just logged here, then taken back from the banner: logging again, on a fresh sheet, is a new session', async () => {
     await show();
     await press(t('cardioLog.log'));
     const [{ body }] = mockServices.queue.record.mock.calls[0] as [{ body: { clientId: string } }];
 
-    await press(t('workout.cardio.undoLabel'));
+    await press(t('undoBanner.undo'));
 
-    expect(mockServices.takeBack).toHaveBeenCalledWith(body.clientId, expect.any(Function), undefined);
+    expect(mockServices.takeBack).toHaveBeenCalledWith(body.clientId, expect.any(Function));
+    await screen.unmount();
+    await show();
     await press(t('cardioLog.log'));
     const ids = mockServices.queue.record.mock.calls.map(([record]) => record.body.clientId);
     expect(ids).toHaveLength(2);
     expect(ids[1]).not.toBe(ids[0]);
+  });
+
+  test('from the banner, no way to reach the server: said in an alert and aloud, and the banner is back to try again', async () => {
+    const announced = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
+    mockServices.takeBack.mockResolvedValueOnce('offline');
+    await show();
+    await press(t('cardioLog.log'));
+    await press(t('undoBanner.undo'));
+    expect(alerted).toHaveBeenCalledWith(t('cardioLog.undoFailed'));
+    expect(announced).toHaveBeenCalledWith(t('cardioLog.undoFailed'));
+    expect(undoButton()).toBeOnTheScreen();
+  });
+
+  test('from the banner, the server refuses (409): said, and the banner does not come back', async () => {
+    mockServices.takeBack.mockResolvedValueOnce('conflict');
+    await show();
+    await press(t('cardioLog.log'));
+    await press(t('undoBanner.undo'));
+    expect(alerted).toHaveBeenCalledWith(t('workout.cardio.undoLate'));
+    expect(banner()).toBeNull();
+  });
+
+  test('from the banner, taken back and said to VoiceOver (K-815)', async () => {
+    const announced = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
+    await show();
+    await press(t('cardioLog.log'));
+    await press(t('undoBanner.undo'));
+    expect(announced).toHaveBeenCalledWith(t('workout.cardio.undoneSaid'));
   });
 
   test('no way to reach the server: said, and the cardio stays logged', async () => {
