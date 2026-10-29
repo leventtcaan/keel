@@ -23,7 +23,7 @@ const ROWS: { which: Switch; labelKey: string; hintKey?: string }[] = [
  * other. Each is off until turned on, and turning on asks iOS; if iOS does not allow it, it stays off and says where to
  * allow it. Where HealthKit is not in the build (Expo Go), it says so.
  */
-export function HealthWriteSection() {
+export function HealthWriteSection({ bare = false }: { bare?: boolean } = {}) {
   const { health, healthWriting } = useAppServices();
   const settings = useSyncExternalStore(healthWriting.subscribe, healthWriting.current);
   const { color } = useTheme();
@@ -51,13 +51,13 @@ export function HealthWriteSection() {
 
   if (!health.available) {
     return (
-      <Section title={t('settings.healthWrite.title')}>
+      <Section title={bare ? undefined : t('settings.healthWrite.title')}>
         <Text style={[styles.note, { color: color.muted }]}>{t('settings.healthWrite.unavailable')}</Text>
       </Section>
     );
   }
   return (
-    <Section title={t('settings.healthWrite.title')}>
+    <Section title={bare ? undefined : t('settings.healthWrite.title')}>
       <Text style={[styles.note, { color: color.muted }]}>{t('settings.healthWrite.note')}</Text>
       {ROWS.map((row) => (
         <WriteRow

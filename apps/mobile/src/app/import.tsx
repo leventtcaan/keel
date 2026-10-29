@@ -157,7 +157,7 @@ export default function ImportScreen() {
   } else if (stage.kind === 'done') body = <Done imported={stage.imported} alreadyThere={stage.alreadyThere} built={stage.built} />;
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         <ScreenTitle>{t('import.title')}</ScreenTitle>
         {body}

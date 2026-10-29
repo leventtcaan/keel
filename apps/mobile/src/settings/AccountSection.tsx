@@ -1,7 +1,7 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
+import { ListGroup, ListRow } from '@/components/ListGroup';
 import { ProblemText } from '@/components/ProblemText';
-import { Button } from '@/components/Button';
 import { t } from '@/copy';
 import { useAppServices } from '@/services/ServicesProvider';
 import { billsOn } from '@/subscription/status';
@@ -10,17 +10,18 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
 import { askFirst } from './askFirst';
-import { Section } from './Section';
 import { useAction } from './useAction';
 
 /**
- * The account: export (K-214, a JSON file), delete (App Review 5.1.1(v): in the app; asks first — and, while Apple would
- * go on charging a subscription or the phone cannot tell, says so, K-811), sign out (warns when entries have not reached the
- * server: a sign-out drops them, K-304; and when progress photos are on the phone: they are only there, and go with the
- * account, K-614). The questions are system alerts, on the screen wherever the list is scrolled (ADR-087 #1); "Cancel or change
- * plan" stays in Settings' subscription section. The rows are neutral.
+ * The account as one grouped list (ADR-070 Ek 2 #2), the same in Settings and in the paywall's Account sheet: export (K-214,
+ * a JSON file), sign out (warns when entries have not reached the server: a sign-out drops them, K-304; and when progress
+ * photos are on the phone: they are only there, and go with the account, K-614) and delete (App Review 5.1.1(v): in the app;
+ * asks first — and, while Apple would go on charging a subscription or the phone cannot tell, says so, K-811). Sign out and
+ * Delete account are the destructive rows, in the warning colour; their questions are system alerts, on the screen wherever
+ * the list is scrolled (ADR-087 #1). "Cancel or change plan" stays in Settings' subscription group. `title` and `footer` are
+ * for the page that wants them: Settings has the title, the sheet the footer.
  */
-export function AccountSection() {
+export function AccountSection({ title, footer }: { title?: string; footer?: string } = {}) {
   const { api, exportData, deleteAccount, signOut, pendingCount, photos } = useAppServices();
   const { color } = useTheme();
   const { busy, problem, run } = useAction();
@@ -56,23 +57,18 @@ export function AccountSection() {
     }, {});
 
   return (
-    <Section title={t('settings.account.title')}>
-      <View style={styles.item}>
-        <Button label={t('settings.export.title')} variant="ghost" onPress={exportAll} disabled={busy} />
-        <Text style={[styles.note, { color: color.muted }]}>{t('settings.export.note')}</Text>
-      </View>
-      <View style={styles.item}>
-        <Button label={t('settings.delete.title')} variant="ghost" onPress={askToDelete} disabled={busy} />
-        <Text style={[styles.note, { color: color.muted }]}>{t('settings.delete.note')}</Text>
-      </View>
-      <Button label={t('settings.signOut.title')} variant="ghost" onPress={leave} disabled={busy} />
+    <View style={styles.stack}>
+      <ListGroup title={title} footer={footer} testID="group-account">
+        <ListRow icon="square.and.arrow.up" label={t('settings.export.title')} accessibilityHint={t('settings.export.note')} disabled={busy} onPress={exportAll} />
+        <ListRow icon="rectangle.portrait.and.arrow.right" label={t('settings.signOut.title')} destructive disabled={busy} onPress={leave} />
+        <ListRow icon="trash" label={t('settings.delete.title')} accessibilityHint={t('settings.delete.note')} destructive disabled={busy} onPress={askToDelete} />
+      </ListGroup>
       {problem !== null && <ProblemText style={[styles.text, { color: color.text }]}>{problem}</ProblemText>}
-    </Section>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  item: { gap: tokens.space.xs },
-  note: { fontSize: tokens.type.bodySmall },
+  stack: { gap: tokens.space.sm },
   text: { fontSize: tokens.type.body },
 });

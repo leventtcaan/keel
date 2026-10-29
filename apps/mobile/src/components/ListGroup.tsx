@@ -69,9 +69,11 @@ type RowProps = {
 const INSET_PAST_ICON = tokens.space.md + tokens.icon.regular + tokens.space.md;
 
 /** One row of a ListGroup: icon, label, value, and a chevron, a switch or nothing at the end. */
-export function ListRow({ label, icon, value, onPress, navigates = false, destructive = false, switch: toggle, accessibilityLabel, accessibilityHint, disabled = false, testID }: RowProps) {
+export function ListRow({ label, icon, value: given, onPress, navigates = false, destructive = false, switch: toggle, accessibilityLabel, accessibilityHint, disabled = false, testID }: RowProps) {
   const { color } = useTheme();
   const first = useContext(FirstRow);
+  // A value still being read is no value: the row is named by its label alone.
+  const value = given === '' ? undefined : given;
   const ink = destructive ? color.warn : color.text;
   const tone = destructive ? 'warn' : 'text';
   // Built outside the JSX children (the raw-text guard reads them).
@@ -88,7 +90,9 @@ export function ListRow({ label, icon, value, onPress, navigates = false, destru
       {separator}
       {icon !== undefined && <Icon name={icon} tone={tone} />}
       <Text style={[styles.label, { color: ink }]}>{label}</Text>
-      {value !== undefined && <Text style={[styles.value, { color: color.muted }]}>{value}</Text>}
+      {value !== undefined && (
+        <Text style={[styles.value, { color: color.muted }]}>{value}</Text>
+      )}
       {toggle !== undefined && (
         <Switch
           accessibilityLabel={accessibilityLabel ?? label}
@@ -144,6 +148,7 @@ const styles = StyleSheet.create({
   },
   separator: { position: 'absolute', top: 0, right: 0, height: tokens.border.hairline },
   label: { flex: 1, minWidth: 0, fontSize: tokens.type.body },
-  value: { fontSize: tokens.type.bodySmall },
+  // A long value (a list of foods, the user's own sentence) wraps in its share of the row, never cut (Larger Text) and never taking the label's room.
+  value: { flexShrink: 1, maxWidth: '60%', textAlign: 'right', fontSize: tokens.type.bodySmall },
   dim: { opacity: tokens.opacity.dim },
 });

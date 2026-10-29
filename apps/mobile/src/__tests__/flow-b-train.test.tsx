@@ -84,6 +84,8 @@ let mockParams: Record<string, string> = {};
 jest.mock('expo-router', () => ({
   // The edit-program screen sets its Stack.Screen options (no edge swipe back with edits unsaved); nothing here reads them.
   Stack: { Screen: () => null },
+  // ... and listens for the system back (to ask first when edits are unsaved); nothing here leaves the page that way.
+  useNavigation: () => ({ addListener: () => () => {} }),
   router: {
     push: (to: unknown) => went.push(to),
     replace: (to: unknown) => went.push(to),

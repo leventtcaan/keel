@@ -1,98 +1,50 @@
-import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useCallback } from 'react';
 
-import { Button } from '@/components/Button';
-import { ProblemText } from '@/components/ProblemText';
-import { TextField } from '@/components/TextField';
+import { ListGroup, ListRow } from '@/components/ListGroup';
 import { t } from '@/copy';
-import { avoidList } from '@/onboarding/draft';
 import { useAppServices } from '@/services/ServicesProvider';
-import { tokens } from '@/theme/tokens';
 import { load } from '@/today/today';
+import { useReadOnFocus } from '@/today/useReadOnFocus';
 
-import { Section } from './Section';
-import { SettingsRow } from './SettingsRow';
-import { useAction } from './useAction';
-
-/** The list as the profile holds it, or why there is none to show. Never "none" for a list that was not read. */
-type Foods = 'loading' | 'failed' | string[];
+import { openDetail } from './detail';
 
 /**
  * Settings › Food (K-982, ADR-069 #3; moved here from onboarding): the foods the user does not or cannot eat, in their own
  * words. They can say something about health (an allergy), so they are kept and shown only with the health data consent
- * (FoodPreferences.avoid, K-225): without it the row is locked and the profile is not asked for them. Saved as the whole
- * profile with the new list, the rest of it as the server just gave it (the same way as the units, K-310).
+ * (FoodPreferences.avoid, K-225): without it the row is locked and the profile is not asked for them. The row says what is
+ * kept and opens the page that edits it (`FoodEditor`), so the list is never long under a row.
  */
 export function FoodGroup({ granted }: { granted: boolean | null }) {
-  // Keyed by the consent: when it goes or comes back, what was read and typed under the last yes is dropped with the
-  // component, so a yes given again starts from a read, never from the old list (the server deleted it, K-231).
+  // Keyed by the consent: when it goes or comes back, what was read under the last yes is dropped with the component, so a
+  // yes given again starts from a read, never from the old list (the server deleted it, K-231).
   return (
-    <Section title={t('settings.food.title')}>
-      <FoodRows key={String(granted === true)} granted={granted} />
-    </Section>
+    <ListGroup title={t('settings.food.title')} testID="group-food">
+      <FoodRow key={String(granted === true)} granted={granted} />
+    </ListGroup>
   );
 }
 
-function FoodRows({ granted }: { granted: boolean | null }) {
+/** A row that cannot be opened is still a (disabled) button, so a screen reader finds it and hears why. */
+const locked = () => undefined;
+
+function FoodRow({ granted }: { granted: boolean | null }) {
   const { api } = useAppServices();
-  const { busy, problem, run } = useAction();
-  const [foods, setFoods] = useState<Foods>('loading');
-  const [typed, setTyped] = useState<string | null>(null); // null: the editor is closed
-
-  useEffect(() => {
-    if (granted !== true) return;
-    let live = true; // an answer after the consent went, or Settings closed, changes nothing
-    void load(() => api.GET('/v1/profile')).then((read) => {
-      if (live) setFoods(read.state === 'ready' ? (read.value.food?.avoid ?? []) : 'failed');
-    });
-    return () => {
-      live = false;
-    };
-  }, [api, granted]);
-
-  const save = () =>
-    void run(
-      async () => {
-        const read = await api.GET('/v1/profile');
-        if (read.data === undefined) throw new Error(`profile read failed with HTTP ${read.response.status}`);
-        const put = await api.PUT('/v1/profile', { body: { ...read.data, food: { ...read.data.food, avoid: avoidList(typed ?? '') } } });
-        if (put.data === undefined) throw new Error(`profile update failed with HTTP ${put.response.status}`);
-        setFoods(put.data.food?.avoid ?? []);
-        setTyped(null);
-      },
-      {},
-      'settings.food.failed',
-    );
-
   const label = t('settings.food.avoid');
-  let row = null;
-  if (granted === false) row = <SettingsRow label={label} value={t('settings.food.locked')} disabled />;
-  else if (granted === true && foods === 'failed') row = <SettingsRow label={label} value={t('settings.food.unread')} disabled />;
-  else if (granted === true && typeof foods !== 'string') {
-    const list = foods.join(t('editProgram.listJoin'));
-    row = <SettingsRow label={label} value={foods.length === 0 ? t('settings.food.none') : list} onPress={() => setTyped(typed === null ? list : null)} />;
-  }
-  const editor =
-    granted === true && typed !== null ? (
-      <View style={styles.editor}>
-        <TextField label={t('settings.food.label')} value={typed} onChangeText={setTyped} hint={t('settings.food.hint')} />
-        <View style={styles.buttons}>
-          <Button label={t('settings.food.save')} size="touch" disabled={busy} onPress={save} />
-          <Button label={t('settings.food.cancel')} variant="ghost" size="touch" disabled={busy} onPress={() => setTyped(null)} />
-        </View>
-        {problem !== null && <ProblemText style={styles.problem}>{problem}</ProblemText>}
-      </View>
-    ) : null;
+  // Read whenever Settings comes into view, so a list saved on its page shows on return. Not asked for without the consent.
+  const read = useCallback(async () => (granted === true ? await load(() => api.GET('/v1/profile')) : null), [api, granted]);
+  const { data } = useReadOnFocus(read);
+
+  if (granted === false) return <ListRow icon="nosign" label={label} value={t('settings.food.locked')} onPress={locked} disabled />;
+  if (granted !== true || data === null || data === undefined) return <ListRow icon="nosign" label={label} />;
+  if (data.state !== 'ready') return <ListRow icon="nosign" label={label} value={t('settings.food.unread')} onPress={locked} disabled />;
+  const foods = data.value.food?.avoid ?? [];
   return (
-    <>
-      {row}
-      {editor}
-    </>
+    <ListRow
+      icon="nosign"
+      label={label}
+      value={foods.length === 0 ? t('settings.food.none') : foods.join(t('editProgram.listJoin'))}
+      navigates
+      onPress={() => openDetail('food')}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  editor: { gap: tokens.space.sm },
-  buttons: { flexDirection: 'row', gap: tokens.space.sm },
-  problem: { fontSize: tokens.type.bodySmall },
-});

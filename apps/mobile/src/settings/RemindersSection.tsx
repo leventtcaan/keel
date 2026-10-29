@@ -1,23 +1,24 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { AppState, Linking, StyleSheet, Text, View } from 'react-native';
+import { AppState, Linking, StyleSheet, View } from 'react-native';
 
-import { ProblemText } from '@/components/ProblemText';
 import { Button } from '@/components/Button';
-import { TextField } from '@/components/TextField';
+import { ListGroup, ListRow } from '@/components/ListGroup';
+import { ProblemText } from '@/components/ProblemText';
 import { t } from '@/copy';
-import { notificationParams as P } from '@/notifications/params';
 import type { NotificationPermission } from '@/notifications/reminders';
 import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
-import { Section } from './Section';
+import { openDetail } from './detail';
 import { useAction } from './useAction';
 
 /**
- * The reminders (K-410, ADR-036): what the three kinds are, said before iOS asks (iOS shows its sheet once); on and off;
- * the way to iOS Settings when iOS has said no for good; and the user's own routine sentence, the training reminder's
- * words (I1 C3). "On" is shown only when iOS allows it too — never a switch that does nothing.
+ * The reminders (K-410, ADR-036) as a grouped list: one switch, "Reminders", and the row "Your routine", which opens the page
+ * with what the three kinds are and the user's own sentence (RoutineEditor). The line under the switch names the three kinds
+ * in one line; the paragraph is on the routine page, in front of the sentence. When iOS has said no for good, or the
+ * check-in morning is on alone, that line says so instead, with the step that fixes it. "On" is shown only when iOS allows
+ * it too: never a switch that does nothing.
  */
 export function RemindersSection() {
   const { reminders } = useAppServices();
@@ -25,7 +26,6 @@ export function RemindersSection() {
   const { color } = useTheme();
   const { busy, problem, run } = useAction();
   const [permission, setPermission] = useState<NotificationPermission | null>(null);
-  const [cue, setCue] = useState(settings.cue);
 
   // iOS's answer, read on arrival and each time the app comes back to the front — the way back from iOS Settings. An
   // older, slower read never overwrites a newer one; a read that fails leaves what is shown.
@@ -57,92 +57,50 @@ export function RemindersSection() {
       'settings.reminders.failed',
     );
   const turnOff = () => void run(() => reminders.turnOff(), {}, 'settings.reminders.failed');
-  const saveCue = () => void run(() => reminders.setCue(cue), {}, 'settings.reminders.failed');
 
   // The check-in morning alone while the server makes no calls (K-992): nothing rings, so it is never shown as on.
   const waiting = settings.enabled && settings.only === 'check_in' && settings.noCalls === true;
   const on = settings.enabled && permission?.granted === true && !waiting;
   const blocked = permission !== null && !permission.granted && !permission.canAskAgain;
-  const muted = { color: color.muted };
 
-  const onlyOne = (
-    <>
-      <Text style={[styles.note, muted]}>{t('settings.reminders.onlyCheckIn')}</Text>
-      <Button label={t('settings.reminders.turnOnAll')} variant="ghost" size="sm" disabled={busy} onPress={turnOn} />
-    </>
-  );
+  // What the line under the switch says, and the one step that goes with it. The switch cannot do these two things.
+  let footer = t('settings.reminders.kinds');
+  let step: { label: string; opensSettings: boolean } | null = null;
+  if (waiting && permission?.granted === true) {
+    footer = t('settings.reminders.noCalls');
+    step = { label: t('settings.reminders.turnOnAll'), opensSettings: false };
+  } else if (blocked) {
+    footer = t('settings.reminders.blocked');
+    step = { label: t('settings.reminders.openSettings'), opensSettings: true };
+  } else if (on && settings.only !== undefined) {
+    // Turned on from the plan for the check-in morning alone (K-967): said, and the other two a tap away.
+    footer = t('settings.reminders.onlyCheckIn');
+    step = { label: t('settings.reminders.turnOnAll'), opensSettings: false };
+  }
 
-  const noCalls = (
-    <>
-      <Text style={[styles.note, muted]}>{t('settings.reminders.noCalls')}</Text>
-      <Button label={t('settings.reminders.turnOnAll')} variant="ghost" size="sm" disabled={busy} onPress={turnOn} />
-    </>
-  );
-
+  // Built before the JSX: a literal inside a JSX child is read as text by the copy guard (copy-literals.test.ts).
+  const stepButton =
+    step === null ? null : (
+      <Button label={step.label} variant="text" size="sm" disabled={busy} onPress={step.opensSettings ? () => void Linking.openSettings() : turnOn} />
+    );
   return (
-    <Section title={t('settings.reminders.title')}>
-      <Text style={[styles.note, muted]}>{t('settings.reminders.what', { minutes: P.trainingLeadMinutes })}</Text>
-      {waiting && permission?.granted === true ? (
-        noCalls
-      ) : on ? (
-        <OnRow busy={busy} onTurnOff={turnOff} />
-      ) : blocked ? (
-        <Blocked />
-      ) : (
-        <Button label={t('settings.reminders.turnOn')} disabled={busy} onPress={turnOn} />
-      )}
-      {/* Turned on from the plan for the check-in morning alone (K-967): said, and the other two a tap away. */}
-      {on && settings.only !== undefined && onlyOne}
-      <TextField
-        label={t('settings.reminders.cue.label')}
-        value={cue}
-        onChangeText={setCue}
-        hint={t('settings.reminders.cue.hint')}
-        maxLength={P.cueMaxChars}
-      />
-      <Button
-        label={t('settings.reminders.cue.save')}
-        accessibilityLabel={t('settings.reminders.cue.saveLabel')}
-        variant="ghost"
-        size="sm"
-        disabled={busy || cue.trim() === settings.cue}
-        onPress={saveCue}
-      />
+    <View style={styles.stack}>
+      <ListGroup title={t('settings.reminders.title')} footer={footer} testID="group-reminders">
+        <ListRow
+          icon="bell"
+          label={t('settings.reminders.title')}
+          switch={{ value: on, onValueChange: (next) => (next ? turnOn() : turnOff()) }}
+          disabled={busy}
+        />
+        <ListRow icon="clock" label={t('settings.reminders.routine')} value={settings.cue} navigates onPress={() => openDetail('routine')} />
+      </ListGroup>
+      {stepButton}
       {problem !== null && <ProblemText style={[styles.note, { color: color.text }]}>{problem}</ProblemText>}
-    </Section>
-  );
-}
-
-function OnRow({ busy, onTurnOff }: { busy: boolean; onTurnOff: () => void }) {
-  const { color } = useTheme();
-  return (
-    <View style={styles.row}>
-      <Text style={[styles.state, { color: color.text }]}>{t('settings.reminders.on')}</Text>
-      <Button
-        label={t('settings.reminders.turnOff')}
-        accessibilityLabel={t('settings.reminders.turnOffLabel')}
-        variant="ghost"
-        size="sm"
-        disabled={busy}
-        onPress={onTurnOff}
-      />
     </View>
   );
 }
 
-/** iOS will not show its sheet again: only iOS Settings can allow notifications now. */
-function Blocked() {
-  const { color } = useTheme();
-  return (
-    <>
-      <Text style={[styles.note, { color: color.text }]}>{t('settings.reminders.blocked')}</Text>
-      <Button label={t('settings.reminders.openSettings')} variant="ghost" onPress={() => void Linking.openSettings()} />
-    </>
-  );
-}
-
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  state: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
+  stack: { gap: tokens.space.sm },
   note: { fontSize: tokens.type.bodySmall },
 });

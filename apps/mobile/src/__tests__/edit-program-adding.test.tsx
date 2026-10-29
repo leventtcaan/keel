@@ -38,6 +38,7 @@ const mockServices = {
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices }));
 jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
+  useNavigation: () => ({ addListener: () => () => {} }),
   router: { push: jest.fn(), back: jest.fn(), dismissTo: jest.fn() },
   useLocalSearchParams: () => mockParams,
   useFocusEffect: (effect: () => void) => {

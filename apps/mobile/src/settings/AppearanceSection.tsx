@@ -1,8 +1,7 @@
-import type { ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 
-import { Chip } from '@/components/Chip';
 import { ProblemText } from '@/components/ProblemText';
+import { Segmented } from '@/components/Segmented';
 import { t } from '@/copy';
 import { useAppearance, useAppServices } from '@/services/ServicesProvider';
 import type { Appearance } from '@/theme/appearance';
@@ -15,10 +14,10 @@ import { useAction } from './useAction';
 const CHOICES: Appearance[] = ['light', 'dark', 'system'];
 
 /**
- * Light, Dark or System, Light until the person picks (ADR-070 #3); kept on the phone, the whole app follows at once. The
- * group's other rows (the units, K-982) go in as `children`.
+ * Light, Dark or System as one segmented control, Light until the person picks (ADR-070 #3, Ek 2 #2); kept on the phone, the
+ * whole app follows at once.
  */
-export function AppearanceSection({ children }: { children?: ReactNode } = {}) {
+export function AppearanceSection() {
   const { appearance } = useAppServices();
   const chosen = useAppearance();
   const { color } = useTheme();
@@ -26,18 +25,12 @@ export function AppearanceSection({ children }: { children?: ReactNode } = {}) {
   const choose = (next: Appearance) => void run(() => appearance.set(next), {}, 'settings.appearance.failed');
   return (
     <Section title={t('settings.appearance.title')}>
-      <View style={styles.row}>
-        {CHOICES.map((choice) => (
-          <Chip key={choice} label={t(`settings.appearance.${choice}`)} selected={chosen === choice} onPress={() => choose(choice)} />
-        ))}
-      </View>
+      <Segmented options={CHOICES.map((choice) => ({ value: choice, label: t(`settings.appearance.${choice}`) }))} value={chosen} onChange={choose} />
       {problem !== null && <ProblemText style={[styles.note, { color: color.text }]}>{problem}</ProblemText>}
-      {children}
     </Section>
   );
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm },
   note: { fontSize: tokens.type.bodySmall },
 });

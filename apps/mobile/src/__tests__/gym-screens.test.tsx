@@ -94,6 +94,24 @@ describe('the list', () => {
   });
 });
 
+// One way back (ADR-070 Ek 2 #4, K-1043): the system header's back button, named for the screen before (navigation.test.tsx); the
+// screens draw none of their own, and nothing else on them goes back by itself.
+describe('the way back', () => {
+  test('the gyms and a gym have no Back of their own', async () => {
+    await show('list');
+    expect(await screen.findByText('Club')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Back' })).toBeNull();
+    expect(screen.queryByText('Back')).toBeNull();
+    expect(mockBack).not.toHaveBeenCalled();
+    await screen.unmount();
+    mockParams = { id: 'g2' };
+    await show('gym');
+    expect(await screen.findByLabelText('Name')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Back' })).toBeNull();
+    expect(screen.queryByText('Back')).toBeNull();
+  });
+});
+
 describe('a gym', () => {
   test('its equipment is shown as stored, and a change is saved whole under its id, in kg', async () => {
     mockParams = { id: 'g2' };

@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -54,7 +54,9 @@ export default function BuildProgramScreen() {
   };
 
   return (
-    <SafeAreaView edges={['top', 'bottom']} style={[styles.safe, { backgroundColor: color.background }]}>
+    <SafeAreaView edges={['bottom']} style={[styles.safe, { backgroundColor: color.background }]}>
+      {/* While the program is being built the way back is shut, as the Back button was: the answer would lead nowhere. */}
+      <Stack.Screen options={{ headerBackVisible: !busy, gestureEnabled: !busy }} />
       <ScrollView contentContainerStyle={styles.body}>
         <ScreenTitle>{t('buildProgram.title')}</ScreenTitle>
         <Text style={[styles.question, { color: color.text }]}>{t('onboarding.days.title')}</Text>
@@ -72,7 +74,6 @@ export default function BuildProgramScreen() {
             {count !== null && <Button label={t('buildProgram.retry')} onPress={() => void build(count)} />}
           </View>
         )}
-        <Button label={t('buildProgram.back')} variant="ghost" disabled={busy} onPress={() => router.back()} />
       </ScrollView>
     </SafeAreaView>
   );
