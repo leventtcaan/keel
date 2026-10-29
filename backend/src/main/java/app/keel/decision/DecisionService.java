@@ -31,6 +31,7 @@ import app.keel.engine.WaistTrend;
 import app.keel.engine.WhatIf;
 import app.keel.engine.WeekTally;
 import app.keel.engine.WeighIn;
+import app.keel.engine.WeighInWeek;
 import app.keel.engine.WeightSeries;
 import app.keel.engine.WeightTrend;
 import app.keel.identity.AccountDates;
@@ -754,6 +755,29 @@ class DecisionService {
         }
         LocalDate today = LocalDate.now(clock.withZone(profile.timeZone()));
         return Optional.of(FirstWeekFacts.firstCallOn(firstDay(account, profile.timeZone()), profile.checkInDay(), today));
+    }
+
+    /**
+     * This check-in week's weigh-ins against what the next call needs (ADR-089, contract FirstWeeks.weighInWeek), until a call
+     * has read the scale ({@link WeighInWeekFacts#readTheScale}). The block is the engine's: the seven days ending on the day of
+     * the next call ({@link #nextCallOn}, the day the Hero names); the days are the ones the call reads — a day's first weigh-in,
+     * none imported (ADR-053) — and the plan's start is the one the call judges by, or the first call's day while there is no
+     * plan, as the plan the first call starts. It never changes a call (U1).
+     */
+    @Transactional(readOnly = true)
+    Optional<WeighInWeek> weighInWeek(AccountId account) {
+        consent.require(account, ConsentKind.HEALTH_DATA);
+        ProfileFacts profile = profiles.of(account).orElseThrow(() -> new ApiException(ErrorCode.CONFLICT));
+        if (calls.newestFirst(account, Optional.empty(), 1).stream().findFirst().filter(WeighInWeekFacts::readTheScale).isPresent()) {
+            return Optional.empty();
+        }
+        LocalDate today = LocalDate.now(clock.withZone(profile.timeZone()));
+        Parameters p = parameters.forSex(Sex.valueOf(profile.sex().name()));
+        LocalDate checkIn = nextCallOn(account, profile, today).orElseThrow();
+        // The weigh-ins the call reads: the evaluation window, as the check-in's Snapshot has them (week()).
+        List<WeighIn> weights = measurements.dailyWeights(account, today.minusDays(p.wholeNumber(ParameterKey.EVALUATION_WINDOW_DAYS) - 1L), today);
+        LocalDate planStart = calls.plan(account).map(CallStore.Plan::planStart).orElse(checkIn);
+        return Optional.of(WeighInWeek.of(today, checkIn, planStart, new WeightSeries(weights), p));
     }
 
     /**

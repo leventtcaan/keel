@@ -78,9 +78,10 @@ class DecisionContractTests {
         Map<String, Object> schema = map(map(map(contract().get("components")).get("schemas")).get("FirstWeeks"));
         List<String> fields = Arrays.stream(FirstWeeksController.FirstWeeksView.class.getRecordComponents()).map(RecordComponent::getName).toList();
         assertThat(map(schema.get("properties")).keySet()).containsExactlyInAnyOrderElementsOf(fields);
-        // Absent in some weeks (the words) and once the first call is made (its day): the rest always there.
+        // Absent in some weeks (the words), once the first call is made (its day) and once a call has read the scale (the
+        // weigh-in week, ADR-089): the rest always there.
         assertThat((List<String>) schema.get("required")).containsExactlyInAnyOrderElementsOf(
-                fields.stream().filter(field -> !List.of("contentKey", "firstCallOn").contains(field)).toList());
+                fields.stream().filter(field -> !List.of("contentKey", "firstCallOn", "weighInWeek").contains(field)).toList());
         assertThat(map(map(schema.get("properties")).get("firstCallOn"))).containsEntry("type", "string").containsEntry("format", "date");
         assertThat(FirstWeeksController.FirstWeeksView.class.getRecordComponents()).filteredOn(c -> c.getName().equals("firstCallOn"))
                 .singleElement().satisfies(c -> assertThat(c.getType()).isEqualTo(LocalDate.class));
@@ -89,6 +90,27 @@ class DecisionContractTests {
         assertThat(map(reason.get("properties")).keySet()).containsExactlyInAnyOrderElementsOf(
                 java.util.stream.Stream.concat(Arrays.stream(FirstWeeksController.SignalView.class.getRecordComponents()).map(RecordComponent::getName),
                         java.util.stream.Stream.of("facts")).toList());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void theWeighInWeekIsTheContractsSchemaFieldForFieldWithDatesAsDates() throws Exception {
+        // ADR-089 #1: the block, its weighed days and the number it needs; the date the call can read the data only when short.
+        Map<String, Object> schemas = map(map(contract().get("components")).get("schemas"));
+        Map<String, Object> schema = map(schemas.get("WeighInWeek"));
+        Map<String, Object> properties = map(schema.get("properties"));
+
+        assertThat(map(map(schemas.get("FirstWeeks")).get("properties")).get("weighInWeek")).isEqualTo(Map.of("$ref", "#/components/schemas/WeighInWeek"));
+        assertThat(properties.keySet()).containsExactlyInAnyOrderElementsOf(
+                Arrays.stream(FirstWeeksController.WeighInWeekView.class.getRecordComponents()).map(RecordComponent::getName).toList());
+        assertThat((List<String>) schema.get("required")).containsExactlyInAnyOrder("from", "to", "weighedDays", "needed");
+        for (String day : List.of("from", "to", "callsFrom")) {
+            assertThat(map(properties.get(day))).as(day).containsEntry("type", "string").containsEntry("format", "date");
+        }
+        assertThat(map(map(properties.get("weighedDays")).get("items"))).containsEntry("type", "string").containsEntry("format", "date");
+        assertThat(map(properties.get("needed"))).containsEntry("type", "integer");
+        assertThat(Arrays.stream(FirstWeeksController.WeighInWeekView.class.getRecordComponents()).filter(c -> !c.getName().equals("needed")
+                && !c.getName().equals("weighedDays")).map(RecordComponent::getType)).containsOnly(LocalDate.class);
     }
 
     @Test
