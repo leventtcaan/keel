@@ -17,13 +17,14 @@ import { tokens } from '@/theme/tokens';
 import type { LocalRecord } from '@/sync/store';
 import { load } from '@/today/today';
 import { useReadOnFocus } from '@/today/useReadOnFocus';
+import { AnyDayRows } from '@/train/AnyDayRows';
 import { BuildProgramPrompt } from '@/train/BuildProgramPrompt';
 import { CallRow } from '@/train/CallRow';
 import { changeToday } from '@/train/changes';
 import { dayName, programNotes, restNote } from '@/train/program';
 import { TodayCard } from '@/train/TodayCard';
 import { movesOf } from '@/train/trainData';
-import { type WeekRow, finishedDay, movedOffToday, sessionDone, sessionMoves, sessionState, splitName, todayKind, weekRows } from '@/train/week';
+import { type WeekRow, anyDayRows, finishedDay, movedOffToday, sessionDone, sessionMoves, sessionState, splitName, todayKind, weekRows } from '@/train/week';
 
 type Schemas = components['schemas'];
 
@@ -147,6 +148,9 @@ export default function TrainScreen() {
   // With no session today (and no week off), any of the week's can be started from its row.
   const pick = today === null && kind !== 'restWeek' && active === null;
   const rows = weekRows(program, session.today);
+  // Days on no weekday have no session of the week: each starts from its own row (Evre 7, issue 684).
+  const anyDays = anyDayRows(program, data?.records ?? [], session.today);
+  const anyStartable = active === null && kind !== 'restWeek';
   // The review's changes in force (ADR-073 #3): how many, and the page that undoes each.
   const appliedCount = program.review?.applied.length ?? 0;
   const applied =
@@ -176,6 +180,22 @@ export default function TrainScreen() {
     program.canAddDay === true ? (
       <Button label={t('train.addDay')} accessibilityLabel={t('train.addDayLabel')} variant="ghost" onPress={() => router.push('/add-day')} />
     ) : null;
+  // Built outside the JSX (the raw-text guard reads what is inside it).
+  const weekHeading =
+    rows.length === 0 ? null : (
+      <Text accessibilityRole="header" style={[styles.heading, { color: color.text }]}>
+        {t('train.thisWeek')}
+      </Text>
+    );
+  const anyBlock =
+    anyDays.length === 0 ? null : (
+      <>
+        <Text accessibilityRole="header" style={[styles.heading, { color: color.text }]}>
+          {t('programEditor.anyDay')}
+        </Text>
+        <AnyDayRows rows={anyDays} startable={anyStartable} onStart={start} />
+      </>
+    );
   return (
     <Screen editable>
       <Text style={[styles.text, { color: color.textSecondary }]}>{t('train.head', { split: splitName(program), days })}</Text>
@@ -199,7 +219,7 @@ export default function TrainScreen() {
         moves={moves}
         units={units}
         underWay={active !== null}
-        canPick={pick && rows.some((row) => startable(program, row, data?.records ?? []))}
+        canPick={pick && (rows.some((row) => startable(program, row, data?.records ?? [])) || anyDays.some((row) => !row.done))}
         checkInDay={data?.checkInDay ?? null}
         onStart={start}
         openWorkoutId={today?.session.workout?.state === 'OPEN' ? today.session.workout.id : null}
@@ -214,11 +234,9 @@ export default function TrainScreen() {
         }
       />
       <View style={styles.week}>
-        <Text accessibilityRole="header" style={[styles.heading, { color: color.text }]}>
-          {t('train.thisWeek')}
-        </Text>
+        {weekHeading}
         {/* One card, a row per session (K-1053): the date on a badge, the session, its state; as the app's grouped lists. */}
-        <View style={[styles.weekCard, { backgroundColor: color.surface }]}>
+        <View style={[styles.weekCard, { backgroundColor: color.surface }, rows.length === 0 && styles.hidden]}>
           {rows.map((row, index) => {
             const done = sessionDone(program, row, data?.records ?? []);
             const skipped = row.session.skipped === true;
@@ -263,6 +281,7 @@ export default function TrainScreen() {
             );
           })}
         </View>
+        {anyBlock}
         {addDay}
       </View>
     </Screen>
@@ -337,6 +356,7 @@ const styles = StyleSheet.create({
   applied: { minHeight: tokens.size.touch, borderRadius: tokens.radius.card, borderWidth: tokens.border.outline, padding: tokens.space.md, flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
   bold: { fontWeight: tokens.weight.semibold },
   dim: { opacity: tokens.opacity.dim },
+  hidden: { display: 'none' },
   heading: { fontSize: tokens.type.heading, fontWeight: tokens.weight.bold },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },

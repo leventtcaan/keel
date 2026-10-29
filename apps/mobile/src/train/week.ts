@@ -211,6 +211,20 @@ export function weekRows(program: Schemas['Program'], today: string | undefined 
     .map((f) => ({ ...f, weekday: weekdayOf(f.session.date) }));
 }
 
+/** A day of the program on no weekday, and whether a workout of it was finished this week. */
+export type AnyDayRow = { day: Schemas['ProgramDay']; done: boolean };
+
+/**
+ * The program's days on no weekday ("any day": a program typed or brought in): the server puts no session of the week on them
+ * (`Program.week` is the calendar, and a day on no weekday is not on it), so nothing else can start them. Each is a row of its
+ * own, started on any day; done once a workout of it was finished this week on this phone (the week is the server's `weekOf`,
+ * as for the dated sessions). Evre 7, issue 684: without these rows such a program left Train at "Rest" with no way to a workout.
+ */
+export function anyDayRows(program: Schemas['Program'], records: LocalRecord[], today: string): AnyDayRow[] {
+  const week = program.weekOf === undefined ? [today] : Array.from({ length: 7 }, (_, i) => addDays(program.weekOf as string, i));
+  return program.days.filter((day) => day.weekday === undefined).map((day) => ({ day, done: finishedOnPhone(records, week, day.id) !== null }));
+}
+
 /**
  * The program's split in words: the user's own is their own; a generated one is each split its days are from, once, in
  * the days' order ("Upper / Lower + Push / Pull / Legs"), never one name for the whole.

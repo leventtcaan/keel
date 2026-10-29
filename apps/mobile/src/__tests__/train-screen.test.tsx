@@ -170,6 +170,102 @@ const DECISION = {
   declinable: true,
 } as unknown as Schemas['Decision'];
 
+// Evre 7 (issue 684), Levent: "the workout never finishes, loops, functions that do not work". A program typed or brought in with days on
+// "any day" has no session of the week for them (the server's calendar has none: Program.week), so Train said "Rest, no session today"
+// with nothing to start, and "+ > Workout" sent the person to this same page: a loop with no way to a workout.
+describe('days on no weekday ("any day"): each is started from its own row', () => {
+  const ANY: Schemas['ProgramDay'][] = [
+    { id: 'x1', name: 'Push day', exercises: [{ exerciseId: 'bench_press', baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 1 }] },
+    {
+      id: 'x2',
+      name: 'Pull day',
+      exercises: [
+        { exerciseId: 'squat', baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 1 },
+        { exerciseId: 'dip', baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 1 },
+      ],
+    },
+  ];
+  const floating = () => withProgram({ days: ANY, week: [], source: 'OWN' });
+  const finished = (programDayId: string): LocalRecord[] => [
+    {
+      seq: 1,
+      clientId: 'w1',
+      kind: 'workout',
+      parentClientId: null,
+      body: { clientId: 'w1', startedAt: new Date(2026, 8, 28, 18, 0).toISOString(), programDayId },
+      state: 'SYNCED',
+      serverId: 's1',
+      serverBody: null,
+      errorCode: null,
+    },
+    {
+      seq: 2,
+      clientId: 'f1',
+      kind: 'finish',
+      parentClientId: 'w1',
+      body: { endedAt: new Date(2026, 8, 28, 19, 0).toISOString() },
+      state: 'SYNCED',
+      serverId: null,
+      serverBody: null,
+      errorCode: null,
+    },
+  ];
+
+  test('a row for each, with its moves and a Start; a tap opens the workout on that day', async () => {
+    mockData = floating();
+    await show();
+    expect(await screen.findByText('Push day')).toBeTruthy();
+    expect(screen.getByText('Pull day')).toBeTruthy();
+    expect(screen.getByText(t('train.moveCount.other', { count: 2 }))).toBeTruthy();
+    await fireEvent.press(screen.getByLabelText(t('train.startDay', { day: 'Pull day' })));
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/workout', params: { day: 'x2' } });
+  });
+
+  test('the card says there is no session today and that a day below can be started', async () => {
+    mockData = floating();
+    await show();
+    expect(await screen.findByText(t('train.restDayPick'))).toBeTruthy();
+  });
+
+  test('a day done this week carries its tick and no Start; the others still start', async () => {
+    mockData = floating();
+    mockRecords = finished('x1');
+    await show();
+    await screen.findByText('Push day');
+    expect(screen.queryByLabelText(t('train.startDay', { day: 'Push day' }))).toBeNull();
+    expect(screen.getByLabelText(t('train.doneTag'))).toBeTruthy();
+    expect(screen.getByLabelText(t('train.startDay', { day: 'Pull day' }))).toBeTruthy();
+  });
+
+  test('a workout under way is continued, never a second started from a row', async () => {
+    mockData = floating();
+    mockRecords = [
+      {
+        seq: 1,
+        clientId: 'w2',
+        kind: 'workout',
+        parentClientId: null,
+        body: { clientId: 'w2', startedAt: new Date(2026, 8, 29, 8, 30).toISOString(), programDayId: 'x1' },
+        state: 'PENDING',
+        serverId: null,
+        serverBody: null,
+        errorCode: null,
+      },
+    ];
+    await show();
+    await screen.findByText('Pull day');
+    expect(screen.queryByLabelText(t('train.startDay', { day: 'Pull day' }))).toBeNull();
+    expect(screen.getByText(t('train.continueWorkout'))).toBeTruthy();
+  });
+
+  test('days with a weekday keep their dated rows; the program\'s any-day days come after them', async () => {
+    mockData = withProgram({ days: [...PROGRAM.days, ANY[0]] });
+    await show();
+    await screen.findByText('Push day');
+    expect(screen.getByText(t('train.weekRow', { weekday: 'Thu', day: 'Lower A' }))).toBeTruthy();
+  });
+});
+
 describe('the head of the tab', () => {
   test('Edit opens the program editor', async () => {
     await show();
@@ -1155,7 +1251,7 @@ describe('Add a day and the rest note (ADR-090 #3, Ek 1)', () => {
     expect(mockPush).toHaveBeenCalledWith('/add-day');
   });
 
-  test.each([[false], [undefined]])('canAddDay %s (seven days, a day on no weekday, an older server): no "Add a day"', async (canAddDay) => {
+  test.each([[false], [undefined]])('canAddDay %s (seven days, an older server): no "Add a day"', async (canAddDay) => {
     mockData = withProgram(canAddDay === undefined ? {} : { canAddDay });
     await show();
     await screen.findByLabelText(t('editProgram.editLabel'));
