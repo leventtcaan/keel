@@ -5289,6 +5289,23 @@ tasks:
     tests: ["jest settings + account + gyms + edit-program + import", "tools/anayasa-denetimi.sh"]
     refs: ["plan/kararlar/ADR-070-gorsel-dil-turkuaz.md", "prototip/yeniden-yapim.html", "plan/kararlar/ADR-088-open-food-facts.md"]
 
+  - id: K-1044
+    title: "Yeniden yapım Evre 2.3: ikonlu + sayfası, tek onay deseni (Saved · Undo), tartı sayacı"
+    milestone: M10
+    module: mobile
+    type: feature
+    size: M
+    status: doing
+    depends_on: [K-1041]
+    why: "+ sayfası ikonsuz, onaylar üç ayrı düzen, yemekte geri al yok, tartıda sayaç yok (envanter T-4, T-11, T-9). ADR-070 Ek 2 #3, #6"
+    acceptance:
+      - "+ sayfası prototip/yeniden-yapim.html › 4 gibi: üç ikonlu karo (Workout altında bugünün seansı), Cardio ve Life got in the way ikonlu gruplu satır"
+      - "Tartı, kardiyo ve yemek kaydı sonrası sayfa kapanır, This Week'te UndoBanner (Saved + ayrıntı + Undo); ayrı Saved sayfası yok; Undo kaydı geri alır"
+      - "Tartıda tek Stepper ve trend sayacı ('3 of 7'); kardiyoda tek Stepper"
+      - "jest + anayasa denetimi yeşil; kanıt simülatörde gerçek sunucuda"
+    tests: ["jest plus + weigh-in + cardio + meal + this-week + undo-banner", "tools/anayasa-denetimi.sh"]
+    refs: ["plan/kararlar/ADR-070-gorsel-dil-turkuaz.md", "prototip/yeniden-yapim.html"]
+
   - id: K-1010
     title: "Sunucudaki ek siteler: Caddy /opt/sites altındaki *.caddy dosyalarını içeri alır"
     milestone: M9
