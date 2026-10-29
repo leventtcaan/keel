@@ -27,3 +27,6 @@ apps/mobile/android/
 
 # IDE (Eclipse/VS Code Java) build output
 backend/bin/
+
+# Rebuild inventory screenshots (personal data; the private artifact carries them)
+.envanter/
