@@ -32,3 +32,5 @@ Open Food Facts (ODbL, gecelik döküm) ve USDA Branded (CC0, çoğu ABD). TürK
 - Akışla indirme SSH oturumuna bağlı koşunca oturum kopunca boru hattı öldü: `fetch-off.sh` oturumdan bağımsız (`setsid`/zamanlayıcı) koşar.
 - Sonuç: barkod kapsamı Türkiye'de sınırlı ama sıfırdan anlamlı; besin değeri eksik ürünler alınmaz (U5 aralığı kurulamaz). Kapsam yetmezse sonraki adım
   USDA Branded ya da kullanıcının etiketten girdiği ürün (ayrı karar).
+- Üretim (2026-10-29 03:22 UTC): süzme 27.987 Türkiye ürününden 2.897'sini tuttu (ad + dört besin + makul değer), içe aktarım 2.897 / 0 atlandı.
+  Süzme bitmeden açılan backend içe aktarmaz: `fetch-off.sh` sonrası backend yeniden başlatılır (ya da sonraki dağıtım).
