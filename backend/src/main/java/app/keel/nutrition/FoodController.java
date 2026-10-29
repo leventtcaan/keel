@@ -73,8 +73,8 @@ class FoodController {
 
     /** Contract FoodEstimate. */
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    record FoodEstimate(List<FoodEstimator.EstimatedItem> items, FoodRanges.Range kcal, FoodRanges.Range proteinG,
-            FoodEstimator.AmountQuestion question) {
+    record FoodEstimate(List<FoodEstimator.EstimatedItem> items, FoodRanges.Range kcal, FoodRanges.Range proteinG, FoodRanges.Range carbsG,
+            FoodRanges.Range fatG, FoodEstimator.AmountQuestion question) {
     }
 
     private static final int MIN_QUERY = 2;
@@ -219,7 +219,8 @@ class FoodController {
     @PostMapping("/v1/food-estimates")
     FoodEstimate estimate(AccountId account, @RequestBody FoodEstimateRequest request) {
         FoodEstimator.Estimate estimate = estimator.estimate(account, request.items());
-        return new FoodEstimate(estimate.items(), estimate.total().kcal(), estimate.total().proteinG(), estimate.question().orElse(null));
+        return new FoodEstimate(estimate.items(), estimate.total().kcal(), estimate.total().proteinG(), estimate.total().carbsG(),
+                estimate.total().fatG(), estimate.question().orElse(null));
     }
 
     private static Food view(FoodStore.Food food, Parameters p, FoodPortions.Settings settings, List<String> avoid) {
