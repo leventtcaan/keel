@@ -2,6 +2,7 @@ package app.keel.engine;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -42,9 +43,11 @@ public final class DataSufficiency {
 
     /** The first of the three checks that fails today, in order; empty if all pass. */
     private static Optional<Gap> firstGap(Snapshot snapshot, Parameters parameters) {
-        LocalDate today = snapshot.today();
-        WeightSeries weights = snapshot.weights();
+        return firstGap(snapshot.today(), snapshot.planStart(), snapshot.weights(), parameters);
+    }
 
+    /** The checks read only the day, the plan's start and the weigh-ins: the same ones on a day that is not a Snapshot's. */
+    private static Optional<Gap> firstGap(LocalDate today, LocalDate planStart, WeightSeries weights, Parameters parameters) {
         int noInterpretationDays = parameters.wholeNumber(ParameterKey.NO_INTERPRETATION_DAYS);
         Optional<LocalDate> first = weights.firstDay();
         if (first.isEmpty() || today.isBefore(first.get().plusDays(noInterpretationDays - 1L))) {
@@ -52,7 +55,7 @@ public final class DataSufficiency {
         }
 
         int window = parameters.wholeNumber(ParameterKey.DECISION_WINDOW_DAYS);
-        if (today.isBefore(snapshot.planStart().plusDays(window - 1L))) {
+        if (today.isBefore(planStart.plusDays(window - 1L))) {
             return Optional.of(new Gap(WINDOW_NOT_FULL, CYCLE_WINDOW));
         }
 
@@ -76,21 +79,30 @@ public final class DataSufficiency {
      * window holds only the daily weigh-ins, and every check stays passed.
      */
     private static LocalDate earliestEnoughDay(Snapshot snapshot, Parameters parameters) {
-        int horizon = Math.max(parameters.wholeNumber(ParameterKey.NO_INTERPRETATION_DAYS),
+        return earliestEnoughDay(snapshot.today(), snapshot.planStart(), snapshot.weights(), parameters);
+    }
+
+    /**
+     * The same day for the inputs the checks read, without a Snapshot ({@link WeighInWeek}: the day a user whose block is
+     * short is told the call can read the data is the one formula, not a copy of it). {@code planStart} may be a day to come:
+     * the plan a first call has not started yet. Its window starts then, so the search reaches that many days further.
+     */
+    static LocalDate earliestEnoughDay(LocalDate today, LocalDate planStart, WeightSeries weights, Parameters parameters) {
+        int daysToPlanStart = (int) Math.max(0, ChronoUnit.DAYS.between(today, planStart));
+        int horizon = daysToPlanStart + Math.max(parameters.wholeNumber(ParameterKey.NO_INTERPRETATION_DAYS),
                 parameters.wholeNumber(ParameterKey.DECISION_WINDOW_DAYS));
-        List<WeighIn> weighIns = new ArrayList<>(snapshot.weights().weighIns());
+        List<WeighIn> weighIns = new ArrayList<>(weights.weighIns());
         BigDecimal lastKg = weighIns.isEmpty() ? BigDecimal.ONE : weighIns.getLast().kg();
-        LocalDate lastShort = snapshot.today();
+        LocalDate lastShort = today;
         for (int ahead = 1; ahead <= horizon; ahead++) {
-            LocalDate day = snapshot.today().plusDays(ahead);
+            LocalDate day = today.plusDays(ahead);
             // Only the dates matter to these checks; the weight value is a placeholder.
             weighIns.add(new WeighIn(day, lastKg));
-            Snapshot then = new Snapshot(day, snapshot.sex(), snapshot.phase(), snapshot.planStart(), new WeightSeries(weighIns));
-            if (firstGap(then, parameters).isPresent()) {
+            if (firstGap(day, planStart, new WeightSeries(weighIns), parameters).isPresent()) {
                 lastShort = day;
             }
         }
-        if (lastShort.equals(snapshot.today().plusDays(horizon))) {
+        if (lastShort.equals(today.plusDays(horizon))) {
             throw new IllegalStateException("No day within " + horizon + " days makes the data sufficient");
         }
         return lastShort.plusDays(1);
