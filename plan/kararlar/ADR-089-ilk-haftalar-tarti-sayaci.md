@@ -30,3 +30,7 @@ toplam sayısıdır (trend_min_weighins 7), haftanın bloğu değil.
 - Sözleşme: `FirstWeeks.weighInWeek` (isteğe bağlı), `WeighInWeek` şeması. Kendi commit'inde, koddan önce.
 - Testler: motor (blok sayımı, yetişemez sınırı, callsFrom = earliestEnoughDay), servis (IMPORT sayılmaz, ilk karar sonrası alan yok),
   mobil (dört durum, hatırlatmanın kurulması/kaldırılması).
+
+## Ek 1 (29 Eki, uygulama #663)
+- İlk haftayı kapatan karar (Continue, MoveMissedSessions, AddTrainingDay; seansları okur, tartıyı değil) sayacı bitirmez: tartıyı okuyan ilk karara (ya da hard stop) kadar sayaç görünür. `WeighInWeekFacts.readTheScale`.
+- İlk karardan önce plan başlangıcı ilk check-in günü sayılır (ilk karar planı başlatır); `earliestEnoughDay` arama ufku plan başlangıcına kalan gün kadar uzar (yoksa 500). Plan başlangıcı bugün ya da geçmişteyse hesap aynıdır.
