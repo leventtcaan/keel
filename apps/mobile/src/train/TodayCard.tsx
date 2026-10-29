@@ -111,8 +111,7 @@ function Body({ program, today, date, kind, stale, finishedDay, movedAway, moves
       <Button
         label={t('train.undo')}
         accessibilityLabel={t('train.undoLabel')}
-        variant="ghost"
-        size="sm"
+        variant="text"
         disabled={onChange === null}
         onPress={() => onChange?.(undoable.day.id, 'UNDO')}
       />
@@ -122,7 +121,7 @@ function Body({ program, today, date, kind, stale, finishedDay, movedAway, moves
   const short = session?.session.short === true;
   const full =
     session !== null && short && !underWay && !stale ? (
-      <Button label={t('train.full')} variant="ghost" size="sm" disabled={onChange === null} onPress={() => onChange?.(session.day.id, 'FULL')} />
+      <Button label={t('train.full')} variant="text" disabled={onChange === null} onPress={() => onChange?.(session.day.id, 'FULL')} />
     ) : null;
   const held = program.loadHeldSince !== undefined;
   const change = () => sheet({ pathname: '/today-change', params: { day: session?.day.id ?? '' } });
@@ -135,7 +134,7 @@ function Body({ program, today, date, kind, stale, finishedDay, movedAway, moves
         <View style={styles.grow}>
           <Button label={t('train.start')} accessibilityLabel={t('train.startDay', { day: dayName(session.day) })} onPress={() => onStart(session.day.id)} />
         </View>
-        <Button label={t('train.change')} accessibilityLabel={t('train.changeLabel')} variant="ghost" onPress={change} />
+        <Button label={t('train.change')} accessibilityLabel={t('train.changeLabel')} variant="secondary" onPress={change} />
       </View>
     );
   }
@@ -149,6 +148,8 @@ function Body({ program, today, date, kind, stale, finishedDay, movedAway, moves
         {title}
       </Text>
       {line !== null && <Text style={[styles.text, { color: color.text }]}>{line}</Text>}
+      {/* Start in the head, not at the foot of a long list: the tab bar and the "+" never cover it (T-18, K-1045). */}
+      {dock}
       {undo}
       {full}
       {notice}
@@ -204,7 +205,6 @@ function Body({ program, today, date, kind, stale, finishedDay, movedAway, moves
           <Text style={[styles.text, { color: color.text }]}>{t('train.cardioMinutes', { minutes: program.cardio.minutes })}</Text>
         </View>
       )}
-      {dock}
     </View>
   );
 }

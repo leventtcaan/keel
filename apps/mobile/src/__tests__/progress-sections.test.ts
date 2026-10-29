@@ -6,6 +6,7 @@
 import type { ProgressRead } from '@/progress/read';
 import { callsOf, heroOf, phaseOf, strengthOf, targetsOf, weighInDots, weightOf } from '@/progress/sections';
 import type { Loaded } from '@/today/today';
+import { weekHead, weekRecordText } from '@/today/week';
 
 import { budget, consistency, decision, decisionPage, lift, liftWeeks, program, starting, summary, trendPoints, training } from './support/progressFixtures';
 
@@ -130,7 +131,7 @@ describe('the hero', () => {
   });
 
   test('the first call made: one sentence of results and the record', () => {
-    expect(heroOf(WEEK_12, 'METRIC')).toEqual({ title: 'Stronger on 4 of 5 lifts. Down 3.8 kg.', sub: '12 weeks · 11 on track' });
+    expect(heroOf(WEEK_12, 'METRIC')).toEqual({ title: 'Stronger on 4 of 5 lifts. Down 3.8 kg.', sub: '11/12 weeks on track' });
   });
 
   test('the change in the user\'s unit', () => {
@@ -166,7 +167,7 @@ describe('the hero', () => {
 
   test('one week counted is "1 week"', () => {
     const one = with_(WEEK_12, { consistency: ready(CONSISTENCY({ record: { onTrackWeeks: 1, countedWeeks: 1, currentRun: 1, forgivenWeeks: 0 } })) });
-    expect(heroOf(one, 'METRIC')?.sub).toBe('1 week · 1 on track');
+    expect(heroOf(one, 'METRIC')?.sub).toBe('1/1 week on track');
   });
 
   test('the consistency not read: no hero (no first day shown to someone who is past it)', () => {
@@ -262,5 +263,36 @@ describe('the calls', () => {
     expect(callsOf(with_(WEEK_12, { calls: none }))).toBeNull();
     expect(callsOf(with_(WEEK_12, { calls: consent }))).toBeNull();
     expect(callsOf(with_(WEEK_12, { calls: failed }))).toBeNull();
+  });
+});
+
+describe('the week count is This week\'s, from the same source (K-1045, T-8)', () => {
+  // The envanter's case: This week said "Week 4 · 0/2 weeks on track", Progress "2 weeks · 0 on track". One Consistency, one line.
+  const record = { onTrackWeeks: 0, countedWeeks: 2, currentRun: 0, forgivenWeeks: 0 };
+  const loaded = ready(CONSISTENCY({ record }));
+
+  test('Progress says what the This week header says for the same Consistency', () => {
+    const head = weekHead(loaded, ready({ week: 4, risk: [], readsRisk: false, training: true }));
+    expect(head.record).not.toBeNull();
+    const thisWeek = weekRecordText({ onTrack: head.record?.onTrack ?? -1, counted: head.record?.counted ?? -1 });
+    expect(thisWeek).toBe('0/2 weeks on track');
+    expect(heroOf(with_(WEEK_12, { consistency: loaded }), 'METRIC')?.sub).toBe(thisWeek);
+  });
+
+  test.each([
+    [{ onTrackWeeks: 11, countedWeeks: 12 }, '11/12 weeks on track'],
+    [{ onTrackWeeks: 1, countedWeeks: 1 }, '1/1 week on track'],
+    [{ onTrackWeeks: 0, countedWeeks: 1 }, '0/1 week on track'],
+  ])('%j reads %s on both', (counts, line) => {
+    const consistency = ready(CONSISTENCY({ record: { ...record, ...counts } }));
+    const head = weekHead(consistency);
+    expect(weekRecordText({ onTrack: head.record?.onTrack ?? -1, counted: head.record?.counted ?? -1 })).toBe(line);
+    expect(heroOf(with_(WEEK_12, { consistency }), 'METRIC')?.sub).toBe(line);
+  });
+
+  test('no week counted yet: neither screen has a line', () => {
+    const consistency = ready(CONSISTENCY({ record: { ...record, onTrackWeeks: 0, countedWeeks: 0 } }));
+    expect(weekHead(consistency).record).toBeNull();
+    expect(heroOf(with_(WEEK_12, { consistency }), 'METRIC')?.sub).toBeNull();
   });
 });

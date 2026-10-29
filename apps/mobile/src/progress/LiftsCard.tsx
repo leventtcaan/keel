@@ -2,8 +2,8 @@ import { useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import type { components } from '@/api/schema';
-import { Card } from '@/components/Card';
 import { Chip } from '@/components/Chip';
+import { Section } from '@/components/Section';
 import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
@@ -14,7 +14,7 @@ import { type UnitSystem, formatLoad, loadValue } from '@/units/units';
 import { effortLine } from './effort';
 import { LineChart } from './LineChart';
 import type { ChartPoint } from './lineScale';
-import { CardHead, liftSet } from './Parts';
+import { liftSet } from './Parts';
 
 type Lift = components['schemas']['LiftProgress'];
 
@@ -70,8 +70,7 @@ export function LiftsCard({ lifts, moves, units }: { lifts: Lift[]; moves: Reado
   );
 
   return (
-    <Card>
-      <CardHead title={t('progress.strength.title')} aside={t('progress.strength.bestSet')} />
+    <Section testID="section-strength" title={t('progress.strength.title')} aside={t('progress.strength.bestSet')}>
       {chips}
       <View style={styles.top}>
         <Text testID="strength-best" style={[styles.big, { color: color.text }]}>
@@ -82,7 +81,7 @@ export function LiftsCard({ lifts, moves, units }: { lifts: Lift[]; moves: Reado
       {chart}
       {legend}
       {effortText}
-    </Card>
+    </Section>
   );
 }
 

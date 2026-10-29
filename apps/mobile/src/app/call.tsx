@@ -13,6 +13,7 @@ import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { useReduceMotion } from '@/theme/useReduceMotion';
+import { TrendCount } from '@/weighIn/TrendCount';
 import { applyCall, callFace, declineCall } from '@/today/call';
 import { ChangeRows } from '@/today/ChangeRows';
 import { changeRows } from '@/today/callChanges';
@@ -22,6 +23,9 @@ import { useWeek1 } from '@/today/useWeek1';
 import { type Loaded, labelKey, load, weekdayDate } from '@/today/today';
 
 type Decision = components['schemas']['Decision'];
+
+/** The wait for weigh-ins (rule data_insufficient): the one "not yet" the user can do something about from here (K-1045, T-9). */
+const NEEDS_WEIGH_INS = 'decision.no_decision_yet.data_insufficient';
 
 /**
  * Two reasons on the call (ADR-077 #3: the data and the rule); the rest stay on record. The call that closes the first
@@ -68,6 +72,11 @@ export default function CallScreen() {
   // Changed: the read that follows says the call's new standing aloud (VoiceOver, K-815).
   const toSay = useRef<Loaded<Decision> | null | undefined>(undefined);
 
+  // The count of weigh-ins the trend still needs, the one Progress shows (GET /v1/weigh-ins/summary): read only while the call
+  // waits for weigh-ins and is the current one, never for a past call opened read only.
+  const [weighIns, setWeighIns] = useState<Loaded<components['schemas']['WeighInSummary']> | null>(null);
+  const needsWeighIns = !readOnly && call?.state === 'ready' && call.value.copyKey === NEEDS_WEIGH_INS;
+
   // Read on arrival and again after a change or on asking; an answer landing after the screen left is dropped.
   const [reads, setReads] = useState(0);
   const read = () => setReads((n) => n + 1);
@@ -80,6 +89,17 @@ export default function CallScreen() {
       live = false;
     };
   }, [api, id, reads]);
+
+  useEffect(() => {
+    if (!needsWeighIns) return;
+    let live = true;
+    void load(() => api.GET('/v1/weigh-ins/summary')).then((found) => {
+      if (live) setWeighIns(found);
+    });
+    return () => {
+      live = false;
+    };
+  }, [api, needsWeighIns, reads]);
 
   const [rise] = useState(() => new Animated.Value(0));
   const shown = call?.state === 'ready';
@@ -173,6 +193,17 @@ export default function CallScreen() {
           <Text style={[styles.text, { color: color.text }]}>{t('callScreen.observation', { days: waitsDays })}</Text>
         </View>
       );
+    // How many weigh-ins are still needed, in words and as the segments Progress and the weigh-in screen draw. Only with the
+    // server's count and the trend not ready; a count that could not be read is not guessed.
+    const summary = needsWeighIns && weighIns?.state === 'ready' && !weighIns.value.trendReady ? weighIns.value : null;
+    const left = summary === null ? 0 : Math.max(0, summary.trendMinWeighIns - summary.weighInCount);
+    const weighInsLeft =
+      summary === null || left === 0 ? null : (
+        <View testID="weigh-ins-left" style={styles.left}>
+          <Text style={[styles.text, styles.strong, { color: color.text }]}>{t(left === 1 ? 'callScreen.weighInsLeft.one' : 'callScreen.weighInsLeft.other', { count: left })}</Text>
+          <TrendCount count={summary.weighInCount} min={summary.trendMinWeighIns} />
+        </View>
+      );
     body = (
       <>
         <Text style={[styles.small, { color: color.muted }]}>{weekdayDate(decision.madeOn)}</Text>
@@ -188,6 +219,7 @@ export default function CallScreen() {
           {reasons}
           {observation}
         </View>
+        {weighInsLeft}
         <View style={styles.meta}>
           {waits ? null : (
             <Text style={[styles.small, { color: color.textSecondary }]}>{t('callScreen.confidence', { level: t(`callScreen.level.${decision.confidence}`) })}</Text>
@@ -211,13 +243,16 @@ export default function CallScreen() {
           onPress={() => void change(decision, second)}
         />
       );
-    const gotIt = <Button label={t('callScreen.gotIt')} variant={using ? 'ghost' : 'primary'} onPress={() => router.back()} />;
+    // Waiting on weigh-ins, the one primary is the way to them; "Got it" only leaves (T-9).
+    const toScale = needsWeighIns;
+    const gotIt = <Button label={t('callScreen.gotIt')} variant={using || toScale ? 'secondary' : 'primary'} onPress={() => router.back()} />;
+    const weighIn = toScale ? <Button label={t('callScreen.weighIn')} onPress={() => router.push('/weigh-in')} /> : null;
     dock =
       week1?.dock ??
       (readOnly ? null : (
         <View style={styles.dock}>
-          {using ? secondWay : gotIt}
-          {using ? gotIt : secondWay}
+          {weighIn ?? (using ? secondWay : gotIt)}
+          {weighIn ? gotIt : using ? gotIt : secondWay}
         </View>
       ));
   }
@@ -245,6 +280,8 @@ const styles = StyleSheet.create({
   body: { padding: tokens.space.lg, gap: tokens.space.md },
   back: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
   note: { gap: tokens.space.sm },
+  left: { gap: tokens.space.sm },
+  strong: { fontWeight: tokens.weight.semibold },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },
   line: { fontSize: tokens.type.body },
