@@ -635,6 +635,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/foods/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One food with its portions (to change the portion of a logged item)
+         * @description A database food, or the user's own ("own:<id>"). NOT_FOUND for a food that is not there, and for another user's own food.
+         */
+        get: operations["getFood"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/foods/{id}/favorite": {
         parameters: {
             query?: never;
@@ -5036,6 +5056,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Food"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getFood: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The food */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Food"];
                 };
             };
             default: components["responses"]["Error"];

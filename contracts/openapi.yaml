@@ -800,6 +800,27 @@ paths:
                   $ref: "#/components/schemas/Food"
         default:
           $ref: "#/components/responses/Error"
+  /v1/foods/{id}:
+    get:
+      tags: [nutrition]
+      operationId: getFood
+      summary: One food with its portions (to change the portion of a logged item)
+      description: A database food, or the user's own ("own:<id>"). NOT_FOUND for a food that is not there, and for another user's own food.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The food
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Food"
+        default:
+          $ref: "#/components/responses/Error"
   /v1/foods/{id}/favorite:
     parameters:
       - name: id
