@@ -340,3 +340,17 @@ scenarios:
     # Without an estimate the energy floor cannot be computed, and low energy is the higher risk for her (J1 C6).
     weeks: [65.0, 65.0, 65.0, 65.0, 65.0]
     expect: [observing, observing, observing, fat_estimate_needed, fat_estimate_needed]
+
+  - id: GS-39
+    title: "A real first month: five weigh-ins most weeks, one forgotten week, half the meals logged once: the first call waits for week 5"
+    user: {sex: male, phase: cut, height: 178}
+    # Weigh-ins: 5 a week (days 1, 2, 4, 5, 6 of each week); week 2 only 3 (days 9, 11, 13) < min_weighins_per_week 4.
+    # A sparse block stops a call until no block of the 21-day window is short. Week 3 (day 20): counting the days to
+    # come as daily, every block holds 4 on days 22-25, but on days 26-28 the oldest block (6-12, 7-13, 8-14) holds
+    # 3; from day 29 it holds 4 for good → next 9. Week 4 (day 27): again day 29 → next 2. Week 5 (day 34): blocks
+    # 14-20, 21-27, 28-34 hold 5 each (MEDIUM: 4 ≤ 5 < dense 6); means 86.3 → 85.5, 0.8 > 0.58 toward the goal.
+    mornings: 5
+    weeks: [87.0, 86.6, 86.3, 85.9, 85.5, 85.1]
+    overrides: {2: {mornings: 3}, 3: {adherence: 0.6}}
+    expect: [observing, data_insufficient, {is: data_insufficient, next: 9}, {is: data_insufficient, next: 2},
+             {is: continue/toward_goal, confidence: medium}, continue/toward_goal]
