@@ -64,7 +64,7 @@ const OUTLINED = [
   'components/TextField.tsx',
   'components/ProgressBar.tsx',
   'onboarding/StepFrame.tsx',
-  'app/onboarding/days.tsx',
+  'onboarding/DayTiles.tsx',
   'app/onboarding/preparing.tsx',
   'app/workout-end.tsx',
   'progress/Parts.tsx',
