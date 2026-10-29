@@ -14,7 +14,7 @@ type Schemas = components['schemas'];
 
 /**
  * The food line on This week (ADR-077 #1, prototype `#home`): what is left of today's food as a range (U5), the server's
- * (K-409), and "Log"; the whole line opens the meal. Without the health data consent, the lock line in its place:
+ * (K-409), and "Log"; the line opens the day's food (the meals, to correct or delete, ADR-086), "Log" the meal. Without the health data consent, the lock line in its place:
  * "Needs your OK for health data · Allow" (ADR-072 Ek 1, user test 8 Oct), Allow leading to the consent in Settings,
  * where its text is read before it is given. The first week (no call yet): the server works the budget out from the target
  * the plan will start with (K-997, ADR-072 Ek 2), so the same range comes back. One name for the number whether or not a
@@ -56,21 +56,24 @@ export function FoodLine({ budget }: { budget: Loaded<Schemas['DayBudget']> }) {
     return null;
   }
   return (
-    <Pressable
-      testID="food-line"
-      accessibilityRole="button"
-      accessibilityLabel={amount === null ? t('thisWeek.food.lineLabelAround', { lead }) : t('thisWeek.food.lineLabel', { lead, amount })}
-      onPress={() => router.push('/meal')}
-      style={({ pressed }) => [styles.line, { backgroundColor: color.surface }, pressed && styles.dim]}>
-      <View style={styles.grow}>
+    <View testID="food-line" style={[styles.line, { backgroundColor: color.surface }]}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={amount === null ? t('thisWeek.food.lineLabelAround', { lead }) : t('thisWeek.food.lineLabel', { lead, amount })}
+        onPress={() => router.push('/food')}
+        style={({ pressed }) => [styles.grow, styles.body, pressed && styles.dim]}>
         <Text style={[styles.text, { color: color.textSecondary }]}>{lead}</Text>
         {amount === null ? null : <Text style={[styles.amount, { color: color.text }]}>{amount}</Text>}
-      </View>
-      <View style={[styles.log, { backgroundColor: color.background }]}>
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t('thisWeek.food.logLabel')}
+        onPress={() => router.push('/meal')}
+        style={({ pressed }) => [styles.log, { backgroundColor: color.background }, pressed && styles.dim]}>
         <SymbolView name="fork.knife" size={tokens.type.bodySmall} tintColor={color.text} />
         <Text style={[styles.strong, { color: color.text }]}>{t('thisWeek.food.log')}</Text>
-      </View>
-    </Pressable>
+      </Pressable>
+    </View>
   );
 }
 
@@ -84,6 +87,7 @@ const styles = StyleSheet.create({
     minHeight: tokens.size.touch,
   },
   grow: { flex: 1 },
+  body: { minHeight: tokens.size.touch, justifyContent: 'center' },
   text: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.semibold },
   amount: { fontFamily: tokens.font.displayBold, fontSize: tokens.type.number, fontVariant: ['tabular-nums'] },
   strong: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.bold },

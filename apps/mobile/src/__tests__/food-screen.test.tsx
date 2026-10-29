@@ -33,7 +33,7 @@ const TARGETS: Schemas['Targets'] = { targetKcal: 2300, proteinG: 160, carbsG: 2
 let mockAnswers: Record<string, Answer> = {};
 const mockGET = jest.fn(async (path: string, _init?: unknown) => mockAnswers[path] ?? refused(404, 'NOT_FOUND'));
 jest.mock('expo-router', () => ({
-  router: { push: jest.fn() },
+  router: { push: jest.fn(), back: jest.fn() },
   useRouter: () => ({ push: jest.fn() }),
   useFocusEffect: (effect: () => void) => {
     const React = jest.requireActual<typeof import('react')>('react');
@@ -167,15 +167,32 @@ test('without the health data consent: one line and the way to Settings', async 
   expect(screen.getByRole('button', { name: t('today.consent.open') })).toBeOnTheScreen();
 });
 
-test('a meal from a photo is one tap from the Food tab, beside logging by name (K-408)', async () => {
+test("today's food: the title, the day's budget and the way to log a meal (ADR-086)", async () => {
   await show();
-  await act(async () => fireEvent.press(screen.getByRole('button', { name: t('food.photo') })));
-  expect(jest.mocked(router.push)).toHaveBeenCalledWith('/meal-photo');
+  expect(screen.getByRole('header', { name: t('screens.food.title') })).toBeOnTheScreen();
+  expect(screen.getByText(range(780, 950, t('food.budget.kcalUnit')))).toBeOnTheScreen();
+  await act(async () => fireEvent.press(screen.getByRole('button', { name: t('food.log') })));
+  expect(jest.mocked(router.push)).toHaveBeenCalledWith('/meal');
 });
 
-test('without the health data consent there is no photo either', async () => {
+test('a way back, as on the other screens opened from a screen', async () => {
+  await show();
+  await act(async () => fireEvent.press(screen.getByRole('button', { name: t('food.back') })));
+  expect(jest.mocked(router.back)).toHaveBeenCalledTimes(1);
+});
+
+test('the AI is off on this surface (ADR-069 #3, K-909): no coach bar, no meal from a photo, no recipes; each led to a retired screen', async () => {
+  await show();
+  expect(screen.queryByRole('button', { name: t('coach.entry') })).toBeNull();
+  expect(screen.queryByText(t('coach.entry'))).toBeNull();
+  expect(screen.queryByRole('button', { name: t('food.photo') })).toBeNull();
+  expect(screen.queryByRole('button', { name: t('food.recipes') })).toBeNull();
+});
+
+test('without the health data consent there is nothing to log: one line and the way to Settings', async () => {
   mockAnswers = { '/v1/days/{day}/budget': refused(403, 'CONSENT_REQUIRED'), '/v1/targets': refused(403, 'CONSENT_REQUIRED') };
   await show();
+  expect(screen.queryByRole('button', { name: t('food.log') })).toBeNull();
   expect(screen.queryByRole('button', { name: t('food.photo') })).toBeNull();
 });
 
