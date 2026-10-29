@@ -219,6 +219,7 @@ class TheReviewsFindings(unittest.TestCase):
         provision = (DEPLOY / "provision.sh").read_text()
         self.assertRegex(provision, r"install -d -m 755 [^\n]*/opt/keel/fdc")
         self.assertNotRegex(provision, r"install -d -m 750 [^\n]*/opt/keel/fdc")
+        self.assertRegex(provision, r"install -d -m 755 [^\n]*/opt/keel/off")  # K-1042: the Open Food Facts file the same way
 
     def test_journald_is_the_only_log_and_drops_old_entries_daily(self):
         # C2: Ubuntu forwards journald to rsyslog (/var/log/syslog, weeks); the live journal file rotates monthly.
@@ -748,6 +749,66 @@ class WeeklyReport(unittest.TestCase):
         readme = (DEPLOY / "README.md").read_text()
         self.assertIn("`weekly-report.sh`", readme)
         self.assertIn("`weekly-report.sql`", readme)
+
+
+class TheOpenFoodFactsFile(unittest.TestCase):
+    """K-1042, ADR-088: the filtered Turkey subset the backend imports; the dump is streamed, never kept."""
+
+    FILTER = DEPLOY / "off_filter.py"
+
+    def run_filter(self, *lines):
+        result = subprocess.run(["python3", "-I", str(self.FILTER)], input="\n".join(lines) + "\n", capture_output=True, text=True, check=True)
+        return [json.loads(line) for line in result.stdout.splitlines()], result.stderr
+
+    @staticmethod
+    def product(code="8690504012345", **fields):
+        p = {"code": code, "countries_tags": ["en:turkey"], "product_name": "Gofret", "brands": "Ülker, Başka",
+             "nutriments": {"energy-kcal_100g": 520, "proteins_100g": 6.5, "carbohydrates_100g": 60, "fat_100g": 28},
+             "serving_quantity": 30, "serving_size": "30 g"}
+        p.update(fields)
+        return json.dumps(p)
+
+    def test_a_turkish_product_comes_out_with_only_the_fields_the_import_reads(self):
+        kept, errors = self.run_filter(self.product())
+        self.assertEqual(kept, [{"code": "8690504012345", "name": "Gofret", "name_en": None, "brand": "Ülker", "kcal": 520.0, "protein": 6.5,
+                                 "carbs": 60.0, "fat": 28.0, "serving_g": 30.0, "serving": "30 g"}])
+        self.assertIn("seen=1 turkey=1 kept=1", errors)
+
+    def test_turkey_by_country_tag_or_by_the_869_prefix_and_nothing_else(self):
+        kept, _ = self.run_filter(self.product("12345670", countries_tags=["en:france"]),
+                                  self.product("12345678", countries_tags=["en:france"]),
+                                  self.product("8691234567890", countries_tags=["en:france"]),
+                                  self.product("12345679", countries_tags=["en:turkiye"]))
+        self.assertEqual([p["code"] for p in kept], ["8691234567890", "12345679"])
+
+    def test_a_product_without_a_name_or_a_nutrient_or_with_an_impossible_one_is_dropped(self):
+        full = {"energy-kcal_100g": 100, "proteins_100g": 1, "carbohydrates_100g": 1, "fat_100g": 1}
+        kept, _ = self.run_filter("not json", self.product(product_name=""),
+                                  self.product(nutriments={**full, "fat_100g": None}),
+                                  self.product(nutriments={k: v for k, v in full.items() if k != "proteins_100g"}),
+                                  self.product(nutriments={**full, "energy-kcal_100g": 901}),
+                                  self.product(nutriments={**full, "fat_100g": -1}),
+                                  self.product(code="86905040123x5"))
+        self.assertEqual(kept, [])
+
+    def test_the_fetch_streams_the_dump_through_the_filter_and_moves_the_file_in_whole(self):
+        script = (DEPLOY / "fetch-off.sh").read_text()
+        self.assertIn("curl -fsSL https://static.openfoodfacts.org/data/openfoodfacts-products.jsonl.gz | gunzip -c | python3 -I /opt/keel/deploy/off_filter.py", script)
+        self.assertRegex(script, r"> \"\$part\"")
+        self.assertRegex(script, r"mv \"\$part\" off-tr\.jsonl")
+        self.assertLess(script.index('> "$part"'), script.index('mv "$part"'))
+        self.assertNotRegex(script, r"curl [^\n]*-o ", "the dump is not written to disk")
+
+    def test_the_backend_reads_the_file_from_the_mount_the_fetch_writes_to(self):
+        compose = (DEPLOY / "compose.yaml").read_text()
+        self.assertIn("KEEL_OFF_IMPORT_FILE: /off/off-tr.jsonl", compose)
+        self.assertIn("./off:/off:ro", compose)
+        self.assertIn("dir=/opt/keel/off", (DEPLOY / "fetch-off.sh").read_text())
+
+    def test_the_readme_lists_both_files(self):
+        readme = (DEPLOY / "README.md").read_text()
+        self.assertIn("`fetch-off.sh`", readme)
+        self.assertIn("`off_filter.py`", readme)
 
 
 if __name__ == "__main__":
