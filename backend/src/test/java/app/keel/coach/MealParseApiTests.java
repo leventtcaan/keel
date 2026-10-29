@@ -63,7 +63,7 @@ class MealParseApiTests {
                 ('k504:4', 'Zkegg, whole, raw', null, 'FOUNDATION', 143, 13, 1, 10),
                 ('k504:5', 'Zkeggnog', null, 'FOUNDATION', 88, 5, 8, 4),
                 ('k504:6', 'Zkhen wings', 'Zkfarm', 'BRANDED', 203, 30, 0, 8),
-                ('k504:7', 'Zkhen nuggets', null, 'FOUNDATION', 296, 15, 16, 19),
+                ('k504:7', 'Zkhen nuggets', null, 'BRANDED', 296, 15, 16, 19),
                 ('k504:8', 'Zkhen soup', null, 'FOUNDATION', 50, 4, 5, 2),
                 ('k504:9', 'Zkstew, beef', null, 'FOUNDATION', 95, 7, 8, 4)
                 on conflict (id) do nothing""").update();
