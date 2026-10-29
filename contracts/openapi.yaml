@@ -3087,6 +3087,10 @@ components:
           $ref: "#/components/schemas/KcalRange"
         proteinG:
           $ref: "#/components/schemas/GramRange"
+        carbsG:
+          $ref: "#/components/schemas/GramRange"
+        fatG:
+          $ref: "#/components/schemas/GramRange"
         question:
           $ref: "#/components/schemas/AmountQuestion"
     AmountQuestion:

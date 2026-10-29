@@ -2355,6 +2355,8 @@ export interface components {
             items: components["schemas"]["EstimatedItem"][];
             kcal: components["schemas"]["KcalRange"];
             proteinG: components["schemas"]["GramRange"];
+            carbsG?: components["schemas"]["GramRange"];
+            fatG?: components["schemas"]["GramRange"];
             question?: components["schemas"]["AmountQuestion"];
         };
         /** @description The one question that would narrow the range most, about the item that dominates it. */
