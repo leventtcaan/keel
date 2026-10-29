@@ -416,7 +416,10 @@ export interface paths {
         put?: never;
         /**
          * Search the food database by name
-         * @description A POST so the search words stay out of URLs and access logs (V3).
+         * @description A POST so the search words stay out of URLs and access logs (V3). Forgiving: a prefix, a plural ("eggs") and a
+         *     small typo ("bananna") all find the food. Best first: the food itself for a generic word ("egg", "rice"), the
+         *     product for a brand word, the user's own and the most logged foods ahead of the rest, and the foods of the user's
+         *     region first (from `Accept-Language`, e.g. `en-US`; without it, from the profile's time zone; else no preference).
          */
         post: operations["searchFoods"];
         delete?: never;
@@ -435,8 +438,9 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * The product with this barcode (USDA FDC Branded Foods, ADR-008)
-         * @description A POST so the barcode stays out of URLs and access logs (V3). NOT_FOUND when FDC has no such product.
+         * The product with this barcode (USDA FDC Branded Foods, Open Food Facts US and Turkey; ADR-008, ADR-088, ADR-090)
+         * @description A POST so the barcode stays out of URLs and access logs (V3). USDA Branded first, then Open Food Facts of the user's
+         *     region (as for the search). NOT_FOUND when no database has such a product.
          */
         post: operations["lookUpBarcode"];
         delete?: never;
@@ -2062,12 +2066,20 @@ export interface components {
             activeEnergyKcal?: number;
         };
         Food: {
-            /** @description The database's identifier (USDA FoodData Central, ADR-008). */
+            /** @description The database's identifier (USDA FoodData Central, ADR-008; Open Food Facts, ADR-088). */
             id: string;
             name: string;
             brand?: string;
             per100g: components["schemas"]["Nutrients"];
+            /** @description The household measures the database gives, as they are named. `portions` is the list to show. */
             servings?: components["schemas"]["Serving"][];
+            /**
+             * @description Every way to log this food (ADR-090 #1, #5): its household measures ("1 large", "1 slice", "1 cup"), the label
+             *     serving of a product, and always g and oz (and ml where the density is known). The default portion comes first.
+             *     Each carries its own numbers, one per nutrient, so a result row can say "1 large egg, 72 kcal".
+             */
+            portions?: components["schemas"]["Portion"][];
+            defaultAmount?: components["schemas"]["Amount"];
         };
         Nutrients: {
             kcal: components["schemas"]["KcalRange"];
@@ -2080,12 +2092,35 @@ export interface components {
             name: string;
             grams: number;
         };
+        /**
+         * @description One way to log a food. Send `unit` as `Amount.unit` with a quantity of how many of it. The numbers are for one of
+         *     it, as single numbers (ADR-090 #5): the middle of the range, and for a product the label's value; the ranges stay in
+         *     `per100g` and in the estimate (/v1/food-estimates), where the user can open them.
+         */
+        Portion: {
+            /** @description What to send as `Amount.unit`, e.g. "1 large", "1 slice", "1 cup", "g", "oz", "ml". */
+            unit: string;
+            /** @description What to show for it, e.g. "1 large", "1 serving (30 g)", "g". */
+            label: string;
+            /**
+             * @description PIECE a countable ("1 large", "1 slice"); SERVING a product's label serving; MEASURE a household measure
+             *     ("1 cup", "1 tbsp", "3 oz"); WEIGHT g or oz; VOLUME ml.
+             * @enum {string}
+             */
+            kind: "PIECE" | "SERVING" | "MEASURE" | "WEIGHT" | "VOLUME";
+            /** @description What one of it weighs (for ml, one millilitre). */
+            grams: number;
+            kcal: number;
+            proteinG: number;
+            carbsG: number;
+            fatG: number;
+        };
         Amount: {
             /** @description At most 2 decimals; the amount it makes is at most 5000 g. */
             quantity: number;
             /**
-             * @description grams (g), millilitres (ml: only for a food with a known density) or the name of one of the food's servings
-             *     (a serving is a measure: its own range, whatever certainty says).
+             * @description grams (g), ounces (oz), millilitres (ml: only for a food with a known density) or the name of one of the food's
+             *     servings (a serving is a measure: its own range, whatever certainty says).
              */
             unit: string;
             /**
