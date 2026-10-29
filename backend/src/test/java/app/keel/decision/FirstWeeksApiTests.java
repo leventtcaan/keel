@@ -106,6 +106,8 @@ class FirstWeeksApiTests {
         // none done is no risk (U7). This week's words are the program's (theProgramsDaysDecideWhetherTrainingIsPlanned).
         AccountId account = ready(List.of());
         program(account, "MONDAY");
+        // The profile follows the program's weekdays (ADR-090 Ek 1); what this week asks is what the profile asked before the program.
+        jdbc.sql("update profile.profile set training_days = '{}' where account_id = :a").param("a", account.value()).update();
         jdbc.sql("with made as (update training.program set created_at = now() - interval '3 days' where account_id = :a returning created_at) "
                 + "update training.program_history set effective_from = (select created_at from made) where account_id = :a").param("a", account.value()).update();
         began(account, today().minusDays(35));

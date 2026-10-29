@@ -167,7 +167,9 @@ class ProgramReviewControllerTests {
             }).toList());
             return edited;
         }).toList();
-        Map<String, Object> edited = map(send("PATCH", account, "/v1/program", Map.of("days", edit)));
+        MvcTestResult patched = send("PATCH", account, "/v1/program", Map.of("days", edit));
+        assertThat(patched.getResponse().getStatus()).as(patched.getResponse().getContentAsString()).isEqualTo(200);
+        Map<String, Object> edited = map(patched);
         assertThat(suggestions(edited)).containsExactly("REP_RANGE:squat");
 
         Map<String, Object> program = map(send("POST", account, "/v1/program/review/apply", Map.of("reviewId", reviewId(edited),

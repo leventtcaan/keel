@@ -60,9 +60,27 @@ final class AccountFixture {
         send(account, "POST", "/v1/photo-checks", Map.of("clientId", UUID.randomUUID(), "takenOn", "2026-09-30", "look", "SAME"));
         send(account, "POST", "/v1/body-looks", Map.of("clientId", UUID.randomUUID(), "takenOn", "2026-09-30", "level", 3));
         send(account, "PUT", "/v1/activity-days", Map.of("day", "2026-09-30", "steps", 8000));
-        // Six days: the one generated program the review still has a suggestion for, fewer days (K-985: the templates pass it).
-        MvcTestResult program = send(account, "POST", "/v1/program/generate", Map.of("trainingDays",
-                List.of("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY")));
+        // A generated program the user edited (a squat at 3 to 5 reps, outside K-21): the review has a suggestion to apply (K-1060: the
+        // review no longer brings six days down, ADR-090 #3).
+        MvcTestResult generated = send(account, "POST", "/v1/program/generate", Map.of("trainingDays", List.of("MONDAY", "TUESDAY", "THURSDAY", "FRIDAY")));
+        Map<?, ?> first = JSON.readValue(generated.getResponse().getContentAsString(), Map.class);
+        List<Map<String, Object>> edit = new java.util.ArrayList<>();
+        for (Object rawDay : (List<?>) first.get("days")) {
+            Map<?, ?> day = (Map<?, ?>) rawDay;
+            List<Map<String, Object>> moves = new java.util.ArrayList<>();
+            for (Object rawMove : (List<?>) day.get("exercises")) {
+                Map<?, ?> move = (Map<?, ?>) rawMove;
+                Map<String, Object> one = new java.util.HashMap<>();
+                one.put("id", move.get("id"));
+                one.put("exerciseId", move.get("exerciseId"));
+                one.put("sets", move.get("baseSets"));
+                one.put("reps", "squat".equals(move.get("exerciseId")) ? Map.of("min", 3, "max", 5) : move.get("reps"));
+                moves.add(one);
+            }
+            edit.add(Map.of("id", day.get("id"), "weekday", day.get("weekday"), "exercises", moves));
+        }
+        MvcTestResult program = send(account, "PATCH", "/v1/program", Map.of("days", edit));
+        assertThat(program.getResponse().getStatus()).as(program.getResponse().getContentAsString()).isEqualTo(200);
         // A suggestion of the program's review applied (K-956): the change log, with the program before and after, is the account's.
         Map<?, ?> review = (Map<?, ?>) JSON.readValue(program.getResponse().getContentAsString(), Map.class).get("review");
         List<?> suggestions = (List<?>) review.get("suggestions");
