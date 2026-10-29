@@ -17,6 +17,7 @@ import { tokens } from '@/theme/tokens';
 import type { LocalRecord } from '@/sync/store';
 import { load } from '@/today/today';
 import { useReadOnFocus } from '@/today/useReadOnFocus';
+import { BuildProgramPrompt } from '@/train/BuildProgramPrompt';
 import { CallRow } from '@/train/CallRow';
 import { changeToday } from '@/train/changes';
 import { dayName, programNotes } from '@/train/program';
@@ -113,7 +114,14 @@ export default function TrainScreen() {
         <Button label={t('train.retry')} variant="ghost" size="sm" onPress={reload} />
       </View>
     ) : null;
-  const none = data?.program.state === 'none' ? <Text style={[styles.text, { color: color.textSecondary }]}>{t('train.none')}</Text> : null;
+  // No program (K-1037, ADR-084): said, and the way to build one.
+  const none =
+    data?.program.state === 'none' ? (
+      <View style={styles.note}>
+        <Text style={[styles.text, { color: color.textSecondary }]}>{t('train.none')}</Text>
+        <BuildProgramPrompt />
+      </View>
+    ) : null;
   const kept = data?.kept === true && program !== null ? <Text style={[styles.small, { color: color.muted }]}>{t('train.kept')}</Text> : null;
   // The first read on its way: a calm sign, not an empty page (simulator walk, K-970).
   const loading =

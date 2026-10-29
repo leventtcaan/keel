@@ -442,6 +442,34 @@ describe("a call declined: last week's plan kept (K-963, user test 8 Oct)", () =
   });
 });
 
+describe('an account with no program (K-1037, ADR-084)', () => {
+  beforeEach(() => {
+    mockAnswers['/v1/program'] = refused(404, 'NOT_FOUND');
+  });
+
+  test("the training card's place has the way out: the line and Build my program, which opens the days question", async () => {
+    await show();
+    expect(screen.getByText(t('buildProgram.line'))).toBeOnTheScreen();
+    await press(t('buildProgram.action'));
+    expect(mockPush).toHaveBeenCalledWith('/build-program');
+    // The program is read once, as before: the card learns from the week's own read.
+    expect(mockGET.mock.calls.filter(([path]) => path === '/v1/program')).toHaveLength(1);
+  });
+
+  test('a program that could not be read (offline) is not a missing one: no Build my program', async () => {
+    mockAnswers['/v1/program'] = 'offline';
+    await show();
+    expect(screen.queryByText(t('buildProgram.action'))).toBeNull();
+  });
+
+  test('with a program, the card is the training card and there is no Build my program', async () => {
+    mockAnswers['/v1/program'] = ok(PROGRAM);
+    await show();
+    expect(screen.queryByText(t('buildProgram.action'))).toBeNull();
+    expect(screen.getByTestId('today-card')).toBeOnTheScreen();
+  });
+});
+
 describe('without the health data consent (ADR-072 Ek 1: no consent, no line)', () => {
   beforeEach(() => {
     for (const path of ['/v1/consistency', '/v1/decisions/current', '/v1/first-weeks', '/v1/weigh-ins', '/v1/days/{day}/budget']) {

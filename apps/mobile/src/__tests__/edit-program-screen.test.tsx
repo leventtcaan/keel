@@ -136,6 +136,33 @@ const show = () =>
     </ThemeProvider>,
   );
 
+describe('an account with no program (K-1037, ADR-084)', () => {
+  beforeEach(() => {
+    mockData = { program: { state: 'none' }, exercises: { state: 'ready', value: [] }, kept: false };
+  });
+
+  test.each(['', 'days', 'cardio'])('part "%s": the line and Build my program in place of a lone Back; it opens the days question', async (part) => {
+    mockParams = part === '' ? {} : { part };
+    await show();
+    expect(await screen.findByText(t('buildProgram.line'))).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: t('buildProgram.action') }));
+    expect(mockPush).toHaveBeenCalledWith('/build-program');
+  });
+
+  test('Back is still there', async () => {
+    await show();
+    expect(await screen.findByText(t('buildProgram.line'))).toBeOnTheScreen();
+    expect(screen.getByText(t('editProgram.back'))).toBeOnTheScreen();
+  });
+
+  test('not while the program is still being read, and not when it failed to load', async () => {
+    mockData = { program: { state: 'failed', problem: 'NoConnection' }, exercises: { state: 'failed', problem: 'NoConnection' }, kept: false };
+    await show();
+    await act(async () => {});
+    expect(screen.queryByText(t('buildProgram.action'))).toBeNull();
+  });
+});
+
 describe('the page', () => {
   test("each part a row with what it holds now; the split is the program's real one", async () => {
     await show();

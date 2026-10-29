@@ -478,6 +478,17 @@
     "skippedTag": "skipped",
     "doneTag": "Done"
   },
+  "buildProgram": {
+    "title": "Build my program",
+    "action": "Build my program",
+    "line": "Pick your training days and we build the program.",
+    "note": "We place the days. Move them anytime. Session 1 finds your weights.",
+    "building": "Building your program…",
+    "offline": "No connection. Try again when you're online.",
+    "failed": "Your program couldn't be built. Try again.",
+    "retry": "Try again",
+    "back": "Back"
+  },
   "editProgram": {
     "title": "Edit program",
     "edit": "Edit",

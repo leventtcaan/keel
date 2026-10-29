@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
 import { PlusEntry } from '@/components/PlusEntry';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
@@ -19,6 +20,7 @@ import { TodayCard } from '@/today/TodayCard';
 import { todayCardOf } from '@/today/todayWorkout';
 import { useToday } from '@/today/useToday';
 import { WeekStrip } from '@/today/WeekStrip';
+import { BuildProgramPrompt } from '@/train/BuildProgramPrompt';
 import { todayFor } from '@/train/week';
 import { heroOf, loggedDays, stripDays, trainedDays, weekHead, weekMonday } from '@/today/week';
 
@@ -61,6 +63,13 @@ export default function TodayScreen() {
     const now = data.readAt ?? new Date();
     const today = todayFor(read?.program ?? null, kept, now);
     const card = todayCardOf({ program: read?.program ?? null, kept, records: data.records ?? [], now });
+    // No program on the server (not one that could not be read): the training card's place is the way to build one (K-1037).
+    const noProgram =
+      data.program.state === 'none' ? (
+        <Card testID="build-program-card">
+          <BuildProgramPrompt />
+        </Card>
+      ) : null;
     top = (
       <>
         <WeekStrip head={weekHead(data.consistency, data.firstWeeks)} days={stripDays(monday, today, sessions, trainedDays(data.week?.workouts), loggedDays(data.week?.weighIns))} />
@@ -68,6 +77,7 @@ export default function TodayScreen() {
             check-in open the Monday block is the one hero: the check-in asks whether the state still holds (word budget). */}
         {stateCard}
         <Hero hero={hero} today={today} onChanged={reload} />
+        {noProgram}
         <TodayCard
           card={card}
           program={read?.program ?? null}
