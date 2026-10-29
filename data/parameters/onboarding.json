@@ -62,28 +62,12 @@
       "note": "Where the about-you wheels start (prototype #ob-about: 178 cm, 84 kg, born 1999 in 2026). Height and year start as the answer, so Continue is open; the weight goes out as the first weigh-in, so it counts only once the person moves its wheel."
     },
     {
-      "key": "height_wheel_cm",
-      "value": { "min_cm": 140, "max_cm": 210 },
-      "unit": "cm",
-      "tag": "urun",
-      "source": "plan/yeni-yuz-kurallar.md#R6",
-      "note": "The height wheel's first and last rows (prototip/yeni-yuz.html WHEELS.height: 140 to 210), inside what the profile accepts (height_min_cm, height_max_cm). The wheel is a short list to pick from, not the limit of what the server keeps; imperial runs over the whole inches whose centimetres fall in it (K-1049)."
-    },
-    {
       "key": "default_training_days",
       "value": 3,
       "unit": "days_per_week",
       "tag": "urun",
       "source": "plan/yeni-yuz-kurallar.md#R6",
       "note": "How many days the days question opens on (prototip/yeni-yuz.html S.ob.daysN: 3, #ob-days), one of default_day_sets. A tap on a box still confirms it; the engine never proposes fewer than three (ADR-071 #8) (K-1049)."
-    },
-    {
-      "key": "about_default_sex",
-      "value": "MALE",
-      "unit": "Sex",
-      "tag": "urun",
-      "source": "plan/yeni-yuz-kurallar.md#R6",
-      "note": "Which of the two sex answers #ob-about opens on (prototip/yeni-yuz.html S.ob.sex: male, #ob-about); the other is one tap away (K-1049)."
     },
     {
       "key": "weight_wheel",

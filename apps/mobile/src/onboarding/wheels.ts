@@ -23,18 +23,13 @@ export function heightFromWheel(value: number, system: UnitSystem, height: Heigh
 }
 
 /**
- * Metric: every whole centimetre of the wheel (P.heightWheel, the prototype's 140 to 210, inside what the profile accepts).
- * Imperial: every whole inch whose height falls in the same span (a count of inches is never more than the centimetres it
- * measures, so the profile's top in centimetres bounds the search).
+ * Metric: every whole centimetre the profile accepts. Imperial: every whole inch whose height it accepts (a count of
+ * inches is never more than the centimetres it measures, so the profile's top in centimetres bounds the search).
  */
 export function heightValues(system: UnitSystem): number[] {
-  const { min_cm: min, max_cm: max } = P.heightWheel;
-  if (system === 'METRIC') return rows(min, max, 1);
+  if (system === 'METRIC') return rows(P.heightMinCm, P.heightMaxCm, 1);
   const none: Height = { cm: '', feet: '', inches: '' };
-  return rows(0, P.heightMaxCm, 1).filter((inches) => {
-    const cm = heightCm(heightFromWheel(inches, 'IMPERIAL', none), 'IMPERIAL');
-    return cm !== null && cm >= min && cm <= max;
-  });
+  return rows(0, P.heightMaxCm, 1).filter((inches) => heightCm(heightFromWheel(inches, 'IMPERIAL', none), 'IMPERIAL') !== null);
 }
 
 /** The starting height in both systems' fields: the centimetres, and the whole inches nearest to them. */

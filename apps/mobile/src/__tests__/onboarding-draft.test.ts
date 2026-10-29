@@ -72,22 +72,21 @@ describe('steps', () => {
   });
 });
 
-describe('where the walk starts (prototype: 3 days, Male; K-1049)', () => {
-  test('three training days, placed by the parameter, and Male', () => {
-    expect(startingAnswers()).toEqual({ trainingDays: defaultTrainingDays(3), sex: 'MALE' });
+describe('where the walk starts (prototype: 3 days; K-1049)', () => {
+  test('three training days, placed by the parameter; no sex: that is always the person\'s own answer', () => {
+    expect(startingAnswers()).toEqual({ trainingDays: defaultTrainingDays(3) });
     expect(onboardingParams.defaultTrainingDays).toBe(3);
-    expect(onboardingParams.defaultSex).toBe('MALE');
   });
-
   test('an empty draft still leaves no step: the starting answers are the walk\'s, not the draft\'s', () => {
     expect(emptyDraft.trainingDays).toEqual([]);
     expect(emptyDraft.sex).toBeNull();
   });
 
-  test('with them, the days and about-you steps need nothing more (a height and a year come from the wheels)', () => {
+  test('with them the days step needs nothing more; about-you still needs the sex', () => {
     const start = { ...emptyDraft, ...startingAnswers(), height: { cm: '178', feet: '', inches: '' }, birthYear: '1999' };
     expect(stepComplete('days', start, 'METRIC', THIS_YEAR)).toBe(true);
-    expect(stepComplete('about', start, 'METRIC', THIS_YEAR)).toBe(true);
+    expect(stepComplete('about', start, 'METRIC', THIS_YEAR)).toBe(false);
+    expect(stepComplete('about', { ...start, sex: 'FEMALE' }, 'METRIC', THIS_YEAR)).toBe(true);
   });
 });
 

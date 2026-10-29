@@ -68,11 +68,12 @@ export const emptyDraft: Draft = {
 };
 
 /**
- * Where the walk's own answers start (prototype S.ob: 3 days, male): the days question opens on three boxes' worth of days
- * and about-you on one sex, each still a tap away from another. Not in `emptyDraft`, which asks everything.
+ * Where the walk's own answers start (prototype S.ob.daysN: 3): the days question opens on three boxes' worth of days, a tap
+ * away from another count. Not in `emptyDraft`, which asks everything. The sex has no start: it feeds the energy math and the
+ * observation days, so it is always the person's own answer (K-1049, orchestrator decision).
  */
-export function startingAnswers(): Pick<Draft, 'trainingDays' | 'sex'> {
-  return { trainingDays: defaultTrainingDays(P.defaultTrainingDays) ?? [], sex: P.defaultSex };
+export function startingAnswers(): Pick<Draft, 'trainingDays'> {
+  return { trainingDays: defaultTrainingDays(P.defaultTrainingDays) ?? [] };
 }
 
 /**

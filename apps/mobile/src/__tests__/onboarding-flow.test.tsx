@@ -634,6 +634,7 @@ describe('days (ADR-072 #4)', () => {
     await choose(t('onboarding.days.label', { count: 5 }));
     await press(t('onboarding.healthData.notNow'));
     await press(t('onboarding.consent.continueWithout'));
+    await press(t('onboarding.about.male'));
     await press(t('onboarding.continue'));
     await endWalk();
     const sent = mockProfile.store.mock.calls[0][0] as { schedule: { trainingDays: unknown } };
@@ -978,29 +979,15 @@ describe('#ob-about (ADR-072 #2)', () => {
     });
     expect(wheel(t('onboarding.about.born')).props.accessibilityValue).toEqual({ text: `${SUGGESTED_YEAR} ${t('onboarding.about.year')}` });
     expect(screen.getByText(t('onboarding.about.sex'))).toBeOnTheScreen();
-    // Male is chosen when the question opens (prototype #ob-about), so Continue is open; the other stays one tap away.
-    expect(screen.getByRole('button', { name: t('onboarding.about.male') })).toBeSelected();
-    expect(screen.getByRole('button', { name: t('onboarding.about.female') })).not.toBeSelected();
-    expect(continueButton()).toBeEnabled();
+    expect(continueButton()).toBeDisabled(); // the sex is not suggested
     await press(t('onboarding.about.female'));
-    expect(screen.getByRole('button', { name: t('onboarding.about.female') })).toBeSelected();
-    expect(screen.getByRole('button', { name: t('onboarding.about.male') })).not.toBeSelected();
     expect(continueButton()).toBeEnabled();
   });
 
-  test('sex left as it opened is Male in the profile; changed, it is the one chosen', async () => {
+  test('neither sex is chosen when the question opens: it feeds the energy math, so it is always the answer given', async () => {
     await walkTo('about');
-    await press(t('onboarding.continue'));
-    await endWalk();
-    expect(mockProfile.store.mock.calls[0][0]).toMatchObject({ sex: 'MALE' });
-  });
-
-  test('the height wheel runs from 140 to 210 cm (prototype), not the 100-250 the profile accepts', async () => {
-    await walkTo('about');
-    await turn(t('onboarding.about.height'), 'decrement', 100);
-    expect(wheel(t('onboarding.about.height')).props.accessibilityValue).toEqual({ text: `140 ${t('units.cmUnit')}` });
-    await turn(t('onboarding.about.height'), 'increment', 100);
-    expect(wheel(t('onboarding.about.height')).props.accessibilityValue).toEqual({ text: `210 ${t('units.cmUnit')}` });
+    expect(screen.getByRole('button', { name: t('onboarding.about.male') })).not.toBeSelected();
+    expect(screen.getByRole('button', { name: t('onboarding.about.female') })).not.toBeSelected();
   });
 
   test('a year under 18 cannot be chosen: the wheel ends on the youngest adult year (ADR-027 #13)', async () => {
