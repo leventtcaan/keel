@@ -5357,6 +5357,24 @@ tasks:
     tests: ["jest workout + workout-end + workout-summary + stepper", "tools/anayasa-denetimi.sh"]
     refs: ["plan/kararlar/ADR-070-gorsel-dil-turkuaz.md", "prototip/yeniden-yapim.html"]
 
+  - id: K-1048
+    title: "Yeniden yapım Evre 4.1: tutarlılık turu (hareket ikonları, karar kartı etiketi, antrenman ilk görünüm, yemek silme uyarısı, bant yeri, tartı aralığı)"
+    milestone: M10
+    module: mobile
+    type: fix
+    size: S
+    status: doing
+    depends_on: [K-1045, K-1046, K-1047]
+    why: "Sahte sunucu görsel turunda kalanlar (envanter T-12 ve Evre 2 sonrası): ADR-070 Ek 2, ADR-087"
+    acceptance:
+      - "MoveThumb yalnız ekipman sınıfı ikonu; bilinmeyen ekipmanda ikon yok"
+      - "Karar kartında prototipteki üst etiket (This week's call); boş üst alan yok"
+      - "Antrenman: ilerleme çubuğu üstündeki boş şerit yok; set kartının Reps left satırı ilk görünümde dock'un üstünde (iPhone SE dahil)"
+      - "Delete this meal sistem uyarısı; UndoBanner + düğmesini örtmez; tartı grafik aralığı Segmented"
+      - "jest + anayasa denetimi yeşil; kanıt simülatörde"
+    tests: ["jest today + workout + meal-edit + saved-banner + weigh-in", "tools/anayasa-denetimi.sh"]
+    refs: ["plan/kararlar/ADR-070-gorsel-dil-turkuaz.md", "plan/kararlar/ADR-087-kirik-gorunum-duzeltmeleri.md", "prototip/yeniden-yapim.html"]
+
   - id: K-1010
     title: "Sunucudaki ek siteler: Caddy /opt/sites altındaki *.caddy dosyalarını içeri alır"
     milestone: M9
