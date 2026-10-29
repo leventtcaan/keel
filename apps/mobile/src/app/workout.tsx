@@ -45,6 +45,8 @@ import { NOT_PAUSED, type Pause, pausedFor, toggle } from '@/train/pause';
 import type { Skips } from '@/train/skips';
 import { type Swaps, applySwaps, swapChoices, validSwaps } from '@/train/sessionSwaps';
 import { SwapSheet } from '@/train/SwapSheet';
+import { TakenSheet } from '@/train/TakenSheet';
+import { orderBehind, pushBehind, takenChoices } from '@/train/taken';
 import { workoutParams } from '@/train/params';
 import { repsText } from '@/train/reps';
 import { buildSet, exerciseStatus, loadText, parseEntry, parseLoad, platesLine } from '@/train/session';
@@ -119,6 +121,11 @@ function Session() {
   // while `swapping`.
   const [swaps, setSwaps] = useState<Swaps>({});
   const [swapping, setSwapping] = useState(false);
+  // Taken (ADR-090 Ek 2, K-1064): the planned moves put behind ("Do it later"), in the order they were put there; the moves found
+  // taken, sent with the finish; and the sheet, open for `move`, with the move to go back to when it was opened on the next one.
+  const [behind, setBehind] = useState<string[]>([]);
+  const [taken, setTaken] = useState<string[]>([]);
+  const [taking, setTaking] = useState<{ move: string; back: string | null } | null>(null);
   // The last step (K-973, ADR-075 #6): the cardio after the weights, open while shown; what was chosen there but Done.
   const [cardioOpen, setCardioOpen] = useState(false);
   const [cardioChoice, setCardioChoice] = useState<'later' | 'skipped' | null>(null);
@@ -147,6 +154,8 @@ function Session() {
     skips: Skips;
     swaps: Swaps;
     left: string[];
+    behind: string[];
+    taken: string[];
     /** A cardio was logged in it: that record is its own and stays (ADR-075 Ek 9), and the page says so. */
     cardio: boolean;
     /** The ids it comes back under, made once: an Undo that failed half way and is tried again adds nothing twice. */
@@ -188,6 +197,8 @@ function Session() {
         setSkips(skipped);
         setSwaps(open === null ? {} : await sessionSwaps.read(open.clientId));
         setLeft(open === null ? [] : await sessionSwaps.readLeft(open.clientId));
+        setBehind(open === null ? [] : await sessionSwaps.readBehind(open.clientId));
+        setTaken(open === null ? [] : await sessionSwaps.readTaken(open.clientId));
         setData(read);
         setOwn(mine);
         pauseRef.current = paused;
@@ -232,8 +243,15 @@ function Session() {
   const extraIds = [...new Set([...done.map((s) => s.exerciseId).filter((id) => !added.includes(id)), ...added])].filter(
     (id) => !planIds.includes(id) && moves.has(id),
   );
+  // The moves put behind (Taken, "Do it later") are the end of the plan, in the order they were put there; by the planned move
+  // they stand in for, so a swap does not bring one back.
+  const planned_ = orderBehind(
+    shown.map((p, i) => ({ exerciseId: p.exerciseId, planned: p, base: today[i] })),
+    (e) => e.base?.exerciseId ?? e.exerciseId,
+    behind,
+  );
   const entries: { exerciseId: string; planned?: components['schemas']['PlannedExercise']; base?: components['schemas']['PlannedExercise'] }[] =
-    day === null ? [] : [...shown.map((p, i) => ({ exerciseId: p.exerciseId, planned: p, base: today[i] })), ...extraIds.map((exerciseId) => ({ exerciseId }))];
+    day === null ? [] : [...planned_, ...extraIds.map((exerciseId) => ({ exerciseId }))];
   const plans: (ExercisePlan | null)[] =
     records === null
       ? []
@@ -346,7 +364,7 @@ function Session() {
     // So are the skips before it.
     if (Object.keys(skips).length > 0) await sessionSkips.keep(clientId, skips);
     // And the swaps before it, with the moves swapped away from.
-    if (Object.keys(swaps).length > 0 || left.length > 0) await sessionSwaps.keep(clientId, swaps, left);
+    if (Object.keys(swaps).length > 0 || left.length > 0 || behind.length > 0 || taken.length > 0) await sessionSwaps.keep(clientId, swaps, left, { behind, taken });
     return clientId;
   };
 
@@ -468,7 +486,7 @@ function Session() {
       // The time paused (K-998), within the session's length: the summary's minutes and Health's are the active time.
       const lengthMs = Math.max(0, end.getTime() - Date.parse(active.startedAt));
       const pausedMs = Math.min(lengthMs, pausedFor(pauseRef.current, end.getTime()));
-      await queue.record(finishRecord(active.clientId, newClientId(), end, [...unclean], sessionNote, Math.floor(pausedMs / 1000)));
+      await queue.record(finishRecord(active.clientId, newClientId(), end, [...unclean], sessionNote, Math.floor(pausedMs / 1000), taken));
       // Finished, its pause, skips and swaps are done with (the time paused went with the finish, K-998).
       void sessionPause.forget().catch(named);
       void sessionSkips.forget().catch(named);
@@ -618,6 +636,8 @@ function Session() {
       skips,
       swaps,
       left,
+      behind,
+      taken,
       cardio: cardioLogged,
       back: { workout: newClientId(), sets: active.sets.map(() => newClientId()) },
     };
@@ -662,7 +682,9 @@ function Session() {
       }
       if (discarded.pause.pausedAt !== null || discarded.pause.pausedMs > 0) await sessionPause.keep(back.workout, discarded.pause);
       if (Object.keys(discarded.skips).length > 0) await sessionSkips.keep(back.workout, discarded.skips);
-      if (Object.keys(discarded.swaps).length > 0 || discarded.left.length > 0) await sessionSwaps.keep(back.workout, discarded.swaps, discarded.left);
+      if (Object.keys(discarded.swaps).length > 0 || discarded.left.length > 0 || discarded.behind.length > 0 || discarded.taken.length > 0) {
+        await sessionSwaps.keep(back.workout, discarded.swaps, discarded.left, { behind: discarded.behind, taken: discarded.taken });
+      }
       setDiscarded(null);
       setProblem(null);
     } catch (error) {
@@ -675,15 +697,17 @@ function Session() {
 
   // Adding a move outside the plan (K-416): found in the catalog by name or alias, on the phone (offline too).
   // The swaps and the moves swapped away from, kept with the workout once there is one (K-972, K-973); see Swap below.
-  const keepSwaps = (next: Swaps, nextLeft: string[]) => {
+  const keepSwaps = (next: Swaps, nextLeft: string[], nextBehind: string[] = behind, nextTaken: string[] = taken) => {
     setSwaps(next);
     setLeft(nextLeft);
-    if (active !== null) void sessionSwaps.keep(active.clientId, next, nextLeft).catch(named);
+    setBehind(nextBehind);
+    setTaken(nextTaken);
+    if (active !== null) void sessionSwaps.keep(active.clientId, next, nextLeft, { behind: nextBehind, taken: nextTaken }).catch(named);
   };
   const addMove = (id: string) => {
     setAdded((before) => (before.includes(id) ? before : [...before, id]));
     // A move swapped away from and added again is a move to do again, kept so (K-973): not closed when opened again.
-    if (left.includes(id)) keepSwaps(swaps, left.filter((other) => other !== id));
+    if (left.includes(id)) keepSwaps(swaps, left.filter((other) => other !== id), behind, taken);
     setPicked(id);
     setAdding(null);
     setCreating(null);
@@ -813,9 +837,10 @@ function Session() {
           equipment: moves.get(id)?.equipment,
           back: id === base.exerciseId,
         }));
-  const swapTo = (to: string) => {
+  const swapTo = (to: string, via?: { stay: string | null }) => {
     if (base === undefined || moveId === undefined) return;
     const before = swaps;
+    const takenBefore = taken;
     // Swapped by the move the session started with: the planned move again is no swap.
     const next = Object.fromEntries(Object.entries(swaps).filter(([id]) => id !== base.exerciseId));
     const back = to === base.exerciseId;
@@ -824,16 +849,24 @@ function Session() {
     setUndo({
       said,
       run: () => {
-        keepSwaps(before, leftBefore);
+        keepSwaps(before, leftBefore, behind, takenBefore);
         setPicked(moveId);
       },
     });
-    // The move swapped away from is out of its superset (the new one takes its place), and the new one is in it.
-    keepSwaps(back ? next : { ...next, [base.exerciseId]: to }, [...new Set([...left.filter((id) => id !== to), moveId])]);
+    // The move swapped away from is out of its superset (the new one takes its place), and the new one is in it. Done as a way
+    // out of a taken move, it is kept as taken (K-1064).
+    keepSwaps(
+      back ? next : { ...next, [base.exerciseId]: to },
+      [...new Set([...left.filter((id) => id !== to), moveId])],
+      behind,
+      via === undefined ? taken : [...new Set([...taken, moveId])],
+    );
     // The rest running was for the move before: a swap changes what comes next, so the timer and its alert go, as for a skip.
-    endRest();
-    setPicked(to);
+    // Opened on the next move, the swap is for that one and the person stays where they are.
+    if (via?.stay == null) endRest();
+    setPicked(via?.stay ?? to);
     setSwapping(false);
+    setTaking(null);
     // Said, not only shown (K-815).
     announce(said);
   };
@@ -890,6 +923,43 @@ function Session() {
   };
   const nextAt = openAfter(selected);
   const nextId = entries[nextAt]?.exerciseId;
+  /**
+   * Taken (ADR-090 Ek 2, K-1064; G1 K-77): the move's equipment is busy. "Do it later" puts the planned move at the end of today's
+   * order, a swap in the session does the move on other equipment (the same swapTo, so Undo, the superset and the planned move
+   * again work as for Swap). Either way the move is kept as taken, sent with the finish for later suggestions. Opened on the
+   * next move (`taking.back`), what is done leaves the person where they were.
+   */
+  const takenOptions =
+    base === undefined || moveId === undefined || plan === null || plan.current === null
+      ? []
+      : takenChoices({ base, current: moveId, inSession, known: (id) => moves.has(id), equipmentOf: (id) => moves.get(id)?.equipment, max: workoutParams.takenAlternativesMax, taken });
+  // Later needs a move left to put it behind, and one of the plan (a move added here has no place in it to move).
+  const canLater = base !== undefined && moveId !== undefined && plan !== null && plan.current !== null && nextAt >= 0;
+  const canTake = moveId !== undefined && (takenOptions.length > 0 || canLater);
+  const doLater = () => {
+    if (base === undefined || moveId === undefined) return;
+    const behindBefore = behind;
+    const takenBefore = taken;
+    const back = taking?.back ?? null;
+    const said = t('taken.laterSaid', { name: name(moveId) });
+    setUndo({
+      said,
+      run: () => {
+        keepSwaps(swaps, left, behindBefore, takenBefore);
+        setPicked(moveId);
+      },
+    });
+    keepSwaps(swaps, left, pushBehind(behind, base.exerciseId), [...new Set([...taken, moveId])]);
+    // The move after this one, in the order as it was: it stays that move when this one goes to the end.
+    if (back === null) endRest();
+    setPicked(back ?? nextId ?? moveId);
+    setTaking(null);
+    announce(said);
+  };
+  const closeTaken = () => {
+    if (taking?.back != null) setPicked(taking.back);
+    setTaking(null);
+  };
   const dots = (
     <MoveDots
       dots={entries.map((e, index) => {
@@ -1074,6 +1144,10 @@ function Session() {
     !canSwap || moveId === undefined ? null : (
       <Button label={t('workout.swap')} accessibilityLabel={t('swap.label', { move: name(moveId) })} variant="text" size="sm" onPress={() => setSwapping(true)} disabled={busy} />
     );
+  const takenButton =
+    !canTake || moveId === undefined ? null : (
+      <Button label={t('taken.open')} accessibilityLabel={t('taken.openLabel', { move: name(moveId) })} variant="text" size="sm" onPress={() => setTaking({ move: moveId, back: null })} disabled={busy} />
+    );
   const moreButton =
     moreActions.length === 0 || moveId === undefined ? null : (
       <Button label={t('workout.more')} variant="text" size="sm" onPress={() => setMenu(menuOpen ? null : { move: moveId, choosing: false })} />
@@ -1097,6 +1171,7 @@ function Session() {
             onPress={() => router.push({ pathname: '/exercise-history', params: { exercise: moveId } })}
           />
           {swapButton}
+          {takenButton}
           <View style={styles.grow} />
           {moreButton}
         </View>
@@ -1141,7 +1216,21 @@ function Session() {
   const partner = group === undefined || moveId === undefined ? null : nextInGroup(group[1], moveId, leftAfterThis).next;
   const upNextId = partner !== null && partner !== moveId ? partner : nextId;
   const upNext =
-    upNextId === undefined || row === null ? null : <UpNext name={name(upNextId)} equipment={moves.get(upNextId)?.equipment} />;
+    upNextId === undefined || row === null ? null : (
+      <UpNext
+        name={name(upNextId)}
+        equipment={moves.get(upNextId)?.equipment}
+        onTaken={
+          moveId === undefined || upNextId === moveId
+            ? undefined
+            : () => {
+                // The sheet is the next move's; closing it, or choosing, comes back to the move under way.
+                setPicked(upNextId);
+                setTaking({ move: upNextId, back: moveId });
+              }
+        }
+      />
+    );
 
   // The dock (ADR-075 #1): one place for the one thing to do now, so the button never moves. The set under way; the
   // move done, the next one with sets left; nothing left, the finish.
@@ -1269,8 +1358,25 @@ function Session() {
   const restSlot = restShown === null ? null : <View testID="rest-slot">{restShown}</View>;
   const swapSheet =
     moveId === undefined ? null : <SwapSheet move={name(moveId)} options={swapOptions} onPick={swapTo} onClose={() => setSwapping(false)} />;
+  const takenSheet =
+    moveId === undefined ? null : (
+      <TakenSheet
+        move={name(moveId)}
+        canLater={canLater}
+        options={takenOptions.map((choice) => ({ id: choice.id, name: name(choice.id), equipment: moves.get(choice.id)?.equipment, done: choice.done }))}
+        hasMore={swapOptions.length > takenOptions.length}
+        onLater={doLater}
+        onPick={(id) => swapTo(id, { stay: taking?.back ?? null })}
+        onMore={() => {
+          setTaking(null);
+          setSwapping(true);
+        }}
+        onClose={closeTaken}
+      />
+    );
+  const takingNow = taking !== null && taking.move === moveId;
   const dock =
-    dockButton === null || ending || swapping || discarded !== null ? null : (
+    dockButton === null || ending || swapping || takingNow || discarded !== null ? null : (
       <View testID="dock" style={[styles.dock, { borderTopColor: color.line }]}>
         {dockButton}
       </View>
@@ -1351,7 +1457,7 @@ function Session() {
           }}>
           {data?.kept === true && <Text style={[styles.small, { color: color.muted }]}>{t('workout.kept')}</Text>}
           {loadFailed}
-          {discarded !== null ? discardedPanel : ending ? endSheet : swapping ? swapSheet : finishing ? form : cardioShown ? cardioPage : session}
+          {discarded !== null ? discardedPanel : ending ? endSheet : swapping ? swapSheet : takingNow ? takenSheet : finishing ? form : cardioShown ? cardioPage : session}
         </ScrollView>
         {dock}
       </KeyboardAvoidingView>

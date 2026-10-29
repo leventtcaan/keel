@@ -28,6 +28,8 @@ export const workoutParams = {
   historyDays: param<number>('history_days'),
   noteMaxChars: param<number>('note_max_chars'),
   moveSearchResults: param<number>('move_search_results'),
+  /** How many other-equipment moves the workout's Taken sheet offers (ADR-090 Ek 2, K-1064; G1 K-77). */
+  takenAlternativesMax: param<number>('taken_alternatives_max'),
   /** How many moves the workout end's "What moved" lists (K-974); the rest are counted. */
   summaryMovesShown: param<number>('summary_moves_shown'),
   ownMoveNameMaxChars: param<number>('own_move_name_max_chars'),

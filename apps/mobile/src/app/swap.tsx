@@ -16,7 +16,9 @@ import { useReadOnFocus } from '@/today/useReadOnFocus';
 import { swapMove } from '@/train/changes';
 import { MoveThumb } from '@/train/MoveThumb';
 import { exerciseName } from '@/train/program';
+import { workoutParams } from '@/train/params';
 import { swapChoice } from '@/train/swap';
+import { takenChoices } from '@/train/taken';
 import { movesOf } from '@/train/trainData';
 import { sessionMoves, sessionState } from '@/train/week';
 
@@ -122,9 +124,22 @@ export default function SwapScreen() {
   } else if (choice !== null && to === null) {
     title = t('swap.title', { move: name(choice.current.exerciseId) });
     const plannedId = choice.planned.exerciseId;
-    const offered = todayOnly ? choice.todayOptions : choice.options;
+    // "Gym is busy" is the workout's Taken for a day not started (ADR-090 Ek 2, K-1064): a few moves of the same muscles on other
+    // equipment than the taken one, the ones done before first; the planned move first when a swap for today is in place.
+    const busy_ = todayOnly
+      ? takenChoices({
+          base: choice.planned,
+          current: choice.current.exerciseId,
+          inSession: new Set(target?.session.exerciseIds ?? []),
+          // The server's list is the catalog's: the screen has no other say on which moves exist.
+          known: () => true,
+          equipmentOf: (id) => moves.get(id)?.equipment,
+          max: workoutParams.takenAlternativesMax,
+        }).map((c) => c.id)
+      : [];
+    const offered = todayOnly ? [...(choice.swapped ? [plannedId] : []), ...busy_] : choice.options;
     // The user's own move has no options at all; a catalog move may have none in this gym.
-    const none = moves.get(choice.current.exerciseId)?.name !== undefined ? 'swap.noneOwn' : 'swap.none';
+    const none = todayOnly ? 'taken.none' : moves.get(choice.current.exerciseId)?.name !== undefined ? 'swap.noneOwn' : 'swap.none';
     const ways =
       offered.length === 0 && todayOnly ? (
         <View style={styles.rows}>
@@ -134,7 +149,7 @@ export default function SwapScreen() {
       ) : null;
     body = (
       <View style={styles.rows}>
-        {line(offered.length === 0 ? none : 'swap.why')}
+        {line(offered.length === 0 ? none : todayOnly ? 'taken.why' : 'swap.why')}
         {offered.map((id) => (
           <OptionRow
             key={id}

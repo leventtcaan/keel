@@ -231,11 +231,51 @@ test('"Gym is busy", a move with nothing to swap to: said for it, skip today ins
   mockParams = { day: 'a', scope: 'today' };
   await show();
   await fireEvent.press(await screen.findByText('Bench press'));
-  expect(screen.getByText(t('swap.none'))).toBeTruthy();
+  expect(screen.getByText(t('taken.none'))).toBeTruthy();
   await fireEvent.press(screen.getByText(t('swap.skipInstead')));
   expect(mockReplace).toHaveBeenCalledWith({ pathname: '/today-change', params: { day: 'a' } });
   await fireEvent.press(screen.getByText(t('swap.backToList')));
   expect(screen.getByText(t('swap.which'))).toBeTruthy();
+});
+
+// ADR-090 Ek 2 (K-1064): "Gym is busy" is the workout's Taken for a day not started: other equipment than the taken move's, a few.
+test('"Gym is busy" offers moves on other equipment than the taken one, at most three, the ones done before first', async () => {
+  const lat = {
+    ...PULLDOWN,
+    swapOptions: ['close_grip_lat_pulldown', 'pull_up', 'barbell_row', 'chest_supported_row', 'one_arm_dumbbell_row', 'seated_row'],
+    swapTables: [
+      { exerciseId: 'close_grip_lat_pulldown' },
+      { exerciseId: 'pull_up' },
+      { exerciseId: 'barbell_row' },
+      { exerciseId: 'chest_supported_row' },
+      { exerciseId: 'one_arm_dumbbell_row', lastBestSet: { loadKg: 24, reps: 10, rir: 1 } },
+      { exerciseId: 'seated_row' },
+    ],
+  };
+  const catalog = [
+    ['lat_pulldown', 'CABLE'],
+    ['close_grip_lat_pulldown', 'CABLE'],
+    ['seated_row', 'CABLE'],
+    ['pull_up', 'BODYWEIGHT'],
+    ['barbell_row', 'BARBELL'],
+    ['chest_supported_row', 'MACHINE'],
+    ['one_arm_dumbbell_row', 'DUMBBELL'],
+  ].map(([id, equipment]) => ({ id, equipment, load: equipment === 'BODYWEIGHT' ? 'BODYWEIGHT_PLUS_EXTERNAL' : 'EXTERNAL', unilateral: false })) as Schemas['Exercise'][];
+  mockData = {
+    program: { state: 'ready', value: { ...PROGRAM, days: [{ ...PROGRAM.days[0], exercises: [BENCH, lat] }] } },
+    exercises: { state: 'ready', value: catalog },
+    kept: false,
+  };
+  mockParams = { day: 'a', scope: 'today' };
+  await show();
+  await fireEvent.press(await screen.findByText('Lat pulldown'));
+  expect(await screen.findByText(t('taken.why'))).toBeTruthy();
+  const offered = screen.getAllByRole('button').map((b) => String(b.props.accessibilityLabel)).filter((name) => /row|pull/i.test(name) && !/lat pulldown/i.test(name));
+  expect(offered).toEqual(['One-arm dumbbell row', 'Pull-up', 'Barbell row']);
+  expect(screen.queryByText('Close-grip lat pulldown')).toBeNull(); // the same cable station is no way out
+  expect(screen.queryByText('Seated row')).toBeNull();
+  await fireEvent.press(screen.getByText('Pull-up'));
+  expect(mockPost).toHaveBeenCalledWith('/v1/program/swap', { body: { programDayId: 'a', exerciseId: 'lat_pulldown', to: 'pull_up', scope: 'TODAY' } });
 });
 
 test("the user's own move: no other move for this one", async () => {

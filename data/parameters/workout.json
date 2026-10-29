@@ -208,6 +208,14 @@
       "note": "How many moves the session's 'Add a move' search shows (K-416): a short list to pick from with one tap (I2 A4: alternatives ready, no long search)."
     },
     {
+      "key": "taken_alternatives_max",
+      "value": 3,
+      "unit": "moves",
+      "tag": "tecrube",
+      "source": "arastirma/ham/guray/G1-antrenman.md#K-77",
+      "note": "Taken, in the workout (ADR-090 Ek 2, K-1064): when the equipment of a move is busy the session offers at most this many moves of the same muscles on other equipment, one per kind of equipment, ones the user has done before first (K-77: do not wait for a busy machine, go to an alternative you know; K-37 asks for 3-4 moves per muscle group, one of them is the busy one)."
+    },
+    {
       "key": "own_move_name_max_chars",
       "value": 60,
       "unit": "characters",
