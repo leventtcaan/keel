@@ -16,12 +16,13 @@ type Equipment = components['schemas']['Equipment'];
 
 /**
  * One symbol per class. SF Symbols has no bar, so the barbell is the system's own "traditional strength training" figure
- * (the bar overhead); the others are things, not people: a cable fly is not a squatting figure.
+ * (the bar overhead); the others are things, not people: a cable fly is not a squatting figure. The machine is the weight
+ * stack, not the gear: that is Settings' icon, and it read as a setting on a chest-supported row (K-1057 #12).
  */
 const SYMBOL: Record<Equipment, SFSymbol> = {
   BARBELL: 'figure.strengthtraining.traditional',
   DUMBBELL: 'dumbbell',
-  MACHINE: 'gearshape',
+  MACHINE: 'square.stack.3d.up',
   CABLE: 'cable.connector',
   PLATE_LOADED: 'circle.circle',
   BODYWEIGHT: 'figure.core.training',

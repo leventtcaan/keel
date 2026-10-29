@@ -3,7 +3,7 @@
  * lifter, the experienced one and the one who brings a program walk different questions. Pure, so every branch is
  * checked here; onboarding-flow.test.tsx walks the screens themselves.
  */
-import { type Answers, RETIRED_STEPS, SCREENS, branchOf, nextStep, questionsOf, walk } from '@/onboarding/flow';
+import { type Answers, RETIRED_STEPS, SCREENS, SEGMENTS, branchOf, filledSegments, nextStep, questionsOf, walk } from '@/onboarding/flow';
 
 const answers = (overrides: Partial<Answers> = {}): Answers => ({ experience: null, programChoice: null, ...overrides });
 
@@ -134,5 +134,30 @@ describe('the next step', () => {
     expect(nextStep('activity', answers())).toBeNull();
     expect(nextStep('weights', answers({ experience: 'Y3_PLUS', programChoice: 'BUILD_ONE_FOR_ME' }))).toBeNull();
     for (const step of RETIRED_STEPS) expect(nextStep(step, answers())).toBeNull();
+  });
+});
+
+describe('the segments of the step indicator (K-1057 #10): the count is the longest walk from the first screen, the fill follows the walk', () => {
+  test('as many as the longest branch has questions: 9, whatever has been answered', () => {
+    expect(SEGMENTS).toBe(9);
+    expect(SEGMENTS).toBe(Math.max(...(['newLifter', 'experienced', 'ownProgram'] as const).map((branch) => questionsOf(branch).length)));
+  });
+
+  test('the first screen fills some of them, the last one of any walk fills all of them', () => {
+    for (const experience of ['NEW', 'Y3_PLUS'] as const) {
+      const steps = walk(answers({ experience, programChoice: 'BUILD_ONE_FOR_ME' })).length;
+      expect(filledSegments(0, steps)).toBeGreaterThan(0);
+      expect(filledSegments(steps - 1, steps)).toBe(SEGMENTS);
+    }
+    const own = walk(answers({ experience: 'Y1_3', programChoice: 'BRING_MY_OWN' })).length;
+    expect(filledSegments(own - 1, own)).toBe(SEGMENTS);
+  });
+
+  test('never backwards on a walk, and a step off the walk fills none', () => {
+    for (const length of [7, 8, 9]) {
+      const fills = Array.from({ length }, (_, index) => filledSegments(index, length));
+      expect(fills).toEqual([...fills].sort((a, b) => a - b));
+    }
+    expect(filledSegments(-1, 7)).toBe(0);
   });
 });

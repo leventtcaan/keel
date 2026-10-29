@@ -1161,6 +1161,7 @@
       "notChecked": "These amounts couldn't be checked. If a measure isn't one the food has, change it to grams; offline, try again when you're online."
     },
     "edit": {
+      "save": "Save",
       "delete": "Delete this meal",
       "confirmTitle": "Delete this meal?",
       "confirmBody": "It comes out of your day's total. This can't be undone.",
@@ -2991,6 +2992,7 @@
     "take": "Take photos",
     "compare": "Compare",
     "delete": "Delete all photos",
+    "deleteTitle": "Delete all progress photos?",
     "deleteBody": "This deletes every progress photo Next Call keeps on this phone. Next Call has no other copy.",
     "deleteConfirm": "Delete photos",
     "deleteKeep": "Keep them",

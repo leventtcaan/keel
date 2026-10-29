@@ -305,7 +305,7 @@ export default function MealScreen() {
   const dock =
     step === 'entry' && (original === null || original.state === 'ready') && items.length > 0 ? (
       <View style={styles.dock}>
-        <Button label={t('meal.save')} onPress={() => void save()} disabled={busy || requests === null || !checked} />
+        <Button label={t(original === null ? 'meal.save' : 'meal.edit.save')} onPress={() => void save()} disabled={busy || requests === null || !checked} />
       </View>
     ) : null;
 

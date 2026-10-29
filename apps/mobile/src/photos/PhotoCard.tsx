@@ -7,7 +7,7 @@ import { Button } from '@/components/Button';
 import { Section } from '@/components/Section';
 import { t } from '@/copy';
 import { useAppServices } from '@/services/ServicesProvider';
-import { Confirm } from '@/settings/Confirm';
+import { askFirst } from '@/settings/askFirst';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { shortDate } from '@/train/program';
@@ -40,14 +40,13 @@ type Props = {
 
 /**
  * Photos on Progress (K-614): the window for the next one — open since a day, never "late" (U7, H1 §2.5) — the photo days
- * on this phone, and deleting them all, asked first. The reminder is this card, not a notification (ADR-036: three types).
+ * on this phone, and deleting them all, asked first in a system alert. The reminder is this card, not a notification (ADR-036: three types).
  * Reads only the photos folder (V1).
  */
 export function PhotoCard({ today, flowWeek }: Props) {
   const { photos, report } = useAppServices();
   const { color } = useTheme();
   const [checks, setChecks] = useState<PhotoCheck[] | null>(null);
-  const [asking, setAsking] = useState(false);
   // A count, not a flag: a second failure is a new showing, said again (K-815).
   const [failures, setFailures] = useState(0);
 
@@ -67,7 +66,6 @@ export function PhotoCard({ today, flowWeek }: Props) {
   );
 
   const remove = async () => {
-    setAsking(false);
     try {
       await photos.forget();
       setFailures(0);
@@ -85,19 +83,19 @@ export function PhotoCard({ today, flowWeek }: Props) {
     checks.length === 0 ? null : (
       <Text style={[styles.small, { color: color.muted }]}>{t(`photos.count.${checks.length === 1 ? 'one' : 'other'}`, { count: checks.length })}</Text>
     );
+  // The question is the system's alert (ADR-087 #1, K-1057): on the screen wherever Progress is scrolled, never under the tab bar.
+  const ask = () =>
+    askFirst({
+      title: t('photos.deleteTitle'),
+      body: t('photos.deleteBody'),
+      confirmLabel: t('photos.deleteConfirm'),
+      keepLabel: t('photos.deleteKeep'),
+      onConfirm: () => void remove(),
+    });
   const deleting =
-    checks.length === 0 ? null : asking ? (
-      <Confirm
-        body={t('photos.deleteBody')}
-        confirmLabel={t('photos.deleteConfirm')}
-        keepLabel={t('photos.deleteKeep')}
-        onConfirm={() => void remove()}
-        onKeep={() => setAsking(false)}
-        busy={false}
-      />
-    ) : (
+    checks.length === 0 ? null : (
       <View style={styles.remove}>
-        <Button label={t('photos.delete')} variant="destructive" size="sm" onPress={() => setAsking(true)} />
+        <Button label={t('photos.delete')} variant="destructive" size="sm" onPress={ask} />
       </View>
     );
 

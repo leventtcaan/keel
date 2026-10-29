@@ -4,6 +4,7 @@
  * they're gone"). The reminder is this card: no fourth notification (ADR-036). Nothing here touches the network.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { Alert, type AlertButton } from 'react-native';
 
 import { t } from '@/copy';
 import type { PhotoCheck } from '@/photos/library';
@@ -32,6 +33,14 @@ jest.mock('expo-router', () => ({
     React.useEffect(effect, [effect]);
   },
 }));
+
+// The question is the system's alert (ADR-087 #1, K-1057), not a block in the card: the tap on a button of the alert stands in for the user's.
+const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+const lastAlert = () => {
+  const [title, message, buttons] = alert.mock.calls[alert.mock.calls.length - 1] as [string, string, AlertButton[]];
+  return { title, message, buttons };
+};
+const tapAlert = async (style: 'cancel' | 'destructive') => act(async () => lastAlert().buttons.find((b) => b.style === style)!.onPress?.());
 
 const fetchSpy = jest.fn();
 beforeEach(() => {
@@ -84,13 +93,21 @@ test('the window open: since when, never how late', async () => {
   expect(screen.getByText(t('photos.count.one', { count: 1 }))).toBeOnTheScreen();
 });
 
-test('delete all: asked first, then every photo gone from the phone', async () => {
+test('delete all: asked first in a system alert, then every photo gone from the phone', async () => {
   mockChecks = [check('2026-09-20')];
   await show('over');
   await fireEvent.press(screen.getByRole('button', { name: t('photos.delete') }));
   expect(mockServices.photos.forget).not.toHaveBeenCalled();
-  expect(screen.getByText(t('photos.deleteBody'))).toBeOnTheScreen();
-  await fireEvent.press(screen.getByRole('button', { name: t('photos.deleteConfirm') }));
+  expect(lastAlert().title).toBe(t('photos.deleteTitle'));
+  expect(lastAlert().message).toBe(t('photos.deleteBody'));
+  expect(lastAlert().buttons.map((b) => [b.text, b.style])).toEqual([
+    [t('photos.deleteKeep'), 'cancel'],
+    [t('photos.deleteConfirm'), 'destructive'],
+  ]);
+  // Nothing inline: no second button in the card for the tab bar to cover.
+  expect(screen.queryByText(t('photos.deleteBody'))).toBeNull();
+  expect(screen.queryByRole('button', { name: t('photos.deleteConfirm') })).toBeNull();
+  await tapAlert('destructive');
   expect(mockServices.photos.forget).toHaveBeenCalledTimes(1);
   expect(screen.queryByText(t('photos.count.one', { count: 1 }))).toBeNull();
   expect(screen.getByText(t('photos.firstDue'))).toBeOnTheScreen();
@@ -100,9 +117,10 @@ test('"Keep them" keeps them', async () => {
   mockChecks = [check('2026-09-20')];
   await show('over');
   await fireEvent.press(screen.getByRole('button', { name: t('photos.delete') }));
-  await fireEvent.press(screen.getByRole('button', { name: t('photos.deleteKeep') }));
+  await tapAlert('cancel');
   expect(mockServices.photos.forget).not.toHaveBeenCalled();
   expect(screen.getByText(t('photos.count.one', { count: 1 }))).toBeOnTheScreen();
+  expect(screen.getByRole('button', { name: t('photos.delete') })).toBeOnTheScreen();
 });
 
 test('a delete that fails says so and is reported by name', async () => {
@@ -110,7 +128,7 @@ test('a delete that fails says so and is reported by name', async () => {
   mockServices.photos.forget.mockRejectedValueOnce(Object.assign(new Error('x'), { name: 'FileSystemError' }));
   await show('over');
   await fireEvent.press(screen.getByRole('button', { name: t('photos.delete') }));
-  await fireEvent.press(screen.getByRole('button', { name: t('photos.deleteConfirm') }));
+  await tapAlert('destructive');
   expect(screen.getByText(t('photos.deleteFailed'))).toBeOnTheScreen();
   expect(mockServices.report).toHaveBeenCalledWith({ name: 'FileSystemError' });
 });
@@ -120,10 +138,10 @@ test('a retry that works clears the failure', async () => {
   mockServices.photos.forget.mockRejectedValueOnce(Object.assign(new Error('x'), { name: 'FileSystemError' }));
   await show('over');
   await fireEvent.press(screen.getByRole('button', { name: t('photos.delete') }));
-  await fireEvent.press(screen.getByRole('button', { name: t('photos.deleteConfirm') }));
+  await tapAlert('destructive');
   expect(screen.getByText(t('photos.deleteFailed'))).toBeOnTheScreen();
   await fireEvent.press(screen.getByRole('button', { name: t('photos.delete') }));
-  await fireEvent.press(screen.getByRole('button', { name: t('photos.deleteConfirm') }));
+  await tapAlert('destructive');
   expect(screen.queryByText(t('photos.deleteFailed'))).toBeNull();
 });
 

@@ -682,6 +682,18 @@ describe('the step indicator follows the branch', () => {
     expect(indicator(1, 7)).toBeOnTheScreen();
   });
 
+  test('the bar has the same number of segments on the first question and after every answer that changes the branch (K-1057 #10)', async () => {
+    const segments = () => screen.getAllByTestId('onboarding-segment').length;
+    await open();
+    expect(segments()).toBe(9);
+    await choose(t('onboarding.goal.lose_fat.title'));
+    expect(segments()).toBe(9);
+    await choose(t('onboarding.experience.Y3_PLUS'));
+    expect(segments()).toBe(9);
+    await choose(t('onboarding.program.bring_my_own.title'));
+    expect(segments()).toBe(9);
+  });
+
   test('the health consent no longer changes the walk: the foods to avoid moved to Settings (ADR-072 #8)', async () => {
     await walkTo('about');
     expect(indicator(6, 8)).toBeOnTheScreen();

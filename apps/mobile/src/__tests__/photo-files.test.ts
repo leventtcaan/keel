@@ -247,7 +247,7 @@ const uncommented = (text: string) => text.replace(/\/\*[\s\S]*?\*\//g, '').repl
 const code = (file: string) => uncommented(fs.readFileSync(file, 'utf8'));
 /** What a file under src/photos may import: nothing that talks to a server. */
 const ALLOWED = [/^react$/, /^expo$/, /^(\.\.\/)+modules\/backup-exclusion$/, /^react-native$/, /^react-native-svg$/, /^react-native-safe-area-context$/, /^expo-file-system$/, /^expo-router$/,
-  /^expo-camera$/, /^expo-image-picker$/, /^expo-sensors$/, /^@\/components\//, /^@\/copy$/, /^@\/theme\//, /^@\/settings\/Confirm$/,
+  /^expo-camera$/, /^expo-image-picker$/, /^expo-sensors$/, /^@\/components\//, /^@\/copy$/, /^@\/theme\//, /^@\/settings\/askFirst$/,
   /^@\/services\/ServicesProvider$/, /^@\/onboarding\/params$/, /^@\/train\/program$/, /^@\/photos\//, /^\.\//,
   /^(\.\.\/)+data\/parameters\/[a-z]+\.json$/];
 /** The one thing taken from a module that also talks to the server: the calendar day (`today.ts` holds `load` too). */
