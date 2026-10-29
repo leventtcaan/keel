@@ -28,16 +28,23 @@ const gap = (a: Weekday, b: Weekday): number => {
   return Math.min(apart, WEEKDAYS.length - apart);
 };
 
+/** A free weekday and the rest around it: the days between it and the nearest day trained. */
+export type Suggestion = { day: Weekday; rest: number };
+
 /**
  * The free weekday to suggest: the one furthest from the days already trained (the most rest around it), the earliest in the
- * week when two are as far. None when no weekday is free.
+ * week when two are as far. None when no weekday is free. `rest` is the days between it and the nearest trained day, so the
+ * sheet only calls it a good spot when there is a day off beside it.
  */
-export function suggestedWeekday(program: Program): Weekday | undefined {
+export function suggestion(program: Program): Suggestion | undefined {
   const trained = trainedWeekdays(program);
-  let best: { day: Weekday; room: number } | undefined;
+  let best: Suggestion | undefined;
   for (const day of freeWeekdays(program)) {
-    const room = trained.length === 0 ? WEEKDAYS.length : Math.min(...trained.map((other) => gap(day, other)));
-    if (best === undefined || room > best.room) best = { day, room };
+    const rest = trained.length === 0 ? WEEKDAYS.length : Math.min(...trained.map((other) => gap(day, other))) - 1;
+    if (best === undefined || rest > best.rest) best = { day, rest };
   }
-  return best?.day;
+  return best;
 }
+
+/** The suggested weekday alone. */
+export const suggestedWeekday = (program: Program): Weekday | undefined => suggestion(program)?.day;

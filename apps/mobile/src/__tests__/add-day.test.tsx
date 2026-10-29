@@ -129,3 +129,16 @@ test('seven days: nothing to pick, and why', async () => {
   expect(await screen.findByText(t('addDay.full'))).toBeTruthy();
   expect(screen.queryByText(t('addDay.hint'))).toBeNull();
 });
+
+test('the "good spot" line only when the suggested day has a day off beside it', async () => {
+  // Monday and Thursday: Saturday has a day off on both sides.
+  await show();
+  expect(await screen.findByText(t('addDay.suggested'))).toBeTruthy();
+});
+
+test('every free day next to a trained one: no "good spot" claim', async () => {
+  mockData = { ...mockData, program: { state: 'ready', value: program(['TUESDAY', 'THURSDAY', 'SUNDAY']) } };
+  await show();
+  expect(await screen.findByText(t('addDay.addOn', { day: 'Monday' }))).toBeTruthy();
+  expect(screen.queryByText(t('addDay.suggested'))).toBeNull();
+});

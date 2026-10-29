@@ -12,7 +12,7 @@ import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { useReadOnFocus } from '@/today/useReadOnFocus';
-import { freeWeekdays, suggestedWeekday } from '@/train/addDay';
+import { freeWeekdays, suggestion } from '@/train/addDay';
 import { addProgramDay } from '@/train/changes';
 
 type Weekday = Parameters<typeof addProgramDay>[1];
@@ -43,7 +43,8 @@ export default function AddDayScreen() {
 
   const program = data?.program.state === 'ready' ? data.program.value : null;
   const free = program === null ? [] : freeWeekdays(program);
-  const suggested = program === null ? undefined : suggestedWeekday(program);
+  const pick = program === null ? undefined : suggestion(program);
+  const suggested = pick?.day;
   const name = (day: Weekday) => t(`programEditor.weekdayName.${day}`);
 
   const add = async (day: Weekday) => {
@@ -77,7 +78,7 @@ export default function AddDayScreen() {
           disabled={busy}
           onPress={() => void add(suggested)}
         />
-        <Text style={[styles.small, { color: color.muted }]}>{t('addDay.suggested')}</Text>
+        {pick !== undefined && pick.rest > 0 && <Text style={[styles.small, { color: color.muted }]}>{t('addDay.suggested')}</Text>}
         {others.length > 0 && (
           <View style={styles.rows}>
             <Text style={[styles.small, { color: color.textSecondary }]}>{t('addDay.other')}</Text>
