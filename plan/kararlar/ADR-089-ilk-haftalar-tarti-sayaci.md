@@ -34,3 +34,6 @@ toplam sayısıdır (trend_min_weighins 7), haftanın bloğu değil.
 ## Ek 1 (29 Eki, uygulama #663)
 - İlk haftayı kapatan karar (Continue, MoveMissedSessions, AddTrainingDay; seansları okur, tartıyı değil) sayacı bitirmez: tartıyı okuyan ilk karara (ya da hard stop) kadar sayaç görünür. `WeighInWeekFacts.readTheScale`.
 - İlk karardan önce plan başlangıcı ilk check-in günü sayılır (ilk karar planı başlatır); `earliestEnoughDay` arama ufku plan başlangıcına kalan gün kadar uzar (yoksa 500). Plan başlangıcı bugün ya da geçmişteyse hesap aynıdır.
+
+## Ek 2 (29 Eki, Levent): hatırlatma dördüncü tür değil
+- ADR-036 korunur (üç tür, dördüncüsü yok). Karar #3 (ayrı yerel bildirim) yerine: bloktaki, check-in gününden önceki antrenman günlerinin **antrenman hatırlatmasına** tek satır eklenir, yalnız blok geride ve hâlâ yetişebilirken ("2 more weigh-ins before Monday's call."). Antrenman hatırlatması kapalıysa satır da yok; izin istenmez; yeni parametre yok. Sayaç her okunduğunda üç tür sırayla yeniden kurulur (ADR-036 #3).
