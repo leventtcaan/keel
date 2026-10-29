@@ -982,6 +982,60 @@
    ]
   },
   {
+   "table": "nutrition.own_food",
+   "module": "nutrition",
+   "class": "health",
+   "purpose": "Foods you added from a label: name, barcode and the numbers per serving.",
+   "columns": [
+    "id",
+    "account_id",
+    "name",
+    "brand",
+    "gtin",
+    "serving_grams",
+    "kcal",
+    "protein_g",
+    "carbs_g",
+    "fat_g",
+    "created_at"
+   ],
+   "basis": "explicit consent (GDPR Art. 9(2)(a)) — HEALTH_DATA",
+   "gated_by": "HEALTH_DATA",
+   "erased_by": [
+    "account_deletion",
+    "withdraw:HEALTH_DATA"
+   ],
+   "exported": true,
+   "export_key": "ownFoods",
+   "policy": "data-health",
+   "app_privacy": [
+    "Health & Fitness › Health"
+   ]
+  },
+  {
+   "table": "nutrition.food_favorite",
+   "module": "nutrition",
+   "class": "health",
+   "purpose": "The foods you starred.",
+   "columns": [
+    "account_id",
+    "food_id",
+    "created_at"
+   ],
+   "basis": "explicit consent (GDPR Art. 9(2)(a)) — HEALTH_DATA",
+   "gated_by": "HEALTH_DATA",
+   "erased_by": [
+    "account_deletion",
+    "withdraw:HEALTH_DATA"
+   ],
+   "exported": true,
+   "export_key": "favoriteFoods",
+   "policy": "data-health",
+   "app_privacy": [
+    "Health & Fitness › Health"
+   ]
+  },
+  {
    "table": "decision.plan",
    "module": "decision",
    "class": "health",
