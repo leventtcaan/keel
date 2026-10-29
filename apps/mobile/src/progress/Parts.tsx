@@ -141,7 +141,7 @@ export function WeighInDots({ count, min, note }: { count: number; min: number; 
   const { color } = useTheme();
   const line = note === null ? null : t(note === 'stale' ? 'progress.weight.stale' : 'progress.weight.after', { min });
   const dots = Array.from({ length: min }, (_, i) => (
-    <View key={i} testID={i < count ? 'weight-dot-filled' : 'weight-dot-empty'} style={[styles.dot, { backgroundColor: i < count ? color.accent : color.track }]} />
+    <View key={i} testID={i < count ? 'weight-dot-filled' : 'weight-dot-empty'} style={[styles.dot, i < count ? { backgroundColor: color.accent } : { backgroundColor: color.track, borderColor: color.edge, borderWidth: tokens.border.hairline }]} />
   ));
   return (
     <Section card testID="section-weight" title={t('progress.weight.title')} aside={t('progress.weight.count', { count, min })}>
@@ -171,7 +171,8 @@ const styles = StyleSheet.create({
   barFill: { position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: tokens.radius.track },
   barTarget: { position: 'absolute', top: -tokens.space.xs, bottom: -tokens.space.xs, width: tokens.border.outline },
   barCount: { width: tokens.size.barCount, textAlign: 'right', fontVariant: ['tabular-nums'] },
-  // The weigh-ins toward the trend as one segmented bar across the card (K-1054), a segment for each.
+  // The weigh-ins toward the trend as one segmented bar across the card (K-1054), a segment for each; one not yet made keeps
+  // the control edge (WCAG 1.4.11, K-816).
   dots: { flexDirection: 'row', gap: tokens.space.xs },
   dot: { flex: 1, height: tokens.space.sm, borderRadius: tokens.radius.track },
 });
