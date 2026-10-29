@@ -34,6 +34,7 @@ import { type AlertAccess, type RestAlert, alertsUnavailable, createRestAlert } 
 import type { Figure } from '@/train/demo';
 import { type TrainingCache, createTrainingCache } from '@/train/trainData';
 import { programFollower } from '@/api/programFollower';
+import { type GuideMark, createGuideMark } from '@/guide/guide';
 import { type MealStart, readMealStart, readRecentFoods } from '@/food/mealStart';
 import { noPhotoCache, type PhotoCache } from '@/food/photo';
 import type { AppleReauth } from '@/session/appleSignIn';
@@ -169,6 +170,8 @@ export type AppServices = {
   trialReminder: TrialReminder;
   /** The plan just shown at the end of onboarding, for the paywall after it (K-967): in memory only. */
   planPreviews: PlanPreviews;
+  /** Whether the first-use guide was shown on this phone (K-1065). */
+  guide: GuideMark;
 };
 
 export async function createAppServices({
@@ -232,6 +235,7 @@ export async function createAppServices({
   // iOS is asked only on the user's tap ("Remind me before it ends"), through the reminders' own access.
   const trialReminder = createTrialReminder({ kv, alerts, ask: () => notifications.request(), now });
   const planPreviews = createPlanPreviews();
+  const guide = createGuideMark({ kv });
   // Each answer the gate reads (every start, every sign-in) lets the trial reminder follow it: a trial cancelled anywhere —
   // in Apple's sheet, in iOS Settings — loses its reminder at the next start (K-707 review).
   const gate = await createSubscriptionGate({ kv, api, purchases, links, report, onRead: (read) => void trialReminder.keep(read).catch(reportName) });
@@ -243,6 +247,7 @@ export async function createAppServices({
     await profile.forget();
     await reminders.forget(); // and reminders turned on, with someone's own sentence (K-410)
     await kv.removeItemAsync(FIGURE); // and the profile's sex (ADR-037 › 49)
+    await guide.forget(); // and the first-use guide's mark (K-1065)
     await projectionSwitch.forget(); // and the projection's switch and what it showed (K-606)
     // Not the progress photos (ADR-055 › 101): the only copy, and the person may be the same one coming back; whose they
     // are is settled at the next sign-in (claimPhotos).
@@ -307,6 +312,7 @@ export async function createAppServices({
     healthWriting.forget().catch(reportError); // and the Apple Health switches (K-412); what was written stays the user's
     trialReminder.forget().catch(reportError); // and the trial reminder: the account's, not the next person's (K-707)
     planPreviews.forget(); // and the plan just shown, kept in memory for the paywall (K-967)
+    guide.forget().catch(reportError); // and the first-use guide's mark: the next person has not seen it (K-1065)
     gate.forget().catch(reportError); // and whether this account met the paywall: the next one is asked afresh (K-706)
     photoCache.clear().catch(reportError); // and a meal photo's files a read cut short left in the cache (K-811, V1)
     purchases.forget().catch(reportError); // and the App Store's account: the next person's purchases are not this account's (K-702)
@@ -334,6 +340,7 @@ export async function createAppServices({
     gate,
     trialReminder,
     planPreviews,
+    guide,
     bodyFigure: async () => ((await kv.getItemAsync(FIGURE)) === 'female' ? 'female' : 'male'),
     restAlert,
     sessionPause,

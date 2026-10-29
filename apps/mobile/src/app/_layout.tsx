@@ -4,10 +4,11 @@ import * as SplashScreen from 'expo-splash-screen';
 import { type ComponentProps, type ReactNode, useEffect } from 'react';
 import { Appearance, StyleSheet, View } from 'react-native';
 
+import { GuideProvider } from '@/guide/GuideProvider';
 import { previousScreenName, pushedScreen } from '@/navigation/pushed';
 import { SavedBanner, SavedProvider } from '@/saved/saved';
 import { ProgramChangesListener } from '@/train/ProgramChangesListener';
-import { ServicesProvider, useAppearance, useOnboarding, useSignedIn, useSubscriptionGate } from '@/services/ServicesProvider';
+import { ServicesProvider, useAppServices, useAppearance, useOnboarding, useSignedIn, useSubscriptionGate } from '@/services/ServicesProvider';
 import { fontAssets } from '@/theme/fonts';
 import { ThemeProvider, useTheme } from '@/theme/theme';
 
@@ -60,7 +61,7 @@ function AppStack() {
         <Stack.Screen name="workout" />
         <Stack.Screen name="workout-end" />
         <Stack.Screen name="exercise-history" />
-        <Stack.Screen name="exercise" />
+        <Stack.Screen name="exercise" options={pushed} />
         <Stack.Screen name="workout-edit" />
         <Stack.Screen name="check-in" />
         <Stack.Screen name="call" />
@@ -117,6 +118,12 @@ function ChosenTheme({ children }: { children: ReactNode }) {
   return <ThemeProvider appearance={appearance}>{children}</ThemeProvider>;
 }
 
+/** The first-use guide (K-1065) is held above the stack, so Settings can ask for it and This week, under it, draws it. */
+function GuideHost({ children }: { children: ReactNode }) {
+  const { guide } = useAppServices();
+  return <GuideProvider mark={guide}>{children}</GuideProvider>;
+}
+
 export default function RootLayout() {
   const [loaded, error] = useFonts(fontAssets);
   const ready = loaded || error !== null;
@@ -134,11 +141,13 @@ export default function RootLayout() {
         <ChosenTheme>
           {/* The one confirmation of a save (weigh-in, cardio, meal) lives over the whole app, so it is on any tab. */}
           <SavedProvider>
-            <View style={styles.root}>
-              <AppStack />
-              <ProgramChangesListener />
-              <SavedBanner />
-            </View>
+            <GuideHost>
+              <View style={styles.root}>
+                <AppStack />
+                <ProgramChangesListener />
+                <SavedBanner />
+              </View>
+            </GuideHost>
           </SavedProvider>
         </ChosenTheme>
       </ServicesProvider>

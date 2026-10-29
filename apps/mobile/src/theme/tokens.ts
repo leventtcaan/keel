@@ -215,6 +215,8 @@ export const tokens = {
     scrim: 0.45,
     /** The photo guide's outline while the phone is not straight, over the live picture (K-1055): present, not shouting. */
     silhouette: 0.55,
+    /** The first-use guide's dim over the screen (K-1065): the part it points at stays clear. */
+    guideDim: 0.62,
   },
   /** The app's few movements of its own, each skipped under Reduce Motion (K-807). */
   motion: {
@@ -224,6 +226,15 @@ export const tokens = {
     revealRise: 24,
     /** The undo banner coming in (UndoBanner), in milliseconds. */
     bannerMs: 200,
+    /** Progress follows its data (K-1065): a bar filling, a number counting up, the muscle map taking its colour, in milliseconds. */
+    fillMs: 600,
+    countMs: 700,
+    mapMs: 500,
+    /** The first-use guide moving from one step to the next, in milliseconds. */
+    guideMs: 260,
+    /** The guide waits for a part to stop moving (a screen sliding away over it) before it points at it: the gap between two reads, and how many at most. */
+    guideSettleMs: 80,
+    guideSettleTries: 12,
   },
 } as const;
 

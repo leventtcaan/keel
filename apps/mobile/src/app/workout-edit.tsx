@@ -1,10 +1,11 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { components } from '@/api/schema';
 import { Card } from '@/components/Card';
+import { FormScroll } from '@/components/FormScroll';
 import { Chip } from '@/components/Chip';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
@@ -220,7 +221,7 @@ export default function WorkoutEditScreen() {
 
   return (
     <SafeAreaView testID="screen" style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
-      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+      <FormScroll contentContainerStyle={styles.body}>
         <ScreenTitle>{t('sessionEdit.title')}</ScreenTitle>
         {when}
         {unreadable}
@@ -228,7 +229,7 @@ export default function WorkoutEditScreen() {
         {groups}
         {addForm}
         {targetsNote}
-      </ScrollView>
+      </FormScroll>
     </SafeAreaView>
   );
 }

@@ -1,10 +1,13 @@
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
+import { FormScroll } from '@/components/FormScroll';
+import { KeyboardFrame } from '@/components/KeyboardFrame';
+import { ModalClose } from '@/components/ModalClose';
 import { Segmented } from '@/components/Segmented';
 import { ProblemText, useProblem } from '@/components/ProblemText';
 import { ScreenTitle } from '@/components/ScreenTitle';
@@ -206,8 +209,15 @@ export default function WeighInScreen() {
         )}
         {problemLine}
         {trendLine}
-        <Button label={t('weighIn.save')} onPress={() => void save()} disabled={busy} />
         <HealthJit />
+      </View>
+    ) : null;
+
+  // The one primary, in the dock under the scroll and on top of the keyboard (K-1065): Save is never under it.
+  const dock =
+    step === 'entry' ? (
+      <View style={styles.dock}>
+        <Button label={t('weighIn.save')} onPress={() => void save()} disabled={busy} />
       </View>
     ) : null;
 
@@ -223,12 +233,16 @@ export default function WeighInScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
-      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-        <ScreenTitle>{t('weighIn.title')}</ScreenTitle>
-        {consentStep}
-        {entry}
-        {chart}
-      </ScrollView>
+      <ModalClose accessibilityLabel={t('weighIn.closeLabel')} />
+      <KeyboardFrame>
+        <FormScroll contentContainerStyle={styles.body}>
+          <ScreenTitle>{t('weighIn.title')}</ScreenTitle>
+          {consentStep}
+          {entry}
+          {chart}
+        </FormScroll>
+        {dock}
+      </KeyboardFrame>
     </SafeAreaView>
   );
 }
@@ -252,7 +266,8 @@ function RangeChoice({ range, onChange }: { range: Range; onChange: (range: Rang
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  body: { padding: tokens.space.lg, gap: tokens.space.lg },
+  body: { paddingHorizontal: tokens.space.lg, paddingVertical: tokens.space.sm, gap: tokens.space.lg },
+  dock: { paddingHorizontal: tokens.space.lg, paddingBottom: tokens.space.sm },
   part: { gap: tokens.space.sm },
   heading: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
   label: { fontSize: tokens.type.label, fontWeight: tokens.weight.bold },

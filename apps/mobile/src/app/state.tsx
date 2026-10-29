@@ -10,6 +10,7 @@ import { ScreenTitle } from '@/components/ScreenTitle';
 import { ConsentText } from '@/consent/ConsentText';
 import { grantConsent } from '@/consent/consents';
 import { t } from '@/copy';
+import { useChangesOnClose } from '@/saved/saved';
 import { useAppServices } from '@/services/ServicesProvider';
 import { stateParams } from '@/state/params';
 import type { StateKind } from '@/state/stateService';
@@ -35,6 +36,7 @@ const nameOf = (error: unknown) => (error instanceof Error ? error.name : 'Unkno
  */
 export default function StateScreen() {
   const { state, report, api, consents } = useAppServices();
+  useChangesOnClose(); // the tabs read again when this closes (K-1065)
   const { color } = useTheme();
   const [kind, setKind] = useState<StateKind | null>(null);
   const [days, setDays] = useState<number | null>(null);

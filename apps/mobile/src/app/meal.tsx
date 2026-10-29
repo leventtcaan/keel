@@ -1,12 +1,15 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ProblemText } from '@/components/ProblemText';
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
+import { FormScroll } from '@/components/FormScroll';
+import { KeyboardFrame } from '@/components/KeyboardFrame';
+import { ModalClose } from '@/components/ModalClose';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { ConsentText } from '@/consent/ConsentText';
 import { grantConsent } from '@/consent/consents';
@@ -311,20 +314,23 @@ export default function MealScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
-      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-        <ScreenTitle>{t(original === null ? 'meal.title' : 'meal.editTitle')}</ScreenTitle>
-        {consentStep}
-        {originalNote}
-        {entry}
-      </ScrollView>
-      {dock}
+      <ModalClose accessibilityLabel={t('meal.closeLabel')} />
+      <KeyboardFrame>
+        <FormScroll contentContainerStyle={styles.body}>
+          <ScreenTitle>{t(original === null ? 'meal.title' : 'meal.editTitle')}</ScreenTitle>
+          {consentStep}
+          {originalNote}
+          {entry}
+        </FormScroll>
+        {dock}
+      </KeyboardFrame>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  body: { padding: tokens.space.lg, gap: tokens.space.lg },
+  body: { paddingHorizontal: tokens.space.lg, paddingVertical: tokens.space.sm, gap: tokens.space.lg },
   dock: { paddingHorizontal: tokens.space.lg, paddingBottom: tokens.space.sm },
   part: { gap: tokens.space.md },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm },

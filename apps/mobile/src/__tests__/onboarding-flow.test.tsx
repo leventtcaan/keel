@@ -202,6 +202,8 @@ jest.mock('@/services/ServicesProvider', () => ({
     state: { keep: async () => {} }, // Today keeps the state it read, for the reminders (K-518)
     opens: { previous: async () => null }, // Today counts its open (K-521)
     planPreviews: { keep: mockKeepPreview }, // the plan handed to the paywall after it (K-967)
+    // The first-use guide (K-1065): shown already, so it never opens over the tabs here.
+    guide: { seen: async () => true, markSeen: async () => {}, forget: async () => {} },
   }),
 }));
 

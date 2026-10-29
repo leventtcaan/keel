@@ -8,6 +8,7 @@ import { Button } from '@/components/Button';
 import { ProblemText, useProblem } from '@/components/ProblemText';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
+import { useChangesOnClose } from '@/saved/saved';
 import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
@@ -35,6 +36,7 @@ const SAID = { conflict: 'swap.conflict', offline: 'swap.offline', failed: 'swap
  */
 export default function SwapScreen() {
   const { api, training, workoutRecords } = useAppServices();
+  useChangesOnClose(); // the tabs read again when this closes (K-1065)
   const { color } = useTheme();
   const params = useLocalSearchParams<{ day?: string; move?: string; scope?: string }>();
   const todayOnly = params.scope === 'today';

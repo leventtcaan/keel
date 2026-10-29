@@ -421,12 +421,12 @@ describe('the 12th week (ADR-078 #2)', () => {
     expect(screen.getByTestId('consistency-grid').props.accessibilityLabel).toBe(t('progress.consistency.spoken', { count: 2, onTrack: 1, spare: 1, paused: 0, other: 0 }));
   });
 
-  test('sets per muscle: a bar each, this week against the target, in place of the map', async () => {
+  test('sets per muscle: a bar each, this week against the target, under the map that stays (K-1065)', async () => {
     await show();
     expect(screen.getByText(t('progress.muscles.setsTitle'))).toBeOnTheScreen();
     expect(screen.getByTestId('muscle-bar-quads').props.accessibilityLabel).toBe(t('progress.muscles.barLabel', { muscle: t('demo.muscle.quads'), done: 6, target: 10 }));
-    expect(screen.queryByText(t('progress.muscles.title'))).toBeNull();
-    expect(mockMap).not.toHaveBeenCalled();
+    expect(screen.getByText(t('progress.muscles.title'))).toBeOnTheScreen();
+    expect(mockMap).toHaveBeenCalled();
   });
 
   test('the trend ready: the 3 of 7 card is gone', async () => {

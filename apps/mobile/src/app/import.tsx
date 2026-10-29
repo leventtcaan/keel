@@ -1,10 +1,11 @@
 import * as Crypto from 'expo-crypto';
 import { router } from 'expo-router';
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ProblemText } from '@/components/ProblemText';
+import { FormScroll } from '@/components/FormScroll';
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
@@ -168,10 +169,10 @@ export default function ImportScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['bottom']}>
-      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+      <FormScroll contentContainerStyle={styles.body}>
         <ScreenTitle>{t('import.title')}</ScreenTitle>
         {body}
-      </ScrollView>
+      </FormScroll>
     </SafeAreaView>
   );
 }

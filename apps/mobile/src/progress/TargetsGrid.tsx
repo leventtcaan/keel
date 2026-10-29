@@ -4,6 +4,7 @@ import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ProgressBar } from '@/components/ProgressBar';
 import { t } from '@/copy';
+import { CountUp } from '@/motion/CountUp';
 import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
@@ -21,8 +22,12 @@ const share = (done: number, of: number) => (of > 0 ? done / of : 0);
 
 type BoxProps = { kind: Target['kind']; title: string; value: string | null; of: string; fill: number; source: string; label: string; hint: string; onPress: () => void };
 
+/** A box's number written as one whole number ("1,450"): it counts up to the server's number. A range or a dash stays as written (U5). */
+const countedOf = (value: string | null): number | null => (value !== null && /^\d[\d,]*$/.test(value) ? Number(value.replaceAll(',', '')) : null);
+
 function Box({ kind, title, value, of, fill, source, label, hint, onPress }: BoxProps) {
   const { color } = useTheme();
+  const counted = countedOf(value);
   return (
     <Pressable
       testID={`target-${kind}`}
@@ -36,7 +41,7 @@ function Box({ kind, title, value, of, fill, source, label, hint, onPress }: Box
         <SymbolView name="chevron.right" size={tokens.type.label} tintColor={color.muted} />
       </View>
       <Text style={[styles.value, { color: color.text }]}>
-        {value}
+        {counted === null ? value : <CountUp value={counted} format={num} />}
         <Text style={[styles.of, { color: color.muted }]}>{value === null ? of : ` ${of}`}</Text>
       </Text>
       <ProgressBar value={fill} label={label} />

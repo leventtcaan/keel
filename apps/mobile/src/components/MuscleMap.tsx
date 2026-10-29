@@ -6,13 +6,17 @@
  * the theme's track (an area left out keeps the drawing's own grey, which ignores the theme). Several muscles on one area
  * (the three delts) fill it by the most done. VoiceOver hears each muscle's sets this week. Nothing is counted here.
  */
+import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Body, { type Slug } from 'react-native-body-highlighter';
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from '@/motion/reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
+import { useReduceMotion } from '@/theme/useReduceMotion';
 import { type Figure, drawingAreas } from '@/train/demo';
 import { workoutParams as P } from '@/train/params';
 
@@ -45,27 +49,67 @@ export function areaFills(muscles: readonly MuscleSets[]): Map<string, Fill> {
   return fills;
 }
 
+type Drawn = { slug: Slug; color: string }[];
+
+/** One drawing of the figure, front and back, each area in the colour it is given. */
+function Figures({ data, figure }: { data: Drawn; figure: Figure }) {
+  return (
+    <>
+      {SIDES.map((side) => (
+        <Body key={side} data={data} side={side} gender={figure} scale={MAP_SCALE} border="none" />
+      ))}
+    </>
+  );
+}
+
 export function MuscleMap({ muscles, figure }: { muscles: readonly MuscleSets[]; figure: Figure }) {
   const { color } = useTheme();
+  const reduce = useReduceMotion();
   const fills = areaFills(muscles);
   const colours: Record<Fill, string> = { full: color.accent, part: color.accentMid, planned: color.accentSoft };
-  const data = drawingAreas(figure).map((slug) => {
+  const data: Drawn = drawingAreas(figure).map((slug) => {
     const fill = fills.get(slug);
     // The areas named in muscle_map_areas are checked against the drawing (exercise-screen.test).
     return { slug: slug as Slug, color: fill === undefined ? color.track : colours[fill] };
   });
+  // When the data changes the old drawing stays over the new one and fades out (K-1065): every area eases from its colour to
+  // the next together. Nothing is drawn twice at rest; Reduce Motion changes it at once.
+  const key = data.map((d) => d.color).join();
+  const [drawn, setDrawn] = useState<{ key: string; data: Drawn; before: Drawn | null }>({ key, data, before: null });
+  if (drawn.key !== key) setDrawn({ key, data, before: reduce ? null : drawn.data });
+  const fade = useSharedValue(1);
+  const fading = drawn.before !== null;
+  useEffect(() => {
+    if (!fading) return;
+    const finish = () => setDrawn((now) => (now.key === key ? { ...now, before: null } : now));
+    fade.set(1);
+    fade.set(
+      withTiming(0, { duration: tokens.motion.mapMs, easing: Easing.inOut(Easing.ease) }, (finished) => {
+        'worklet';
+        if (finished) scheduleOnRN(finish);
+      }),
+    );
+  }, [fading, key, fade]);
+  const over = useAnimatedStyle(() => ({ opacity: fade.value }));
   const said = muscles
     .map((m) => t('muscleMap.item', { muscle: t(`demo.muscle.${m.muscle}`), done: m.doneSets, target: m.targetSets }))
     .join(t('demo.separator'));
+  const old =
+    drawn.before === null ? null : (
+      <Animated.View pointerEvents="none" style={[styles.over, over]}>
+        <Figures data={drawn.before} figure={figure} />
+      </Animated.View>
+    );
   return (
     <View style={styles.map} accessible accessibilityLabel={t('muscleMap.label', { muscles: said })}>
-      {SIDES.map((side) => (
-        <Body key={side} data={data} side={side} gender={figure} scale={MAP_SCALE} border="none" />
-      ))}
+      {old}
+      <Figures data={data} figure={figure} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   map: { flexDirection: 'row', justifyContent: 'center', gap: tokens.space.md },
+  // The old drawing over the new, the same size and place; rendered first in the tree, so the new is what is read last.
+  over: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, flexDirection: 'row', justifyContent: 'center', gap: tokens.space.md, zIndex: 1 },
 });

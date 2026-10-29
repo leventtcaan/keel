@@ -1,9 +1,10 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useEffect, useRef, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
+import { FormScroll } from '@/components/FormScroll';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { TextField } from '@/components/TextField';
 import { t } from '@/copy';
@@ -76,7 +77,7 @@ export function BarcodeScanner({ onCode, onClose }: { onCode: (gtin: string) => 
   return (
     <Modal animationType={reduceMotion ? 'none' : 'slide'} presentationStyle="pageSheet" onRequestClose={onClose}>
       <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
-        <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+        <FormScroll contentContainerStyle={styles.body}>
           <ScreenTitle>{t('meal.barcode.title')}</ScreenTitle>
           {camera}
           <View style={styles.typed}>
@@ -94,7 +95,7 @@ export function BarcodeScanner({ onCode, onClose }: { onCode: (gtin: string) => 
             <Button label={t('meal.barcode.lookUp')} variant="ghost" size="sm" onPress={lookUpTyped} />
           </View>
           <Button label={t('meal.barcode.close')} variant="ghost" onPress={onClose} />
-        </ScrollView>
+        </FormScroll>
       </SafeAreaView>
     </Modal>
   );

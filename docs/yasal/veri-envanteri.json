@@ -1211,11 +1211,12 @@
     "policy": "data-on-phone"
    },
    {
-    "what": "Settings and states on the phone: appearance (light, dark or system), units, consents, reminders (all, or the check-in morning alone), your reminder sentence, the weekdays of your program (the training reminders go by them; never sent) and the week's weigh-in count (the training reminder's extra line; never sent), declared state, eating-pattern check result (answers never stored), projection, subscription gate, trial reminder, training cache (program, exercises, gym, history, own moves, setups), the open workout's pause and what was skipped or swapped in it, Apple Health write switches, whether Apple Health was asked about yet (once, at the first weigh-in or workout), and the steps, sleep and active energy of the recent days sent (up to 28, so none is sent twice), onboarding done or still open (plan not yet seen), whether the account met the subscription screen, the profile's sex (for the muscle map's figure), the last days the app was opened (never sent: a long gap, reminders' timing)",
+    "what": "Settings and states on the phone: appearance (light, dark or system), units, consents, reminders (all, or the check-in morning alone), your reminder sentence, the weekdays of your program (the training reminders go by them; never sent) and the week's weigh-in count (the training reminder's extra line; never sent), declared state, eating-pattern check result (answers never stored), projection, subscription gate, trial reminder, training cache (program, exercises, gym, history, own moves, setups), the open workout's pause and what was skipped or swapped in it, Apple Health write switches, whether Apple Health was asked about yet (once, at the first weigh-in or workout), and the steps, sleep and active energy of the recent days sent (up to 28, so none is sent twice), onboarding done or still open (plan not yet seen), whether the account met the subscription screen, the profile's sex (for the muscle map's figure), whether the first-use guide was shown (never sent), the last days the app was opened (never sent: a long gap, reminders' timing)",
     "policy": "data-on-phone",
     "kv_keys": [
      "appearance",
      "consent.*",
+     "guide.seen",
      "health.activityDaysSent",
      "health.asked",
      "healthWrite.weighIns",

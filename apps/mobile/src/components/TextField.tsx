@@ -1,12 +1,12 @@
 import { StyleSheet, Text, TextInput, type TextInputProps, View } from 'react-native';
 
+import { isNumberPad, useDoneBar } from '@/components/KeyboardDone';
 import { ProblemText } from '@/components/ProblemText';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
 /** What an empty number field shows, faint: the empty table cell's dash (prototype `.fv.ghost`). */
 const EMPTY = '-';
-const NUMERIC: TextInputProps['keyboardType'][] = ['number-pad', 'decimal-pad', 'numeric'];
 
 type Props = {
   /** Already translated; also what a screen reader calls the field. */
@@ -37,6 +37,9 @@ type Props = {
 export function TextField({ label, value, onChangeText, suffix, hint, problem, problemOccurrence, announceProblem = true, keyboardType, maxLength, multiline = false, onSearch }: Props) {
   const { color } = useTheme();
   const note = problem ?? hint;
+  const numeric = isNumberPad(keyboardType);
+  // A number pad has no Return key and a note's Return starts a line: both get the Done bar over the keyboard (K-1065).
+  const { id: doneId, bar } = useDoneBar(numeric || multiline);
   return (
     <View style={styles.field}>
       <Text style={[styles.label, { color: color.muted }]}>{label}</Text>
@@ -50,11 +53,13 @@ export function TextField({ label, value, onChangeText, suffix, hint, problem, p
           maxLength={maxLength}
           multiline={multiline}
           // On a card (surface on surface) an empty field would not show at all (K-416, simulator).
-          {...(NUMERIC.includes(keyboardType) ? { placeholder: EMPTY, placeholderTextColor: color.muted } : {})}
-          {...(onSearch === undefined ? {} : { autoCapitalize: 'none', autoCorrect: false, returnKeyType: 'search', onSubmitEditing: onSearch })}
+          inputAccessoryViewID={doneId}
+          {...(numeric ? { placeholder: EMPTY, placeholderTextColor: color.muted } : {})}
+          {...(onSearch === undefined ? { returnKeyType: multiline ? 'default' : 'done' } : { autoCapitalize: 'none', autoCorrect: false, returnKeyType: 'search', onSubmitEditing: onSearch })}
           style={[styles.input, multiline && styles.multiline, { color: color.text }]}
         />
         {suffix !== undefined && <Text style={[styles.suffix, { color: color.muted }]}>{suffix}</Text>}
+        {bar}
       </View>
       {problem && !announceProblem ? (
         <Text style={[styles.note, { color: color.text }]}>{problem}</Text>

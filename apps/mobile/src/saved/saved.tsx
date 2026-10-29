@@ -1,4 +1,4 @@
-import { type ReactNode, createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
+import { type ReactNode, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert } from 'react-native';
 import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 
@@ -78,6 +78,16 @@ export function useSavedChanges(): number {
  */
 export function useSavedSignal(): () => void {
   return useContext(Saved).changed;
+}
+
+/**
+ * For a sheet that can change what the tabs show without saving a record (today's change, a swap, a declared state): as it
+ * closes it says so, and the tabs read again (K-1065). A sheet closing over a tab does not give the tab its focus back, so
+ * without this the tab would go on showing the day before the change. A sheet that changed nothing costs one read more.
+ */
+export function useChangesOnClose(): void {
+  const { changed } = useContext(Saved);
+  useEffect(() => changed, [changed]);
 }
 
 /** The screen's way to say "this was saved, and this takes it back". */
