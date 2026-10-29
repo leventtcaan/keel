@@ -10,6 +10,7 @@ import type { components } from '@/api/schema';
 import { type Loaded, load, localDay } from '@/today/today';
 import type { GymWeights } from '@/train/loadSteps';
 import { workoutParams } from '@/train/params';
+import { programChanged } from '@/train/programChanges';
 import type { KeyValue } from '@/units/preference';
 
 type Schemas = components['schemas'];
@@ -113,6 +114,21 @@ export function createTrainingCache(kv: KeyValue, onProgram?: (program: Schemas[
   }
 
   return {
+    /**
+     * A program the server answered to a change of it (a day added, an edit, a rebuild, an undo): the one place every path that
+     * changes the program meets (api/programFollower.ts). Kept as the offline copy, handed to whoever follows the program (the
+     * reminders), and announced to the screens in view. A read begun for the account that left keeps nothing.
+     */
+    async follow(program: Schemas['Program'], changed = true, era: number = generation): Promise<void> {
+      if (era !== generation) return;
+      await kv.setItemAsync(PROGRAM, JSON.stringify(program));
+      if (era !== generation) return;
+      onProgram?.(program);
+      // The screens in view read again, as after a save (ADR-090 Ek 1, K-1051's saved-changes signal).
+      if (changed) programChanged();
+    },
+    /** The account's era: taken when a request begins, so an answer that comes once the account left is dropped. */
+    era: (): number => generation,
     async read(api: ApiClient): Promise<TrainData> {
       const startedIn = generation;
       const [program, exercises, gym] = await Promise.all([

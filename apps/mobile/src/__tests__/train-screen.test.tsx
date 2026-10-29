@@ -1136,3 +1136,43 @@ describe('on the system (K-1045, T-7, T-18, ADR-070 Ek 2 #1, #8)', () => {
     });
   });
 });
+
+describe('Add a day and the rest note (ADR-090 #3, Ek 1)', () => {
+  const dayOn = (weekday: Schemas['Weekday'], i: number): Schemas['ProgramDay'] => ({
+    id: `x${i}`,
+    nameKey: 'programDays.push_a.name',
+    weekday,
+    exercises: [{ exerciseId: 'bench_press', baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 1 }],
+  });
+  const WEEK = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'] as const;
+  const withDays = (count: number, extra: Partial<Schemas['Program']> = {}): TrainData =>
+    withProgram({ days: WEEK.slice(0, count).map(dayOn), week: [], ...extra });
+
+  test('the server says a day can be added: "Add a day" is on Train, and opens the sheet', async () => {
+    mockData = withProgram({ canAddDay: true });
+    await show();
+    await fireEvent.press(await screen.findByLabelText(t('train.addDayLabel')));
+    expect(mockPush).toHaveBeenCalledWith('/add-day');
+  });
+
+  test.each([[false], [undefined]])('canAddDay %s (seven days, a day on no weekday, an older server): no "Add a day"', async (canAddDay) => {
+    mockData = withProgram(canAddDay === undefined ? {} : { canAddDay });
+    await show();
+    await screen.findByLabelText(t('editProgram.editLabel'));
+    expect(screen.queryByLabelText(t('train.addDayLabel'))).toBeNull();
+  });
+
+  test.each([[2], [3], [5]])('%i days: no rest note', async (count) => {
+    mockData = withDays(count);
+    await show();
+    await screen.findByLabelText(t('editProgram.editLabel'));
+    expect(screen.queryByText(t('train.restNote'))).toBeNull();
+  });
+
+  test.each([[6], [7]])('%i days: the short note, not a push to fewer', async (count) => {
+    mockData = withDays(count);
+    await show();
+    expect(await screen.findByText(t('train.restNote'))).toBeTruthy();
+    expect(t('train.restNote')).toBe('A rest day helps you grow faster.');
+  });
+});

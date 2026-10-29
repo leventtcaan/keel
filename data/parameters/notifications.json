@@ -9,6 +9,14 @@
       "note": "Slot 1 (K-410): on a training day, this long before the user's own usual time, in the user's own words. A consistent time and a routine to hang it on are the only two cues that predict the behaviour (I1 C2, r = 0.11-0.13)."
     },
     {
+      "key": "default_training_time",
+      "value": "18:00",
+      "unit": "local_time",
+      "tag": "urun",
+      "source": "arastirma/ham/I1-onboarding-aliskanlik.md#F4",
+      "note": "SEÇİM, ürün kararı (agent, K-1060, the product owner confirms); no source gives an hour. The usual time the training reminder goes by when the user has told none: onboarding no longer asks for it (ADR-072 #4), so without a default no new user ever got a training reminder. A time the user gave (Schedule.usualTrainingTime) wins; the reminder is training_reminder_lead_minutes before it."
+    },
+    {
       "key": "check_in_reminder_time",
       "value": "09:00",
       "unit": "local_time",

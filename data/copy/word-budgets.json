@@ -973,6 +973,8 @@
         "train.moved",
         "train.startThis",
         "train.startDay",
+        "train.addDay",
+        "train.addDayLabel",
         "editProgram.editLabel",
         "editProgram.appliedUndo",
         "openElsewhere.continue",
@@ -993,6 +995,38 @@
         "workout.ending.confirm",
         "workout.ending.keep",
         "workout.ending.failed"
+      ],
+      "faces": [
+        {
+          "face": "six or seven days: the short rest note (ADR-090 #3)",
+          "keys": [
+            "screens.train.title",
+            "editProgram.edit",
+            "train.head",
+            "train.days.other",
+            "train.restNote",
+            "train.todayOn",
+            "train.moveCount.other",
+            "train.setsReps",
+            "train.cardio",
+            "train.cardioAfter",
+            "train.cardioMinutes",
+            "train.start",
+            "train.change",
+            "train.thisWeek",
+            "train.weekRow",
+            "train.weekRowCardio"
+          ],
+          "dynamic": [
+            { "what": "the split, from the days' names (Push / Pull / Legs)", "words": 5 },
+            { "what": "today's weekday (Tue)", "words": 1 },
+            { "what": "today's session (Push A)", "words": 2 },
+            { "what": "four moves' names (Bench press, Squat, Seated row, Hip thrust)", "words": 8 },
+            { "what": "four next loads, each with its unit (62.5 kg)", "words": 4 },
+            { "what": "two other sessions of the week, each a weekday and a day's name (Thu · Pull A)", "words": 6 },
+            { "what": "the two other sessions' move counts, each under its name (5 moves)", "words": 2 }
+          ]
+        }
       ],
       "parts": ["src/train/OpenElsewhere.tsx"]
     },

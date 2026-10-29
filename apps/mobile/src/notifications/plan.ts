@@ -3,7 +3,9 @@
  * decision 29 Sep: the budget is kinds, not a weekly count). Pure — what is planned from what is known — so the slots are tested
  * without a phone; reminders.ts hands the plan to the device.
  *
- * 1. Training: each training day, the lead before the user's own usual time, in the user's own sentence (I1 F4, C2-C3). On the
+ * 1. Training: each training day of the PROGRAM (ADR-090 Ek 1: the program is where the days are made; the profile's list is only
+ *    what is used before the program has been read), the lead before the user's own usual time (a default when they gave none:
+ *    onboarding no longer asks, ADR-072 #4), in the user's own sentence (I1 F4, C2-C3). On the
  *    block's training days before the check-in day, while the week's weigh-ins are behind and still reachable, one more line
  *    (ADR-089 Ek 2): the weigh-in count rides this reminder, it is no fourth kind (ADR-036).
  * 2. Check-in: the check-in day, in the morning (I1 F4, D1).
@@ -41,6 +43,11 @@ export function weighInFactsOf(week: components['schemas']['WeighInWeek']): Weig
 
 export type PlanInput = {
   schedule: Schedule | null;
+  /**
+   * The weekdays the program trains on, as last read (ADR-090 Ek 1): the training days of the plan. None known, or a program
+   * with no day on a weekday: the schedule's own list.
+   */
+  programDays?: Schedule['trainingDays'] | null;
   /** The user's own routine sentence, kept on the phone; blank means none. */
   cue: string | null;
   lastOpened: Date | null;
@@ -110,7 +117,9 @@ function weighInLine(facts: PlanInput['weighInWeek'], firstCall: FirstCall, day:
   return t(missing === 1 ? 'reminders.training.weighIns.one' : 'reminders.training.weighIns.other', { count: missing, day: t(`onboarding.schedule.dayName.${weekday}`) });
 }
 
-export function planReminders({ schedule, cue, lastOpened, now, muted, mutedUntil, restUntil, firstCall, weighInWeek }: PlanInput): Reminder[] {
+export function planReminders({ schedule: kept, programDays, cue, lastOpened, now, muted, mutedUntil, restUntil, firstCall, weighInWeek }: PlanInput): Reminder[] {
+  // The program's weekdays are the training days (one source, ADR-090 Ek 1); the schedule keeps the rest (check-in day, time).
+  const schedule: Schedule | null = kept === null ? null : { ...kept, trainingDays: programDays != null && programDays.length > 0 ? programDays : kept.trainingDays };
   if (muted && mutedUntil === null) return [];
   const plan: Reminder[] = [];
   // A state with a last day still on (K-518): every slot waits for it to end.
@@ -118,8 +127,9 @@ export function planReminders({ schedule, cue, lastOpened, now, muted, mutedUnti
   // Training waits for the later of a week off and a state.
   const offUntil = [restUntil, until].filter((day): day is string => day !== null && day >= dayOf(now)).sort().at(-1) ?? null;
 
-  if (schedule?.usualTrainingTime !== undefined) {
-    const usual = minutesOf(schedule.usualTrainingTime);
+  if (schedule !== null) {
+    // The time the user gave, else the default one: no training reminder was ever planned for a new user without it (K-1060).
+    const usual = minutesOf(schedule.usualTrainingTime ?? P.defaultTrainingTime);
     const title = t('reminders.training.title', { minutes: P.trainingLeadMinutes });
     const body = cue?.trim() || t('reminders.training.body');
     // The training days that carry the weigh-in line (ADR-089 Ek 2): a weekly reminder repeats its words every week, so

@@ -20,7 +20,7 @@ import { useReadOnFocus } from '@/today/useReadOnFocus';
 import { BuildProgramPrompt } from '@/train/BuildProgramPrompt';
 import { CallRow } from '@/train/CallRow';
 import { changeToday } from '@/train/changes';
-import { dayName, programNotes } from '@/train/program';
+import { dayName, programNotes, restNote } from '@/train/program';
 import { TodayCard } from '@/train/TodayCard';
 import { movesOf } from '@/train/trainData';
 import { type WeekRow, finishedDay, movedOffToday, sessionDone, sessionMoves, sessionState, splitName, todayKind, weekRows } from '@/train/week';
@@ -162,6 +162,20 @@ export default function TrainScreen() {
       </Pressable>
     );
   const decision = data?.decision.state === 'ready' && data.decision.value.action.type !== 'NO_DECISION_YET' ? data.decision.value : null;
+  // Six and seven days are the user's own (ADR-090 #3): a short note, never a push to fewer.
+  const rest = restNote(program);
+  const restRow =
+    rest === null ? null : (
+      <View style={[styles.restNote, { backgroundColor: color.accentSoft }]}>
+        <SymbolView name="moon.zzz.fill" size={tokens.icon.small} tintColor={color.accent} />
+        <Text style={[styles.small, styles.grow, { color: color.text }]}>{rest}</Text>
+      </View>
+    );
+  // The one way a day is added (ADR-090 Ek 1): a sheet to pick the weekday, the server fills the day.
+  const addDay =
+    program.canAddDay === true ? (
+      <Button label={t('train.addDay')} accessibilityLabel={t('train.addDayLabel')} variant="ghost" onPress={() => router.push('/add-day')} />
+    ) : null;
   return (
     <Screen editable>
       <Text style={[styles.text, { color: color.textSecondary }]}>{t('train.head', { split: splitName(program), days })}</Text>
@@ -173,6 +187,7 @@ export default function TrainScreen() {
           {note}
         </Text>
       ))}
+      {restRow}
       <TodayCard
         program={program}
         today={today}
@@ -248,6 +263,7 @@ export default function TrainScreen() {
             );
           })}
         </View>
+        {addDay}
       </View>
     </Screen>
   );
@@ -317,6 +333,7 @@ const styles = StyleSheet.create({
   loading: { alignSelf: 'flex-start', minHeight: tokens.size.touch },
   top: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
   edit: { minHeight: tokens.size.touch, minWidth: tokens.size.touch, alignItems: 'center', justifyContent: 'center' },
+  restNote: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, borderRadius: tokens.radius.card, padding: tokens.space.md },
   applied: { minHeight: tokens.size.touch, borderRadius: tokens.radius.card, borderWidth: tokens.border.outline, padding: tokens.space.md, flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
   bold: { fontWeight: tokens.weight.semibold },
   dim: { opacity: tokens.opacity.dim },

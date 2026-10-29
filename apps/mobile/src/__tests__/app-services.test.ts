@@ -6,6 +6,7 @@ import { createAppServices } from '@/services/appServices';
 import { storeUnavailable } from '@/subscription/store';
 import type { StoredSession } from '@/session/session';
 import { localDay } from '@/today/today';
+import { onProgramChanged } from '@/train/programChanges';
 
 import { nodeSqlite } from './support/nodeSqlite';
 
@@ -1232,5 +1233,91 @@ describe("the meal photos' leftovers go with the session (K-811, V1)", () => {
     await settle();
     expect(await services.session.isSignedIn()).toBe(false);
     expect(report).toHaveBeenCalledWith({ name: 'FileSystemError' });
+  });
+});
+
+describe("the program is where the training days are (ADR-090 Ek 1, K-1060)", () => {
+  const program = (weekdays: string[]) => ({
+    id: 'p1',
+    source: 'GENERATED',
+    days: weekdays.map((weekday, i) => ({ id: `d${i}`, nameKey: 'programDays.upper.name', weekday, exercises: [] })),
+    canAddDay: true,
+  });
+
+  async function phone(answer: (request: Request) => Response) {
+    const scheduled: { id: string }[][] = [];
+    const notifications = {
+      permission: async () => ({ granted: true, canAskAgain: true }),
+      request: async () => ({ granted: true, canAskAgain: true }),
+      replace: async (reminders: { id: string }[]) => void scheduled.push(reminders),
+      clear: async () => void scheduled.push([]),
+    };
+    const fetch = jest.fn(async (request: Request) => answer(request));
+    const kv = memoryKv();
+    const services = await createAppServices({ baseUrl: BASE, storage: memoryStorage(), db: nodeSqlite(), fetch, report: () => {}, kv, locale: 'en-US', notifications });
+    await services.session.signIn(SESSION);
+    await settle();
+    // The profile's own list (what onboarding wrote): Monday. No usual time: onboarding no longer asks.
+    await services.reminders.keepSchedule({ trainingDays: ['MONDAY'], checkInDay: 'MONDAY', timeZone: 'UTC' } as never);
+    await services.reminders.turnOn();
+    const training = () => (scheduled.at(-1) ?? []).map((r) => r.id).filter((id) => id.startsWith('training-'));
+    return { services, kv, training };
+  }
+
+  const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+
+  test('a day added from any screen reaches the reminders at once: the training reminders follow the program, not the profile', async () => {
+    const { services, training } = await phone((request) => {
+      const path = new URL(request.url).pathname;
+      if (path === '/v1/program/days') return json(program(['MONDAY', 'WEDNESDAY', 'FRIDAY']));
+      return json({ code: 'NOT_FOUND' }, 404);
+    });
+    expect(training()).toEqual(['training-MONDAY']);
+
+    await services.api.POST('/v1/program/days', { body: { weekday: 'FRIDAY' } });
+    await settle();
+
+    expect(training()).toEqual(['training-MONDAY', 'training-WEDNESDAY', 'training-FRIDAY']);
+  });
+
+  test('a program only read keeps the reminders right too (the app opened, a screen read it), and the copy kept for offline is the newest', async () => {
+    const { services, training } = await phone((request) => {
+      const path = new URL(request.url).pathname;
+      if (path === '/v1/program') return json(program(['TUESDAY', 'SATURDAY']));
+      return json({ code: 'NOT_FOUND' }, 404);
+    });
+
+    await services.api.GET('/v1/program');
+    await settle();
+
+    expect(training()).toEqual(['training-TUESDAY', 'training-SATURDAY']);
+    expect((await services.training.keptProgram())?.days.map((d) => d.weekday)).toEqual(['TUESDAY', 'SATURDAY']);
+  });
+
+  test('the answer to a change tells the screens in view to read again; a plain read does not', async () => {
+    const heard = jest.fn();
+    const stop = onProgramChanged(heard);
+    const { services } = await phone((request) => {
+      const path = new URL(request.url).pathname;
+      return path.startsWith('/v1/program') ? json(program(['MONDAY', 'THURSDAY'])) : json({ code: 'NOT_FOUND' }, 404);
+    });
+
+    await services.api.GET('/v1/program');
+    await settle();
+    expect(heard).not.toHaveBeenCalled();
+
+    await services.api.PATCH('/v1/program', { body: { days: [] } });
+    await settle();
+    expect(heard).toHaveBeenCalledTimes(1);
+    stop();
+  });
+
+  test('no program (404): the profile\'s days stand in', async () => {
+    const { services, training } = await phone((request) =>
+      new URL(request.url).pathname === '/v1/program' && request.method === 'GET' ? json({ code: 'NOT_FOUND' }, 404) : json({}, 404),
+    );
+    await services.training.read(services.api);
+    await settle();
+    expect(training()).toEqual(['training-MONDAY']);
   });
 });

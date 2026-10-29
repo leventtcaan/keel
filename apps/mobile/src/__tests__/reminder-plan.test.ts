@@ -40,11 +40,56 @@ test('the training reminder speaks in the user\'s own sentence; without one, a p
   expect(planReminders(base).find((r) => r.kind === 'training')?.body).toBe(t('reminders.training.body'));
 });
 
-test('no usual time, no training reminder — the check-in stays', () => {
+test('no usual time (onboarding no longer asks, ADR-072 #4): the training reminder goes by the default one, the check-in stays (K-1060)', () => {
   const { usualTrainingTime: _none, ...withoutTime } = schedule;
   const plan = planReminders({ ...base, schedule: withoutTime });
-  expect(plan.filter((r) => r.kind === 'training')).toEqual([]);
+  expect(P.defaultTrainingTime).toBe('18:00');
+  // Thirty minutes before the default 18:00, on each training day: a new user gets the reminder the settings promise.
+  expect(plan.filter((r) => r.kind === 'training').map((r) => r.when)).toEqual([
+    { weekday: 2, hour: 17, minute: 30 },
+    { weekday: 5, hour: 17, minute: 30 },
+  ]);
   expect(plan.filter((r) => r.kind === 'check_in')).toHaveLength(1);
+});
+
+test('a time the user gave wins over the default', () => {
+  const evening = planReminders({ ...base, schedule: { ...schedule, usualTrainingTime: '07:00' } }).filter((r) => r.kind === 'training');
+  expect(evening.map((r) => r.when)).toEqual([
+    { weekday: 2, hour: 6, minute: 30 },
+    { weekday: 5, hour: 6, minute: 30 },
+  ]);
+});
+
+describe('the training days are the PROGRAM\'s (ADR-090 Ek 1)', () => {
+  test("the program's weekdays plan the training reminders, whatever older list the profile's schedule still holds", () => {
+    // The profile says Monday and Thursday (what onboarding wrote); the program was changed in Edit to Tuesday, Wednesday and Saturday.
+    const training = planReminders({ ...base, programDays: ['TUESDAY', 'WEDNESDAY', 'SATURDAY'] }).filter((r) => r.kind === 'training');
+    expect(training.map((r) => r.when)).toEqual([
+      { weekday: 3, hour: 17, minute: 30 },
+      { weekday: 4, hour: 17, minute: 30 },
+      { weekday: 7, hour: 17, minute: 30 },
+    ]);
+  });
+
+  test('seven days: a reminder for each', () => {
+    const week = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'] as const;
+    expect(planReminders({ ...base, programDays: [...week] }).filter((r) => r.kind === 'training')).toHaveLength(7);
+  });
+
+  test("the program not read yet, or with no day on a weekday: the profile's days stand in", () => {
+    for (const programDays of [undefined, null, [] as Schedule['trainingDays']]) {
+      const training = planReminders({ ...base, programDays }).filter((r) => r.kind === 'training');
+      expect(training.map((r) => r.when)).toEqual([
+        { weekday: 2, hour: 17, minute: 30 },
+        { weekday: 5, hour: 17, minute: 30 },
+      ]);
+    }
+  });
+
+  test("the check-in morning stays the schedule's own", () => {
+    const checkIn = planReminders({ ...base, programDays: ['TUESDAY'] }).filter((r) => r.kind === 'check_in');
+    expect(checkIn.map((r) => r.when)).toEqual([{ weekday: 2, hour: 9, minute: 0 }]);
+  });
 });
 
 test('the check-in reminder: once a week, the check-in day, in the morning', () => {
@@ -287,12 +332,15 @@ describe('the weigh-in line on the training reminder (ADR-089 Ek 2, K-1058)', ()
     expect(list.filter((r) => r.body.includes('\n'))).toEqual([]);
   });
 
-  test('the training reminder off (no usual time): nothing is planned for training, line or not; check-in and quiet are as before', () => {
+  test('no usual time (the default one, K-1060): the training days carry the line as with a time the user gave', () => {
     const { usualTrainingTime: _none, ...withoutTime } = schedule;
-    const off = plan({ schedule: withoutTime });
-    expect(off.filter((r) => r.kind === 'training')).toEqual([]);
-    expect(off.map((r) => r.kind)).toEqual(planReminders({ ...base, schedule: withoutTime, now: wednesday, lastOpened: wednesday, weighInWeek: null }).map((r) => r.kind));
-    expect(off.some((r) => r.body.includes('weigh-in'))).toBe(false);
+    expect(plan({ schedule: withoutTime }).filter((r) => r.kind === 'training').map((r) => r.body)).toEqual(
+      plan({}).filter((r) => r.kind === 'training').map((r) => r.body),
+    );
+  });
+
+  test('the training reminders off (reminders off): nothing is planned at all; so no line', () => {
+    expect(planReminders({ ...base, schedule: null, now: wednesday, lastOpened: null, weighInWeek: null }).filter((r) => r.kind === 'training')).toEqual([]);
   });
 
   test('a week off or a state on that day: that day has no training reminder, so no line', () => {

@@ -48,6 +48,7 @@ const KEY = {
   cue: 'reminders.cue',
   only: 'reminders.only',
   schedule: 'reminders.schedule',
+  programDays: 'reminders.programDays',
   lastOpened: 'reminders.lastOpened',
   restUntil: 'reminders.restUntil',
   firstCall: 'reminders.firstCall',
@@ -61,6 +62,17 @@ function scheduleOf(kept: string | null): Schedule | null {
   try {
     const value = JSON.parse(kept) as Partial<Schedule> | null;
     return value !== null && Array.isArray(value.trainingDays) && typeof value.checkInDay === 'string' ? (value as Schedule) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The program's weekdays kept by an earlier run; anything that is not a list of them counts as none known. */
+function programDaysOf(kept: string | null): Schedule['trainingDays'] | null {
+  if (kept === null) return null;
+  try {
+    const value = JSON.parse(kept) as unknown;
+    return Array.isArray(value) && value.every((day) => typeof day === 'string') ? (value as Schedule['trainingDays']) : null;
   } catch {
     return null;
   }
@@ -138,6 +150,7 @@ export async function createReminders({ kv, access, now, report, muted = async (
     }
     const plan = planReminders({
       schedule: scheduleOf(await kv.getItemAsync(KEY.schedule)),
+      programDays: programDaysOf(await kv.getItemAsync(KEY.programDays)),
       cue: settings.cue,
       lastOpened: dateOf(await kv.getItemAsync(KEY.lastOpened)),
       now: now(),
@@ -221,9 +234,19 @@ export async function createReminders({ kv, access, now, report, muted = async (
       }),
 
     /**
-     * A week off as the program has it (Program.restUntil, ADR-037 › 51b), kept whenever the program is read — on Today and
-     * on the Train tab. Training reminders stop until it ends; null, none.
+     * The weekdays the program trains on (ADR-090 Ek 1), kept whenever the program is read or changed: the training reminders go
+     * by these, never by the profile's older list. Days on no weekday count for none; the same days again change nothing.
+     * `era` as keepRestUntil's.
      */
+    keepProgramDays: (days: Schedule['trainingDays'], era: number = generation): Promise<void> =>
+      inTurn(async () => {
+        if (era !== generation) return;
+        const kept = JSON.stringify([...days].sort());
+        if ((await kv.getItemAsync(KEY.programDays)) === kept) return;
+        await kv.setItemAsync(KEY.programDays, kept);
+        await reschedule();
+      }),
+
     /** The account's era: taken when a read begins, so what it brings back is dropped if the account left meanwhile. */
     era: (): number => generation,
 

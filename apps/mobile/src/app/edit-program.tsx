@@ -13,6 +13,7 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { load } from '@/today/today';
 import { useReadOnFocus } from '@/today/useReadOnFocus';
+import { trainedWeekdays } from '@/train/addDay';
 import { liftDays } from '@/train/cardio';
 import { CardioEditor } from '@/train/CardioEditor';
 import { type Changed, type Undone, applySuggestion, coachCardio, editProgram, putCardio, rebuild, undoChange } from '@/train/changes';
@@ -72,6 +73,8 @@ export default function EditProgramScreen() {
       const profileDays = profile?.state === 'ready' ? profile.value.schedule.trainingDays : null;
       return { ...read, own, active: activeWorkout(records, Date.now()), profileDays };
     }, [api, training, workoutRecords, part]),
+    // The "Add a day" sheet closes over this page without its focus (ADR-090 Ek 1): a program changed is read again.
+    { afterSaves: true },
   );
   // The program the server just answered, shown until the page reads again: a second tap names the review it holds
   // now (not the one read before), an undo's later changes leave the list at once (K-970 review).
@@ -124,6 +127,13 @@ export default function EditProgramScreen() {
   // after a name, are no edit (the server saves nothing then, and the page must not say it did).
   const baseEdit = useMemo(() => (program === null ? null : programEditOf(base, program)), [base, program]);
   const dirty = draft !== null && (edit === null || JSON.stringify(edit) !== JSON.stringify(baseEdit));
+  // "Add a day" is the one flow (ADR-090 Ek 1): the sheet, the server fills the day. Not over edits not saved (the add reads the
+  // program as saved, and a draft would be lost): they are saved first. A program the server cannot add to (a day on no weekday)
+  // keeps the editor's own empty day.
+  const addDayHere =
+    program?.canAddDay === true
+      ? () => (dirty ? setProblem(t('editProgram.saveFirst')) : router.push('/add-day'))
+      : undefined;
   const onEdit = useCallback(
     (next: (all: EditedDay[]) => EditedDay[]) => {
       setDraft((before) => next(before ?? base));
@@ -254,13 +264,20 @@ export default function EditProgramScreen() {
   const rebuildNow = async () => {
     if (sending.current || rebuilding.current) return;
     rebuilding.current = true;
-    const profile = await load(() => api.GET('/v1/profile'));
-    if (!shown.current) return;
-    if (profile.state !== 'ready') {
-      rebuilding.current = false;
-      return setProblem(t(profile.state === 'failed' && profile.problem === 'NoConnection' ? 'editProgram.offline' : 'editProgram.noDays'));
+    // The days to build for are the PROGRAM's, as it is now (ADR-090 Ek 1: the program is where the days are made, so a rebuild keeps the
+    // days the user has). Only a program with a day on no weekday has fewer weekdays than days; then the profile's, which the server
+    // keeps as the program's last weekdays.
+    const own = program === null ? [] : trainedWeekdays(program);
+    let days: Schemas['Weekday'][] = program !== null && own.length === program.days.length ? own : [];
+    if (days.length === 0) {
+      const profile = await load(() => api.GET('/v1/profile'));
+      if (!shown.current) return;
+      if (profile.state !== 'ready') {
+        rebuilding.current = false;
+        return setProblem(t(profile.state === 'failed' && profile.problem === 'NoConnection' ? 'editProgram.offline' : 'editProgram.noDays'));
+      }
+      days = profile.value.schedule.trainingDays;
     }
-    const days = profile.value.schedule.trainingDays;
     let rebuilt = false;
     await send(
       () => rebuild(api, days),
@@ -309,7 +326,7 @@ export default function EditProgramScreen() {
         {markedDay && adding !== undefined && (
           <Text style={[styles.text, { color: color.textSecondary }]}>{t('editProgram.addingDay', { day: t(`programEditor.weekdayName.${adding}`) })}</Text>
         )}
-        <ProgramEditor days={days} onChange={onEdit} moves={catalog} makeOwn={makeOwn} />
+        <ProgramEditor days={days} onChange={onEdit} moves={catalog} makeOwn={makeOwn} onAddDay={addDayHere} />
         {warning}
         {notReady}
         <Button label={t('editProgram.save')} disabled={busy || !dirty || edit === null} onPress={() => save(false)} />

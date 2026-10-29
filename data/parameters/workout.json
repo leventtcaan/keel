@@ -287,6 +287,14 @@
       "note": "Product choice, no source (ADR-075 #5): a session left with \"Fill in the rest later\" stays open this long after it started, then the server closes it and sets its targets as a finish does (SessionAutoClose). A day leaves the evening and the next morning to fill it in; sets added after the close still count (K-432). The server reads this file as it is: one value, no mirror."
     },
     {
+      "key": "rest_note_above_days",
+      "value": 5,
+      "unit": "days",
+      "tag": "tecrube",
+      "source": "arastirma/ham/guray/G6-eski-arsiv.md#K-36",
+      "note": "A program that trains more days than this (the coaching ideal of 4-5, G6 K-36) carries a short note on Train that a rest day helps muscle grow (ADR-090 #3). Six and seven days are the user's choice: the review does not ask to take one away (training.yaml training_days_free_max); the note is all that is said."
+    },
+    {
       "key": "program_days_max",
       "value": 7,
       "unit": "days",

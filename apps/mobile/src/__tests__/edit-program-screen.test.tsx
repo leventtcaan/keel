@@ -978,7 +978,9 @@ describe('rebuild for me', () => {
     expect(await screen.findByText(t('editProgram.rebuildBody'))).toBeTruthy();
     expect(mockPost).not.toHaveBeenCalled();
     await fireEvent.press(screen.getByText(t('editProgram.rebuildConfirm')));
-    expect(mockPost).toHaveBeenCalledWith('/v1/program/generate', { body: { trainingDays: ['MONDAY', 'THURSDAY'] } });
+    // The days the program has now (ADR-090 Ek 1), not the profile's older list (Monday and Thursday here): the user added Wednesday and Friday in Edit.
+    expect(mockPost).toHaveBeenCalledWith('/v1/program/generate', { body: { trainingDays: ['MONDAY', 'WEDNESDAY', 'FRIDAY'] } });
+    expect(mockGet).not.toHaveBeenCalledWith('/v1/profile');
     expect(mockDismissTo).toHaveBeenCalledWith('/train');
   });
 
@@ -1016,8 +1018,9 @@ describe('rebuild for me', () => {
     expect(screen.queryByText(t('editProgram.rebuildUnderWay'))).toBeNull();
   });
 
-  test("days the server can't build for: said with their number, not as our failure", async () => {
+  test("days the server can't build for: said with their number, not as our failure (a program with days on no weekday goes by the profile's)", async () => {
     mockParams = { part: 'rebuild' };
+    mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, days: PROGRAM.days.map(({ weekday: _w, ...d }) => d) } } };
     mockGet.mockImplementationOnce(async () => ({ data: { schedule: { trainingDays: [] } }, response: { status: 200 } }));
     mockAnswers['/v1/program/generate'] = () => ({ error: { code: 'VALIDATION_FAILED' }, response: { status: 400 } });
     await show();
@@ -1223,5 +1226,39 @@ describe('walkthrough round 3: Edit program (K-1013)', () => {
       await fireEvent.changeText(screen.getByLabelText(t('programEditor.search')), '');
       expect(offered('Barbell row')).toBeOnTheScreen();
     });
+  });
+});
+
+describe('Add a day is the one flow (ADR-090 Ek 1, K-1060)', () => {
+  test('where the server can add one, the button opens the sheet: the server fills the day, no empty day appears in the editor', async () => {
+    mockParams = { part: 'days' };
+    editable({ ...EDITABLE, canAddDay: true });
+    await show();
+    await screen.findByText('Upper');
+    await fireEvent.press(screen.getByText(t('programEditor.addDay')));
+    expect(mockPush).toHaveBeenCalledWith('/add-day');
+    expect(screen.queryByText(t('programEditor.defaultName', { number: 3 }))).toBeNull();
+  });
+
+  test('over edits not saved the day is not added: they are saved first, and the page says so', async () => {
+    mockParams = { part: 'days' };
+    editable({ ...EDITABLE, canAddDay: true });
+    await show();
+    await rename('Chest day');
+    await fireEvent.press(screen.getByText(t('programEditor.addDay')));
+    expect(await screen.findByText(t('editProgram.saveFirst'))).toBeTruthy();
+    expect(mockPush).not.toHaveBeenCalledWith('/add-day');
+  });
+
+  test("where the server can not add (a day on no weekday), or does not say, the editor's own empty day stays the way", async () => {
+    mockParams = { part: 'days' };
+    for (const canAddDay of [false, undefined]) {
+      editable({ ...EDITABLE, ...(canAddDay === undefined ? {} : { canAddDay }) });
+      const { unmount } = await show();
+      await screen.findByText('Upper');
+      await fireEvent.press(screen.getByText(t('programEditor.addDay')));
+      expect(mockPush).not.toHaveBeenCalledWith('/add-day');
+      unmount();
+    }
   });
 });

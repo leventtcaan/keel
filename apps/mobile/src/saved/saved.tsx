@@ -72,6 +72,14 @@ export function useSavedChanges(): number {
   return useContext(Changes);
 }
 
+/**
+ * Says "what the screens show changed" without a banner (a program changed by a path that has its own Undo, ADR-090 Ek 1): the
+ * tabs that read on this count read again, as after a save.
+ */
+export function useMarkChanged(): () => void {
+  return useContext(Saved).changed;
+}
+
 /** The screen's way to say "this was saved, and this takes it back". */
 export function useSaved(): (save: Save) => void {
   return useContext(Saved).publish;

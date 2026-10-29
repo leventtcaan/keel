@@ -6,6 +6,7 @@ import { Appearance, StyleSheet, View } from 'react-native';
 
 import { previousScreenName, pushedScreen } from '@/navigation/pushed';
 import { SavedBanner, SavedProvider } from '@/saved/saved';
+import { ProgramChangesListener } from '@/train/ProgramChangesListener';
 import { ServicesProvider, useAppearance, useOnboarding, useSignedIn, useSubscriptionGate } from '@/services/ServicesProvider';
 import { fontAssets } from '@/theme/fonts';
 import { ThemeProvider, useTheme } from '@/theme/theme';
@@ -46,6 +47,7 @@ function AppStack() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="plus" options={{ presentation: 'formSheet', sheetAllowedDetents: 'fitToContents', sheetGrabberVisible: true }} />
         <Stack.Screen name="today-change" options={{ presentation: 'formSheet', sheetAllowedDetents: 'fitToContents', sheetGrabberVisible: true }} />
+        <Stack.Screen name="add-day" options={{ presentation: 'formSheet', sheetAllowedDetents: 'fitToContents', sheetGrabberVisible: true }} />
         <Stack.Screen name="swap" options={{ presentation: 'modal' }} />
         <Stack.Screen name="edit-program" options={pushed} />
         <Stack.Screen name="build-program" options={pushed} />
@@ -136,6 +138,7 @@ export default function RootLayout() {
           <SavedProvider>
             <View style={styles.root}>
               <AppStack />
+              <ProgramChangesListener />
               <SavedBanner />
             </View>
           </SavedProvider>
