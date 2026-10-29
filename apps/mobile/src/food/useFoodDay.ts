@@ -5,59 +5,82 @@ import { useAppServices } from '@/services/ServicesProvider';
 import { type Loaded, load } from '@/today/today';
 import { useReadOnFocus } from '@/today/useReadOnFocus';
 
+import { addDays } from './dayLabel';
 import { type DayMeal, dayBefore, dayMeals, repeatOffers } from './meals';
+import { foodParams } from './params';
+import { usedSlots } from './slots';
 
 type Schemas = components['schemas'];
 
 export type FoodDay = {
+  /** The day these reads are of (YYYY-MM-DD). */
+  day: string;
   budget: Loaded<Schemas['DayBudget']>;
   targets: Loaded<Schemas['Targets']>;
-  /** Today's meals; null behind the health data consent (the server said so). */
+  /** The day's meals; null behind the health data consent (the server said so). */
   meals: DayMeal[] | null;
   /** Whether the server's list was read: if not, the meals are only the phone's, and "nothing logged" cannot be said. */
   mealsRead: boolean;
-  /** "Same as yesterday", for the slots today has nothing in; empty when yesterday's list could not be read. */
+  /** "Same as yesterday", for the slots this day has nothing in; empty when the day before could not be read. */
   offers: Schemas['Meal'][];
-  /** What the day can still hold (K-507): the user's own foods that fit what is likely left; empty when none or unread. */
+  /** What the day can still hold (K-507): the user's own foods that fit what is likely left; empty when none, unread, or not today. */
   suggestions: Schemas['Suggestion'][];
+  /** That day's own totals, when it has meals (the strip's read): what a day without a target shows. */
+  summary: Schemas['DaySummary'] | undefined;
+  /** The days of the strip with a meal logged. */
+  loggedDays: ReadonlySet<string>;
+  /** Those days with what each came to, oldest first: the days a day's meals can be copied from. */
+  summaries: Schemas['DaySummary'][];
+  /** The slots the user's day is made of: those they logged into lately, and this day's (all four until a pattern shows). */
+  slots: Schemas['MealSlot'][];
 };
 
 /**
- * The Food tab's reads (K-409, K-407), on focus and on coming back to the front. What waits on the phone is sent first,
- * so a meal just saved is in the server's list; offline, the phone's own copies stand in for it.
+ * The Food page's reads (K-409, K-407, K-1063), on focus and on coming back to the front, for the day shown (`selected`, else today):
+ * the budget, the targets, that day's meals, the day before's for "same as yesterday", and the last month's days with meals for the
+ * strip. What waits on the phone is sent first, so a meal just saved is in the server's list; offline, the phone's own copies stand in
+ * for it. Choosing another day reads again.
  */
-export function useFoodDay(): { day: string; data: FoodDay | null; reload: () => void } {
+export function useFoodDay(selected: string | null): { today: string; day: string; data: FoodDay | null; reload: () => void } {
   const { api, queue, mealRecords, report } = useAppServices();
   const latest = useRef({ queue, mealRecords, report });
   useEffect(() => {
     latest.current = { queue, mealRecords, report };
   });
-  return useReadOnFocus(
-    useCallback(
-      async (day: string): Promise<FoodDay> => {
-        const { queue: waiting, mealRecords: records, report: tell } = latest.current;
-        const named = (error: unknown) => tell({ name: error instanceof Error ? error.name : 'Unknown' });
-        await waiting.drain().catch(named);
-        const [budget, targets, today, yesterday, local, suggested] = await Promise.all([
-          load(() => api.GET('/v1/days/{day}/budget', { params: { path: { day } } })),
-          load(() => api.GET('/v1/targets')),
-          load(() => api.GET('/v1/meals', { params: { query: { day } } })),
-          load(() => api.GET('/v1/meals', { params: { query: { day: dayBefore(day) } } })),
-          records().catch((error: unknown) => {
-            named(error);
-            return [];
-          }),
-          load(() => api.GET('/v1/days/{day}/suggestions', { params: { path: { day } } })),
-        ]);
-        const suggestions = suggested.state === 'ready' ? suggested.value : [];
-        if (today.state === 'consent') return { budget, targets, meals: null, mealsRead: false, offers: [], suggestions: [] };
-        const mealsRead = today.state === 'ready';
-        const meals = dayMeals(mealsRead ? today.value : null, local, day);
-        // Without today's list a slot already logged could be offered again.
-        const offers = mealsRead && yesterday.state === 'ready' ? repeatOffers(yesterday.value, meals) : [];
-        return { budget, targets, meals, mealsRead, offers, suggestions };
-      },
-      [api],
-    ),
+  const read = useCallback(
+    async (today: string): Promise<FoodDay> => {
+      const day = selected ?? today;
+      const { queue: waiting, mealRecords: records, report: tell } = latest.current;
+      const named = (error: unknown) => tell({ name: error instanceof Error ? error.name : 'Unknown' });
+      await waiting.drain().catch(named);
+      const [budget, targets, shown, before, local, suggested, days, history] = await Promise.all([
+        load(() => api.GET('/v1/days/{day}/budget', { params: { path: { day } } })),
+        load(() => api.GET('/v1/targets')),
+        load(() => api.GET('/v1/meals', { params: { query: { day } } })),
+        load(() => api.GET('/v1/meals', { params: { query: { day: dayBefore(day) } } })),
+        records().catch((error: unknown) => {
+          named(error);
+          return [];
+        }),
+        day === today ? load(() => api.GET('/v1/days/{day}/suggestions', { params: { path: { day } } })) : Promise.resolve(null),
+        load(() => api.GET('/v1/days', { params: { query: { from: addDays(today, -(foodParams.dayStripDays - 1)), to: today } } })),
+        load(() => api.GET('/v1/meals', { params: { query: { from: addDays(today, -(foodParams.slotsUsedWindowDays - 1)), to: today } } })),
+      ]);
+      const suggestions = suggested !== null && suggested.state === 'ready' ? suggested.value : [];
+      const summaries = days.state === 'ready' ? days.value : [];
+      const loggedDays = new Set(summaries.map((summary) => summary.day));
+      const summary = summaries.find((entry) => entry.day === day);
+      const shownSlots = (shown.state === 'ready' ? shown.value : []).map((meal) => meal.slot);
+      const slots = usedSlots(history.state === 'ready' ? history.value : [], shownSlots);
+      if (shown.state === 'consent') return { day, budget, targets, meals: null, mealsRead: false, offers: [], suggestions: [], summary, loggedDays, summaries, slots };
+      const mealsRead = shown.state === 'ready';
+      const meals = dayMeals(mealsRead ? shown.value : null, local, day);
+      // Without the day's list a slot already logged could be offered again.
+      const offers = mealsRead && before.state === 'ready' ? repeatOffers(before.value, meals) : [];
+      return { day, budget, targets, meals, mealsRead, offers, suggestions, summary, loggedDays, summaries, slots };
+    },
+    [api, selected],
   );
+  const { day: today, data, reload } = useReadOnFocus(read);
+  return { today, day: selected ?? today, data, reload };
 }

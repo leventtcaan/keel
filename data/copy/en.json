@@ -1083,7 +1083,56 @@
     "reachedOne": "{reached} of 1 exercise reached your target effort"
   },
   "food": {
+    "single": {
+      "kcal": "{value} kcal",
+      "macros": "P {protein} · C {carbs} · F {fat}",
+      "line": "{kcal} · {macros}",
+      "lineKcalProtein": "{kcal} kcal · P {protein}",
+      "spoken": "{kcal} kilocalories, {protein} grams of protein, {carbs} of carbs, {fat} of fat"
+    },
+    "day": {
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "before": "Day before",
+      "after": "Day after",
+      "hasMeals": "has meals"
+    },
+    "logDay": "Add food to this day",
+    "totals": {
+      "eaten": "{value} {unit} eaten",
+      "left": "{value} {unit} left",
+    "gramsShort": "g",
+      "protein": "Protein",
+      "carbs": "Carbs",
+      "fat": "Fat",
+      "of": "{eaten} {unit}",
+      "ofTarget": "{eaten} / {target} {unit}",
+      "hint": "{count} meals a day, about {kcal} kcal each",
+      "nothing": "Nothing logged.",
+      "rangeEaten": "Eaten: {kcal}; protein {protein}; carbs {carbs}; fat {fat}",
+      "rangeLeft": "Left: {kcal}"
+    },
+    "copy": {
+      "open": "Copy a day's meals",
+      "close": "Done",
+      "title": "Copy into {day}",
+      "none": "No other day with meals yet.",
+      "one": "{count} meal · {kcal}",
+      "other": "{count} meals · {kcal}",
+      "spoken": "Copy the meals of {day}",
+      "failed": "Couldn't read that day. Try again.",
+      "saved": "Copied · {count} meals"
+    },
+    "deleted": {
+      "detail": "Deleted · {slot}",
+      "itemDetail": "Removed · {name}",
+      "said": "Put back.",
+      "undoFailed": "Couldn't put it back. Try again.",
+      "failed": "Couldn't delete it. Try again."
+    },
     "suggestions": {
+      "times": "{quantity} × {unit}",
+      "amount": "{quantity} {unit}",
       "title": "Fits what's left today",
       "item": "{name} · {quantity} {unit}",
       "itemServing": "{name} · {unit}",
@@ -1116,6 +1165,14 @@
     },
     "consent": "Your food budget and targets need the health data consent.",
     "meals": {
+      "noneDay": "Nothing logged this day.",
+    "menu": "Menu for {slot}",
+      "logToday": "Log again today",
+      "deleteMeal": "Delete meal",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "addTo": "Add to {slot}",
+      "emptySlot": "Nothing yet",
       "title": "Today's meals",
       "none": "Nothing logged today.",
       "waiting": "Not sent yet",
@@ -1128,6 +1185,7 @@
       "SNACK": "Snack"
     },
     "repeat": {
+      "titleDay": "Same as the day before",
       "title": "Same as yesterday",
       "spoken": "Log {slot} again: {items}",
       "failed": "Couldn't log it. Try again.",
@@ -1174,6 +1232,54 @@
     "savedEarlier": "An earlier save of this recipe went through, so your changes since weren't kept. Delete it from your recipes and enter it again."
   },
   "meal": {
+    "logNow": "Log now",
+    "intoDay": "Logging into {day}",
+    "quickAdd": {
+      "open": "Quick add",
+      "name": "Quick add",
+      "folded": "Quick add",
+      "kcal": "Calories",
+      "protein": "Protein",
+      "carbs": "Carbs",
+      "fat": "Fat"
+    },
+    "own": {
+      "open": "Create my own food",
+      "title": "Your food",
+      "name": "Name",
+      "serving": "Serving size",
+      "kcal": "Calories",
+      "protein": "Protein",
+      "carbs": "Carbs",
+      "fat": "Fat",
+      "save": "Save and add",
+      "cancel": "Cancel",
+      "invalid": "Check the name and the numbers.",
+      "failed": "Couldn't save it. Try again.",
+      "barcode": "Barcode {gtin}"
+    },
+    "browse": {
+      "recent": "Recent",
+      "frequent": "Frequent",
+      "favorites": "Favorites",
+      "again": "Log again",
+      "empty": {
+        "recent": "Nothing eaten lately.",
+        "frequent": "Nothing logged often yet.",
+        "favorites": "Star a food to keep it here.",
+        "again": "No past meals yet."
+      },
+      "againLine": "{slot} · {day} · {kcal}",
+      "againSpoken": "Log {slot} again: {items}"
+    },
+    "favorite": {
+      "add": "Add {name} to favorites",
+      "remove": "Remove {name} from favorites"
+    },
+    "slots": {
+      "more": "Other",
+      "moreSpoken": "Show the other meals"
+    },
     "title": "Log a meal",
     "closeLabel": "Close meal log",
     "quick": {
@@ -1193,6 +1299,11 @@
       "failed": "Couldn't record your choice. Check your connection and try again."
     },
     "search": {
+      "logNow": "Log {name} now",
+      "avoided": "You avoid this",
+      "per100gSingle": "{kcal} kcal per 100 g",
+      "portionLine": "{portion} · {numbers}",
+      "withBrand": "{brand} · {rest}",
       "label": "Find a food",
       "add": "Add {name}",
       "tooShort": "Type at least {min} letters.",
@@ -1214,6 +1325,13 @@
       "unavailable": "{name}: an ingredient is no longer in the food database. Enter the recipe again to use it."
     },
     "item": {
+      "open": "Open {name}",
+      "quantitySpoken": "{quantity} of it",
+      "half": "½",
+      "detail": "Details",
+      "detailHide": "Hide details",
+      "detailRange": "{kcal}; {protein}",
+      "detailWaiting": "Working it out...",
       "amount": "Amount of {name}",
       "amountTitle": "Amount",
       "unitTitle": "Unit",
@@ -1234,6 +1352,8 @@
       "portions": "portions"
     },
     "estimate": {
+      "range": "Range: {kcal}; {protein}",
+      "itemRange": "{name}: {kcal}",
       "title": "Estimate",
       "question": "{name}: {question}"
     },
@@ -1258,6 +1378,9 @@
       "notChecked": "The server hasn't checked these amounts yet. Check them, or try again when you're online."
     },
     "barcode": {
+      "missTitle": "That product isn't in the database yet.",
+      "addIt": "Add it",
+      "searchInstead": "Search instead",
       "scan": "Scan a barcode",
       "scanShort": "Scan",
       "title": "Scan a barcode",

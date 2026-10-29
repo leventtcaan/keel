@@ -35,3 +35,13 @@ export function unitLabel(unit: string): string {
 export function unitAfterNumber(unit: string): string {
   return BEGINS_WITH_COUNT.test(unit) ? t('meal.item.servingOf', { unit }) : unitLabel(unit);
 }
+
+/**
+ * An amount alone, as a row's second line says it (K-1063): "1 large", "2 × 1 large", "150 g", "1.5 cup". The same arranging of words
+ * as `amountLine`, without the food's name before it.
+ */
+export function amountPhrase(amount: Pick<components['schemas']['Amount'], 'quantity' | 'unit'>): string {
+  const { quantity, unit } = amount;
+  if (BEGINS_WITH_COUNT.test(unit)) return quantity === 1 ? unit : t('food.suggestions.times', { quantity: String(quantity), unit });
+  return t('food.suggestions.amount', { quantity: String(quantity), unit: unitLabel(unit) });
+}

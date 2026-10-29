@@ -533,6 +533,7 @@
         "settings.reminders.onlyCheckIn",
         "settings.reminders.title",
         "settings.reminders.routine",
+        "settings.reminders.meals",
         "settings.subscription.none",
         "settings.subscription.failed",
         "settings.subscription.title",
@@ -1357,12 +1358,12 @@
     },
     {
       "screen": "meal",
-      "budget": 25,
+      "budget": 40,
       "source": "prototip/yeni-yuz.html",
       "task": "K-980",
-      "note": "The first view is the first day's: the title, the four slots, the search (it searches as you type, ADR-085: no Search button) with its hint for an empty box and its Scan button; nothing is offered when there is no yesterday and no recent food. 'Log it' is not on the first view: the dock has it once a food is in the meal (K-1046, prototype yeniden-yapim.html 7). The face with the quick adds is the ordinary day: 'Same as yesterday' (a row, a press logs it), 'Recent' (at most quick_recent_max, data/parameters/food.json). Food names are the person's and the database's own words, as the prototype leaves them out of its count; the unit of an amount (g) and the kcal after each range are counted as listed. The plus on a recent food and the barcode button are spoken, not read.",
+      "note": "The first view is the first day's: the title, the four slots, the search (it searches as you type, ADR-085: no Search button) with its hint for an empty box and its Scan button; nothing is offered when there is no yesterday and no recent food. 'Log it' is not on the first view: the dock has it once a food is in the meal (K-1046, prototype yeniden-yapim.html 7). The face with the quick adds is the ordinary day: 'Same as yesterday' (a row, a press logs it), 'Recent' (at most quick_recent_max, data/parameters/food.json). Food names are the person's and the database's own words, as the prototype leaves them out of its count; the unit of an amount (g) and the kcal after each range are counted as listed. The plus on a recent food and the barcode button are spoken, not read. K-1063 (ADR-090 Ek 3) raised the budget from 25 to 40, openly (K1): the day's face now offers what logging needs without typing: the four lists (Recent, Frequent, Favorites, Log again), Quick add, Create my own food, and each food's portion line with its single numbers (\"1 large, 72 kcal, P 6, C 0, F 5\"), which the prototype's two plain recent rows did not have. The prototype's target is raised with it (prototip/yeni-yuz.html, meal t: 40).",
       "file": "src/app/meal.tsx",
-      "parts": ["src/food/QuickAdds.tsx", "src/food/FoodPicker.tsx", "src/food/savedMeal.ts"],
+      "parts": ["src/food/QuickAdds.tsx", "src/food/FoodPicker.tsx", "src/food/FoodBrowse.tsx", "src/food/savedMeal.ts"],
       "keys": [
         "meal.title",
         "food.slot.BREAKFAST",
@@ -1371,9 +1372,21 @@
         "food.slot.SNACK",
         "meal.search.label",
         "meal.search.empty",
-        "meal.barcode.scanShort"
+        "meal.barcode.scanShort",
+        "meal.quickAdd.open",
+        "meal.own.open"
       ],
       "notFirstView": [
+        "meal.slots.moreSpoken",
+        "meal.intoDay",
+        "meal.fromCoach.notChecked",
+        "meal.search.avoided",
+        "meal.search.logNow",
+        "meal.barcode.missTitle",
+        "meal.barcode.addIt",
+        "meal.barcode.searchInstead",
+        "meal.browse.againLine",
+        "meal.browse.againSpoken",
         "meal.closeLabel",
         "consent.health_data.title",
         "consent.health_data.points.collected",
@@ -1406,6 +1419,10 @@
         "meal.barcode.notFound",
         "meal.barcode.badNumber",
         "meal.barcode.failed",
+        "meal.browse.empty.recent",
+        "meal.browse.empty.frequent",
+        "meal.browse.empty.favorites",
+        "meal.browse.empty.again",
         "food.repeat.spoken",
         "food.repeat.failed",
         "food.suggestions.item",
@@ -1430,15 +1447,21 @@
             "food.slot.LUNCH",
             "food.slot.DINNER",
             "food.slot.SNACK",
+            "meal.slots.more",
             "food.repeat.title",
-            "meal.quick.recent",
+            "meal.browse.recent",
+            "meal.browse.frequent",
+            "meal.browse.favorites",
+            "meal.browse.again",
             "meal.search.label",
             "meal.search.empty",
-            "meal.barcode.scanShort"
+            "meal.barcode.scanShort",
+            "meal.quickAdd.open",
+            "meal.own.open"
           ],
           "dynamic": [
-            { "what": "kcal after the range of Same as yesterday", "words": 1 },
-            { "what": "the unit (g) and kcal of each of two recent foods", "words": 4 }
+            { "what": "kcal after Same as yesterday's meal", "words": 1 },
+            { "what": "the portion line of each of two foods: the portion, kcal, P, C and F (\"1 large, 72 kcal, P 6, C 0, F 5\")", "words": 10 }
           ]
         }
       ]

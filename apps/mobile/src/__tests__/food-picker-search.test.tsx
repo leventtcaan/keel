@@ -1,7 +1,8 @@
 /**
  * Finding a food as the user types (K-1038, ADR-085): a short wait after the last key, then the search; the old list goes
  * the moment the words change and "searching" shows; a late answer to older words never replaces a newer one; no
- * connection and a server error are told apart; each row says its energy per 100 g as a range (U5). The keyboard's
+ * connection and a server error are told apart; each row says the portion the food opens on with that portion's numbers as single
+ * numbers (ADR-090 #5). The keyboard's
  * Search key searches at once, and there is no separate Search button — Scan stays.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
@@ -23,6 +24,14 @@ const food = (id: string, name: string, kcal = R(130, 160)): Schemas['Food'] => 
   per100g: { kcal, proteinG: R(10, 13), carbsG: R(0, 1), fatG: R(9, 11) },
 });
 const EGG = food('fdc-1', 'Egg, whole, raw');
+const LARGE_EGG: Schemas['Food'] = {
+  ...food('fdc-3', 'Egg, whole'),
+  portions: [
+    { unit: '1 large', label: '1 large', kind: 'PIECE', grams: 50, kcal: 72, proteinG: 6.3, carbsG: 0.4, fatG: 4.8 },
+    { unit: 'g', label: 'g', kind: 'WEIGHT', grams: 1, kcal: 1.43, proteinG: 0.126, carbsG: 0.01, fatG: 0.095 },
+  ],
+  defaultAmount: { quantity: 1, unit: '1 large' },
+};
 const EGGNOG = food('fdc-2', 'Eggnog', R(80, 100));
 
 let mockSearch: (q: string) => Promise<Answer> = async () => ok([EGG]);
@@ -199,22 +208,47 @@ describe('when the search does not work', () => {
 });
 
 describe('a result row', () => {
-  test('says its energy per 100 g as a range, under the name', async () => {
+  // K1 (ADR-090 #1, #5, K-1063): a row said "130-160 kcal per 100 g" as a range; it says the portion the food opens on and that
+  // portion's numbers as single ones, and a food without portions says the middle of its range per 100 g.
+  test('an answer without portions says the middle of its energy per 100 g, one number, under the name', async () => {
     await show();
     await type('egg');
     await wait(DELAY);
-    const kcal = `${t('format.range', { low: 130, high: 160 })} ${t('food.budget.kcalUnit')}`;
     expect(screen.getByText(EGG.name)).toBeOnTheScreen();
-    expect(screen.getByText(t('meal.search.per100g', { kcal }))).toBeOnTheScreen();
-    expect(t('meal.search.per100g', { kcal })).toContain('130-160');
+    expect(screen.getByText(t('meal.search.per100gSingle', { kcal: 145 }))).toBeOnTheScreen();
+    expect(screen.queryByText(/130-160/)).toBeNull();
   });
 
-  test('is spoken with the range as words, as the button\'s hint', async () => {
+  test('a food with portions says its natural portion and the numbers of that portion: kcal, protein, carbs, fat', async () => {
+    mockSearch = async () => ok([LARGE_EGG]);
     await show();
     await type('egg');
     await wait(DELAY);
-    const spoken = `${t('format.rangeSpoken', { low: 130, high: 160 })} ${t('food.budget.kcalUnit')}`;
-    expect(screen.getByHintText(t('meal.search.per100gSpoken', { kcal: spoken }))).toBeOnTheScreen();
+    expect(screen.getByText('1 large · 72 kcal · P 6 · C 0 · F 5')).toBeOnTheScreen();
+  });
+
+  test('a product says its brand first; a food the profile avoids is marked, not hidden', async () => {
+    mockSearch = async () => ok([{ ...LARGE_EGG, brand: 'Happy Hens', avoided: true }]);
+    await show();
+    await type('egg');
+    await wait(DELAY);
+    expect(screen.getByText('Happy Hens · 1 large · 72 kcal · P 6 · C 0 · F 5')).toBeOnTheScreen();
+    expect(screen.getByText(t('meal.search.avoided'))).toBeOnTheScreen();
+  });
+
+  test('a plus logs the portion shown at once; the row itself opens the portion step', async () => {
+    mockSearch = async () => ok([LARGE_EGG]);
+    const onLogNow = jest.fn();
+    await render(
+      <ThemeProvider scheme="light">
+        <FoodPicker full={false} onFood={onFood} onLogNow={onLogNow} />
+      </ThemeProvider>,
+    );
+    await type('egg');
+    await wait(DELAY);
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.search.logNow', { name: LARGE_EGG.name }) })));
+    expect(onLogNow).toHaveBeenCalledWith(LARGE_EGG);
+    expect(onFood).not.toHaveBeenCalled();
   });
 });
 

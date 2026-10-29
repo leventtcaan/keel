@@ -179,11 +179,115 @@
     },
     {
       "key": "quick_recent_max",
-      "value": 2,
+      "value": 12,
       "unit": "count",
       "tag": "urun",
       "source": "plan/kararlar/ADR-018-health-yazma-ve-ice-aktarma.md#Ek 1",
-      "note": "How many of the foods eaten lately (GET /v1/foods/recent, K-1025) the meal screen offers for one tap (K-980, prototype #meal): the fast path stays a few lines, so the screen keeps within its word budget with 'Same as yesterday' above it (data/copy/word-budgets.json). The server orders them (the slot's own first, then the freshest) and sends up to keel.nutrition.recent-foods (application.yml, 5); this is how many of those the screen shows, so it is never more than the server's ceiling (backend NutritionLimitsTests mirrors it). The rest are a search away."
+      "note": "How many of the foods eaten lately (GET /v1/foods/recent, K-1025) the meal screen lists for one tap (K-980): twelve since K-1063 (ADR-090 Ek 3: two was too few to be a shortcut). The server orders them (the slot's own first, then the freshest) and sends up to keel.nutrition.recent-foods (application.yml, 12); this is how many of those the screen shows, so it is never more than the server's ceiling (backend NutritionLimitsTests mirrors it)."
+    },
+    {
+      "key": "past_day_slot_hours",
+      "value": {"BREAKFAST": 8, "LUNCH": 12, "DINNER": 19, "SNACK": 16},
+      "unit": "hour_of_day",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-090-evre-6-kararlari.md#Ek 3",
+      "note": "The hour a meal logged into a day that is not today is given (the app has no clock to read for it, and a day's order is by time): the usual hour of the slot. Today's meals take the moment they are logged."
+    },
+    {
+      "key": "day_strip_days",
+      "value": 30,
+      "unit": "days",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-090-evre-6-kararlari.md#Ek 3",
+      "note": "How many days back the Food page's day strip goes (ADR-090 Ek 3: at least a month of logged days can be read, changed and logged into)."
+    },
+    {
+      "key": "log_again_days",
+      "value": 14,
+      "unit": "days",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-090-evre-6-kararlari.md#Ek 3",
+      "note": "How far back \"Log again\" looks for a meal to log once more (one tap)."
+    },
+    {
+      "key": "log_again_max",
+      "value": 10,
+      "unit": "meals",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-090-evre-6-kararlari.md#Ek 3",
+      "note": "How many past meals \"Log again\" lists, the freshest first, one of each kind of meal."
+    },
+    {
+      "key": "slots_used_window_days",
+      "value": 14,
+      "unit": "days",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-090-evre-6-kararlari.md#Ek 3",
+      "note": "The meal slots offered are the ones the user logged into in this many days (and today's); a user with fewer than two such slots sees all four. One tap adds the others (ADR-090 Ek 3: \"I eat N meals a day\")."
+    },
+    {
+      "key": "portion_quick_quantities",
+      "value": [0.5, 1, 2, 3],
+      "unit": "servings",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-090-evre-6-kararlari.md#Ek 3",
+      "note": "The quantities a portion offers as one-tap chips beside the stepper, for a food counted in pieces or servings (\"half\", 1, 2, 3): the common cases need no typing."
+    },
+    {
+      "key": "meal_amount_step_oz",
+      "value": 0.5,
+      "unit": "oz",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-070-gorsel-dil-turkuaz.md#Ek 2",
+      "note": "One tap of - or + on a food counted in ounces (the grams' step, 10 g, is about a third of an ounce; half an ounce is the smallest part a US scale shows)."
+    },
+    {
+      "key": "quick_add_kcal_max",
+      "value": 10000,
+      "unit": "kcal",
+      "tag": "urun",
+      "source": "contracts/openapi.yaml#QuickEntry",
+      "note": "Contract QuickEntry.kcal: a quick add is at most this (a day's worth of food at most)."
+    },
+    {
+      "key": "quick_add_macro_max",
+      "value": 1000,
+      "unit": "g",
+      "tag": "urun",
+      "source": "contracts/openapi.yaml#QuickEntry",
+      "note": "Contract QuickEntry: protein, carbs and fat of a quick add are at most this many grams each."
+    },
+    {
+      "key": "own_food_name_max_chars",
+      "value": 80,
+      "unit": "characters",
+      "tag": "urun",
+      "source": "contracts/openapi.yaml#NewFood",
+      "note": "Contract NewFood.name: the longest name of a food the user adds from a label."
+    },
+    {
+      "key": "own_food_default_serving_g",
+      "value": 100,
+      "unit": "g",
+      "tag": "urun",
+      "source": "contracts/openapi.yaml#NewFood",
+      "note": "The serving size an own food starts on (a label's own: 100 g, the basis most labels also give); the user changes it to the label's."
+    },
+    {
+      "key": "swipe_delete_px",
+      "value": 96,
+      "unit": "points",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-090-evre-6-kararlari.md#Ek 3",
+      "note": "How far a logged item is swiped to the left to delete it (iOS list habit: a short swipe shows the red Delete, a long one does it). Past it the item goes and the app's banner offers Undo; short of it the row springs back. Product choice, no source gives a distance."
+    },
+    {
+      "key": "meal_hint_round_kcal",
+      "value": 50,
+      "unit": "kcal",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-090-evre-6-kararlari.md#Ek 3",
+      "note": "The small hint under the day's numbers (about 600 kcal a meal) is the day's target over the meal slots the user uses, rounded to this: a guide to the size of a meal, not a budget per meal (U7). Rounded so it does not read as a precise rule."
     }
   ]
 }

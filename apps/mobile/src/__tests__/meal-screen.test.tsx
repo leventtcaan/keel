@@ -65,7 +65,7 @@ const mockBack = jest.fn();
 jest.mock('expo-crypto', () => ({ randomUUID: () => jest.requireActual<typeof import('node:crypto')>('node:crypto').randomUUID() }));
 jest.mock('expo-router', () => ({ router: { back: () => mockBack(), push: jest.fn() }, useLocalSearchParams: () => ({}) }));
 const mockServices = {
-  api: { POST: mockPOST, PUT: mockPUT, GET: jest.fn(), DELETE: jest.fn(async (_path: string, _init?: unknown) => ({ response: new Response(null, { status: 204 }) })) },
+  api: { POST: mockPOST, PUT: mockPUT, GET: jest.fn(async (_path: string, _init?: unknown) => ({ error: { code: 'NOT_FOUND', message: 'x' }, response: new Response(null, { status: 404 }) })), DELETE: jest.fn(async (_path: string, _init?: unknown) => ({ response: new Response(null, { status: 204 }) })) },
   queue: { record: mockRecord },
   // The real take-back is tested on its own (sync-take-back.test.ts): here it only runs the server delete it is given.
   takeBack: jest.fn(async (_clientId: string, remove: (serverId: string) => Promise<number>) => {
@@ -137,6 +137,10 @@ async function amount(food: Schemas['Food'], text: string) {
   await act(async () => fireEvent.changeText(screen.getByLabelText(t('meal.item.amount', { name: food.name })), text));
 }
 const kcal = (low: number, high: number) => `${t('format.range', { low, high })} ${t('food.budget.kcalUnit')}`;
+// K1 (ADR-090 #5, K-1063): numbers are single where a food is logged — the middle of the server's range — and the ranges are under "Details".
+const single = (low: number, high: number) => t('food.single.kcal', { value: Math.round((low + high) / 2) });
+/** Opens a folded item (only the open one shows its amount; the one added last is open). */
+const openItem = async (name: string) => act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.item.open', { name }) })));
 const estimates = () => mockPOST.mock.calls.filter(([path]) => path === '/v1/food-estimates');
 
 describe('a meal the coach read (K-509)', () => {
@@ -178,7 +182,7 @@ describe('a meal the coach read (K-509)', () => {
     takeMeal();
     handOffMeal([{ foodId: RICE.id, name: RICE.name, quantity: 180, unit: 'g' }], 'photo');
     await show();
-    expect(screen.getByText(kcal(170, 240))).toBeOnTheScreen(); // the estimate is there — only no question
+    expect(screen.getByText(single(170, 240))).toBeOnTheScreen(); // the estimate is there — only no question
     expect(screen.queryByText(t('meal.photo.why'))).toBeNull();
   });
 
@@ -284,7 +288,7 @@ describe('the amounts and the estimate', () => {
     expect(screen.getByRole('button', { name: t('meal.save') })).toBeDisabled();
   });
 
-  test("with every amount given, the server's estimate as ranges: each item, the meal's energy and protein (U1, U5)", async () => {
+  test("with every amount given, the server's estimate as one number, its ranges under Details (U1, U5 as amended by ADR-090 #5)", async () => {
     await show();
     await search('rice');
     await add(RICE);
@@ -292,9 +296,21 @@ describe('the amounts and the estimate', () => {
     expect(estimates().at(-1)?.[1]).toEqual({
       body: { items: [{ foodId: 'fdc-3', amount: { quantity: 1.5, unit: '1 bowl', certainty: 'ESTIMATED' } }] },
     });
-    expect(screen.getByText(kcal(170, 240))).toBeOnTheScreen();
-    expect(screen.getByText(kcal(380, 530))).toBeOnTheScreen();
-    expect(screen.getByText(`${t('format.range', { low: 40, high: 52 })} ${t('food.budget.proteinUnit')}`)).toBeOnTheScreen();
+    expect(screen.getByTestId('numbers-0')).toHaveTextContent(single(170, 240));
+    expect(screen.queryByText(kcal(170, 240))).toBeNull();
+    await act(async () => fireEvent.press(screen.getByTestId('details-0')));
+    expect(screen.getByText(t('meal.item.detailRange', { kcal: kcal(170, 240), protein: `${t('format.range', { low: 3, high: 5 })} ${t('food.budget.proteinUnit')}` }))).toBeOnTheScreen();
+  });
+
+  test('from two items on the meal has a total: one number, its ranges under Details', async () => {
+    await show();
+    await search('rice');
+    await add(RICE);
+    await search('chicken');
+    await add(CHICKEN);
+    expect(screen.getByTestId('estimate-kcal')).toHaveTextContent(single(380, 530));
+    await act(async () => fireEvent.press(screen.getByTestId('estimate-detail')));
+    expect(screen.getByText(t('meal.estimate.range', { kcal: kcal(380, 530), protein: `${t('format.range', { low: 40, high: 52 })} ${t('food.budget.proteinUnit')}` }))).toBeOnTheScreen();
   });
 
   test("the estimate's one question, and weighing answers it: the item goes as weighed", async () => {
@@ -321,7 +337,7 @@ describe('the amounts and the estimate', () => {
     expect(estimates().at(-1)?.[1]).toEqual({ body: { items: [{ foodId: 'fdc-3', amount: { quantity: 200, unit: 'g', certainty: 'ESTIMATED' } }] } });
   });
 
-  test('another unit empties the amount: "1" of a bowl is not 1 g (simulator: it became 15 g)', async () => {
+  test('another unit never leaves the amount empty or wrong: "1" of a bowl is not 1 g (simulator: it became 15 g), so grams open on 100 g (K-1063)', async () => {
     await show();
     await search('rice');
     await add(RICE);
@@ -329,8 +345,7 @@ describe('the amounts and the estimate', () => {
     await act(async () =>
       fireEvent.press(screen.getByRole('button', { name: t('meal.item.unitSpoken', { name: RICE.name, unit: t('meal.item.grams') }) })),
     );
-    expect(screen.getByLabelText(t('meal.item.amount', { name: RICE.name })).props.value).toBe('');
-    expect(screen.queryByTestId('estimate')).toBeNull();
+    expect(screen.getByLabelText(t('meal.item.amount', { name: RICE.name })).props.value).toBe('100');
   });
 
   test('more than the contract takes is named, and nothing is estimated or saved', async () => {
@@ -377,9 +392,9 @@ describe('saving', () => {
     await show();
     await search('rice');
     await add(RICE);
+    await amount(RICE, '1');
     await search('chicken');
     await add(CHICKEN);
-    await amount(RICE, '1');
     await amount(CHICKEN, '150');
     await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.save') })));
     const [{ body }] = mockRecord.mock.calls[0] as [{ body: { clientId: string } }];
@@ -476,18 +491,18 @@ describe('review: answers in their order, guards, failures', () => {
     expect(screen.queryByRole('button', { name: t('meal.search.add', { name: RICE.name }) })).toBeNull();
   });
 
-  test('the estimate card goes as soon as an amount changes, until the new one comes', async () => {
+  test('the numbers go as soon as an amount changes, until the new estimate comes', async () => {
     await show();
     await search('rice');
     await add(RICE);
     await amount(RICE, '1');
-    expect(screen.getByTestId('estimate')).toBeOnTheScreen();
+    expect(screen.getByTestId('numbers-0')).toBeOnTheScreen();
     const next = held<Answer>();
     mockEstimate = () => next.promise;
     await amount(RICE, '2');
-    expect(screen.queryByTestId('estimate')).toBeNull();
+    expect(screen.queryByTestId('numbers-0')).toBeNull();
     await amount(RICE, '');
-    expect(screen.queryByTestId('estimate')).toBeNull();
+    expect(screen.queryByTestId('numbers-0')).toBeNull();
   });
 
   test('estimate answers out of order: only the one for the current amounts is shown', async () => {
@@ -501,11 +516,12 @@ describe('review: answers in their order, guards, failures', () => {
     await add(RICE);
     await amount(RICE, '2');
     await amount(RICE, '3');
-    const answer = (low: number, high: number): Answer => ok({ items: [], kcal: R(low, high), proteinG: R(1, 2) });
+    const answer = (low: number, high: number): Answer =>
+      ok({ items: [{ foodId: RICE.id, name: RICE.name, amount: { quantity: 1, unit: '1 bowl' }, kcal: R(low, high), proteinG: R(1, 2) }], kcal: R(low, high), proteinG: R(1, 2) });
     await act(async () => second.release(answer(500, 600)));
     await act(async () => first.release(answer(100, 200)));
-    expect(screen.getByText(kcal(500, 600))).toBeOnTheScreen();
-    expect(screen.queryByText(kcal(100, 200))).toBeNull();
+    expect(screen.getByTestId('numbers-0')).toHaveTextContent(single(500, 600));
+    expect(screen.queryByText(single(100, 200))).toBeNull();
   });
 
   test('two presses of save in the same moment log once, and go back once', async () => {
@@ -574,9 +590,9 @@ describe('review: answers in their order, guards, failures', () => {
     await show();
     await search('rice');
     await add(RICE);
+    await amount(RICE, '1');
     await search('chicken');
     await add(CHICKEN);
-    await amount(RICE, '1');
     await amount(CHICKEN, '150');
     expect(screen.getByText(t('meal.estimate.question', { name: CHICKEN.name, question: t('foodEstimate.question.grams') }))).toBeOnTheScreen();
 
@@ -586,17 +602,20 @@ describe('review: answers in their order, guards, failures', () => {
     expect(screen.queryByText(/Weighing/)).toBeNull();
   });
 
-  test('the same food twice: each item is its own, removed and changed by its place', async () => {
+  test('the same food twice: each item is its own, removed and changed by its place (the earlier one folds, a tap opens it)', async () => {
     await show();
     await search('rice');
     await add(RICE);
+    await act(async () => fireEvent.changeText(screen.getByLabelText(t('meal.item.amount', { name: RICE.name })), '1'));
     await search('rice');
     await add(RICE);
-    const fields = () => screen.getAllByLabelText(t('meal.item.amount', { name: RICE.name }));
-    await act(async () => fireEvent.changeText(fields()[0], '1'));
-    await act(async () => fireEvent.changeText(fields()[1], '2'));
-    await act(async () => fireEvent.press(screen.getAllByRole('button', { name: t('meal.item.removeSpoken', { name: RICE.name }) })[1]));
-    expect(fields().map((field) => field.props.value)).toEqual(['1']);
+    await act(async () => fireEvent.changeText(screen.getByLabelText(t('meal.item.amount', { name: RICE.name })), '2'));
+    // The first folded when the second came: its line says its amount.
+    await openItem(RICE.name);
+    expect(screen.getByLabelText(t('meal.item.amount', { name: RICE.name })).props.value).toBe('1');
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.item.removeSpoken', { name: RICE.name }) })));
+    expect(screen.getAllByTestId(/^item-/)).toHaveLength(1);
+    expect(screen.getByLabelText(t('meal.item.amount', { name: RICE.name })).props.value).toBe('2');
   });
 
   test('at most the items the server takes: the meal is full, and says so (review: a larger one was lost)', async () => {

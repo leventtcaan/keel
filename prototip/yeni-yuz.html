@@ -1421,7 +1421,7 @@ const SCREENS = {
       <button class="btn ghost wide" type="button" data-act="health" data-val="no">Not now</button></div>
   </div>` },
 
-  meal: { n: 'Öğün', t: 25, r: () => noConsent() ? `${navtop('Lunch')}${lockLine()}` : `${navtop('Lunch', '<span class="tnum">13:10</span>')}
+  meal: { n: 'Öğün', t: 40, r: () => noConsent() ? `${navtop('Lunch')}${lockLine()}` : `${navtop('Lunch', '<span class="tnum">13:10</span>')}
     <div class="search"><div class="inbox">${I.search(18)}<input id="foodq" type="search" placeholder="Search food" aria-label="Search food"></div><button class="iconbtn surf" type="button" data-go="barcode" aria-label="Scan a barcode" style="border-radius:12px;width:50px;height:50px">${I.barcode(24)}</button></div>
     <section class="card ink"><div class="ct"><span class="k">Same as yesterday</span></div>
       <div class="sh"><div><b style="font-size:19px">Chicken rice bowl</b><br><span class="kc" style="color:var(--block-muted)">610-720 kcal</span></div><button class="btn onblock sm" type="button" data-act="logmeal" data-val="Chicken rice bowl|610|720">Add</button></div></section>
