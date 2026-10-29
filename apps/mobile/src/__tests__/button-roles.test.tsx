@@ -53,6 +53,13 @@ describe.each(schemes)('roles in the %s theme', (scheme) => {
     expect(inkOf('Delete').color).toBe(p.warn);
   });
 
+  test('a secondary inside a Card (onSurface) is filled with the raised colour, or it would vanish into the card', async () => {
+    await renderIn(scheme, <Button label="Continue" variant="secondary" onSurface onPress={() => {}} />);
+    expect(drawn('Continue')).toMatchObject({ backgroundColor: p.raise });
+    expect(p.raise).not.toBe(p.surface);
+    expect(inkOf('Continue').color).toBe(p.text);
+  });
+
   test.each([
     ['ghost', 'secondary'],
     ['warn', 'destructive'],

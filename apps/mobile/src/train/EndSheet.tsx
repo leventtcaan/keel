@@ -52,12 +52,23 @@ export function EndSheet({ onFinish, onLater, onDiscard, onBack, cardioKept = fa
       <Text style={[styles.title, { color: color.text }]}>{t('workout.ending.discardAsk')}</Text>
       <Text style={[styles.note, { color: color.textSecondary }]}>{discardNote}</Text>
       <View style={styles.row}>
-        <Button label={t('workout.ending.confirm')} variant="warn" onPress={onDiscard} disabled={busy} />
-        <Button label={t('workout.ending.keep')} variant="ghost" onPress={() => setConfirming(false)} disabled={busy} />
+        <Button label={t('workout.ending.confirm')} variant="destructive" onPress={onDiscard} disabled={busy} />
+        <Button label={t('workout.ending.keep')} variant="secondary" onPress={() => setConfirming(false)} disabled={busy} />
       </View>
     </View>
   ) : (
-    choice(t('workout.ending.discard'), discardNote, ask)
+    // Starts the one destructive action of the menu: the warning colour as words, no fill (ADR-070 Ek 2 #1); the note under it.
+    <View style={[styles.choice, { backgroundColor: color.surface }]}>
+      <Button
+        label={t('workout.ending.discard')}
+        accessibilityLabel={`${t('workout.ending.discard')}. ${discardNote}`}
+        variant="destructive"
+        size="sm"
+        onPress={ask}
+        disabled={busy}
+      />
+      <Text style={[styles.note, { color: color.textSecondary }]}>{discardNote}</Text>
+    </View>
   );
   return (
     <View testID="end-sheet" style={styles.sheet}>
@@ -70,7 +81,7 @@ export function EndSheet({ onFinish, onLater, onDiscard, onBack, cardioKept = fa
           {problem}
         </ProblemText>
       )}
-      <Button label={t('workout.ending.back')} variant="ghost" onPress={onBack} disabled={busy} />
+      <Button label={t('workout.ending.back')} variant="secondary" onPress={onBack} disabled={busy} />
     </View>
   );
 }

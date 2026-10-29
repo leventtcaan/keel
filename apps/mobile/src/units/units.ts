@@ -33,6 +33,9 @@ const P = {
   imperialRegions: param<string[]>('imperial_regions'),
 };
 
+/** The most decimals a typed load keeps (the stored kilo's, stored_kg_decimals): 11.34 kg is a 25 lb dumbbell. */
+export const loadInputDecimals = P.storedKgDecimals;
+
 /**
  * Half away from zero at `decimals`. The nudge by one part in 2^52 undoes binary representation: 1.005 is stored as
  * 1.00499999…, and plain Math.round(100.4999…) would give 1.00.

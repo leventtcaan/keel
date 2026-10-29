@@ -22,6 +22,14 @@ type Props = {
   unit?: string;
   /** How many decimals a value keeps; the step's own by default (2.5 → 1). A number typed past it is rounded to it. */
   decimals?: number;
+  /** What the empty field says, already translated ("Pick"); "-" by default. */
+  placeholder?: string;
+  /**
+   * For a screen that moves the number itself (a gym's loads are no fixed step apart, a first tap starts from a bar): given
+   * the direction, what one tap does, or null where it would not move (the button is off). Replaces the plain step, the
+   * buttons and VoiceOver's swipe alike; with it an empty value can be stepped from. `step` still sets the decimals and the keyboard.
+   */
+  steps?: (direction: 1 | -1) => (() => void) | null;
 };
 
 const ACTIONS = [{ name: 'increment' }, { name: 'decrement' }];
@@ -53,31 +61,42 @@ function parse(text: string): number | null {
  * − value + as one component (ADR-070 Ek 2 #5): the value is a field one taps and types into (decimal keyboard, a comma or
  * a dot), the buttons step it. One adjustable control for VoiceOver: swipe up or down to step.
  */
-export function Stepper({ label, value, onChange, onEmpty, step, min = Number.NEGATIVE_INFINITY, max = Number.POSITIVE_INFINITY, unit, decimals }: Props) {
+export function Stepper({ label, value, onChange, onEmpty, step, min = Number.NEGATIVE_INFINITY, max = Number.POSITIVE_INFINITY, unit, decimals, placeholder = '-', steps }: Props) {
   const { color } = useTheme();
   const places = decimals ?? decimalsOf(step);
-  // What is on the screen while the field is being typed in: "5" on its way to "55" is not yet below the minimum.
-  const [draft, setDraft] = useState<string | null>(null);
+  // What is on the screen while the field is being typed in: "5" on its way to "55" is not yet below the minimum. It holds
+  // the value the typing gave the screen: when the value is another one by now (a step, a suggestion taken, the screen
+  // set it), the draft is old and the value is shown, so a tap on + with the keyboard up is seen.
+  const [draft, setDraft] = useState<{ text: string; value: number | null } | null>(null);
   const clamp = (n: number) => Math.min(max, Math.max(min, round(n, places)));
-  const stepBy = (direction: 1 | -1) => {
-    if (value !== null) onChange(clamp(value + direction * step));
+  const stepTo = (direction: 1 | -1): (() => void) | null => {
+    if (steps !== undefined) return steps(direction);
+    if (value === null) return null;
+    const next = clamp(value + direction * step);
+    return next === value ? null : () => onChange(next);
   };
+  const stepBy = (direction: 1 | -1) => stepTo(direction)?.();
   const typed = (text: string) => {
-    setDraft(text);
     const number = parse(text);
-    if (number !== null) onChange(clamp(number));
-    else onEmpty?.();
+    if (number !== null) {
+      const heard = clamp(number);
+      setDraft({ text, value: heard });
+      onChange(heard);
+    } else {
+      // Nothing to hear yet; a screen told of empty fields takes the number away, else the old value stays.
+      setDraft({ text, value: onEmpty === undefined ? value : null });
+      onEmpty?.();
+    }
   };
   const adjusted = ({ nativeEvent: { actionName } }: AccessibilityActionEvent) => {
     if (actionName === 'increment') stepBy(1);
     else if (actionName === 'decrement') stepBy(-1);
   };
-  const atMin = value === null || value <= min;
-  const atMax = value === null || value >= max;
   const shown = value === null ? '' : show(value, places);
+  const typing = draft !== null && draft.value === value;
   return (
     <View style={[styles.box, { backgroundColor: color.surface }]}>
-      <StepButton direction={-1} label={t('stepper.decrease', { label })} disabled={atMin} onPress={() => stepBy(-1)} />
+      <StepButton direction={-1} label={t('stepper.decrease', { label })} disabled={stepTo(-1) === null} onPress={() => stepBy(-1)} />
       <View style={styles.value}>
         <TextInput
           accessibilityLabel={label}
@@ -86,12 +105,12 @@ export function Stepper({ label, value, onChange, onEmpty, step, min = Number.NE
           accessibilityValue={{ text: unit === undefined ? shown : `${shown} ${unit}` }}
           accessibilityActions={ACTIONS}
           onAccessibilityAction={adjusted}
-          value={draft ?? shown}
+          value={typing ? draft.text : shown}
           onChangeText={typed}
-          onFocus={() => setDraft(shown)}
+          onFocus={() => setDraft({ text: shown, value })}
           onBlur={() => setDraft(null)}
           onSubmitEditing={() => setDraft(null)}
-          placeholder="-"
+          placeholder={placeholder}
           placeholderTextColor={color.muted}
           keyboardType={places > 0 ? 'decimal-pad' : 'number-pad'}
           selectTextOnFocus
@@ -99,7 +118,7 @@ export function Stepper({ label, value, onChange, onEmpty, step, min = Number.NE
         />
         {unit !== undefined && <Text style={[styles.unit, { color: color.muted }]}>{unit}</Text>}
       </View>
-      <StepButton direction={1} label={t('stepper.increase', { label })} disabled={atMax} onPress={() => stepBy(1)} />
+      <StepButton direction={1} label={t('stepper.increase', { label })} disabled={stepTo(1) === null} onPress={() => stepBy(1)} />
     </View>
   );
 }

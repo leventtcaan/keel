@@ -1,7 +1,7 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ProblemText, announce } from '@/components/ProblemText';
@@ -29,6 +29,7 @@ import { calibrationRead, lighterOffer } from '@/train/calibration';
 import { cardioAfterLift } from '@/train/cardio';
 import { moveInsight } from '@/train/insight';
 import { MoveDots } from '@/train/MoveDots';
+import { MoveMenu, type MoveAction } from '@/train/MoveMenu';
 import { MoveThumb } from '@/train/MoveThumb';
 import { OwnMoveForm, type SaveOutcome } from '@/train/OwnMoveForm';
 import { SupersetLink } from '@/train/SupersetLink';
@@ -165,6 +166,9 @@ function Session() {
   const [unlinked, setUnlinked] = useState<string[]>([]);
   // Creating the user's own move from the search (K-416): the name it started from, null while not creating.
   const [creating, setCreating] = useState<string | null>(null);
+  // The move's "More" menu (ADR-070 Ek 2 #1), and the partner being chosen for a superset (opened from it). Both are about
+  // the move they were opened on: another move starts without them.
+  const [menu, setMenu] = useState<{ move: string; choosing: boolean } | null>(null);
 
   const named = useCallback((error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' }), [report]);
   // A failed read back is not a failed save: the set is kept; the screen catches up at the next read.
@@ -249,6 +253,8 @@ function Session() {
   const planned = entry_?.planned;
   const base = entry_?.base;
   const moveId = entry_?.exerciseId;
+  const menuOpen = menu !== null && menu.move === moveId && !menu.choosing;
+  const choosing = menu !== null && menu.move === moveId && menu.choosing;
   const move = moveId === undefined ? undefined : moves.get(moveId);
   const row = plan === null || plan.current === null ? null : plan.rows[plan.current];
   // A superset is two moves or more, in the order its round was started: those whose last work set carries its id, then
@@ -367,7 +373,9 @@ function Session() {
       setProblem({ row: rowKey, text: t('workout.saveFailed') });
     }
     if (saved) {
-      // A set logged: the last skip is no longer the thing to undo, and a set being corrected is left as it was.
+      // A set logged: the keyboard that took its numbers goes, so it does not cover the next set and the dock.
+      Keyboard.dismiss();
+      // The last skip is no longer the thing to undo, and a set being corrected is left as it was.
       setUndo(null);
       setEditing(null);
       // Paused while the set was being kept: no rest starts inside the pause (nor its alert).
@@ -968,13 +976,19 @@ function Session() {
   const unlink = () => {
     if (group !== undefined) setUnlinked((before) => [...before, group[0]]);
   };
+  const partners = (group?.[1] ?? []).filter((id) => id !== moveId).map(name);
+  const candidates = entries.filter((e) => e.exerciseId !== moveId && groupOf(e.exerciseId) === undefined).map((e) => ({ id: e.exerciseId, name: name(e.exerciseId) }));
   const supersetBlock =
     moveId === undefined ? null : (
       <SupersetLink
-        partners={(group?.[1] ?? []).filter((id) => id !== moveId).map(name)}
-        candidates={entries.filter((e) => e.exerciseId !== moveId && groupOf(e.exerciseId) === undefined).map((e) => ({ id: e.exerciseId, name: name(e.exerciseId) }))}
-        onLink={linkWith}
-        onUnlink={unlink}
+        partners={partners}
+        candidates={candidates}
+        choosing={choosing}
+        onLink={(partner) => {
+          setMenu(null);
+          linkWith(partner);
+        }}
+        onClose={() => setMenu(null)}
       />
     );
   const warmBlock =
@@ -990,31 +1004,23 @@ function Session() {
         busy={busy}
       />
     );
-  // The move's head (prototype `.mhead`): its picture opens how it is done, as the How to link does (one for VoiceOver).
-  // Skip move (K-972): with the move's links at the top, far from Skip set in the dock. A move outside the plan has no count.
-  const skipMoveLink =
-    planned === undefined || moveId === undefined || plan === null || plan.current === null ? null : (
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={t('workout.skipMoveLabel', { name: name(moveId) })}
-        onPress={skipThisMove}
-        disabled={busy}
-        style={styles.link}>
-        <Text style={[styles.small, { color: color.muted }]}>{t('workout.skipMove')}</Text>
-      </Pressable>
-    );
-  // Swap (K-972): with the move's links; only a move of the plan with sets left, and where the server's list has another to offer.
-  const swapLink =
-    swapOptions.length === 0 || moveId === undefined ? null : (
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={t('swap.label', { move: name(moveId) })}
-        onPress={() => setSwapping(true)}
-        disabled={busy}
-        style={styles.link}>
-        <Text style={[styles.small, { color: color.accent }]}>{t('workout.swap')}</Text>
-      </Pressable>
-    );
+  // The move's head (prototype `.mh`, `.acts`): its equipment's icon opens how it is done, as the How to link does (one for
+  // VoiceOver). One row of text buttons, How to · History · Swap, and More; the rarer actions are the menu's. Skip move
+  // (K-972): far from Skip set in the dock; a move outside the plan has no count. It is undone with Undo and the move's
+  // sets are kept, so it is no discard and looks like the other rows.
+  const canSkipMove = planned !== undefined && moveId !== undefined && plan !== null && plan.current !== null;
+  // Swap (K-972): only a move of the plan with sets left, and where the server's list has another to offer.
+  const canSwap = swapOptions.length > 0 && moveId !== undefined;
+  const canLink = partners.length > 0 || candidates.length > 0;
+  const moreActions: MoveAction[] = [
+    ...(!canLink ? [] : [partners.length > 0 ? { key: 'unlink', label: t('superset.unlink'), icon: 'link.badge.plus' as const } : { key: 'superset', label: t('superset.link'), icon: 'link' as const }]),
+    ...(!canSkipMove ? [] : [{ key: 'skip', label: t('workout.skipMove'), accessibilityLabel: t('workout.skipMoveLabel', { name: name(moveId) }), icon: 'forward.end' as const }]),
+  ];
+  const pickMore = (key: string) => {
+    setMenu(key === 'superset' && moveId !== undefined ? { move: moveId, choosing: true } : null);
+    if (key === 'unlink') unlink();
+    else if (key === 'skip') skipThisMove();
+  };
   // A move skipped, opened again: it says so, and it can be brought back.
   const skippedMove = (
     <View style={[styles.undo, { backgroundColor: color.surface }]}>
@@ -1022,40 +1028,51 @@ function Session() {
       <Button label={t('workout.bringBack')} variant="ghost" size="sm" onPress={bringBack} />
     </View>
   );
+  const openHowTo = () => router.push({ pathname: '/exercise', params: { exercise: moveId } });
+  // Only the equipment class, and only when it is known: a move the catalog says nothing of has no icon (ADR-070 Ek 2 #3).
+  const thumb =
+    moveId === undefined || move?.equipment === undefined ? null : (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t('demo.openLabel', { exercise: name(moveId) })}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+        onPress={openHowTo}>
+        <MoveThumb equipment={move.equipment} />
+      </Pressable>
+    );
+  const swapButton =
+    !canSwap || moveId === undefined ? null : (
+      <Button label={t('workout.swap')} accessibilityLabel={t('swap.label', { move: name(moveId) })} variant="text" size="sm" onPress={() => setSwapping(true)} disabled={busy} />
+    );
+  const moreButton =
+    moreActions.length === 0 || moveId === undefined ? null : (
+      <Button label={t('workout.more')} variant="text" size="sm" onPress={() => setMenu(menuOpen ? null : { move: moveId, choosing: false })} />
+    );
+  const moreMenu = menuOpen && moreActions.length > 0 ? <MoveMenu actions={moreActions} onPick={pickMore} /> : null;
   const head =
     moveId === undefined ? null : (
       <View testID="move-head" style={styles.head}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('demo.openLabel', { exercise: name(moveId) })}
-          accessibilityElementsHidden
-          importantForAccessibility="no-hide-descendants"
-          onPress={() => router.push({ pathname: '/exercise', params: { exercise: moveId } })}>
-          <MoveThumb equipment={move?.equipment} />
-        </Pressable>
-        <View style={styles.grow}>
-          <Text style={[styles.name, { color: color.text }]}>{name(moveId)}</Text>
-          <View style={styles.links}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('demo.openLabel', { exercise: name(moveId) })}
-              onPress={() => router.push({ pathname: '/exercise', params: { exercise: moveId } })}
-              style={styles.link}>
-              <Text style={[styles.small, { color: color.accent }]}>{t('demo.open')}</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('history.openLabel', { exercise: name(moveId) })}
-              onPress={() => router.push({ pathname: '/exercise-history', params: { exercise: moveId } })}
-              style={styles.link}>
-              <Text style={[styles.small, { color: color.accent }]}>{t('history.open')}</Text>
-            </Pressable>
-            {/* With the move's other links, not between the target and the set (K-971). */}
-            {supersetBlock}
-            {swapLink}
-            {skipMoveLink}
-          </View>
+        <View style={styles.nameRow}>
+          {thumb}
+          <Text style={[styles.name, styles.grow, { color: color.text }]}>{name(moveId)}</Text>
         </View>
+        {/* One row, not two (ADR-070 Ek 2 #1): the move's links, then More, with the rarer ones. */}
+        <View testID="move-links" style={styles.links}>
+          <Button label={t('demo.open')} accessibilityLabel={t('demo.openLabel', { exercise: name(moveId) })} variant="text" size="sm" onPress={openHowTo} />
+          <Button
+            label={t('history.open')}
+            accessibilityLabel={t('history.openLabel', { exercise: name(moveId) })}
+            variant="text"
+            size="sm"
+            onPress={() => router.push({ pathname: '/exercise-history', params: { exercise: moveId } })}
+          />
+          {swapButton}
+          <View style={styles.grow} />
+          {moreButton}
+        </View>
+        {moreMenu}
+        {supersetBlock}
       </View>
     );
   const card =
@@ -1321,8 +1338,9 @@ const styles = StyleSheet.create({
   actions: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: tokens.space.lg },
   list: { gap: tokens.space.xs },
   dayLine: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', columnGap: tokens.space.sm },
-  head: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.md },
-  links: { flexDirection: 'row', flexWrap: 'wrap', columnGap: tokens.space.lg },
+  head: { gap: tokens.space.xs },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.md },
+  links: { flexDirection: 'row', alignItems: 'center', columnGap: tokens.space.sm },
   link: { minHeight: tokens.size.touch, justifyContent: 'center' },
   move: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, padding: tokens.space.sm, borderRadius: tokens.radius.button },
   grow: { flex: 1 },

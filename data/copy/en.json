@@ -663,6 +663,7 @@
     "skipSet": "Skip set",
     "skipSetLabel": "Skip this set",
     "skipMove": "Skip move",
+    "more": "More",
     "skipMoveLabel": "Skip {name} today",
     "skipped": "Skipped",
     "skippedSet": "Set {number}, skipped",
@@ -760,12 +761,6 @@
     "doneSet": "Set {number}, done: {set}, {left} left",
     "next": "Next: {name}",
     "upNext": "Up next",
-    "stepper": {
-      "lessLoad": "Less weight",
-      "moreLoad": "More weight",
-      "lessReps": "Fewer reps",
-      "moreReps": "More reps"
-    },
     "head": {
       "set": "#",
       "today": "Today",

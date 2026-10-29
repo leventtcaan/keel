@@ -3,6 +3,7 @@
  * place in the session, and the set body the queue sends — the row's side, a bodyweight move's 0, the RIR picked.
  */
 import type { components } from '@/api/schema';
+import { onboardingParams } from '@/onboarding/params';
 import { workoutParams } from '@/train/params';
 import { buildSet, clockText, exerciseStatus, parseEntry, restText, rirChoice, setText, stepLoad, stepReps } from '@/train/session';
 import type { ExercisePlan } from '@/train/workout';
@@ -155,6 +156,25 @@ describe("the weight stepper's step (K-971): a pair of the smallest plates, the 
     expect(stepLoad(50, -1, stack, GYM, 'METRIC')).toBe(45);
     expect(stepLoad(null, 1, barbell, GYM, 'METRIC')).toBe(20); // nothing yet: the empty bar
     expect(stepLoad(20, -1, barbell, GYM, 'METRIC')).toBeNull(); // nothing under the bar
+  });
+
+  // K-1047 (ADR-070 Ek 2 #5): nothing yet starts from the empty bar on a barbell move, from the smallest step on any other.
+  // No table of starts per equipment exists in the parameters or the catalog; the bar is the onboarding's (20 kg, 45 lb).
+  test('nothing yet, no gym bar: the empty bar on a barbell move, the smallest step on any other', () => {
+    const NO_BAR = { ...GYM, barKg: null };
+    expect(stepLoad(null, 1, barbell, undefined, 'METRIC')).toBe(onboardingParams.startingWeightStepper.start_kg);
+    expect(stepLoad(null, 1, barbell, undefined, 'IMPERIAL')).toBe(20.41); // 45 lb
+    expect(stepLoad(null, 1, barbell, NO_BAR, 'METRIC')).toBe(20);
+    for (const equipment of ['MACHINE', 'CABLE', 'DUMBBELL', 'PLATE_LOADED']) {
+      expect(stepLoad(null, 1, { ...bench, equipment } as Schemas['Exercise'], undefined, 'METRIC')).toBe(workoutParams.loadStep.kg);
+    }
+    expect(stepLoad(null, 1, { ...bench, equipment: 'MACHINE' } as Schemas['Exercise'], undefined, 'IMPERIAL')).toBe(2.27); // 5 lb
+  });
+
+  test('the bar is only where nothing is: a load typed steps from itself, down from nothing goes nowhere, an added load has no bar', () => {
+    expect(stepLoad(60, 1, barbell, undefined, 'METRIC')).toBe(62.5);
+    expect(stepLoad(null, -1, barbell, undefined, 'METRIC')).toBeNull();
+    expect(stepLoad(null, 1, { ...dip, equipment: 'BARBELL' } as Schemas['Exercise'], undefined, 'METRIC')).toBe(workoutParams.loadStep.kg);
   });
 
   test('a gym that says nothing of this equipment: the plain step', () => {

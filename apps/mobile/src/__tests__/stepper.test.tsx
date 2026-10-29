@@ -4,7 +4,7 @@
  */
 import { fireEvent, render, screen, userEvent } from '@testing-library/react-native';
 import { type ComponentProps, type ReactElement, useState } from 'react';
-import { StyleSheet } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 
 import { Stepper } from '@/components/Stepper';
 import { t } from '@/copy';
@@ -212,5 +212,83 @@ describe('no value yet (a first weigh-in has no last one to start from, K-1044)'
     await renderIt(<Held />);
     await fireEvent.changeText(field(), '');
     expect(heard).toEqual([]);
+  });
+});
+
+// K-1047 (the workout's set card): a screen that moves the number itself, an empty start, and a keyboard that is still up.
+describe('a screen that steps the number itself (steps)', () => {
+  function Own({ stops }: { stops: number[] }) {
+    const [value, setValue] = useState<number | null>(null);
+    const to = (direction: 1 | -1) => {
+      const at = value === null ? -1 : stops.indexOf(value);
+      const next = stops[at + direction];
+      return next === undefined || (value === null && direction < 0) ? null : () => setValue(next);
+    };
+    return <Stepper label="Weight" unit="kg" step={2.5} value={value} onChange={setValue} onEmpty={() => setValue(null)} steps={to} placeholder="Pick" />;
+  }
+  const more = () => screen.getByRole('button', { name: t('stepper.increase', { label: 'Weight' }) });
+  const less = () => screen.getByRole('button', { name: t('stepper.decrease', { label: 'Weight' }) });
+
+  test('an empty value can be stepped from: the buttons ask the screen, which jumps to its own first stop', async () => {
+    await renderIt(<Own stops={[20, 22.5, 25]} />);
+    expect(field().props.value).toBe('');
+    expect(field().props.placeholder).toBe('Pick');
+    expect(more()).toBeEnabled();
+    expect(less()).toBeDisabled(); // the screen says nothing is under the start
+    await userEvent.setup().press(more());
+    expect(field().props.value).toBe('20');
+    await userEvent.setup().press(more());
+    expect(field().props.value).toBe('22.5');
+  });
+
+  test('a button is off where the screen has no step; VoiceOver\'s actions go through it too', async () => {
+    await renderIt(<Own stops={[20, 22.5]} />);
+    await fireEvent(field(), 'accessibilityAction', { nativeEvent: { actionName: 'increment' } });
+    await fireEvent(field(), 'accessibilityAction', { nativeEvent: { actionName: 'increment' } });
+    expect(field().props.value).toBe('22.5');
+    expect(more()).toBeDisabled();
+  });
+
+  test('typing still works beside it, a comma too', async () => {
+    await renderIt(<Own stops={[20, 22.5]} />);
+    await fireEvent(field(), 'focus');
+    await fireEvent.changeText(field(), '62,5');
+    await fireEvent(field(), 'blur');
+    expect(field().props.value).toBe('62.5');
+  });
+});
+
+describe('what is typed is old once the value is another one (K-1047)', () => {
+  test('a tap on + with the field still focused shows the stepped value, not the typed text', async () => {
+    await renderIt(<Held />);
+    await fireEvent(field(), 'focus');
+    await fireEvent.changeText(field(), '80');
+    expect(field().props.value).toBe('80');
+    await userEvent.setup().press(screen.getByRole('button', { name: t('stepper.increase', { label: 'Weight' }) }));
+    expect(field().props.value).toBe('82.5');
+  });
+
+  test('a value the screen sets itself while the field is focused replaces the typed text', async () => {
+    function Suggest() {
+      const [value, setValue] = useState(60);
+      return (
+        <>
+          <Stepper label="Weight" step={2.5} value={value} onChange={setValue} />
+          <Pressable accessibilityRole="button" accessibilityLabel="Use 55" onPress={() => setValue(55)} />
+        </>
+      );
+    }
+    await renderIt(<Suggest />);
+    await fireEvent(field(), 'focus');
+    await fireEvent.changeText(field(), '62');
+    await fireEvent.press(screen.getByRole('button', { name: 'Use 55' }));
+    expect(field().props.value).toBe('55');
+  });
+
+  test('a number with a trailing dot stays as typed while the number is the value ("62." on its way to "62.5")', async () => {
+    await renderIt(<Held />);
+    await fireEvent(field(), 'focus');
+    await fireEvent.changeText(field(), '62.');
+    expect(field().props.value).toBe('62.');
   });
 });
