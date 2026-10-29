@@ -396,15 +396,16 @@ describe('first-day rough edges (K-1066)', () => {
     expect(mockRecord).toHaveBeenCalledWith(expect.objectContaining({ body: expect.objectContaining({ eatenAt: at(29, 10), slot: 'BREAKFAST' }) }));
   });
 
-  test('the title is the day: "Today\'s food", "Yesterday\'s food", else the date', async () => {
+  test('the title is the day: "Today\'s food", "Yesterday\'s food", else "Food" (the navigator names the date)', async () => {
     await show();
     expect(screen.getByRole('header', { name: t('screens.food.title') })).toBeOnTheScreen();
     await press(screen.getByTestId('day-before'));
     expect(screen.getByRole('header', { name: t('food.day.titleYesterday') })).toBeOnTheScreen();
     expect(screen.queryByRole('header', { name: t('screens.food.title') })).toBeNull();
     await press(screen.getByTestId('day-2026-09-25'));
-    // The title and the navigator's own label both name the day.
-    expect(screen.getAllByRole('header', { name: 'Fri, Sep 25' })).toHaveLength(2);
+    // The navigator's own label names the day; the title does not say it a second time.
+    expect(screen.getAllByRole('header', { name: 'Fri, Sep 25' })).toHaveLength(1);
+    expect(screen.getByRole('header', { name: t('food.day.titleOther') })).toBeOnTheScreen();
   });
 
   test('a quick add says its name once', async () => {

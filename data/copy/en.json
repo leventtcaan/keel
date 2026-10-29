@@ -1099,6 +1099,7 @@
       "today": "Today",
       "yesterday": "Yesterday",
       "titleYesterday": "Yesterday's food",
+      "titleOther": "Food",
       "before": "Day before",
       "after": "Day after",
       "hasMeals": "has meals"
