@@ -5,7 +5,12 @@ guncelleme: 2026-10-10
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (29 Eki ~23:00 UTC — Evre 6 bitti, build 9 TestFlight yolunda)
+## ▶ DEVAM NOKTASI (30 Eki — Evre 7 duraklatıldı, Levent sınavda; devam: `plan/oturum-promptlari/evre-7-devam.md`)
+Birleşen: #688-#695 (dört hata + Add a move + boş gün yok); #696 açık (auto-merge). Yarım dallar GitHub'da: `mobile/684-log-a-meal` (Log a meal +
+Today's food yeniden, kanıt bekliyor), `mobile/684-workout-flow` (antrenman akışı + Imperial yuvarlama, doğrulanmamış). Sonra genel bütünlük + 210 öğelik
+basma turu, build 10. Levent'e sorulacaklar devam dosyasında.
+
+## (önceki) DEVAM NOKTASI (29 Eki ~23:00 UTC — Evre 6 bitti, build 9 TestFlight yolunda)
 Evre 6 (`plan/evre-6-ortalamayi-yakala.md`, denetim `plan/evre-6-denetim.md`) parçaları birleşti: #677 antrenman günleri tek kaynak + 7 gün + Train'den
 gün ekleme · #679 #682 ABD yemek verisi (sunucuda 1,8 M USDA markalı, 5,4 bin FNDDS ev ölçüsü, 286 bin OFF ABD, pg_trgm arama) · #676 ayarlar (Gyms
 yok, düzenlenebilir profil, çipler, rıza düğmesi) · #678 ilk kullanım rehberi, hareket ekranı, Progress animasyonu, klavye · #681 dolu alet · #683 yemek
