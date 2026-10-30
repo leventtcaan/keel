@@ -292,7 +292,7 @@ describe('training', () => {
     expect(button(`${t('settings.training.days')}, ${line}`)).toBeOnTheScreen();
     expect(screen.queryByText(new RegExp(t('programEditor.weekdayShort.TUESDAY')))).toBeNull();
     await press(`${t('settings.training.days')}, ${line}`);
-    expect(mockPush).toHaveBeenCalledWith({ pathname: '/edit-program', params: { part: 'days' } });
+    expect(mockPush).toHaveBeenCalledWith('/edit-program');
   });
 
   test('a program day with no weekday reads "Any day", as Edit does', async () => {

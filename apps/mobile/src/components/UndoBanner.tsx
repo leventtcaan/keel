@@ -14,8 +14,8 @@ type Props = {
   lead?: string;
   /** What was saved, one short line after "Saved" ("72.5 kg"). Already translated. */
   detail?: string;
-  /** The person tapped Undo. */
-  onUndo: () => void;
+  /** The person tapped Undo. Absent when the thing cannot be taken back (a rebuilt program): the band says it and goes, with no Undo. */
+  onUndo?: () => void;
   /** The banner is done, by Undo or by time: the screen stops showing it. */
   onDismiss: () => void;
   /** How long it stays; the parameter `undo_banner_ms` when not given. */
@@ -41,8 +41,11 @@ export function UndoBanner({ lead, detail, onUndo, onDismiss, durationMs = worko
   });
 
   useEffect(() => {
-    if (detail === undefined) announce(t('undoBanner.announceBare'));
+    // With no Undo the line is said as it stands: "Undo is available" would be false.
+    if (onUndo === undefined) announce([lead, detail].filter((word) => word !== undefined).join(t('undoBanner.join')));
+    else if (detail === undefined) announce(t('undoBanner.announceBare'));
     else announce(lead === undefined ? t('undoBanner.announce', { detail }) : t('undoBanner.announceLead', { lead, detail }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- said when the words change, not when Undo's closure does
   }, [lead, detail]);
 
   // The time is up: the banner goes. A tap on Undo ends it first (`shown` false), which clears the timer: nothing is dismissed twice.
@@ -64,18 +67,20 @@ export function UndoBanner({ lead, detail, onUndo, onDismiss, durationMs = worko
   }, [reduce, fade]);
 
   if (!shown) return null;
-  const undo = () => {
+  // Built outside the JSX children (the raw-text guard reads them).
+  const undoButton = onUndo === undefined ? null : <Button label={t('undoBanner.undo')} variant="text" onPress={undo} />;
+  function undo() {
     setShown(false);
-    onUndo();
+    onUndo?.();
     onDismiss();
-  };
+  }
   return (
     <Animated.View
       testID="undo-banner"
       style={[styles.band, { backgroundColor: color.decisionBackground, bottom: bottomOffset, opacity: reduce ? 1 : fade }]}>
       <InverseSurface>
         <BannerWords lead={lead} detail={detail} />
-        <Button label={t('undoBanner.undo')} variant="text" onPress={undo} />
+        {undoButton}
       </InverseSurface>
     </Animated.View>
   );
