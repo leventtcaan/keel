@@ -15,7 +15,7 @@ import { tokens } from '@/theme/tokens';
 import { type Loaded, localDay } from '@/today/today';
 import { type PersonalRecord, type Session, historyOf, recordsOf, sessionsOf } from '@/train/history';
 import { exerciseName, shortDate } from '@/train/program';
-import { setText } from '@/train/session';
+import { setLeftText, setText } from '@/train/session';
 import { type Move, type TrainData, historyFrom, movesOf } from '@/train/trainData';
 import { type UnitSystem, formatLoad, loadValue } from '@/units/units';
 
@@ -113,7 +113,7 @@ export default function ExerciseHistoryScreen() {
                   ? t('history.warmUp', { set: done })
                   : s.rir === undefined
                     ? done
-                    : t('summary.setRir', { set: done, rir: s.rir });
+                    : setLeftText(done, s.rir);
               return (
                 <View key={s.clientId}>
                   <Text style={[styles.small, { color: s.setType === 'WARM_UP' ? color.muted : color.textSecondary }]}>{line}</Text>
@@ -134,7 +134,6 @@ export default function ExerciseHistoryScreen() {
         {sessionCards}
         {empty}
         {unread}
-        <Button label={t('history.done')} variant="ghost" onPress={() => router.back()} />
       </ScrollView>
     </SafeAreaView>
   );

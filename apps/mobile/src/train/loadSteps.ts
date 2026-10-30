@@ -7,7 +7,9 @@
  * dynamic programming. Comments on the why live with the backend's (LoadSteps.java); this follows it line for line.
  */
 import type { components } from '@/api/schema';
-import type { UnitSystem } from '@/units/units';
+import { type UnitSystem, parseLoadKg } from '@/units/units';
+
+import units from '../../../../data/parameters/units.json';
 
 type Equipment = components['schemas']['Equipment'];
 
@@ -224,4 +226,14 @@ export function platesFor(equipment: Equipment, loadKg: number, gym: GymWeights)
   if (equipment === 'BARBELL') return gym.barKg === null ? null : platesPerSide(loadKg, gym.barKg, gym.platesKg);
   if (equipment === 'PLATE_LOADED' && loadKg > 0) return platesPerSide(loadKg, 0, gym.platesKg);
   return null;
+}
+
+/**
+ * The standard US rack (a 45 lb bar, 45 35 25 10 5 2.5 lb plates): what a lb user's plates read as when their gym is still the kilo
+ * default (Evre 7: "25 + 10 + 2.5 kg a side" under a load shown in lb). Only how the plates are said; the gym's own other weights stay.
+ */
+export function imperialRack(gym: GymWeights): GymWeights {
+  const kg = (lb: number) => parseLoadKg(String(lb), 'IMPERIAL') ?? 0;
+  const find = (key: string) => (units.parameters as { key: string; value: unknown }[]).find((p) => p.key === key)?.value;
+  return { ...gym, barKg: kg(find('imperial_bar_lb') as number), platesKg: (find('imperial_plates_lb') as number[]).map(kg) };
 }

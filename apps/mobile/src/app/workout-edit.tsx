@@ -20,7 +20,7 @@ import { SupersetLine } from '@/train/SupersetLink';
 import { exerciseName, shortDate } from '@/train/program';
 import { supersetPartners } from '@/train/superset';
 import { type Move, movesOf } from '@/train/trainData';
-import { buildSet, parseEntry, rirChoice, setText } from '@/train/session';
+import { buildSet, parseEntry, rirChoice, setLeftText, setText } from '@/train/session';
 import { weightInput } from '@/units/units';
 
 type Schemas = components['schemas'];
@@ -159,7 +159,7 @@ export default function WorkoutEditScreen() {
                 ? t('history.warmUp', { set: done })
                 : s.rir === undefined
                   ? done
-                  : t('summary.setRir', { set: done, rir: s.rir });
+                  : setLeftText(done, s.rir);
             return (
               <SetLine
                 key={s.id}

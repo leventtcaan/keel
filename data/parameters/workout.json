@@ -480,6 +480,38 @@
       "tag": "urun",
       "source": "plan/evre-7-inceleme.md#12.",
       "note": "Evre 7 B2: with nothing typed and no chip chosen, the picker opens with 'Popular for' the day's own main groups, this many at most (the groups the day trains most)."
+    },
+    {
+      "key": "rest_adjust_seconds",
+      "value": 15,
+      "unit": "seconds",
+      "tag": "urun",
+      "source": "plan/evre-7-inceleme.md#17.",
+      "note": "Evre 7 C2: one tap of the rest timer's minus and plus (Hevy's 15 s, arastirma/ham/evre7-rakip-kaliplari.md section 2). The rest counts DOWN from rest_seconds_min (the low end of G1 K-49's band), longer or shorter by these steps; the timer in the background is moved with it."
+    },
+    {
+      "key": "session_set_seconds",
+      "value": 60,
+      "unit": "seconds",
+      "tag": "urun",
+      "source": "plan/evre-7-inceleme.md#16.",
+      "note": "Evre 7 C1: the time of one work set itself (the lift, setting up), for the 'about 50 min' on today's card: a set costs this plus rest_seconds_min of rest. A product estimate to set a person's expectation, not a coaching rule; the session shows its real time."
+    },
+    {
+      "key": "session_minutes_round",
+      "value": 5,
+      "unit": "min",
+      "tag": "urun",
+      "source": "plan/evre-7-inceleme.md#16.",
+      "note": "Evre 7 C1: the estimate is shown to the nearest this many minutes (an estimate says 50, never 47)."
+    },
+    {
+      "key": "headline_moves_shown",
+      "value": 3,
+      "unit": "moves",
+      "tag": "urun",
+      "source": "plan/evre-7-inceleme.md#16.",
+      "note": "Evre 7 C1: how many of today's moves say what the last time was beside today's target (the headline lifts), so the card motivates without a wall of numbers."
     }
   ]
 }

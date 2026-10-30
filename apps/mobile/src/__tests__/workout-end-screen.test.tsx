@@ -114,9 +114,14 @@ test('closed by itself (no minutes known): no minutes box, none made up', async 
   expect(screen.queryByText(t('workoutEnd.minutes.other'))).toBeNull();
 });
 
-test("a record: the server's first, the real set, and its next target from the program", async () => {
+// K1 (Evre 7 C3): the card named only the first record ("Record", "Best ever. Next: ..."); a finish is an achievement, so every record of the session is
+// named, each the real set, in the server's order, under "New best".
+test("every record of the session: 'New best', the real sets in the server's order, and the next target from the program where it has one", async () => {
   await show();
-  expect(await screen.findByText(t('workoutEnd.record', { move: 'Squat', set: '100 kg × 8' }))).toBeTruthy();
+  expect(await screen.findByText(t('workoutEnd.recordKicker'))).toBeTruthy();
+  expect(screen.getAllByTestId('record')).toHaveLength(2);
+  expect(screen.getByText(t('workoutEnd.record', { move: 'Squat', set: '100 kg × 8' }))).toBeTruthy();
+  expect(screen.getByText(t('workoutEnd.record', { move: 'Bench press', set: '120 kg × 3' }))).toBeTruthy();
   expect(screen.getByText(t('workoutEnd.recordNext', { set: '100 kg × 9' }))).toBeTruthy();
   expect(screen.queryByText(/e1RM|estimated/i)).toBeNull();
 });
@@ -140,6 +145,14 @@ test("the first session: Baseline set, and what it's for", async () => {
   expect(await screen.findByText(t('workoutEnd.baseline'))).toBeTruthy();
   expect(screen.getByText(t('workoutEnd.baselineBody'))).toBeTruthy();
   expect(screen.queryByText(t('workoutEnd.change', { percent: '+6' }))).toBeNull();
+});
+
+test('a worse session than the last is never shown as a negative percent: the weight lifted stands alone (U7, Evre 7 C3)', async () => {
+  mockEnd = { ...READY, summary: { ...SUMMARY, liftedChangePercent: -94 } };
+  await show();
+  expect(await screen.findByText(t('workoutEnd.week', { done: 2, planned: 3 }))).toBeTruthy();
+  expect(screen.queryByText(/vs last time/)).toBeNull();
+  expect(screen.queryByText(/-94/)).toBeNull();
 });
 
 test('a session the server could not compare with the last one (K-1014) shows the weight lifted and no percent', async () => {
@@ -183,10 +196,11 @@ test('Reduce Motion: the hero is still, nothing animates', async () => {
   await act(async () => undefined);
 });
 
-test("the record's move not on the program's day (or the program not read): best ever, no next target made up", async () => {
+test("the record's move not on the program's day (or the program not read): the set alone, no next target made up", async () => {
   mockEnd = { ...READY, program: null };
   await show();
-  expect(await screen.findByText(t('workoutEnd.recordBest'))).toBeTruthy();
+  expect(await screen.findByText(t('workoutEnd.record', { move: 'Squat', set: '100 kg × 8' }))).toBeTruthy();
+  expect(screen.queryByText(/^Next:/)).toBeNull();
 });
 
 test('the status bar is light while this screen is in front, and back to dark once it leaves (the share card is light)', async () => {
@@ -237,7 +251,7 @@ const MOVES: Schemas['MoveChange'][] = [
   { exerciseId: 'bench_press', best: { loadKg: 72.5, reps: 8 }, change: 'HELD' },
 ];
 
-test('what moved: a row per move from the catalog, the set and what changed, calm for a lighter day (U7)', async () => {
+test('what moved: a row per move from the catalog, the set and what improved; a lighter day is not said (U7)', async () => {
   mockEnd = { ...READY, summary: { ...SUMMARY, moves: MOVES } };
   await show();
   expect(await screen.findByText(t('workoutEnd.moved'))).toBeTruthy();
@@ -245,10 +259,10 @@ test('what moved: a row per move from the catalog, the set and what changed, cal
   expect(screen.getByText('Romanian deadlift')).toBeTruthy();
   expect(screen.getByText('90 × 9')).toBeTruthy();
   expect(screen.getByText(t('workoutEnd.move.repsUp.one', { count: 1 }))).toBeTruthy();
-  expect(screen.getByText(t('workoutEnd.move.loadDown', { amount: '5 kg' }))).toBeTruthy();
+  expect(screen.queryByText(/lighter|fewer/)).toBeNull(); // a lighter day is not said (U7)
   expect(screen.getByText(t('workoutEnd.move.held'))).toBeTruthy();
   // Each row is said as one line to VoiceOver, with the unit.
-  const spoken = t('workoutEnd.move.label', { move: 'Seated row', set: '55 kg × 9', change: t('workoutEnd.move.loadDown', { amount: '5 kg' }) });
+  const spoken = t('workoutEnd.move.labelPlain', { move: 'Seated row', set: '55 kg × 9' });
   expect(screen.getByLabelText(spoken)).toBeTruthy();
   expect(screen.queryByText(/e1RM|estimated/i)).toBeNull();
 });
@@ -327,6 +341,17 @@ describe('Apple Health at the end of the first workout (K-980, ADR-018 Ek 1, pro
     expect(screen.queryByRole('header', { name: t('health.jit.title') })).toBeNull();
     expect(kept.get('health.asked')).toBe('1');
     expect(requestRead).not.toHaveBeenCalled();
+  });
+
+  // Evre 7 C3 (the walk: the card with "What we read" came in the middle of the celebration): a quiet row after Done, no sentences about what is read.
+  test('a quiet row after Done: the title and the two buttons, without the sentences of what is read and written', async () => {
+    arrange();
+    await show();
+    await screen.findByRole('header', { name: t('health.jit.title') });
+    expect(screen.queryByText(t('health.jit.reads'))).toBeNull();
+    expect(screen.queryByText(t('health.jit.writes'))).toBeNull();
+    const text = JSON.stringify(screen.toJSON());
+    expect(text.indexOf(t('workoutEnd.done'))).toBeLessThan(text.indexOf(t('health.jit.title')));
   });
 
   test('Continue shows Apple\'s sheet', async () => {

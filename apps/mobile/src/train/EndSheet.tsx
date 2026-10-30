@@ -37,8 +37,8 @@ export function EndSheet({ onFinish, onLater, onDiscard, onBack, cardioKept = fa
       onPress={onPress}
       disabled={busy}
       style={({ pressed }) => [styles.choice, { backgroundColor: color.surface }, (pressed || busy) && styles.dim]}>
+      {/* A short row: the note is said to VoiceOver (the label), not written under it (Evre 7 C: no prose in a menu). */}
       <Text style={[styles.title, { color: color.text }]}>{title}</Text>
-      <Text style={[styles.note, { color: color.textSecondary }]}>{note}</Text>
     </Pressable>
   );
   const ask = () => {
@@ -67,7 +67,8 @@ export function EndSheet({ onFinish, onLater, onDiscard, onBack, cardioKept = fa
         onPress={ask}
         disabled={busy}
       />
-      <Text style={[styles.note, { color: color.textSecondary }]}>{discardNote}</Text>
+      {/* Said only where it matters: the cardio logged in the session stays (it is its own record); "Nothing is saved" goes without saying. */}
+      {cardioKept ? <Text style={[styles.note, { color: color.textSecondary }]}>{discardNote}</Text> : null}
     </View>
   );
   return (

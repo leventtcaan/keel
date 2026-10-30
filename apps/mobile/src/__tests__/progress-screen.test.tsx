@@ -289,7 +289,7 @@ describe('after the first workout (ADR-078 Ek 2: strength opens by itself)', () 
   test('in pounds', async () => {
     mockUnits = 'IMPERIAL';
     await show();
-    expect(within(screen.getByTestId('strength-row-squat')).getByText('220.5 lb × 8')).toBeOnTheScreen();
+    expect(within(screen.getByTestId('strength-row-squat')).getByText('220 lb × 8')).toBeOnTheScreen();
   });
 
   describe('a bodyweight move (K-1028, B4)', () => {
@@ -677,8 +677,8 @@ describe('strength: the lifts, the best set, the effort (ADR-078 #2, Ek 3)', () 
   test('in pounds', async () => {
     mockUnits = 'IMPERIAL';
     await show();
-    expect(screen.getByTestId('strength-best')).toHaveTextContent('231.5 lb × 8');
-    expect(within(chart()).getAllByTestId('strength-tick').map(svgText)).toEqual(['220.5 lb', '231.5 lb']);
+    expect(screen.getByTestId('strength-best')).toHaveTextContent('230 lb × 8');
+    expect(within(chart()).getAllByTestId('strength-tick').map(svgText)).toEqual(['220 lb', '230 lb']);
   });
 
   test('opens on the first lift that has a chart, the first lift when none has', async () => {

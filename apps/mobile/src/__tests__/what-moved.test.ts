@@ -45,23 +45,20 @@ test('load up: by the server difference, in kg', () => {
 
 test('load up in lb: the set and the difference are written in the user unit (formatted, not recomputed against history)', () => {
   const [row] = whatMoved([move('bench_press', 72.5, 8, 'LOAD', 2.5)], 'IMPERIAL').rows;
-  expect(row.set).toBe('159.8 × 8');
-  expect(row.change).toBe(t('workoutEnd.move.loadUp', { amount: '5.5 lb' }));
+  expect(row.set).toBe('160 × 8');
+  expect(row.change).toBe(t('workoutEnd.move.loadUp', { amount: '5 lb' }));
 });
 
-test('lighter today: calm words with the amount, never a warning (U7)', () => {
+test('lighter today: not said at all, the set stands alone (U7, Evre 7 C3)', () => {
   const [row] = whatMoved([move('bench_press', 70, 8, 'LOAD', -2.5)], 'METRIC').rows;
-  expect(row.change).toBe(t('workoutEnd.move.loadDown', { amount: '2.5 kg' }));
+  expect(row.change).toBeNull();
   expect(row.tone).toBe('flat');
-  expect(row.change).not.toMatch(/-|fail|miss|worse|drop|lost|only/i);
+  expect(row.set).toBe('70 × 8');
 });
 
-test('fewer reps: calm words, plural', () => {
-  expect(whatMoved([move('squat', 100, 7, 'REPS', -1)], 'METRIC').rows[0]).toMatchObject({
-    change: t('workoutEnd.move.repsDown.one', { count: 1 }),
-    tone: 'flat',
-  });
-  expect(whatMoved([move('squat', 100, 6, 'REPS', -2)], 'METRIC').rows[0].change).toBe(t('workoutEnd.move.repsDown.other', { count: 2 }));
+test('fewer reps: not said either', () => {
+  expect(whatMoved([move('squat', 100, 7, 'REPS', -1)], 'METRIC').rows[0]).toMatchObject({ change: null, tone: 'flat' });
+  expect(whatMoved([move('squat', 100, 6, 'REPS', -2)], 'METRIC').rows[0].change).toBeNull();
 });
 
 test('same, held and first time have their own plain words', () => {
@@ -93,15 +90,15 @@ test('every move first time (the first session): nothing moved, no list; the bas
 
 test('imperial, reps up: the set is in lb, the reps difference is a count and does not change with the unit', () => {
   const [row] = whatMoved([move('squat', 100, 8, 'REPS', 2)], 'IMPERIAL').rows;
-  expect(row.set).toBe('220.5 × 8');
+  expect(row.set).toBe('220 × 8');
   expect(row.change).toBe(t('workoutEnd.move.repsUp.other', { count: 2 }));
   expect(row.tone).toBe('up');
 });
 
-test('imperial, a lighter day: calm words, the amount in lb, flat', () => {
+test('imperial, a lighter day: the set in lb, nothing said of it, flat', () => {
   const [row] = whatMoved([move('bench_press', 70, 8, 'LOAD', -2.5)], 'IMPERIAL').rows;
-  expect(row.set).toBe('154.3 × 8');
-  expect(row.change).toBe(t('workoutEnd.move.loadDown', { amount: '5.5 lb' }));
+  expect(row.set).toBe('155 × 8');
+  expect(row.change).toBeNull();
   expect(row.tone).toBe('flat');
 });
 

@@ -82,9 +82,9 @@ test('an added load left empty is 0, the body alone; any other move needs its we
 });
 
 test("an untouched suggestion is logged as the server's kg, not as its rounded lb read back", () => {
-  // 62.5 kg shows as 137.8 lb; 137.8 lb read back is 62.51 kg. Logged unchanged, the set is the 62.5 the server set.
-  expect(parseEntry('137.8', '6', bench, 'IMPERIAL', 62.5)).toEqual({ loadKg: 62.5, reps: 6 });
-  expect(parseEntry('140', '6', bench, 'IMPERIAL', 62.5)).toEqual({ loadKg: 63.5, reps: 6 });
+  // 62.5 kg shows as 140 lb (the nearest 5 lb); 140 lb read back is 63.5 kg. Logged unchanged, the set is the 62.5 the server set.
+  expect(parseEntry('140', '6', bench, 'IMPERIAL', 62.5)).toEqual({ loadKg: 62.5, reps: 6 });
+  expect(parseEntry('145', '6', bench, 'IMPERIAL', 62.5)).toEqual({ loadKg: 65.77, reps: 6 });
   expect(parseEntry('62.5', '6', bench, 'METRIC', 62.5)).toEqual({ loadKg: 62.5, reps: 6 });
 });
 
@@ -130,7 +130,7 @@ describe("the weight stepper's step (K-971): a pair of the smallest plates, the 
     expect(stepLoad(61, 1, bench, undefined, 'METRIC')).toBe(62.5); // typed off the grid: onto it
     expect(stepLoad(null, 1, bench, undefined, 'METRIC')).toBe(workoutParams.loadStep.kg);
     expect(stepLoad(61.23, 1, bench, undefined, 'IMPERIAL')).toBe(63.5); // 135 lb and 5 lb: 140 lb
-    expect(stepLoad(62.5, 1, bench, undefined, 'IMPERIAL')).toBe(63.5); // 137.8 lb: up to 140, not 142.8
+    expect(stepLoad(62.5, 1, bench, undefined, 'IMPERIAL')).toBe(65.77); // shown as 140 lb: up to 145
     expect(stepLoad(62.5, -1, bench, undefined, 'IMPERIAL')).toBe(61.23); // and down to 135
   });
 
@@ -145,8 +145,8 @@ describe("the weight stepper's step (K-971): a pair of the smallest plates, the 
   });
 
   test('a load a step lands on whose shown number is the one shown now is passed over: a tap always moves the number', () => {
-    // A kg gym for a lb user: 226 lb read back is 102.51 kg, and the nearest load under it, 102.5, shows as 226 too.
-    expect(stepLoad(102.51, -1, barbell, GYM, 'IMPERIAL')).toBe(100);
+    // A kg gym for a lb user: 225 lb read back is 102.06 kg, and the nearest load under it, 100, shows as 220 lb (nothing between).
+    expect(stepLoad(102.06, -1, barbell, GYM, 'IMPERIAL')).toBe(100);
   });
 
   test('at the gym: within one step where it makes a load there, else the next it makes', () => {

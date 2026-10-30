@@ -30,6 +30,8 @@ type Props = {
   heading: string;
   /** The reps to aim for ("6-10 reps"); null outside the plan. */
   range: string | null;
+  /** What this set was last time ("185 lb × 8"), Hevy's PREVIOUS: the reference beside the numbers to type; null for a move never done. */
+  previous?: string | null;
   /** The work sets' aim for reps left (the plan's target RIR); null outside the plan. */
   aim: number | null;
   gym: GymWeights | undefined;
@@ -51,7 +53,7 @@ type Props = {
  * be typed too, filled with the suggestion; reps left picked from 0, 1 and 2+. A bodyweight move has no weight; a weighted
  * one steps what is added. The button that logs it is the screen's, in its dock, so it never moves.
  */
-export function ActiveSet({ move, heading, range, aim, gym, plates, entry, onChange, onTooHeavy, problem, problemOccurrence, onLayout }: Props) {
+export function ActiveSet({ move, heading, range, previous = null, aim, gym, plates, entry, onChange, onTooHeavy, problem, problemOccurrence, onLayout }: Props) {
   const { color } = useTheme();
   const units = useUnits();
   const unit = t(units === 'METRIC' ? 'units.kgUnit' : 'units.lbUnit');
@@ -124,6 +126,14 @@ export function ActiveSet({ move, heading, range, aim, gym, plates, entry, onCha
   // plates a side.
   const weightLine =
     !picking && plates === null ? null : <Text style={[styles.small, { color: color.muted }]}>{picking ? t('workout.pick.why') : plates}</Text>;
+  // Built outside the JSX (the raw-text guard reads what is inside it).
+  const previousRow =
+    previous === null ? null : (
+      <View testID="previous-set" accessible accessibilityLabel={t('workout.previousLabel', { set: previous })} style={styles.previous}>
+        <Text style={[styles.small, { color: color.muted }]}>{t('workout.previous')}</Text>
+        <Text style={[styles.small, styles.bold, { color: color.textSecondary }]}>{previous}</Text>
+      </View>
+    );
   return (
     <View testID="active-set" onLayout={onLayout} style={[styles.entry, { borderColor: color.text }]}>
       <View testID="set-head" style={styles.head}>
@@ -132,6 +142,7 @@ export function ActiveSet({ move, heading, range, aim, gym, plates, entry, onCha
         {tooHeavy}
         {addNote}
       </View>
+      {previousRow}
       <View style={styles.steppers}>
         {load}
         <Stepper
@@ -182,4 +193,6 @@ const styles = StyleSheet.create({
   rirLabel: { flex: 1, minWidth: tokens.size.primaryButton * 2 },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },
+  bold: { fontWeight: tokens.weight.bold },
+  previous: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
 });

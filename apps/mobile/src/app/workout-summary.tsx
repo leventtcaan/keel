@@ -14,7 +14,7 @@ import { tokens } from '@/theme/tokens';
 import { SupersetLine } from '@/train/SupersetLink';
 import { exerciseName } from '@/train/program';
 import { supersetPartners } from '@/train/superset';
-import { setText } from '@/train/session';
+import { setLeftText, setText } from '@/train/session';
 import { type Summary, summarize } from '@/train/summary';
 import { type Move, type TrainData, movesOf } from '@/train/trainData';
 import { lastTime, setsOf, workoutOf } from '@/train/workout';
@@ -70,7 +70,7 @@ export default function WorkoutSummaryScreen() {
         {move !== undefined &&
           done.sets.map((s) => (
             <Text key={s.clientId} style={[styles.small, { color: color.textSecondary }]}>
-              {s.rir === undefined ? setText(s, move, units) : t('summary.setRir', { set: setText(s, move, units), rir: s.rir })}
+              {s.rir === undefined ? setText(s, move, units) : setLeftText(setText(s, move, units), s.rir)}
             </Text>
           ))}
         {done.note !== null && <Text style={[styles.small, { color: color.muted }]}>{done.note}</Text>}

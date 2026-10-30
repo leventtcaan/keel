@@ -16,9 +16,10 @@ import { connectHealthJit, healthJitDue } from './justInTime';
  * and under the first workout's summary, once. Continue shows Apple's sheet and records the consent; "Not now" is free and
  * is the once. What is read and written is said in two lines, and the consent's own text is one tap away. Nothing is on the
  * screen when there is nothing to ask (asked before, Apple Health on already, not available in this build, no health data
- * consent): the parent shows what it shows. `onSettled`, if given, tells the parent how it ended.
+ * consent): the parent shows what it shows. `onSettled`, if given, tells the parent how it ended. `quiet` (Evre 7 C3, the end of a workout): a
+ * row, not a card of sentences: the title, the consent's own text one tap away, and the two buttons side by side.
  */
-export function HealthJit({ onSettled }: { onSettled?: (how: 'connected' | 'declined') => void }) {
+export function HealthJit({ onSettled, quiet = false }: { onSettled?: (how: 'connected' | 'declined') => void; quiet?: boolean }) {
   const { api, health, consents, healthAsk, report } = useAppServices();
   const { color } = useTheme();
   const [due, setDue] = useState(false);
@@ -64,19 +65,24 @@ export function HealthJit({ onSettled }: { onSettled?: (how: 'connected' | 'decl
     onSettled?.('declined');
   };
 
+  const lines = quiet ? null : (
+    <>
+      <Text style={[styles.text, { color: color.textSecondary }]}>{t('health.jit.reads')}</Text>
+      <Text style={[styles.text, { color: color.textSecondary }]}>{t('health.jit.writes')}</Text>
+    </>
+  );
   return (
     <Card testID="health-jit">
       <Text accessibilityRole="header" style={[styles.title, { color: color.text }]}>
         {t('health.jit.title')}
       </Text>
-      <Text style={[styles.text, { color: color.textSecondary }]}>{t('health.jit.reads')}</Text>
-      <Text style={[styles.text, { color: color.textSecondary }]}>{t('health.jit.writes')}</Text>
+      {lines}
       <Pressable accessibilityRole="button" accessibilityState={{ expanded: reading }} onPress={() => setReading((was) => !was)} style={styles.link}>
         <Text style={[styles.strong, { color: color.accent }]}>{t('health.jit.read')}</Text>
       </Pressable>
       {reading && <Text style={[styles.small, { color: color.textSecondary }]}>{t('consent.apple_health.body')}</Text>}
       {problem !== null && <ProblemText style={[styles.text, { color: color.text }]}>{problem}</ProblemText>}
-      <View style={styles.actions}>
+      <View style={quiet ? styles.row : styles.actions}>
         {/* Not the screen's one primary (ADR-070 Ek 2 #1): a secondary and a text button, inside the card. */}
         <Button label={t('health.jit.continue')} variant="secondary" onSurface onPress={() => void connect()} disabled={busy} />
         <Button label={t('health.jit.notNow')} variant="text" onPress={() => void decline()} disabled={busy} />
@@ -92,4 +98,5 @@ const styles = StyleSheet.create({
   strong: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.bold },
   link: { minHeight: tokens.size.touch, justifyContent: 'center' },
   actions: { gap: tokens.space.sm },
+  row: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
 });

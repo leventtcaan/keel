@@ -162,7 +162,7 @@ test("the add form starts from the move's last work set of the session (simulato
 
 test('a work set reads as in the history, with its RIR', async () => {
   await show();
-  expect(screen.getByText(t('summary.setRir', { set: '80 kg × 8', rir: 1 }))).toBeOnTheScreen();
+  expect(screen.getByText(t('summary.setLeft.one', { set: '80 kg × 8', count: 1 }))).toBeOnTheScreen();
 });
 
 test('a one-sided move is added a side at a time', async () => {

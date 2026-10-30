@@ -96,8 +96,8 @@ test("Workout: the session's day, its minutes, kilos lifted, sets and the record
 
 test('Workout in pounds: the load and the record in the unit they chose', () => {
   const workout = kind(stickersFor(FULL, 'IMPERIAL'), 'workout')!;
-  expect(workout.stats[1]).toMatchObject({ value: '9,436', label: t('workoutEnd.liftedLb') });
-  expect(workout.stats[3].value).toBe('220.5 lb × 8');
+  expect(workout.stats[1]).toMatchObject({ value: '9,435', label: t('workoutEnd.liftedLb') });
+  expect(workout.stats[3].value).toBe('220 lb × 8');
 });
 
 test('Workout of a first session: the baseline in the record is not a record; one minute and one set read in the singular', () => {

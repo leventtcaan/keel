@@ -51,6 +51,61 @@
       "tag": "urun",
       "source": "arastirma/ham/L3-ozellik-boslugu.md#7",
       "note": "Only the default before the user chooses (onboarding asks, settings change it): the countries that use US customary units."
+    },
+    {
+      "key": "load_display_step_lb",
+      "value": 5,
+      "unit": "lb",
+      "tag": "urun",
+      "source": "plan/evre-7-inceleme.md#17.",
+      "note": "Evre 7: a load shown in pounds is a real one: the nearest 5 lb (a 45 lb bar with 5 lb and 2.5 lb plates, 5 lb dumbbell steps), never 209.4 lb. The engine and the server stay in kg; this is only how a load reads (loadValue and formatLoad, the one place)."
+    },
+    {
+      "key": "load_display_small_below_lb",
+      "value": 10,
+      "unit": "lb",
+      "tag": "urun",
+      "source": "plan/evre-7-inceleme.md#17.",
+      "note": "Under this many lb a load is shown to the nearest 2.5 lb (small plates, light dumbbells)."
+    },
+    {
+      "key": "load_display_small_step_lb",
+      "value": 2.5,
+      "unit": "lb",
+      "tag": "urun",
+      "source": "plan/evre-7-inceleme.md#17.",
+      "note": "The step under load_display_small_below_lb."
+    },
+    {
+      "key": "load_display_kg_grid",
+      "value": 1.25,
+      "unit": "kg",
+      "tag": "urun",
+      "source": "plan/evre-7-inceleme.md#17.",
+      "note": "A load that sits on this kilo grid (the engine's targets for a kilo gym: 2.5 kg plates in pairs) came from kilos, so a pound user reads it to the rack even where it falls near a pound by chance (110 kg is 242.51 lb). Only an off-grid load can be one typed in pounds, and that is shown as typed."
+    },
+    {
+      "key": "imperial_bar_lb",
+      "value": 45,
+      "unit": "lb",
+      "tag": "urun",
+      "source": "plan/evre-7-inceleme.md#17.",
+      "note": "The plates a side are said in the user's unit: a user in pounds with a gym still in kilos reads the standard US rack, a 45 lb bar and these plates. Only for how the plates read; no load is changed."
+    },
+    {
+      "key": "imperial_plates_lb",
+      "value": [
+        45,
+        35,
+        25,
+        10,
+        5,
+        2.5
+      ],
+      "unit": "lb",
+      "tag": "urun",
+      "source": "plan/evre-7-inceleme.md#17.",
+      "note": "The standard US plates, heaviest first."
     }
   ]
 }

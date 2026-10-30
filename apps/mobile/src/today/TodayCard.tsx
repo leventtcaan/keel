@@ -18,7 +18,7 @@ import { workoutParams } from '@/train/params';
 import { dayName, exerciseName } from '@/train/program';
 import { repCount } from '@/train/reps';
 import { sessionMoves } from '@/train/workout';
-import { type UnitSystem, loadValue } from '@/units/units';
+import { type UnitSystem, loadValue, volumeValue } from '@/units/units';
 
 import { type TodayCard as Card, type TodayParts, cardioLoggedToday, cardioToday } from './todayWorkout';
 import { nextSession, weekdayOf } from './week';
@@ -44,7 +44,7 @@ function targetOf(planned: Schemas['PlannedExercise'], move: Schemas['Exercise']
 
 /** "8,420 kg": the load lifted, the server's sum, whole, in the user's unit. */
 function lifted(kg: number, units: UnitSystem): string {
-  const value = Math.round(loadValue(kg, units)).toLocaleString('en-US');
+  const value = volumeValue(kg, units).toLocaleString('en-US');
   return t(units === 'METRIC' ? 'units.kg' : 'units.lb', { value });
 }
 

@@ -30,8 +30,6 @@ export function SwapSheet({ move, options, onPick, onClose }: Props) {
       <Text accessibilityRole="header" style={[styles.heading, { color: color.text }]}>
         {t('swap.title', { move })}
       </Text>
-      <Text style={[styles.note, { color: color.textSecondary }]}>{t('swap.why')}</Text>
-      <Text style={[styles.note, { color: color.textSecondary }]}>{t('workout.swapToday')}</Text>
       {options.map((option) => {
         const note = option.back ? t('swap.back') : undefined;
         return (

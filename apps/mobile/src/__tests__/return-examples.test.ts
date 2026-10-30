@@ -52,7 +52,7 @@ test('the first two loaded compound moves, in the program order, with the server
 
 test('in the unit the user keeps', () => {
   const p = program([[planned('squat', 100)]]);
-  expect(easeExamples(p, MOVES, 'IMPERIAL')).toContain(t('units.lb', { value: 220.5 }));
+  expect(easeExamples(p, MOVES, 'IMPERIAL')).toContain(t('units.lb', { value: 220 }));
 });
 
 test('a move without a target yet, or without a weight to name, is passed over; one move is enough', () => {

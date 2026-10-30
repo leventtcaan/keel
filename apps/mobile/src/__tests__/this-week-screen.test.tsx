@@ -1184,6 +1184,25 @@ describe('on the system (K-1045, ADR-070 Ek 2 #7, #8; prototype yeniden-yapim 5)
     expect(screen.queryByTestId('ring-2026-12-24')).toBeNull();
   });
 
+  // Evre 7 (the walk: "the week strip cannot be tapped"): a day opens as a short sheet with its plan or its log, never a "missed".
+  test('a tap on a planned day opens its plan as short rows; Close puts the week back', async () => {
+    await show();
+    await fireEvent.press(screen.getByTestId('day-2026-12-25'));
+    const sheet = within(screen.getByTestId('day-sheet'));
+    expect(sheet.getByText(t('thisWeek.day.planned'))).toBeOnTheScreen();
+    expect(sheet.getAllByTestId('day-row').length).toBeGreaterThan(0);
+    await fireEvent.press(sheet.getByRole('button', { name: t('modal.close') }));
+    expect(screen.queryByTestId('day-sheet')).toBeNull();
+  });
+
+  test('a tap on a day with nothing is "Rest day", no moves and nothing said as missed (U7)', async () => {
+    await show();
+    await fireEvent.press(screen.getByTestId('day-2026-12-24'));
+    const sheet = within(screen.getByTestId('day-sheet'));
+    expect(sheet.getByText(t('thisWeek.day.rest'))).toBeOnTheScreen();
+    expect(sheet.queryAllByTestId('day-row')).toHaveLength(0);
+  });
+
   test("today's card: three moves with their targets, \"and 1 more\", the cardio line with its icon, and one primary Start", async () => {
     await show();
     const card = within(screen.getByTestId('today-card'));

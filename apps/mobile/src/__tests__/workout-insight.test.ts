@@ -116,7 +116,7 @@ describe('the other cases', () => {
 
   test('in pounds', () => {
     expect(moveInsight({ planned: BENCH, sets: times(3, () => set(100, 10)), sides: 1, held: false, units: 'IMPERIAL' })).toBe(
-      '+4 reps vs last time. Top of the range: 231.5 lb next time.',
+      '+4 reps vs last time. Top of the range: 230 lb next time.',
     );
   });
 });

@@ -72,7 +72,7 @@ test('in lb, the lines say lb: a heavier weight and a higher estimated max', () 
     summarize(today, () => last, new Map([[BENCH.id, BENCH]]), [planned('bench_press')], 'IMPERIAL').moves[0].line;
   // 185 lb and 180 lb as the app stores them.
   expect(imperial([set('bench_press', 83.91, 6, 1)], [set('bench_press', 81.65, 6, 1)])).toBe('Up 5 lb from last time at RIR 1');
-  expect(imperial([set('bench_press', 80, 10, 0)], [set('bench_press', 82.5, 6, 1)])).toBe('Estimated max up 10.8 lb');
+  expect(imperial([set('bench_press', 80, 10, 0)], [set('bench_press', 82.5, 6, 1)])).toBe('Estimated max up 10 lb');
 });
 
 test("without the plan (the day left the program), the target is the engine's: the effort is still judged", () => {

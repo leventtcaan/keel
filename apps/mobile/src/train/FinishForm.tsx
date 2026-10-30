@@ -35,7 +35,6 @@ export function FinishForm({ moves, named, unclean, onMark, note, onNote, onFini
   return (
     <View style={styles.form}>
       <Text style={[styles.heading, { color: color.text }]}>{t('workout.form.title')}</Text>
-      <Text style={[styles.text, { color: color.textSecondary }]}>{t('workout.form.note')}</Text>
       {moves.map((id) => (
         <View key={id} style={styles.move}>
           <Text style={[styles.text, styles.name, { color: color.text }]}>{exerciseName(id, named)}</Text>

@@ -2,7 +2,7 @@
  * A move's history screen (K-415, ADR-033): its records on top, then every session that has it, newest first, each set as
  * it was done. Read from the server's list, kept on the phone, joined with what the phone has not sent yet.
  */
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
@@ -105,9 +105,9 @@ test('then each session, newest first, every set as it was done — a warm-up ma
   await show();
   const days = await screen.findAllByText(/^Sep (21|28)$/);
   expect(days.map((d) => d.props.children)).toContain('Sep 21');
-  expect(screen.getByText('85 kg × 4 · RIR 2')).toBeTruthy();
+  expect(screen.getByText('85 kg × 4 · 2 reps left')).toBeTruthy();
   expect(screen.getByText('40 kg × 10 · warm-up')).toBeTruthy();
-  expect(screen.getByText('80 kg × 8 · RIR 1')).toBeTruthy();
+  expect(screen.getByText('80 kg × 8 · 1 rep left')).toBeTruthy();
 });
 
 test('an isolation move shows no weight record (G6 K-33)', async () => {
@@ -159,13 +159,15 @@ test('nothing logged for the move yet', async () => {
   expect(await screen.findByText('Nothing logged for this exercise yet.')).toBeTruthy();
 });
 
-test('back closes it', async () => {
+// K1 (Evre 7 C): the history is a pushed screen with the system's back arrow (the walk: "no back arrow"), so the "Done" button at its
+// foot, the only way out, is gone.
+test('the way back is the system header, not a button at the foot', async () => {
   await show();
-  await fireEvent.press(await screen.findByText('Done'));
-  expect(mockBack).toHaveBeenCalled();
+  await screen.findByText(t('history.sessions'));
+  expect(screen.queryByText('Done')).toBeNull();
 });
 
-test('in lb, two loads written alike are one weight: one "137.8 lb" row', async () => {
+test('in lb, two loads written alike are one weight: one "140 lb" row', async () => {
   mockUnits = 'IMPERIAL';
   mockHistory = {
     state: 'ready',
@@ -175,7 +177,7 @@ test('in lb, two loads written alike are one weight: one "137.8 lb" row', async 
     ],
   };
   await show();
-  expect(await screen.findAllByText('Most reps at 137.8 lb · 6')).toHaveLength(1);
+  expect(await screen.findAllByText('Most reps at 140 lb · 6')).toHaveLength(1);
 });
 
 test("the exercises unread (offline, nothing kept): the screen says it couldn't load, not an empty history", async () => {
@@ -190,8 +192,7 @@ test('a read that throws is reported by its name only, and the screen stays', as
     throw Object.assign(new Error('disk'), { name: 'StoreFailed' });
   });
   await show();
-  expect(await screen.findByText('Done')).toBeTruthy();
-  await screen.findByText('Done');
+  await waitFor(() => expect(mockServices.report).toHaveBeenCalled());
   expect(mockServices.report).toHaveBeenCalledWith({ name: 'StoreFailed' });
 });
 
@@ -284,7 +285,7 @@ describe('editing a past session (K-416)', () => {
       },
     ];
     await show();
-    expect(await screen.findByText('80 kg × 8 · RIR 1')).toBeTruthy();
+    expect(await screen.findByText('80 kg × 8 · 1 rep left')).toBeTruthy();
     expect(screen.queryByRole('button', { name: /^Edit the session/ })).toBeNull();
   });
 
@@ -306,6 +307,6 @@ test("the user's own move's history under the name they gave", async () => {
   };
   await show();
   expect(await screen.findByText('Landmine press')).toBeOnTheScreen();
-  expect(screen.getByText('30 kg × 10 · RIR 1')).toBeOnTheScreen();
+  expect(screen.getByText('30 kg × 10 · 1 rep left')).toBeOnTheScreen();
   expect(screen.queryByText(t('history.loadFailed'))).toBeNull();
 });
