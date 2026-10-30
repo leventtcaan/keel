@@ -61,8 +61,9 @@ export type Week1 = {
  * K-995 B; the program edit of K-970). Null for every other call; for one whose missed days are no training days any
  * more (already moved) there is nothing to pick, only what could not be saved, said. A missed day the program no longer
  * trains on (moved elsewhere already) is left out, the others stay. One more day: the same way, with the suggested
- * weekday filled: where the server says it can (Program.canAddDay) it adds the chosen weekday with its content (POST
- * /v1/program/days, K-1012); otherwise, or when it says no all the same (409), the day is added in the training days.
+ * weekday filled: the server adds the chosen weekday with its content (POST /v1/program/days, K-1012), whatever
+ * Program.canAddDay says; when it says no (409) that is said on the call with another try, and no empty day is ever made in
+ * the editor (Evre 7 B1).
  */
 export function useWeek1(decision: Schemas['Decision'] | null): Week1 | null {
   const { api, report } = useAppServices();
@@ -122,48 +123,36 @@ export function useWeek1(decision: Schemas['Decision'] | null): Week1 | null {
   let suggestion: string;
   let rows: ChangeRow[];
   let submit: () => Promise<void>;
-  // The add call, for a program the server cannot add a day to: the day is added in Edit; why, said under the rows.
-  let inEdit = false;
-  let why: string | null = null;
 
   if (call.kind === 'add') {
     const suggestedDay = call.suggested[0];
     const day = picks[NEW_DAY] ?? suggestedDay;
     slots = [{ key: NEW_DAY, head: t('callScreen.week1.addHead'), chosen: day }];
     suggestion = suggestedDay === undefined ? '' : t('callScreen.week1.suggestionAdd', { day: full(suggestedDay) });
-    // The server fills the new day from the program's own generator where it says it can (Program.canAddDay, K-1013: the
-    // rule POST /v1/program/days answers with; the phone counts no days). Where it cannot, or does not say (an older
-    // server), or refuses all the same (409: a weekday taken meanwhile): the day is added in the program editor, with the
-    // day marked there. The call lists "New day" only when this call adds it, and says before the tap when Edit does.
-    const serverAdds = program?.state === 'ready' && program.value.canAddDay === true;
-    inEdit = program?.state === 'ready' && !serverAdds;
-    const added = serverAdds;
+    // The day always comes from the server, filled by the program's own generator (POST /v1/program/days), whatever `canAddDay` says
+    // (absent on an older server): the server is the one that knows, and its "no" is said here with another try. There is no editor
+    // day to fall back to (Evre 7 B1: an empty "No moves yet" day is never offered).
     rows = [
       row('days', t('callScreen.week1.daysLabel'), null, String(call.toDays)),
-      ...(added ? [row('new', t('callScreen.week1.newDay'), null, day === undefined ? t('callScreen.week1.noDay') : short(day))] : []),
+      row('new', t('callScreen.week1.newDay'), null, day === undefined ? t('callScreen.week1.noDay') : short(day)),
     ];
-    if (inEdit && day !== undefined) why = t('callScreen.week1.addInEdit', { day: full(day) });
-    const edit = () => router.push({ pathname: '/edit-program', params: { part: 'days', ...(day === undefined ? {} : { adding: day }) } });
     submit = async () => {
       if (sending.current || day === undefined) return;
       sending.current = true;
       setBusy(true);
       setProblem(null);
       try {
-        const current = await readProgram();
-        if (current === null) return;
-        if (current.canAddDay !== true) return edit();
         const result = await addProgramDay(api, day);
         if (result.kind === 'done') {
           setProgram({ state: 'ready', value: result.program });
           announce(t('callScreen.week1.saved'));
           router.back();
-        } else if (result.kind === 'conflict') {
-          edit();
-        } else {
-          report({ name: REPORTED[result.kind] });
-          setProblem(t(SAID[result.kind]));
+          return;
         }
+        report({ name: REPORTED[result.kind] });
+        setProblem(t(result.kind === 'conflict' ? 'callScreen.week1.addStale' : SAID[result.kind]));
+        // The program changed under the choice (a weekday taken meanwhile): read it again, so what is offered is what is there.
+        if (result.kind === 'conflict') setProgram(await load(() => api.GET('/v1/program')));
       } finally {
         sending.current = false;
         setBusy(false);
@@ -253,16 +242,11 @@ export function useWeek1(decision: Schemas['Decision'] | null): Week1 | null {
     rows,
     dock: (
       <View style={styles.dock}>
-        <Button label={t(inEdit ? 'callScreen.week1.openEdit' : picked ? 'callScreen.week1.done' : 'callScreen.week1.soundsRight')} disabled={busy || !complete} onPress={() => void submit()} />
+        <Button label={t(picked ? 'callScreen.week1.done' : 'callScreen.week1.soundsRight')} disabled={busy || !complete} onPress={() => void submit()} />
         <Button label={t('callScreen.week1.changeIt')} variant="ghost" disabled={busy} onPress={() => setChanging(true)} />
       </View>
     ),
-    note: (
-      <>
-        {why === null ? null : <Text style={[styles.text, { color: color.textSecondary }]}>{why}</Text>}
-        {note}
-      </>
-    ),
+    note,
     changing: picker,
   };
 }

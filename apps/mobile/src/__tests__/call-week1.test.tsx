@@ -436,59 +436,42 @@ describe('one more day (K-1012): the suggestion comes filled, like the move', ()
     expect(screen.getByRole('button', { name: w('soundsRight') })).toBeOnTheScreen();
   });
 
-  test('not two days (three): the call says why before the tap, lists no "New day" it cannot add, and Edit opens with the day marked', async () => {
-    mockAnswers['/v1/program'] = ok(threeDays());
+  // K1 (Evre 7 B1): the five tests that sent the day to the program editor (an empty "No moves yet" day) now say the day is always the
+  // server's: it is asked whatever canAddDay says, and its "no" is said on the call with another try.
+  test.each([
+    ['not two days (three, canAddDay false)', () => ok(threeDays())],
+    ["the user's own program (canAddDay false)", () => ok({ ...twoDays(), source: 'OWN', canAddDay: false })],
+    ['canAddDay not sent (an older server, the copy kept offline)', () => ok((({ canAddDay: _unknown, ...older }) => older)(twoDays()))],
+  ])('%s: the call lists "New day" and asks the server all the same; no editor, no empty day', async (_name, program) => {
+    mockAnswers['/v1/program'] = program();
     await show();
-    expect(screen.getByText(w('addInEdit').replace('{day}', 'Saturday'))).toBeOnTheScreen();
-    expect(screen.queryByText(w('newDay'))).toBeNull(); // this call does not add the day, so it does not list it as added
-    expect(screen.getByText(w('daysLabel'))).toBeOnTheScreen();
-    await press(w('openEdit'));
-    expect(mockPOST).not.toHaveBeenCalled();
-    expect(mockPush).toHaveBeenCalledWith({ pathname: '/edit-program', params: { part: 'days', adding: 'SATURDAY' } });
+    expect(screen.getByText(w('newDay'))).toBeOnTheScreen();
+    await press(w('soundsRight'));
+    expect(mockPOST).toHaveBeenCalledWith('/v1/program/days', { body: { weekday: 'SATURDAY' } });
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(mockBack).toHaveBeenCalled();
   });
 
-  test("the server says it cannot add (canAddDay false: the user's own program of two days): no \"New day\", the reason, Edit; the phone counts no days", async () => {
-    mockAnswers['/v1/program'] = ok({ ...twoDays(), source: 'OWN', canAddDay: false });
-    await show();
-    expect(screen.queryByText(w('newDay'))).toBeNull();
-    expect(screen.getByText(w('addInEdit').replace('{day}', 'Saturday'))).toBeOnTheScreen();
-    await press(w('openEdit'));
-    expect(mockPOST).not.toHaveBeenCalled();
-    expect(mockPush).toHaveBeenCalledWith({ pathname: '/edit-program', params: { part: 'days', adding: 'SATURDAY' } });
-  });
-
-  test('canAddDay not sent (an older server): not known, so the day is added in Edit, never a request that may be refused', async () => {
-    const { canAddDay: _unknown, ...older } = twoDays();
-    mockAnswers['/v1/program'] = ok(older);
-    await show();
-    expect(screen.queryByText(w('newDay'))).toBeNull();
-    await press(w('openEdit'));
-    expect(mockPOST).not.toHaveBeenCalled();
-    expect(mockPush).toHaveBeenCalledWith({ pathname: '/edit-program', params: { part: 'days', adding: 'SATURDAY' } });
-  });
-
-  test('not two days, a day picked in "Change it": Edit opens with that day marked', async () => {
+  test('not two days, a day picked in "Change it": that weekday is the one sent to the server', async () => {
     mockAnswers['/v1/program'] = ok(threeDays());
     await show();
     await press(w('changeIt'));
     await press(t('programEditor.weekdayName.SUNDAY'));
     await press(w('done'));
-    expect(screen.getByText(w('addInEdit').replace('{day}', 'Sunday'))).toBeOnTheScreen();
-    // The button still says where it goes ("Open Edit"), a pick or not: "Done" would promise a save.
-    expect(screen.queryByRole('button', { name: w('done') })).toBeNull();
-    await press(w('openEdit'));
-    expect(mockPOST).not.toHaveBeenCalled();
-    expect(mockPush).toHaveBeenCalledWith({ pathname: '/edit-program', params: { part: 'days', adding: 'SUNDAY' } });
+    await press(w('done'));
+    expect(mockPOST).toHaveBeenCalledWith('/v1/program/days', { body: { weekday: 'SUNDAY' } });
+    expect(mockPush).not.toHaveBeenCalled();
   });
 
-  test('the server says no (409: a user\'s own program, a taken day, the days changed): Edit with the day marked, no note on the call', async () => {
+  test('the server says no (409: a taken day, the days changed): said on the call, never the editor; the button is there to try again', async () => {
     mockPost = refused(409, 'CONFLICT');
     await show();
     await press(w('soundsRight'));
     expect(mockPOST).toHaveBeenCalledTimes(1);
-    expect(mockPush).toHaveBeenCalledWith({ pathname: '/edit-program', params: { part: 'days', adding: 'SATURDAY' } });
+    expect(screen.getByText(w('addStale'))).toBeOnTheScreen();
+    expect(mockPush).not.toHaveBeenCalled();
     expect(mockBack).not.toHaveBeenCalled();
-    expect(screen.queryByText(w('stale'))).toBeNull();
+    expect(screen.getByRole('button', { name: w('soundsRight') })).toBeEnabled();
   });
 
   test('the day is outside what a program is (400): its own line, nothing opened, another try possible', async () => {

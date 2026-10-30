@@ -1305,15 +1305,15 @@ describe('Add a day is the one flow (ADR-090 Ek 1, K-1060)', () => {
     expect(screen.queryByText(t('programEditor.defaultName', { number: 3 }))).toBeNull();
   });
 
-  test("where the server can not add (seven days), or does not say (an older server), the editor's own empty day stays the way", async () => {
+  // K1 (Evre 7 B1): the editor's own empty day was the way where the server could not add or did not say; it is gone. The sheet asks the
+  // server whatever canAddDay says, and says why not (add-day.test.tsx).
+  test.each([[false], [undefined]])('canAddDay %s: still the sheet, never an empty "No moves yet" day in the editor', async (canAddDay) => {
     mockParams = { part: 'days' };
-    for (const canAddDay of [false, undefined]) {
-      editable({ ...EDITABLE, ...(canAddDay === undefined ? {} : { canAddDay }) });
-      const { unmount } = await show();
-      await screen.findByText('Upper');
-      await fireEvent.press(screen.getByText(t('programEditor.addDay')));
-      expect(mockPush).not.toHaveBeenCalledWith('/add-day');
-      unmount();
-    }
+    editable({ ...EDITABLE, ...(canAddDay === undefined ? {} : { canAddDay }) });
+    await show();
+    await screen.findByText('Upper');
+    await fireEvent.press(screen.getByText(t('programEditor.addDay')));
+    expect(mockPush).toHaveBeenCalledWith('/add-day');
+    expect(screen.queryByText(t('programEditor.defaultName', { number: 3 }))).toBeNull();
   });
 });

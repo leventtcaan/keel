@@ -1,7 +1,6 @@
 /**
- * Edit › Days opened from the first week's "add a day" call (K-1013, user test 10 Oct): the call could not add the day itself
- * (a program that does not have two days, or the server's 409), so Edit opens with the weekday the user chose already
- * marked on a new day, and says why the day is added here. Without that route parameter the page is the plain Days page.
+ * Edit › Days and the old `adding` route parameter (K-1013, user test 10 Oct; removed in Evre 7 B1): the first week's call used to open
+ * Edit with an empty new day on the chosen weekday. A day is only ever made by the server now; the parameter does nothing.
  */
 import { act, render, screen } from '@testing-library/react-native';
 
@@ -66,45 +65,30 @@ async function show() {
 }
 const header = (name: string, weekday: string) => t('programEditor.dayHeader', { day: name, weekday, moves: t('programEditor.noMovesMeta') });
 
-describe('opened from the first week call with a day chosen', () => {
+// K1 (Evre 7 B1): the first week's call no longer opens Edit with a new, empty day marked (the day comes from the server there). A
+// link that still carries `adding` (an old one) opens the plain page: no new day, no note.
+describe('opened with the old `adding` parameter', () => {
   beforeEach(() => {
     mockParams = { part: 'days', adding: 'SATURDAY' };
   });
 
-  test('a new day is already on the chosen weekday, no moves yet, and the page says why it is added here', async () => {
+  test('no new day is made on the weekday, no note: the days are the program\'s', async () => {
     await show();
-    expect(screen.getByRole('button', { name: header(t('programEditor.defaultName', { number: 4 }), 'Saturday') })).toBeOnTheScreen();
-    expect(screen.getByText(t('editProgram.addingDay', { day: 'Saturday' }))).toBeOnTheScreen();
-    // The days the program has are as they were.
-    expect(screen.getByText(t('programEditor.summary', { days: t('programEditor.days.other', { count: 4 }), moves: t('programEditor.moves.other', { count: 3 }) }))).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: header(t('programEditor.defaultName', { number: 4 }), 'Saturday') })).toBeNull();
+    expect(screen.queryByTestId('day-card-3')).toBeNull();
+    expect(screen.getByText(t('programEditor.summary', { days: t('programEditor.days.other', { count: 3 }), moves: t('programEditor.moves.other', { count: 3 }) }))).toBeOnTheScreen();
   });
 
-  test('the new day has no moves, so it is not saved yet (a day needs a move)', async () => {
+  test('the page is not dirty: nothing to save', async () => {
     await show();
     expect(screen.getByRole('button', { name: t('editProgram.save') })).toBeDisabled();
+    expect(screen.queryByTestId('unsaved-note')).toBeNull();
   });
 
-  test('a weekday the program trains on already is no new day: the plain page, no note', async () => {
-    mockParams = { part: 'days', adding: 'FRIDAY' };
+  test('the page read again on focus adds no day either', async () => {
     await show();
-    expect(screen.queryByText(t('editProgram.addingDay', { day: 'Friday' }))).toBeNull();
-    expect(screen.queryByRole('button', { name: header(t('programEditor.defaultName', { number: 4 }), 'Friday') })).toBeNull();
-  });
-
-  test('a made-up weekday is ignored', async () => {
-    mockParams = { part: 'days', adding: 'FUNDAY' };
-    await show();
-    expect(screen.queryByText(/marked/)).toBeNull();
-    expect(screen.queryByTestId('day-card-3')).toBeNull();
-  });
-
-  test('the page read again on focus does not add the day a second time, and keeps the day already marked', async () => {
-    await show();
-    const reads = mockServices.training.read.mock.calls.length;
     await act(async () => mockRefocus());
-    expect(mockServices.training.read.mock.calls.length).toBeGreaterThan(reads); // it did read again
-    expect(screen.getAllByRole('button', { name: header(t('programEditor.defaultName', { number: 4 }), 'Saturday') })).toHaveLength(1);
-    expect(screen.queryByTestId('day-card-4')).toBeNull();
+    expect(screen.queryByTestId('day-card-3')).toBeNull();
   });
 });
 
