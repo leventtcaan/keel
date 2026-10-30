@@ -19,7 +19,7 @@ function stateWord(status: PhoneConsentStatus | undefined, read: boolean): strin
 /**
  * Settings › Health and data (K-982, ADR-007, ADR-018; a grouped list, ADR-070 Ek 2 #2): four rows, each opening the page that
  * holds the controls and their texts, so none is lost and none is long under a row. The two consents come first, always
- * (they are how the import unlocks), each saying Allowed or Not allowed, and open their text, Allow and Withdraw; Add to
+ * (they are how the import unlocks), each saying On or Off, and open their text, Allow and Withdraw; Add to
  * Apple Health (the write switches) is apart from the read consent (ADR-018 §1, Ek 1: what a switch added stays yours to
  * stop even after the consent is withdrawn); the weigh-in import reads health data, so without the health data consent its
  * row says so and its page gives the consent. The workout file import is a Training row, not here. Read whenever Settings comes into view,

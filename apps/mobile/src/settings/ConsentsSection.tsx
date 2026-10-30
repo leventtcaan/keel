@@ -12,7 +12,7 @@ import {
   withdrawConsent,
 } from '@/consent/consents';
 import { ConsentText } from '@/consent/ConsentText';
-import { t } from '@/copy';
+import { has, t } from '@/copy';
 import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
@@ -31,9 +31,10 @@ const WORDS = { NoConnection: 'settings.consents.failed', HealthSheetFailed: 'se
  * Each consent: its state, the text it was given to (View), and Allow or Withdraw (ADR-007: separately, at any time).
  * Withdrawing asks first; withdrawing the health data consent deletes the health entries for good (K-231), so its
  * question says so and offers the export before. Apple Health brings in health data, so it needs the health data consent, and HealthKit in the
- * build. After every change the states are read again from the server, the truth; `onChanged` then tells the screen it holds (K-982).
+ * build. `why` puts the first line of its text, what it reads and what for, under the name without a tap (the Apple Health page: the
+ * reason is the first thing to know, the legal words stay behind View). After every change the states are read again from the server, the truth; `onChanged` then tells the screen it holds (K-982).
  */
-export function ConsentsSection({ onChanged, only, bare = false }: { onChanged?: () => void; only?: Kind; bare?: boolean } = {}) {
+export function ConsentsSection({ onChanged, only, bare = false, why = false }: { onChanged?: () => void; only?: Kind; bare?: boolean; why?: boolean } = {}) {
   const { api, health, consents, withdrawHealthData, exportData } = useAppServices();
   const { color } = useTheme();
   const [states, setStates] = useState<Partial<Record<Kind, PhoneConsentStatus>> | null>(null);
@@ -145,6 +146,7 @@ export function ConsentsSection({ onChanged, only, bare = false }: { onChanged?:
         />
       ) : undefined;
     const text = open === kind ? <ConsentText kind={kind} /> : null;
+    const reason = why && has(`settings.consents.why.${kind}`) ? <Text style={[styles.text, { color: color.textSecondary }]}>{t(`settings.consents.why.${kind}`)}</Text> : null;
     const confirm =
       asking === kind ? (
         <Confirm
@@ -174,6 +176,7 @@ export function ConsentsSection({ onChanged, only, bare = false }: { onChanged?:
           />
           {toggle}
         </View>
+        {reason}
         {blocked !== null && <Text style={[styles.small, { color: color.muted }]}>{blocked}</Text>}
         {text}
         {confirm}
