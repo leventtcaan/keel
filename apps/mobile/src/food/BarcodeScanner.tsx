@@ -20,7 +20,7 @@ const FOOD_BARCODES = ['ean13', 'ean8', 'upc_a', 'upc_e'] as const;
 /**
  * The barcode reader (K-407): the camera, asked for once, reads one code and hands it on as scanned — a UPC-E is
  * expanded by the server (K-208). The camera sees the same code many times a second: only the first counts. Refused, or a
- * worn label: the number can be typed. Nothing is recorded or kept; the picture never leaves the camera view (V1).
+ * worn label, or no camera on the phone at all: the number can be typed, and the screen says so. Nothing is recorded or kept; the picture never leaves the camera view (V1).
  */
 export function BarcodeScanner({ onCode, onClose }: { onCode: (gtin: string) => void; onClose: () => void }) {
   const reduceMotion = useReduceMotion();
@@ -32,6 +32,18 @@ export function BarcodeScanner({ onCode, onClose }: { onCode: (gtin: string) => 
   const asking = useRef(false);
   // Asked once by itself; refused, it says why — on Android a first "no" can still be asked again, on a tap.
   const [asked, setAsked] = useState(false);
+  // Whether the phone has a camera at all (a simulator has none): false is certain, anything else is "try it".
+  const [available, setAvailable] = useState<boolean | null>(null);
+  useEffect(() => {
+    let live = true;
+    void Promise.resolve()
+      .then(() => CameraView.isAvailableAsync())
+      .then((yes) => live && setAvailable(yes === true))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (permission === null || permission.granted || !permission.canAskAgain || asking.current) return;
@@ -60,12 +72,18 @@ export function BarcodeScanner({ onCode, onClose }: { onCode: (gtin: string) => 
       <Button label={t('meal.barcode.askAgain')} variant="ghost" size="sm" onPress={() => void requestPermission()} />
     ) : null;
   const camera =
-    permission?.granted === true ? (
+    available === false ? (
+      <View style={styles.typed}>
+        <Text style={[styles.text, { color: color.text }]}>{t('meal.barcode.noCamera')}</Text>
+        {permission?.granted === true ? null : askAgain}
+      </View>
+    ) : permission?.granted === true ? (
       <CameraView
         style={styles.camera}
         facing="back"
         barcodeScannerSettings={{ barcodeTypes: [...FOOD_BARCODES] }}
         onBarcodeScanned={(result) => take(result.data)}
+        onMountError={() => setAvailable(false)}
       />
     ) : permission !== null && !permission.granted && (asked || !permission.canAskAgain) ? (
       <View style={styles.typed}>

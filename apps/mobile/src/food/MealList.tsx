@@ -9,6 +9,7 @@ import { tokens } from '@/theme/tokens';
 import { amountPhrase } from './amountText';
 import { QUICK } from './draft';
 import { type DayMeal, groupBySlot } from './meals';
+import { dayOrder } from './slots';
 import { kcalText, mid } from './single';
 import { SwipeRow } from './SwipeRow';
 
@@ -48,7 +49,7 @@ type ListProps = {
 /**
  * The day's meals, each item with its amount and its kcal as one number (K-1063, ADR-090 #5): tap an item to change its amount or
  * portion where it stands, swipe it left to delete it (the app's banner offers Undo). Logs of the same slot are one section under one header (K-1066): the
- * slot's total is their sum and its menu acts on all of them. A meal not sent yet has no numbers: the server estimates it when it arrives. An empty slot of the user's day offers its own add.
+ * slot's total is their sum and its menu acts on all of them. A meal not sent yet has no numbers: the server estimates it when it arrives. An empty slot of the user's day offers its own add, in its own place: one fixed order for all of them (Breakfast, Lunch, Dinner, Snack).
  */
 export function MealList({ meals, complete, isToday, emptySlots, onEditItem, onDeleteItem, onDeleteSlot, onAdd, onLogToday }: ListProps) {
   const { color } = useTheme();
@@ -58,12 +59,28 @@ export function MealList({ meals, complete, isToday, emptySlots, onEditItem, onD
       { text: t('food.meals.deleteMeal'), style: 'destructive' as const, onPress: () => onDeleteSlot(logs) },
       { text: t('food.meals.cancel'), style: 'cancel' as const },
     ]);
+  const groups = groupBySlot(meals);
+  const emptySection = (slot: Slot) => (
+    <Pressable
+      key={slot}
+      testID={`empty-${slot}`}
+      accessibilityRole="button"
+      accessibilityLabel={t('food.meals.addTo', { slot: t(`food.slot.${slot}`) })}
+      onPress={() => onAdd(slot)}
+      style={[styles.emptySlot, { backgroundColor: color.surface }]}>
+      <Text style={[styles.name, { color: color.text }]}>{t(`food.slot.${slot}`)}</Text>
+      <Text style={[styles.amount, styles.grow, { color: color.muted }]}>{t('food.meals.emptySlot')}</Text>
+      <Icon name="plus.circle.fill" tone="accent" />
+    </Pressable>
+  );
   const noneLine =
     meals.length === 0 && complete ? <Text style={[styles.empty, { color: color.textSecondary }]}>{t(isToday ? 'food.meals.none' : 'food.meals.noneDay')}</Text> : null;
   return (
     <View testID="meals" style={styles.list}>
       {noneLine}
-      {groupBySlot(meals).map((group) => {
+      {dayOrder(groups.map((group) => group.slot), emptySlots).map((slot) => {
+        const group = groups.find((one) => one.slot === slot);
+        if (group === undefined) return emptySection(slot);
         const slotName = t(`food.slot.${group.slot}`);
         // Every log of the slot lists its items in one card, in the order they were logged; each item still acts on its own log.
         // Built outside the JSX children (the raw-text guard reads them).
@@ -126,19 +143,6 @@ export function MealList({ meals, complete, isToday, emptySlots, onEditItem, onD
           </View>
         );
       })}
-      {emptySlots.map((slot) => (
-        <Pressable
-          key={slot}
-          testID={`empty-${slot}`}
-          accessibilityRole="button"
-          accessibilityLabel={t('food.meals.addTo', { slot: t(`food.slot.${slot}`) })}
-          onPress={() => onAdd(slot)}
-          style={[styles.emptySlot, { backgroundColor: color.surface }]}>
-          <Text style={[styles.name, { color: color.text }]}>{t(`food.slot.${slot}`)}</Text>
-          <Text style={[styles.amount, styles.grow, { color: color.muted }]}>{t('food.meals.emptySlot')}</Text>
-          <Icon name="plus.circle.fill" tone="accent" />
-        </Pressable>
-      ))}
     </View>
   );
 }

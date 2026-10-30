@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { components } from '@/api/schema';
+import { EmptyState } from '@/components/EmptyState';
 import { Icon } from '@/components/Icon';
 import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
@@ -44,7 +45,7 @@ type Props = {
  * What can be logged without typing (Evre 7 A, ADR-090 Ek 6): one list with sections, in the order a person reaches for them. A whole past
  * meal first, as one row ("Same as yesterday's breakfast"); the hearted foods; the foods usually had at this meal; the recent ones — each
  * food once, in the highest section it belongs to. Every row has the same look: a plus logs the portion shown right away, the row opens the
- * portion step, the heart keeps the food. A user with nothing yet is offered nothing (the first day).
+ * portion step, the heart keeps the food. A user with nothing yet is told how to start (the first day): search or scan, one line.
  */
 export function FoodHome({ slot, favorites, favoriteIds, usual, recent, again, today, added, onOpenSuggestion, onLogSuggestion, onOpenFood, onLogFood, onLogAgain, onFavorite }: Props) {
   const { color } = useTheme();
@@ -98,7 +99,7 @@ export function FoodHome({ slot, favorites, favoriteIds, usual, recent, again, t
   });
 
   const nothing = favorites.length === 0 && usualShown.length === 0 && recentAll.length === 0 && again.length === 0;
-  if (nothing) return null;
+  if (nothing) return <EmptyState icon="magnifyingglass" text={t('meal.home.empty')} testID="browse-empty" />;
 
   // Built outside the JSX children (the raw-text guard reads them).
   const againBlock =

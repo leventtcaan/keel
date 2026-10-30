@@ -10,7 +10,7 @@ import { foodDetail, suggestionDetail } from '@/food/foodRows';
 import { amountGrams } from '@/food/meals';
 import { foodParams } from '@/food/params';
 import { isCounted, quantityInPortion, stepOf } from '@/food/portions';
-import { ALL_SLOTS, emptySlotsOf, perMealKcal, usedSlots } from '@/food/slots';
+import { ALL_SLOTS, dayOrder, emptySlotsOf, perMealKcal, usedSlots } from '@/food/slots';
 import { macrosOf, macrosOfPortion, mid } from '@/food/single';
 import { kindsOfMeal } from '@/food/useFoodExtras';
 
@@ -69,6 +69,12 @@ describe('the slots of the user\'s own day (ADR-090 Ek 3: "I eat N meals a day")
 
   test('the slots of the day that have no meal on the day shown', () => {
     expect(emptySlotsOf(['BREAKFAST', 'LUNCH', 'DINNER'], ['LUNCH'])).toEqual(['BREAKFAST', 'DINNER']);
+  });
+
+  test('filled and empty sections share one order: Breakfast, Lunch, Dinner, Snack', () => {
+    expect(dayOrder(['DINNER'], ['BREAKFAST', 'LUNCH', 'SNACK'])).toEqual(ALL_SLOTS);
+    expect(dayOrder(['SNACK', 'BREAKFAST'], ['DINNER'])).toEqual(['BREAKFAST', 'DINNER', 'SNACK']);
+    expect(dayOrder(['LUNCH'], ['LUNCH'])).toEqual(['LUNCH']);
   });
 
   test('a meal of the day is about the target over the slots in use, rounded; nothing without a target', () => {

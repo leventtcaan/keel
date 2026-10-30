@@ -1,6 +1,6 @@
 /**
- * The Food page's day (K-409, K-1063): what is left of today's budget as one number (ADR-090 #5), and the targets the calls set (K-216) —
- * carbs and fat only when a split fits (no number made up), and without a calorie target only steps and training.
+ * The Food page's day (K-409, K-1063): what is left of today's budget as one number (ADR-090 #5); the targets themselves are in Settings
+ * and This week, not here (Evre 7 final walk).
  */
 import { router } from 'expo-router';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
@@ -139,45 +139,23 @@ test('across zero, about at the target', async () => {
   expect(screen.getByText(t('food.budget.around'))).toBeOnTheScreen();
 });
 
-test('the targets the calls set: calories, protein, carbs, fat, steps, training', async () => {
+// K1 (Evre 7 final walk, review §C): the page ended with a "Your targets" card of six prose lines; the targets are in Settings and This week.
+// Its four tests (the lines, no split, half a split, no calorie target) go with the card; the question left is whether the page still
+// shows no targets and, without a calorie target, says the budget comes with the first one.
+test('the page ends with the meals: no card of targets, with or without a split', async () => {
   await show();
-  for (const text of [
-    t('food.targets.kcal', { kcal: '2,300' }),
-    t('food.targets.protein', { g: 160 }),
-    t('food.targets.carbs', { g: 250 }),
-    t('food.targets.fat', { g: 70 }),
-    t('food.targets.steps', { steps: '8,000' }),
-    t('food.targets.training', { count: 3 }),
-  ]) {
-    expect(screen.getByText(text)).toBeOnTheScreen();
-  }
-  expect(screen.queryByText(t('food.targets.noSplit'))).toBeNull();
+  expect(screen.queryByTestId('targets')).toBeNull();
+  expect(screen.queryByText('Your targets')).toBeNull();
+  expect(screen.queryByText(/steps a day/)).toBeNull();
+  expect(screen.queryByText(/training sessions a week/)).toBeNull();
 });
 
-test('no split of carbs and fat fits: it says so, and makes up no number', async () => {
-  mockAnswers['/v1/targets'] = ok({ ...TARGETS, carbsG: undefined, fatG: undefined });
-  await show();
-  expect(screen.getByText(t('food.targets.noSplit'))).toBeOnTheScreen();
-  expect(screen.queryByText(t('food.targets.carbs', { g: 250 }))).toBeNull();
-  expect(screen.getByText(t('food.targets.protein', { g: 160 }))).toBeOnTheScreen();
-});
-
-test('half a split is no split: carbs without fat shows neither number', async () => {
-  mockAnswers['/v1/targets'] = ok({ ...TARGETS, fatG: undefined });
-  await show();
-  expect(screen.getByText(t('food.targets.noSplit'))).toBeOnTheScreen();
-  expect(screen.queryByText(t('food.targets.carbs', { g: 250 }))).toBeNull();
-});
-
-test('no calorie target yet: only the steps and the training days', async () => {
+test('no calorie target yet: the budget comes with the first one, and no targets are listed', async () => {
   mockAnswers['/v1/targets'] = ok({ stepsPerDay: 8000, trainingSessionsPerWeek: 3 });
   mockAnswers['/v1/days/{day}/budget'] = refused(404, 'NOT_FOUND');
   await show();
-  expect(screen.getByText(t('food.targets.steps', { steps: '8,000' }))).toBeOnTheScreen();
-  expect(screen.getByText(t('food.targets.training', { count: 3 }))).toBeOnTheScreen();
-  expect(screen.queryByText(t('food.targets.noSplit'))).toBeNull();
-  expect(screen.queryByText(t('food.targets.kcal', { kcal: '2,300' }))).toBeNull();
   expect(screen.getByText(t('food.budget.none'))).toBeOnTheScreen();
+  expect(screen.queryByTestId('targets')).toBeNull();
 });
 
 test('without the health data consent: one line and the way to Settings', async () => {

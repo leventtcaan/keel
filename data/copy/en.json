@@ -1209,16 +1209,6 @@
       "proteinDone": "Protein target reached",
       "none": "Your food budget comes with your first calorie target."
     },
-    "targets": {
-      "title": "Your targets",
-      "kcal": "{kcal} kcal a day",
-      "protein": "Protein {g} g",
-      "carbs": "Carbs {g} g",
-      "fat": "Fat {g} g",
-      "noSplit": "Carbs and fat: no split fits this target right now.",
-      "steps": "{steps} steps a day",
-      "training": "{count} training sessions a week"
-    },
     "consent": "Your food budget and targets need the health data consent.",
     "meals": {
       "noneDay": "Nothing logged this day.",
@@ -1306,6 +1296,7 @@
     "home": {
       "favorites": "Favorites",
       "favoritesEmpty": "Tap the heart on a food to keep it here.",
+      "empty": "Search for a food, or scan a barcode.",
       "usual": "Usually at {slot}",
       "recent": "Recent",
       "showAll": "Show all {count}",
@@ -1363,6 +1354,8 @@
       "save": "Save and add",
       "cancel": "Cancel",
       "invalid": "Check the name and the numbers.",
+      "needName": "Add a name.",
+      "check": "Check the {field}.",
       "failed": "Couldn't save it. Try again.",
       "barcode": "Barcode {gtin}"
     },
@@ -1398,7 +1391,8 @@
     },
     "saved": {
       "one": "{slot}, 1 item",
-      "other": "{slot}, {count} items"
+      "other": "{slot}, {count} items",
+      "toToday": "{detail} to Today"
     },
     "editTitle": "Correct a meal",
     "consent": {
@@ -1505,7 +1499,8 @@
       "notFound": "That product isn't in the food database yet. Find it by name.",
       "failed": "Couldn't look that barcode up. Check your connection, or find it by name.",
       "badNumber": "That number doesn't read as a barcode. Check the digits.",
-      "askAgain": "Try the camera again"
+      "askAgain": "Try the camera again",
+      "noCamera": "No camera here. Type the number below."
     }
   },
   "widget": {

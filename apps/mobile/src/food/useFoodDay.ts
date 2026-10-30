@@ -29,7 +29,7 @@ export type FoodDay = {
   suggestions: Schemas['Suggestion'][];
   /** That day's own totals, when it has meals (the strip's read): what a day without a target shows. */
   summary: Schemas['DaySummary'] | undefined;
-  /** The days of the strip with a meal logged. */
+  /** The days of the strip with a meal logged: the day shown by the list the page shows, the others by the strip's read. */
   loggedDays: ReadonlySet<string>;
   /** Those days with what each came to, oldest first: the days a day's meals can be copied from. */
   summaries: Schemas['DaySummary'][];
@@ -71,8 +71,9 @@ export function useFoodDay(selected: string | null): { today: string; day: strin
         load(() => api.GET('/v1/meals', { params: { query: { from: addDays(today, -(foodParams.slotsUsedWindowDays - 1)), to: today } } })),
       ]);
       const suggestions = suggested !== null && suggested.state === 'ready' ? suggested.value : [];
-      const summaries = days.state === 'ready' ? days.value : [];
-      const loggedDays = new Set(summaries.map((summary) => summary.day));
+      const summaries = days.state === 'ready' ? days.value.filter((entry) => entry.meals > 0) : [];
+      // A dot means the day has a meal: the strip's read says so for every day, the day shown is told by the list the page shows.
+      const loggedDays = new Set(summaries.map((entry) => entry.day));
       const summary = summaries.find((entry) => entry.day === day);
       const shownSlots = (shown.state === 'ready' ? shown.value : []).map((meal) => meal.slot);
       const logged = history.state === 'ready' ? history.value : [];
@@ -81,6 +82,10 @@ export function useFoodDay(selected: string | null): { today: string; day: strin
       if (shown.state === 'consent') return { day, budget, targets, meals: null, mealsRead: false, offers: [], suggestions: [], summary, loggedDays, summaries, slots, patternDays };
       const mealsRead = shown.state === 'ready';
       const meals = dayMeals(mealsRead ? shown.value : null, local, day);
+      if (mealsRead) {
+        if (meals.length > 0) loggedDays.add(day);
+        else loggedDays.delete(day);
+      }
       // Without the day's list a slot already logged could be offered again.
       const offers = mealsRead && before.state === 'ready' ? repeatOffers(before.value, meals) : [];
       return { day, budget, targets, meals, mealsRead, offers, suggestions, summary, loggedDays, summaries, slots, patternDays };

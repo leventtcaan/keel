@@ -202,6 +202,32 @@ describe('the day navigator', () => {
     expect(screen.getByText(kcal(90))).toBeOnTheScreen();
   });
 
+  // Evre 7 final walk: with Dinner logged first the page listed Breakfast, Dinner, Lunch (a grey pill), Snack.
+  test('filled and empty meals share one order: Breakfast, Lunch, Dinner, Snack, each in its own place', async () => {
+    mockMeals = { '2026-09-29': [meal('d9', 29, 19, 'DINNER', [item('Soup', [150, 170])])] };
+    mockDays = [{ day: '2026-09-29', meals: 1, eaten: NUTRIENTS([150, 170], [4, 5], [10, 12], [3, 4]) }];
+    await show();
+    const ids = screen.getAllByTestId(/^(meal|empty)-/).map((node) => node.props.testID as string);
+    expect(ids).toEqual(['empty-BREAKFAST', 'empty-LUNCH', 'meal-DINNER', 'empty-SNACK']);
+  });
+
+  test('a dot says the day has a meal, as the page does: a day the strip counts none for has none, and the day shown follows its own list', async () => {
+    mockMeals = { '2026-09-29': [BREAKFAST] };
+    mockDays = [
+      { day: '2026-09-24', meals: 0, eaten: NUTRIENTS([0, 0], [0, 0], [0, 0], [0, 0]) },
+      { day: '2026-09-29', meals: 1, eaten: NUTRIENTS([148, 176], [10, 14], [20, 30], [5, 8]) },
+    ];
+    await show();
+    expect(screen.getByRole('button', { name: new RegExp(`^${t('food.day.today')}, ${t('food.day.hasMeals')}`) })).toBeOnTheScreen();
+    expect(screen.getAllByRole('button', { name: new RegExp(t('food.day.hasMeals')) })).toHaveLength(1);
+    // The strip says the 28th has a meal, the page's own list for it is empty: the dot goes once the day is opened (day 24 of the walk).
+    mockDays = [{ day: '2026-09-28', meals: 1, eaten: NUTRIENTS([100, 110], [4, 5], [10, 12], [3, 4]) }, ...mockDays];
+    await press(screen.getByTestId('day-before'));
+    expect(screen.getByText(t('food.meals.noneDay'))).toBeOnTheScreen();
+    expect(screen.getAllByRole('button', { name: new RegExp(t('food.day.hasMeals')) })).toHaveLength(1); // only today's
+    expect(screen.getByTestId('day-2026-09-28')).toBeSelected();
+  });
+
   test('logging goes into the day shown: today\'s button, or a past day\'s, with the day in the link', async () => {
     await show();
     await press(screen.getByRole('button', { name: t('food.log') }));
@@ -298,6 +324,17 @@ describe('deleting where it stands, with Undo', () => {
       kind: 'meal',
       body: { clientId: expect.any(String), eatenAt: new Date(2026, 8, 29, 13, 0).toISOString(), slot: 'LUNCH', repeatOf: 'l1' },
     });
+  });
+
+  // Evre 7 final walk: "Saved Lunch, 2 items" after Log again today, from a past day, said no day.
+  test("logging a past day's meal again says in the banner that it went to Today", async () => {
+    mockMeals['2026-09-25'] = [meal('l2', 25, 12, 'LUNCH', [item('Rice', [200, 240]), item('Beans', [100, 120])])];
+    await show();
+    await press(screen.getByTestId('day-2026-09-25'));
+    await press(screen.getByTestId('menu-LUNCH'));
+    const [, , buttons] = alert.mock.calls[0] as [string, string | undefined, AlertButton[]];
+    await act(async () => buttons[0].onPress?.());
+    expect(within(banner()!).getByText(t('meal.saved.toToday', { detail: t('meal.saved.other', { slot: t('food.slot.LUNCH'), count: 2 }) }))).toBeOnTheScreen();
   });
 
   test('offline: nothing is deleted and it says a connection is needed; a server error says it could not', async () => {

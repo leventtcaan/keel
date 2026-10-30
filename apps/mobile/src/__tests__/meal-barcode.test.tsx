@@ -30,6 +30,7 @@ type Permission = { granted: boolean; canAskAgain: boolean };
 let mockStartPermission: Permission = { granted: true, canAskAgain: true };
 let mockAnswerPermission: Permission = { granted: true, canAskAgain: true };
 const mockRequest = jest.fn();
+let mockHasCamera = true;
 let mockCamera: { onBarcodeScanned?: (result: { data: string; type: string }) => void; barcodeScannerSettings?: unknown } | null = null;
 jest.mock('expo-camera', () => {
   const React = jest.requireActual<typeof import('react')>('react');
@@ -43,15 +44,18 @@ jest.mock('expo-camera', () => {
       };
       return [permission, request];
     },
-    CameraView: (props: NonNullable<typeof mockCamera>) => {
-      React.useEffect(() => {
-        mockCamera = props;
-        return () => {
-          mockCamera = null;
-        };
-      });
-      return null;
-    },
+    CameraView: Object.assign(
+      (props: NonNullable<typeof mockCamera>) => {
+        React.useEffect(() => {
+          mockCamera = props;
+          return () => {
+            mockCamera = null;
+          };
+        });
+        return null;
+      },
+      { isAvailableAsync: async () => mockHasCamera },
+    ),
   };
 });
 
@@ -76,6 +80,7 @@ jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServ
 beforeEach(() => {
   jest.clearAllMocks();
   mockCamera = null;
+  mockHasCamera = true;
   mockStartPermission = { granted: true, canAskAgain: true };
   mockAnswerPermission = { granted: true, canAskAgain: true };
   mockLookup = async () => ok(YOGURT);
@@ -189,6 +194,37 @@ test('an own food with nothing in it is not sent: the form says to check the nam
   expect(mockPOST.mock.calls.filter(([path]) => path === '/v1/foods')).toHaveLength(0);
 });
 
+// Evre 7 final walk: one wrong field was "Check the name and the numbers." Now it is named; several still get the whole line.
+describe('the own food form names the one field that is wrong', () => {
+  async function openForm() {
+    mockLookup = async () => refused(404, 'NOT_FOUND');
+    await openScanner();
+    await scan('8690504000000');
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.barcode.addIt') })));
+  }
+  const fill = async (label: string, value: string) => act(async () => fireEvent.changeText(screen.getByLabelText(t(label)), value));
+  const save = async () => act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.own.save') })));
+
+  test('no name: "Add a name."', async () => {
+    await openForm();
+    await fill('meal.own.kcal', '200');
+    await save();
+    expect(screen.getByText(t('meal.own.needName'))).toBeOnTheScreen();
+  });
+
+  test('no calories: "Check the calories."; a protein that is not a number: "Check the protein."', async () => {
+    await openForm();
+    await fill('meal.own.name', 'Zork bar');
+    await save();
+    expect(screen.getByText(t('meal.own.check', { field: 'calories' }))).toBeOnTheScreen();
+    await fill('meal.own.kcal', '200');
+    await fill('meal.own.protein', 'lots');
+    await save();
+    expect(screen.getByText(t('meal.own.check', { field: 'protein' }))).toBeOnTheScreen();
+    expect(mockPOST.mock.calls.filter(([path]) => path === '/v1/foods')).toHaveLength(0);
+  });
+});
+
 test('not looked up (offline, a code the server refuses): it says so', async () => {
   mockLookup = async () => {
     throw new TypeError('Network request failed');
@@ -209,6 +245,34 @@ test('the camera is asked for once; refused, it says so and the number can be ty
   await act(async () => fireEvent.changeText(screen.getByLabelText(t('meal.barcode.type')), ' 5000112548167 '));
   await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.barcode.lookUp') })));
   expect(mockPOST).toHaveBeenCalledWith('/v1/foods/barcode-lookup', { body: { gtin: '5000112548167' } });
+});
+
+// Evre 7 final walk: with no camera (the simulator) the sheet's top was a blank white square.
+test('no camera on the phone: it says so in one line, the typed number is right under it, and nothing is blank', async () => {
+  mockHasCamera = false;
+  await openScanner();
+  expect(screen.getByText(t('meal.barcode.noCamera'))).toBeOnTheScreen();
+  expect(mockCamera).toBeNull();
+  expect(screen.queryByRole('button', { name: t('meal.barcode.askAgain') })).toBeNull(); // permission is granted: nothing to ask again
+  await act(async () => fireEvent.changeText(screen.getByLabelText(t('meal.barcode.type')), '5000112548167'));
+  await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.barcode.lookUp') })));
+  expect(mockPOST).toHaveBeenCalledWith('/v1/foods/barcode-lookup', { body: { gtin: '5000112548167' } });
+});
+
+test('no camera, and the permission can still be asked: the same line, and "Try the camera again"', async () => {
+  mockHasCamera = false;
+  mockStartPermission = { granted: false, canAskAgain: true };
+  mockAnswerPermission = { granted: false, canAskAgain: true };
+  await openScanner();
+  expect(screen.getByText(t('meal.barcode.noCamera'))).toBeOnTheScreen();
+  expect(screen.getByRole('button', { name: t('meal.barcode.askAgain') })).toBeOnTheScreen();
+});
+
+test('a camera that fails to start (a mount error) falls back to the same line', async () => {
+  await openScanner();
+  expect(mockCamera).not.toBeNull();
+  await act(async () => (mockCamera as { onMountError?: () => void }).onMountError?.());
+  expect(screen.getByText(t('meal.barcode.noCamera'))).toBeOnTheScreen();
 });
 
 test('a typed number that is not a barcode is not sent', async () => {

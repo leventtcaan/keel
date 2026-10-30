@@ -52,6 +52,15 @@ export function emptySlotsOf(used: Slot[], logged: Slot[]): Slot[] {
   return used.filter((slot) => !logged.includes(slot));
 }
 
+/** The sections of one day, filled and empty alike, in the day's one order (Breakfast, Lunch, Dinner, Snack); a slot the app adds later goes last. */
+export function dayOrder(filled: Slot[], empty: Slot[]): Slot[] {
+  const place = (slot: Slot) => {
+    const at = ALL_SLOTS.indexOf(slot);
+    return at === -1 ? ALL_SLOTS.length : at;
+  };
+  return [...new Set([...filled, ...empty])].sort((a, b) => place(a) - place(b));
+}
+
 /** About how much a meal of the day is, from the day's target over the slots in use, to the nearest `meal_hint_round_kcal`. Null: no target or no slots. */
 export function perMealKcal(targetKcal: number | undefined, slots: number): number | null {
   if (targetKcal === undefined || slots < 1) return null;

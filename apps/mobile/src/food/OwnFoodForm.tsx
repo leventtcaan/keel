@@ -25,6 +25,8 @@ type Props = {
   onCreated: (food: Schemas['Food']) => void;
 };
 
+type Field = 'name' | 'serving' | 'kcal' | 'protein' | 'carbs' | 'fat';
+
 /** A number typed: empty is none, anything that is not 0 or more is wrong (null). */
 function amount(text: string): number | null | 'empty' {
   if (text.trim() === '') return 'empty';
@@ -57,7 +59,15 @@ export function OwnFoodForm({ gtin, initialName = '', onCancel, onCreated }: Pro
     const [p, c, f] = [amount(protein), amount(carbs), amount(fat)];
     // A macro left empty is none (0); the name, the serving and the calories are the label's first lines.
     if (name.trim() === '' || grams === 'empty' || grams === null || grams <= 0 || energy === 'empty' || energy === null || p === null || c === null || f === null) {
-      setProblem(t('meal.own.invalid'));
+      // One wrong field is named; several are the whole line.
+      const wrong: Field[] = [];
+      if (name.trim() === '') wrong.push('name');
+      if (grams === 'empty' || grams === null || grams <= 0) wrong.push('serving');
+      if (energy === 'empty' || energy === null) wrong.push('kcal');
+      if (p === null) wrong.push('protein');
+      if (c === null) wrong.push('carbs');
+      if (f === null) wrong.push('fat');
+      setProblem(wrong.length > 1 ? t('meal.own.invalid') : wrong[0] === 'name' ? t('meal.own.needName') : t('meal.own.check', { field: t(`meal.own.${wrong[0]}`).toLowerCase() }));
       return;
     }
     saving.current = true;
