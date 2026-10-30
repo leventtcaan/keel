@@ -20,7 +20,6 @@ import { MealList, RepeatOffers } from '@/food/MealList';
 import { foodParams } from '@/food/params';
 import { emptySlotsOf, perMealKcal } from '@/food/slots';
 import { savedMeal } from '@/food/savedMeal';
-import { TargetsCard } from '@/food/TargetsCard';
 import { useFoodDay } from '@/food/useFoodDay';
 import { useSaved } from '@/saved/saved';
 import { useAppServices } from '@/services/ServicesProvider';
@@ -138,8 +137,9 @@ export default function FoodScreen() {
       if (!(await consents.granted('HEALTH_DATA'))) return setProblem(t('food.repeat.noConsent'));
       const ids: string[] = [];
       for (const meal of logs) ids.push(await logMealAgain(services, meal, new Date().toISOString()));
-      if (ids.length === 1) return saved(savedMeal({ clientId: ids[0], slot: logs[0].slot, items: logs[0].items.length }, { api, takeBack, report }));
-      saved({ detail: t('food.copy.saved', { count: ids.length }), undo: undoAll(ids) });
+      // Logged from another day: the banner says it went to Today.
+      if (ids.length === 1) return saved(savedMeal({ clientId: ids[0], slot: logs[0].slot, items: logs[0].items.length, toToday: true }, { api, takeBack, report }));
+      saved({ detail: t('meal.saved.toToday', { detail: t('food.copy.saved', { count: ids.length }) }), undo: undoAll(ids) });
     });
 
   /** Takes back every meal logged by one action (its clientIds), as one Undo. */
@@ -199,7 +199,6 @@ export default function FoodScreen() {
       <DayTotals budget={data.budget} targets={data.targets} {...(data.summary === undefined ? {} : { summary: data.summary })} hint={hint} />
     );
   const noBudget = noTarget ? <Text style={[styles.text, { color: color.textSecondary }]}>{t('food.budget.none')}</Text> : null;
-  const targets = data !== null && isToday && data.targets.state === 'ready' ? <TargetsCard targets={data.targets.value} /> : null;
   const meals =
     data !== null && data.meals !== null ? (
       <MealList
@@ -267,7 +266,6 @@ export default function FoodScreen() {
         {offers}
         {copy}
         {problem !== null && <ProblemText style={[styles.text, { color: color.text }]}>{problem}</ProblemText>}
-        {targets}
       </ScrollView>
       {dock}
     </SafeAreaView>

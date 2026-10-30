@@ -1399,7 +1399,8 @@
         "meal.quickAdd.open",
         "meal.own.short",
         "meal.tray.viewDay",
-        "meal.tray.empty"
+        "meal.tray.empty",
+        "meal.home.empty"
       ],
       "notFirstView": [
         "consent.health_data.title",
@@ -1459,6 +1460,7 @@
         "meal.picker.spoken",
         "meal.picker.spokenEmpty",
         "meal.quick.undoFailed",
+        "meal.saved.toToday",
         "meal.quick.undoOffline",
         "meal.quick.undoneSaid",
         "meal.quickAdd.folded",
@@ -1547,7 +1549,7 @@
       "note": "The reader as the person meets it: its title, the typed number, Look up, Close. Why the camera is off and what a wrong number says are other states, off the first view.",
       "file": "src/food/BarcodeScanner.tsx",
       "keys": ["meal.barcode.title", "meal.barcode.type", "meal.barcode.lookUp", "meal.barcode.close"],
-      "notFirstView": ["meal.barcode.denied", "meal.barcode.invalid", "meal.barcode.askAgain"]
+      "notFirstView": ["meal.barcode.denied", "meal.barcode.invalid", "meal.barcode.askAgain", "meal.barcode.noCamera"]
     },
     {
       "screen": "checkin",

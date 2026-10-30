@@ -14,11 +14,12 @@ const takeBackMeal = ({ api, takeBack }: Pick<Services, 'api' | 'takeBack'>, cli
 
 /**
  * A new meal kept on the phone, as the app's one banner shows it (K-1044, ADR-070 Ek 2 #6): "Saved · Lunch, 3 items" and
- * Undo. Undo is the meal list's own delete.
+ * Undo. Undo is the meal list's own delete. `toToday`: the meal was brought from another day, so the banner names the day it landed on.
  */
-export function savedMeal(meal: { clientId: string; slot: components['schemas']['MealSlot']; items: number }, services: Services): Save {
+export function savedMeal(meal: { clientId: string; slot: components['schemas']['MealSlot']; items: number; toToday?: boolean }, services: Services): Save {
+  const detail = t(meal.items === 1 ? 'meal.saved.one' : 'meal.saved.other', { slot: t(`food.slot.${meal.slot}`), count: meal.items });
   return {
-    detail: t(meal.items === 1 ? 'meal.saved.one' : 'meal.saved.other', { slot: t(`food.slot.${meal.slot}`), count: meal.items }),
+    detail: meal.toToday === true ? t('meal.saved.toToday', { detail }) : detail,
     undo: undoThrough(() => takeBackMeal(services, meal.clientId), services.report, words()),
   };
 }

@@ -207,6 +207,9 @@ describe("a past meal of this meal as one row (\"Same as yesterday's lunch\")", 
     expect(screen.queryByTestId('browse')).toBeNull();
     expect(screen.queryByText(t('meal.home.recent'))).toBeNull();
     expect(screen.getByLabelText(t('meal.search.label'))).toBeOnTheScreen();
+    // Evre 7 final walk: below Quick add / Create food the sheet was blank; now one line says how to start.
+    expect(screen.getByTestId('browse-empty')).toBeOnTheScreen();
+    expect(screen.getByText(t('meal.home.empty'))).toBeOnTheScreen();
   });
 
   test('two taps at once log one meal', async () => {
