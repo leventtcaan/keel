@@ -124,9 +124,9 @@ class FoodMappingTests {
         Map<String, Object> cup = map(post("/v1/food-estimates", Map.of("items", List.of(item("fdc:168878", 1, "1 cup", null)))));
         assertThat(cup).containsEntry("kcal", Map.of("low", 127, "high", 283));
 
-        // 250 ml whole milk × 1.03 g/ml = 257.5 g, eyeballed: 61 × 0.9 × 2.575 × 0.5 = 70.68 → 70
+        // 250 ml whole milk × 1.03 g/ml = 257.5 g, eyeballed: the number is 157 (157.075); 61 × 1.1 × 2.575 × 1.5 = 259.2 is 102.2 over it, the wider side: 157 ± 103 (Ek 8)
         Map<String, Object> milk = map(post("/v1/food-estimates", Map.of("items", List.of(item("fdc:746782", 250, "ml", null)))));
-        assertThat((Map<String, Object>) milk.get("kcal")).containsEntry("low", 70);
+        assertThat((Map<String, Object>) milk.get("kcal")).containsEntry("low", 54);
         assertThat(post("/v1/food-estimates", Map.of("items", List.of(item("fdc:171477", 250, "ml", null))))).as("no density").hasStatus(400);
         assertThat(post("/v1/food-estimates", Map.of("items", List.of(item("fdc:171477", 1, "1 bucket", null))))).as("no such serving").hasStatus(400);
     }
