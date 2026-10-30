@@ -20,7 +20,7 @@ import { exerciseName } from '@/train/program';
  * wheel under the row, one at a time; flicked to a number, the load reaches the draft in kg as the stepper's taps did. Each is
  * skippable: one left unset finds its load in session 1, none is derived from another (the wheel starts on the empty bar, a
  * place, not a suggestion). Only for the experienced and an own program (flow.ts); the last question, so Continue prepares the
- * plan. "Skip" goes on with none.
+ * plan. The dock has one button: "Skip for now" while nothing is set (none is sent), "Continue" once a lift is.
  */
 export default function WeightsStep() {
   const { draft, update } = useDraft();
@@ -38,11 +38,20 @@ export default function WeightsStep() {
     update({ startingWeights: {} });
     router.push(routeAfter(null));
   };
+  const anySet = Object.keys(draft.startingWeights).length > 0;
   return (
     <StepFrame
       step="weights"
       title={t('onboarding.weights.title')}
-      why={t('onboarding.weights.why', { reps: P.startingWeightReps })}>
+      why={t('onboarding.weights.why', { reps: P.startingWeightReps })}
+      // One exit in the dock: Skip while nothing is set (it sends none), Continue once a lift is (it sends those).
+      actions={
+        anySet ? (
+          <Button label={t('onboarding.continue')} onPress={() => router.push(routeAfter(null))} />
+        ) : (
+          <Button label={t('onboarding.weights.skip')} onPress={skip} />
+        )
+      }>
       <View>
         {startingWeightMoves(draft).map((move) => (
           <LoadRow
@@ -58,14 +67,10 @@ export default function WeightsStep() {
         ))}
       </View>
       <Text style={[styles.tap, { color: color.muted }]}>{t('onboarding.weights.tap')}</Text>
-      <View style={styles.skip}>
-        <Button label={t('onboarding.weights.skip')} variant="ghost" size="sm" onPress={skip} />
-      </View>
     </StepFrame>
   );
 }
 
 const styles = StyleSheet.create({
   tap: { fontSize: tokens.type.bodySmall },
-  skip: { alignItems: 'center', paddingTop: tokens.space.sm },
 });

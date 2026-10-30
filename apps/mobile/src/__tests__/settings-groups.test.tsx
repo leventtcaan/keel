@@ -248,11 +248,11 @@ describe('the groups', () => {
     }
   });
 
-  test('Sign out and Delete account are destructive rows: the warning colour; Export is not', async () => {
+  test('Sign out and Delete account are neutral rows like Export: red is only inside their system alerts', async () => {
     await show();
     const ink = (name: string) => within(button(name)).getByText(name);
-    expect(ink(t('settings.signOut.title'))).toHaveStyle({ color: palettes.light.warn });
-    expect(ink(t('settings.delete.title'))).toHaveStyle({ color: palettes.light.warn });
+    expect(ink(t('settings.signOut.title'))).toHaveStyle({ color: palettes.light.text });
+    expect(ink(t('settings.delete.title'))).toHaveStyle({ color: palettes.light.text });
     expect(ink(t('settings.export.title'))).toHaveStyle({ color: palettes.light.text });
   });
 
@@ -833,7 +833,9 @@ describe('account', () => {
     await press(t('settings.export.title'));
     expect(mockServices.exportData).toHaveBeenCalledTimes(1);
     await press(t('settings.signOut.title'));
-    expect(mockServices.signOut).toHaveBeenCalledTimes(1);
+    expect(mockServices.signOut).not.toHaveBeenCalled();
+    expect(alert).toHaveBeenCalledWith(t('settings.signOut.confirmTitle'), t('settings.signOut.confirmBody'), expect.any(Array));
+    alert.mockClear();
     await press(t('settings.delete.title'));
     expect(alert).toHaveBeenCalledWith(t('settings.delete.confirmTitle'), expect.any(String), expect.any(Array));
     expect(mockServices.deleteAccount).not.toHaveBeenCalled();

@@ -14,11 +14,11 @@ import { useAction } from './useAction';
 
 /**
  * The account as one grouped list (ADR-070 Ek 2 #2), the same in Settings and in the paywall's Account sheet: export (K-214,
- * a JSON file), sign out (warns when entries have not reached the server: a sign-out drops them, K-304; and when progress
+ * a JSON file), sign out (asks first; warns when entries have not reached the server: a sign-out drops them, K-304; and when progress
  * photos are on the phone: they are only there, and go with the account, K-614) and delete (App Review 5.1.1(v): in the app;
  * asks first — and, while Apple would go on charging a subscription or the phone cannot tell, says so, K-811). Sign out and
- * Delete account are the destructive rows, in the warning colour; their questions are system alerts, on the screen wherever
- * the list is scrolled (ADR-087 #1). "Cancel or change plan" stays in Settings' subscription group. `title` and `footer` are
+ * Delete account are plain rows (red is only inside the system alerts, evre 7 §A); their questions are system alerts, on
+ * the screen wherever the list is scrolled (ADR-087 #1), and sign out is always asked, even with nothing at risk. "Cancel or change plan" stays in Settings' subscription group. `title` and `footer` are
  * for the page that wants them: Settings has the title, the sheet the footer.
  */
 export function AccountSection({ title, footer }: { title?: string; footer?: string } = {}) {
@@ -32,12 +32,15 @@ export function AccountSection({ title, footer }: { title?: string; footer?: str
   const leave = () =>
     void run(async () => {
       const [pending, kept] = await Promise.all([pendingCount(), photos.photos()]);
-      if (pending === 0 && kept.length === 0) return signOut();
+      // Always asked: one tap must not sign a paid account out. Nothing at risk: the short question; else the warnings.
+      const atRisk = pending > 0 || kept.length > 0;
       askFirst({
         title: t('settings.signOut.confirmTitle'),
-        body: [...(pending > 0 ? [t('settings.signOut.pending', { count: pending })] : []), ...(kept.length > 0 ? [t('settings.signOut.photos')] : [])],
-        confirmLabel: t('settings.signOut.confirm'),
-        keepLabel: t('settings.signOut.keep'),
+        body: atRisk
+          ? [...(pending > 0 ? [t('settings.signOut.pending', { count: pending })] : []), ...(kept.length > 0 ? [t('settings.signOut.photos')] : [])]
+          : t('settings.signOut.confirmBody'),
+        confirmLabel: atRisk ? t('settings.signOut.confirm') : t('settings.signOut.title'),
+        keepLabel: atRisk ? t('settings.signOut.keep') : t('settings.signOut.cancel'),
         onConfirm: () => void run(signOut, {}),
       });
     }, {});
@@ -60,8 +63,8 @@ export function AccountSection({ title, footer }: { title?: string; footer?: str
     <View style={styles.stack}>
       <ListGroup title={title} footer={footer} testID="group-account">
         <ListRow icon="square.and.arrow.up" label={t('settings.export.title')} accessibilityHint={t('settings.export.note')} disabled={busy} onPress={exportAll} />
-        <ListRow icon="rectangle.portrait.and.arrow.right" label={t('settings.signOut.title')} destructive disabled={busy} onPress={leave} />
-        <ListRow icon="trash" label={t('settings.delete.title')} accessibilityHint={t('settings.delete.note')} destructive disabled={busy} onPress={askToDelete} />
+        <ListRow icon="rectangle.portrait.and.arrow.right" label={t('settings.signOut.title')} disabled={busy} onPress={leave} />
+        <ListRow icon="trash" label={t('settings.delete.title')} accessibilityHint={t('settings.delete.note')} disabled={busy} onPress={askToDelete} />
       </ListGroup>
       {problem !== null && <ProblemText style={[styles.text, { color: color.text }]}>{problem}</ProblemText>}
     </View>

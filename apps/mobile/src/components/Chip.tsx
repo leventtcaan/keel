@@ -14,6 +14,8 @@ type Props = {
   accessibilityLabel?: string;
   /** A full touch target (size.touch tall), where the chip is a control of its own rather than one of a dense row. */
   touch?: boolean;
+  /** The one choice still missing before the step can go on: outlined in the accent until one is made. */
+  needed?: boolean;
   onPress: () => void;
 };
 
@@ -21,11 +23,11 @@ type Props = {
  * A choice among a few; the selected one is filled with the text colour (prototype `.chip[aria-pressed]`). On the page
  * that equals the decision-block colours; inside the block (inverse palette) it flips, so it never vanishes into it.
  */
-export function Chip({ label, selected = false, disabled = false, accessibilityLabel, touch = false, onPress }: Props) {
+export function Chip({ label, selected = false, disabled = false, accessibilityLabel, touch = false, needed = false, onPress }: Props) {
   const { color } = useTheme();
   const fill = selected
     ? { backgroundColor: color.text, borderColor: color.text }
-    : { backgroundColor: color.surface, borderColor: color.edge };
+    : { backgroundColor: color.surface, borderColor: needed ? color.accent : color.edge, ...(needed ? { borderWidth: tokens.border.outline } : {}) };
   return (
     <Pressable
       accessibilityRole="button"

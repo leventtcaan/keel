@@ -205,13 +205,21 @@ describe('#paywall after the plan (ADR-072 #7)', () => {
     expect(screen.getAllByText(weekdayDate(FIRST_CALL))).toHaveLength(2);
   });
 
-  test('three values: the program for the days (or the own program, tuned), every set\'s weight and reps, the call on its day', async () => {
+  test('three values with calls: the call on its day, every set\'s weights from last time, cardio and food that adjust', async () => {
     mockPreview = PREVIEW;
     await show();
-    for (const key of ['subscription.values.built', 'subscription.values.sets']) expect(screen.getByText(t(key))).toBeOnTheScreen();
+    for (const key of ['subscription.values.sets', 'subscription.values.adjust']) expect(screen.getByText(t(key))).toBeOnTheScreen();
     expect(screen.getByText(t('subscription.values.call', { day: t('onboarding.schedule.dayName.MONDAY') }))).toBeOnTheScreen();
+    expect(screen.queryByText(t('subscription.values.built'))).toBeNull();
+  });
+
+  test('without calls the program line stays: built for the days, or the own program, tuned', async () => {
+    mockPreview = { ...PREVIEW, firstCall: null };
+    await show();
+    expect(screen.getByText(t('subscription.values.built'))).toBeOnTheScreen();
+    expect(screen.getByText(t('subscription.values.sets'))).toBeOnTheScreen();
     await screen.unmount();
-    mockPreview = { ...PREVIEW, own: true };
+    mockPreview = { ...PREVIEW, firstCall: null, own: true };
     await show();
     expect(screen.getByText(t('subscription.values.own'))).toBeOnTheScreen();
     expect(screen.queryByText(t('subscription.values.built'))).toBeNull();

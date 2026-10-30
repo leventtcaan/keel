@@ -56,6 +56,11 @@ type Props = {
    * empty day (a typed program in onboarding has no server program yet).
    */
   onAddDay?: () => void;
+  /**
+   * Whether a day with no move says "Add at least one move." Default yes (Edit: a day was just emptied). A screen that opens the
+   * editor on an empty day (onboarding's "Type it in") turns it on only after the user pressed its confirm with nothing.
+   */
+  needMoves?: boolean;
 };
 
 /**
@@ -75,7 +80,7 @@ const movesWord = (count: number) => t(count === 1 ? 'programEditor.moves.one' :
  * can be put back (Undo). A new day opens; under the cards, "Add a day" while there are fewer than a program has. The
  * rules are programEdit.ts; what is done with the program, and with an own move, is the screen's.
  */
-export function ProgramEditor({ days, onChange, moves, makeOwn, onAddDay }: Props) {
+export function ProgramEditor({ days, onChange, moves, makeOwn, onAddDay, needMoves = true }: Props) {
   const { color } = useTheme();
   const byId = useMemo(() => new Map(moves.map((m) => [m.id, m])), [moves]);
   const [open, setOpen] = useState<string | null>(days[0]?.id ?? null);
@@ -97,6 +102,8 @@ export function ProgramEditor({ days, onChange, moves, makeOwn, onAddDay }: Prop
   };
   const removeDay = (day: EditedDay, at: number) => {
     onChange((all) => withoutDay(all, at));
+    // Nothing in it, nothing to put back: no Undo bar, no announcement of a loss.
+    if (day.moves.length === 0) return;
     gone({ name: day.name, undo: (all) => withDayAt(all, day, at), where: { at } });
   };
   const removeMove = (day: EditedDay, index: number) => {
@@ -156,6 +163,8 @@ export function ProgramEditor({ days, onChange, moves, makeOwn, onAddDay }: Prop
           open={open === day.id}
           onOpen={() => setOpen(open === day.id ? null : day.id)}
           alone={days.length === 1}
+          dayCount={days.length}
+          needMoves={needMoves}
           taken={(w) => weekdayTaken(days, at, w)}
           byId={byId}
           onChange={onChange}
@@ -180,6 +189,9 @@ type DayProps = {
   onOpen: () => void;
   /** The only day: it stays. */
   alone: boolean;
+  /** How many days the program has: an "any day" day says the plan has that many. */
+  dayCount: number;
+  needMoves: boolean;
   taken: (weekday: Schemas['Weekday']) => boolean;
   byId: ReadonlyMap<string, Move>;
   onChange: Update;
@@ -191,7 +203,7 @@ type DayProps = {
   undo: { index: number; bar: ReactNode } | null;
 };
 
-function DayCard({ day, at, open, onOpen, alone, taken, byId, onChange, onRemoveDay, onRemoveMove, onReorder, onAddMove, undo }: DayProps) {
+function DayCard({ day, at, open, onOpen, alone, dayCount, needMoves, taken, byId, onChange, onRemoveDay, onRemoveMove, onReorder, onAddMove, undo }: DayProps) {
   const { color } = useTheme();
   const weekday = day.weekday === undefined ? t('programEditor.anyDay') : t(`programEditor.weekdayName.${day.weekday}`);
   const moveWords = day.moves.length === 0 ? t('programEditor.noMovesMeta') : movesWord(day.moves.length);
@@ -216,38 +228,46 @@ function DayCard({ day, at, open, onOpen, alone, taken, byId, onChange, onRemove
   }
 
   const toggle = (w: Schemas['Weekday']) => onChange((all) => withWeekday(all, at, all[at].weekday === w ? undefined : w));
-  // Removing a day is asked first, by the system's own alert (ADR-087 #1): the day and its moves go, with Undo after.
+  // Removing a day with moves is asked first, by the system's own alert (ADR-087 #1): the day and its moves go, with Undo after.
   const remove = alone ? null : (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={t('programEditor.removeDayLabel', { day: day.name })}
       onPress={() =>
-        askFirst({
-          title: t('programEditor.removeDayAsk', { day: day.name }),
-          body: t('programEditor.removeDayBody', { moves: moveWords }),
-          confirmLabel: t('programEditor.removeDayConfirm'),
-          keepLabel: t('programEditor.keep'),
-          onConfirm: onRemoveDay,
-        })
+        // An empty day goes at once: nothing is lost, so nothing is asked.
+        day.moves.length === 0
+          ? onRemoveDay()
+          : askFirst({
+              title: t('programEditor.removeDayAsk', { day: day.name }),
+              body: t('programEditor.removeDayBody', { moves: moveWords }),
+              confirmLabel: t('programEditor.removeDayConfirm'),
+              keepLabel: t('programEditor.keep'),
+              onConfirm: onRemoveDay,
+            })
       }
       style={({ pressed }) => [styles.remove, pressed && styles.dim]}>
       <Icon name="trash" size="small" tone="warn" />
       <Text style={[styles.removeText, { color: color.warn }]}>{t('programEditor.removeDay')}</Text>
     </Pressable>
   );
-  // One row of captions over the moves' steppers (each stepper also says its own name to VoiceOver).
-  const captions =
-    day.moves.length === 0 ? (
-      <Text style={[styles.small, { color: color.text }]}>{t('programEditor.noMoves')}</Text>
-    ) : (
-      <View style={styles.captions} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
-        {(['sets', 'repsMin', 'repsMax'] as const).map((key) => (
-          <Text key={key} style={[styles.caption, { color: color.muted }]}>
-            {t(`programEditor.${key}`)}
-          </Text>
-        ))}
-      </View>
-    );
+  // The steppers' captions: once, over the first move's steppers (each stepper also says its own name to VoiceOver).
+  const captions = (
+    <View style={styles.captions} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+      {(['sets', 'repsMin', 'repsMax'] as const).map((key) => (
+        <Text key={key} style={[styles.caption, { color: color.muted }]}>
+          {t(`programEditor.${key}`)}
+        </Text>
+      ))}
+    </View>
+  );
+  const noMoves = day.moves.length === 0 && needMoves ? <Text style={[styles.small, { color: color.text }]}>{t('programEditor.noMoves')}</Text> : null;
+  // No weekday is a choice with a consequence: said, with what the plan then is.
+  const anyDay =
+    day.weekday === undefined ? (
+      <Text style={[styles.small, { color: color.muted }]}>
+        {t('programEditor.anyDayNote', { days: t(dayCount === 1 ? 'programEditor.days.one' : 'programEditor.days.other', { count: dayCount }) })}
+      </Text>
+    ) : null;
   const undoAt = (index: number) => (undo !== null && undo.index === index ? undo.bar : null);
   return (
     <View testID={`day-card-${at}`} style={[styles.day, { borderColor: color.line }]}>
@@ -267,7 +287,8 @@ function DayCard({ day, at, open, onOpen, alone, taken, byId, onChange, onRemove
           />
         ))}
       </View>
-      {captions}
+      {anyDay}
+      {noMoves}
       {day.moves.map((move, index) => [
         undoAt(index),
         <MoveRow
@@ -276,6 +297,7 @@ function DayCard({ day, at, open, onOpen, alone, taken, byId, onChange, onRemove
           name={exerciseName(move.exerciseId, byId)}
           onStep={(field, by) => onChange((all) => stepped(all, at, index, field, by))}
           first={index === 0}
+          captions={index === 0 ? captions : null}
           last={index === day.moves.length - 1}
           dayName={day.name}
           onRemove={() => onRemoveMove(index)}
@@ -304,6 +326,8 @@ type MoveProps = {
   name: string;
   dayName: string;
   first: boolean;
+  /** The steppers' captions, over the steppers (the first move's only). */
+  captions: ReactNode;
   last: boolean;
   onStep: (field: Stepped, by: number) => void;
   onRemove: () => void;
@@ -311,7 +335,7 @@ type MoveProps = {
 };
 
 /** A move of the day: its name, remove, and three steppers: the sets, the fewest and the most reps. */
-function MoveRow({ move, name, dayName, first, last, onStep, onRemove, onMove }: MoveProps) {
+function MoveRow({ move, name, dayName, first, captions, last, onStep, onRemove, onMove }: MoveProps) {
   const { color } = useTheme();
   // The system's action sheet: move it up or down the day, or take it out (the red one; Undo follows).
   const options = () => {
@@ -351,6 +375,7 @@ function MoveRow({ move, name, dayName, first, last, onStep, onRemove, onMove }:
           <Icon name="ellipsis.circle" />
         </Pressable>
       </View>
+      {captions}
       <View style={styles.steppers}>
         {stepper('sets', 'programEditor.setsLabel', move.sets)}
         {stepper('min', 'programEditor.minLabel', move.reps.min)}

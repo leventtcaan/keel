@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Chip } from '@/components/Chip';
 import { t } from '@/copy';
+import { stepComplete } from '@/onboarding/draft';
 import { useDraft } from '@/onboarding/OnboardingContext';
 import { StepFrame } from '@/onboarding/StepFrame';
 import { Wheel } from '@/onboarding/Wheel';
@@ -59,8 +60,10 @@ export default function AboutStep() {
       />
     ) : null;
 
+  // Continue is grey for a reason the user cannot see: when sex is the only thing missing, it is said and the choices are outlined.
+  const onlySex = draft.sex === null && stepComplete('about', { ...draft, sex: 'MALE' }, system, thisYear);
   return (
-    <StepFrame step="about" title={t('onboarding.about.title')} why={t('onboarding.about.why')}>
+    <StepFrame step="about" title={t('onboarding.about.title')} why={t('onboarding.about.why')} hint={onlySex ? t('onboarding.about.pickSex') : undefined}>
       <View style={styles.row}>
         <Chip label={t('onboarding.about.metric')} selected={metric} onPress={() => choose('METRIC')} />
         <Chip label={t('onboarding.about.imperial')} selected={!metric} onPress={() => choose('IMPERIAL')} />
@@ -86,8 +89,8 @@ export default function AboutStep() {
       </View>
       <Text style={[styles.label, { color: color.muted }]}>{t('onboarding.about.sex')}</Text>
       <View style={styles.row}>
-        <Chip label={t('onboarding.about.male')} selected={draft.sex === 'MALE'} onPress={() => update({ sex: 'MALE' })} />
-        <Chip label={t('onboarding.about.female')} selected={draft.sex === 'FEMALE'} onPress={() => update({ sex: 'FEMALE' })} />
+        <Chip label={t('onboarding.about.male')} selected={draft.sex === 'MALE'} needed={onlySex} onPress={() => update({ sex: 'MALE' })} />
+        <Chip label={t('onboarding.about.female')} selected={draft.sex === 'FEMALE'} needed={onlySex} onPress={() => update({ sex: 'FEMALE' })} />
       </View>
     </StepFrame>
   );

@@ -54,10 +54,18 @@ describe.each([
   };
 
   describe('Sign out', () => {
-    test('nothing waiting and no photos on the phone: signs out at once, nothing to ask', async () => {
+    test('nothing waiting and no photos on the phone: still asks first, short: "Sign out?", Cancel / Sign out; nothing runs yet', async () => {
       await show();
       await press(t('settings.signOut.title'));
-      expect(alert).not.toHaveBeenCalled();
+      const { title, message, buttons } = asked();
+      expect(title).toBe(t('settings.signOut.confirmTitle'));
+      expect(message).toBe(t('settings.signOut.confirmBody'));
+      expect(buttons.map((b) => [b.text, b.style])).toEqual([
+        [t('settings.signOut.cancel'), 'cancel'],
+        [t('settings.signOut.title'), 'destructive'],
+      ]);
+      expect(mockServices.signOut).not.toHaveBeenCalled();
+      await act(async () => buttons.find((b) => b.style === 'destructive')!.onPress?.());
       expect(mockServices.signOut).toHaveBeenCalledTimes(1);
     });
 
@@ -177,8 +185,8 @@ describe('the paywall account sheet', () => {
     );
     expect(rowsOf(screen.getByTestId('group-account-card'))).toEqual(sheet);
     expect(sheet).toEqual([t('settings.export.title'), t('settings.signOut.title'), t('settings.delete.title')]);
-    expect(within(screen.getByRole('button', { name: t('settings.signOut.title') })).getByText(t('settings.signOut.title'))).toHaveStyle({ color: palettes.light.warn });
-    expect(within(screen.getByRole('button', { name: t('settings.delete.title') })).getByText(t('settings.delete.title'))).toHaveStyle({ color: palettes.light.warn });
+    expect(within(screen.getByRole('button', { name: t('settings.signOut.title') })).getByText(t('settings.signOut.title'))).toHaveStyle({ color: palettes.light.text });
+    expect(within(screen.getByRole('button', { name: t('settings.delete.title') })).getByText(t('settings.delete.title'))).toHaveStyle({ color: palettes.light.text });
     expect(screen.queryByText(t('settings.account.footer'))).toBeNull(); // Settings has the title, the sheet the footer
   });
 

@@ -79,11 +79,13 @@ type Props = {
   continueLabel?: string;
   /** In place of Continue: steps whose answer is a choice of buttons (a consent, the last step). */
   actions?: ReactNode;
+  /** One line under Continue, saying why it is grey (already translated); only while that is the one thing missing. */
+  hint?: string;
   /** While a step's answer is on its way to the server, leaving it would leave that answer behind. */
   backDisabled?: boolean;
 };
 
-export function StepFrame({ step, title, why, children, chosen = false, continueLabel, actions, backDisabled = false }: Props) {
+export function StepFrame({ step, title, why, children, chosen = false, continueLabel, actions, hint, backDisabled = false }: Props) {
   const { color } = useTheme();
   const { draft } = useDraft();
   const units = useUnits();
@@ -112,12 +114,15 @@ export function StepFrame({ step, title, why, children, chosen = false, continue
   const bottom =
     actions ??
     (chosen ? null : (
-      <Button
-        label={continueLabel ?? t('onboarding.continue')}
-        // A step off the walk (index -1) leads nowhere: nothing opens it either.
-        onPress={() => index >= 0 && router.push(routeAfter(next))}
-        disabled={!ready}
-      />
+      <>
+        <Button
+          label={continueLabel ?? t('onboarding.continue')}
+          // A step off the walk (index -1) leads nowhere: nothing opens it either.
+          onPress={() => index >= 0 && router.push(routeAfter(next))}
+          disabled={!ready}
+        />
+        {!ready && hint !== undefined && <Text style={[styles.hint, { color: color.textSecondary }]}>{hint}</Text>}
+      </>
     ));
 
   return (
@@ -164,6 +169,7 @@ const styles = StyleSheet.create({
   steps: { flex: 1, flexDirection: 'row', gap: tokens.space.xs },
   segment: { flex: 1, height: tokens.size.track, borderRadius: tokens.radius.track },
   why: { fontSize: tokens.type.body },
+  hint: { fontSize: tokens.type.bodySmall, textAlign: 'center' },
   body: {
     paddingHorizontal: tokens.space.lg,
     paddingVertical: tokens.space.md,

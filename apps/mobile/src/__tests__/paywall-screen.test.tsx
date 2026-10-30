@@ -198,6 +198,13 @@ test('already subscribed on the server: nothing to sell', async () => {
   expect(mockStore.plans).not.toHaveBeenCalled();
 });
 
+test('already subscribed: the status and the day it renews or ends come from what the server already says (no plan name: it does not carry one)', async () => {
+  mockAnswers = [ok({ ...TRIAL, status: 'ACTIVE', accessUntil: '2026-11-12T12:00:00Z' })];
+  await show();
+  expect(screen.getByText(t('settings.subscription.status.ACTIVE', { date: 'Nov 12, 2026' }))).toBeOnTheScreen();
+  expect(screen.getByText('Renews on Nov 12, 2026')).toBeOnTheScreen();
+});
+
 test('no connection: nothing can be bought; trying again asks again', async () => {
   mockAnswers = ['offline'];
   await show();

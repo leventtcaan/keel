@@ -45,8 +45,6 @@ export type PaywallWords = {
   /** Its first line, and its second (the trial's length, in the accent colour); none without a trial. */
   lead: string;
   accent: string | null;
-  /** Under the headline: until when nothing is charged (the trial only). */
-  sub: { lead: string; date: string } | null;
   /** The cancel note, in the scroll. The price and the renewal are said once, in `dock` by the button (Apple 3.1.2, K-1066). */
   terms: string[];
   /**
@@ -75,14 +73,13 @@ export function paywallWords(plan: Plan, today: string): PaywallWords {
   const cancel = t('subscription.cancelNote');
   if (plan.trial === null) {
     const title = t('subscription.title');
-    return { title, lead: title, accent: null, sub: null, terms: [cancel], dock: dockWords(plan, null), action: t('subscription.subscribe') };
+    return { title, lead: title, accent: null, terms: [cancel], dock: dockWords(plan, null), action: t('subscription.subscribe') };
   }
   const trial = span(plan.trial);
   return {
     title: t('subscription.titleTrial', { trial }),
     lead: t('subscription.titleLead'),
     accent: t('subscription.titleFor', { trial }),
-    sub: { lead: t('subscription.sub.lead'), date: weekdayDate(after(today, plan.trial.count, plan.trial.unit)) },
     terms: [cancel],
     dock: dockWords(plan, t('subscription.dock.noCharge')),
     action: t('subscription.startTrial', { trial: t(`subscription.trial.${plan.trial.unit}`, { count: String(plan.trial.count) }) }),

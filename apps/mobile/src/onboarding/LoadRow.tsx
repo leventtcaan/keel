@@ -1,5 +1,5 @@
 /**
- * One move's starting weight (prototype section 11 frame 7, #ob-weights; K-1058): its name and the load, "Not set" until moved.
+ * One move's starting weight (prototype section 11 frame 7, #ob-weights; K-1058): its name and the load; until moved, "Not set" as a quiet plus slot, not a value.
  * A tap opens the lift's wheel under the row (the same Wheel About you uses), flicked to a number in the lift's load steps;
  * a tap on the open row closes it. The wheel's middle row is only a place to start (the empty bar), never a suggested load
  * (ADR-072). A lift set by mistake goes back to "Not set" with "Clear" under its wheel. VoiceOver hears the row as one button, name and
@@ -8,6 +8,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
+import { Icon } from '@/components/Icon';
 import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
@@ -37,6 +38,15 @@ export function LoadRow({ name, kg, units, open, onToggle, onChange, onClear }: 
     kg === undefined ? null : (
       <Button label={t('onboarding.weights.clear')} accessibilityLabel={t('onboarding.weights.clearLabel', { name })} variant="text" size="sm" onPress={onClear} />
     );
+  const value =
+    kg === undefined ? (
+      <View style={styles.empty}>
+        <Icon name="plus" size="small" tone="muted" />
+        <Text style={[styles.emptyText, { color: color.muted }]}>{shown}</Text>
+      </View>
+    ) : (
+      <Text style={[styles.value, { color: color.text }]}>{shown}</Text>
+    );
   return (
     <View style={[styles.box, { borderBottomColor: color.line }]}>
       <Pressable
@@ -47,7 +57,7 @@ export function LoadRow({ name, kg, units, open, onToggle, onChange, onClear }: 
         onPress={onToggle}
         style={({ pressed }) => [styles.row, pressed && styles.dim]}>
         <Text style={[styles.name, { color: color.text }]}>{name}</Text>
-        <Text style={[styles.value, { color: kg === undefined ? color.muted : color.text }]}>{shown}</Text>
+        {value}
       </Pressable>
       {open && (
         <View style={styles.wheel}>
@@ -79,6 +89,9 @@ const styles = StyleSheet.create({
   },
   name: { flex: 1, fontSize: tokens.type.body, fontWeight: tokens.weight.bold },
   value: { fontFamily: tokens.font.display, fontSize: tokens.type.number },
+  // Not set: a quiet empty slot (a plus and the words, muted), so it does not read as a value.
+  empty: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.xs },
+  emptyText: { fontSize: tokens.type.body },
   wheel: { paddingBottom: tokens.space.sm },
   dim: { opacity: tokens.opacity.dim },
 });
