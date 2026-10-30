@@ -14,6 +14,7 @@ import { t } from '@/copy';
 import { workoutParams } from '@/train/params';
 import { repsText } from '@/train/reps';
 import type { Move } from '@/train/trainData';
+import { answerAlert, answerSheet } from './support/systemChoices';
 
 type Schemas = components['schemas'];
 
@@ -123,6 +124,17 @@ async function toEditor() {
   return { getPathname: () => router.getPathname() };
 }
 
+/** A move taken out of its day through the row's options (the system's action sheet), the red choice. */
+async function removeMove(move: string, dayTitle = day(1)) {
+  answerSheet(t('programEditor.removeFrom', { day: dayTitle }));
+  await press(t('programEditor.moveOptionsLabel', { move }));
+}
+/** A day removed: the system's alert asks first (ADR-087 #1); answered with the destructive choice. */
+async function removeDay(title: string) {
+  answerAlert('confirm');
+  await press(t('programEditor.removeDayLabel', { day: title }));
+}
+
 /** A move added to a day (the n-th "Add a move"), found by what was typed. */
 async function addMove(typed: string, id: string, at = 0) {
   await fireEvent.press(screen.getAllByRole('button', { name: t('programEditor.addMove') })[at]);
@@ -208,7 +220,7 @@ test('days added and removed; a weekday one day has is not offered to another', 
   await addMove('curl', 'barbell_curl');
   expect(confirm()).toBeEnabled();
   await press(header(day(1), t('programEditor.weekdayName.MONDAY'), 1));
-  await press(t('programEditor.removeDayLabel', { day: day(1) }));
+  await removeDay(day(1));
   await press(t('onboarding.typeProgram.confirm'));
   expect(puts()[0][1]).toEqual({ body: { days: [{ name: day(2), exercises: [{ exerciseId: 'barbell_curl', sets: SETS, reps: REPS.ISOLATION }] }] } });
 });
@@ -217,7 +229,7 @@ test('a move removed is gone from the day', async () => {
   await toEditor();
   await addMove('squ', 'squat');
   await addMove('bench', 'bench_press');
-  await press(t('programEditor.removeMoveLabel', { move: name('squat') }));
+  await removeMove(name('squat'));
   expect(screen.queryByText(name('squat'))).toBeNull();
   await press(t('onboarding.typeProgram.confirm'));
   expect((puts()[0][1].body as Schemas['OwnProgram']).days[0].exercises.map((e) => e.exerciseId)).toEqual(['bench_press']);
@@ -307,7 +319,7 @@ test('an own move removed from the day before sending is never made', async () =
   await toEditor();
   await addMove('squ', 'squat');
   await makeOwn();
-  await press(t('programEditor.removeMoveLabel', { move: 'Landmine press' }));
+  await removeMove('Landmine press');
   await press(t('onboarding.typeProgram.confirm'));
   expect(ownPosts()).toEqual([]);
 });
@@ -373,7 +385,7 @@ test('a move removed can be put back (Undo), where it was', async () => {
   await toEditor();
   await addMove('squ', 'squat');
   await addMove('bench', 'bench_press');
-  await press(t('programEditor.removeMoveLabel', { move: name('squat') }));
+  await removeMove(name('squat'));
   expect(screen.getByText(t('programEditor.removed', { name: name('squat') }))).toBeOnTheScreen();
   await press(t('programEditor.undoLabel', { name: name('squat') }));
   expect(screen.queryByText(t('programEditor.removed', { name: name('squat') }))).toBeNull();
@@ -386,7 +398,7 @@ test('a day removed can be put back (Undo), with its moves', async () => {
   await addMove('squ', 'squat');
   await press(t('programEditor.addDay'));
   await addMove('curl', 'barbell_curl');
-  await press(t('programEditor.removeDayLabel', { day: day(2) }));
+  await removeDay(day(2));
   expect(screen.queryByRole('button', { name: header(day(2), t('programEditor.anyDay'), 1) })).toBeNull();
   await press(t('programEditor.undoLabel', { name: day(2) }));
   expect(screen.getByRole('button', { name: header(day(2), t('programEditor.anyDay'), 1) })).toBeOnTheScreen();
@@ -406,7 +418,7 @@ test('a removal is said to VoiceOver, with the way to put it back next to where 
     await toEditor();
     await addMove('squ', 'squat');
     await addMove('bench', 'bench_press');
-    await press(t('programEditor.removeMoveLabel', { move: name('squat') }));
+    await removeMove(name('squat'));
     expect(said).toHaveBeenCalledWith(t('programEditor.removed', { name: name('squat') }));
     // In the day's card, where the move was: before the move that stayed.
     const bar = screen.getByTestId('undo');
@@ -420,7 +432,7 @@ test('a removal is said to VoiceOver, with the way to put it back next to where 
 test('Undo that cannot put it back (the move is in the day again) leaves the bar', async () => {
   await toEditor();
   await addMove('squ', 'squat');
-  await press(t('programEditor.removeMoveLabel', { move: name('squat') }));
+  await removeMove(name('squat'));
   await addMove('squ', 'squat');
   await press(t('programEditor.undoLabel', { name: name('squat') }));
   expect(screen.getByTestId('undo')).toBeOnTheScreen();

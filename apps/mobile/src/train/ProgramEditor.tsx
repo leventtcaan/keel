@@ -1,23 +1,21 @@
 import { type ReactNode, useMemo, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActionSheetIOS, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
 import { announce } from '@/components/ProblemText';
-import { ScreenTitle } from '@/components/ScreenTitle';
+import { Icon } from '@/components/Icon';
 import { TextField } from '@/components/TextField';
 import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
-import { useReduceMotion } from '@/theme/useReduceMotion';
+import { askFirst } from '@/settings/askFirst';
 
-import { browseMoves, findMoves } from './moves';
-import { OwnMoveForm, type SaveOutcome } from './OwnMoveForm';
+import { MovePicker } from './MovePicker';
+import type { SaveOutcome } from './OwnMoveForm';
 import { workoutParams as P } from './params';
 import { exerciseName } from './program';
-import { repsText } from './reps';
 import {
   type EditedDay,
   type EditedMove,
@@ -30,6 +28,7 @@ import {
   stepped,
   weekdayTaken,
   withDayAt,
+  movedMove,
   withMove,
   withMoveAt,
   withoutDay,
@@ -108,6 +107,10 @@ export function ProgramEditor({ days, onChange, moves, makeOwn, onAddDay }: Prop
     });
     gone({ name: exerciseName(move.exerciseId, byId), undo: (all) => withMoveAt(all, day.id, move, index), where: { dayId: day.id, index } });
   };
+  const reorder = (day: EditedDay, from: number, to: number) => onChange((all) => {
+    const at = all.findIndex((d) => d.id === day.id);
+    return at < 0 ? all : movedMove(all, at, from, to);
+  });
   // The bar goes only once the thing is back: put back where it cannot be (the move is in the day again), it stays.
   const undo = () => {
     if (removed === null || removed.undo(days) === days) return;
@@ -122,10 +125,12 @@ export function ProgramEditor({ days, onChange, moves, makeOwn, onAddDay }: Prop
   const dayWords = t(days.length === 1 ? 'programEditor.days.one' : 'programEditor.days.other', { count: days.length });
   const summary = t('programEditor.summary', { days: dayWords, moves: movesWord(count) });
   const more = days.length < P.programDaysMax ? <Button label={t('programEditor.addDay')} variant="ghost" onPress={addDay} /> : null;
+  // The day as it is now (not as it was when the picker opened): the moves it has are not offered again.
+  const pickerDay = adding === null ? null : (days.find((d) => d.id === adding.id) ?? adding);
   const sheet =
-    adding === null ? null : (
-      <AddMoveSheet
-        day={adding}
+    adding === null || pickerDay === null ? null : (
+      <MovePicker
+        day={pickerDay}
         moves={moves}
         byId={byId}
         makeOwn={makeOwn}
@@ -156,6 +161,7 @@ export function ProgramEditor({ days, onChange, moves, makeOwn, onAddDay }: Prop
           onChange={onChange}
           onRemoveDay={() => removeDay(day, at)}
           onRemoveMove={(index) => removeMove(day, index)}
+          onReorder={(from, to) => reorder(day, from, to)}
           onAddMove={() => setAdding(day)}
           undo={moveBar(day.id)}
         />,
@@ -179,12 +185,13 @@ type DayProps = {
   onChange: Update;
   onRemoveDay: () => void;
   onRemoveMove: (index: number) => void;
+  onReorder: (from: number, to: number) => void;
   onAddMove: () => void;
   /** The bar to put back a move removed from this day, where the move was. */
   undo: { index: number; bar: ReactNode } | null;
 };
 
-function DayCard({ day, at, open, onOpen, alone, taken, byId, onChange, onRemoveDay, onRemoveMove, onAddMove, undo }: DayProps) {
+function DayCard({ day, at, open, onOpen, alone, taken, byId, onChange, onRemoveDay, onRemoveMove, onReorder, onAddMove, undo }: DayProps) {
   const { color } = useTheme();
   const weekday = day.weekday === undefined ? t('programEditor.anyDay') : t(`programEditor.weekdayName.${day.weekday}`);
   const moveWords = day.moves.length === 0 ? t('programEditor.noMovesMeta') : movesWord(day.moves.length);
@@ -209,8 +216,24 @@ function DayCard({ day, at, open, onOpen, alone, taken, byId, onChange, onRemove
   }
 
   const toggle = (w: Schemas['Weekday']) => onChange((all) => withWeekday(all, at, all[at].weekday === w ? undefined : w));
+  // Removing a day is asked first, by the system's own alert (ADR-087 #1): the day and its moves go, with Undo after.
   const remove = alone ? null : (
-    <Button label={t('programEditor.removeDay')} accessibilityLabel={t('programEditor.removeDayLabel', { day: day.name })} variant="ghost" size="touch" onPress={onRemoveDay} />
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={t('programEditor.removeDayLabel', { day: day.name })}
+      onPress={() =>
+        askFirst({
+          title: t('programEditor.removeDayAsk', { day: day.name }),
+          body: t('programEditor.removeDayBody', { moves: moveWords }),
+          confirmLabel: t('programEditor.removeDayConfirm'),
+          keepLabel: t('programEditor.keep'),
+          onConfirm: onRemoveDay,
+        })
+      }
+      style={({ pressed }) => [styles.remove, pressed && styles.dim]}>
+      <Icon name="trash" size="small" tone="warn" />
+      <Text style={[styles.removeText, { color: color.warn }]}>{t('programEditor.removeDay')}</Text>
+    </Pressable>
   );
   // One row of captions over the moves' steppers (each stepper also says its own name to VoiceOver).
   const captions =
@@ -252,7 +275,11 @@ function DayCard({ day, at, open, onOpen, alone, taken, byId, onChange, onRemove
           move={move}
           name={exerciseName(move.exerciseId, byId)}
           onStep={(field, by) => onChange((all) => stepped(all, at, index, field, by))}
+          first={index === 0}
+          last={index === day.moves.length - 1}
+          dayName={day.name}
           onRemove={() => onRemoveMove(index)}
+          onMove={(by) => onReorder(index, index + by)}
         />,
       ])}
       {undoAt(day.moves.length)}
@@ -272,11 +299,36 @@ function UndoBar({ name, onUndo }: { name: string; onUndo: () => void }) {
   );
 }
 
-type MoveProps = { move: EditedMove; name: string; onStep: (field: Stepped, by: number) => void; onRemove: () => void };
+type MoveProps = {
+  move: EditedMove;
+  name: string;
+  dayName: string;
+  first: boolean;
+  last: boolean;
+  onStep: (field: Stepped, by: number) => void;
+  onRemove: () => void;
+  onMove: (by: number) => void;
+};
 
 /** A move of the day: its name, remove, and three steppers: the sets, the fewest and the most reps. */
-function MoveRow({ move, name, onStep, onRemove }: MoveProps) {
+function MoveRow({ move, name, dayName, first, last, onStep, onRemove, onMove }: MoveProps) {
   const { color } = useTheme();
+  // The system's action sheet: move it up or down the day, or take it out (the red one; Undo follows).
+  const options = () => {
+    const labels = [
+      ...(first ? [] : [t('programEditor.moveUp')]),
+      ...(last ? [] : [t('programEditor.moveDown')]),
+      t('programEditor.removeFrom', { day: dayName }),
+      t('programEditor.cancel'),
+    ];
+    const destructiveButtonIndex = labels.length - 2;
+    ActionSheetIOS.showActionSheetWithOptions({ title: name, options: labels, destructiveButtonIndex, cancelButtonIndex: labels.length - 1 }, (picked) => {
+      if (picked === destructiveButtonIndex) return onRemove();
+      const chosen = labels[picked];
+      if (chosen === t('programEditor.moveUp')) onMove(-1);
+      else if (chosen === t('programEditor.moveDown')) onMove(1);
+    });
+  };
   const stepper = (field: Stepped, label: string, value: number) => (
     <Stepper
       label={t(label, { move: name })}
@@ -290,7 +342,14 @@ function MoveRow({ move, name, onStep, onRemove }: MoveProps) {
     <View style={styles.move}>
       <View style={styles.moveHead}>
         <Text style={[styles.name, { color: color.text }]}>{name}</Text>
-        <Button label={t('programEditor.removeMove')} accessibilityLabel={t('programEditor.removeMoveLabel', { move: name })} variant="ghost" size="touch" onPress={onRemove} />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('programEditor.moveOptionsLabel', { move: name })}
+          onPress={options}
+          hitSlop={tokens.space.xs}
+          style={({ pressed }) => [styles.more, pressed && styles.dim]}>
+          <Icon name="ellipsis.circle" />
+        </Pressable>
       </View>
       <View style={styles.steppers}>
         {stepper('sets', 'programEditor.setsLabel', move.sets)}
@@ -338,83 +397,8 @@ function Stepper({ label, value, less, more, onStep }: StepperProps) {
   );
 }
 
-type SheetProps = Pick<Props, 'moves' | 'makeOwn'> & {
-  day: EditedDay;
-  byId: ReadonlyMap<string, Move>;
-  onAdd: (move: Move) => void;
-  onClose: () => void;
-};
-
-/**
- * "Add a move" (prototype sheet `addmove`): to the open day, a move found by name in the catalog and the user's own (not
- * one the day has), each with the range it starts from; or "Add my own move", the engine's questions (OwnMoveForm).
- */
-function AddMoveSheet({ day, moves, byId, makeOwn, onAdd, onClose }: SheetProps) {
-  const { color } = useTheme();
-  const reduceMotion = useReduceMotion();
-  const [query, setQuery] = useState('');
-  const [own, setOwn] = useState(false);
-  // The moves the day does not have: what is offered, in the search and in the own-move form's "Is it one of these?".
-  const offered = useMemo(() => {
-    const has = new Set(day.moves.map((m) => m.exerciseId));
-    return moves.filter((m) => !has.has(m.id));
-  }, [day.moves, moves]);
-  const save = async (body: Schemas['NewCustomExercise']): Promise<SaveOutcome> => {
-    const made = await makeOwn(body);
-    if (typeof made === 'string') return made;
-    onAdd(made);
-    return 'saved';
-  };
-  // Nothing typed lists what the day can take, by name (K-1013).
-  const found = query.trim() === '' ? browseMoves(offered) : findMoves(query, offered);
-  const none = query.trim() !== '' && found.length === 0 ? <Text style={[styles.small, { color: color.muted }]}>{t('programEditor.none')}</Text> : null;
-  const body = own ? (
-    <OwnMoveForm
-      name={[...query.trim()].slice(0, P.ownMoveNameMaxChars).join('')}
-      catalog={offered}
-      onPick={(id) => {
-        const move = byId.get(id);
-        if (move !== undefined) onAdd(move);
-      }}
-      onSave={save}
-      onBack={() => setOwn(false)}
-    />
-  ) : (
-    <View style={styles.add}>
-      <TextField label={t('programEditor.search')} value={query} onChangeText={setQuery} onSearch={() => undefined} />
-      {found.map((m) => (
-        <Pressable
-          key={m.id}
-          accessibilityRole="button"
-          accessibilityLabel={t('programEditor.pickLabel', { name: exerciseName(m.id, byId), range: repsText(P.programNewMoveReps[m.kind]) })}
-          onPress={() => onAdd(m)}
-          style={styles.found}>
-          <Text style={[styles.name, { color: color.text }]}>{exerciseName(m.id, byId)}</Text>
-          <Text style={[styles.small, { color: color.muted }]}>{repsText(P.programNewMoveReps[m.kind])}</Text>
-        </Pressable>
-      ))}
-      {none}
-      <Button label={t('programEditor.addOwn')} variant="ghost" onPress={() => setOwn(true)} />
-    </View>
-  );
-  return (
-    <Modal animationType={reduceMotion ? 'none' : 'slide'} presentationStyle="pageSheet" onRequestClose={onClose}>
-      <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
-        <ScrollView contentContainerStyle={styles.sheet} keyboardShouldPersistTaps="handled">
-          <ScreenTitle>{t('programEditor.addMove')}</ScreenTitle>
-          <Text style={[styles.text, { color: color.textSecondary }]}>{t('programEditor.sheetTo', { day: day.name, sets: P.programNewMoveSets })}</Text>
-          {body}
-          <Button label={t('programEditor.close')} variant="ghost" onPress={onClose} />
-        </ScrollView>
-      </SafeAreaView>
-    </Modal>
-  );
-}
-
 const styles = StyleSheet.create({
   editor: { gap: tokens.space.lg },
-  safe: { flex: 1 },
-  sheet: { padding: tokens.space.lg, gap: tokens.space.md },
   day: { gap: tokens.space.sm, paddingTop: tokens.space.md, borderTopWidth: tokens.border.hairline },
   dayHead: { gap: tokens.space.xs, minHeight: tokens.size.touch, justifyContent: 'center' },
   dayName: { fontSize: tokens.type.heading, fontWeight: tokens.weight.bold },
@@ -427,9 +411,10 @@ const styles = StyleSheet.create({
   steps: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: tokens.radius.button },
   stepButton: { minWidth: tokens.size.touch, minHeight: tokens.size.touch, alignItems: 'center', justifyContent: 'center' },
   dim: { opacity: tokens.opacity.dim },
+  remove: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, minHeight: tokens.size.touch },
+  removeText: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
+  more: { minWidth: tokens.size.touch, minHeight: tokens.size.touch, alignItems: 'center', justifyContent: 'center' },
   snackbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space.sm, padding: tokens.space.sm, borderRadius: tokens.radius.card },
-  add: { gap: tokens.space.sm },
-  found: { padding: tokens.space.sm, borderRadius: tokens.radius.button, gap: tokens.space.xs },
   name: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold, flexShrink: 1 },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },

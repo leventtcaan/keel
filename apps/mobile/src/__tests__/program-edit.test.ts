@@ -10,6 +10,7 @@ import {
   canStep,
   type EditedDay,
   isPending,
+  movedMove,
   newDay,
   ownProgramOf,
   pendingMove,
@@ -219,5 +220,27 @@ describe('the program it makes (contract OwnProgram)', () => {
   test('a name longer than a day name can be is no program', () => {
     expect(ownProgramOf(renamed(oneMove, 0, 'x'.repeat(workoutParams.programDayNameMaxChars + 1)))).toBeNull();
     expect(ownProgramOf(renamed(oneMove, 0, 'x'.repeat(workoutParams.programDayNameMaxChars)))).not.toBeNull();
+  });
+});
+
+describe('reorder (Evre 7 B3)', () => {
+  const three = withMove(withMove(withMove(start, 0, SQUAT), 0, CURL), 0, move('bench_press'));
+  const order = (days: EditedDay[]) => days[0].moves.map((m) => m.exerciseId);
+
+  test('a move goes up or down one place; the others keep their order', () => {
+    expect(order(movedMove(three, 0, 0, 1))).toEqual(['barbell_curl', 'squat', 'bench_press']);
+    expect(order(movedMove(three, 0, 2, 1))).toEqual(['squat', 'bench_press', 'barbell_curl']);
+    expect(order(movedMove(three, 0, 0, 2))).toEqual(['barbell_curl', 'bench_press', 'squat']);
+  });
+
+  test('a place the day does not have, or the same place, is no change (the same array)', () => {
+    expect(movedMove(three, 0, 0, 0)).toBe(three);
+    expect(movedMove(three, 0, 0, -1)).toBe(three);
+    expect(movedMove(three, 0, 2, 3)).toBe(three);
+  });
+
+  test("a move keeps its sets, reps and the program's row through a move", () => {
+    const rowed = three.map((day) => ({ ...day, moves: day.moves.map((m, i) => ({ ...m, rowId: `r${i}` })) }));
+    expect(movedMove(rowed, 0, 0, 1)[0].moves.map((m) => m.rowId)).toEqual(['r1', 'r0', 'r2']);
   });
 });

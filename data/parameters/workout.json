@@ -405,6 +405,81 @@
       "tag": "urun",
       "source": "contracts/openapi.yaml#CardioPlan",
       "note": "CardioPlan.minutes maximum: a longer session would be refused by the server."
+    },
+    {
+      "key": "move_picker_groups",
+      "value": {
+        "chest": [
+          "chest"
+        ],
+        "back": [
+          "lats",
+          "upper_back",
+          "erectors"
+        ],
+        "shoulders": [
+          "front_delts",
+          "side_delts",
+          "rear_delts"
+        ],
+        "arms": [
+          "biceps",
+          "triceps",
+          "forearms"
+        ],
+        "legs": [
+          "quads",
+          "hamstrings",
+          "glutes",
+          "calves"
+        ]
+      },
+      "unit": "muscle groups",
+      "tag": "urun",
+      "source": "plan/evre-7-inceleme.md#12.",
+      "note": "Evre 7 B2: the muscle chips of the 'Add a move' picker, in the order shown. A move belongs to the group of its first (main) muscle in the catalog (data/muscles.yaml names the muscles). Five groups people know by name, not fifteen muscles."
+    },
+    {
+      "key": "move_picker_popular",
+      "value": {
+        "chest": [
+          "bench_press",
+          "incline_dumbbell_press",
+          "cable_fly"
+        ],
+        "back": [
+          "lat_pulldown",
+          "seated_row",
+          "pull_up"
+        ],
+        "shoulders": [
+          "dumbbell_shoulder_press",
+          "lateral_raise",
+          "face_pull"
+        ],
+        "arms": [
+          "dumbbell_curl",
+          "triceps_pushdown",
+          "hammer_curl"
+        ],
+        "legs": [
+          "squat",
+          "leg_press",
+          "romanian_deadlift"
+        ]
+      },
+      "unit": "moves",
+      "tag": "urun",
+      "source": "plan/evre-7-inceleme.md#12.",
+      "note": "Evre 7 B2: 'Popular for <group>' in the picker, first. A product choice, not usage data (the app counts none): the group's main lifts first, one isolation that most programs add. Each must be a catalog move of that group (move-picker.test.ts)."
+    },
+    {
+      "key": "move_picker_featured_groups",
+      "value": 2,
+      "unit": "groups",
+      "tag": "urun",
+      "source": "plan/evre-7-inceleme.md#12.",
+      "note": "Evre 7 B2: with nothing typed and no chip chosen, the picker opens with 'Popular for' the day's own main groups, this many at most (the groups the day trains most)."
     }
   ]
 }

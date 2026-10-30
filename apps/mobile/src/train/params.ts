@@ -28,6 +28,10 @@ export const workoutParams = {
   historyDays: param<number>('history_days'),
   noteMaxChars: param<number>('note_max_chars'),
   moveSearchResults: param<number>('move_search_results'),
+  /** The "Add a move" picker (Evre 7 B2): the muscle groups of its chips, the popular moves of each, how many groups open the list. */
+  movePickerGroups: param<Record<string, string[]>>('move_picker_groups'),
+  movePickerPopular: param<Record<string, string[]>>('move_picker_popular'),
+  movePickerFeaturedGroups: param<number>('move_picker_featured_groups'),
   /** How many other-equipment moves the workout's Taken sheet offers (ADR-090 Ek 2, K-1064; G1 K-77). */
   takenAlternativesMax: param<number>('taken_alternatives_max'),
   /** How many moves the workout end's "What moved" lists (K-974); the rest are counted. */
