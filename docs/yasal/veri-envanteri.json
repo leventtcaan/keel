@@ -1356,6 +1356,7 @@
    "expo-file-system": null,
    "expo-font": null,
    "expo-glass-effect": null,
+   "expo-haptics": null,
    "expo-image": null,
    "expo-image-manipulator": null,
    "expo-image-picker": null,

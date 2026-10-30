@@ -98,6 +98,7 @@ export function LogMeal({ day, slotParam }: Props) {
     };
   }, [api, key]);
   const shownEstimate = estimate !== null && estimate.key === key ? estimate.value : null;
+  const waiting = key !== null && (estimate === null || estimate.key !== key);
 
   const readRecipes = async (): Promise<Schemas['Recipe'][]> => {
     if (recipes !== null) return recipes;
@@ -205,7 +206,7 @@ export function LogMeal({ day, slotParam }: Props) {
   const item = items[0];
   const submit = async () => {
     if (item === undefined || requests === null) return;
-    const numbers = numbersOf(item, shownEstimate?.items[0], undefined);
+    const numbers = numbersOf(item, shownEstimate?.items[0], undefined, waiting);
     const amount = item.quick === undefined ? (requests[0]?.amount === undefined ? null : amountPhrase(requests[0].amount)) : null;
     const kept = await keep(`item:${JSON.stringify(requests)}`, [{ body: { items: requests }, shown: [{ name: item.name, amount, kcal: numbers?.kcal ?? null }] }], [item.foodId]);
     if (kept) setItems([]);
@@ -252,6 +253,7 @@ export function LogMeal({ day, slotParam }: Props) {
         known={known}
         {...(knownRecipes === undefined ? {} : { recipes: knownRecipes })}
         {...(shownEstimate?.items[0] === undefined ? {} : { estimate: shownEstimate.items[0] })}
+        waiting={waiting}
         slotName={slotName}
         mode="add"
         question={question}

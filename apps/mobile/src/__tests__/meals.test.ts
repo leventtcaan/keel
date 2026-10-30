@@ -5,7 +5,7 @@
  * and an amount is what the contract takes (at most 2 decimals, at most 5000 g).
  */
 import type { components } from '@/api/schema';
-import { amountGrams, dayMeals, defaultSlot, parseQuantity, repeatOffers } from '@/food/meals';
+import { amountGrams, dayMeals, defaultSlot, groupBySlot, parseQuantity, repeatOffers } from '@/food/meals';
 import type { LocalRecord } from '@/sync/store';
 
 type Schemas = components['schemas'];
@@ -145,5 +145,28 @@ describe('amountGrams', () => {
 
   test('a unit the food does not have is unknown', () => {
     expect(amountGrams(food, { quantity: 1, unit: '1 slice' })).toBeNull();
+  });
+});
+
+describe('the day sections', () => {
+  test('are Breakfast, Lunch, Dinner, Snack in that order, not the order they were logged in (Evre 7)', () => {
+    const rows = [
+      { kind: 'sent' as const, meal: meal('s', at(9, 30), 'SNACK') },
+      { kind: 'sent' as const, meal: meal('d', at(12, 0), 'DINNER') },
+      { kind: 'sent' as const, meal: meal('b', at(13, 0), 'BREAKFAST') },
+      { kind: 'sent' as const, meal: meal('l', at(14, 0), 'LUNCH') },
+      { kind: 'sent' as const, meal: meal('b2', at(15, 0), 'BREAKFAST') },
+    ];
+    const groups = groupBySlot(rows);
+    expect(groups.map((group) => group.slot)).toEqual(['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK']);
+    expect(groups[0].meals.map((one) => one.id)).toEqual(['b', 'b2']);
+  });
+
+  test('a slot with only a meal still on its way is a section too', () => {
+    const groups = groupBySlot([
+      { kind: 'waiting' as const, clientId: 'w', eatenAt: at(8), slot: 'LUNCH' as const },
+      { kind: 'sent' as const, meal: meal('b', at(9), 'BREAKFAST') },
+    ]);
+    expect(groups.map((group) => [group.slot, group.waiting])).toEqual([['BREAKFAST', 0], ['LUNCH', 1]]);
   });
 });

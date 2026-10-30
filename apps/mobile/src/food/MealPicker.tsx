@@ -52,9 +52,11 @@ export function MealPicker({ value, onChange, kcal }: Props) {
             <Text style={[styles.name, { color: ink }]}>
               {name}
             </Text>
-            <Text style={[styles.kcal, { color: selected ? color.background : color.muted }]}>
-              {amount === undefined ? t('meal.picker.none') : amount.toLocaleString('en-US')}
-            </Text>
+            {amount === undefined ? (
+              <View style={styles.kcalSlot} />
+            ) : (
+              <Text style={[styles.kcal, { color: selected ? color.background : color.muted }]}>{amount.toLocaleString('en-US')}</Text>
+            )}
           </Pressable>
         );
       })}
@@ -75,4 +77,6 @@ const styles = StyleSheet.create({
   },
   name: { fontSize: tokens.type.label, fontWeight: tokens.weight.semibold },
   kcal: { fontSize: tokens.type.label, fontVariant: ['tabular-nums'] },
+  // An empty meal keeps the line its number would take, so the four pills stay one height.
+  kcalSlot: { height: tokens.type.label + tokens.space.xs },
 });

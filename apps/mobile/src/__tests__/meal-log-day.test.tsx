@@ -217,6 +217,14 @@ describe('the meals of the user\'s own day', () => {
     expect(screen.getByRole('button', { name: t('meal.picker.spoken', { slot: t('food.slot.LUNCH'), kcal: t('food.single.kcal', { value: 190 }) }) })).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: t('meal.picker.spokenEmpty', { slot: t('food.slot.DINNER') }) })).toBeOnTheScreen();
   });
+
+  test('a meal with nothing in it shows its name and nothing else, no dash (Evre 7)', async () => {
+    mockLocal = [];
+    await show();
+    const dinner = screen.getByTestId('slot-DINNER');
+    expect(within(dinner).queryByText('-')).toBeNull();
+    expect(within(dinner).getAllByText(/./)).toHaveLength(1);
+  });
 });
 
 describe('what can be logged without typing', () => {
