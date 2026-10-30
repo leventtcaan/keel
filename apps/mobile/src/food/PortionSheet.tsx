@@ -47,6 +47,8 @@ type Props = {
   favorite?: { on: boolean; onToggle: () => void };
   /** The server's one question about the amount ("Weighing it makes it exact"), already worded; absent when it asks none. */
   question?: string | null;
+  /** The server's answer for this amount is still on its way: no number is shown rather than one that will move. */
+  waiting?: boolean;
   /** The button waits (a save is on its way). */
   busy: boolean;
   /** There is nothing to send yet (the estimate is being waited for, an amount is wrong). */
@@ -65,7 +67,7 @@ type Props = {
  * the keyboard: "Add to Breakfast · 220 kcal". The numbers follow every choice. A quick add is the same sheet with its calories and macros
  * as fields. Closing it (the x, a tap outside) adds nothing.
  */
-export function PortionSheet({ item, index, known, recipes, estimate, logged, slotName, mode, favorite, question, busy, blocked, onChange, onSubmit, onClose, onRemove }: Props) {
+export function PortionSheet({ item, index, known, recipes, estimate, logged, slotName, mode, favorite, question, waiting = false, busy, blocked, onChange, onSubmit, onClose, onRemove }: Props) {
   const { color } = useTheme();
   const reduce = useReduceMotion();
   const insets = useContext(SafeAreaInsetsContext);
@@ -92,7 +94,7 @@ export function PortionSheet({ item, index, known, recipes, estimate, logged, sl
   const portion = portionOf(item);
   const quantity = parseNumber(item.quantity);
   const counted = isCounted(portion, item.unit) && !portions;
-  const numbers = numbersOf(item, estimate, logged);
+  const numbers = numbersOf(item, estimate, logged, waiting);
   const food = known.get(item.foodId);
   const quick = item.quick;
   const label = numbers === null || quick !== undefined ? t('meal.sheet.add', { slot: slotName }) : t('meal.sheet.addKcal', { slot: slotName, kcal: kcalText(numbers.kcal) });

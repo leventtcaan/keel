@@ -5,7 +5,7 @@
  */
 import type { components } from '@/api/schema';
 import type { Loaded, TodayData } from '@/today/today';
-import { addDays, daysBetween, heroOf, loadWeekLogs, loggedDays, stripDays, trainedDays, weekdayOf, weekHead, weekMonday } from '@/today/week';
+import { addDays, daysBetween, guideCallStep, heroOf, loadWeekLogs, loggedDays, stripDays, trainedDays, weekdayOf, weekHead, weekMonday } from '@/today/week';
 
 type Schemas = components['schemas'];
 
@@ -201,6 +201,17 @@ describe('the one hero (ADR-077 #1)', () => {
 
   test('a call that could not be read: no hero (the screen says it failed once)', () => {
     expect(heroOf(data({ decision: { state: 'failed', problem: 'NoConnection' } }))).toEqual({ kind: 'none' });
+  });
+});
+
+describe('the first-use guide points only at what is there (Evre 7)', () => {
+  test('the call step is for a hero that is the call: Monday, the week call, the first week; not "calls are off", not a paused week, not nothing', () => {
+    expect(guideCallStep({ kind: 'monday', week: 3, questions: 2 })).toBe(true);
+    expect(guideCallStep({ kind: 'call', decision: decision(), declined: false })).toBe(true);
+    expect(guideCallStep({ kind: 'firstWeek', firstCallOn: null })).toBe(true);
+    expect(guideCallStep({ kind: 'callsOff' })).toBe(false);
+    expect(guideCallStep({ kind: 'paused' })).toBe(false);
+    expect(guideCallStep({ kind: 'none' })).toBe(false);
   });
 });
 

@@ -129,6 +129,8 @@ export function MealItems({ edit, day, item: itemParam }: Props) {
     };
   }, [api, key]);
   const shown = estimate !== null && estimate.key === key ? estimate.value : null;
+  // The answer for these very items is still on its way: a number from the catalog would move when it comes (one number, Evre 7).
+  const waiting = key !== null && (estimate === null || estimate.key !== key);
   // A meal the coach read waits for the same check (K-509 review): its measure is the user's word, which may not be one of the food's
   // servings — saved unchecked, the server would refuse it later, after the user thought it logged.
   const unchecked = fromCoach && estimate !== null && estimate.key === key && estimate.value === null;
@@ -235,7 +237,7 @@ export function MealItems({ edit, day, item: itemParam }: Props) {
   const list = !ready ? null : (
     <View style={[styles.card, { backgroundColor: color.surface }]} testID="meal-items">
       {items.map((one, index) => {
-        const numbers = numbersOf(one, estimatedItems?.[index], logged);
+        const numbers = numbersOf(one, estimatedItems?.[index], logged, waiting);
         return (
           <Pressable
             key={`${one.foodId}-${index}`}
@@ -286,6 +288,7 @@ export function MealItems({ edit, day, item: itemParam }: Props) {
         {...(knownRecipes === undefined ? {} : { recipes: knownRecipes })}
         {...(estimatedItems?.[openIndex] === undefined ? {} : { estimate: estimatedItems[openIndex] })}
         {...(logged === undefined ? {} : { logged })}
+        waiting={waiting}
         slotName={t(`food.slot.${slot}`)}
         mode={focused ? 'save' : 'done'}
         question={openIndex !== null && shown?.question?.foodId === open.foodId ? question : null}

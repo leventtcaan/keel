@@ -136,6 +136,12 @@ export function heroOf(data: TodayData): Hero {
   return { kind: 'none' };
 }
 
+/**
+ * Whether the hero is the weekly call itself, the part the first-use guide's "Your weekly call" step points at. "Calls are off", a paused
+ * week and a week with nothing to show have a hero (or none) that is not a call: the guide leaves that step out (Evre 7).
+ */
+export const guideCallStep = (hero: Hero): boolean => hero.kind === 'monday' || hero.kind === 'call' || hero.kind === 'firstWeek';
+
 export type WeekLogs = { workouts: Loaded<Schemas['Workout'][]>; weighIns: Loaded<Schemas['WeighIn'][]> };
 
 /**

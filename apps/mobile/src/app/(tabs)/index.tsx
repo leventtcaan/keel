@@ -28,7 +28,7 @@ import { dayView } from '@/today/dayView';
 import { WeekStrip } from '@/today/WeekStrip';
 import { BuildProgramPrompt } from '@/train/BuildProgramPrompt';
 import { todayFor } from '@/train/week';
-import { heroOf, loggedDays, stripDays, trainedDays, weekHead, weekMonday } from '@/today/week';
+import { guideCallStep, heroOf, loggedDays, stripDays, trainedDays, weekHead, weekMonday } from '@/today/week';
 
 type Program = components['schemas']['Program'];
 
@@ -45,10 +45,17 @@ export default function TodayScreen() {
   // back in view. The focus part comes first, so the week's own read on focus is the last to register.
   const guide = useGuide();
   const { arrive } = guide;
+  // Only while This week is the screen in view: the guide is a layer over everything, so with the Welcome back screen on top it
+  // would open over that one, pointing at parts nobody can see.
   const loadedRef = useRef(false);
+  const focusedRef = useRef(false);
   useFocusEffect(
     useCallback(() => {
+      focusedRef.current = true;
       if (loadedRef.current) arrive();
+      return () => {
+        focusedRef.current = false;
+      };
     }, [arrive]),
   );
   const { day, data, reload } = useToday();
@@ -57,7 +64,7 @@ export default function TodayScreen() {
   const loaded = data !== null;
   useEffect(() => {
     loadedRef.current = loaded;
-    if (loaded) arrive();
+    if (loaded && focusedRef.current) arrive();
   }, [loaded, arrive]);
   // The parts the guide points at, and the scroll it may move to bring one into view.
   const callRef = useRef<View>(null);
@@ -106,7 +113,7 @@ export default function TodayScreen() {
     // The parts the guide points at are held in a view only where there is something to see: an empty one would still add a gap.
     const call =
       hero.kind === 'paused' || hero.kind === 'none' ? null : (
-        <View ref={callRef} collapsable={false}>
+        <View ref={guideCallStep(hero) ? callRef : undefined} collapsable={false}>
           <Hero hero={hero} today={today} onChanged={reload} />
         </View>
       );

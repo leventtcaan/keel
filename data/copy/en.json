@@ -682,7 +682,7 @@
     "noneOwn": "No other move for this one.",
     "skipInstead": "Skip today instead",
     "backToList": "Back to the list",
-    "why":"Same muscles, and your gym has these. The new move has no target of its own: its weight is yours.",
+    "why": "Same muscles, on your gym's equipment.",
     "back": "Back to the planned move",
     "none": "No other move for these muscles in your gym.",
     "which": "Which one is taken?",
@@ -1283,7 +1283,6 @@
   "meal": {
     "logNow": "Log now",
     "picker": {
-      "none": "-",
       "spoken": "{slot}, {kcal} so far",
       "spokenEmpty": "{slot}, nothing yet"
     },
@@ -3745,6 +3744,9 @@
     "calls": {
       "title": "Calls",
       "notApplied": "Not applied",
+      "change": "{label} {from} → {to}",
+      "noChange": "No change",
+      "moved": "{label}: {to}",
       "rowLabel": "{title}, {date}",
       "rowLabelNotApplied": "{title}, {date}, not applied"
     },

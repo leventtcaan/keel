@@ -94,7 +94,7 @@ export default function ProgressScreen() {
     // sets of each muscle against its target follow it as bars, so the view is the same one before and after.
     const musclesCard = <MusclesCard muscles={muscles} figure={figure} />;
     const barsCard = running ? <MuscleBars muscles={muscles} /> : null;
-    const callsCard = calls === null ? null : <CallsCard items={calls.items} />;
+    const callsCard = calls === null ? null : <CallsCard items={calls.items} units={units} />;
     // The first days' targets only while there is no first call (or no consent to read one); not while it is unknown.
     const first = phase === 'first' || phase === 'locked';
     const targetsGrid = first && targets.length > 0 ? <TargetsGrid targets={targets} /> : null;
@@ -111,20 +111,21 @@ export default function ProgressScreen() {
           {hero.sub === null ? null : <Text style={[styles.sub, { color: color.decisionMuted }]}>{hero.sub}</Text>}
         </DecisionBlock>
       );
+    // The weight trend is the headline of someone cutting: it comes first, the strength and the map after it (Evre 7).
     const parts = running ? (
       <>
+        {weightCard}
         {strengthCard}
         {musclesCard}
         {barsCard}
-        {weightCard}
         <ConsistencyGrid weeks={weeks} />
         {callsCard}
       </>
     ) : (
       <>
+        {weightCard}
         {musclesCard}
         {strengthCard}
-        {weightCard}
         {callsCard}
       </>
     );

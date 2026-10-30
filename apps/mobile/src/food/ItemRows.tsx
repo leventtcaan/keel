@@ -44,15 +44,26 @@ type Props = {
   openFirst?: number;
 };
 
-/** The single numbers of an item: its portion's, times the quantity; else the middle of the server's estimate for it. */
-export function numbersOf(item: DraftItem, estimate: Schemas['EstimatedItem'] | undefined, logged: Schemas['EstimatedItem'][] | undefined): Macros | null {
+/** Whether the server's answer is for this very item at this very amount (an answer for the amount before the last tap is not). */
+const answers = (item: DraftItem, estimate: Schemas['EstimatedItem']): boolean => {
   const quantity = parseQuantity(item.quantity);
-  // Where it was logged and nothing changed, the day's own number: the portion's single number is the food's, the logged one has the amount's error.
+  return estimate.foodId === item.foodId && estimate.amount.unit === item.unit && quantity !== null && estimate.amount.quantity === quantity;
+};
+
+/**
+ * THE single numbers of an item at an amount (Evre 7, ADR-090 #5): the middle of the server's range for that amount, the number the
+ * day is built from, so the sheet, the tray, the diary and Details never disagree. Where it was logged and nothing changed, the logged
+ * range's. Before the server has answered (`waiting`) nothing is shown rather than a number that will move; if no answer is coming
+ * (offline, refused), the portion's catalog figure times the quantity stands in.
+ */
+export function numbersOf(item: DraftItem, estimate: Schemas['EstimatedItem'] | undefined, logged: Schemas['EstimatedItem'][] | undefined, waiting = false): Macros | null {
+  const quantity = parseQuantity(item.quantity);
   const was = logged?.find((one) => one.foodId === item.foodId && one.amount.unit === item.unit && one.amount.quantity === quantity);
   if (was !== undefined) return macrosOf(was);
+  if (estimate !== undefined && (item.portions === undefined || answers(item, estimate))) return macrosOf(estimate);
+  if (waiting) return null;
   const portion = portionOf(item);
-  if (portion !== undefined && quantity !== null) return macrosOfPortion(portion, quantity);
-  return estimate === undefined ? null : macrosOf(estimate);
+  return portion !== undefined && quantity !== null ? macrosOfPortion(portion, quantity) : null;
 }
 
 /**

@@ -10,6 +10,7 @@ import { localDay } from '@/today/today';
 import { parseNumber } from '@/units/units';
 
 import { foodParams } from './params';
+import { ALL_SLOTS } from './slots';
 
 type Schemas = components['schemas'];
 type Meal = Schemas['Meal'];
@@ -46,7 +47,7 @@ export function dayMeals(server: Meal[] | null, records: LocalRecord[], day: str
 /** One slot of the day: every meal logged into it (several logs of the same slot are one section), and how many are not sent yet. */
 export type SlotGroup = { slot: MealSlot; meals: Meal[]; waiting: number };
 
-/** The day's rows grouped by slot, in the order the slots first appear (the rows are in time order): one header per slot (K-1066). */
+/** The day's rows grouped by slot, in the day's order (Breakfast, Lunch, Dinner, Snack): one header per slot (K-1066). A slot's logs stay in time order. */
 export function groupBySlot(rows: DayMeal[]): SlotGroup[] {
   const groups = new Map<MealSlot, SlotGroup>();
   for (const row of rows) {
@@ -56,7 +57,12 @@ export function groupBySlot(rows: DayMeal[]): SlotGroup[] {
     else group.waiting += 1;
     groups.set(slot, group);
   }
-  return [...groups.values()];
+  // The day's own order, not the order of the clock: Breakfast, Lunch, Dinner, Snack (a slot the app adds later goes after them).
+  const place = (slot: MealSlot) => {
+    const at = ALL_SLOTS.indexOf(slot);
+    return at === -1 ? ALL_SLOTS.length : at;
+  };
+  return [...groups.values()].sort((a, b) => place(a.slot) - place(b.slot));
 }
 
 /**

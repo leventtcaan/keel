@@ -71,6 +71,20 @@ const estimateOf = (request: Schemas['FoodEstimateRequest']): Schemas['FoodEstim
   proteinG: R(40, 52),
 });
 
+/**
+ * A server whose range for a portioned food is built around the portion's own numbers (the value's error, floor and ceiling as the
+ * server does), so the number the sheet shows once the server has answered is the portion's times the quantity (one number, Evre 7).
+ */
+const estimateAround = (request: Schemas['FoodEstimateRequest']): Schemas['FoodEstimate'] => {
+  const items = request.items.map((item) => {
+    const portion = PORTIONED.portions?.find((one) => one.unit === item.amount.unit);
+    if (item.foodId !== PORTIONED.id || portion === undefined) return estimateOf({ items: [item] }).items[0];
+    const around = (value: number) => ({ low: Math.floor(value * item.amount.quantity * 0.9), high: Math.ceil(value * item.amount.quantity * 1.1) });
+    return { foodId: item.foodId, name: PORTIONED.name, amount: item.amount, kcal: around(portion.kcal), proteinG: around(portion.proteinG), carbsG: around(portion.carbsG), fatG: around(portion.fatG) };
+  });
+  return { items, kcal: items[0].kcal, proteinG: items[0].proteinG };
+};
+
 jest.mock('expo-symbols', () => {
   const { createElement } = jest.requireActual<typeof import('react')>('react');
   return { SymbolView: (props: { testID?: string }) => createElement('SymbolView', { ...props, testID: props.testID ?? 'symbol' }) };
@@ -235,7 +249,7 @@ describe('units are a track of their own, not the slot chips', () => {
   test('with the portions known, another portion keeps the weight: 1 large egg (50 g) is 50 g, then 2 oz (rounded to the half)', async () => {
     mockPOST.mockImplementation(async (path: string, init: { body: never }) => {
       if (path === '/v1/foods/search') return ok([PORTIONED]);
-      if (path === '/v1/food-estimates') return ok(estimateOf(init.body));
+      if (path === '/v1/food-estimates') return ok(estimateAround(init.body));
       return refused(404, 'NOT_FOUND');
     });
     await show();
@@ -253,7 +267,7 @@ describe('units are a track of their own, not the slot chips', () => {
   test('half, 1, 2 and 3 are one tap for a food counted in pieces; no typing for the common case', async () => {
     mockPOST.mockImplementation(async (path: string, init: { body: never }) => {
       if (path === '/v1/foods/search') return ok([PORTIONED]);
-      if (path === '/v1/food-estimates') return ok(estimateOf(init.body));
+      if (path === '/v1/food-estimates') return ok(estimateAround(init.body));
       return refused(404, 'NOT_FOUND');
     });
     await show();
@@ -418,7 +432,7 @@ describe('the portion step\'s numbers', () => {
   test('a portioned food draws the bar and the three figures with their names', async () => {
     mockPOST.mockImplementation(async (path: string, init: { body: never }) => {
       if (path === '/v1/foods/search') return ok([PORTIONED]);
-      if (path === '/v1/food-estimates') return ok(estimateOf(init.body));
+      if (path === '/v1/food-estimates') return ok(estimateAround(init.body));
       return refused(404, 'NOT_FOUND');
     });
     await show();

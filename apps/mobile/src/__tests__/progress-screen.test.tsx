@@ -887,6 +887,27 @@ describe('calls (ADR-078 #2, Ek 3)', () => {
     expect(screen.getByTestId('call-c2').props.accessibilityRole).toBe('button');
   });
 
+  // Evre 7 (the walk: three rows all headed "Keep going exactly as you are."): the date is what tells the rows apart; a call that moved a target says which.
+  test('a call that moved a target says what moved, old to new; the rows are told apart by their dates', async () => {
+    answers['/v1/decisions'] = ok(
+      decisionPage([
+        decision('c3', '2026-10-19', { changes: [{ what: 'STEPS', before: { stepsPerDay: 7000 }, after: { stepsPerDay: 10000 } }] }),
+        decision('c2', '2026-10-12'),
+      ]),
+    );
+    await show();
+    expect(within(screen.getByTestId('call-c3')).getByText(t('progress.calls.change', { label: 'Steps', from: '7,000', to: '10,000 steps' }))).toBeOnTheScreen();
+    expect(within(screen.getByTestId('call-c3')).getByText('Oct 19')).toBeOnTheScreen();
+    expect(within(screen.getByTestId('call-c2')).queryByText(/→/)).toBeNull();
+  });
+
+  test('rows with the same words under their dates say the words once, then "No change"', async () => {
+    answers['/v1/decisions'] = ok(decisionPage([decision('c3', '2026-10-19'), decision('c2', '2026-10-12'), decision('c1', '2026-10-05')]));
+    await show();
+    expect(screen.getAllByText(t('decision.continue.toward_goal.title'))).toHaveLength(1);
+    expect(screen.getAllByText(t('progress.calls.noChange'))).toHaveLength(2);
+  });
+
   test('asked for as many as progress.json shows', async () => {
     await show();
     expect(mockQueries['/v1/decisions']).toEqual({ limit: 12 });
@@ -1004,6 +1025,19 @@ describe('photos (K-614) stay on the tab', () => {
     mockPhotoChecks = [{ takenOn: '2026-09-20', photos: { front: 'file:///docs/2026-09-20-front.jpg' } }];
     await show();
     expect(mockApiCalls.filter((c) => /photo/i.test(c))).toEqual([]);
+  });
+});
+
+describe('the order of the cards (Evre 7: the weight trend is the headline of a fat-loss user, not the fourth block)', () => {
+  beforeEach(() => {
+    answers = weekTwelve();
+  });
+
+  test('after the first call: weight first, then strength, the map and the sets, consistency, calls', async () => {
+    await show();
+    const order = screen.getAllByTestId(/^section-/).map((node) => node.props.testID as string);
+    expect(order.slice(0, 3)).toEqual(['section-weight', 'section-strength', 'section-muscles']);
+    expect(order.indexOf('section-calls')).toBeGreaterThan(order.indexOf('section-consistency'));
   });
 });
 
