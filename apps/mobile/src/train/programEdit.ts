@@ -98,6 +98,16 @@ export function withMoveAt(all: EditedDay[], dayId: string, move: EditedMove, in
   return changed(all, at, { ...all[at], moves: [...moves.slice(0, index), move, ...moves.slice(index)] });
 }
 
+/** A move taken from one place in its day to another (reorder); no change for a place the day does not have. */
+export function movedMove(all: EditedDay[], at: number, from: number, to: number): EditedDay[] {
+  const { moves } = all[at];
+  if (from === to || from < 0 || to < 0 || from >= moves.length || to >= moves.length) return all;
+  const next = [...moves];
+  const [taken] = next.splice(from, 1);
+  next.splice(to, 0, taken);
+  return changed(all, at, { ...all[at], moves: next });
+}
+
 export function withoutMove(all: EditedDay[], at: number, index: number): EditedDay[] {
   return changed(all, at, { ...all[at], moves: all[at].moves.filter((_, i) => i !== index) });
 }

@@ -18,6 +18,7 @@ import { ThemeProvider } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import type { LocalRecord } from '@/sync/store';
 import type { TrainData } from '@/train/trainData';
+import { answerSheet } from './support/systemChoices';
 
 type Schemas = components['schemas'];
 
@@ -1211,16 +1212,17 @@ describe('walkthrough round 3: Edit program (K-1013)', () => {
   });
 
   describe('every control of the editor is a full touch target (44 pt)', () => {
-    test('weekday chips, Remove this day, Remove, Add a move, and the Undo that puts one back', async () => {
+    test('weekday chips, Remove this day, the options of a move, Add a move, and the Undo that puts one back', async () => {
       mockParams = { part: 'days' };
       editable();
       await show();
       await screen.findByText('Upper');
       expect(screen.getByLabelText('Tuesday')).toHaveStyle({ minHeight: tokens.size.touch, minWidth: tokens.size.touch });
       expect(screen.getByRole('button', { name: t('programEditor.removeDayLabel', { day: 'Upper' }) })).toHaveStyle({ minHeight: tokens.size.touch });
-      expect(screen.getByRole('button', { name: t('programEditor.removeMoveLabel', { move: 'Bench press' }) })).toHaveStyle({ minHeight: tokens.size.touch });
+      expect(screen.getByRole('button', { name: t('programEditor.moveOptionsLabel', { move: 'Bench press' }) })).toHaveStyle({ minHeight: tokens.size.touch });
       expect(screen.getByRole('button', { name: t('programEditor.addMove') })).toHaveStyle({ minHeight: tokens.size.touch });
-      await fireEvent.press(screen.getByRole('button', { name: t('programEditor.removeMoveLabel', { move: 'Bench press' }) }));
+      answerSheet(t('programEditor.removeFrom', { day: 'Upper' }));
+      await fireEvent.press(screen.getByRole('button', { name: t('programEditor.moveOptionsLabel', { move: 'Bench press' }) }));
       expect(screen.getByRole('button', { name: t('programEditor.undoLabel', { name: 'Bench press' }) })).toHaveStyle({ minHeight: tokens.size.touch });
     });
 
