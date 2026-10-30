@@ -9,7 +9,7 @@ guncelleme: 2026-10-10
 Evre 7 (`plan/evre-7-urun-hissi.md`, inceleme + envanter `plan/evre-7-inceleme.md`, rakipler `arastirma/ham/evre7-rakip-kaliplari.md`): #688-#706 birleşti
 (dört hata kök nedeni; Log a meal + Today's food yeniden; Add a move seçici, boş gün yok, gün silme onaylı; Edit program sade, Rebuild sonucu söylüyor;
 antrenman öncesi/an/sonrası, geriye sayan dinlenme, Imperial plaka yuvarlama, nötr bitiş; tek kcal gerçeği; haptics; son basma turu 186/210).
-Build 10 (EAS, otomatik TestFlight) yolda. Levent'e sorulacaklar: eklenen hareket 3 set, "call" kelimesi/ürün adı, FinishForm ara adımı, K1 listesi.
+Build 10 TestFlight'ta. Levent onayları ADR-090 Ek'te: 3 set, "call" kalır, bitiş formu kalır, K1 onaylı.
 Levent'in gerçek hesabında 29 Eki 21:33 antrenmanı hâlâ açık (41 set): build 10'da bitirilebilir.
 
 ## (önceki) DEVAM NOKTASI (30 Eki — Evre 7 duraklatıldı, Levent sınavda; devam: `plan/oturum-promptlari/evre-7-devam.md`)
