@@ -155,7 +155,7 @@ test('B: Train → Change → "Gym is busy" → swap for today → Edit → a fl
 
   // Edit › Moves: the review's flag, applied.
   await open(<EditProgramScreen />);
-  await fireEvent.press(await screen.findByText(t('editProgram.moves')));
+  await fireEvent.press(await screen.findByText(t('editProgram.program')));
   expect(last()).toEqual({ pathname: '/edit-program', params: { part: 'moves' } });
   await open(<EditProgramScreen />, { part: 'moves' });
   await fireEvent.press(await screen.findByLabelText(`${t('editProgram.apply')}: Hamstrings: 4 sets a week, not 3`));

@@ -102,3 +102,16 @@ test('a lead says what happened in place of "Saved": "Deleted" and what, once ea
   expect(screen.queryByText(t('undoBanner.saved'))).toBeNull();
   expect(announce).toHaveBeenCalledWith(t('undoBanner.announceLead', { lead: 'Deleted', detail: 'Breakfast' }));
 });
+
+// Evre 7 B5: a rebuilt program cannot be taken back (the server keeps no copy), so its banner says what happened and goes: no Undo
+// button, and VoiceOver is not told "Undo is available".
+test('with no Undo to give: the words only, no button, and VoiceOver hears the words as they stand', async () => {
+  const onDismiss = jest.fn();
+  await renderIt(<UndoBanner lead="Program rebuilt" detail="4 days · 27 moves" onDismiss={onDismiss} />);
+  expect(screen.getByText('Program rebuilt')).toBeOnTheScreen();
+  expect(screen.getByText('4 days · 27 moves')).toBeOnTheScreen();
+  expect(screen.queryByRole('button', { name: t('undoBanner.undo') })).toBeNull();
+  expect(announce).toHaveBeenCalledWith('Program rebuilt, 4 days · 27 moves');
+  await act(async () => jest.advanceTimersByTime(workoutParams.undoBannerMs));
+  expect(onDismiss).toHaveBeenCalledTimes(1);
+});

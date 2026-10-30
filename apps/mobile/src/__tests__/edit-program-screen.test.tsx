@@ -6,9 +6,10 @@
  * (ADR-073 #4): sent by their ids (PATCH /v1/program, K-995) so a move kept keeps its target; the moves whose target an
  * edit takes are said before saving; the answer is the program shown, with Saved and Undo.
  */
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { router } from 'expo-router';
-import { AccessibilityInfo, ScrollView, StyleSheet } from 'react-native';
+import { AccessibilityInfo, Alert, StyleSheet } from 'react-native';
 
 import EditProgramScreen from '@/app/edit-program';
 import type { components } from '@/api/schema';
@@ -18,7 +19,8 @@ import { ThemeProvider } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import type { LocalRecord } from '@/sync/store';
 import type { TrainData } from '@/train/trainData';
-import { answerSheet } from './support/systemChoices';
+import { WithSaved, banner, undoButton } from './support/saved';
+import { answerAlert, answerSheet } from './support/systemChoices';
 
 type Schemas = components['schemas'];
 
@@ -96,6 +98,7 @@ const UNDER_WAY: LocalRecord = {
 };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices }));
 const mockPush = jest.fn();
+const mockAlert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 const mockDismissTo = jest.fn();
 let mockParams: Record<string, string> = {};
 /** The options the screen gave its Stack.Screen last (the iOS edge swipe back is one of them). */
@@ -157,7 +160,9 @@ beforeEach(() => {
 const show = () =>
   render(
     <ThemeProvider>
-      <EditProgramScreen />
+      <WithSaved>
+        <EditProgramScreen />
+      </WithSaved>
     </ThemeProvider>,
   );
 
@@ -189,20 +194,23 @@ describe('an account with no program (K-1037, ADR-084)', () => {
   });
 });
 
+// K1 (Evre 7 B4): the root is a grouped list (icon, name, value, chevron). Days and moves are one row ("Your program"); the Split row and
+// its page are gone (the split follows the days; the line under the title says it); the applied changes row says "Review", not "Undo".
 describe('the page', () => {
-  test("each part a row with what it holds now; the split is the program's real one", async () => {
+  test("a grouped list: the program (its days and moves), cardio, rebuild; the split is a line under the title, not a row or a page", async () => {
     await show();
     expect(await screen.findByText(t('editProgram.title'))).toBeTruthy();
     expect(screen.getByText('Mon · Wed · Fri')).toBeTruthy();
     expect(screen.getByText('4 moves · 1 flag')).toBeTruthy();
-    expect(screen.getByText('Upper / Lower + Push / Pull / Legs')).toBeTruthy();
+    expect(screen.getByText('Upper / Lower + Push / Pull / Legs · 3 days')).toBeTruthy();
     expect(screen.getByText('1 change applied')).toBeTruthy();
+    expect(screen.queryByText(t('editProgram.rebuildRow'))).toBeTruthy();
+    expect(screen.queryByText('Split')).toBeNull();
+    expect(screen.queryByText('Training days')).toBeNull(); // one row for days and moves
   });
 
   test.each([
-    ['Training days', 'days'],
-    ['Moves', 'moves'],
-    ['Split', 'split'],
+    ['Your program', 'moves'],
     ['Rebuild for me', 'rebuild'],
     ['Cardio', 'cardio'],
     ['1 change applied', 'changes'],
@@ -210,6 +218,17 @@ describe('the page', () => {
     await show();
     await fireEvent.press(await screen.findByText(row));
     expect(mockPush).toHaveBeenCalledWith({ pathname: '/edit-program', params: { part } });
+  });
+
+  test('the applied changes row says what it does (Review), not Undo, which it does not do', async () => {
+    await show();
+    expect(await screen.findByText(t('editProgram.reviewChanges'))).toBeTruthy();
+  });
+
+  test('the old split page is not a page any more: its link opens the list', async () => {
+    mockParams = { part: 'split' };
+    await show();
+    expect(await screen.findByText('Mon · Wed · Fri')).toBeTruthy();
   });
 });
 
@@ -302,9 +321,9 @@ describe('training days and moves: edited here (ADR-073 #4)', () => {
     await rename('Chest day');
     mockServices.training.read.mockImplementationOnce(() => new Promise(() => undefined));
     await save();
-    expect(await screen.findByText(t('editProgram.saved'))).toBeTruthy();
-    expect(screen.queryByLabelText(t('editProgram.undoEditLabel'))).toBeNull();
-    expect(screen.queryByText(t('editProgram.undo'))).toBeNull();
+    expect(await screen.findByText(t('editProgram.savedLead'))).toBeTruthy();
+    expect(banner()).toBeTruthy();
+    expect(screen.queryByRole('button', { name: t('undoBanner.undo') })).toBeNull();
   });
 
   test('Undo takes back this edit (the new one in the answer), not an earlier one', async () => {
@@ -320,7 +339,8 @@ describe('training days and moves: edited here (ADR-073 #4)', () => {
     await rename('Chest day');
     mockServices.training.read.mockImplementationOnce(() => new Promise(() => undefined));
     await save();
-    await fireEvent.press(await screen.findByLabelText(t('editProgram.undoEditLabel')));
+    await screen.findByText(t('editProgram.savedLead'));
+    await fireEvent.press(undoButton());
     expect(mockPost).toHaveBeenCalledWith('/v1/program/review/undo', { body: { changeId: 'e1' } });
   });
 
@@ -351,15 +371,17 @@ describe('training days and moves: edited here (ADR-073 #4)', () => {
   test('saved: the program the server answered is on screen, with Saved and Undo', async () => {
     mockParams = { part: 'days' };
     editable();
-    mockPatch.mockImplementationOnce(async () => ({ data: AFTER, response: { status: 200 } }));
+    mockPatch.mockImplementationOnce(async () => {
+      editable(AFTER); // the server's word, which the page reads next
+      return { data: AFTER, response: { status: 200 } };
+    });
     await show();
     await rename('Chest day');
-    // The read after it never ends: what the page shows comes from the answer alone.
-    mockServices.training.read.mockImplementationOnce(() => new Promise(() => undefined));
     await save();
-    expect(await screen.findByText(t('editProgram.saved'))).toBeTruthy();
+    expect(await screen.findByText(t('editProgram.savedLead'))).toBeTruthy();
+    expect(screen.getByText(t('editProgram.savedDetail'))).toBeTruthy();
     expect(screen.getByLabelText(t('programEditor.dayName'))).toHaveProp('value', 'Chest day');
-    expect(screen.getByText(t('editProgram.undo'))).toBeTruthy();
+    expect(undoButton()).toBeTruthy();
     // Saved is not a draft: nothing left to save.
     expect(screen.getByRole('button', { name: t('editProgram.save') })).toBeDisabled();
     mockPatch.mockClear();
@@ -376,11 +398,12 @@ describe('training days and moves: edited here (ADR-073 #4)', () => {
     await rename('Chest day');
     mockServices.training.read.mockImplementationOnce(() => new Promise(() => undefined));
     await save();
-    await fireEvent.press(await screen.findByLabelText(t('editProgram.undoEditLabel')));
+    await screen.findByText(t('editProgram.savedLead'));
+    await fireEvent.press(undoButton());
     expect(mockPost).toHaveBeenCalledWith('/v1/program/review/undo', { body: { changeId: 'e1' } });
-    expect(await screen.findByText(t('editProgram.undoneWith.other', { count: 2 }))).toBeTruthy();
-    expect(screen.queryByText(t('editProgram.saved'))).toBeNull();
-    expect(screen.getByLabelText(t('programEditor.dayName'))).toHaveProp('value', 'Upper');
+    expect(banner()).toBeNull();
+    mockData = { ...mockData, program: { state: 'ready', value: EDITABLE } };
+    expect(screen.queryByText(t('editProgram.savedLead'))).toBeNull();
   });
 
   test('an undo the program no longer allows is said', async () => {
@@ -391,10 +414,10 @@ describe('training days and moves: edited here (ADR-073 #4)', () => {
     await show();
     await rename('Chest day');
     await save();
-    await fireEvent.press(await screen.findByLabelText(t('editProgram.undoEditLabel')));
-    expect(await screen.findByText(t('editProgram.undoConflict'))).toBeTruthy();
-    // The edit cannot be undone any more: no button left to press.
-    expect(screen.queryByLabelText(t('editProgram.undoEditLabel'))).toBeNull();
+    await screen.findByText(t('editProgram.savedLead'));
+    await fireEvent.press(undoButton());
+    // Said as the system's alert, with the banner's own words (a banner that is gone cannot say it).
+    expect(mockAlert).toHaveBeenCalledWith(t('editProgram.undoConflict'));
   });
 
   test('a day moved to another weekday, a move stepped: sent as the user left them', async () => {
@@ -675,7 +698,7 @@ describe('training days and moves: edited here (ADR-073 #4)', () => {
       await rename('Chest day');
       expect(mockScreenOptions?.gestureEnabled).toBe(false);
       await save();
-      expect(await screen.findByText(t('editProgram.saved'))).toBeTruthy();
+      expect(await screen.findByText(t('editProgram.savedLead'))).toBeTruthy();
       expect(mockScreenOptions?.gestureEnabled).toBe(true);
     });
 
@@ -697,7 +720,7 @@ describe('training days and moves: edited here (ADR-073 #4)', () => {
       await rename('Chest day');
       expect(await systemBack()).toBe('stopped');
       await save();
-      expect(await screen.findByText(t('editProgram.saved'))).toBeTruthy();
+      expect(await screen.findByText(t('editProgram.savedLead'))).toBeTruthy();
       expect(await systemBack()).toBe('left');
     });
   });
@@ -790,23 +813,32 @@ describe('cardio', () => {
     expect(await screen.findByText('2 × 30 min')).toBeTruthy();
   });
 
-  test("its page: whose it is, the minutes and the days, each day where it goes", async () => {
+  // K1 (Evre 7 B4): the page is rows, not paragraphs. A switch (on/off), "Plan" or "Yours" (with Reset), the minutes, the week's days
+  // each with a dot (filled: after the weights; ring: an easy day) and one legend line. "Turn cardio off" is the switch; "Back to the
+  // coach's default" is Reset (and turning the switch on); the "saved" sentences are the app's banner.
+  const after = (name: string) => t('editProgram.cardio.dayLabel', { weekday: name, place: t('editProgram.cardio.place.AFTER_LIFT') });
+  const easy = (name: string) => t('editProgram.cardio.dayLabel', { weekday: name, place: t('editProgram.cardio.place.OFF_DAY_LOW_INTENSITY') });
+
+  test('its page: the switch is on, whose it is, the minutes and each day where it goes: no paragraph', async () => {
     mockParams = { part: 'cardio' };
     await show();
-    expect(await screen.findByText(t('editProgram.cardio.coach'))).toBeTruthy();
+    expect(await screen.findByRole('switch', { name: t('editProgram.cardio.title') })).toBeOnTheScreen();
+    expect(screen.getByText(t('editProgram.cardio.plan'))).toBeTruthy();
     expect(screen.getByText('30 min')).toBeTruthy();
-    expect(screen.getByText('Mon · after lifting')).toBeTruthy();
-    expect(screen.getByText('Fri · after lifting')).toBeTruthy();
-    // The coach's default is the coach's: no way back to it from itself.
-    expect(screen.queryByText(t('editProgram.cardio.coachDefault'))).toBeNull();
+    expect(screen.getByLabelText(after('Monday'))).toBeTruthy();
+    expect(screen.getByLabelText(after('Friday'))).toBeTruthy();
+    // The plan's own: no way back to it from itself.
+    expect(screen.queryByText(t('editProgram.cardio.reset'))).toBeNull();
+    // No sentence of explanation anywhere on the page.
+    expect(JSON.stringify(screen.toJSON())).not.toMatch(/works best|won't change|coach/i);
   });
 
-  test('changed and saved: the minutes a step up, a rest day added at an easy pace, sent whole', async () => {
+  test('changed and saved: the minutes a step up, a rest day added at an easy pace, sent whole; the banner says it', async () => {
     mockParams = { part: 'cardio' };
     await show();
     await fireEvent.press(await screen.findByLabelText(t('programEditor.moreLabel', { what: t('editProgram.cardio.minutesLabel') })));
     await fireEvent.press(screen.getByLabelText('Sunday'));
-    expect(screen.getByText('Sun · easy, no weights')).toBeTruthy();
+    expect(screen.getByLabelText(easy('Sunday'))).toBeTruthy();
     await fireEvent.press(screen.getByText(t('editProgram.cardio.save')));
     expect(mockPut).toHaveBeenCalledWith('/v1/program/cardio', {
       body: {
@@ -818,30 +850,45 @@ describe('cardio', () => {
         ],
       },
     });
-    expect(await screen.findByText(t('editProgram.cardio.saved'))).toBeTruthy();
+    expect(await screen.findByText(t('editProgram.savedLead'))).toBeTruthy();
+    expect(within(screen.getByTestId('undo-banner')).getByText(t('editProgram.cardio.savedOn'))).toBeTruthy();
   });
 
-  test('turned off: no session at all', async () => {
+  test('turned off with the switch: no session at all, and the banner says it is off (not "this is your cardio now")', async () => {
     mockParams = { part: 'cardio' };
     await show();
-    await fireEvent.press(await screen.findByText(t('editProgram.cardio.turnOff')));
+    await fireEvent(await screen.findByRole('switch', { name: t('editProgram.cardio.title') }), 'valueChange', false);
     expect(mockPut).toHaveBeenCalledWith('/v1/program/cardio', { body: { minutes: 30, sessions: [] } });
+    expect(await screen.findByText(t('editProgram.cardio.savedOff'))).toBeTruthy();
   });
 
-  test("the user's own: back to the coach's default removes it", async () => {
+  test('off: the switch is off and nothing else of the page shows (no empty chips, no Save); on again is the default plan', async () => {
     mockParams = { part: 'cardio' };
-    cardio({ source: 'USER' });
+    cardio({ source: 'USER', sessionsPerWeek: 0, sessions: [] });
     await show();
-    expect(await screen.findByText(t('editProgram.cardio.own'))).toBeTruthy();
-    await fireEvent.press(screen.getByText(t('editProgram.cardio.coachDefault')));
+    const toggle = await screen.findByRole('switch', { name: t('editProgram.cardio.title') });
+    expect(toggle).toHaveProp('value', false);
+    expect(screen.queryByText(t('editProgram.cardio.save'))).toBeNull();
+    expect(screen.queryByLabelText('Monday')).toBeNull();
+    await fireEvent(toggle, 'valueChange', true);
     expect(mockDelete).toHaveBeenCalledWith('/v1/program/cardio');
   });
 
-  test('a session after the weights past the line: one line of information, never a block (G2 K-35)', async () => {
+  test("the user's own: it says Yours, and Reset goes back to the plan's default (removes it)", async () => {
+    mockParams = { part: 'cardio' };
+    cardio({ source: 'USER' });
+    await show();
+    expect(await screen.findByText(t('editProgram.cardio.yours'))).toBeTruthy();
+    await fireEvent.press(screen.getByText(t('editProgram.cardio.reset')));
+    expect(mockDelete).toHaveBeenCalledWith('/v1/program/cardio');
+  });
+
+  test('a session after the weights past the line: one small chip, never a block, and no sentence (G2 K-35)', async () => {
     mockParams = { part: 'cardio' };
     cardio({ source: 'USER', minutes: 45, afterLiftOverLine: true });
     await show();
-    expect(await screen.findByText(t('decision.rule.cardio_after_lift_over_line'))).toBeTruthy();
+    expect(await screen.findByText(t('editProgram.cardio.long'))).toBeTruthy();
+    expect(screen.queryByText(t('decision.rule.cardio_after_lift_over_line'))).toBeNull();
     expect(screen.getByText(t('editProgram.cardio.save'))).toBeTruthy();
   });
 
@@ -858,14 +905,32 @@ describe('cardio', () => {
 
   test('saved: the page shows the cardio the server answered', async () => {
     mockParams = { part: 'cardio' };
-    mockPut.mockImplementationOnce(async () => ({ data: USER_CARDIO, response: { status: 200 } }));
+    mockPut.mockImplementationOnce(async () => {
+      mockData = { ...mockData, program: { state: 'ready', value: USER_CARDIO } }; // the server's word, which the page reads next
+      return { data: USER_CARDIO, response: { status: 200 } };
+    });
     await show();
-    // The read after it never ends: what the page shows comes from the answer alone.
-    mockServices.training.read.mockImplementationOnce(() => new Promise(() => undefined));
     await fireEvent.press(await screen.findByText(t('editProgram.cardio.save')));
-    expect(await screen.findByText(t('editProgram.cardio.own'))).toBeTruthy();
+    expect(await screen.findByText(t('editProgram.cardio.yours'))).toBeTruthy();
     expect(screen.getByText('35 min')).toBeTruthy();
-    expect(screen.queryByText('Fri · after lifting')).toBeNull();
+    expect(screen.queryByLabelText(after('Friday'))).toBeNull();
+  });
+
+  // The walk found the page still showing the old minutes and Wednesday after a reset: it shows what the server answered.
+  test('reset: the page shows the plan the server answered, not the draft it had', async () => {
+    mockParams = { part: 'cardio' };
+    cardio({ source: 'USER', minutes: 35 });
+    mockDelete.mockImplementationOnce(async () => {
+      mockData = { ...mockData, program: { state: 'ready', value: PROGRAM } };
+      return { data: PROGRAM, response: { status: 200 } };
+    });
+    await show();
+    await fireEvent.press(await screen.findByLabelText(t('programEditor.moreLabel', { what: t('editProgram.cardio.minutesLabel') })));
+    expect(screen.getByText('40 min')).toBeTruthy();
+    await fireEvent.press(screen.getByText(t('editProgram.cardio.reset')));
+    expect(await screen.findByText(t('editProgram.cardio.plan'))).toBeTruthy();
+    expect(screen.getByText('30 min')).toBeTruthy();
+    expect(screen.getByText(t('editProgram.cardio.coachBack'))).toBeTruthy();
   });
 
   test.each([
@@ -888,7 +953,7 @@ describe('cardio', () => {
     expect(await screen.findByText(t(key))).toBeTruthy();
     // The page read again after the failure: the draft is still the user's.
     expect(screen.getByText('35 min')).toBeTruthy();
-    expect(screen.getByText('Sun · easy, no weights')).toBeTruthy();
+    expect(screen.getByLabelText(easy('Sunday'))).toBeTruthy();
     await fireEvent.press(screen.getByText(t('editProgram.cardio.save')));
     expect(mockPut.mock.calls[1]).toEqual(mockPut.mock.calls[0]);
   });
@@ -905,53 +970,32 @@ describe('cardio', () => {
     await act(async () => answer({ data: PROGRAM, response: { status: 200 } }));
   });
 
-  test('no day chosen: Save is off (only "Turn cardio off" sends no day)', async () => {
+  test('no day chosen: Save is off (turning cardio off is the switch)', async () => {
     mockParams = { part: 'cardio' };
     await show();
-    await fireEvent.press(await screen.findByLabelText('Monday'));
-    await fireEvent.press(screen.getByLabelText('Friday'));
+    await fireEvent.press(await screen.findByLabelText(after('Monday')));
+    await fireEvent.press(screen.getByLabelText(after('Friday')));
     await fireEvent.press(screen.getByText(t('editProgram.cardio.save')));
     expect(mockPut).not.toHaveBeenCalled();
   });
 
-  test('cardio already off: no "Turn cardio off"', async () => {
-    mockParams = { part: 'cardio' };
-    cardio({ source: 'USER', sessionsPerWeek: 0, sessions: [] });
-    await show();
-    expect(await screen.findByText(t('editProgram.cardio.save'))).toBeTruthy();
-    expect(screen.queryByText(t('editProgram.cardio.turnOff'))).toBeNull();
-  });
-
-  test("back to the coach's default: confirmed, and the over-the-line note goes with the user's cardio", async () => {
-    mockParams = { part: 'cardio' };
-    cardio({ source: 'USER', minutes: 45, afterLiftOverLine: true });
-    mockDelete.mockImplementationOnce(async () => ({ data: PROGRAM, response: { status: 200 } }));
-    await show();
-    // The read after it never ends: what the page shows comes from the answer alone.
-    mockServices.training.read.mockImplementationOnce(() => new Promise(() => undefined));
-    await fireEvent.press(await screen.findByText(t('editProgram.cardio.coachDefault')));
-    expect(await screen.findByText(t('editProgram.cardio.coachBack'))).toBeTruthy();
-    expect(screen.queryByText(t('decision.rule.cardio_after_lift_over_line'))).toBeNull();
-    expect(screen.getByText(t('editProgram.cardio.coach'))).toBeTruthy();
-  });
-
   test('days on no weekday: a day goes after lifting on the training days the profile has; easy on the others', async () => {
     mockParams = { part: 'cardio' };
-    mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, cardio: undefined, days: PROGRAM.days.map(({ weekday: _w, ...d }) => d) } } };
+    mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, days: PROGRAM.days.map(({ weekday: _w, ...d }) => d) } } };
     await show();
     await fireEvent.press(await screen.findByLabelText('Thursday'));
     await fireEvent.press(screen.getByLabelText('Sunday'));
-    expect(screen.getByText('Thu · after lifting')).toBeTruthy();
-    expect(screen.getByText('Sun · easy, no weights')).toBeTruthy();
+    expect(screen.getByLabelText(after('Thursday'))).toBeTruthy();
+    expect(screen.getByLabelText(easy('Sunday'))).toBeTruthy();
   });
 
   test('days on no weekday and no profile read: no place is guessed, every day after lifting', async () => {
     mockParams = { part: 'cardio' };
     mockGet.mockImplementation(async () => ({ response: { status: 404 } }) as never);
-    mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, cardio: undefined, days: PROGRAM.days.map(({ weekday: _w, ...d }) => d) } } };
+    mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, days: PROGRAM.days.map(({ weekday: _w, ...d }) => d) } } };
     await show();
     await fireEvent.press(await screen.findByLabelText('Sunday'));
-    expect(screen.getByText('Sun · after lifting')).toBeTruthy();
+    expect(screen.getByLabelText(after('Sunday'))).toBeTruthy();
   });
 
   test('day chips are full touch targets; the minutes say their value and are said when they change', async () => {
@@ -965,14 +1009,22 @@ describe('cardio', () => {
   });
 });
 
-test('split: the real split, and the way to another one', async () => {
-  mockParams = { part: 'split' };
-  await show();
-  expect(await screen.findByText('Upper / Lower + Push / Pull / Legs')).toBeTruthy();
-  expect(screen.getByText(t('editProgram.splitBody'))).toBeTruthy();
-});
-
 describe('rebuild for me', () => {
+  // The button asks first with the system alert (ADR-087 #1); these answer it with the red choice.
+  beforeEach(() => {
+    answerAlert('confirm');
+  });
+
+  test('the press asks first, with the system alert; "Keep my program" sends nothing', async () => {
+    const alert = answerAlert('keep');
+    mockParams = { part: 'rebuild' };
+    await show();
+    await fireEvent.press(await screen.findByText(t('editProgram.rebuildConfirm')));
+    expect(alert.mock.calls[0][0]).toBe(t('editProgram.rebuildAsk'));
+    expect(mockPost).not.toHaveBeenCalled();
+    expect(mockDismissTo).not.toHaveBeenCalled();
+  });
+
   test("after a confirmation, a new program from the user's training days, then back to Train", async () => {
     mockParams = { part: 'rebuild' };
     await show();
@@ -997,9 +1049,24 @@ describe('rebuild for me', () => {
     expect(mockDismissTo).not.toHaveBeenCalled();
   });
 
-  test('the confirmation names what goes: targets, starting weights, this week\'s changes, the user\'s own program and moves', () => {
-    const body = t('editProgram.rebuildBody');
-    for (const word of ['targets', 'starting weights', "this week's", 'own program']) expect(body).toContain(word);
+  // K1 (Evre 7 B5): the five-line paragraph of what goes is one line and counts the user can weigh (own moves, review changes).
+  test("the confirmation is one line; what goes is counts: the user's own moves and the review's changes", async () => {
+    expect(t('editProgram.rebuildBody').split(/\s+/).length).toBeLessThanOrEqual(10);
+    mockParams = { part: 'rebuild' };
+    mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, review: { ...PROGRAM.review!, notReviewedMoves: 3 } } } };
+    await show();
+    expect(await screen.findByText(t('editProgram.goesOwnMoves.other', { count: 3 }))).toBeTruthy();
+    expect(screen.getByText(t('editProgram.goesChanges.one', { count: 1 }))).toBeTruthy();
+  });
+
+  test('rebuilt: the result is said where the user lands (the banner: days and moves), and no Undo is promised: the server keeps no copy', async () => {
+    mockParams = { part: 'rebuild' };
+    await show();
+    await fireEvent.press(await screen.findByText(t('editProgram.rebuildConfirm')));
+    expect(mockDismissTo).toHaveBeenCalledWith('/train');
+    expect(screen.getByText(t('editProgram.rebuilt'))).toBeTruthy();
+    expect(screen.getByText(t('editProgram.rebuiltDetail', { days: '3 days', moves: '4 moves' }))).toBeTruthy();
+    expect(screen.queryByRole('button', { name: t('undoBanner.undo') })).toBeNull();
   });
 
   test('a workout under way: no rebuild, and why', async () => {
@@ -1150,8 +1217,13 @@ describe('walkthrough round 3: Edit program (K-1013)', () => {
   };
   const order = () => texts(screen.toJSON());
 
-  describe('edits not saved are said where they can be seen, above the editor', () => {
-    test('nothing edited: no note; an edit: the note, above the days; saved: gone', async () => {
+  // K1 (Evre 7 B4): the note used to be inserted ABOVE the page, which pushed everything down when the first edit was made (simulator
+  // walk). It, the question on leaving, the reason Save is off and Save are one dock under the page, outside the scroll: always on the
+  // screen, and nothing above it moves.
+  describe('edits not saved are said where they can be seen: the dock under the page', () => {
+    const dock = () => within(screen.getByTestId('edit-dock'));
+
+    test('nothing edited: no note; an edit: the note in the dock, above Save; saved: gone', async () => {
       mockParams = { part: 'days' };
       editable();
       mockPatch.mockImplementationOnce(async () => ({ data: AFTER, response: { status: 200 } }));
@@ -1159,12 +1231,12 @@ describe('walkthrough round 3: Edit program (K-1013)', () => {
       await screen.findByText('Upper');
       expect(screen.queryByText(t('editProgram.unsavedNote'))).toBeNull();
       await rename('Chest day');
-      const note = screen.getByText(t('editProgram.unsavedNote'));
-      expect(note).toBeOnTheScreen();
+      expect(dock().getByText(t('editProgram.unsavedNote'))).toBeOnTheScreen();
       expect(order().indexOf(t('editProgram.unsavedNote'))).toBeLessThan(order().indexOf(t('editProgram.save')));
-      expect(order().indexOf(t('editProgram.unsavedNote'))).toBeLessThan(order().indexOf('Lower'));
+      // The page above is the same as before the edit: the note did not come in above it.
+      expect(order().indexOf(t('editProgram.unsavedNote'))).toBeGreaterThan(order().indexOf('Lower'));
       await save();
-      expect(await screen.findByText(t('editProgram.saved'))).toBeTruthy();
+      expect(await screen.findByText(t('editProgram.savedLead'))).toBeTruthy();
       expect(screen.queryByText(t('editProgram.unsavedNote'))).toBeNull();
     });
 
@@ -1180,34 +1252,39 @@ describe('walkthrough round 3: Edit program (K-1013)', () => {
       expect(screen.getByText(t('editProgram.unsavedNote'))).toBeOnTheScreen();
     });
 
-    test('an edit after Saved: "Saved." goes, so it is never on the screen with "not saved yet"', async () => {
+    test('an edit after a save: the note is there again (the banner is about the save before it)', async () => {
       mockParams = { part: 'days' };
       editable();
       mockPatch.mockImplementationOnce(async () => ({ data: AFTER, response: { status: 200 } }));
       await show();
       await rename('Chest day');
       await save();
-      expect(await screen.findByText(t('editProgram.saved'))).toBeTruthy();
+      expect(await screen.findByText(t('editProgram.savedLead'))).toBeTruthy();
       await rename('Chest day 2');
       expect(screen.getByText(t('editProgram.unsavedNote'))).toBeOnTheScreen();
-      expect(screen.queryByText(t('editProgram.saved'))).toBeNull();
     });
 
-    test('Back with edits: the question is at the top too (not under the fold), instead of the note, and the page goes up to it', async () => {
+    test('Back with edits: the question is in the dock, in place of the note (not said twice), and nothing is inserted above the page', async () => {
       mockParams = { part: 'days' };
       editable();
       await show();
       await rename('Chest day');
-      // The mocked ScrollView's scrollTo is a jest.fn shared by its instances.
-      const scrolled = ScrollView.prototype.scrollTo as unknown as jest.Mock;
-      scrolled.mockClear();
       await systemBack();
+      expect(dock().getByText(t('editProgram.leaveWarn'))).toBeOnTheScreen();
       expect(order().indexOf(t('editProgram.leaveWarn'))).toBeLessThan(order().indexOf(t('editProgram.save')));
-      expect(order().indexOf(t('editProgram.leaveWarn'))).toBeLessThan(order().indexOf('Lower'));
-      expect(screen.queryByText(t('editProgram.unsavedNote'))).toBeNull(); // not said twice
-      expect(scrolled).toHaveBeenCalledWith({ y: 0, animated: false });
+      expect(order().indexOf(t('editProgram.leaveWarn'))).toBeGreaterThan(order().indexOf('Lower'));
+      expect(screen.queryByText(t('editProgram.unsavedNote'))).toBeNull();
       await fireEvent.press(screen.getByText(t('editProgram.keepEditing')));
       expect(screen.getByText(t('editProgram.unsavedNote'))).toBeOnTheScreen();
+    });
+
+    test('Add a day over edits not saved: said in the dock, where it is seen, not under the fold', async () => {
+      mockParams = { part: 'days' };
+      editable({ ...EDITABLE, canAddDay: true });
+      await show();
+      await rename('Chest day');
+      await fireEvent.press(screen.getByText(t('programEditor.addDay')));
+      expect(dock().getByText(t('editProgram.saveFirst'))).toBeOnTheScreen();
     });
   });
 

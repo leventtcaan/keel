@@ -162,7 +162,7 @@ export default function TrainScreen() {
         <Text style={[styles.text, styles.bold, styles.grow, { color: color.text }]}>
           {t(appliedCount === 1 ? 'editProgram.applied.one' : 'editProgram.applied.other', { count: appliedCount })}
         </Text>
-        <Text style={[styles.text, { color: color.text }]}>{t('editProgram.appliedUndo')}</Text>
+        <Text style={[styles.text, { color: color.text }]}>{t('editProgram.reviewChanges')}</Text>
       </Pressable>
     );
   const decision = data?.decision.state === 'ready' && data.decision.value.action.type !== 'NO_DECISION_YET' ? data.decision.value : null;

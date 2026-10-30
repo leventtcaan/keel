@@ -15,7 +15,8 @@ function said<T>(read: Loaded<T> | undefined, value: (found: T) => string): stri
   return t(read.state === 'none' ? 'settings.training.none' : 'settings.training.unread');
 }
 
-const edit = (part: 'days' | 'cardio') => router.push({ pathname: '/edit-program', params: { part } });
+/** Days open Edit program's own list (one door to the program, not the editor straight away); cardio is its page. */
+const edit = (part?: 'cardio') => router.push(part === undefined ? '/edit-program' : { pathname: '/edit-program', params: { part } });
 
 /**
  * Settings › Training (K-982, ADR-074 #4, ADR-073; a grouped list, ADR-070 Ek 2 #2): the days (the program's own weekdays,
@@ -30,7 +31,7 @@ export function TrainingGroup() {
   const { data } = useReadOnFocus(read);
   return (
     <ListGroup title={t('settings.training.title')} testID="group-training">
-      <ListRow icon="calendar" label={t('settings.training.days')} value={said(data?.program, daysLine)} navigates onPress={() => edit('days')} />
+      <ListRow icon="calendar" label={t('settings.training.days')} value={said(data?.program, daysLine)} navigates onPress={() => edit()} />
       <ListRow icon="figure.run" label={t('editProgram.cardio.title')} value={said(data?.program, cardioLine)} navigates onPress={() => edit('cardio')} />
       <ListRow icon="square.and.arrow.down" label={t('settings.training.import')} value={t('settings.training.importFrom')} navigates onPress={() => router.push('/import')} />
     </ListGroup>

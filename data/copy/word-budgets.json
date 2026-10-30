@@ -993,7 +993,7 @@
         "train.addDay",
         "train.addDayLabel",
         "editProgram.editLabel",
-        "editProgram.appliedUndo",
+        "editProgram.reviewChanges",
         "openElsewhere.continue",
         "openElsewhere.continueLabel",
         "openElsewhere.later",

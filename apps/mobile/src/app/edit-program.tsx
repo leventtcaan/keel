@@ -1,13 +1,16 @@
 import { Stack, router, useLocalSearchParams, useNavigation } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
+import { ListGroup, ListRow } from '@/components/ListGroup';
 import { ProblemText, announce, useProblem } from '@/components/ProblemText';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
+import { type Undone as SavedUndone, useSaved } from '@/saved/saved';
+import { askFirst } from '@/settings/askFirst';
 import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
@@ -18,7 +21,7 @@ import { liftDays } from '@/train/cardio';
 import { CardioEditor } from '@/train/CardioEditor';
 import { type Changed, type Undone, applySuggestion, coachCardio, editProgram, putCardio, rebuild, undoChange } from '@/train/changes';
 import type { SaveOutcome } from '@/train/OwnMoveForm';
-import { dayName, exerciseName } from '@/train/program';
+import { exerciseName } from '@/train/program';
 import { type EditedDay, draftFits, editedDays, programEditOf, targetsLost } from '@/train/programEdit';
 import { BuildProgramPrompt } from '@/train/BuildProgramPrompt';
 import { ProgramEditor } from '@/train/ProgramEditor';
@@ -29,8 +32,8 @@ import { splitName } from '@/train/week';
 import { activeWorkout } from '@/train/workout';
 
 type Schemas = components['schemas'];
-type Part = 'days' | 'moves' | 'changes' | 'cardio' | 'split' | 'rebuild';
-const PARTS: readonly Part[] = ['days', 'moves', 'changes', 'cardio', 'split', 'rebuild'];
+type Part = 'days' | 'moves' | 'changes' | 'cardio' | 'rebuild';
+const PARTS: readonly Part[] = ['days', 'moves', 'changes', 'cardio', 'rebuild'];
 
 const plural = (key: string, count: number, vars: Record<string, string | number> = {}) =>
   t(`${key}.${count === 1 ? 'one' : 'other'}`, { count, ...vars });
@@ -55,6 +58,7 @@ const SAID = { conflict: 'editProgram.stale', offline: 'editProgram.offline', fa
 export default function EditProgramScreen() {
   const { api, training, workoutRecords, report } = useAppServices();
   const { color } = useTheme();
+  const saved = useSaved();
   const params = useLocalSearchParams<{ part?: string }>();
   const navigation = useNavigation();
   // Set when the page is left on purpose ("Leave without saving", a rebuild that moves on), so the stop on unsaved edits lets it through.
@@ -106,7 +110,6 @@ export default function EditProgramScreen() {
   // save (the user's work) and goes with a saved one, an apply, an undo, or a program that changed under it.
   const [draft, setDraft] = useState<EditedDay[] | null>(null);
   const [warned, setWarned] = useState<string[] | null>(null);
-  const [savedEdit, setSavedEdit] = useState<string | null>(null);
   // Back with edits not saved asks first (they would be gone).
   const [leaving, setLeaving] = useState(false);
   const base = useMemo(() => (program === null ? [] : editedDays(program)), [program]);
@@ -124,7 +127,6 @@ export default function EditProgramScreen() {
     (next: (all: EditedDay[]) => EditedDay[]) => {
       setDraft((before) => next(before ?? base));
       setWarned(null);
-      setSavedEdit(null);
       // "Saved." was about the edit before this one: it must not stand beside "not saved yet".
       setDone(null);
       // The warning was about the edit as it was; this is another.
@@ -194,8 +196,9 @@ export default function EditProgramScreen() {
       (answer) => {
         const edits = 'program' in answer ? answer.program.review?.edits ?? [] : [];
         setDraft(null);
-        setSavedEdit(edits.filter((e) => !known.has(e.id)).at(-1)?.id ?? null);
-        setDone(t('editProgram.saved'));
+        // The app's one confirmation (the banner), with Undo for this edit: it is a change of the log.
+        const editId = edits.filter((e) => !known.has(e.id)).at(-1)?.id;
+        saved({ lead: t('editProgram.savedLead'), detail: t('editProgram.savedDetail'), ...(editId === undefined ? {} : { undo: () => takeBack(editId) }) });
       },
       { ...words(SAID), conflict: () => t(CONFLICT[fits]), refused: t('editProgram.editRefused') },
       // The rows the draft names are gone: the program as the server has it now is what to edit again.
@@ -230,6 +233,12 @@ export default function EditProgramScreen() {
       return 'offline';
     }
   };
+  /** Taking a saved edit back from the banner: its own call, closed over the services (the page may be gone by then). */
+  const takeBack = async (changeId: string): Promise<SavedUndone> => {
+    const answer = await undoChange(api, changeId);
+    if (answer.kind === 'done') return { done: true, said: t('editProgram.undone') };
+    return { done: false, message: t(answer.kind === 'conflict' ? 'editProgram.undoConflict' : answer.kind === 'offline' ? 'editProgram.offline' : 'editProgram.failed'), again: answer.kind !== 'conflict' };
+  };
   // An undo refused is not a stale review: the program changed another way since its last change.
   const undoOf = (changeId: string) =>
     void send(
@@ -238,11 +247,8 @@ export default function EditProgramScreen() {
         const also = 'alsoUndone' in answer ? answer.alsoUndone.length : 0;
         setDone(also === 0 ? t('editProgram.undone') : plural('editProgram.undoneWith', also));
         setDraft(null);
-        setSavedEdit(null);
       },
       words({ ...SAID, conflict: 'editProgram.undoConflict' }),
-      // Not allowed any more: the button would say the same again.
-      (kind) => kind === 'conflict' && setSavedEdit(null),
     );
   const undo = (applied: Schemas['AppliedReviewChange']) => undoOf(applied.id);
   // A tap waits for the training days too: a second one before they come must not rebuild twice.
@@ -279,9 +285,17 @@ export default function EditProgramScreen() {
     let rebuilt = false;
     await send(
       () => rebuild(api, days),
-      () => {
+      (answer) => {
         rebuilt = true;
         leaveFreely.current = true;
+        // The result is said where the user lands: what the new program is (the server has no snapshot of the old one, so no Undo).
+        if ('program' in answer) {
+          const made = answer.program;
+          saved({
+            lead: t('editProgram.rebuilt'),
+            detail: t('editProgram.rebuiltDetail', { days: plural('programEditor.days', made.days.length), moves: plural('editProgram.moveCount', made.days.reduce((n, d) => n + d.exercises.length, 0)) }),
+          });
+        }
         router.dismissTo('/train');
       },
       // Which days the server builds for is its rule: the phone only says how many it was asked for.
@@ -292,25 +306,49 @@ export default function EditProgramScreen() {
     if (!rebuilt && shown.current) setWorking(false);
   };
 
+  // The one question before it goes, as the system's own alert (ADR-087 #1): the red choice is the rebuild.
+  const askRebuild = () =>
+    askFirst({
+      title: t('editProgram.rebuildAsk'),
+      body: t('editProgram.rebuildBody'),
+      confirmLabel: t('editProgram.rebuildGo'),
+      keepLabel: t('editProgram.rebuildKeep'),
+      onConfirm: () => void rebuildNow(),
+    });
+
   let title = t('editProgram.title');
   let body = null;
+  let dockEditor: ReactNode = null;
   if (program !== null && part === null) {
     const count = program.days.reduce((n, d) => n + d.exercises.length, 0);
     const movesLine = plural('editProgram.moveCount', count);
     const flags = review?.suggestions.length ?? 0;
     const applied = review?.applied.length ?? 0;
+    // The same grouped list as Settings (ADR-070 Ek 2 #2): icon, name, value, chevron. Days and moves are one page (they were two
+    // rows of one editor); the split is no row (it follows the days: the line under the title says it); a rebuild stands apart.
+    // Built outside the JSX children (the raw-text guard reads them).
+    const appliedRow =
+      applied === 0 ? null : (
+        <ListGroup>
+          <ListRow icon="checkmark.circle" label={plural('editProgram.applied', applied)} value={t('editProgram.reviewChanges')} navigates onPress={() => open('changes')} />
+        </ListGroup>
+      );
+    const programValue = flags === 0 ? movesLine : plural('editProgram.flags', flags, { moves: movesLine });
     body = (
       <View style={styles.rows}>
-        {applied > 0 && <Row title={plural('editProgram.applied', applied)} detail={t('editProgram.appliedUndo')} onPress={() => open('changes')} />}
-        <Row title={t('editProgram.days')} detail={daysLine(program)} onPress={() => open('days')} />
-        <Row title={t('editProgram.moves')} detail={flags === 0 ? movesLine : plural('editProgram.flags', flags, { moves: movesLine })} onPress={() => open('moves')} />
-        <Row title={t('editProgram.cardio.title')} detail={cardioLine(program)} onPress={() => open('cardio')} />
-        <Row title={t('editProgram.split')} detail={splitName(program)} onPress={() => open('split')} />
-        <Row title={t('editProgram.rebuild')} detail={t('editProgram.rebuildRow')} onPress={() => open('rebuild')} />
+        <Text style={[styles.small, { color: color.textSecondary }]}>{t('editProgram.programLine', { split: splitName(program), days: plural('programEditor.days', program.days.length) })}</Text>
+        {appliedRow}
+        <ListGroup>
+          <ListRow icon="calendar" label={t('editProgram.program')} detail={daysLine(program)} value={programValue} navigates onPress={() => open('moves')} />
+          <ListRow icon="figure.run" label={t('editProgram.cardio.title')} value={cardioLine(program)} navigates onPress={() => open('cardio')} />
+        </ListGroup>
+        <ListGroup>
+          <ListRow icon="arrow.triangle.2.circlepath" label={t('editProgram.rebuild')} detail={t('editProgram.rebuildRow')} navigates onPress={() => open('rebuild')} />
+        </ListGroup>
       </View>
     );
   } else if (program !== null && (part === 'days' || part === 'moves')) {
-    title = t(part === 'days' ? 'editProgram.days' : 'editProgram.moves');
+    title = t(part === 'days' ? 'editProgram.days' : 'editProgram.program');
     const warning =
       warned === null ? null : (
         <View style={[styles.flag, { backgroundColor: color.accentSoft }]}>
@@ -320,13 +358,18 @@ export default function EditProgramScreen() {
         </View>
       );
     const notReady = dirty && edit === null ? <Text style={[styles.small, { color: color.textSecondary }]}>{t('editProgram.notReady')}</Text> : null;
+    // The warning about targets, the reason a day is not ready and Save are in the dock under the page (always on the screen).
     const editor = (
       <View style={styles.rows}>
         <ProgramEditor days={days} onChange={onEdit} moves={catalog} makeOwn={makeOwn} onAddDay={addDayHere} />
+      </View>
+    );
+    dockEditor = (
+      <>
         {warning}
         {notReady}
         <Button label={t('editProgram.save')} disabled={busy || !dirty || edit === null} onPress={() => save(false)} />
-      </View>
+      </>
     );
     body =
       part === 'days' ? (
@@ -359,24 +402,15 @@ export default function EditProgramScreen() {
     );
   } else if (program !== null && part === 'cardio') {
     title = t('editProgram.cardio.title');
-    const saved = () => setDone(t('editProgram.cardio.saved'));
+    const said = (detail: string) => () => saved({ lead: t('editProgram.savedLead'), detail });
     body = (
       <CardioEditor
         program={program}
         lifts={liftDays(program, data?.profileDays ?? null)}
         busy={busy}
-        onSave={(plan) => void send(() => putCardio(api, plan), saved, words(SAID))}
-        onCoach={() => void send(() => coachCardio(api), () => setDone(t('editProgram.cardio.coachBack')), words(SAID))}
+        onSave={(plan) => void send(() => putCardio(api, plan), said(plan.sessions.length === 0 ? t('editProgram.cardio.savedOff') : t('editProgram.cardio.savedOn')), words(SAID))}
+        onCoach={() => void send(() => coachCardio(api), said(t('editProgram.cardio.coachBack')), words(SAID))}
       />
-    );
-  } else if (program !== null && part === 'split') {
-    title = t('editProgram.split');
-    body = (
-      <View style={styles.rows}>
-        <Text style={[styles.heading, { color: color.text }]}>{splitName(program)}</Text>
-        <Text style={[styles.text, { color: color.textSecondary }]}>{program.days.map(dayName).join(t('editProgram.dayList'))}</Text>
-        <Text style={[styles.text, { color: color.text }]}>{t('editProgram.splitBody')}</Text>
-      </View>
     );
   } else if (program !== null && part === 'rebuild') {
     title = t('editProgram.rebuild');
@@ -385,10 +419,9 @@ export default function EditProgramScreen() {
     const confirm = underWay ? null : (
       <Button
         label={t(working ? 'buildProgram.building' : 'editProgram.rebuildConfirm')}
-        variant="warn"
         busy={working}
         disabled={busy || working}
-        onPress={() => void rebuildNow()}
+        onPress={askRebuild}
       />
     );
     const progress = !working ? null : (
@@ -396,9 +429,25 @@ export default function EditProgramScreen() {
         <ActivityIndicator color={color.muted} />
       </View>
     );
+    // What goes, as counts the user can weigh (not a paragraph): their own moves, the review's changes in force.
+    const goes = [
+      ...((review?.notReviewedMoves ?? 0) > 0 ? [plural('editProgram.goesOwnMoves', review?.notReviewedMoves ?? 0)] : []),
+      ...((review?.applied.length ?? 0) > 0 ? [plural('editProgram.goesChanges', review?.applied.length ?? 0)] : []),
+    ];
+    const chips =
+      underWay || goes.length === 0 ? null : (
+        <View style={styles.chips}>
+          {goes.map((what) => (
+            <View key={what} style={[styles.chip, { backgroundColor: color.surface }]}>
+              <Text style={[styles.small, styles.bold, { color: color.text }]}>{what}</Text>
+            </View>
+          ))}
+        </View>
+      );
     body = (
       <View style={styles.rows}>
         <Text style={[styles.text, { color: color.text }]}>{t(underWay ? 'editProgram.rebuildUnderWay' : 'editProgram.rebuildBody')}</Text>
+        {chips}
         {confirm}
         {progress}
       </View>
@@ -407,13 +456,11 @@ export default function EditProgramScreen() {
     // No program (K-1037, ADR-084): nothing to edit, and the way to build one.
     body = <BuildProgramPrompt />;
   }
-  // The page is long and Back is at its foot: the question is asked at the top, so the page goes up to it, without
-  // motion (Reduce Motion, accessibility.test.ts).
-  const scroller = useRef<ScrollView>(null);
+  // The question is asked in the dock at the foot of the screen, which is always on it: nothing is inserted above the page, so it
+  // never jumps (simulator walk, Evre 7).
   const announceLeaving = useCallback(() => {
     setLeaving(true);
     announce(t('editProgram.leaveWarn'));
-    scroller.current?.scrollTo({ y: 0, animated: false });
   }, []);
   // The way back is the system's (the header's button, the edge swipe, ADR-070 Ek 2 #4). With edits not saved it is stopped
   // and the question is asked instead; "Leave without saving" is the one way out that lets it through.
@@ -441,7 +488,7 @@ export default function EditProgramScreen() {
         <Button label={t('editProgram.keepEditing')} variant="ghost" onPress={() => setLeaving(false)} />
       </View>
     ) : null;
-  // Edits not saved are said at the top, where they are seen: the iOS edge swipe back is off meanwhile (it would drop them
+  // Edits not saved are said in the dock, where they are seen: the iOS edge swipe back is off meanwhile (it would drop them
   // without a question), and a swipe that does nothing, with the reason below the fold, looked broken (K-1013).
   const unsaved =
     !dirty || leave !== null ? null : (
@@ -449,47 +496,39 @@ export default function EditProgramScreen() {
         <Text style={[styles.small, { color: color.text }]}>{t('editProgram.unsavedNote')}</Text>
       </View>
     );
-  const undoEdit =
-    savedEdit === null ? null : (
-      <Button label={t('editProgram.undo')} accessibilityLabel={t('editProgram.undoEditLabel')} variant="ghost" disabled={busy} onPress={() => undoOf(savedEdit)} />
+  // The dock under the page: what was answered or went wrong, the question on leaving, the unsaved note and Save. It is outside
+  // the scroll, so each is on the screen when it comes and nothing above it moves.
+  const answered_ = done === null ? null : <ProblemText style={[styles.text, { color: color.text }]}>{done}</ProblemText>;
+  const problem_ =
+    problem === null ? null : (
+      <ProblemText occurrence={occurrence} style={[styles.text, { color: color.text }]}>
+        {problem}
+      </ProblemText>
+    );
+  const dock =
+    answered_ === null && problem_ === null && leave === null && unsaved === null && dockEditor === null ? null : (
+      <View testID="edit-dock" style={[styles.dock, { backgroundColor: color.background, borderColor: color.line }]}>
+        {answered_}
+        {problem_}
+        {leave}
+        {unsaved}
+        {dockEditor}
+      </View>
     );
   return (
     <SafeAreaView edges={['bottom']} style={[styles.safe, { backgroundColor: color.background }]}>
       {/* The iOS edge swipe back would drop unsaved edits without the question Back asks. */}
       <Stack.Screen options={{ gestureEnabled: !dirty && !working, headerBackVisible: !working }} />
-      <ScrollView ref={scroller} contentContainerStyle={styles.body}>
+      <ScrollView contentContainerStyle={styles.body}>
         <ScreenTitle>{title}</ScreenTitle>
-        {leave}
-        {unsaved}
         {body}
-        {done !== null && <ProblemText style={[styles.text, { color: color.text }]}>{done}</ProblemText>}
-        {undoEdit}
-        {problem !== null && (
-          <ProblemText occurrence={occurrence} style={[styles.text, { color: color.text }]}>
-            {problem}
-          </ProblemText>
-        )}
       </ScrollView>
+      {dock}
     </SafeAreaView>
   );
 }
 
 const open = (part: Part) => router.push({ pathname: '/edit-program', params: { part } });
-
-/** A part of the program: what it is, what it holds now. */
-function Row({ title, detail, onPress }: { title: string; detail: string; onPress: () => void }) {
-  const { color } = useTheme();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`${title}, ${detail}`}
-      onPress={onPress}
-      style={({ pressed }) => [styles.row, { backgroundColor: color.surface }, pressed && styles.dim]}>
-      <Text style={[styles.text, styles.bold, { color: color.text }]}>{title}</Text>
-      <Text style={[styles.small, { color: color.textSecondary }]}>{detail}</Text>
-    </Pressable>
-  );
-}
 
 /** A review suggestion in its words, with what can be done to it (Apply, or Undo once applied). */
 function Flag({ suggestion, action, busy, onPress }: { suggestion: Schemas['ReviewSuggestion']; action: string; busy: boolean; onPress: () => void }) {
@@ -507,8 +546,8 @@ function Flag({ suggestion, action, busy, onPress }: { suggestion: Schemas['Revi
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   body: { padding: tokens.space.lg, gap: tokens.space.md },
+  dock: { gap: tokens.space.sm, padding: tokens.space.lg, borderTopWidth: tokens.border.hairline },
   rows: { gap: tokens.space.sm },
-  row: { minHeight: tokens.size.touch, borderRadius: tokens.radius.card, padding: tokens.space.md, gap: tokens.space.xs },
   day: { gap: tokens.space.xs },
   move: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
   flag: { borderRadius: tokens.radius.card, padding: tokens.space.md, gap: tokens.space.sm },
@@ -519,4 +558,6 @@ const styles = StyleSheet.create({
   small: { fontSize: tokens.type.bodySmall },
   dim: { opacity: tokens.opacity.dim },
   progress: { alignItems: 'center' },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm },
+  chip: { borderRadius: tokens.radius.chip, paddingHorizontal: tokens.space.md, paddingVertical: tokens.space.xs },
 });

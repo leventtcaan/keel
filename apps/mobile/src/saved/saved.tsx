@@ -24,7 +24,7 @@ export type Save = {
    * Takes the save back through the very calls the screen that saved it would make (the delete by id, the held send
    * dropped). Closed over services, never over the screen's state: that screen is gone by now.
    */
-  undo: () => Promise<Undone>;
+  undo?: () => Promise<Undone>;
 };
 
 type Shown = Save & { id: number };
@@ -114,10 +114,12 @@ export function SavedBanner() {
   const insets = useContext(SafeAreaInsetsContext);
   if (shown === null) return null;
 
+  const undoCall = shown.undo;
   const undo = async () => {
+    if (undoCall === undefined) return;
     let result: Undone;
     try {
-      result = await shown.undo();
+      result = await undoCall();
     } catch {
       result = { done: false, message: t('undoBanner.failed'), again: true };
     }
@@ -137,7 +139,7 @@ export function SavedBanner() {
       key={shown.id}
       lead={shown.lead}
       detail={shown.detail}
-      onUndo={() => void undo()}
+      onUndo={undoCall === undefined ? undefined : () => void undo()}
       onDismiss={() => dismiss(shown.id)}
       bottomOffset={(insets?.bottom ?? 0) + PLUS_TOP + tokens.space.sm}
     />
