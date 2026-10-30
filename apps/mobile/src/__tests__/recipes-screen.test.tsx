@@ -119,7 +119,7 @@ test('without the health data consent: it says recipes need it, and where to giv
   await show();
   expect(screen.getByText(t('recipes.consent'))).toBeTruthy();
   await fireEvent.press(screen.getByRole('button', { name: t('recipes.openSettings') }));
-  expect(mockPush).toHaveBeenCalledWith('/settings');
+  expect(mockPush).toHaveBeenCalledWith({ pathname: '/settings-detail', params: { part: 'consent' } });
 });
 
 test('read again when the screen comes back into view (a recipe just entered)', async () => {

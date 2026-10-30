@@ -15,6 +15,7 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
 import type { Loaded } from './today';
+import { openDetail } from '@/settings/detail';
 
 type Schemas = components['schemas'];
 
@@ -35,7 +36,7 @@ export function FoodLine({ budget }: { budget: Loaded<Schemas['DayBudget']> }) {
       <View testID="food-locked" style={[styles.card, styles.line, styles.clear, { backgroundColor: color.surface }]}>
         <SymbolView name="lock.fill" size={tokens.type.body} tintColor={color.muted} />
         <Text style={[styles.text, styles.grow, { color: color.textSecondary }]}>{t('thisWeek.food.locked')}</Text>
-        <Button label={t('thisWeek.food.allow')} accessibilityLabel={t('thisWeek.food.allowLabel')} variant="text" size="sm" onPress={() => router.push('/settings')} />
+        <Button label={t('thisWeek.food.allow')} accessibilityLabel={t('thisWeek.food.allowLabel')} variant="text" size="sm" onPress={() => openDetail('consent')} />
       </View>
     );
   }

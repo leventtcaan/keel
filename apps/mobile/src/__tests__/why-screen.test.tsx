@@ -152,7 +152,7 @@ test('without the health data consent: one line and the way to Settings', async 
   await show();
   expect(screen.getByText(t('today.consent.body'))).toBeOnTheScreen();
   await act(async () => fireEvent.press(screen.getByRole('button', { name: t('today.consent.open') })));
-  expect(mockPush).toHaveBeenCalledWith('/settings');
+  expect(mockPush).toHaveBeenCalledWith({ pathname: '/settings-detail', params: { part: 'consent' } });
 });
 
 test('not read: said once, with a way to try again that reads both again', async () => {

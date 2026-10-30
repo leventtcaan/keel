@@ -91,6 +91,16 @@ function rowOf(change: Schemas['DecisionChange'], offPlan: boolean, units: UnitS
   return { id: what, kind: 'change', label: name, from, to, spoken: t('callScreen.changes.spoken', { what: name, from: spokenFrom, to }) };
 }
 
+/**
+ * What a call moved, said for the banner that follows "Use this call": each target's old and new value, the call's own
+ * (`after`), never the one in force that a call kept off the plan carries (`inForce`: it is applied now). Nothing for a call
+ * that moved no target: the banner then says only that it is applied (U1).
+ */
+export function appliedWords(decision: Schemas['Decision'], units: UnitSystem): string | undefined {
+  const rows = (decision.changes ?? []).flatMap((change) => rowOf({ ...change, inForce: undefined }, false, units) ?? []);
+  return rows.length === 0 ? undefined : rows.map((row) => row.spoken).join(t('today.call.appliedJoin'));
+}
+
 /** The call's changes in the server's order; none for a call that moved no target. */
 export function changeRows(decision: Schemas['Decision'], units: UnitSystem): ChangeRow[] {
   const state = decision.application.state;

@@ -81,13 +81,13 @@ test('the three changes, each saying what it does: no catch-up for a skip', asyn
   expect(await screen.findByText('Short on time')).toBeTruthy();
   expect(screen.getByText('Move it')).toBeTruthy();
   expect(screen.getByText('Skip today')).toBeTruthy();
-  expect(await screen.findByText('No catch-up. Monday reads what happened.')).toBeTruthy();
+  expect(await screen.findByText("No catch-up, Monday's call reads the week.")).toBeTruthy();
 });
 
 test("skip: the day that reads what happened is the user's check-in day (user test 10 Oct)", async () => {
   mockCheckInDay = 'SUNDAY';
   await show();
-  expect(await screen.findByText('No catch-up. Sunday reads what happened.')).toBeTruthy();
+  expect(await screen.findByText("No catch-up, Sunday's call reads the week.")).toBeTruthy();
   expect(screen.queryByText(/Monday/)).toBeNull();
 });
 
@@ -95,7 +95,7 @@ test('skip, the check-in day not known (profile not read): no day is made up', a
   mockCheckInDay = null;
   await show();
   expect(await screen.findByText(t('todayChange.skip.bodyNoDay'))).toBeTruthy();
-  expect(screen.queryByText(/reads what happened/)).toBeNull();
+  expect(screen.queryByText(/reads the week/)).toBeNull();
 });
 
 test.each([

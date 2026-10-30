@@ -72,3 +72,13 @@ describe('the catalog moves cues', () => {
     expect(new Set(lists).size).toBe(lists.length);
   });
 });
+
+// The Edit page shows a review suggestion's body in its row: one short plain line, no "Coaching rule:" lead and no jargon (Evre 7 final pass).
+describe('the review suggestions in the Edit row', () => {
+  const rules = Object.keys((en as Json).review as Json);
+
+  test.each(rules)('review.%s.body is one short plain line', (rule) => {
+    expect(text(`review.${rule}.body`)).not.toMatch(/coaching rule|compound|isolation/i);
+    expect(words(`review.${rule}.body`)).toBeLessThanOrEqual(18);
+  });
+});

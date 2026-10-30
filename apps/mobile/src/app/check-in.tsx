@@ -27,6 +27,7 @@ import { newClientId } from '@/sync/send';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import type { Loaded } from '@/today/today';
+import { openDetail } from '@/settings/detail';
 
 const SAID: Record<SendProblem, string> = {
   NoConnection: 'checkIn.screen.sendFailed',
@@ -136,7 +137,7 @@ function Body({ checkIn, picks, onPick, onRetry }: BodyProps) {
       return (
         <View style={styles.note}>
           {line('today.consent.body')}
-          <Button label={t('today.consent.open')} variant="ghost" size="sm" onPress={() => router.push('/settings')} />
+          <Button label={t('today.consent.open')} variant="ghost" size="sm" onPress={() => openDetail('consent')} />
         </View>
       );
     case 'failed':

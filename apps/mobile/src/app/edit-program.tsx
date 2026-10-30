@@ -1,4 +1,6 @@
-import { Stack, router, useLocalSearchParams, useNavigation } from 'expo-router';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
+// Not exported from the package root: the header's native Back pops the route by itself unless it is registered as prevented.
+import { usePreventRemove } from 'expo-router/build/react-navigation/core/usePreventRemove';
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -60,9 +62,9 @@ export default function EditProgramScreen() {
   const { color } = useTheme();
   const saved = useSaved();
   const params = useLocalSearchParams<{ part?: string }>();
-  const navigation = useNavigation();
-  // Set when the page is left on purpose ("Leave without saving", a rebuild that moves on), so the stop on unsaved edits lets it through.
-  const leaveFreely = useRef(false);
+  // Set when the page is left on purpose ("Leave without saving", a rebuild that moves on). It is state, not a ref: the stop on
+  // unsaved edits is registered with the navigator on render, so it is lifted first and the way out is taken after (the effect below).
+  const [exit, setExit] = useState<'back' | 'train' | null>(null);
   const part = PARTS.find((p) => p === params.part) ?? null;
   const { data, reload } = useReadOnFocus(
     useCallback(async () => {
@@ -139,7 +141,8 @@ export default function EditProgramScreen() {
   /** One request at a time; its answer shown and said here, and the program read again. */
   const send = async (
     request: () => Promise<Answer>,
-    then: (answer: Answer) => void,
+    // 'saved': the banner was published, and a save makes the page read again (`afterSaves` above): one read, not two.
+    then: (answer: Answer) => void | 'saved',
     said: Record<string, string | (() => string)> = SAID,
     otherwise?: (kind: string) => void,
   ) => {
@@ -151,20 +154,33 @@ export default function EditProgramScreen() {
     sending.current = false;
     if (!shown.current) return;
     setBusy(false);
+    let readsAfterSave = false;
     if (answer.kind === 'done') {
       setProblem(null);
       setAnswered({ program: answer.program, over: data });
-      then(answer);
+      readsAfterSave = then(answer) === 'saved';
     } else {
       const word = said[answer.kind];
       setProblem(typeof word === 'function' ? word() : (word ?? t(SAID.failed)));
       otherwise?.(answer.kind);
     }
-    reload();
+    if (!readsAfterSave) reload();
   };
   const words = (keys: Record<string, string>) => Object.fromEntries(Object.entries(keys).map(([k, key]) => [k, t(key)]));
   const apply = (s: Schemas['ReviewSuggestion']) => {
-    if (review !== undefined) void send(() => applySuggestion(api, review.id, s.id), () => setDraft(null), words(SAID));
+    if (review === undefined) return;
+    // The change this apply made is the one in the answer's list that the review did not have: Undo takes that one back.
+    const known = new Set(review.applied.map((a) => a.id));
+    void send(
+      () => applySuggestion(api, review.id, s.id),
+      (answer) => {
+        setDraft(null);
+        const made = 'program' in answer ? answer.program.review?.applied.find((a) => a.suggestion.id === s.id && !known.has(a.id)) : undefined;
+        saved({ lead: t('editProgram.appliedLead'), detail: suggestionWords(s, 'title'), ...(made === undefined ? {} : { undo: () => takeBack(made.id) }) });
+        return 'saved';
+      },
+      words(SAID),
+    );
   };
   const names = (ids: string[]) => ids.map((id) => exerciseName(id, moves)).join(t('editProgram.listJoin'));
   // Saving the edit: the moves whose target it takes are said first, once; saved, the program answered is shown and the
@@ -287,7 +303,7 @@ export default function EditProgramScreen() {
       () => rebuild(api, days),
       (answer) => {
         rebuilt = true;
-        leaveFreely.current = true;
+        setExit('train');
         // The result is said where the user lands: what the new program is (the server has no snapshot of the old one, so no Undo).
         if ('program' in answer) {
           const made = answer.program;
@@ -296,7 +312,6 @@ export default function EditProgramScreen() {
             detail: t('editProgram.rebuiltDetail', { days: plural('programEditor.days', made.days.length), moves: plural('editProgram.moveCount', made.days.reduce((n, d) => n + d.exercises.length, 0)) }),
           });
         }
-        router.dismissTo('/train');
       },
       // Which days the server builds for is its rule: the phone only says how many it was asked for.
       { ...words(SAID), refused: t('editProgram.rebuildRefused', { count: days.length }) },
@@ -463,16 +478,13 @@ export default function EditProgramScreen() {
     announce(t('editProgram.leaveWarn'));
   }, []);
   // The way back is the system's (the header's button, the edge swipe, ADR-070 Ek 2 #4). With edits not saved it is stopped
-  // and the question is asked instead; "Leave without saving" is the one way out that lets it through.
-  useEffect(
-    () =>
-      navigation.addListener('beforeRemove', (event) => {
-        if (leaveFreely.current || !dirty) return;
-        event.preventDefault();
-        announceLeaving();
-      }),
-    [navigation, dirty, announceLeaving],
-  );
+  // and the question is asked instead; "Leave without saving" is the one way out that lets it through. Registered with React
+  // Navigation's `usePreventRemove`: a bare `beforeRemove` listener does not stop the native header Back, which pops by itself.
+  usePreventRemove(dirty && exit === null, announceLeaving);
+  useEffect(() => {
+    if (exit === 'back') router.back();
+    if (exit === 'train') router.dismissTo('/train');
+  }, [exit]);
   const leave =
     leaving && dirty ? (
       <View style={[styles.flag, { backgroundColor: color.accentSoft }]}>
@@ -481,8 +493,7 @@ export default function EditProgramScreen() {
           label={t('editProgram.leave')}
           variant="warn"
           onPress={() => {
-            leaveFreely.current = true;
-            router.back();
+            setExit('back');
           }}
         />
         <Button label={t('editProgram.keepEditing')} variant="ghost" onPress={() => setLeaving(false)} />

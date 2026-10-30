@@ -108,6 +108,8 @@ let mockScreenOptions: { gestureEnabled?: boolean } | undefined;
  * that calls `preventDefault` stops it. `systemBack()` is that press.
  */
 let mockBeforeRemove: ((event: { preventDefault: () => void }) => void)[] = [];
+/** What the screen last told `usePreventRemove`: the native header Back pops by itself unless the route is registered as prevented. */
+let mockPrevented = false;
 const mockNavigation = {
   addListener: (_type: string, listener: (event: { preventDefault: () => void }) => void) => {
     mockBeforeRemove.push(listener);
@@ -116,6 +118,27 @@ const mockNavigation = {
     };
   },
 };
+// React Navigation's `usePreventRemove`: registers the route as prevented (so the native header Back does not pop it) and, while
+// prevented, stops the removal and calls back. The mock keeps one `beforeRemove` listener that `systemBack()` triggers.
+jest.mock('expo-router/build/react-navigation/core/usePreventRemove', () => ({
+  usePreventRemove: (prevent: boolean, callback: (options: { data: { action: { type: string } } }) => void) => {
+    const React = jest.requireActual<typeof import('react')>('react');
+    const latest = React.useRef({ prevent, callback });
+    latest.current = { prevent, callback };
+    mockPrevented = prevent;
+    React.useEffect(() => {
+      const listener = (event: { preventDefault: () => void }) => {
+        if (!latest.current.prevent) return;
+        event.preventDefault();
+        latest.current.callback({ data: { action: { type: 'GO_BACK' } } });
+      };
+      mockBeforeRemove.push(listener);
+      return () => {
+        mockBeforeRemove = mockBeforeRemove.filter((l) => l !== listener);
+      };
+    }, []);
+  },
+}));
 jest.mock('expo-router', () => ({
   Stack: {
     Screen: ({ options }: { options?: { gestureEnabled?: boolean } }) => {
@@ -144,6 +167,7 @@ async function systemBack(): Promise<'left' | 'stopped'> {
 beforeEach(() => {
   jest.clearAllMocks();
   mockBeforeRemove = [];
+  mockPrevented = false;
   mockGet.mockImplementation(profileAnswer);
   mockData = { program: { state: 'ready', value: PROGRAM }, exercises: { state: 'ready', value: [] }, kept: false };
   mockParams = {};
@@ -661,6 +685,31 @@ describe('training days and moves: edited here (ADR-073 #4)', () => {
       expect(await systemBack()).toBe('left');
     });
 
+    test('the route is registered as prevented while edits are not saved (the header Back pops natively otherwise), and not once nothing is to lose', async () => {
+      mockParams = { part: 'days' };
+      editable();
+      mockPatch.mockImplementationOnce(async () => ({ data: AFTER, response: { status: 200 } }));
+      await show();
+      await screen.findByText('Upper');
+      expect(mockPrevented).toBe(false);
+      await rename('Chest day');
+      expect(mockPrevented).toBe(true);
+      await save();
+      expect(await screen.findByText(t('editProgram.savedLead'))).toBeTruthy();
+      expect(mockPrevented).toBe(false);
+    });
+
+    test('Leave without saving: the stop is lifted first, then the screen goes back (never in the same breath)', async () => {
+      mockParams = { part: 'days' };
+      editable();
+      await show();
+      await rename('Chest day');
+      await systemBack();
+      await fireEvent.press(screen.getByText(t('editProgram.leave')));
+      expect(mockPrevented).toBe(false);
+      expect(router.back).toHaveBeenCalledTimes(1);
+    });
+
     test('Back warned, then Save: the warning goes (a failed save keeps the edits, and the warning is stale)', async () => {
       mockParams = { part: 'days' };
       editable();
@@ -765,6 +814,28 @@ describe('moves', () => {
     await fireEvent.press(await screen.findByLabelText(`${t('editProgram.apply')}: Chest: 12 sets a week, not 18`));
     expect(mockPost).toHaveBeenCalledWith('/v1/program/review/apply', { body: { reviewId: 'rev-1', suggestionIds: ['TOO_MANY_SETS:chest'] } });
     expect(mockServices.training.read).toHaveBeenCalledTimes(2);
+  });
+
+  test('a flag applied is not silent: the banner says "Applied" with the flag, and Undo takes that change back', async () => {
+    mockParams = { part: 'moves' };
+    const change = { id: 'c-new', appliedAt: '2026-09-29T10:00:00Z', suggestion: SUGGESTION };
+    mockAnswers['/v1/program/review/apply'] = () => ({ data: { ...PROGRAM, review: { ...PROGRAM.review!, suggestions: [], applied: [APPLIED, change] } }, response: { status: 200 } });
+    await show();
+    expect(banner()).toBeNull();
+    await fireEvent.press(await screen.findByLabelText(`${t('editProgram.apply')}: Chest: 12 sets a week, not 18`));
+    expect(await screen.findByText(t('editProgram.appliedLead'))).toBeTruthy();
+    expect(within(screen.getByTestId('undo-banner')).getByText('Chest: 12 sets a week, not 18')).toBeTruthy();
+    await fireEvent.press(undoButton());
+    expect(mockPost).toHaveBeenLastCalledWith('/v1/program/review/undo', { body: { changeId: 'c-new' } });
+  });
+
+  test('a flag that did not apply (stale) has no banner', async () => {
+    mockParams = { part: 'moves' };
+    mockAnswers['/v1/program/review/apply'] = () => ({ error: { code: 'CONFLICT' }, response: { status: 409 } });
+    await show();
+    await fireEvent.press(await screen.findByLabelText(`${t('editProgram.apply')}: Chest: 12 sets a week, not 18`));
+    expect(await screen.findByText(t('editProgram.stale'))).toBeTruthy();
+    expect(banner()).toBeNull();
   });
 
   test('a stale review is said, and read again', async () => {

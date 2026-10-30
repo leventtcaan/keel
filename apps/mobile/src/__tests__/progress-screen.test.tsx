@@ -206,7 +206,7 @@ describe('the first days (ADR-078 #1)', () => {
     expect(words(box('steps'))).not.toContain('/ 7,000');
     expect(box('steps').props.accessibilityLabel).toBe(t('progress.targets.label.stepsOff', { target: '7,000' }));
     await fireEvent.press(box('steps'));
-    expect(mockPush).toHaveBeenLastCalledWith('/settings');
+    expect(mockPush).toHaveBeenLastCalledWith({ pathname: '/settings-detail', params: { part: 'apple' } });
   });
 
   test("cardio opens the cardio log itself, the screen the '+' sheet's Cardio row opens (ADR-078 Ek 2), not the sheet or the Train tab", async () => {
@@ -468,7 +468,7 @@ describe('without the health data consent', () => {
     await show();
     expect(screen.getByTestId('progress-locked')).toBeOnTheScreen();
     await fireEvent.press(screen.getByRole('button', { name: t('thisWeek.food.allowLabel') }));
-    expect(mockPush).toHaveBeenCalledWith('/settings');
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/settings-detail', params: { part: 'consent' } });
     expect(screen.queryByTestId('target-calories')).toBeNull();
     expect(screen.queryByTestId('target-protein')).toBeNull();
     expect(screen.queryByTestId('target-steps')).toBeNull();

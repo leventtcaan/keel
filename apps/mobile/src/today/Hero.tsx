@@ -8,15 +8,17 @@ import { Button } from '@/components/Button';
 import { DecisionBlock } from '@/components/DecisionBlock';
 import { ProblemText } from '@/components/ProblemText';
 import { t } from '@/copy';
-import { useAppServices } from '@/services/ServicesProvider';
+import { useSaved } from '@/saved/saved';
+import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
-import { applyCall } from './call';
+import { appliedSave, applyCall } from './call';
 import { labelKey } from './today';
 import { WeighInCounter } from './WeighInCounter';
 import { type Hero as HeroFace, daysBetween, weekdayOf } from './week';
 import { counterOf } from './weighInWeek';
+import { openDetail } from '@/settings/detail';
 
 type Schemas = components['schemas'];
 
@@ -46,6 +48,8 @@ function when(lead: 'thisWeek.hero.nextCall' | 'thisWeek.hero.firstCall', day: s
  */
 export function Hero({ hero, today, onChanged }: Props) {
   const { api, report } = useAppServices();
+  const units = useUnits();
+  const saved = useSaved();
   const { color } = useTheme();
   const [busy, setBusy] = useState(false);
   // Not used, said for the read it happened on (as CallCard): the call read again is a new try.
@@ -60,6 +64,7 @@ export function Hero({ hero, today, onChanged }: Props) {
     try {
       await applyCall(api, decision.id);
       setFailed(null);
+      saved(appliedSave(api, decision, units));
       onChanged();
     } catch (error) {
       const name = nameOf(error);
@@ -169,7 +174,7 @@ export function Hero({ hero, today, onChanged }: Props) {
           accessibilityLabel={t('thisWeek.hero.settingsLabel')}
           size="sm"
           variant="ghost"
-          onPress={() => router.push('/settings')}
+          onPress={() => openDetail('consent')}
         />
       );
       return (

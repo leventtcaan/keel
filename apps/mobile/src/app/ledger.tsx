@@ -14,6 +14,7 @@ import { tokens } from '@/theme/tokens';
 import { ledgerEntries } from '@/today/ledger';
 import { load } from '@/today/today';
 import type { UnitSystem } from '@/units/units';
+import { openDetail } from '@/settings/detail';
 
 type Decision = components['schemas']['Decision'];
 type Read =
@@ -87,7 +88,7 @@ function Body({ read, units, onOlder }: { read: Read; units: UnitSystem; onOlder
     return (
       <View style={styles.note}>
         {line('today.consent.body')}
-        <Button label={t('today.consent.open')} variant="ghost" size="sm" onPress={() => router.push('/settings')} />
+        <Button label={t('today.consent.open')} variant="ghost" size="sm" onPress={() => openDetail('consent')} />
       </View>
     );
   }
@@ -118,7 +119,7 @@ function OlderNotRead({ reason }: { reason: 'consent' | 'failed' }) {
   return (
     <View style={styles.note}>
       {text('today.consent.body')}
-      <Button label={t('today.consent.open')} variant="ghost" size="sm" onPress={() => router.push('/settings')} />
+      <Button label={t('today.consent.open')} variant="ghost" size="sm" onPress={() => openDetail('consent')} />
     </View>
   );
 }

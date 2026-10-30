@@ -81,6 +81,8 @@ jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServ
 // The router: where the app went, and the params of the screen shown.
 const went: unknown[] = [];
 let mockParams: Record<string, string> = {};
+// The edit-program screen registers its stop on unsaved edits with React Navigation; there is no navigator here.
+jest.mock('expo-router/build/react-navigation/core/usePreventRemove', () => ({ usePreventRemove: () => {} }));
 jest.mock('expo-router', () => ({
   // The edit-program screen sets its Stack.Screen options (no edge swipe back with edits unsaved); nothing here reads them.
   Stack: { Screen: () => null },

@@ -28,6 +28,7 @@ import { newClientId } from '@/sync/send';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { load } from '@/today/today';
+import { openDetail } from '@/settings/detail';
 
 type Schemas = components['schemas'];
 
@@ -190,7 +191,7 @@ export default function FoodScreen() {
   const consent = needsConsent ? (
     <View style={styles.note}>
       <Text style={[styles.text, { color: color.textSecondary }]}>{t('food.consent')}</Text>
-      <Button label={t('today.consent.open')} variant="ghost" size="sm" onPress={() => router.push('/settings')} />
+      <Button label={t('today.consent.open')} variant="ghost" size="sm" onPress={() => openDetail('consent')} />
     </View>
   ) : null;
   const totals =
