@@ -13,11 +13,13 @@ import { DayStrip } from '@/food/DayStrip';
 import { DayTotals } from '@/food/DayTotals';
 import { copiedAt, changeMeal, deleteMeal, deletedMeal, deletedMeals, logMealAgain, removedItem, requestsOfMeal } from '@/food/mealActions';
 import { dayTitle, eatenAtFor } from '@/food/dayLabel';
+import { FoodList, type FoodRowData } from '@/food/FoodList';
+import { suggestionRow } from '@/food/foodRows';
+import { defaultSlot, dayBefore } from '@/food/meals';
 import { MealList, RepeatOffers } from '@/food/MealList';
 import { foodParams } from '@/food/params';
 import { emptySlotsOf, perMealKcal } from '@/food/slots';
 import { savedMeal } from '@/food/savedMeal';
-import { Suggestions } from '@/food/Suggestions';
 import { TargetsCard } from '@/food/TargetsCard';
 import { useFoodDay } from '@/food/useFoodDay';
 import { useSaved } from '@/saved/saved';
@@ -79,6 +81,16 @@ export default function FoodScreen() {
       const clientId = newClientId();
       await queue.record({ kind: 'meal', body: { clientId, eatenAt: eatenAtFor(day, meal.slot, new Date()), slot: meal.slot, repeatOf: meal.id } });
       setRepeated((before) => ({ read: data, ids: new Set(before.read === data ? before.ids : []).add(meal.id) }));
+    });
+
+  /** A food that fits what is left, logged in its usual amount with one tap, into the meal the clock says (the plus of any food row). */
+  const logSuggestion = (suggestion: Schemas['Suggestion']) =>
+    guarded(async () => {
+      if (!(await consents.granted('HEALTH_DATA'))) return setProblem(t('food.repeat.noConsent'));
+      const clientId = newClientId();
+      const slot = defaultSlot(new Date());
+      await queue.record({ kind: 'meal', body: { clientId, eatenAt: eatenAtFor(day, slot, new Date()), slot, items: [{ foodId: suggestion.foodId, amount: suggestion.amount }] } });
+      saved(savedMeal({ clientId, slot, items: 1 }, { api, takeBack, report }));
     });
 
   const needsConnection = () => setProblem(t('meal.edit.needsConnection'));
@@ -208,10 +220,37 @@ export default function FoodScreen() {
     ) : null;
   const copy =
     data === null || needsConsent ? null : copying ? (
-      <CopyDay days={data.summaries} into={day} today={today} busy={working} onCopy={(source) => void copyDay(source)} onClose={() => setCopying(false)} />
+      <CopyDay days={data.summaries} into={day} today={today} busy={working} {...(offered.length > 0 ? { skip: dayBefore(day) } : {})} onCopy={(source) => void copyDay(source)} onClose={() => setCopying(false)} />
     ) : (
       <Button label={t('food.copy.open')} variant="text" size="sm" onPress={() => setCopying(true)} />
     );
+
+  // What fits what is left (today only): the same food row as everywhere, a plus that logs it. Built outside the JSX children (the raw-text guard).
+  const fitRows: FoodRowData[] =
+    data === null || needsConsent || !isToday
+      ? []
+      : data.suggestions.map((one) => {
+          const row = suggestionRow(one);
+          return {
+            key: `fit-${one.foodId}`,
+            testID: `fit-${one.foodId}`,
+            name: one.name,
+            sub: row.sub,
+            kcal: row.kcal,
+            macros: row.macros,
+            onOpen: () => void logSuggestion(one),
+            onLog: () => void logSuggestion(one),
+            openLabel: t('meal.search.add', { name: one.name }),
+            logLabel: t('food.suggestions.log', { name: one.name }),
+          };
+        });
+  const fits = fitRows.length === 0 ? null : <FoodList title={t('food.suggestions.title')} rows={fitRows} testID="fits" />;
+  const dock =
+    !needsConsent && data !== null ? (
+      <View style={styles.dock}>
+        <Button label={t(isToday ? 'food.log' : 'food.logDay')} onPress={() => router.push({ pathname: '/meal', params: { day } })} />
+      </View>
+    ) : null;
 
   return (
     <SafeAreaView testID="screen" style={[styles.safe, { backgroundColor: color.background }]} edges={['bottom']}>
@@ -222,23 +261,22 @@ export default function FoodScreen() {
         {consent}
         {totals}
         {noBudget}
-        {!needsConsent && data !== null && (
-          <Button label={t(isToday ? 'food.log' : 'food.logDay')} onPress={() => router.push({ pathname: '/meal', params: { day } })} />
-        )}
+        {fits}
         {meals}
         {offers}
         {copy}
         {problem !== null && <ProblemText style={[styles.text, { color: color.text }]}>{problem}</ProblemText>}
-        {!needsConsent && data !== null && isToday && <Suggestions suggestions={data.suggestions} />}
         {targets}
       </ScrollView>
+      {dock}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  body: { padding: tokens.space.lg, gap: tokens.space.md },
+  body: { padding: tokens.space.lg, gap: tokens.space.lg },
+  dock: { paddingHorizontal: tokens.space.lg, paddingBottom: tokens.space.sm },
   note: { gap: tokens.space.sm },
   text: { fontSize: tokens.type.body },
 });

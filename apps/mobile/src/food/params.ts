@@ -54,4 +54,6 @@ export const foodParams = {
   logAgainRowsMax: param<number>('log_again_rows_max'),
   trayItemsMax: param<number>('tray_items_max'),
   addedMarkMs: param<number>('added_mark_ms'),
+  swipeRevealFraction: param<number>('swipe_reveal_fraction'),
+  swipeFullFraction: param<number>('swipe_full_fraction'),
 };

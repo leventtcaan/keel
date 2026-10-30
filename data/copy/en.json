@@ -64,6 +64,7 @@
     "title": "Log",
     "weighIn": "Weigh-in",
     "meal": "Meal",
+    "diary": "Food diary",
     "workout": "Workout",
     "cardio": "Cardio",
     "life": "Life got in the way"
@@ -1118,6 +1119,7 @@
     "totals": {
       "eaten": "{value} {unit} eaten",
       "left": "{value} {unit} left",
+      "barLabel": "{eaten} of {target} {unit} eaten",
     "gramsShort": "g",
       "protein": "Protein",
       "carbs": "Carbs",
@@ -1130,7 +1132,7 @@
       "rangeLeft": "Left: {kcal}"
     },
     "copy": {
-      "open": "Copy a day's meals",
+      "open": "Copy an earlier day",
       "close": "Done",
       "title": "Copy into {day}",
       "none": "No other day with meals yet.",

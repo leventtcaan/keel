@@ -74,7 +74,7 @@ async function show() {
 test('the sheet names what can be logged', async () => {
   await show();
   expect(screen.getByRole('header', { name: t('plus.title') })).toBeOnTheScreen();
-  for (const key of ['plus.weighIn', 'plus.meal', 'plus.workout', 'plus.cardio', 'plus.life']) {
+  for (const key of ['plus.weighIn', 'plus.meal', 'plus.diary', 'plus.workout', 'plus.cardio', 'plus.life']) {
     expect(screen.getByRole('button', { name: new RegExp(t(key)) })).toBeOnTheScreen();
   }
 });
@@ -93,6 +93,7 @@ describe('the tiles and the rows have their icons (ADR-070 Ek 2 #3, K-1044, prot
   });
 
   test.each([
+    ['plus.diary', 'list.bullet.rectangle'],
     ['plus.cardio', 'figure.run'],
     ['plus.life', 'pause.circle'],
   ])('the %s row: the %s symbol, and it goes to another page, so it has a chevron', async (key, symbol) => {
@@ -136,6 +137,7 @@ describe('the tiles and the rows have their icons (ADR-070 Ek 2 #3, K-1044, prot
 test.each([
   ['plus.weighIn', '/weigh-in'],
   ['plus.meal', '/meal'],
+  ['plus.diary', '/food'],
   ['plus.cardio', '/cardio'],
   ['plus.life', '/state'],
 ])('%s opens %s in place of the sheet', async (key, route) => {

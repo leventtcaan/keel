@@ -360,6 +360,22 @@
       "tag": "urun",
       "source": "plan/kararlar/ADR-090-evre-6-kararlari.md#Ek 6",
       "note": "How long a row that was just logged shows its check instead of the plus."
+    },
+    {
+      "key": "swipe_reveal_fraction",
+      "value": 0.4,
+      "unit": "fraction",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-090-evre-6-kararlari.md#Ek 6",
+      "note": "A logged item swiped left this far of the Delete button's width stays open with the red Delete showing (a tap on it deletes); less springs back. The iOS list habit: a swipe shows the button, it does not delete by itself."
+    },
+    {
+      "key": "swipe_full_fraction",
+      "value": 0.6,
+      "unit": "fraction",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-090-evre-6-kararlari.md#Ek 6",
+      "note": "A logged item swiped left this far across its row is deleted with the swipe (iOS Mail's full swipe); the app's banner offers Undo. Between the two thresholds the button is shown and waits for a tap."
     }
   ]
 }

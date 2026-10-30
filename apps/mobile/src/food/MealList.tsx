@@ -1,7 +1,6 @@
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { components } from '@/api/schema';
-import { Button } from '@/components/Button';
 import { Icon } from '@/components/Icon';
 import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
@@ -98,6 +97,7 @@ export function MealList({ meals, complete, isToday, emptySlots, onEditItem, onD
                       {amount !== null && <Text style={[styles.amount, { color: color.muted }]}>{amount}</Text>}
                     </View>
                     <Text style={[styles.kcal, { color: color.text }]}>{kcalText(mid(item.kcal))}</Text>
+                    <Icon name="chevron.right" size="small" tone="muted" />
                   </Pressable>
                 </SwipeRow>
               );
@@ -105,7 +105,12 @@ export function MealList({ meals, complete, isToday, emptySlots, onEditItem, onD
           </View>
         );
         const waiting = group.waiting > 0 && sent ? <Text style={[styles.amount, { color: color.muted }]}>{t('food.meals.waiting')}</Text> : null;
-        const add = sent ? <Button label={t('food.meals.addTo', { slot: slotName })} variant="text" size="sm" onPress={() => onAdd(group.slot)} /> : null;
+        // The one add of a meal: a plus at the end of its header, the same as the empty meals' (Evre 7 A: it was a text link under the card).
+        const add = sent ? (
+          <Pressable testID={`add-${group.slot}`} accessibilityRole="button" accessibilityLabel={t('food.meals.addTo', { slot: slotName })} onPress={() => onAdd(group.slot)} hitSlop={tokens.space.sm}>
+            <Icon name="plus.circle.fill" tone="accent" />
+          </Pressable>
+        ) : null;
         return (
           <View key={group.slot} style={styles.meal} testID={`meal-${group.slot}`}>
             <View style={styles.header}>
@@ -114,10 +119,10 @@ export function MealList({ meals, complete, isToday, emptySlots, onEditItem, onD
               </Text>
               <Text style={[styles.mealKcal, { color: color.muted }]}>{sent ? slotKcal(group.meals) : t('food.meals.waiting')}</Text>
               {menuButton}
+              {add}
             </View>
             {card}
             {waiting}
-            {add}
           </View>
         );
       })}
@@ -176,10 +181,10 @@ export function RepeatOffers({ offers, onRepeat, busy, title }: { offers: Meal[]
 }
 
 const styles = StyleSheet.create({
-  list: { gap: tokens.space.lg },
+  list: { gap: tokens.space.md },
   meal: { gap: tokens.space.sm },
-  header: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
-  slot: { flex: 1, fontSize: tokens.type.heading, fontWeight: tokens.weight.bold },
+  header: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.md, minHeight: tokens.size.touch },
+  slot: { flex: 1, fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
   mealKcal: { fontSize: tokens.type.body, fontVariant: ['tabular-nums'] },
   card: { borderRadius: tokens.radius.card, overflow: 'hidden' },
   item: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, paddingVertical: tokens.space.sm, paddingHorizontal: tokens.space.md, minHeight: tokens.size.touch },
