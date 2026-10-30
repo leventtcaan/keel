@@ -1239,12 +1239,16 @@ describe('on the system (K-1045, ADR-070 Ek 2 #7, #8; prototype yeniden-yapim 5)
     });
   });
 
-  test('Food left: the row opens /food, and "Log" is a text button (no fill) that opens /meal', async () => {
+  // K1 (Evre 7 A, review §7 P0): the Food card is an obvious card: its words, a bar of the day and a chevron open /food; "Log" was a text link
+  // and is the secondary button (a fill, ink words) that opens /meal.
+  test('Food left: the card opens /food (chevron and bar say so), and "Log" is a filled secondary button that opens /meal', async () => {
     mockAnswers['/v1/days/{day}/budget'] = ok(BUDGET(1240, 1480));
     await show();
+    expect(screen.getByTestId('food-line-chevron')).toBeOnTheScreen();
+    expect(within(screen.getByTestId('food-line')).getByRole('progressbar')).toBeOnTheScreen();
     const log = screen.getByRole('button', { name: t('thisWeek.food.logLabel') });
-    expect(StyleSheet.flatten(log.props.style)?.backgroundColor).toBeUndefined();
-    expect(within(log).getByText(t('thisWeek.food.log'))).toHaveStyle({ color: p.accent });
+    expect(StyleSheet.flatten(log.props.style)?.backgroundColor).toBe(p.raise);
+    expect(within(log).getByText(t('thisWeek.food.log'))).toHaveStyle({ color: p.text });
     await press(t('thisWeek.food.logLabel'));
     expect(mockPush).toHaveBeenCalledWith('/meal');
     mockPush.mockClear();

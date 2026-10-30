@@ -30,7 +30,9 @@ const BUDGET = (low: number, high: number): Schemas['DayBudget'] => ({
 });
 const TARGETS: Schemas['Targets'] = { targetKcal: 2300, proteinG: 160, carbsG: 250, fatG: 70, stepsPerDay: 8000, trainingSessionsPerWeek: 3 };
 
+jest.mock('expo-crypto', () => ({ randomUUID: () => jest.requireActual<typeof import('node:crypto')>('node:crypto').randomUUID() }));
 let mockAnswers: Record<string, Answer> = {};
+const mockRecord = jest.fn(async (_record: unknown) => true);
 const mockGET = jest.fn(async (path: string, _init?: unknown) => mockAnswers[path] ?? refused(404, 'NOT_FOUND'));
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), back: jest.fn() },
@@ -42,7 +44,7 @@ jest.mock('expo-router', () => ({
 }));
 const mockServices = {
   api: { GET: mockGET },
-  queue: { drain: async () => {}, record: async () => true },
+  queue: { drain: async () => {}, record: mockRecord },
   mealRecords: async () => [],
   consents: { granted: async () => true },
   report: () => {},
@@ -228,17 +230,27 @@ describe('what the day can still hold (K-507)', () => {
     await show();
     expect(mockGET).toHaveBeenCalledWith('/v1/days/{day}/suggestions', { params: { path: { day: '2026-09-29' } } });
     expect(screen.getByText(t('food.suggestions.title'))).toBeOnTheScreen();
-    expect(screen.getByText(t('food.suggestions.item', { name: RICE.name, quantity: '150', unit: 'g' }))).toBeOnTheScreen();
+    // K1 (Evre 7 walk finding): the section is the same food row as everywhere (name, the amount under it, one calorie number, a plus).
+    expect(screen.getByText(RICE.name)).toBeOnTheScreen();
+    expect(screen.getByText('150 g')).toBeOnTheScreen();
     // K1 (ADR-090 #5): the middle of the range, one number.
-    expect(screen.getByText(t('food.single.kcal', { value: 205 }))).toBeOnTheScreen();
+    expect(screen.getByTestId('fit-fdc-3-kcal')).toHaveTextContent(t('food.single.kcal', { value: 205 }));
+    expect(screen.getByTestId('fit-fdc-3-log')).toBeOnTheScreen();
   });
 
-  test('one tap: the meal screen with that food and amount, handed over in memory (V3)', async () => {
+  // K1 (Evre 7 walk finding): a row of "Fits what's left today" had no plus and handed the food to the meal screen; its plus logs it in its usual
+  // amount into the meal the clock says, with the app's banner and Undo.
+  test('one tap logs that food in its usual amount (the plus of the row), with nothing handed over', async () => {
     mockAnswers['/v1/days/{day}/suggestions'] = ok([RICE]);
+    mockRecord.mockClear();
     await show();
     await act(async () => fireEvent.press(screen.getByRole('button', { name: t('food.suggestions.log', { name: RICE.name }) })));
-    expect(jest.mocked(router.push)).toHaveBeenCalledWith('/meal');
-    expect(takeMeal()).toEqual([{ foodId: 'fdc-3', name: RICE.name, quantity: 150, unit: 'g' }]);
+    expect(mockRecord).toHaveBeenCalledWith({
+      kind: 'meal',
+      body: { clientId: expect.any(String), eatenAt: new Date(2026, 8, 29, 13, 0).toISOString(), slot: 'LUNCH', items: [{ foodId: 'fdc-3', amount: { quantity: 150, unit: 'g', certainty: 'ESTIMATED' } }] },
+    });
+    expect(jest.mocked(router.push)).not.toHaveBeenCalledWith('/meal');
+    expect(takeMeal()).toBeNull();
   });
 
   test('nothing fits, or no answer: no section, and no word of it (U7)', async () => {

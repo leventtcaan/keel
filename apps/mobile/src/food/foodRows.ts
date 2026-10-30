@@ -37,3 +37,32 @@ export function suggestionDetail(suggestion: Schemas['Suggestion']): string {
     numbers: t('food.single.lineKcalProtein', { kcal: numbers.kcal, protein: numbers.protein }),
   });
 }
+
+/** What a food row draws besides its name (Evre 7 A): the brand and the portion it opens on, the single calories of that portion, and its macros. */
+export function foodRow(food: Schemas['Food']): { sub: string; kcal: number; macros: { protein: number; carbs: number; fat: number } } {
+  const start = food.defaultAmount;
+  const portion = food.portions?.find((p) => p.unit === start?.unit) ?? food.portions?.[0];
+  const quantity = portion !== undefined && portion.unit === start?.unit ? (start?.quantity ?? 1) : 1;
+  // An answer without portions: the middle of the database's value per 100 g.
+  const numbers = portion === undefined ? macrosOf(food.per100g) : macrosOfPortion(portion, quantity);
+  const rest = portion === undefined ? t('meal.search.per100gShort') : portionPhrase(portion, quantity);
+  return {
+    sub: food.brand === undefined ? rest : t('meal.search.withBrand', { brand: food.brand, rest }),
+    kcal: numbers.kcal,
+    macros: { protein: numbers.protein, carbs: numbers.carbs, fat: numbers.fat },
+  };
+}
+
+/** The same for a food eaten before (Recent, Usually at): the amount of its last or usual time, and the numbers the server estimated for it. */
+export function suggestionRow(suggestion: Schemas['Suggestion']): { sub: string; kcal: number; macros: { protein: number; carbs?: number; fat?: number } } {
+  const numbers = macrosOf({ kcal: suggestion.kcal, proteinG: suggestion.proteinG, carbsG: suggestion.carbsG, fatG: suggestion.fatG });
+  return {
+    sub: amountPhrase(suggestion.amount),
+    kcal: numbers.kcal,
+    macros: {
+      protein: numbers.protein,
+      ...(suggestion.carbsG === undefined ? {} : { carbs: numbers.carbs }),
+      ...(suggestion.fatG === undefined ? {} : { fat: numbers.fat }),
+    },
+  };
+}

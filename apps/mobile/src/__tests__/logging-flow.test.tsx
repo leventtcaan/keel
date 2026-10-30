@@ -50,7 +50,7 @@ jest.mock('expo-crypto', () => ({ randomUUID: () => jest.requireActual<typeof im
 const YESTERDAY_LUNCH = {
   id: 'm-lunch',
   clientId: 'c-lunch',
-  eatenAt: '2026-10-14T10:10:00Z',
+  eatenAt: new Date(2026, 9, 14, 12, 10).toISOString(),
   slot: 'LUNCH',
   items: [{ foodId: 'f1', name: 'Chicken rice bowl', amount: { quantity: 1, unit: 'bowl' }, kcal: { low: 610, high: 720 }, proteinG: { low: 40, high: 50 } }],
   kcal: { low: 610, high: 720 },
@@ -60,15 +60,18 @@ const kept = new Map<string, string>();
 const requestRead = jest.fn(async () => {});
 const mockServices = {
   api: {
-    GET: jest.fn(async (path: string, _init?: unknown) =>
-      path === '/v1/weigh-ins/summary'
+    GET: jest.fn(async (path: string, init?: { params?: { query?: { day?: string } } }) =>
+      path === '/v1/meals'
+        ? ok(init?.params?.query?.day === undefined ? [YESTERDAY_LUNCH] : [])
+        : path === '/v1/weigh-ins/summary'
         ? ok({ last: { id: 'w0', clientId: 'w0', measuredAt: '2026-10-14T05:00:00Z', kg: 80.4, source: 'MANUAL' }, weighInCount: 3, trendMinWeighIns: 7, trendReady: false })
         : { error: { code: 'NOT_FOUND', message: 'x' }, response: new Response(null, { status: 404 }) },
     ),
     PUT: jest.fn(async (_path: string, _init?: unknown) => ok({ status: 'GRANTED' })),
     DELETE: jest.fn(),
   },
-  queue: { record: jest.fn(async (_record: unknown) => true) },
+  queue: { record: jest.fn(async (_record: unknown) => true), drain: jest.fn(async () => {}) },
+  mealRecords: async (): Promise<unknown[]> => [],
   mealStart: jest.fn(async (_day: string) => ({ offers: [YESTERDAY_LUNCH] as never[] })),
   recentFoods: jest.fn(async (_slot: string) => [] as never[]),
   training: { read: jest.fn(async () => ({ program: { state: 'none' as const }, exercises: { state: 'none' as const }, kept: false })) },
@@ -87,6 +90,17 @@ const mockServices = {
   report: jest.fn(),
 };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => 'METRIC' }));
+
+/** What the phone keeps when a meal is logged is what the tray reads back. */
+function keepMeals() {
+  const records: unknown[] = [];
+  mockServices.queue.record.mockImplementation(async (record: unknown) => {
+    const { body } = record as { body: { clientId: string } };
+    records.push({ seq: records.length, clientId: body.clientId, kind: 'meal', parentClientId: null, body, state: 'PENDING', serverId: null, serverBody: null, errorCode: null });
+    return true;
+  });
+  mockServices.mealRecords = async () => records;
+}
 
 function Harness() {
   const [stack, setStack] = useState<string[]>(['/']);
@@ -141,6 +155,8 @@ afterAll(() => jest.useRealTimers());
 beforeEach(() => {
   jest.clearAllMocks();
   kept.clear();
+  mockServices.mealRecords = async () => [];
+  mockServices.queue.record.mockImplementation(async () => true);
 });
 
 let taps = 0;
@@ -177,17 +193,17 @@ test('A2: "+" → Weigh-in → Apple Health, asked on the way → Save → back 
   taps = 0;
   await tap(t('plus.entry'));
   await tap(new RegExp(`^${t('plus.meal')}`));
-  await tap(t('food.repeat.spoken', { slot: t('food.slot.LUNCH'), items: 'Chicken rice bowl' }));
+  keepMeals();
+  await tap(t('meal.again.spoken', { slot: t('food.slot.LUNCH').toLowerCase(), items: 'Chicken rice bowl' }));
   expect(mockServices.queue.record).toHaveBeenLastCalledWith({
     kind: 'meal',
     body: expect.objectContaining({ slot: 'LUNCH', repeatOf: 'm-lunch' }),
   });
   expect(taps).toBe(3);
-  // The meal closes the sheet too, and its banner replaces the weigh-in's: one confirmation at a time.
-  expect(mockStack).toEqual(['/']);
-  expect(screen.getAllByTestId('undo-banner')).toHaveLength(1);
-  expect(screen.getByText(t('meal.saved.one', { slot: t('food.slot.LUNCH') }))).toBeOnTheScreen();
-  expect(screen.queryByText(t('units.kg', { value: '80.4' }))).toBeNull();
+  // K1 (Evre 7 A): the meal keeps the sheet open (Done leaves) and its light confirmation stands in the sheet's own column (the weigh-in's
+  // banner of the app is under the sheet, as a native modal covers it).
+  expect(mockStack).toEqual(['/', '/meal']);
+  expect(screen.getByText(t('meal.toast.added'))).toBeOnTheScreen();
 });
 
 test('the next weigh-in is three taps: Apple Health is not asked twice', async () => {
@@ -212,19 +228,23 @@ test('the sheet names every way to log, each one tap from the "+"', async () => 
   }
 });
 
-test('a meal: "+", Meal, "Same as yesterday" Add — three taps, the sheet closes on its own and the banner offers Undo', async () => {
+// K1 (Evre 7 A): a meal logged from the sheet no longer closes it ("a food, then another" is one visit): the tap logs, the tray grows and a
+// light "Added, Undo" stands above the foot; Done is the fourth tap and leaves, with the page it began from under it.
+test('a meal: "+", Meal, "Same as yesterday\'s lunch" — three taps log it, the sheet stays with Undo, Done leaves', async () => {
   await show();
   await tap(t('plus.entry'));
   await tap(new RegExp(`^${t('plus.meal')}`));
   expect(mockStack).toEqual(['/', '/meal']);
-  await tap(t('food.repeat.spoken', { slot: t('food.slot.LUNCH'), items: 'Chicken rice bowl' }));
+  keepMeals();
+  await tap(t('meal.again.spoken', { slot: t('food.slot.LUNCH').toLowerCase(), items: 'Chicken rice bowl' }));
 
   expect(mockServices.queue.record).toHaveBeenCalledWith({ kind: 'meal', body: expect.objectContaining({ repeatOf: 'm-lunch', slot: 'LUNCH' }) });
   expect(taps).toBeLessThanOrEqual(3);
-  // Saved, with Undo (K-1029, K-1044): the page it began from, and the banner on it.
-  expect(mockStack).toEqual(['/']);
-  expect(screen.getByText(t('meal.saved.one', { slot: t('food.slot.LUNCH') }))).toBeOnTheScreen();
+  expect(mockStack).toEqual(['/', '/meal']);
+  expect(screen.getByText(t('meal.toast.added'))).toBeOnTheScreen();
   expect(screen.getByRole('button', { name: t('undoBanner.undo') })).toBeOnTheScreen();
+  await tap(/^Done/);
+  expect(mockStack).toEqual(['/']);
 });
 
 test('cardio: "+", Cardio, Log — three taps, the sheet closes with the banner; opened again the same day it shows the record instead of asking', async () => {

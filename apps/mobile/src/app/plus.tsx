@@ -24,7 +24,7 @@ type Tile = { key: string; icon: SFSymbol; detail: string | null; onPress: () =>
  * The "+" sheet (K-953, K-980, ADR-069 #4, prototype #plus): log a weigh-in, a meal, today's workout, a cardio session, or say life got in the way.
  * Each choice takes the sheet's place. Three tiles, the icon top left and the label bottom left (ADR-070 Ek 2 #3, K-1044):
  * the workout is today's session by name, a workout under way is continued, and with nothing planned today the Train tab
- * opens to pick a day. Cardio and life are the rows of a grouped list under the tiles.
+ * opens to pick a day. The food diary (Today's food, Evre 7 A: it was too hidden), cardio and life are the rows of a grouped list under the tiles.
  */
 export default function PlusScreen() {
   const { api, training, workoutRecords } = useAppServices();
@@ -55,6 +55,7 @@ export default function PlusScreen() {
   ];
 
   const rows = [
+    { key: 'plus.diary', icon: 'list.bullet.rectangle', route: '/food' },
     { key: 'plus.cardio', icon: 'figure.run', route: '/cardio' },
     { key: 'plus.life', icon: 'pause.circle', route: '/state' },
   ] as const;

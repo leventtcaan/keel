@@ -10,16 +10,13 @@ import { foodParams } from './params';
 type Schemas = components['schemas'];
 
 export type FoodExtras = {
-  /** The foods eaten most, in their usual amount. */
-  frequent: Schemas['Suggestion'][];
   /** The starred foods, newest star first, each with its portions. */
   favorites: Schemas['Food'][];
+  /** Who is starred right now: a heart just tapped counts at once (the server confirms behind it). */
   favoriteIds: ReadonlySet<string>;
-  /** Past meals to log again, the freshest first, one of each kind of meal. */
-  again: Schemas['Meal'][];
-  /** The slots the user logged into lately: the ones their day is made of. */
-  usedSlots: ReadonlySet<Schemas['MealSlot']>;
-  /** Stars or unstars a food; false when the server could not be reached (the star is not shown as changed). */
+  /** The user's meals of the last two weeks, freshest first: what the slot pattern, the past meals to log again and the used slots rest on. */
+  history: Schemas['Meal'][];
+  /** Stars or unstars a food; false when the server could not be reached (the heart goes back). */
   setFavorite: (foodId: string, on: boolean) => Promise<boolean>;
 };
 
@@ -41,15 +38,16 @@ export function kindsOfMeal(meals: Schemas['Meal'][]): Schemas['Meal'][] {
 }
 
 /**
- * What the meal screen offers beyond the search (K-1063), read once when it opens for a new meal (`enabled`): the foods eaten most,
- * the starred ones, the past meals of the last two weeks, and from those the slots the user's day is made of. A read that fails is
- * nothing offered, never an error: the search below does the logging.
+ * What the meal screen offers beyond the search (K-1063), read once when it opens for a new meal (`enabled`): the starred foods and the
+ * meals of the last two weeks (the slot pattern, the past meals to log again). A read that fails is nothing offered, never an error: the
+ * search below does the logging. A heart is optimistic: it shows the new state at once and goes back if the server did not take it.
  */
 export function useFoodExtras(enabled: boolean, today: string): FoodExtras {
   const { api } = useAppServices();
-  const [frequent, setFrequent] = useState<Schemas['Suggestion'][]>([]);
   const [favorites, setFavorites] = useState<Schemas['Food'][]>([]);
   const [history, setHistory] = useState<Schemas['Meal'][]>([]);
+  // Hearts tapped and not yet confirmed by a read of the list: true is starred, false is not.
+  const [pending, setPending] = useState<ReadonlyMap<string, boolean>>(() => new Map());
 
   const readFavorites = useCallback(async () => {
     const answer = await load(() => api.GET('/v1/foods/favorites')).catch(() => null);
@@ -61,13 +59,9 @@ export function useFoodExtras(enabled: boolean, today: string): FoodExtras {
     let live = true;
     const days = Math.max(foodParams.logAgainDays, foodParams.slotsUsedWindowDays);
     void (async () => {
-      const [freq, past] = await Promise.all([
-        load(() => api.GET('/v1/foods/frequent')).catch(() => null),
-        load(() => api.GET('/v1/meals', { params: { query: { from: addDays(today, -(days - 1)), to: today } } })).catch(() => null),
-      ]);
+      const past = await load(() => api.GET('/v1/meals', { params: { query: { from: addDays(today, -(days - 1)), to: today } } })).catch(() => null);
       if (!live) return;
-      if (freq !== null && freq.state === 'ready') setFrequent(freq.value);
-      if (past !== null && past.state === 'ready') setHistory(past.value);
+      if (past !== null && past.state === 'ready') setHistory([...past.value].sort((a, b) => Date.parse(b.eatenAt) - Date.parse(a.eatenAt)));
       await readFavorites();
     })();
     return () => {
@@ -77,23 +71,67 @@ export function useFoodExtras(enabled: boolean, today: string): FoodExtras {
 
   const setFavorite = useCallback(
     async (foodId: string, on: boolean): Promise<boolean> => {
+      setPending((before) => new Map(before).set(foodId, on));
+      const settle = () =>
+        setPending((before) => {
+          const next = new Map(before);
+          next.delete(foodId);
+          return next;
+        });
       try {
         const id = foodId; // the client encodes a path value itself
         const { response } = on
           ? await api.PUT('/v1/foods/{id}/favorite', { params: { path: { id } } })
           : await api.DELETE('/v1/foods/{id}/favorite', { params: { path: { id } } });
-        if (!response.ok) return false;
+        if (!response.ok) {
+          settle();
+          return false;
+        }
         await readFavorites();
+        settle();
         return true;
       } catch {
+        settle();
         return false;
       }
     },
     [api, readFavorites],
   );
 
-  const favoriteIds = useMemo(() => new Set(favorites.map((food) => food.id)), [favorites]);
-  const again = useMemo(() => kindsOfMeal(history), [history]);
-  const usedSlots = useMemo(() => new Set(history.map((meal) => meal.slot)), [history]);
-  return { frequent, favorites, favoriteIds, again, usedSlots, setFavorite };
+  const favoriteIds = useMemo(() => {
+    const ids = new Set(favorites.map((food) => food.id));
+    for (const [id, on] of pending) {
+      if (on) ids.add(id);
+      else ids.delete(id);
+    }
+    return ids;
+  }, [favorites, pending]);
+  const shownFavorites = useMemo(() => favorites.filter((food) => favoriteIds.has(food.id)), [favorites, favoriteIds]);
+  return { favorites: shownFavorites, favoriteIds, history, setFavorite };
+}
+
+/**
+ * The foods usually had at the meal being logged (Evre 7 A, `GET /v1/foods/frequent?slot=`), read again when the meal changes. An answer
+ * for a meal since changed is dropped, and the list of the meal before is not shown under the new meal's name while the new one is read.
+ * Empty until read, and for good where nothing could be read or nothing was ever had at that meal.
+ */
+export function useUsualFoods(enabled: boolean, slot: Schemas['MealSlot']): Schemas['Suggestion'][] {
+  const { api } = useAppServices();
+  const [usual, setUsual] = useState<{ slot: Schemas['MealSlot']; foods: Schemas['Suggestion'][] } | null>(null);
+
+  useEffect(() => {
+    if (!enabled) return;
+    let live = true;
+    void load(() => api.GET('/v1/foods/frequent', { params: { query: { slot } } }))
+      .then((answer) => {
+        if (live) setUsual({ slot, foods: answer.state === 'ready' ? answer.value : [] });
+      })
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [api, enabled, slot]);
+
+  // The meal's own list only: another meal's foods under this meal's name would be a wrong answer, a moment of none is not.
+  return usual !== null && usual.slot === slot ? usual.foods : [];
 }

@@ -296,6 +296,86 @@
       "tag": "urun",
       "source": "plan/kararlar/ADR-090-evre-6-kararlari.md#Ek 3",
       "note": "The per-meal hint (\"2 meals a day, about 1,200 kcal each\") is shown only once the user's own pattern exists: meals logged on at least this many different days within slots_used_window_days. On the first day the slots are a guess from one or two meals, and the hint would present that guess as the user's habit (K-1066)."
+    },
+    {
+      "key": "slot_pattern_min_logs",
+      "value": 3,
+      "unit": "logs",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-090-evre-6-kararlari.md#Ek 6",
+      "note": "The meal the screen opens on follows the user's own pattern once a meal has this many logs in the window (slots_used_window_days): the slot whose usual time of day is nearest to now. Fewer, and the clock decides (meal_slot_starts)."
+    },
+    {
+      "key": "slot_pattern_max_gap_min",
+      "value": 150,
+      "unit": "minutes",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-090-evre-6-kararlari.md#Ek 6",
+      "note": "The user's pattern picks a meal only when its usual time is within this many minutes of now; further away, the clock decides. A product choice (two and a half hours is about the gap between a usual breakfast and lunch)."
+    },
+    {
+      "key": "browse_favorites_max",
+      "value": 4,
+      "unit": "foods",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-090-evre-6-kararlari.md#Ek 6",
+      "note": "How many favorites the empty search shows before 'Show all' (the list stays one screen, not a library)."
+    },
+    {
+      "key": "browse_usual_max",
+      "value": 5,
+      "unit": "foods",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-090-evre-6-kararlari.md#Ek 6",
+      "note": "How many of the foods usually had at this meal the empty search shows."
+    },
+    {
+      "key": "browse_recent_max",
+      "value": 5,
+      "unit": "foods",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-090-evre-6-kararlari.md#Ek 6",
+      "note": "How many recent foods the empty search shows before 'Show more' (quick_recent_max is the most it shows then)."
+    },
+    {
+      "key": "log_again_rows_max",
+      "value": 2,
+      "unit": "meals",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-090-evre-6-kararlari.md#Ek 6",
+      "note": "How many whole past meals of the slot are offered as one row each ('Same as yesterday's breakfast')."
+    },
+    {
+      "key": "tray_items_max",
+      "value": 5,
+      "unit": "items",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-090-evre-6-kararlari.md#Ek 6",
+      "note": "How many of the meal's items the tray shows as chips before the rest are one '+N' chip that opens the day."
+    },
+    {
+      "key": "added_mark_ms",
+      "value": 1600,
+      "unit": "milliseconds",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-090-evre-6-kararlari.md#Ek 6",
+      "note": "How long a row that was just logged shows its check instead of the plus."
+    },
+    {
+      "key": "swipe_reveal_fraction",
+      "value": 0.4,
+      "unit": "fraction",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-090-evre-6-kararlari.md#Ek 6",
+      "note": "A logged item swiped left this far of the Delete button's width stays open with the red Delete showing (a tap on it deletes); less springs back. The iOS list habit: a swipe shows the button, it does not delete by itself."
+    },
+    {
+      "key": "swipe_full_fraction",
+      "value": 0.6,
+      "unit": "fraction",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-090-evre-6-kararlari.md#Ek 6",
+      "note": "A logged item swiped left this far across its row is deleted with the swipe (iOS Mail's full swipe); the app's banner offers Undo. Between the two thresholds the button is shown and waits for a tap."
     }
   ]
 }

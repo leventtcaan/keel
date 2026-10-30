@@ -64,6 +64,7 @@
     "title": "Log",
     "weighIn": "Weigh-in",
     "meal": "Meal",
+    "diary": "Food diary",
     "workout": "Workout",
     "cardio": "Cardio",
     "life": "Life got in the way"
@@ -1090,8 +1091,16 @@
     "reachedOne": "{reached} of 1 exercise reached your target effort"
   },
   "food": {
+    "macro": {
+      "protein": "P {value}",
+      "carbs": "C {value}",
+      "fat": "F {value}",
+      "spoken": "{protein} grams of protein, {carbs} of carbs, {fat} of fat",
+      "spokenProtein": "{protein} grams of protein"
+    },
     "single": {
       "kcal": "{value} kcal",
+      "gramsOf": "{value} g",
       "macros": "P {protein} · C {carbs} · F {fat}",
       "line": "{kcal} · {macros}",
       "lineKcalProtein": "{kcal} kcal · P {protein}",
@@ -1110,6 +1119,7 @@
     "totals": {
       "eaten": "{value} {unit} eaten",
       "left": "{value} {unit} left",
+      "barLabel": "{eaten} of {target} {unit} eaten",
     "gramsShort": "g",
       "protein": "Protein",
       "carbs": "Carbs",
@@ -1122,7 +1132,7 @@
       "rangeLeft": "Left: {kcal}"
     },
     "copy": {
-      "open": "Copy a day's meals",
+      "open": "Copy an earlier day",
       "close": "Done",
       "title": "Copy into {day}",
       "none": "No other day with meals yet.",
@@ -1243,6 +1253,58 @@
   },
   "meal": {
     "logNow": "Log now",
+    "picker": {
+      "none": "-",
+      "spoken": "{slot}, {kcal} so far",
+      "spokenEmpty": "{slot}, nothing yet"
+    },
+    "tray": {
+      "title": "{slot} · {day}",
+      "empty": "Nothing yet",
+      "viewDay": "View day",
+      "viewDaySpoken": "View the whole day's food",
+      "more": "+{count}",
+      "moreSpoken": "{count} more, open the day",
+      "chip": "{name} · {kcal}",
+      "edit": "Change {name}"
+    },
+    "home": {
+      "favorites": "Favorites",
+      "favoritesEmpty": "Tap the heart on a food to keep it here.",
+      "usual": "Usually at {slot}",
+      "recent": "Recent",
+      "showAll": "Show all {count}",
+      "showMore": "Show more"
+    },
+    "again": {
+      "yesterday": "Same as yesterday's {slot}",
+      "other": "Your last {slot}, {day}",
+      "line": "{items}",
+      "spoken": "Log {slot} again: {items}"
+    },
+    "row": {
+      "added": "Added",
+      "own": "Yours",
+      "plusSpoken": "Add {name}, {amount}",
+      "open": "Choose how much of {name}",
+      "heartOn": "{name} is a favorite",
+      "heartOff": "Make {name} a favorite"
+    },
+    "sheet": {
+      "add": "Add to {slot}",
+      "addKcal": "Add to {slot} · {kcal}",
+      "close": "Close",
+      "closeSpoken": "Close the portion step",
+      "detail": "Details",
+      "weighed": "Weighed",
+      "of": "{name}, portion"
+    },
+    "done": "Done",
+    "doneKcal": "Done · {kcal}",
+    "toast": {
+      "added": "Added",
+      "undoing": "Taking it back"
+    },
     "intoDay": "Logging into {day}",
     "quickAdd": {
       "open": "Quick add",
@@ -1255,6 +1317,7 @@
     },
     "own": {
       "open": "Create my own food",
+      "short": "Create food",
       "title": "Your food",
       "name": "Name",
       "serving": "Serving size",
@@ -1310,8 +1373,13 @@
     },
     "search": {
       "logNow": "Log {name} now",
+      "placeholder": "Search foods",
+      "clear": "Clear search",
+      "createNamed": "Create \"{name}\"",
+      "createNamedSpoken": "Create \"{name}\" as your own food",
       "avoided": "You avoid this",
       "per100gSingle": "{kcal} kcal per 100 g",
+      "per100gShort": "per 100 g",
       "portionLine": "{portion} · {numbers}",
       "withBrand": "{brand} · {rest}",
       "label": "Find a food",

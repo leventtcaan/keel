@@ -22,6 +22,11 @@ type Props = {
   durationMs?: number;
   /** Lift it above something at the bottom (the tab bar), in points from the bottom edge. */
   bottomOffset?: number;
+  /**
+   * In the flow of its screen instead of over it (a sheet that stays open after a save, Evre 7 A): it stands in its column, above the dock,
+   * so it lifts with the keyboard and never covers a button.
+   */
+  inline?: boolean;
 };
 
 /**
@@ -29,7 +34,7 @@ type Props = {
  * that goes by itself (ADR-070 Ek 2 #6). The screen shows it by rendering it and stops on `onDismiss`; a new save is a new
  * banner (give it a new `key`). It is the inverse surface, as the decision block is, so it reads on any page.
  */
-export function UndoBanner({ lead, detail, onUndo, onDismiss, durationMs = workoutParams.undoBannerMs, bottomOffset = tokens.space.xl }: Props) {
+export function UndoBanner({ lead, detail, onUndo, onDismiss, durationMs = workoutParams.undoBannerMs, bottomOffset = tokens.space.xl, inline = false }: Props) {
   const { color } = useTheme();
   const reduce = useReduceMotion();
   const [shown, setShown] = useState(true);
@@ -72,7 +77,7 @@ export function UndoBanner({ lead, detail, onUndo, onDismiss, durationMs = worko
   return (
     <Animated.View
       testID="undo-banner"
-      style={[styles.band, { backgroundColor: color.decisionBackground, bottom: bottomOffset, opacity: reduce ? 1 : fade }]}>
+      style={[styles.band, inline ? styles.inline : { bottom: bottomOffset }, { backgroundColor: color.decisionBackground, opacity: reduce ? 1 : fade }]}>
       <InverseSurface>
         <BannerWords lead={lead} detail={detail} />
         <Button label={t('undoBanner.undo')} variant="text" onPress={undo} />
@@ -106,6 +111,7 @@ const styles = StyleSheet.create({
     paddingLeft: tokens.space.lg,
     paddingRight: tokens.space.xs,
   },
+  inline: { position: 'relative', left: 0, right: 0, marginHorizontal: tokens.space.lg, marginBottom: tokens.space.sm },
   words: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', columnGap: tokens.space.sm },
   saved: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
   detail: { fontSize: tokens.type.bodySmall },

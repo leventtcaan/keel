@@ -22,7 +22,7 @@ import { type Macros, kcalText, macroText, macrosOf, macrosOfPortion, rangeText 
 
 type Schemas = components['schemas'];
 
-const PROBLEM_KEYS = { invalid: 'meal.item.invalid', tooMuch: 'meal.item.tooMuch', recipeGone: 'meal.item.recipeGone' } as const;
+export const PROBLEM_KEYS = { invalid: 'meal.item.invalid', tooMuch: 'meal.item.tooMuch', recipeGone: 'meal.item.recipeGone' } as const;
 /** The Stepper never steps below nothing; an amount of 0 is named by the item's own problem (it must be above 0). */
 const FLOOR = 0;
 
@@ -45,7 +45,7 @@ type Props = {
 };
 
 /** The single numbers of an item: its portion's, times the quantity; else the middle of the server's estimate for it. */
-function numbersOf(item: DraftItem, estimate: Schemas['EstimatedItem'] | undefined, logged: Schemas['EstimatedItem'][] | undefined): Macros | null {
+export function numbersOf(item: DraftItem, estimate: Schemas['EstimatedItem'] | undefined, logged: Schemas['EstimatedItem'][] | undefined): Macros | null {
   const quantity = parseQuantity(item.quantity);
   // Where it was logged and nothing changed, the day's own number: the portion's single number is the food's, the logged one has the amount's error.
   const was = logged?.find((one) => one.foodId === item.foodId && one.amount.unit === item.unit && one.amount.quantity === quantity);
@@ -124,7 +124,7 @@ export function ItemRows({ items, known, recipes, estimated, logged, favorites, 
 }
 
 /** "2 × 1 large", "150 g": the amount of a folded line. */
-function foldedAmount(item: DraftItem): string {
+export function foldedAmount(item: DraftItem): string {
   if (item.quick !== undefined) return t('meal.quickAdd.folded');
   const quantity = parseQuantity(item.quantity);
   // Typed halfway ("1."): the words as typed rather than a guess.

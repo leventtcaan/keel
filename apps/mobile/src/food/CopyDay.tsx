@@ -19,6 +19,7 @@ export function CopyDay({
   into,
   today,
   busy,
+  skip,
   onCopy,
   onClose,
 }: {
@@ -26,11 +27,13 @@ export function CopyDay({
   into: string;
   today: string;
   busy: boolean;
+  /** A day already offered above as "Same as yesterday" (a row each, one tap): not listed twice. */
+  skip?: string;
   onCopy: (day: components['schemas']['DaySummary']) => void;
   onClose: () => void;
 }) {
   const { color } = useTheme();
-  const sources = days.filter((day) => day.day !== into).reverse();
+  const sources = days.filter((day) => day.day !== into && day.day !== skip).reverse();
   return (
     <View testID="copy-day" style={styles.part}>
       {sources.length === 0 ? (

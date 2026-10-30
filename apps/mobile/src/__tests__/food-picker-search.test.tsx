@@ -1,9 +1,9 @@
 /**
  * Finding a food as the user types (K-1038, ADR-085): a short wait after the last key, then the search; the old list goes
  * the moment the words change and "searching" shows; a late answer to older words never replaces a newer one; no
- * connection and a server error are told apart; each row says the portion the food opens on with that portion's numbers as single
- * numbers (ADR-090 #5). The keyboard's
- * Search key searches at once, and there is no separate Search button — Scan stays.
+ * connection and a server error are told apart; each row says the portion the food opens on, that portion's calories as one number and its
+ * macros as three marks (ADR-090 #5, Evre 7 A). The keyboard's Search key searches at once, and there is no separate Search button —
+ * the barcode is an icon in the box.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
@@ -161,23 +161,37 @@ describe('searching as the user types', () => {
     expect(searches()).toHaveLength(0);
   });
 
-  test('an empty box says what to type, and that is all it says', async () => {
+  // K1 (Evre 7 A): the "Try rice." hint line under the box is the box's own placeholder ("Search foods"); nothing else is said while it is empty.
+  test('an empty box says what to do in its placeholder, and that is all it says', async () => {
     await show();
-    expect(screen.getByText(t('meal.search.empty'))).toBeOnTheScreen();
+    expect(field().props.placeholder).toBe(t('meal.search.placeholder'));
     expect(screen.queryByText(t('meal.search.tooShort', { min: foodParams.searchMinChars }))).toBeNull();
     await type('egg');
-    expect(screen.queryByText(t('meal.search.empty'))).toBeNull();
     await type('');
-    expect(screen.getByText(t('meal.search.empty'))).toBeOnTheScreen();
+    expect(field().props.placeholder).toBe(t('meal.search.placeholder'));
     expect(screen.queryByText(t('meal.search.tooShort', { min: foodParams.searchMinChars }))).toBeNull();
   });
 
-  test('nothing found says so', async () => {
+  test('a clear button empties the box and the list (and only shows while there are words)', async () => {
+    await show();
+    expect(screen.queryByRole('button', { name: t('meal.search.clear') })).toBeNull();
+    await type('egg');
+    await wait(DELAY);
+    expect(row(EGG)).toBeOnTheScreen();
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.search.clear') })));
+    expect(field().props.value).toBe('');
+    expect(row(EGG)).toBeNull();
+    expect(screen.queryByRole('button', { name: t('meal.search.clear') })).toBeNull();
+  });
+
+  test('nothing found says so, and offers to create the words as the person\'s own food', async () => {
     mockSearch = async () => ok([]);
     await show();
     await type('zzz');
     await wait(DELAY);
     expect(screen.getByText(t('meal.search.none'))).toBeOnTheScreen();
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.search.createNamedSpoken', { name: 'zzz' }) })));
+    expect(screen.getByDisplayValue('zzz')).toBeOnTheScreen();
   });
 });
 
@@ -208,32 +222,54 @@ describe('when the search does not work', () => {
 });
 
 describe('a result row', () => {
-  // K1 (ADR-090 #1, #5, K-1063): a row said "130-160 kcal per 100 g" as a range; it says the portion the food opens on and that
-  // portion's numbers as single ones, and a food without portions says the middle of its range per 100 g.
+  // K1 (ADR-090 #1, #5, K-1063; Evre 7 A): a row said "1 large · 72 kcal · P 6 · C 0 · F 5" in one muted line; it is now the name, the
+  // portion under it, the calories as one number at the end and the macros as three marks with their letters.
   test('an answer without portions says the middle of its energy per 100 g, one number, under the name', async () => {
     await show();
     await type('egg');
     await wait(DELAY);
     expect(screen.getByText(EGG.name)).toBeOnTheScreen();
-    expect(screen.getByText(t('meal.search.per100gSingle', { kcal: 145 }))).toBeOnTheScreen();
+    expect(screen.getByText(t('meal.search.per100gShort'))).toBeOnTheScreen();
+    expect(screen.getByTestId('result-fdc-1-kcal')).toHaveTextContent(t('food.single.kcal', { value: 145 }));
     expect(screen.queryByText(/130-160/)).toBeNull();
   });
 
-  test('a food with portions says its natural portion and the numbers of that portion: kcal, protein, carbs, fat', async () => {
+  test('a food with portions says its natural portion, the calories of that portion, and protein, carbs and fat as marks', async () => {
     mockSearch = async () => ok([LARGE_EGG]);
     await show();
     await type('egg');
     await wait(DELAY);
-    expect(screen.getByText('1 large · 72 kcal · P 6 · C 0 · F 5')).toBeOnTheScreen();
+    expect(screen.getByText('1 large')).toBeOnTheScreen();
+    expect(screen.getByTestId('result-fdc-3-kcal')).toHaveTextContent('72 kcal');
+    expect(screen.getByText('P 6')).toBeOnTheScreen();
+    expect(screen.getByText('C 0')).toBeOnTheScreen();
+    expect(screen.getByText('F 5')).toBeOnTheScreen();
+    expect(screen.getByLabelText(t('food.macro.spoken', { protein: 6, carbs: 0, fat: 5 }))).toBeOnTheScreen();
   });
 
-  test('a product says its brand first; a food the profile avoids is marked, not hidden', async () => {
-    mockSearch = async () => ok([{ ...LARGE_EGG, brand: 'Happy Hens', avoided: true }]);
+  test('a product says its brand with the portion; a food the profile avoids is marked, not hidden; a food of the person\'s own is badged', async () => {
+    mockSearch = async () => ok([{ ...LARGE_EGG, brand: 'Happy Hens', avoided: true, own: true }]);
     await show();
     await type('egg');
     await wait(DELAY);
-    expect(screen.getByText('Happy Hens · 1 large · 72 kcal · P 6 · C 0 · F 5')).toBeOnTheScreen();
+    expect(screen.getByText('Happy Hens · 1 large')).toBeOnTheScreen();
     expect(screen.getByText(t('meal.search.avoided'))).toBeOnTheScreen();
+    expect(screen.getByText(t('meal.row.own'))).toBeOnTheScreen();
+  });
+
+  test('a heart keeps the food in Favorites (and takes it out); a check shows on the plus of a row just logged', async () => {
+    mockSearch = async () => ok([LARGE_EGG]);
+    const onFavorite = jest.fn();
+    await render(
+      <ThemeProvider scheme="light">
+        <FoodPicker full={false} onFood={onFood} onLogNow={jest.fn()} favorites={new Set([LARGE_EGG.id])} onFavorite={onFavorite} added={new Set([LARGE_EGG.id])} />
+      </ThemeProvider>,
+    );
+    await type('egg');
+    await wait(DELAY);
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.favorite.remove', { name: LARGE_EGG.name }) })));
+    expect(onFavorite).toHaveBeenCalledWith(LARGE_EGG.id, false);
+    expect(screen.getByRole('button', { name: t('meal.row.added') })).toBeOnTheScreen();
   });
 
   test('a plus logs the portion shown at once; the row itself opens the portion step', async () => {
@@ -266,6 +302,9 @@ describe('the buttons', () => {
     await show();
     expect(screen.queryByRole('button', { name: 'Search' })).toBeNull();
     expect(screen.getByRole('button', { name: t('meal.barcode.scan') })).toBeOnTheScreen();
+    // The barcode is an icon at the end of the box while it is empty; once there are words it gives way to the clear button.
+    await type('egg');
+    expect(screen.queryByRole('button', { name: t('meal.barcode.scan') })).toBeNull();
   });
 
   test('picking a row hands the food over and empties the box', async () => {

@@ -5,6 +5,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
+import { ProgressBar } from '@/components/ProgressBar';
+import { Icon } from '@/components/Icon';
 import { PLUS_GUTTER } from '@/components/PlusEntry';
 import { t } from '@/copy';
 import { budgetLine } from '@/food/budget';
@@ -69,19 +71,33 @@ export function FoodLine({ budget }: { budget: Loaded<Schemas['DayBudget']> }) {
         <SymbolView name={detail ? 'chevron.up.circle' : 'info.circle'} size={tokens.type.body} tintColor={color.muted} />
       </Pressable>
     );
+  // Built outside the JSX children (the raw-text guard reads them). What was eaten of the target, as a bar: the card says how the day is going.
+  const eatenKcal = budget.state === 'ready' ? mid(budget.value.eaten.kcal) : 0;
+  const targetKcal = budget.state === 'ready' ? budget.value.targetKcal : 0;
+  const bar =
+    targetKcal > 0 ? (
+      <ProgressBar value={eatenKcal / targetKcal} label={t('food.totals.barLabel', { eaten: eatenKcal.toLocaleString('en-US'), target: targetKcal.toLocaleString('en-US'), unit })} />
+    ) : null;
+  const amountText = amount === null ? null : <Text style={[styles.amount, { color: color.text }]}>{amount}</Text>;
   return (
     <View testID="food-line" style={[styles.card, styles.clear, { backgroundColor: color.surface }]}>
       <View style={styles.line}>
+        {/* The whole left part of the card is the way to Today's food: its words, its bar and a chevron say so (Evre 7 review §7, P0). */}
         <Pressable
+          testID="food-line-open"
           accessibilityRole="button"
           accessibilityLabel={amount === null ? t('thisWeek.food.lineLabelAround', { lead }) : t('thisWeek.food.lineLabel', { lead, amount })}
           onPress={() => router.push('/food')}
-          style={({ pressed }) => [styles.grow, styles.body, pressed && styles.dim]}>
-          <Text style={[styles.text, { color: color.textSecondary }]}>{lead}</Text>
-          {amount === null ? null : <Text style={[styles.amount, { color: color.text }]}>{amount}</Text>}
+          style={({ pressed }) => [styles.grow, styles.open, pressed && styles.dim]}>
+          <View style={styles.grow}>
+            <Text style={[styles.text, { color: color.textSecondary }]}>{lead}</Text>
+            {amountText}
+            {bar}
+          </View>
+          <Icon name="chevron.right" size="small" tone="muted" testID="food-line-chevron" />
         </Pressable>
         {info}
-        <Button label={t('thisWeek.food.log')} accessibilityLabel={t('thisWeek.food.logLabel')} variant="text" onPress={() => router.push('/meal')} />
+        <Button label={t('thisWeek.food.log')} accessibilityLabel={t('thisWeek.food.logLabel')} variant="secondary" size="touch" onSurface onPress={() => router.push('/meal')} />
       </View>
       {detail && detailLine !== null && <Text style={[styles.small, { color: color.textSecondary }]}>{detailLine}</Text>}
     </View>
@@ -96,7 +112,7 @@ const styles = StyleSheet.create({
   info: { minHeight: tokens.size.touch, minWidth: tokens.size.touch / 2, alignItems: 'center', justifyContent: 'center' },
   small: { fontSize: tokens.type.bodySmall },
   grow: { flex: 1 },
-  body: { minHeight: tokens.size.touch, justifyContent: 'center' },
+  open: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, minHeight: tokens.size.touch, paddingVertical: tokens.space.xs },
   text: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.semibold },
   amount: { fontFamily: tokens.font.displayBold, fontSize: tokens.type.number, fontVariant: ['tabular-nums'] },
   dim: { opacity: tokens.opacity.dim },

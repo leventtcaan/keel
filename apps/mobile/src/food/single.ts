@@ -48,6 +48,8 @@ export const numbersText = (m: Macros): string => t('food.single.line', { kcal: 
 /** Spoken: the same in words a screen reader reads whole. */
 export const numbersSpoken = (m: Macros): string => t('food.single.spoken', { kcal: m.kcal, protein: m.protein, carbs: m.carbs, fat: m.fat });
 
-/** A range as the detail shows it: "66-80 kcal". */
+/** A range as the detail shows it: "66-80 kcal"; a range whose ends are the same number is that one number ("2,050 kcal", never "2,050-2,050"). */
 export const rangeText = (range: Range, unit: string): string =>
-  `${t('format.range', { low: range.low.toLocaleString('en-US'), high: range.high.toLocaleString('en-US') })} ${unit}`;
+  range.low === range.high
+    ? `${range.low.toLocaleString('en-US')} ${unit}`
+    : `${t('format.range', { low: range.low.toLocaleString('en-US'), high: range.high.toLocaleString('en-US') })} ${unit}`;

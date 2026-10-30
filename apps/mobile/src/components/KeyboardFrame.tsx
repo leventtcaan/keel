@@ -18,24 +18,34 @@ export function liftOf(windowHeight: number, keyboardTop: number, gapBelow: numb
  * the UI thread drove it), and is at once under Reduce Motion. The scroll itself is a FormScroll.
  */
 export function KeyboardFrame({ children }: { children: ReactNode }) {
-  const window = useWindowDimensions();
-  const reduce = useReduceMotion();
   const below = useContext(SafeAreaInsetsContext)?.bottom ?? 0;
-  const [lift, setLift] = useState(0);
-  useEffect(() => {
-    const raise = (event: KeyboardEvent) => {
-      const to = liftOf(window.height, event.endCoordinates.screenY, below);
-      if (!reduce) LayoutAnimation.configureNext({ duration: event.duration > 0 ? event.duration : 250, update: { type: LayoutAnimation.Types.keyboard } });
-      setLift(to);
-    };
-    const subscriptions = [Keyboard.addListener('keyboardWillChangeFrame', raise), Keyboard.addListener('keyboardWillHide', raise)];
-    return () => subscriptions.forEach((subscription) => subscription.remove());
-  }, [window.height, below, reduce]);
+  const lift = useKeyboardLift(below);
   return (
     <View testID="keyboard-frame" style={[styles.frame, { paddingBottom: lift }]}>
       {children}
     </View>
   );
+}
+
+/**
+ * How high the keyboard stands over the room a view already leaves under itself (`gapBelow`), following the keyboard's own movement (a
+ * layout animation of its duration; at once under Reduce Motion). KeyboardFrame is this on a screen's safe area; a sheet drawn over the whole
+ * screen (the portion step) passes 0 and lifts by the keyboard's full height.
+ */
+export function useKeyboardLift(gapBelow: number): number {
+  const window = useWindowDimensions();
+  const reduce = useReduceMotion();
+  const [lift, setLift] = useState(0);
+  useEffect(() => {
+    const raise = (event: KeyboardEvent) => {
+      const to = liftOf(window.height, event.endCoordinates.screenY, gapBelow);
+      if (!reduce) LayoutAnimation.configureNext({ duration: event.duration > 0 ? event.duration : 250, update: { type: LayoutAnimation.Types.keyboard } });
+      setLift(to);
+    };
+    const subscriptions = [Keyboard.addListener('keyboardWillChangeFrame', raise), Keyboard.addListener('keyboardWillHide', raise)];
+    return () => subscriptions.forEach((subscription) => subscription.remove());
+  }, [window.height, gapBelow, reduce]);
+  return lift;
 }
 
 const styles = StyleSheet.create({ frame: { flex: 1 } });

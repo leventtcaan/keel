@@ -3,9 +3,11 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { components } from '@/api/schema';
 import { Card } from '@/components/Card';
+import { ProgressBar } from '@/components/ProgressBar';
+import { AnimatedFill } from '@/motion/AnimatedFill';
 import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
-import { tokens } from '@/theme/tokens';
+import { type Palette, tokens } from '@/theme/tokens';
 import type { Loaded } from '@/today/today';
 
 import { budgetLine } from './budget';
@@ -50,14 +52,34 @@ export function DayTotals({ budget, targets, summary, hint }: Props) {
     headline = t('food.totals.eaten', { value: (eaten === undefined ? 0 : mid(eaten.kcal)).toLocaleString('en-US'), unit });
   }
 
-  const macro = (key: 'protein' | 'carbs' | 'fat', value: number | undefined, target: number | undefined) => (
-    <View key={key} style={styles.macro} testID={`macro-${key}`}>
-      <Text style={[styles.macroLabel, { color: color.muted }]}>{t(`food.totals.${key}`)}</Text>
-      <Text style={[styles.macroValue, { color: color.text }]}>
-        {target === undefined ? t('food.totals.of', { eaten: value ?? 0, unit: grams }) : t('food.totals.ofTarget', { eaten: value ?? 0, target, unit: grams })}
-      </Text>
-    </View>
-  );
+  // Each macro in its own colour (the same three everywhere), its name beside the dot, "eaten / target g", and a bar where a target exists.
+  const macro = (key: 'protein' | 'carbs' | 'fat', value: number | undefined, target: number | undefined) => {
+    const tone: keyof Palette = key === 'protein' ? 'macroProtein' : key === 'carbs' ? 'macroCarbs' : 'macroFat';
+    const share = target === undefined || target <= 0 ? null : ((value ?? 0) / target) * 100;
+    // Built outside the JSX children (the raw-text guard reads them).
+    const bar =
+      share === null ? null : (
+        <View style={[styles.track, { backgroundColor: color.track }]}>
+          <AnimatedFill testID={`macro-fill-${key}`} percent={share} style={[styles.fill, { backgroundColor: color[tone] }]} />
+        </View>
+      );
+    return (
+      <View key={key} style={styles.macro} testID={`macro-${key}`}>
+        <View style={styles.macroName}>
+          <View style={[styles.dot, { backgroundColor: color[tone] }]} />
+          <Text style={[styles.macroLabel, { color: color.muted }]}>{t(`food.totals.${key}`)}</Text>
+        </View>
+        <Text style={[styles.macroValue, { color: color.text }]}>
+          {target === undefined ? t('food.totals.of', { eaten: value ?? 0, unit: grams }) : t('food.totals.ofTarget', { eaten: value ?? 0, target, unit: grams })}
+        </Text>
+        {bar}
+      </View>
+    );
+  };
+  const target = targetKnown ? budget.value.targetKcal : undefined;
+  const eatenKcal = eaten === undefined ? 0 : mid(eaten.kcal);
+  const kcalBar =
+    target === undefined || target <= 0 ? null : <ProgressBar value={eatenKcal / target} label={t('food.totals.barLabel', { eaten: eatenKcal.toLocaleString('en-US'), target: target.toLocaleString('en-US'), unit })} />;
   const rangeLines =
     eaten === undefined
       ? t('food.totals.nothing')
@@ -76,6 +98,7 @@ export function DayTotals({ budget, targets, summary, hint }: Props) {
       <Text testID="headline" accessibilityRole="header" style={[styles.big, { color: color.text }]}>
         {headline}
       </Text>
+      {kcalBar}
       <View style={styles.macros}>
         {macro('protein', eaten === undefined ? 0 : mid(eaten.proteinG), targetKnown ? budget.value.targetProteinG : undefined)}
         {macro('carbs', eaten === undefined ? 0 : mid(eaten.carbsG), split?.carbsG)}
@@ -94,6 +117,10 @@ const styles = StyleSheet.create({
   big: { fontFamily: tokens.font.displayBold, fontSize: tokens.type.number, fontVariant: ['tabular-nums'] },
   macros: { flexDirection: 'row', gap: tokens.space.md },
   macro: { flex: 1, gap: 2 },
+  macroName: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.xs },
+  dot: { width: tokens.size.swatch - 2, height: tokens.size.swatch - 2, borderRadius: (tokens.size.swatch - 2) / 2 },
+  track: { height: tokens.size.track, borderRadius: tokens.radius.track, overflow: 'hidden' },
+  fill: { height: '100%', borderRadius: tokens.radius.track },
   macroLabel: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.semibold },
   macroValue: { fontSize: tokens.type.body, fontVariant: ['tabular-nums'] },
   small: { fontSize: tokens.type.bodySmall },
