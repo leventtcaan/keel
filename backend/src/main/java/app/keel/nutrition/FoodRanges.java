@@ -19,6 +19,10 @@ import java.util.Optional;
  * </ul>
  * The two multiply, worst case on both sides; low rounds down and high rounds up, so a range never claims more certainty
  * than the numbers carry.
+ * <p>
+ * An amount's range is centred on its single number (ADR-090 Ek 8): the number is the database value times the amount,
+ * rounded to a whole number as the app lists it (FoodPortions), and the range reaches as far on both sides as the wider of
+ * the two worst cases, so the middle of the range is that number and neither side is narrower than the worst case.
  */
 final class FoodRanges {
 
@@ -48,7 +52,7 @@ final class FoodRanges {
 
     /** The database value alone, per 100 g (Contract Food.per100g). */
     static Nutrients per100g(Per100g value, Source source, Parameters parameters) {
-        return ranges(value, source, HUNDRED, BigDecimal.ZERO, parameters);
+        return ranges(value, source, HUNDRED, BigDecimal.ZERO, false, parameters);
     }
 
     /** An amount of a food: the value's error times the amount's. */
@@ -57,7 +61,7 @@ final class FoodRanges {
             case WEIGHED -> ParameterKey.AMOUNT_ERROR_WEIGHED_RATIO;
             case MEASURED -> ParameterKey.AMOUNT_ERROR_MEASURED_RATIO;
             case ESTIMATED -> ParameterKey.AMOUNT_ERROR_ESTIMATED_RATIO;
-        }), parameters);
+        }), true, parameters);
     }
 
     /**
@@ -94,7 +98,8 @@ final class FoodRanges {
                 .map(Item::foodId);
     }
 
-    private static Nutrients ranges(Per100g value, Source source, BigDecimal grams, BigDecimal amountError, Parameters parameters) {
+    private static Nutrients ranges(Per100g value, Source source, BigDecimal grams, BigDecimal amountError, boolean centred,
+            Parameters parameters) {
         BigDecimal portion = grams.divide(HUNDRED);
         BigDecimal analysed = ratio(parameters, ParameterKey.ANALYSED_VALUE_ERROR_RATIO);
         BigDecimal label = ratio(parameters, ParameterKey.LABEL_VALUE_TOLERANCE_RATIO);
@@ -104,16 +109,28 @@ final class FoodRanges {
         BigDecimal over = branded ? label : analysed;
         BigDecimal under = branded ? label : analysed;
         return new Nutrients(
-                range(value.kcal(), analysed, over, portion, amountError),
-                range(value.proteinG(), under, analysed, portion, amountError),
-                range(value.carbsG(), under, analysed, portion, amountError),
-                range(value.fatG(), analysed, over, portion, amountError));
+                range(value.kcal(), analysed, over, portion, amountError, centred),
+                range(value.proteinG(), under, analysed, portion, amountError, centred),
+                range(value.carbsG(), under, analysed, portion, amountError, centred),
+                range(value.fatG(), analysed, over, portion, amountError, centred));
     }
 
-    private static Range range(BigDecimal per100g, BigDecimal valueDown, BigDecimal valueUp, BigDecimal portion, BigDecimal amountError) {
-        BigDecimal low = per100g.multiply(BigDecimal.ONE.subtract(valueDown)).multiply(portion).multiply(BigDecimal.ONE.subtract(amountError));
-        BigDecimal high = per100g.multiply(BigDecimal.ONE.add(valueUp)).multiply(portion).multiply(BigDecimal.ONE.add(amountError));
-        return new Range(low.setScale(0, RoundingMode.FLOOR).intValueExact(), high.setScale(0, RoundingMode.CEILING).intValueExact());
+    private static Range range(BigDecimal per100g, BigDecimal valueDown, BigDecimal valueUp, BigDecimal portion, BigDecimal amountError,
+            boolean centred) {
+        BigDecimal number = per100g.multiply(portion);
+        BigDecimal low = number.multiply(BigDecimal.ONE.subtract(valueDown)).multiply(BigDecimal.ONE.subtract(amountError));
+        BigDecimal high = number.multiply(BigDecimal.ONE.add(valueUp)).multiply(BigDecimal.ONE.add(amountError));
+        if (!centred) {
+            return new Range(low.setScale(0, RoundingMode.FLOOR).intValueExact(), high.setScale(0, RoundingMode.CEILING).intValueExact());
+        }
+        // The number the app lists for this amount (FoodPortions: four decimals, then the app rounds to a whole number).
+        int whole = number.setScale(FoodPortions.DECIMALS, RoundingMode.HALF_UP).setScale(0, RoundingMode.HALF_UP).intValueExact();
+        BigDecimal at = BigDecimal.valueOf(whole);
+        int below = at.subtract(low).setScale(0, RoundingMode.CEILING).intValueExact();
+        int above = high.subtract(at).setScale(0, RoundingMode.CEILING).intValueExact();
+        // A range does not go below zero; when it would, it stops there and keeps the number in the middle.
+        int reach = Math.min(Math.max(Math.max(below, above), 0), whole);
+        return new Range(whole - reach, whole + reach);
     }
 
     private static Range sum(List<Range> ranges) {

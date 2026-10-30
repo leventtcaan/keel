@@ -42,7 +42,7 @@ final class FoodPortions {
     static final String MILLILITRES = "ml";
     private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
     // A gram's or a millilitre's worth is a small number the app multiplies by hundreds: four decimals, not two.
-    private static final int DECIMALS = 4;
+    static final int DECIMALS = 4;
     private static final int GRAMS_DECIMALS = 3;
     private static final BigDecimal LAST_RESORT_GRAMS = HUNDRED;
 

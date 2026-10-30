@@ -70,8 +70,8 @@ class MealLogTests {
         assertThat(first).hasStatus(201);
         assertThat(again).hasStatus(200);
         assertThat(map(again)).isEqualTo(map(first));
-        assertThat(map(first)).containsEntry("slot", "LUNCH").containsEntry("kcal", Map.of("low", 372, "high", 742))
-                .containsEntry("proteinG", Map.of("low", 55, "high", 81));
+        assertThat(map(first)).containsEntry("slot", "LUNCH").containsEntry("kcal", Map.of("low", 318, "high", 742))
+                .containsEntry("proteinG", Map.of("low", 53, "high", 81));
         assertThat((List<Map<String, Object>>) map(first).get("items")).extracting(item -> item.get("name"))
                 .containsExactly("Chicken breast, roasted", "Toasted oat cereal");
         assertThat(list(send(account, "GET", "/v1/meals?day=2026-09-30", null))).hasSize(1);
@@ -87,7 +87,7 @@ class MealLogTests {
 
         assertThat(repeated).hasStatus(201);
         assertThat(map(repeated).get("id")).as("a new meal").isNotEqualTo(yesterday);
-        assertThat(map(repeated)).containsEntry("kcal", Map.of("low", 372, "high", 742));
+        assertThat(map(repeated)).containsEntry("kcal", Map.of("low", 318, "high", 742));
         Object original = list(send(account, "GET", "/v1/meals?day=2026-09-29", null)).getFirst().get("items");
         assertThat(map(repeated).get("items")).as("the items as logged").isEqualTo(original);
         assertThat(list(send(account, "GET", "/v1/meals?day=2026-09-30", null))).hasSize(1);
@@ -171,8 +171,8 @@ class MealLogTests {
         Map<String, Object> budget = map(send(account, "GET", "/v1/days/2026-09-30/budget", null));
 
         assertThat(budget).containsEntry("day", "2026-09-30").containsEntry("targetKcal", 2200)
-                .containsEntry("left", Map.of("kcal", Map.of("low", 1458, "high", 1828), "proteinG", Map.of("low", 79, "high", 105)));
-        assertThat((Map<String, Object>) budget.get("eaten")).containsEntry("kcal", Map.of("low", 372, "high", 742));
+                .containsEntry("left", Map.of("kcal", Map.of("low", 1458, "high", 1882), "proteinG", Map.of("low", 79, "high", 107)));
+        assertThat((Map<String, Object>) budget.get("eaten")).containsEntry("kcal", Map.of("low", 318, "high", 742));
     }
 
     @Test
