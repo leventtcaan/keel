@@ -5,6 +5,7 @@
  * 5.1.1(v): reachable without paying) — on the gate that cannot be closed.
  */
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 
 import SubscribeScreen from '@/app/subscribe';
@@ -146,11 +147,22 @@ describe('the hero right after onboarding: the user\'s own plan, tagged Yours (K
     expect(card().getByText(t('subscription.yours.workoutOne', { name: 'Upper A' }))).toBeOnTheScreen();
   });
 
-  test('the first value line is the call, food and training together, on the check-in day', async () => {
+  test('the first value line is the call and its reason, on the check-in day', async () => {
     mockPreview = { ...PREVIEW, checkInDay: 'THURSDAY' };
     await show();
     expect(screen.getByText(t('subscription.values.call', { day: t('onboarding.schedule.dayName.THURSDAY') }))).toBeOnTheScreen();
-    expect(t('subscription.values.call', { day: 'Thursday' })).toBe('Your Thursday call, food and training together');
+    expect(t('subscription.values.call', { day: 'Thursday' })).toBe('A call every Thursday, with the reason');
+  });
+
+  test('three concrete benefits, in this order: the call, the weights set by set, cardio and food that adjust', async () => {
+    mockPreview = PREVIEW;
+    await show();
+    expect(t('subscription.values.sets')).toBe('Your weights, set by set, from last time');
+    expect(t('subscription.values.adjust')).toBe('Cardio and food that adjust to your week');
+    const texts = screen.getAllByText(/.*/).map((node) => String(node.props.children));
+    const at = [t('subscription.values.call', { day: 'Monday' }), t('subscription.values.sets'), t('subscription.values.adjust')].map((line) => texts.indexOf(line));
+    expect(at.every((i) => i >= 0)).toBe(true);
+    expect([...at].sort((a, b) => a - b)).toEqual(at);
   });
 
   test('the Apple 3.1.2 lines stay: the price, the period, the trial, the renewal and how to cancel', async () => {
@@ -194,8 +206,9 @@ describe('the trial, only where the store offers it', () => {
   test('offered: the headline, the day nothing is charged until, and a button that starts it', async () => {
     await show();
     expect(screen.getByLabelText('Try it free for 2 weeks')).toBeOnTheScreen();
-    // Under the headline, and again on the timeline as the day it charges.
-    expect(screen.getAllByText('Tue, Oct 27')).toHaveLength(2);
+    // The trial is not stated twice before the button: no sentence under the headline, the day it charges is on the timeline once.
+    expect(screen.queryByText(/Nothing is charged until/)).toBeNull();
+    expect(screen.getAllByText('Tue, Oct 27')).toHaveLength(1);
     expect(screen.getByText('No charge today.')).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: START })).toBeOnTheScreen();
   });
@@ -205,7 +218,6 @@ describe('the trial, only where the store offers it', () => {
     await show();
     expect(screen.queryByText(/free/i)).toBeNull();
     expect(screen.queryByText('No charge today.')).toBeNull();
-    expect(screen.queryByText(t('subscription.sub.lead'))).toBeNull();
     expect(screen.getByRole('header', { name: t('subscription.title') })).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: t('subscription.subscribe') })).toBeOnTheScreen();
     expect(screen.getAllByText('$59.99 a year, renewing every year until you cancel.')).toHaveLength(1);
@@ -239,6 +251,38 @@ describe('the bottom that stays', () => {
     expect(screen.getAllByText('$12.99 a month, renewing every month until you cancel.')).toHaveLength(1);
     await press(t('subscription.subscribe'));
     expect(mockStore.buy).toHaveBeenCalledWith('$rc_monthly');
+  });
+});
+
+describe('the plans are above the fold, and nothing hides behind the dock (evre 7 final pass)', () => {
+  test('Yearly and Monthly come right after the headline, before the benefits, the timeline and the terms', async () => {
+    mockPreview = PREVIEW;
+    await show();
+    // The screen top to bottom: each node's own words (a radio's label, a text's string).
+    const words: string[] = [];
+    const walk = (node: unknown) => {
+      if (typeof node === 'string') return void words.push(node);
+      if (node === null || typeof node !== 'object') return;
+      const { props, children } = node as { props: { accessibilityLabel?: string; accessibilityRole?: string }; children: unknown[] | null };
+      if (props.accessibilityRole === 'radio' && props.accessibilityLabel !== undefined) words.push(props.accessibilityLabel);
+      (children ?? []).forEach(walk);
+    };
+    [screen.toJSON()].flat().forEach(walk);
+    const at = (match: string | RegExp) => words.findIndex((w) => (typeof match === 'string' ? w === match : match.test(w)));
+    const [yearly, monthly, benefit, timeline, terms] = [/^Yearly/, /^Monthly/, t('subscription.values.sets'), t('subscription.timeline.heading'), t('subscription.cancelNote')].map(at);
+    expect([yearly, monthly, benefit, timeline, terms].every((i) => i >= 0)).toBe(true);
+    expect(yearly).toBeLessThan(monthly);
+    expect(monthly).toBeLessThan(benefit);
+    expect(benefit).toBeLessThan(timeline);
+    expect(timeline).toBeLessThan(terms);
+  });
+
+  test('the page ends with room as tall as the dock, so the chosen Monthly is never behind it', async () => {
+    await show();
+    const scroll = screen.getByTestId('paywall-scroll');
+    expect(StyleSheet.flatten(scroll.props.contentContainerStyle).paddingBottom ?? 0).toBe(0); // not measured yet
+    await act(async () => fireEvent(screen.getByTestId('paywall-dock'), 'layout', { nativeEvent: { layout: { x: 0, y: 700, width: 440, height: 188 } } }));
+    expect(StyleSheet.flatten(screen.getByTestId('paywall-scroll').props.contentContainerStyle).paddingBottom).toBe(188);
   });
 });
 

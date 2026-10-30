@@ -22,7 +22,7 @@ type Subscription = components['schemas']['Subscription'];
 type Read = { state: 'loading' } | { state: 'ready'; subscription: Subscription } | { state: 'failed' };
 
 /** What the server keeps, in words: none, or the status with the day its access ends (or ended). */
-function stateWords(subscription: Subscription): string {
+export function stateWords(subscription: Subscription): string {
   if (subscription.status === undefined) return t('settings.subscription.none');
   const date = subscription.accessUntil === undefined ? '' : dayWords(subscription.accessUntil);
   return t(`settings.subscription.status.${subscription.status}`, { date });

@@ -396,9 +396,12 @@ describe('export, delete, sign out', () => {
     expect(screen.getByText(t('settings.serverError'))).toBeOnTheScreen();
   });
 
-  test('signing out with nothing waiting signs out at once', async () => {
+  test('signing out with nothing waiting still asks first, short; the destructive button signs out', async () => {
     await show();
     await press(t('settings.signOut.title'));
+    expect(mockServices.signOut).not.toHaveBeenCalled();
+    expect(lastAlert().message).toBe(t('settings.signOut.confirmBody'));
+    await tapAlert('destructive');
     expect(mockServices.signOut).toHaveBeenCalledTimes(1);
   });
 

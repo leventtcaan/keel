@@ -55,7 +55,7 @@ function Preparing() {
   let second = noCardio ? 'onboarding.preparing.noCardio' : 'onboarding.preparing.cardio';
   if (food) second = noCardio ? 'onboarding.preparing.food' : 'onboarding.preparing.foodAndCardio';
   const lines = [
-    t('onboarding.preparing.program', { count: days }),
+    t(days === 1 ? 'onboarding.preparing.program.one' : 'onboarding.preparing.program.other', { count: days }),
     t(second),
     call === null
       ? t('onboarding.preparing.firstWorkout')

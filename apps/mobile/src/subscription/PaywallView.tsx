@@ -3,10 +3,12 @@ import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 
+import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
 import { useAppServices } from '@/services/ServicesProvider';
+import { stateWords } from '@/settings/SubscriptionSection';
 import { AccountButton, AccountSheet } from '@/subscription/AccountSheet';
 import { BrandMark } from '@/subscription/BrandMark';
 import { ExampleCard } from '@/subscription/ExampleCard';
@@ -29,14 +31,14 @@ type Step =
   | { at: 'loading' }
   | { at: 'closed'; why: Exclude<Opened['state'], 'plans' | 'subscribed'> }
   | { at: 'plans'; plans: Plan[]; chosen: string; busy: 'buying' | 'restoring' | null; note: Note | null }
-  | { at: 'active' }
+  | { at: 'active'; subscription?: components['schemas']['Subscription'] }
   /** Bought; the server has not seen it yet (ADR-057 D2). */
   | { at: 'waiting'; looking: boolean };
 
 /** The screen's step for what opening found. */
 function stepOf(opened: Opened): Step {
   if (opened.state === 'plans') return { at: 'plans', plans: opened.plans, chosen: opened.plans[0].id, busy: null, note: null };
-  return opened.state === 'subscribed' ? { at: 'active' } : { at: 'closed', why: opened.state };
+  return opened.state === 'subscribed' ? { at: 'active', subscription: opened.subscription } : { at: 'closed', why: opened.state };
 }
 
 type Props = {
@@ -53,8 +55,8 @@ type Props = {
 
 /**
  * The paywall (K-702, K-1033; prototype paywall-v2, ADR-057, ADR-072 #7 and Ek 3). The example call as the hero, marked as one;
- * the headline, three values; the store's plans, annual chosen first, each with the store's price (K2) and, when it is real, the
- * saving; the timeline — today, the first call, the reminder, the charge — for the chosen plan, the trial as long as the store's
+ * the headline; the store's plans right under it (above the fold), annual chosen first, each with the store's price (K2) and, when it is real, the
+ * saving; three values; the timeline — today, the first call, the reminder, the charge — for the chosen plan, the trial as long as the store's
  * offer; the chosen plan's terms in full, the trial only for someone who can have it (Apple 3.1.2). The button, the price in a
  * line and Restore, Terms, Privacy stay at the bottom. Bought, the server is asked until it sees it (D2): subscribed, or "it can
  * take a minute" with a way to look again — never a second purchase. Opened only when the user asks (D5): from a feature that
@@ -66,6 +68,8 @@ export function Paywall({ required = false, onActive, preview = null }: Props) {
   const insets = useContext(SafeAreaInsetsContext);
   const [step, setStep] = useState<Step>({ at: 'loading' });
   const [account, setAccount] = useState(false);
+  // How tall the sticky bottom is: the page ends with that much room, so the last plan and the terms are never behind it.
+  const [dockHeight, setDockHeight] = useState(0);
   const [links] = useState(configuredLegalLinks);
   // One purchase or restore at a time: a second tap while Apple's sheet is up does nothing (a ref both taps share).
   const running = useRef(false);
@@ -157,6 +161,8 @@ export function Paywall({ required = false, onActive, preview = null }: Props) {
     body = (
       <View style={styles.part}>
         {text(t('subscription.active'))}
+        {/* What the server already says of it: the status and the day it renews or ends (as Settings says it). */}
+        {step.subscription?.status !== undefined && text(stateWords(step.subscription), 'textSecondary')}
         <TrialReminderOffer />
         {onward}
       </View>
@@ -181,43 +187,39 @@ export function Paywall({ required = false, onActive, preview = null }: Props) {
     // Right after onboarding, with calls: the plan the person just saw is the hero, tagged Yours (K-1058). Met later (Settings), or
     // without calls, the example stays: it is not this person's call, and says so.
     hero = preview !== null && preview.firstCall !== null ? <YourPlanCard preview={{ ...preview, firstCall: preview.firstCall }} /> : <ExampleCard kind={calls ? 'call' : 'set'} />;
-    // The weekly call on the profile's own day; met later, with no plan just shown, without a day; the cardio only when the program sets some.
-    let call: string;
-    if (preview === null) call = t('subscription.values.weeklyCall');
-    else if (preview.firstCall === null) call = t(preview.hasCardio ? 'subscription.values.cardio' : 'subscription.values.swap');
-    else call = t('subscription.values.call', { day: t(`onboarding.schedule.dayName.${preview.checkInDay}`) });
-    const program: ValueRow = { icon: 'program', words: t(preview?.own === true ? 'subscription.values.own' : 'subscription.values.built') };
+    // Three concrete lines. With calls: the call on the profile's own day (met later, with no plan just shown, without a day), the
+    // weights from last time, and the cardio and food that adjust. Without calls (no health data consent): the program, the weights,
+    // and the cardio only when the program sets some.
     const sets: ValueRow = { icon: 'sets', words: t('subscription.values.sets') };
-    const weekly: ValueRow = { icon: 'call', words: call };
-    // With a call of its own, it leads (K-1058): the call, food and training together, then what each set holds.
-    const values: ValueRow[] = preview !== null && preview.firstCall !== null ? [weekly, program, sets] : [program, sets, weekly];
+    let values: ValueRow[];
+    if (preview !== null && preview.firstCall === null) {
+      const program: ValueRow = { icon: 'program', words: t(preview.own ? 'subscription.values.own' : 'subscription.values.built') };
+      const other: ValueRow = { icon: 'call', words: t(preview.hasCardio ? 'subscription.values.cardio' : 'subscription.values.swap') };
+      values = [program, sets, other];
+    } else {
+      const call = preview === null ? t('subscription.values.weeklyCall') : t('subscription.values.call', { day: t(`onboarding.schedule.dayName.${preview.checkInDay}`) });
+      values = [{ icon: 'call', words: call }, sets, { icon: 'program', words: t('subscription.values.adjust') }];
+    }
     const choose = (id: string) => setStep((now) => (now.at === 'plans' && now.busy === null ? { ...now, chosen: id, note: null } : now));
     body = (
       <View style={styles.part}>
-        <View style={styles.part}>
-          <ScreenTitle accent={words.accent ?? undefined} label={words.title}>
-            {words.lead}
-          </ScreenTitle>
-          {words.sub !== null && (
-            <Text style={[styles.text, { color: color.textSecondary }]}>
-              {words.sub.lead} <Text style={styles.bold}>{words.sub.date}</Text>
-              {'.'}
-            </Text>
-          )}
-        </View>
-        <Values rows={values} />
+        <ScreenTitle accent={words.accent ?? undefined} label={words.title}>
+          {words.lead}
+        </ScreenTitle>
+        {/* The plans first, above the fold; the benefits and the timeline under them. */}
         <View accessibilityRole="radiogroup" style={styles.plans}>
           {step.plans.map((plan) => (
             <PlanOption key={plan.id} line={planWords(plan, saving)} selected={plan.id === chosen.id} disabled={step.busy !== null} onPress={() => choose(plan.id)} />
           ))}
         </View>
+        <Values rows={values} />
         <TimelineCard rows={timeline} />
         {/* The full terms (Apple 3.1.2): the line at the bottom says them in short. */}
         <View style={styles.terms}>{words.terms.map((line) => <Text key={line} style={[styles.fine, { color: color.muted }]}>{line}</Text>)}</View>
       </View>
     );
     dock = (
-      <View style={[styles.dock, { backgroundColor: color.background, borderTopColor: color.line, paddingBottom: Math.max(insets?.bottom ?? 0, tokens.space.sm) }]}>
+      <View testID="paywall-dock" onLayout={(event) => setDockHeight(event.nativeEvent.layout.height)} style={[styles.dock, { backgroundColor: color.background, borderTopColor: color.line, paddingBottom: Math.max(insets?.bottom ?? 0, tokens.space.sm) }]}>
         {step.note !== null && text(t(`subscription.${step.note}`))}
         {buying ? text(t('subscription.buying'), 'muted') : <Button label={words.action} disabled={step.busy !== null} onPress={() => void buy(chosen.id)} />}
         {/* The billed amount is as prominent as the trial claim (Apple 3.1.2): bold, in the text colour, not the muted one. */}
@@ -243,7 +245,7 @@ export function Paywall({ required = false, onActive, preview = null }: Props) {
       {/* The status bar's own place, outside the scroll (ADR-087 #2): in the band's colour, so at rest it is the band's top, and
           scrolled, the page stops under it instead of passing under the clock. */}
       <View testID="status-bar-band" style={{ height: insets?.top ?? 0, backgroundColor: color.accentSoft }} />
-      <ScrollView testID="paywall-scroll" contentContainerStyle={styles.scroll}>
+      <ScrollView testID="paywall-scroll" contentContainerStyle={[styles.scroll, dockHeight > 0 && { paddingBottom: dockHeight }]}>
         <View style={[styles.band, { backgroundColor: color.accentSoft, paddingTop: tokens.space.sm }]}>
           <View style={styles.head}>
             <View style={styles.brand}>
@@ -277,7 +279,7 @@ const nameOf = (error: unknown) => (error instanceof Error ? error.name : 'Unkno
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { flexGrow: 1 },
-  band: { borderBottomLeftRadius: tokens.radius.card * 2, borderBottomRightRadius: tokens.radius.card * 2, paddingHorizontal: tokens.space.lg, paddingBottom: tokens.space.lg, gap: tokens.space.sm },
+  band: { borderBottomLeftRadius: tokens.radius.card * 2, borderBottomRightRadius: tokens.radius.card * 2, paddingHorizontal: tokens.space.lg, paddingBottom: tokens.space.md, gap: tokens.space.xs },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: tokens.size.touch },
   brand: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
   brandName: { fontFamily: tokens.font.display, fontSize: tokens.type.heading },

@@ -46,8 +46,10 @@ export default function ProgramTypeStep() {
   };
   const used = pendingIn(days);
   const ready = ownProgramOf(days, new Map(used.map((id) => [id, id]))) !== null;
+  // Pressed with nothing to send, it says what is missing: the line is not there before this (evre 7).
+  const [tried, setTried] = useState(false);
   const confirm = () => {
-    if (!ready) return;
+    if (!ready) return setTried(true);
     void send(
       used.map((id) => pending.get(id)!),
       (ids) => ownProgramOf(days, new Map(used.map((id, i) => [id, ids[i]]))),
@@ -56,7 +58,7 @@ export default function ProgramTypeStep() {
 
   const note = (key: string) => <Text style={[styles.text, { color: color.textSecondary }]}>{t(key)}</Text>;
   const catalogNote = moves === null ? note('import.loadingMoves') : moves === 'failed' ? note('import.noMoves') : null;
-  const editor = Array.isArray(moves) ? <ProgramEditor days={days} onChange={setDays} moves={moves} makeOwn={makeOwn} /> : null;
+  const editor = Array.isArray(moves) ? <ProgramEditor days={days} onChange={setDays} moves={moves} makeOwn={makeOwn} needMoves={tried} /> : null;
   const shown =
     problem === null ? null : (
       <ProblemText occurrence={occurrence} style={[styles.text, { color: color.text }]}>
@@ -67,7 +69,7 @@ export default function ProgramTypeStep() {
     <View style={styles.actions}>
       {shown}
       {saving && note('onboarding.programImport.saving')}
-      <Button label={t('onboarding.typeProgram.confirm')} disabled={!ready || saving} onPress={confirm} />
+      <Button label={t('onboarding.typeProgram.confirm')} disabled={saving} onPress={confirm} />
     </View>
   );
 

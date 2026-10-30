@@ -1,12 +1,13 @@
 /**
  * The Monday morning offer on the plan (ADR-072 #6, K-434's place): one switch for the check-in morning reminder alone
  * (K-410, ADR-036; the other two kinds stay off, Settings turns them on), through
- * the same service as Settings — iOS is asked on the switch, never before. iOS saying no for good is said (only iOS
- * Settings can allow them then); a failure is said and reported, and never holds the plan up. Already on: shown on.
+ * the same service as Settings — iOS is asked on the switch, never before. iOS saying no is said (only iOS
+ * Settings can allow them then), with a way there; a failure is said and reported, and never holds the plan up. Already on: shown on.
  */
 import { useRef, useState, useSyncExternalStore } from 'react';
-import { StyleSheet, Switch, Text, View } from 'react-native';
+import { Linking, StyleSheet, Switch, Text, View } from 'react-native';
 
+import { Button } from '@/components/Button';
 import { t } from '@/copy';
 import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
@@ -32,7 +33,8 @@ export function MondayReminder({ day }: { day: string }) {
       if (!on) await reminders.turnOff();
       else {
         const answer = await reminders.turnOn({ only: 'check_in' });
-        if (!answer.granted && !answer.canAskAgain) setNote('refused');
+        // Not allowed is said, whether or not iOS could be asked again: a switch that snaps back with no word looks broken.
+        if (!answer.granted) setNote('refused');
       }
     } catch (error) {
       report({ name: nameOf(error) });
@@ -47,6 +49,8 @@ export function MondayReminder({ day }: { day: string }) {
   const said = note === null ? null : (
     <Text style={[styles.note, { color: color.muted }]}>{t(note === 'refused' ? 'onboarding.reminders.refused' : 'settings.reminders.failed')}</Text>
   );
+  // The one step that fixes it, as Settings' Reminders row offers it.
+  const step = note === 'refused' ? <Button label={t('settings.reminders.openSettings')} variant="text" size="sm" onPress={() => void Linking.openSettings()} /> : null;
   return (
     <View style={styles.block}>
       <View style={styles.row}>
@@ -54,6 +58,7 @@ export function MondayReminder({ day }: { day: string }) {
         <Switch accessibilityLabel={label} value={settings.enabled} disabled={busy} onValueChange={(on) => void flip(on)} />
       </View>
       {said}
+      {step}
     </View>
   );
 }

@@ -100,12 +100,13 @@
         "onboarding.typeProgram.why",
         "programEditor.noMovesMeta",
         "programEditor.dayName",
-        "programEditor.noMoves",
+        "programEditor.anyDayNote",
         "programEditor.addMove",
         "programEditor.addDay",
         "onboarding.typeProgram.confirm"
       ],
       "notFirstView": [
+        "programEditor.noMoves",
         "import.loadingMoves",
         "import.noMoves",
         "onboarding.programImport.saving"
@@ -204,7 +205,7 @@
     },
     {
       "screen": "ob-about",
-      "budget": 25,
+      "budget": 28,
       "source": "ADR-069 #4",
       "task": "K-966",
       "file": "src/app/onboarding/about.tsx",
@@ -222,6 +223,7 @@
         "onboarding.about.sex",
         "onboarding.about.male",
         "onboarding.about.female",
+        "onboarding.about.pickSex",
         "onboarding.continue"
       ],
       "notFirstView": ["units.feetInches"]
@@ -259,8 +261,7 @@
         "exercises.romanian_deadlift.name",
         "onboarding.weights.unset",
         "onboarding.weights.tap",
-        "onboarding.weights.skip",
-        "onboarding.continue"
+        ["onboarding.weights.skip", "onboarding.continue"]
       ],
       "notFirstView": ["onboarding.weights.rowHint", "onboarding.weights.clear", "onboarding.weights.clearLabel", "units.kgUnit", "units.lbUnit"]
     },
@@ -272,7 +273,7 @@
       "file": "src/app/onboarding/preparing.tsx",
       "keys": [
         "onboarding.preparing.title",
-        "onboarding.preparing.program",
+        ["onboarding.preparing.program.one", "onboarding.preparing.program.other"],
         ["onboarding.preparing.cardio", "onboarding.preparing.noCardio", "onboarding.preparing.foodAndCardio", "onboarding.preparing.food"],
         ["onboarding.preparing.firstCall", "onboarding.preparing.firstWorkout"],
         ["onboarding.schedule.dayName.MONDAY", "onboarding.plan.today"],
@@ -292,7 +293,7 @@
         "onboarding.plan.callTitle",
         "onboarding.plan.goal",
         ["onboarding.plan.goalName.LOSE_FAT", "onboarding.plan.goalName.BUILD_MUSCLE", "onboarding.plan.goalName.DECIDE_FOR_ME"],
-        "onboarding.plan.days",
+        ["onboarding.plan.days.one", "onboarding.plan.days.other"],
         "onboarding.schedule.dayShort.MONDAY",
         "onboarding.schedule.dayShort.WEDNESDAY",
         "onboarding.schedule.dayShort.FRIDAY",
@@ -347,8 +348,7 @@
         "subscription.titleLead",
         "subscription.titleFor",
         "subscription.trialSpan.week",
-        "subscription.sub.lead",
-        ["subscription.values.built", "subscription.values.own"],
+        ["subscription.values.built", "subscription.values.own", "subscription.values.adjust"],
         "subscription.values.sets",
         [
           "subscription.values.call",
@@ -395,11 +395,10 @@
             "subscription.titleLead",
             "subscription.titleFor",
             "subscription.trialSpan.week",
-            "subscription.sub.lead",
-            ["subscription.values.built", "subscription.values.own"],
+            ["subscription.values.built", "subscription.values.own", "subscription.values.adjust"],
             "subscription.values.sets",
             ["subscription.values.call", "subscription.values.weeklyCall", "subscription.values.cardio", "subscription.values.swap"],
-            "onboarding.schedule.dayName.MONDAY",
+                "onboarding.schedule.dayName.MONDAY",
             "subscription.plan.annual",
             "subscription.plan.save",
             "subscription.plan.annualBilled",
@@ -547,6 +546,8 @@
         "settings.sources.food",
         "settings.sources.foodValue",
         "settings.signOut.confirmTitle",
+        "settings.signOut.confirmBody",
+        "settings.signOut.cancel",
         "settings.signOut.pending",
         "settings.signOut.photos",
         "settings.signOut.confirm",

@@ -38,8 +38,8 @@ const daysWords = (days: Schemas['Weekday'][]) =>
 
 /**
  * #ob-plan (ADR-072 #6): the starting call in U3's parts, from the server's answers (#ob-preparing). The reason: the
- * answers reflected (goal, days, which days). The news first (K-1058, prototype section 11 frame 6): the starting call in one
- * dark card — where the calories start (K-989: one number, and the days the scale corrects it in), the protein (the server's
+ * answers reflected (goal, days, which days). The news first (K-1058, prototype section 11 frame 6): the starting call in the one
+ * dark card (the first workout below it is a plain surface card, not a second dark one) — where the calories start (K-989: one number, and the days the scale corrects it in), the protein (the server's
  * figure for the day) and the server's first call (K-990), its day and the days to it, then every check-in day; none of it
  * without the health data consent (there are no calls), nor the food without a weigh-in. Then the action: the first workout
  * cut to its first three moves — each move's image, sets × range and, where known, its weight; "and N more", and "Session 1
@@ -127,6 +127,15 @@ export default function PlanScreen() {
     }
   };
 
+  // The answers reflected, a chip each — and none without a value: "We pick" is no goal yet, days are counted from the program
+  // (a day on no weekday is a day), and the weekdays are those the program has.
+  const weekdays = program.days.flatMap((day) => (day.weekday === undefined ? [] : [day.weekday]));
+  const chips = [
+    progress.profile.goal === 'DECIDE_FOR_ME' ? '' : t('onboarding.plan.goal', { goal: t(`onboarding.plan.goalName.${progress.profile.goal}`) }),
+    program.days.length === 0 ? '' : t(program.days.length === 1 ? 'onboarding.plan.days.one' : 'onboarding.plan.days.other', { count: program.days.length }),
+    weekdays.length === 0 ? '' : daysWords(weekdays),
+  ].filter((words) => words !== '');
+
   const small = (words: string) => <Text style={[styles.small, { color: color.muted }]}>{words}</Text>;
   const row = (label: string, value: string, note: string) => (
     <View style={[styles.fact, { borderTopColor: color.line }]}>
@@ -169,42 +178,40 @@ export default function PlanScreen() {
       <Stack.Screen options={{ gestureEnabled: false }} />
       <ScrollView contentContainerStyle={styles.body}>
         <ScreenTitle>{t('onboarding.plan.title')}</ScreenTitle>
-        <View style={styles.reflect} accessibilityLabel={t('onboarding.plan.reflectLabel')}>
-          {[
-            t('onboarding.plan.goal', { goal: t(`onboarding.plan.goalName.${progress.profile.goal}`) }),
-            t('onboarding.plan.days', { count: schedule.trainingDays.length }),
-            daysWords(schedule.trainingDays),
-          ].map((words) => (
-            <Text key={words} style={[styles.chip, { color: color.text, backgroundColor: color.surface }]}>
-              {words}
-            </Text>
-          ))}
-        </View>
+        {chips.length > 0 && (
+          <View style={styles.reflect} accessibilityLabel={t('onboarding.plan.reflectLabel')}>
+            {chips.map((words) => (
+              <Text key={words} style={[styles.chip, { color: color.text, backgroundColor: color.surface }]}>
+                {words}
+              </Text>
+            ))}
+          </View>
+        )}
 
         <StartingCall rows={callRows} />
 
-        <View style={[styles.card, { backgroundColor: color.decisionBackground }]} accessibilityLabel={t('onboarding.plan.workoutLabel')}>
+        <View style={[styles.card, { backgroundColor: color.surface }]} accessibilityLabel={t('onboarding.plan.workoutLabel')}>
           {when !== null && (
-            <Text style={[styles.small, { color: color.decisionMuted }]}>{t('onboarding.plan.firstWorkout', { day: when })}</Text>
+            <Text style={[styles.small, { color: color.muted }]}>{t('onboarding.plan.firstWorkout', { day: when })}</Text>
           )}
-          <Text style={[styles.dayName, { color: color.decisionText }]}>{dayName(workout.day)}</Text>
+          <Text style={[styles.dayName, { color: color.text }]}>{dayName(workout.day)}</Text>
           {leading.map((move) => (
             <View key={move.exerciseId} style={styles.move}>
               <MoveThumb equipment={moves.get(move.exerciseId)?.equipment} />
               <View style={styles.moveText}>
-                <Text style={[styles.moveName, { color: color.decisionText }]}>{exerciseName(move.exerciseId, moves)}</Text>
-                <Text style={[styles.small, { color: color.decisionMuted }]}>
+                <Text style={[styles.moveName, { color: color.text }]}>{exerciseName(move.exerciseId, moves)}</Text>
+                <Text style={[styles.small, { color: color.muted }]}>
                   {t('onboarding.plan.setsReps', { sets: move.sets, reps: repCount(move.reps) })}
                 </Text>
               </View>
               {move.nextLoadKg !== undefined && (
-                <Text style={[styles.strong, { color: color.decisionText }]}>{formatLoad(move.nextLoadKg, units)}</Text>
+                <Text style={[styles.strong, { color: color.text }]}>{formatLoad(move.nextLoadKg, units)}</Text>
               )}
             </View>
           ))}
           {(hidden > 0 || !known) && (
             <View style={styles.rest}>
-              {hidden > 0 && <Text style={[styles.small, { color: color.decisionMuted }]}>{t('onboarding.plan.more', { count: hidden })}</Text>}
+              {hidden > 0 && <Text style={[styles.small, { color: color.muted }]}>{t('onboarding.plan.more', { count: hidden })}</Text>}
               {!known && (
                 <Text style={[styles.tag, { color: color.onAccentInk, backgroundColor: color.accentInk }]}>{t('onboarding.plan.findsWeights')}</Text>
               )}

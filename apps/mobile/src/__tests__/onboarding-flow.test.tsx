@@ -7,10 +7,10 @@ import * as path from 'path';
 
 import { router as appRouter } from 'expo-router';
 import { AccessibilityInfo, StyleSheet } from 'react-native';
-import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-library';
+import { act, fireEvent, renderRouter, screen, within } from 'expo-router/testing-library';
 
 import { t } from '@/copy';
-import { tokens } from '@/theme/tokens';
+import { palettes, tokens } from '@/theme/tokens';
 import { defaultTrainingDays, onboardingParams } from '@/onboarding/params';
 import { kgFromWheel } from '@/onboarding/weights';
 import type { OnboardingState } from '@/onboarding/profileStatus';
@@ -1027,6 +1027,20 @@ describe('#ob-about (ADR-072 #2)', () => {
     expect(continueButton()).toBeEnabled();
   });
 
+  test('Continue is grey with a reason: one line under it names the missing sex, and both sex choices are outlined in the accent until one is picked', async () => {
+    await walkTo('about');
+    expect(screen.getByText(t('onboarding.about.pickSex'))).toBeOnTheScreen();
+    for (const sex of ['male', 'female']) {
+      const outline = StyleSheet.flatten(screen.getByRole('button', { name: t(`onboarding.about.${sex}`) }).props.style) as { borderColor: string; borderWidth: number };
+      expect(outline.borderColor).toBe(palettes.light.accent);
+      expect(outline.borderWidth).toBe(tokens.border.outline);
+    }
+    await press(t('onboarding.about.female'));
+    expect(screen.queryByText(t('onboarding.about.pickSex'))).toBeNull();
+    const chosen = StyleSheet.flatten(screen.getByRole('button', { name: t('onboarding.about.male') }).props.style) as { borderColor: string };
+    expect(chosen.borderColor).not.toBe(palettes.light.accent);
+  });
+
   test('neither sex is chosen when the question opens: it feeds the energy math, so it is always the answer given', async () => {
     await walkTo('about');
     expect(screen.getByRole('button', { name: t('onboarding.about.male') })).not.toBeSelected();
@@ -1123,7 +1137,7 @@ describe('#ob-weights: the starting weights (ADR-072 #3, #5)', () => {
     expect(screen.getByRole('adjustable', { name: name(first) })).toBeOnTheScreen();
     // Opened, it is still not set: the wheel's middle row is a place to start, not a weight (ADR-072).
     expect(screen.getByLabelText(`${name(first)}, ${t('onboarding.weights.unset')}`)).toBeOnTheScreen();
-    expect(continueButton()).toBeDisabled();
+    expect(screen.queryByRole('button', { name: t('onboarding.continue') })).toBeNull(); // nothing set: the one dock button is Skip
     await fireEvent.press(screen.getByRole('button', { name: new RegExp(`^${name(second)}, `) }));
     await settle();
     expect(screen.getAllByRole('adjustable')).toHaveLength(1);
@@ -1159,13 +1173,30 @@ describe('#ob-weights: the starting weights (ADR-072 #3, #5)', () => {
     ]);
   });
 
-  test('Continue sends weights, so it waits for one; with none, "Skip" is the way on', async () => {
+  test('one dock button: "Skip for now" while nothing is set, "Continue" once a lift is; never both', async () => {
     await walkTo('activity', { experience: 'Y1_3' });
     await choose(t('onboarding.activity.ACTIVE'));
-    expect(continueButton()).toBeDisabled();
+    expect(t('onboarding.weights.skip')).toBe('Skip for now');
     expect(screen.getByRole('button', { name: t('onboarding.weights.skip') })).toBeEnabled();
+    expect(screen.queryByRole('button', { name: t('onboarding.continue') })).toBeNull();
     await pickLoad('bench_press');
     expect(continueButton()).toBeEnabled();
+    expect(screen.queryByRole('button', { name: t('onboarding.weights.skip') })).toBeNull();
+  });
+
+  test('"Not set" is a quiet empty slot (muted, small, a plus), not a value in display type; a set load is the value', async () => {
+    await walkTo('activity', { experience: 'Y3_PLUS' });
+    await choose(t('onboarding.activity.ACTIVE'));
+    const row = screen.getByLabelText(`${name('squat')}, ${t('onboarding.weights.unset')}`);
+    const empty = StyleSheet.flatten(within(row).getByText(t('onboarding.weights.unset')).props.style) as { color: string; fontFamily?: string; fontSize: number };
+    expect(empty.color).toBe(palettes.light.muted);
+    expect(empty.fontFamily).toBeUndefined();
+    expect(empty.fontSize).toBeLessThanOrEqual(tokens.type.body);
+    expect(within(row).getByTestId('symbol-plus')).toBeOnTheScreen();
+    await pickLoad('squat');
+    const set = screen.getByLabelText(`${name('squat')}, ${KG(S.start_kg)}`);
+    expect(StyleSheet.flatten(within(set).getByText(KG(S.start_kg)).props.style)).toMatchObject({ fontFamily: tokens.font.display });
+    expect(within(set).queryByTestId('symbol-plus')).toBeNull();
   });
 
   test('each weight set becomes its move\'s first target, sent once the program is built; one left unset is skipped', async () => {
@@ -1198,17 +1229,16 @@ describe('#ob-weights: the starting weights (ADR-072 #3, #5)', () => {
     expect(continueButton()).toBeEnabled();
     await press(t('onboarding.weights.clearLabel', { name: squat }));
     expect(screen.getByLabelText(`${squat}, ${t('onboarding.weights.unset')}`)).toBeOnTheScreen();
-    expect(continueButton()).toBeDisabled();
+    expect(screen.queryByRole('button', { name: t('onboarding.continue') })).toBeNull(); // none set again: Skip, not Continue
     // The others are as they were.
     await pickLoad('bench_press');
     await press(t('onboarding.continue'));
     expect(startingWeightsSent()).toEqual([['/v1/program/starting-weights', { body: { weights: [{ exerciseId: 'bench_press', kg: S.start_kg }] } }]]);
   });
 
-  test('"Skip" goes on with none: no weight is sent, even one set before', async () => {
+  test('"Skip for now" goes on with none: no weight is sent', async () => {
     const router = await walkTo('activity', { experience: 'UNDER_1Y' });
     await choose(t('onboarding.activity.ACTIVE'));
-    await pickLoad('squat');
     await press(t('onboarding.weights.skip'));
     expect(router.getPathname()).toBe('/onboarding/preparing');
     expect(startingWeightsSent()).toEqual([]);
@@ -1221,7 +1251,7 @@ describe('#ob-preparing: each line ticked by the server, never a timer (ADR-072 
     jest.useFakeTimers({ now: new Date(2026, 9, 14, 12, 0) });
   });
   // Without the health data consent there are no calls: the third line is the first workout (K-967 review).
-  const lines = (third = t('onboarding.preparing.firstWorkout')) => [t('onboarding.preparing.program', { count: 3 }), t('onboarding.preparing.cardio'), third];
+  const lines = (third = t('onboarding.preparing.firstWorkout')) => [t('onboarding.preparing.program.other', { count: 3 }), t('onboarding.preparing.cardio'), third];
   const ticked = (line: string) => screen.queryByLabelText(t('onboarding.preparing.done', { line })) !== null;
 
   test('until the program is built nothing is ticked and the plan cannot open; then the three lines, and "See my plan"', async () => {
@@ -1483,7 +1513,7 @@ describe('#ob-plan: the starting call in U3\'s parts (ADR-072 #6)', () => {
     await toPlan({ experience: 'NEW' });
     expect(screen.getByRole('header', { name: t('onboarding.plan.title') })).toBeOnTheScreen();
     expect(screen.getByText(t('onboarding.plan.goal', { goal: t('onboarding.plan.goalName.LOSE_FAT') }))).toBeOnTheScreen();
-    expect(screen.getByText(t('onboarding.plan.days', { count: 3 }))).toBeOnTheScreen();
+    expect(screen.getByText(t('onboarding.plan.days.other', { count: 3 }))).toBeOnTheScreen();
     expect(screen.getByText(['MONDAY', 'WEDNESDAY', 'FRIDAY'].map((day) => t(`onboarding.schedule.dayShort.${day}`)).join(', '))).toBeOnTheScreen();
   });
 

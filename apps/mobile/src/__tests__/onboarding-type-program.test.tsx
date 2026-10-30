@@ -154,7 +154,8 @@ test('#ob-own offers typing it in beside the import; it opens the editor with on
   expect(router.getPathname()).toBe('/onboarding/program-type');
   expect(screen.getByRole('header', { name: t('onboarding.typeProgram.title') })).toBeOnTheScreen();
   expect(screen.getByLabelText(t('programEditor.dayName'))).toHaveProp('value', day(1));
-  expect(confirm()).toBeDisabled(); // a day needs a move
+  expect(confirm()).toBeEnabled(); // pressing it with no move says what is missing (evre 7 final pass)
+  expect(screen.queryByText(t('programEditor.noMoves'))).toBeNull();
 });
 
 test('a move found by name comes in with its starting sets and range; the program sent is what is on the screen', async () => {
@@ -216,9 +217,11 @@ test('days added and removed; a weekday one day has is not offered to another', 
   await fireEvent.press(screen.getByRole('button', { name: t('programEditor.weekdayName.MONDAY') }));
   await press(t('programEditor.addDay'));
   expect(screen.getByRole('button', { name: t('programEditor.weekdayName.MONDAY') })).toBeDisabled();
-  expect(confirm()).toBeDisabled(); // the new day has no move yet
+  await press(t('onboarding.typeProgram.confirm')); // the new day has no move yet: nothing is sent, the line says why
+  expect(puts()).toEqual([]);
+  expect(screen.getByText(t('programEditor.noMoves'))).toBeOnTheScreen();
   await addMove('curl', 'barbell_curl');
-  expect(confirm()).toBeEnabled();
+  expect(screen.queryByText(t('programEditor.noMoves'))).toBeNull();
   await press(header(day(1), t('programEditor.weekdayName.MONDAY'), 1));
   await removeDay(day(1));
   await press(t('onboarding.typeProgram.confirm'));
@@ -262,13 +265,50 @@ test('the fewest reps stop at the most (a fixed target, K-991): its + off there,
   expect(screen.getByRole('button', { name: t('programEditor.moreLabel', { what: fewest }) })).toBeDisabled();
 });
 
-test('a day without a move says so in one line, and the program waits for it', async () => {
+test('"Add at least one move." is said only after "Use this program" was pressed with nothing; nothing is sent; a move takes it away', async () => {
   await toEditor();
+  expect(screen.queryByText(t('programEditor.noMoves'))).toBeNull(); // not before any action
+  await press(t('onboarding.typeProgram.confirm'));
   expect(screen.getByText(t('programEditor.noMoves'))).toBeOnTheScreen();
-  expect(confirm()).toBeDisabled();
+  expect(puts()).toEqual([]);
   await addMove('squ', 'squat');
   expect(screen.queryByText(t('programEditor.noMoves'))).toBeNull();
-  expect(confirm()).toBeEnabled();
+  await press(t('onboarding.typeProgram.confirm'));
+  expect(puts()).toHaveLength(1);
+});
+
+test('the Sets / Min reps / Max reps labels sit once, over the first move\'s steppers, under its name; none on an empty day', async () => {
+  await toEditor();
+  const hidden = { includeHiddenElements: true };
+  expect(screen.queryByText(t('programEditor.sets'), hidden)).toBeNull();
+  await addMove('squ', 'squat');
+  await addMove('bench', 'bench_press');
+  for (const key of ['sets', 'repsMin', 'repsMax']) expect(screen.getAllByText(t(`programEditor.${key}`), hidden)).toHaveLength(1);
+  const texts = screen.getAllByText(/.*/, hidden).map((node) => String(node.props.children));
+  expect(texts.indexOf(name('squat'))).toBeLessThan(texts.indexOf(t('programEditor.sets')));
+  expect(texts.indexOf(t('programEditor.sets'))).toBeLessThan(texts.indexOf(name('bench_press')));
+});
+
+test('removing an empty day needs no question and leaves no Undo bar; a day with moves still asks and can be put back', async () => {
+  const sheet = answerAlert('confirm');
+  await toEditor();
+  await addMove('squ', 'squat');
+  await press(t('programEditor.addDay'));
+  sheet.mockClear();
+  await press(t('programEditor.removeDayLabel', { day: day(2) }));
+  expect(sheet).not.toHaveBeenCalled();
+  expect(screen.queryByTestId('undo')).toBeNull();
+  expect(screen.queryByRole('button', { name: header(day(2), anyDay(), 0) })).toBeNull();
+  expect(screen.queryByText(t('programEditor.removed', { name: day(2) }))).toBeNull();
+});
+
+test('a day with no weekday says what happens: any day, and how many days the plan then has', async () => {
+  await toEditor();
+  await addMove('squ', 'squat');
+  await press(t('programEditor.addDay'));
+  expect(screen.getByText(t('programEditor.anyDayNote', { days: t('programEditor.days.other', { count: 2 }) }))).toBeOnTheScreen();
+  await fireEvent.press(screen.getByRole('button', { name: t('programEditor.weekdayName.TUESDAY') }));
+  expect(screen.queryByText(/Any day\./)).toBeNull();
 });
 
 test("a long day name is whole in the field and in its card's header (wrapped, never cut)", async () => {
