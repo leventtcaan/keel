@@ -17,6 +17,7 @@ import { CallRow } from '@/train/CallRow';
 import type { Outbound } from '@/sync/queue';
 import type { LocalRecord } from '@/sync/store';
 import { type Move, type TrainData, ownMove } from '@/train/trainData';
+import { WithSaved, banner, undoButton } from './support/saved';
 
 type Schemas = components['schemas'];
 
@@ -298,6 +299,17 @@ describe('the head of the tab', () => {
     expect(mockRead.mock.calls.length).toBe(reads + 1);
   });
 
+  test('"Use this call" is not silent: the banner says the call is applied and what moved, and Undo takes the call back', async () => {
+    mockDecision = { ...DECISION, application: { state: 'DECLINED' }, changes: [{ what: 'CALORIES', before: { targetKcal: 2100 }, after: { targetKcal: 1850 }, inForce: { targetKcal: 2100 } }] } as Schemas['Decision'];
+    await showWithBanner();
+    expect(banner()).toBeNull();
+    await fireEvent.press(await screen.findByText(t('train.call.use')));
+    expect(await screen.findByText(t('today.call.appliedLead'))).toBeTruthy();
+    expect(screen.getByText(t('callScreen.changes.spoken', { what: t('callScreen.changes.label.CALORIES'), from: t('callScreen.changes.kcal', { kcal: '2,100' }), to: t('callScreen.changes.kcal', { kcal: '1,850' }) }))).toBeTruthy();
+    await fireEvent.press(undoButton());
+    expect(mockApplied).toHaveBeenCalledWith('/v1/decisions/{id}/undo', { params: { path: { id: 'd1' } } });
+  });
+
   test('a call that is past (409): said, and the tab reads again (the offer goes with the old call)', async () => {
     mockDecision = { ...DECISION, application: { state: 'DECLINED' } } as Schemas['Decision'];
     mockApplyStatus = 409;
@@ -347,6 +359,15 @@ const show = () =>
   render(
     <ThemeProvider>
       <TrainScreen />
+    </ThemeProvider>,
+  );
+// With the app's banner beside it, as the root layout mounts it (a save published reads the tab again, too).
+const showWithBanner = () =>
+  render(
+    <ThemeProvider>
+      <WithSaved>
+        <TrainScreen />
+      </WithSaved>
     </ThemeProvider>,
   );
 
@@ -440,7 +461,7 @@ test('a session moved again, and two moves in one week: no chain is told on the 
 test('skipped: no catch-up, nothing to start or change', async () => {
   mockData = withProgram({ week: [{ programDayId: 'a', date: '2026-09-29', skipped: true, exerciseIds: ['bench_press', 'dip'] }, THURSDAY] });
   await show();
-  expect(await screen.findByText('Skipped. Monday reads what happened.')).toBeTruthy();
+  expect(await screen.findByText("Skipped. No catch-up, Monday's call reads the week.")).toBeTruthy();
   expect(screen.queryByText('Start workout')).toBeNull();
   expect(screen.queryByText('Change')).toBeNull();
 });
@@ -449,7 +470,7 @@ test("skipped: the day that reads what happened is the user's check-in day, not 
   mockCheckInDay = 'SUNDAY';
   mockData = withProgram({ week: [{ programDayId: 'a', date: '2026-09-29', skipped: true, exerciseIds: ['bench_press', 'dip'] }, THURSDAY] });
   await show();
-  expect(await screen.findByText('Skipped. Sunday reads what happened.')).toBeTruthy();
+  expect(await screen.findByText("Skipped. No catch-up, Sunday's call reads the week.")).toBeTruthy();
   expect(screen.queryByText(/Monday/)).toBeNull();
 });
 
@@ -1029,7 +1050,7 @@ test("offline with the copy kept yesterday: the phone's day is today, yesterday'
 test("offline with a kept copy, the kept Undo is not offered (the server's word was for then)", async () => {
   mockData = { ...withProgram({ week: [{ ...PROGRAM.week![0], skipped: true, undoable: true }, THURSDAY] }), kept: true };
   await show();
-  expect(await screen.findByText('Skipped. Monday reads what happened.')).toBeTruthy();
+  expect(await screen.findByText("Skipped. No catch-up, Monday's call reads the week.")).toBeTruthy();
   expect(screen.queryByLabelText(t('train.undoLabel'))).toBeNull();
 });
 
@@ -1117,7 +1138,7 @@ describe("today's change undone (UNDO) and the full workout back (FULL)", () => 
   test('no Undo where the server does not offer it', async () => {
     mockData = withProgram({ week: [{ ...PROGRAM.week![0], skipped: true }, THURSDAY] });
     await show();
-    expect(await screen.findByText('Skipped. Monday reads what happened.')).toBeTruthy();
+    expect(await screen.findByText("Skipped. No catch-up, Monday's call reads the week.")).toBeTruthy();
     expect(screen.queryByLabelText(t('train.undoLabel'))).toBeNull();
   });
 

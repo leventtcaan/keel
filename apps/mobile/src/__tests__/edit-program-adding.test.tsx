@@ -35,6 +35,8 @@ const mockServices = {
   workoutRecords: async () => [],
 };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices }));
+// The edit-program screen registers its stop on unsaved edits with React Navigation; there is no navigator here.
+jest.mock('expo-router/build/react-navigation/core/usePreventRemove', () => ({ usePreventRemove: () => {} }));
 jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
   useNavigation: () => ({ addListener: () => () => {} }),

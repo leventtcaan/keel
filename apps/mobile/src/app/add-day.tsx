@@ -5,15 +5,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
-import { ProblemText, announce, useProblem } from '@/components/ProblemText';
+import { ProblemText, useProblem } from '@/components/ProblemText';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
+import { type Undone, useSaved } from '@/saved/saved';
 import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { useReadOnFocus } from '@/today/useReadOnFocus';
 import { freeWeekdays, suggestion } from '@/train/addDay';
-import { addProgramDay } from '@/train/changes';
+import { addProgramDay, undoChange } from '@/train/changes';
 
 type Weekday = Parameters<typeof addProgramDay>[1];
 
@@ -32,6 +33,7 @@ type Said = keyof typeof SAID;
 export default function AddDayScreen() {
   const { api, training } = useAppServices();
   const { color } = useTheme();
+  const saved = useSaved();
   const { data, reload } = useReadOnFocus(useCallback(() => training.read(api), [api, training]));
   const [problem, setProblem, occurrence] = useProblem();
   const [busy, setBusy] = useState(false);
@@ -54,18 +56,30 @@ export default function AddDayScreen() {
   const suggested = pick?.day;
   const name = (day: Weekday) => t(`programEditor.weekdayName.${day}`);
 
+  /** Taking the day out again from the banner: its own call, closed over the services (the sheet is gone by then). */
+  const takeBack = async (changeId: string): Promise<Undone> => {
+    const answer = await undoChange(api, changeId);
+    if (answer.kind === 'done') return { done: true, said: t('editProgram.undone') };
+    return { done: false, message: t(answer.kind === 'conflict' ? 'editProgram.undoConflict' : answer.kind === 'offline' ? 'editProgram.offline' : 'editProgram.failed'), again: answer.kind !== 'conflict' };
+  };
+
   const add = async (day: Weekday) => {
     if (sending.current) return;
     sending.current = true;
     setBusy(true);
     setProblem(null);
     setFailed(null);
+    // The day's own edit is the one in the answer's log that the program had not: Undo takes that one back.
+    const known = new Set((program?.review?.edits ?? []).map((edit) => edit.id));
     const answer = await addProgramDay(api, day);
     sending.current = false;
     if (!shown.current) return;
     setBusy(false);
     if (answer.kind === 'done') {
-      announce(t('addDay.added', { day: name(day) }));
+      // The app's one confirmation, where the user lands (the walk: "no confirmation"): the day, with Undo where the server gives the
+      // change's id (the day is a change of the log, POST /v1/program/review/undo takes it out).
+      const editId = answer.program.review?.edits?.filter((edit) => !known.has(edit.id)).at(-1)?.id;
+      saved({ lead: t('addDay.added', { day: name(day) }), ...(editId === undefined ? {} : { undo: () => takeBack(editId) }) });
       router.back();
     } else {
       setFailed(day);

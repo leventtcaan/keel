@@ -401,7 +401,7 @@ test('without the health data consent: no number and no call, a way to Settings 
   expect(screen.getByText(t('thisWeek.hero.callsOff'))).toBeOnTheScreen();
   expect(screen.queryByText(t('thisWeek.onTrack', { onTrack: 2, counted: 3 }))).toBeNull();
   await press(t('thisWeek.hero.settingsLabel'));
-  expect(mockPush).toHaveBeenCalledWith('/settings');
+  expect(mockPush).toHaveBeenCalledWith({ pathname: '/settings-detail', params: { part: 'consent' } });
   expect(screen.getByText(t('programDays.upper_a.name'))).toBeOnTheScreen(); // training is not health data (K-969: today's card)
 });
 

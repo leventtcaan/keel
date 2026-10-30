@@ -10,6 +10,7 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
 import type { Target } from './sections';
+import { openDetail } from '@/settings/detail';
 
 const num = (n: number) => n.toLocaleString('en-US');
 /** An estimate stays a range (U5); a day with nothing logged is a plain 0. */
@@ -80,7 +81,7 @@ export function TargetsGrid({ targets }: { targets: Target[] }) {
         if (target.steps === null) {
           return (
             <Box key="steps" kind="steps" title={t('progress.targets.steps')} value={t('progress.targets.noSteps')} of="" fill={0} source={t('progress.targets.connect')}
-              label={t('progress.targets.label.stepsOff', { target: num(target.target) })} hint={t('progress.targets.hint.connect')} onPress={() => router.push('/settings')} />
+              label={t('progress.targets.label.stepsOff', { target: num(target.target) })} hint={t('progress.targets.hint.connect')} onPress={() => openDetail('apple')} />
           );
         }
         const open = () => void Linking.openURL('x-apple-health://').catch((error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' }));

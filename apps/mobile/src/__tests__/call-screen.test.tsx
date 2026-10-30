@@ -13,6 +13,7 @@ import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { ThemeProvider } from '@/theme/theme';
 import { palettes } from '@/theme/tokens';
+import { WithSaved, banner, undoButton } from './support/saved';
 
 type Schemas = components['schemas'];
 type Answer = { data?: unknown; error?: { code: string; message: string }; response: Response };
@@ -72,7 +73,9 @@ beforeEach(() => {
 async function show() {
   await render(
     <ThemeProvider scheme="light">
-      <CallScreen />
+      <WithSaved>
+        <CallScreen />
+      </WithSaved>
     </ThemeProvider>,
   );
   await act(async () => {});
@@ -126,6 +129,21 @@ describe("this week's call", () => {
     await press(t('callScreen.use'));
     expect(mockPOST).toHaveBeenCalledWith('/v1/decisions/{id}/apply', { params: { path: { id: 'd1' } } });
     expect(screen.getByText(t('callScreen.inPlan'))).toBeOnTheScreen();
+  });
+
+  test('"Use this call" is not silent: the banner says the call is applied and what moved, and Undo takes the call back', async () => {
+    await show();
+    mockAnswers['/v1/decisions/current'] = ok(
+      decision({ application: { state: 'DECLINED' }, declinable: false, changes: [{ what: 'CALORIES', before: { targetKcal: 2100 }, after: { targetKcal: 1850 }, inForce: { targetKcal: 2100 } }] }),
+    );
+    await press(t('callScreen.keep'));
+    expect(banner()).toBeNull();
+    mockAnswers['/v1/decisions/current'] = ok(decision());
+    await press(t('callScreen.use'));
+    expect(screen.getByText(t('today.call.appliedLead'))).toBeOnTheScreen();
+    expect(screen.getByText(t('callScreen.changes.spoken', { what: t('callScreen.changes.label.CALORIES'), from: t('callScreen.changes.kcal', { kcal: '2,100' }), to: t('callScreen.changes.kcal', { kcal: '1,850' }) }))).toBeOnTheScreen();
+    await act(async () => fireEvent.press(undoButton()));
+    expect(mockPOST).toHaveBeenCalledWith('/v1/decisions/{id}/undo', { params: { path: { id: 'd1' } } });
   });
 
   test('a call not applied yet (pending): "Use this call" is the one primary action, "Got it" only leaves (user test 10 Oct)', async () => {
@@ -240,7 +258,7 @@ describe("this week's call", () => {
     await show();
     expect(screen.getByText(t('today.consent.body'))).toBeOnTheScreen();
     await press(t('today.consent.open'));
-    expect(mockPush).toHaveBeenCalledWith('/settings');
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/settings-detail', params: { part: 'consent' } });
     expect(screen.queryByText(t('callScreen.failed'))).toBeNull();
   });
 

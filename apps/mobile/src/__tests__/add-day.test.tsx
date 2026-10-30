@@ -12,6 +12,8 @@ import { ThemeProvider } from '@/theme/theme';
 import { freeWeekdays, suggestedWeekday, trainedWeekdays } from '@/train/addDay';
 import type { TrainData } from '@/train/trainData';
 
+import { WithSaved, banner, undoButton } from './support/saved';
+
 type Schemas = components['schemas'];
 type Weekday = Schemas['Weekday'];
 
@@ -64,7 +66,9 @@ beforeEach(() => {
 const show = () =>
   render(
     <ThemeProvider>
-      <AddDayScreen />
+      <WithSaved>
+        <AddDayScreen />
+      </WithSaved>
     </ThemeProvider>,
   );
 
@@ -74,6 +78,26 @@ test('one tap on the suggested day adds it, and the sheet closes on the server\'
   expect(mockPost).toHaveBeenCalledTimes(1);
   expect(mockPost).toHaveBeenCalledWith('/v1/program/days', { body: { weekday: 'SATURDAY' } });
   expect(mockBack).toHaveBeenCalledTimes(1);
+});
+
+test('the day added is not silent: the banner says "Saturday added." and Undo takes the day out again', async () => {
+  const added = { ...program(['MONDAY', 'THURSDAY', 'SATURDAY']), review: { id: 'rev-1', suggestions: [], applied: [], edits: [{ id: 'e-new', editedAt: '2026-10-09T10:00:00Z' }] } };
+  mockAnswer = () => ({ data: added, response: { status: 200 } });
+  await show();
+  expect(banner()).toBeNull();
+  await fireEvent.press(await screen.findByLabelText(t('addDay.addOnLabel', { day: 'Saturday' })));
+  expect(await screen.findByText(t('addDay.added', { day: 'Saturday' }))).toBeTruthy();
+  mockAnswer = () => ({ data: { program: program(['MONDAY', 'THURSDAY']), alsoUndone: [] }, response: { status: 200 } });
+  await fireEvent.press(undoButton());
+  expect(mockPost).toHaveBeenLastCalledWith('/v1/program/review/undo', { body: { changeId: 'e-new' } });
+});
+
+test('a day that could not be added has no banner', async () => {
+  mockAnswer = () => ({ error: { code: 'X' }, response: { status: 409 } });
+  await show();
+  await fireEvent.press(await screen.findByText(t('addDay.addOn', { day: 'Saturday' })));
+  expect(await screen.findByText(t('addDay.conflict'))).toBeTruthy();
+  expect(banner()).toBeNull();
 });
 
 test('the other free days are chips, never the days already trained; a chip adds its day', async () => {

@@ -13,6 +13,7 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { load, type Loaded } from '@/today/today';
 import { whatIfRows } from '@/today/whatIf';
+import { openDetail } from '@/settings/detail';
 
 type WhatIf = components['schemas']['WhatIf'];
 
@@ -60,7 +61,7 @@ function Body({ read }: { read: Loaded<WhatIf> | null }) {
     return (
       <View style={styles.note}>
         {line('today.consent.body')}
-        <Button label={t('today.consent.open')} variant="ghost" size="sm" onPress={() => router.push('/settings')} />
+        <Button label={t('today.consent.open')} variant="ghost" size="sm" onPress={() => openDetail('consent')} />
       </View>
     );
   }

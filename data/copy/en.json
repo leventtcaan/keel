@@ -292,7 +292,7 @@
       "next": "Next session: {session}, {weekday}",
       "restWeek": "Week off training",
       "movedTo": "Moved to {day}.",
-      "skipped": "Skipped. {day} reads what happened.",
+      "skipped": "Skipped. No catch-up, {day}'s call reads the week.",
       "skippedNoDay": "Skipped. Nothing to make up.",
       "done": "Today · done",
       "doneLabel": "Done",
@@ -445,6 +445,10 @@
     "oneThing": "Only one change at a time, so we know what worked. Everything else stays as it is.",
     "apply": "Apply from today",
     "undone": "Undone: your plan is back as it was.",
+    "appliedLead": "Call applied",
+    "appliedJoin": " \u00b7 ",
+    "undoRefused": "This call can't be taken back any more.",
+    "undoOffline": "Not undone: no connection. Try again in a moment.",
     "applyFailed": "Not applied: no connection. Try again in a moment.",
     "applyRefused": "This call can't be applied any more. Your next check-in makes a new one.",
     "applyError": "Not applied: something went wrong on our side. Try again in a moment.",
@@ -551,7 +555,7 @@
     "notUndone": "Nothing to undo now: the day has changed since. This is your week as it is.",
     "full": "Full workout",
     "fullBack": "Every move is back for today.",
-    "skipped": "Skipped. {day} reads what happened.",
+    "skipped": "Skipped. No catch-up, {day}'s call reads the week.",
     "skippedNoDay": "Skipped. Nothing to make up.",
     "setsReps": "{sets} × {reps}",
     "held": "held",
@@ -590,6 +594,7 @@
     "programLine": "{split} · {days}",
     "reviewChanges": "Review",
     "savedLead": "Saved",
+    "appliedLead": "Applied",
     "savedDetail": "Program",
     "rebuilt": "Program rebuilt",
     "rebuiltDetail": "{days} · {moves}",
@@ -729,7 +734,7 @@
       "PAST_SUNDAY": "No free day left this week: a session would pass Sunday.",
       "STARTED": "Today's workout has started, so it stays today."
     },
-    "skip": { "title": "Skip today", "body": "No catch-up. {day} reads what happened.", "bodyNoDay": "No catch-up." },
+    "skip": { "title": "Skip today", "body": "No catch-up, {day}'s call reads the week.", "bodyNoDay": "No catch-up." },
     "started": "Today's workout has started. Change it in the workout.",
     "none": "No session today to change.",
     "offline": "Couldn't change today. Check your connection and try again.",
@@ -3849,19 +3854,19 @@
   "review": {
     "too_many_days": {
       "title": "Train {to} days a week, not {from}",
-      "body": "Coaching rule: {to} training days a week is the most that pays off. Your lightest day's moves go to the other days."
+      "body": "Past {to} days a week it stops paying off. Your lightest day folds into the others."
     },
     "too_many_sets": {
       "title": "{muscle}: {to} sets a week, not {from}",
-      "body": "Coaching rule: the first work sets do most of the growing and fatigue builds fast after them. The extra sets come off, biggest moves first."
+      "body": "The first sets do most of the growing. Extra sets mostly add fatigue."
     },
     "too_few_sets": {
       "title": "{muscle}: {to} sets a week, not {from}",
-      "body": "Coaching rule: a muscle needs at least {min} work sets a week to grow. Isolation sets top it up."
+      "body": "A muscle needs at least {min} sets a week to grow."
     },
     "too_few_arm_sets": {
       "title": "{muscle}: {to} sets a week, not {from}",
-      "body": "Coaching rule: biceps and triceps need at least {min} work sets a week, split over two sessions. Isolation sets top it up."
+      "body": "Biceps and triceps need at least {min} sets a week, over two sessions."
     },
     "once_a_week": {
       "title": "{muscle} on {to} days a week",
@@ -3869,11 +3874,11 @@
     },
     "rep_range_compound": {
       "title": "{exercise}: {toMin}-{toMax} reps",
-      "body": "Coaching rule: compound lifts work best at {toMin}-{toMax} reps. Lower reps strain joints and tendons without adding growth."
+      "body": "Big lifts work best at {toMin}-{toMax} reps. Fewer reps strain joints without adding growth."
     },
     "rep_range_isolation": {
       "title": "{exercise}: {toMin}-{toMax} reps",
-      "body": "Coaching rule: isolation moves work best at {toMin}-{toMax} reps. Going far past that adds time, not growth."
+      "body": "Single-joint moves work best at {toMin}-{toMax} reps. Far past that adds time, not growth."
     }
   }
 }

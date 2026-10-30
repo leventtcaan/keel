@@ -15,6 +15,7 @@ import { tokens } from '@/theme/tokens';
 import { basisRows } from '@/today/basis';
 import { variantOf } from '@/today/call';
 import { labelKey, load, reasonLines, weekdayDate, type Loaded } from '@/today/today';
+import { openDetail } from '@/settings/detail';
 
 type Decision = components['schemas']['Decision'];
 type Basis = components['schemas']['DecisionBasis'];
@@ -70,7 +71,7 @@ function Body({ read, onRetry }: { read: Read | null; onRetry: () => void }) {
     return (
       <View style={styles.note}>
         {line('today.consent.body')}
-        <Button label={t('today.consent.open')} variant="ghost" size="sm" onPress={() => router.push('/settings')} />
+        <Button label={t('today.consent.open')} variant="ghost" size="sm" onPress={() => openDetail('consent')} />
       </View>
     );
   }

@@ -1,5 +1,4 @@
 /** The Progress tab's cards (K-979, ADR-078): this week's muscles, strength, the weigh-ins toward the trend, the lock line. */
-import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -19,6 +18,7 @@ import type { Move } from '@/train/trainData';
 import { type UnitSystem, formatLoad } from '@/units/units';
 
 import type { DotsNote } from './sections';
+import { openDetail } from '@/settings/detail';
 
 type Schemas = components['schemas'];
 
@@ -29,7 +29,7 @@ export function LockLine() {
     <View testID="progress-locked" style={[styles.lock, { backgroundColor: color.surface }]}>
       <SymbolView name="lock.fill" size={tokens.type.body} tintColor={color.muted} />
       <Text style={[styles.grow, styles.fine, { color: color.textSecondary }]}>{t('thisWeek.food.locked')}</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel={t('thisWeek.food.allowLabel')} onPress={() => router.push('/settings')} hitSlop={tokens.space.sm} style={styles.allow}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('thisWeek.food.allowLabel')} onPress={() => openDetail('consent')} hitSlop={tokens.space.sm} style={styles.allow}>
         <Text style={[styles.strong, { color: color.accent }]}>{t('thisWeek.food.allow')}</Text>
       </Pressable>
     </View>

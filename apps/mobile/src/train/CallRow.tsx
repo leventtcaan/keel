@@ -5,10 +5,11 @@ import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { ProblemText, useProblem } from '@/components/ProblemText';
 import { t } from '@/copy';
-import { useAppServices } from '@/services/ServicesProvider';
+import { useSaved } from '@/saved/saved';
+import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
-import { applyCall } from '@/today/call';
+import { appliedSave, applyCall } from '@/today/call';
 
 type Decision = components['schemas']['Decision'];
 
@@ -25,6 +26,8 @@ const nameOf = (error: unknown) => (error instanceof Error ? error.name : 'Unkno
  */
 export function CallRow({ decision, onChanged }: { decision: Decision; onChanged: () => void }) {
   const { api } = useAppServices();
+  const units = useUnits();
+  const saved = useSaved();
   const { color } = useTheme();
   const [busy, setBusy] = useState(false);
   const [failed, setFailed, occurrence] = useProblem();
@@ -40,6 +43,7 @@ export function CallRow({ decision, onChanged }: { decision: Decision; onChanged
     try {
       await applyCall(api, decision.id);
       setFailed(null);
+      saved(appliedSave(api, decision, units));
       onChanged();
     } catch (error) {
       const name = nameOf(error);

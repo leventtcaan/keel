@@ -261,7 +261,7 @@ test('without the health data consent: one line and the way to Settings', async 
   await show();
   expect(screen.getByText(t('today.consent.body'))).toBeOnTheScreen();
   await press(t('today.consent.open'));
-  expect(mockPush).toHaveBeenCalledWith('/settings');
+  expect(mockPush).toHaveBeenCalledWith({ pathname: '/settings-detail', params: { part: 'consent' } });
 });
 
 test('two taps on send while it is on its way send once', async () => {

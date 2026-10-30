@@ -14,6 +14,7 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { load } from '@/today/today';
 import { useReadOnFocus } from '@/today/useReadOnFocus';
+import { openDetail } from '@/settings/detail';
 
 type Recipe = components['schemas']['Recipe'];
 
@@ -60,7 +61,7 @@ export default function RecipesScreen() {
     data === null ? null : data.state === 'consent' ? (
       <>
         <Text style={[styles.text, { color: color.text }]}>{t('recipes.consent')}</Text>
-        <Button label={t('recipes.openSettings')} variant="ghost" size="sm" onPress={() => router.push('/settings')} />
+        <Button label={t('recipes.openSettings')} variant="ghost" size="sm" onPress={() => openDetail('consent')} />
       </>
     ) : data.state === 'failed' ? (
       <>

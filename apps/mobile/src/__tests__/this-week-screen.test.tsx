@@ -50,6 +50,7 @@ const decision = (extra: Partial<Schemas['Decision']> = {}): Schemas['Decision']
   changes: [],
   ...extra,
 });
+const CALORIES_CHANGE: Schemas['DecisionChange'] = { what: 'CALORIES', before: { targetKcal: 2100 }, after: { targetKcal: 1850 } };
 const PROGRAM: Schemas['Program'] = {
   id: 'p1',
   today: '2026-12-25',
@@ -192,7 +193,9 @@ beforeEach(() => {
 async function show() {
   await render(
     <ThemeProvider scheme="light">
-      <TodayScreen />
+      <WithSaved>
+        <TodayScreen />
+      </WithSaved>
     </ThemeProvider>,
   );
   await act(async () => {});
@@ -400,6 +403,28 @@ describe('the hero is one tap (user test 10 Oct)', () => {
     expect(screen.getByText(t('thisWeek.hero.nextCall', { day: 'Monday' }))).toBeOnTheScreen();
   });
 
+  test('"Use this call" is not silent: the banner says the call is applied and what moved, and Undo takes the call back', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(decision({ application: { state: 'PENDING' }, changes: [CALORIES_CHANGE] }));
+    await show();
+    expect(banner()).toBeNull();
+    mockAnswers['/v1/decisions/current'] = ok(decision());
+    await press(t('thisWeek.hero.useCall'));
+    expect(screen.getByText(t('today.call.appliedLead'))).toBeOnTheScreen();
+    expect(screen.getByText(t('callScreen.changes.spoken', { what: t('callScreen.changes.label.CALORIES'), from: t('callScreen.changes.kcal', { kcal: '2,100' }), to: t('callScreen.changes.kcal', { kcal: '1,850' }) }))).toBeOnTheScreen();
+    await act(async () => fireEvent.press(undoButton()));
+    expect(mockPOST).toHaveBeenCalledWith('/v1/decisions/{id}/undo', { params: { path: { id: 'd1' } } });
+  });
+
+  test('a call that did not apply (no connection) has no banner', async () => {
+    mockPOST.mockImplementationOnce(async () => {
+      throw new TypeError('Network request failed');
+    });
+    mockAnswers['/v1/decisions/current'] = ok(decision({ application: { state: 'PENDING' } }));
+    await show();
+    await press(t('thisWeek.hero.useCall'));
+    expect(banner()).toBeNull();
+  });
+
   test('the action on a call not applied is its own control: pressing it does not open the call', async () => {
     mockAnswers['/v1/decisions/current'] = ok(decision({ application: { state: 'PENDING' } }));
     await show();
@@ -507,7 +532,7 @@ describe('without the health data consent (ADR-072 Ek 1: no consent, no line)', 
     expect(screen.queryByText(t('thisWeek.countedByWeek'))).toBeNull();
     expect(screen.queryByText(/weeks on track/)).toBeNull();
     await press(t('thisWeek.hero.settingsLabel'));
-    expect(mockPush).toHaveBeenCalledWith('/settings');
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/settings-detail', params: { part: 'consent' } });
     // The training still shows on the strip: it is not health data.
     expect(day('2026-12-21')).toBe('Monday, trained');
   });
@@ -1028,7 +1053,7 @@ describe('the food line', () => {
     expect(screen.queryByText(t('thisWeek.food.left'))).toBeNull();
     expect(screen.getByText(t('thisWeek.food.locked'))).toBeOnTheScreen();
     await press(t('thisWeek.food.allowLabel'));
-    expect(mockPush).toHaveBeenCalledWith('/settings');
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/settings-detail', params: { part: 'consent' } });
   });
 
   describe('the first week (no call yet): the budget the server works out from the starting target (K-997)', () => {

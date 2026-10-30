@@ -9,18 +9,20 @@ import { Button } from '@/components/Button';
 import { DecisionBlock } from '@/components/DecisionBlock';
 import { ProblemText, announce } from '@/components/ProblemText';
 import { t } from '@/copy';
+import { useSaved } from '@/saved/saved';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { useReduceMotion } from '@/theme/useReduceMotion';
 import { TrendCount } from '@/weighIn/TrendCount';
-import { applyCall, callFace, declineCall } from '@/today/call';
+import { appliedSave, applyCall, callFace, declineCall } from '@/today/call';
 import { ChangeRows } from '@/today/ChangeRows';
 import { changeRows } from '@/today/callChanges';
 import { callReasons } from '@/today/callReasons';
 import { SourceMark } from '@/today/SourceMark';
 import { useWeek1 } from '@/today/useWeek1';
 import { type Loaded, labelKey, load, weekdayDate } from '@/today/today';
+import { openDetail } from '@/settings/detail';
 
 type Decision = components['schemas']['Decision'];
 
@@ -56,6 +58,7 @@ export default function CallScreen() {
   const readOnly = id !== undefined;
   const { api, report } = useAppServices();
   const units = useUnits();
+  const saved = useSaved();
   const { color } = useTheme();
   const reduce = useReduceMotion();
   const [call, setCall] = useState<Loaded<Decision> | null>(null);
@@ -121,6 +124,7 @@ export default function CallScreen() {
     setBusy(true);
     try {
       await (how === 'keep' ? declineCall(api, decision.id) : applyCall(api, decision.id));
+      if (how === 'use') saved(appliedSave(api, decision, units));
       setFailed(null);
       toSay.current = call;
       read();
@@ -153,7 +157,7 @@ export default function CallScreen() {
   };
   let body = null;
   let dock = null;
-  if (call?.state === 'consent') body = note('today.consent.body', { label: t('today.consent.open'), onPress: () => router.push('/settings') });
+  if (call?.state === 'consent') body = note('today.consent.body', { label: t('today.consent.open'), onPress: () => openDetail('consent') });
   else if (call?.state === 'subscription') body = note('callScreen.subscription', { label: t('subscription.seePlans'), onPress: () => router.push('/paywall') });
   else if (call?.state === 'none') body = note('callScreen.none');
   else if (call?.state === 'failed') body = note('callScreen.failed', { label: t('callScreen.retry'), onPress: read });

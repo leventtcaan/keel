@@ -6,6 +6,11 @@
  */
 import type { ApiClient } from '@/api/client';
 import type { components } from '@/api/schema';
+import { t } from '@/copy';
+import type { Save, Undone } from '@/saved/saved';
+import type { UnitSystem } from '@/units/units';
+
+import { appliedWords } from './callChanges';
 
 type Decision = components['schemas']['Decision'];
 
@@ -37,6 +42,32 @@ export async function applyCall(api: ApiClient, id: string): Promise<void> {
     const name = result.response.status === 409 ? 'ApplyRefused' : 'ApplyFailed';
     throw Object.assign(new Error(`apply not done: HTTP ${result.response.status}`), { name });
   }
+}
+
+/**
+ * Puts the targets back as they were before the call (POST /v1/decisions/{id}/undo, the latest call, once applied). Said for
+ * the banner's Undo: a refusal (409: a safety call is never taken back, or another call moved the plan) ends the try; no
+ * connection, or a fault of ours, leaves it open to another.
+ */
+export async function undoCall(api: ApiClient, id: string): Promise<Undone> {
+  let result;
+  try {
+    result = await api.POST('/v1/decisions/{id}/undo', { params: { path: { id } } });
+  } catch {
+    return { done: false, message: t('today.call.undoOffline'), again: true };
+  }
+  if (result.data !== undefined) return { done: true, said: t('today.call.undone') };
+  if (result.response.status === 409) return { done: false, message: t('today.call.undoRefused'), again: false };
+  return { done: false, message: t('undoBanner.failed'), again: true };
+}
+
+/**
+ * The banner that follows "Use this call" from anywhere (This week, Train, the call screen): the call is applied, what it
+ * moved, and Undo. Said from the call as it was read before the tap, whose changes are the call's own numbers.
+ */
+export function appliedSave(api: ApiClient, decision: Decision, units: UnitSystem): Save {
+  const detail = appliedWords(decision, units);
+  return { lead: t('today.call.appliedLead'), ...(detail === undefined ? {} : { detail }), undo: () => undoCall(api, decision.id) };
 }
 
 export type CallFace = {

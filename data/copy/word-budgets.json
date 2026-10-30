@@ -1647,6 +1647,7 @@
         "today.call.applyFailed",
         "today.call.applyRefused",
         "today.call.applyError",
+        "today.call.appliedJoin",
         "today.consent.body",
         "today.consent.open",
         "subscription.seePlans",
