@@ -1212,7 +1212,7 @@ describe('walkthrough round 3: Edit program (K-1013)', () => {
   });
 
   describe('every control of the editor is a full touch target (44 pt)', () => {
-    test('weekday chips, Remove this day, a move's options, Add a move, and the Undo that puts one back', async () => {
+    test('weekday chips, Remove this day, the options of a move, Add a move, and the Undo that puts one back', async () => {
       mockParams = { part: 'days' };
       editable();
       await show();

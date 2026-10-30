@@ -11,8 +11,8 @@ import { useTheme } from '@/theme/theme';
 import { drawingAreas } from './demo';
 import { workoutParams as P } from './params';
 
-/** The drawing is 200 by 400 at scale 1; the glyph is a tenth of that and a half again. */
-const SCALE = 0.075;
+/** The drawing is 200 by 400 at scale 1; the glyph is 20 by 40, as tall as the chip it sits in. */
+const SCALE = 0.1;
 
 export function MuscleGlyph({ group, tone }: { group: string; tone?: string }) {
   const { color } = useTheme();

@@ -4,7 +4,7 @@
  * "Add to <day>"; a day removed only after the system's alert; a move's options in the system's action sheet (up, down, remove).
  */
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
@@ -42,10 +42,12 @@ const START: EditedDay[] = [
   { id: 'b', name: 'Lower', weekday: 'WEDNESDAY', moves: [move('cable_fly')] },
 ];
 
-let latest: EditedDay[] = START;
+const seen: { days: EditedDay[] } = { days: START };
 function Editor() {
   const [days, setDays] = useState(START);
-  latest = days;
+  useEffect(() => {
+    seen.days = days;
+  });
   return (
     <ThemeProvider>
       <ProgramEditor days={days} onChange={(next) => setDays((all) => next(all))} moves={CATALOG} makeOwn={async () => 'refused'} />
@@ -100,14 +102,14 @@ describe('Add a move: a picker, not a flat list', () => {
     expect(screen.getByText(t('exercises.incline_dumbbell_press.cue1'))).toBeOnTheScreen();
     expect(screen.getByText(t('exercises.incline_dumbbell_press.cue3'))).toBeOnTheScreen();
     await fireEvent.press(screen.getByRole('button', { name: t('movePicker.addLabel', { name: 'Incline dumbbell press', day: 'Upper' }) }));
-    expect(names(latest[0])).toEqual(['bench_press', 'lat_pulldown', 'squat', 'incline_dumbbell_press']);
+    expect(names(seen.days[0])).toEqual(['bench_press', 'lat_pulldown', 'squat', 'incline_dumbbell_press']);
     expect(screen.queryByRole('header', { name: t('programEditor.addMove') })).toBeNull();
   });
 
   test('the + at the end of a row adds the move at once, for someone who knows its name', async () => {
     await open();
     await fireEvent.press(screen.getByRole('button', { name: new RegExp(`^${t('programEditor.pickLabel', { name: 'Dumbbell curl', range: '' })}`) }));
-    expect(names(latest[0])).toContain('dumbbell_curl');
+    expect(names(seen.days[0])).toContain('dumbbell_curl');
   });
 
   test('a search narrows across all of it, and the chips narrow the search', async () => {
@@ -127,10 +129,10 @@ describe('removing and ordering (B3)', () => {
     await fireEvent.press(screen.getByRole('button', { name: t('programEditor.removeDayLabel', { day: 'Upper' }) }));
     expect(alert).toHaveBeenCalledTimes(1);
     expect(alert.mock.calls[0][0]).toBe(t('programEditor.removeDayAsk', { day: 'Upper' }));
-    expect(latest.map((d) => d.name)).toEqual(['Upper', 'Lower']);
+    expect(seen.days.map((d) => d.name)).toEqual(['Upper', 'Lower']);
     answerAlert('confirm');
     await fireEvent.press(screen.getByRole('button', { name: t('programEditor.removeDayLabel', { day: 'Upper' }) }));
-    expect(latest.map((d) => d.name)).toEqual(['Lower']);
+    expect(seen.days.map((d) => d.name)).toEqual(['Lower']);
     expect(screen.getByText(t('programEditor.removed', { name: 'Upper' }))).toBeOnTheScreen();
   });
 
@@ -152,26 +154,26 @@ describe('removing and ordering (B3)', () => {
     expect(sheet.mock.calls[1][0].options).toEqual([t('programEditor.moveUp'), t('programEditor.removeFrom', { day: 'Upper' }), t('programEditor.cancel')]);
     await fireEvent.press(screen.getByRole('button', { name: t('programEditor.moveOptionsLabel', { move: 'Lat pulldown' }) }));
     expect(sheet.mock.calls[2][0].options).toHaveLength(4);
-    expect(names(latest[0])).toEqual(['bench_press', 'lat_pulldown', 'squat']);
+    expect(names(seen.days[0])).toEqual(['bench_press', 'lat_pulldown', 'squat']);
   });
 
   test('Move down and Move up reorder the day', async () => {
     await show();
     answerSheet(t('programEditor.moveDown'));
     await fireEvent.press(screen.getByRole('button', { name: t('programEditor.moveOptionsLabel', { move: 'Bench press' }) }));
-    expect(names(latest[0])).toEqual(['lat_pulldown', 'bench_press', 'squat']);
+    expect(names(seen.days[0])).toEqual(['lat_pulldown', 'bench_press', 'squat']);
     answerSheet(t('programEditor.moveUp'));
     await fireEvent.press(screen.getByRole('button', { name: t('programEditor.moveOptionsLabel', { move: 'Squat' }) }));
-    expect(names(latest[0])).toEqual(['lat_pulldown', 'squat', 'bench_press']);
+    expect(names(seen.days[0])).toEqual(['lat_pulldown', 'squat', 'bench_press']);
   });
 
   test('Remove from <day> takes the move out, with the Undo bar after', async () => {
     await show();
     answerSheet(t('programEditor.removeFrom', { day: 'Upper' }));
     await fireEvent.press(screen.getByRole('button', { name: t('programEditor.moveOptionsLabel', { move: 'Lat pulldown' }) }));
-    expect(names(latest[0])).toEqual(['bench_press', 'squat']);
+    expect(names(seen.days[0])).toEqual(['bench_press', 'squat']);
     await act(async () => {});
     await fireEvent.press(screen.getByRole('button', { name: t('programEditor.undoLabel', { name: 'Lat pulldown' }) }));
-    expect(names(latest[0])).toEqual(['bench_press', 'lat_pulldown', 'squat']);
+    expect(names(seen.days[0])).toEqual(['bench_press', 'lat_pulldown', 'squat']);
   });
 });
