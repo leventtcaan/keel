@@ -8,8 +8,9 @@
  * are off the screen; their components stay (ADR-069 #3) and are
  * tested here as the old screen showed them, read by the same hook (`showPart`). The new screen: this-week-screen.test.tsx.
  */
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
+import { StyleSheet } from 'react-native';
 
 import TodayScreen from '@/app/(tabs)/index';
 import type { components } from '@/api/schema';
@@ -25,6 +26,7 @@ import { TodayList } from '@/today/TodayList';
 import type { TodayData } from '@/today/today';
 import { useToday } from '@/today/useToday';
 import { ThemeProvider } from '@/theme/theme';
+import { palettes } from '@/theme/tokens';
 import { formatWeight } from '@/units/units';
 
 type Schemas = components['schemas'];
@@ -604,6 +606,22 @@ describe('state mode on Today (K-518, ADR-038)', () => {
     expect(screen.queryByText(t('today.state.paused', { state: t('state.kind.sick.name'), since: 'Mon, Sep 28' }))).toBeNull();
     expect(screen.getByText(t('today.state.welcomeBack'))).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: t('today.state.declare') })).toBeOnTheScreen();
+  });
+
+  // Evre 7 final pass (#684): the banner says how long, when the server gave an end, and "I'm back" is the teal text button.
+  test('a state with a last day says until when; without one it says since when', async () => {
+    mockAnswers['/v1/state'] = ok({ kind: 'SICK', since: '2026-09-28', until: '2026-10-03' });
+    await showPart(statePart);
+    expect(screen.getByText(t('today.state.pausedUntil', { state: t('state.kind.sick.name'), until: 'Sat, Oct 3' }))).toBeOnTheScreen();
+    expect(screen.queryByText(t('today.state.paused', { state: t('state.kind.sick.name'), since: 'Mon, Sep 28' }))).toBeNull();
+  });
+
+  test('"I\'m back" is the tertiary text button: the accent as words, no fill', async () => {
+    mockAnswers['/v1/state'] = ok({ kind: 'SICK', since: '2026-09-28' });
+    await showPart(statePart);
+    const back = screen.getByRole('button', { name: t('today.state.back') });
+    expect(StyleSheet.flatten(back.props.style)?.backgroundColor).toBeUndefined();
+    expect(within(back).getByText(t('today.state.back'))).toHaveStyle({ color: palettes.light.accent });
   });
 
   test('a note belongs to the state it was said for: a new state shows no old welcome', async () => {

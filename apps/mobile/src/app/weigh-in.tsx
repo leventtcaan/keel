@@ -12,7 +12,7 @@ import { Segmented } from '@/components/Segmented';
 import { ProblemText, useProblem } from '@/components/ProblemText';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { Stepper } from '@/components/Stepper';
-import { ConsentText } from '@/consent/ConsentText';
+import { ConsentStep } from '@/consent/ConsentStep';
 import { grantConsent } from '@/consent/consents';
 import { t } from '@/copy';
 import { HealthJit } from '@/health/HealthJit';
@@ -166,17 +166,16 @@ export default function WeighInScreen() {
 
   const consentStep =
     step === 'consent' ? (
-      <View style={styles.part}>
-        <Text style={[styles.heading, { color: color.text }]}>{t('consent.health_data.title')}</Text>
-        <ConsentText kind="HEALTH_DATA" />
-        {problem !== null && (
-          <ProblemText style={[styles.text, { color: color.text }]} occurrence={occurrence}>
-            {problem}
-          </ProblemText>
-        )}
-        <Button label={t('weighIn.consent.allow')} onPress={() => void allow()} disabled={busy} />
-        <Button label={t('weighIn.consent.notNow')} variant="ghost" onPress={() => router.back()} disabled={busy} />
-      </View>
+      <ConsentStep
+        why={t('weighIn.consent.why')}
+        allow={t('weighIn.consent.allow')}
+        notNow={t('weighIn.consent.notNow')}
+        onAllow={() => void allow()}
+        onNotNow={() => router.back()}
+        busy={busy}
+        problem={problem}
+        occurrence={occurrence}
+      />
     ) : null;
 
   const problemLine =
@@ -194,6 +193,7 @@ export default function WeighInScreen() {
           unit={unit}
           step={weightStep}
           decimals={weightDecimals}
+          fixed
           onChange={(next) => {
             setValue(next);
             setProblem(null);
@@ -234,15 +234,23 @@ export default function WeighInScreen() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
       <ModalClose accessibilityLabel={t('weighIn.closeLabel')} />
-      <KeyboardFrame>
-        <FormScroll contentContainerStyle={styles.body}>
-          <ScreenTitle>{t('weighIn.title')}</ScreenTitle>
+      {consentStep === null ? (
+        <KeyboardFrame>
+          <FormScroll contentContainerStyle={styles.body}>
+            <ScreenTitle>{t('weighIn.title')}</ScreenTitle>
+            {entry}
+            {chart}
+          </FormScroll>
+          {dock}
+        </KeyboardFrame>
+      ) : (
+        <>
+          <View style={styles.titleBox}>
+            <ScreenTitle>{t('weighIn.title')}</ScreenTitle>
+          </View>
           {consentStep}
-          {entry}
-          {chart}
-        </FormScroll>
-        {dock}
-      </KeyboardFrame>
+        </>
+      )}
     </SafeAreaView>
   );
 }
@@ -267,6 +275,7 @@ function RangeChoice({ range, onChange }: { range: Range; onChange: (range: Rang
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   body: { paddingHorizontal: tokens.space.lg, paddingVertical: tokens.space.sm, gap: tokens.space.lg },
+  titleBox: { paddingHorizontal: tokens.space.lg, paddingVertical: tokens.space.sm },
   dock: { paddingHorizontal: tokens.space.lg, paddingBottom: tokens.space.sm },
   part: { gap: tokens.space.sm },
   heading: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },

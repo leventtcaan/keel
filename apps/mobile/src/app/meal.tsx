@@ -1,13 +1,10 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button } from '@/components/Button';
-import { FormScroll } from '@/components/FormScroll';
 import { ModalClose } from '@/components/ModalClose';
-import { ProblemText } from '@/components/ProblemText';
-import { ConsentText } from '@/consent/ConsentText';
+import { ConsentStep } from '@/consent/ConsentStep';
 import { grantConsent } from '@/consent/consents';
 import { t } from '@/copy';
 import { LogMeal } from '@/food/LogMeal';
@@ -15,7 +12,6 @@ import { peekMeal } from '@/food/handoff';
 import { MealItems } from '@/food/MealItems';
 import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
-import { tokens } from '@/theme/tokens';
 
 type Step = 'checking' | 'consent' | 'entry';
 
@@ -61,15 +57,16 @@ export default function MealScreen() {
 
   const consent =
     step === 'consent' ? (
-      <FormScroll contentContainerStyle={styles.body}>
-        <View style={styles.part}>
-          <Text style={[styles.heading, { color: color.text }]}>{t('consent.health_data.title')}</Text>
-          <ConsentText kind="HEALTH_DATA" />
-          {problem !== null && <ProblemText style={[styles.text, { color: color.text }]}>{problem}</ProblemText>}
-          <Button label={t('meal.consent.allow')} onPress={() => void allow()} disabled={busy} />
-          <Button label={t('meal.consent.notNow')} variant="secondary" onPress={() => router.back()} disabled={busy} />
-        </View>
-      </FormScroll>
+      <ConsentStep
+        title={t('consent.health_data.title')}
+        why={t('meal.consent.why')}
+        allow={t('meal.consent.allow')}
+        notNow={t('meal.consent.notNow')}
+        onAllow={() => void allow()}
+        onNotNow={() => router.back()}
+        busy={busy}
+        problem={problem}
+      />
     ) : null;
   const entry =
     step !== 'entry' ? null : edit !== undefined || handed ? (
@@ -89,8 +86,4 @@ export default function MealScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  body: { paddingHorizontal: tokens.space.lg, paddingVertical: tokens.space.sm, gap: tokens.space.lg },
-  part: { gap: tokens.space.md },
-  heading: { fontSize: tokens.type.heading, fontWeight: tokens.weight.bold },
-  text: { fontSize: tokens.type.body },
 });

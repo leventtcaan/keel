@@ -7,7 +7,7 @@ import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
 import { ProblemText } from '@/components/ProblemText';
 import { ScreenTitle } from '@/components/ScreenTitle';
-import { ConsentText } from '@/consent/ConsentText';
+import { ConsentStep } from '@/consent/ConsentStep';
 import { grantConsent } from '@/consent/consents';
 import { t } from '@/copy';
 import { useChangesOnClose } from '@/saved/saved';
@@ -80,7 +80,8 @@ export default function StateScreen() {
   const pause = () =>
     send(async () => {
       if (kind === null) return;
-      if (HEALTH.has(kind) && !(await consents.granted('HEALTH_DATA'))) return setStep('consent');
+      // Asked before anything is sent, on the first tap: a consent the phone cannot read is not given (never a silent no-op).
+      if (HEALTH.has(kind) && !(await consents.granted('HEALTH_DATA').catch(() => false))) return setStep('consent');
       await declare(kind);
     });
 
@@ -102,26 +103,19 @@ export default function StateScreen() {
   if (step === 'consent') {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['bottom']}>
-        <ScrollView contentContainerStyle={styles.body}>
-          <Text accessibilityRole="header" style={[styles.heading, { color: color.text }]}>
-            {t('consent.health_data.title')}
-          </Text>
-          <Text style={[styles.text, { color: color.textSecondary }]}>{t('state.consent.why')}</Text>
-          <ConsentText kind="HEALTH_DATA" />
-          {said}
-        </ScrollView>
-        <View style={styles.footer}>
-          <Button label={t('state.consent.allow')} onPress={() => void allow()} disabled={busy} />
-          <Button
-            label={t('state.consent.notNow')}
-            variant="ghost"
-            onPress={() => {
-              setProblem(null);
-              setStep('choose');
-            }}
-            disabled={busy}
-          />
-        </View>
+        <ConsentStep
+          title={t('consent.health_data.title')}
+          why={t('state.consent.why')}
+          allow={t('state.consent.allow')}
+          notNow={t('state.consent.notNow')}
+          onAllow={() => void allow()}
+          onNotNow={() => {
+            setProblem(null);
+            setStep('choose');
+          }}
+          busy={busy}
+          problem={problem === null ? null : t(problem)}
+        />
       </SafeAreaView>
     );
   }
@@ -170,7 +164,6 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   body: { padding: tokens.space.lg, gap: tokens.space.md },
   text: { fontSize: tokens.type.body },
-  heading: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
   label: { fontSize: tokens.type.label, fontWeight: tokens.weight.bold },
   tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm },
   tile: {

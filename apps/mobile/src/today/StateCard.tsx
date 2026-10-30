@@ -60,10 +60,15 @@ export function StateCard({ state, onChanged, entry = true }: Props) {
     said === null || said.identity !== identity ? null : <ProblemText style={[styles.text, { color: color.textSecondary }]}>{t(said.key)}</ProblemText>;
   if (state?.state === 'ready') {
     const kind = t(`state.kind.${state.value.kind.toLowerCase()}.name`);
+    // The end, when the user gave one (the server's `until`, a day on their calendar); else since when, until they are back.
+    const pausedLine =
+      state.value.until === undefined
+        ? t('today.state.paused', { state: kind, since: weekdayDate(state.value.since) })
+        : t('today.state.pausedUntil', { state: kind, until: weekdayDate(state.value.until) });
     return (
       <Card>
-        <Text style={[styles.text, { color: color.text }]}>{t('today.state.paused', { state: kind, since: weekdayDate(state.value.since) })}</Text>
-        <Button label={t('today.state.back')} variant="ghost" size="sm" onPress={() => void back()} disabled={busy} />
+        <Text style={[styles.text, { color: color.text }]}>{pausedLine}</Text>
+        <Button label={t('today.state.back')} variant="text" size="sm" onPress={() => void back()} disabled={busy} />
         {note}
       </Card>
     );

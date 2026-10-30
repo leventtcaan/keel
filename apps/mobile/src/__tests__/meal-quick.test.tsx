@@ -503,6 +503,8 @@ describe('where it is not shown', () => {
   test('without the health data consent: the consent first, nothing offered', async () => {
     mockGranted = false;
     await show();
+    expect(screen.getByText(t('meal.consent.why'))).toBeOnTheScreen();
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('consent.step.fullText') })));
     expect(screen.getByText(t('consent.health_data.points.collected'))).toBeOnTheScreen();
     expect(screen.queryByTestId('browse')).toBeNull();
   });

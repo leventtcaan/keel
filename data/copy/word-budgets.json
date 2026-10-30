@@ -883,7 +883,7 @@
             "screens.today.title",
             "thisWeek.week",
             ["thisWeek.onTrack", "thisWeek.countedByWeek"],
-            "today.state.paused",
+            ["today.state.paused", "today.state.pausedUntil"],
             "today.state.back",
             "thisWeek.today.today",
             "programDays.full_body_a.name",
@@ -939,7 +939,7 @@
       ],
       "uncounted": ["thisWeek.strip.letter.MONDAY", "thisWeek.strip.letter.TUESDAY", "thisWeek.strip.letter.WEDNESDAY", "thisWeek.strip.letter.THURSDAY", "thisWeek.strip.letter.FRIDAY", "thisWeek.strip.letter.SATURDAY", "thisWeek.strip.letter.SUNDAY"],
       "notFirstView": [
-      "food.totals.barLabel","today.failed", "today.retry", "thisWeek.counter.title", "thisWeek.counter.of", "thisWeek.counter.weighIn", "thisWeek.counter.shortFoot", "thisWeek.counter.label", "thisWeek.counter.labelReached", "thisWeek.settings", "thisWeek.strip.label", "thisWeek.strip.mark", "thisWeek.hero.settingsLabel", "thisWeek.hero.openCall", "thisWeek.hero.monday.openLabel", "thisWeek.today.label", "thisWeek.today.changeLabel", "thisWeek.today.startLabel", "thisWeek.today.doneLabel", "thisWeek.food.allowLabel", "thisWeek.food.lineLabel", "thisWeek.food.lineLabelAround", "thisWeek.food.logLabel", "thisWeek.food.range", "thisWeek.food.showRange", "thisWeek.food.hideRange", "food.budget.single", "format.range", "today.state.declare", "thisWeek.food.allow", "thisWeek.food.locked", "thisWeek.hero.callsOff", "thisWeek.hero.firstCall", "thisWeek.hero.firstWeek", "thisWeek.hero.inDays", "thisWeek.hero.nextCall", "thisWeek.hero.notApplied", "thisWeek.hero.notAppliedShort", "thisWeek.hero.pending", "thisWeek.hero.settings", "thisWeek.hero.start", "thisWeek.hero.today", "thisWeek.hero.tomorrow", "thisWeek.hero.train", "thisWeek.hero.useCall", "thisWeek.hero.weighIn", "thisWeek.hero.yourWeek", "thisWeek.today.continue", "thisWeek.today.done", "thisWeek.today.doneStats.one", "thisWeek.today.doneStats.other", "thisWeek.today.full", "thisWeek.today.movedTo", "thisWeek.today.open", "thisWeek.today.openElsewhere", "thisWeek.today.openSets.none", "thisWeek.today.openSets.one", "thisWeek.today.openSets.other", "thisWeek.today.rest", "thisWeek.today.restWeek", "thisWeek.today.next", "thisWeek.today.skipped", "thisWeek.today.skippedNoDay", "thisWeek.today.undo", "today.state.back", "today.state.paused"],
+      "food.totals.barLabel","today.failed", "today.retry", "thisWeek.counter.title", "thisWeek.counter.of", "thisWeek.counter.weighIn", "thisWeek.counter.shortFoot", "thisWeek.counter.label", "thisWeek.counter.labelReached", "thisWeek.settings", "thisWeek.strip.label", "thisWeek.strip.mark", "thisWeek.hero.settingsLabel", "thisWeek.hero.openCall", "thisWeek.hero.monday.openLabel", "thisWeek.today.label", "thisWeek.today.changeLabel", "thisWeek.today.startLabel", "thisWeek.today.doneLabel", "thisWeek.food.allowLabel", "thisWeek.food.lineLabel", "thisWeek.food.lineLabelAround", "thisWeek.food.logLabel", "thisWeek.food.range", "thisWeek.food.showRange", "thisWeek.food.hideRange", "food.budget.single", "format.range", "today.state.declare", "thisWeek.food.allow", "thisWeek.food.locked", "thisWeek.hero.callsOff", "thisWeek.hero.firstCall", "thisWeek.hero.firstWeek", "thisWeek.hero.inDays", "thisWeek.hero.nextCall", "thisWeek.hero.notApplied", "thisWeek.hero.notAppliedShort", "thisWeek.hero.pending", "thisWeek.hero.settings", "thisWeek.hero.start", "thisWeek.hero.today", "thisWeek.hero.tomorrow", "thisWeek.hero.train", "thisWeek.hero.useCall", "thisWeek.hero.weighIn", "thisWeek.hero.yourWeek", "thisWeek.today.continue", "thisWeek.today.done", "thisWeek.today.doneStats.one", "thisWeek.today.doneStats.other", "thisWeek.today.full", "thisWeek.today.movedTo", "thisWeek.today.open", "thisWeek.today.openElsewhere", "thisWeek.today.openSets.none", "thisWeek.today.openSets.one", "thisWeek.today.openSets.other", "thisWeek.today.rest", "thisWeek.today.restWeek", "thisWeek.today.next", "thisWeek.today.skipped", "thisWeek.today.skippedNoDay", "thisWeek.today.undo", "today.state.back", "today.state.paused", "today.state.pausedUntil"],
       "parts": ["src/today/Hero.tsx", "src/today/WeighInCounter.tsx", "src/today/WeekStrip.tsx", "src/today/TodayCard.tsx", "src/today/FoodLine.tsx", "src/today/StateCard.tsx"],
       "faces": []
     },
@@ -1347,7 +1347,7 @@
         },
         {
           "face": "consent",
-          "keys": ["weighIn.title", "weighIn.consent.allow", "weighIn.consent.notNow"]
+          "keys": ["weighIn.title", "weighIn.consent.why", "consent.step.fullText", "weighIn.consent.allow", "weighIn.consent.notNow"]
         }
       ]
     },
@@ -1356,7 +1356,7 @@
       "budget": 30,
       "source": "prototip/yeni-yuz.html",
       "task": "K-980",
-      "note": "A card under the first weigh-in and under the first workout's numbers, not a screen of its own; what is read and written in two lines. The consent's text is one tap away (What we read), off the first view.",
+      "note": "A card under the first weigh-in only (the end of a workout does not ask, Evre 7 final pass), not a screen of its own; what is read and written in two lines. The consent's text is one tap away (What we read), off the first view.",
       "file": "src/health/HealthJit.tsx",
       "keys": ["health.jit.title", "health.jit.reads", "health.jit.writes", "health.jit.read", "health.jit.continue", "health.jit.notNow"],
       "notFirstView": ["consent.apple_health.body", "health.jit.sheetFailed", "health.jit.failed"]
@@ -1425,8 +1425,10 @@
         "meal.barcode.scan",
         "meal.barcode.searchInstead",
         "meal.closeLabel",
+        "consent.step.fullText",
         "meal.consent.allow",
         "meal.consent.failed",
+        "meal.consent.why",
         "meal.consent.notNow",
         "meal.doneKcal",
         "meal.edit.confirm",
@@ -1945,7 +1947,7 @@
         "state.screen.pause"
       ],
       "uncounted": ["settings.backMark"],
-      "notFirstView": ["state.consent.why", "state.consent.allow", "state.consent.notNow", "consent.health_data.title", "consent.health_data.points.collected", "consent.health_data.points.purpose", "consent.health_data.points.withdraw", "consent.health_data.points.scope"]
+      "notFirstView": ["consent.step.fullText", "state.consent.why", "state.consent.allow", "state.consent.notNow", "consent.health_data.title", "consent.health_data.points.collected", "consent.health_data.points.purpose", "consent.health_data.points.withdraw", "consent.health_data.points.scope"]
     }
   ]
 }

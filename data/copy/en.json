@@ -68,7 +68,7 @@
     "diary": "Food diary",
     "workout": "Workout",
     "cardio": "Cardio",
-    "life": "Life got in the way"
+    "life": "Pause this week"
   },
   "cardioLog": {
     "title": "Cardio",
@@ -419,6 +419,7 @@
     },
     "state": {
       "paused": "Paused: {state}, since {since}.",
+      "pausedUntil": "Paused: {state}, until {until}.",
       "back": "I'm back",
       "declare": "Life got in the way?",
       "welcomeBack": "Welcome back. Pick up where you are: nothing to make up.",
@@ -1396,6 +1397,7 @@
     },
     "editTitle": "Correct a meal",
     "consent": {
+      "why": "Logging meals needs your OK.",
       "allow": "Continue",
       "notNow": "Not now",
       "failed": "Couldn't record your choice. Check your connection and try again."
@@ -1666,6 +1668,7 @@
     "invalid": "That doesn't look like a weight. Check the number.",
     "saveFailed": "Couldn't save it on this phone. Try again.",
     "consent": {
+      "why": "Logging your weight needs your OK.",
       "allow": "Continue",
       "notNow": "Not now",
       "failed": "Couldn't record your choice. Check your connection and try again."
@@ -2169,6 +2172,9 @@
     }
   },
   "consent": {
+    "step": {
+      "fullText": "Read the full text"
+    },
     "health_data": {
       "version": "5",
       "title": "Your health data, for your coaching",
