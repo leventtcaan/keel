@@ -66,10 +66,12 @@ const mockRecord = jest.fn(async (_record: unknown) => true);
 const mockRemember = jest.fn(async () => {});
 const mockBack = jest.fn();
 jest.mock('expo-crypto', () => ({ randomUUID: () => jest.requireActual<typeof import('node:crypto')>('node:crypto').randomUUID() }));
-jest.mock('expo-router', () => ({ router: { back: () => mockBack(), push: jest.fn() }, useLocalSearchParams: () => ({}) }));
+jest.mock('expo-router', () => ({ router: { back: () => mockBack(), push: jest.fn(), dismissTo: jest.fn() }, useLocalSearchParams: () => ({}) }));
 const mockServices = {
   api: { POST: mockPOST, PUT: mockPUT, GET: jest.fn(async (path: string) => (path === '/v1/recipes' ? mockRecipes() : refused(404, 'NOT_FOUND'))), DELETE: jest.fn() },
-  queue: { record: mockRecord },
+  queue: { record: mockRecord, drain: jest.fn(async () => {}) },
+  mealRecords: async () => [],
+  recentFoods: async () => [],
   consents: { granted: async () => mockGranted, remember: mockRemember },
   report: jest.fn(),
 };
@@ -115,7 +117,7 @@ test('at most the whole recipe: more portions than it makes is refused before it
   await fireEvent.press(screen.getByRole('button', { name: t('meal.recipes.add', { name: SOUP.name }) }));
   await fireEvent.changeText(screen.getByLabelText(t('meal.item.amount', { name: SOUP.name })), '5');
   expect(screen.getByText(t('meal.item.tooManyPortions.other', { portions: 4 }))).toBeTruthy();
-  expect(screen.getByRole('button', { name: t('meal.save') }).props.accessibilityState.disabled).toBe(true);
+  expect(screen.getByRole('button', { name: /^Add to / }).props.accessibilityState.disabled).toBe(true);
 });
 
 test('logged as one item, "recipe:<id>", in portions', async () => {
@@ -124,7 +126,7 @@ test('logged as one item, "recipe:<id>", in portions', async () => {
   await fireEvent.press(screen.getByRole('button', { name: t('meal.recipes.add', { name: SOUP.name }) }));
   await fireEvent.changeText(screen.getByLabelText(t('meal.item.amount', { name: SOUP.name })), '1,5');
   await act(async () => {});
-  await fireEvent.press(screen.getByRole('button', { name: t('meal.save') }));
+  await fireEvent.press(screen.getByRole('button', { name: /^Add to / }));
   await act(async () => {});
   expect(mockRecord).toHaveBeenCalledWith(
     expect.objectContaining({

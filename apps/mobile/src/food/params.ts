@@ -46,4 +46,12 @@ export const foodParams = {
   swipeDeletePx: param<number>('swipe_delete_px'),
   mealHintRoundKcal: param<number>('meal_hint_round_kcal'),
   mealHintMinDays: param<number>('meal_hint_min_days'),
+  slotPatternMinLogs: param<number>('slot_pattern_min_logs'),
+  slotPatternMaxGapMin: param<number>('slot_pattern_max_gap_min'),
+  browseFavoritesMax: param<number>('browse_favorites_max'),
+  browseUsualMax: param<number>('browse_usual_max'),
+  browseRecentMax: param<number>('browse_recent_max'),
+  logAgainRowsMax: param<number>('log_again_rows_max'),
+  trayItemsMax: param<number>('tray_items_max'),
+  addedMarkMs: param<number>('added_mark_ms'),
 };

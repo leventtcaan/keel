@@ -62,10 +62,12 @@ const mockBack = jest.fn();
 let mockParams: Record<string, string> = { edit: 'm1', day: '2026-09-29' };
 let mockGranted = true;
 jest.mock('expo-crypto', () => ({ randomUUID: () => jest.requireActual<typeof import('node:crypto')>('node:crypto').randomUUID() }));
-jest.mock('expo-router', () => ({ router: { back: () => mockBack(), push: jest.fn() }, useLocalSearchParams: () => mockParams }));
+jest.mock('expo-router', () => ({ router: { back: () => mockBack(), push: jest.fn(), dismissTo: jest.fn() }, useLocalSearchParams: () => mockParams }));
 const mockServices = {
   api: { GET: mockGET, POST: mockPOST, PUT: mockPUT, DELETE: mockDELETE, PATCH: mockPATCH },
-  queue: { record: mockRecord },
+  queue: { record: mockRecord, drain: jest.fn(async () => {}) },
+  mealRecords: async () => [],
+  recentFoods: async () => [],
   forgetRecord: mockForget,
   consents: { granted: async () => mockGranted, remember: jest.fn() },
   report: jest.fn(),
@@ -122,11 +124,14 @@ async function show() {
 const openItem = async (name: string) => act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.item.open', { name }) })));
 const amountField = (name: string) => screen.getByLabelText(t('meal.item.amount', { name }));
 
-test('the meal opens as it was logged: its slot, its items, their amounts, units and weighing; the others fold to a line', async () => {
+// K1 (Evre 7 A): a correction opened on one item is that item's portion sheet and nothing else (no search, no tabs, no slot row); the meal's
+// other items are lines behind it, a press on one opens its sheet.
+test('the meal opens as it was logged on the item tapped: its amount, unit and weighing in its portion sheet; the others are lines', async () => {
   await show();
   expect(mockGET).toHaveBeenCalledWith('/v1/meals', { params: { query: { day: '2026-09-29' } } });
   expect(screen.getByText(t('meal.editTitle'))).toBeOnTheScreen();
-  expect(screen.getByRole('button', { name: t('food.slot.BREAKFAST') })).toBeSelected();
+  expect(screen.queryByLabelText(t('meal.search.label'))).toBeNull();
+  expect(screen.queryByTestId('meal-picker')).toBeNull();
   expect(amountField('Oats, rolled').props.value).toBe('80');
   expect(screen.getByRole('switch', { name: t('meal.item.weighedSpoken', { name: 'Oats, rolled' }) }).props.value).toBe(true);
   expect(screen.queryByLabelText(t('meal.item.amount', { name: 'Milk, whole' }))).toBeNull();
@@ -182,6 +187,7 @@ test('the change not done (offline, a server error): it says a connection is nee
 });
 
 test('deleting asks first, in a system alert: nothing is deleted until the destructive button; Keep it changes nothing', async () => {
+  mockParams = { edit: 'm1', day: '2026-09-29' };
   await show();
   await askToDelete();
   const { title, message, buttons, keep } = question();
@@ -201,6 +207,7 @@ test('deleting asks first, in a system alert: nothing is deleted until the destr
 });
 
 test('the destructive button deletes and goes back; the banner says Deleted and Undo logs the meal again as it was (K-1063)', async () => {
+  mockParams = { edit: 'm1', day: '2026-09-29' };
   await show();
   await askToDelete();
   expect(mockDELETE).not.toHaveBeenCalled();
@@ -227,6 +234,7 @@ test('the destructive button deletes and goes back; the banner says Deleted and 
 
 test('a delete that fails says so and stays; one that cannot reach the server says a connection is needed', async () => {
   mockDelete = async () => refused(500, 'INTERNAL');
+  mockParams = { edit: 'm1', day: '2026-09-29' };
   await show();
   await askToDelete();
   await confirmDelete();
@@ -283,6 +291,7 @@ describe('review', () => {
   });
 
   test("the phone's copy of a deleted meal is forgotten, so it does not come back offline", async () => {
+    mockParams = { edit: 'm1', day: '2026-09-29' };
     await show();
     await act(async () => fireEvent.press(screen.getAllByRole('button', { name: t('meal.edit.delete') })[0]));
     await confirmDelete();
@@ -315,6 +324,7 @@ describe('review', () => {
   });
 
   test('the alert\'s Delete pressed twice: one delete', async () => {
+    mockParams = { edit: 'm1', day: '2026-09-29' };
     await show();
     await askToDelete();
     const { confirm } = question();

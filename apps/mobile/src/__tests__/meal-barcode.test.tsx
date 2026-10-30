@@ -7,12 +7,10 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
 import MealScreen from '@/app/meal';
+import { FoodPicker } from '@/food/FoodPicker';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { ThemeProvider } from '@/theme/theme';
-
-/** Fifty items, each with its estimate asked at once (ADR-085 #5): longer than jest's 5 s default on a CI runner. */
-const FIFTY_ITEMS_MS = 30_000;
 
 type Schemas = components['schemas'];
 type Answer = { data?: unknown; error?: { code: string; message: string }; response: Response };
@@ -63,10 +61,12 @@ const mockPOST = jest.fn(async (path: string, _init?: unknown) => {
   return refused(404, 'NOT_FOUND');
 });
 jest.mock('expo-crypto', () => ({ randomUUID: () => jest.requireActual<typeof import('node:crypto')>('node:crypto').randomUUID() }));
-jest.mock('expo-router', () => ({ router: { back: jest.fn(), push: jest.fn() }, useLocalSearchParams: () => ({}) }));
+jest.mock('expo-router', () => ({ router: { back: jest.fn(), push: jest.fn(), dismissTo: jest.fn() }, useLocalSearchParams: () => ({}) }));
 const mockServices = {
   api: { POST: mockPOST, PUT: jest.fn(), GET: jest.fn(), DELETE: jest.fn() },
-  queue: { record: jest.fn() },
+  queue: { record: jest.fn(), drain: jest.fn(async () => {}) },
+  mealRecords: async () => [],
+  recentFoods: async () => [],
   consents: { granted: async () => true, remember: jest.fn() },
   forgetRecord: jest.fn(),
   report: jest.fn(),
@@ -176,7 +176,7 @@ test('Add it: the form with the barcode filled in; saved from the label, the pro
     body: { name: 'Zork bar', gtin: '8690504000000', servingGrams: 50, kcal: 200, proteinG: 20, carbsG: 20, fatG: 6 },
   });
   expect(screen.getByLabelText(t('meal.item.amount', { name: 'Zork bar' })).props.value).toBe('1');
-  expect(screen.getByTestId('numbers-0')).toHaveTextContent('200 kcal');
+  expect(screen.getByTestId('numbers-0')).toHaveTextContent('200');
 });
 
 test('an own food with nothing in it is not sent: the form says to check the name and the numbers', async () => {
@@ -264,17 +264,14 @@ describe('review', () => {
     expect(screen.getByRole('button', { name: t('meal.search.add', { name: 'Rice' }) })).toBeOnTheScreen();
   });
 
-  test('a full meal takes no barcode either: the scan is gone', async () => {
+  // K1 (Evre 7 A): the meal screen has no "full" state any more (it adds one food at a time); a picker told its list is full (the
+  // recipe's ingredients) still takes no barcode, and that is what is held here.
+  test('a full list takes no barcode either: the scan is gone', async () => {
     await render(
       <ThemeProvider scheme="light">
-        <MealScreen />
+        <FoodPicker full onFood={jest.fn()} />
       </ThemeProvider>,
     );
-    await act(async () => {});
-    for (let i = 0; i < 50; i++) {
-      await act(async () => fireEvent.press(screen.getByRole('button', { name: t('meal.barcode.scan') })));
-      await scan('5000112548167');
-    }
     expect(screen.queryByRole('button', { name: t('meal.barcode.scan') })).toBeNull();
-  }, FIFTY_ITEMS_MS);
+  });
 });

@@ -153,3 +153,15 @@ describe.each(Object.entries(palettes))('%s palette: a soft accent ground that i
     expect(contrast(p.accent, p.background)).toBeGreaterThanOrEqual(3);
   });
 });
+
+// Evre 7 A: the macro colours are drawn as dots and bars beside their letters, on the page and on a card (never inside the decision block).
+describe.each(Object.entries(palettes))('%s palette: the macro colours', (_, p) => {
+  test.each(['macroProtein', 'macroCarbs', 'macroFat'] as const)('%s reaches 4.5:1 on background and surface', (macro) => {
+    expect(contrast(p[macro], p.background)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(p[macro], p.surface)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  test('the three macro colours are three different colours', () => {
+    expect(new Set([p.macroProtein, p.macroCarbs, p.macroFat]).size).toBe(3);
+  });
+});

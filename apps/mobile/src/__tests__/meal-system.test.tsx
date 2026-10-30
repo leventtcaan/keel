@@ -52,7 +52,7 @@ const YOGURT: Schemas['Suggestion'] = { foodId: 'fdc-yogurt', name: 'Greek yogur
 const YESTERDAY_LUNCH: Schemas['Meal'] = {
   id: 'm-lunch',
   clientId: 'c-lunch',
-  eatenAt: '2026-09-28T10:10:00Z',
+  eatenAt: new Date(2026, 8, 28, 12, 10).toISOString(),
   slot: 'LUNCH',
   items: [{ foodId: 'f1', name: 'Chicken rice bowl', amount: { quantity: 1, unit: 'bowl' } as never, kcal: R(610, 720), proteinG: R(40, 50) }],
   kcal: R(610, 720),
@@ -89,7 +89,8 @@ const mockRecord = jest.fn(async (_record: unknown) => true);
 const mockBack = jest.fn();
 const mockGET = jest.fn(async (path: string, init?: { params?: { query?: { day?: string } } }) => {
   if (path === '/v1/meals') {
-    if (init?.params?.query?.day === '2026-09-28') return ok(mockYesterday);
+    // The range read (no day) is the last two weeks: what the past-meal row and Recent rest on.
+    if (init?.params?.query?.day === undefined) return ok(mockYesterday);
     return ok(mockEdit === undefined ? [] : [EDITED]);
   }
   if (path === '/v1/foods/recent') return ok(mockRecent);
@@ -98,12 +99,13 @@ const mockGET = jest.fn(async (path: string, init?: { params?: { query?: { day?:
 const EDITED: Schemas['Meal'] = { ...YESTERDAY_LUNCH, id: 'm-edit', clientId: 'c-edit', eatenAt: '2026-09-29T10:10:00Z' };
 jest.mock('expo-crypto', () => ({ randomUUID: () => jest.requireActual<typeof import('node:crypto')>('node:crypto').randomUUID() }));
 jest.mock('expo-router', () => ({
-  router: { back: () => mockBack(), push: jest.fn() },
+  router: { back: () => mockBack(), push: jest.fn(), dismissTo: jest.fn() },
   useLocalSearchParams: () => (mockEdit === undefined ? {} : { edit: mockEdit, day: '2026-09-29' }),
 }));
 const mockServices = {
   api: { POST: mockPOST, GET: mockGET, PUT: jest.fn(), DELETE: jest.fn(async (_path: string, _init?: unknown) => ({ response: new Response(null, { status: 204 }) })) },
-  queue: { record: mockRecord },
+  queue: { record: mockRecord, drain: jest.fn(async () => {}) },
+  mealRecords: async () => [],
   takeBack: jest.fn(),
   consents: { granted: async () => true, remember: jest.fn(async () => {}) },
   mealStart: (day: string) => readMealStart({ api: mockServices.api as never, mealRecords: async () => [] }, day),
@@ -240,10 +242,10 @@ describe('units are a track of their own, not the slot chips', () => {
     await search('egg');
     await add(PORTIONED);
     expect(amountField(PORTIONED).props.value).toBe('1');
-    expect(screen.getByTestId('numbers-0')).toHaveTextContent('72 kcal');
+    expect(screen.getByTestId('numbers-0')).toHaveTextContent('72');
     await act(async () => fireEvent.press(button(t('meal.item.unitSpoken', { name: PORTIONED.name, unit: 'g' }))));
     expect(amountField(PORTIONED).props.value).toBe('50');
-    expect(screen.getByTestId('numbers-0')).toHaveTextContent('72 kcal');
+    expect(screen.getByTestId('numbers-0')).toHaveTextContent('72');
     await act(async () => fireEvent.press(button(t('meal.item.unitSpoken', { name: PORTIONED.name, unit: 'oz' }))));
     expect(amountField(PORTIONED).props.value).toBe('2');
   });
@@ -259,10 +261,10 @@ describe('units are a track of their own, not the slot chips', () => {
     await add(PORTIONED);
     await act(async () => fireEvent.press(button(t('meal.item.quantitySpoken', { quantity: 2 }))));
     expect(amountField(PORTIONED).props.value).toBe('2');
-    expect(screen.getByTestId('numbers-0')).toHaveTextContent('144 kcal');
+    expect(screen.getByTestId('numbers-0')).toHaveTextContent('144');
     await act(async () => fireEvent.press(button(t('meal.item.quantitySpoken', { quantity: 0.5 }))));
     expect(amountField(PORTIONED).props.value).toBe('0.5');
-    expect(screen.getByTestId('numbers-0')).toHaveTextContent('36 kcal');
+    expect(screen.getByTestId('numbers-0')).toHaveTextContent('36');
   });
 
   test('the units are the item\'s own chips, one per portion, inside its card and apart from the slot row (K-1063)', async () => {
@@ -277,7 +279,7 @@ describe('units are a track of their own, not the slot chips', () => {
 
   test('a unit and a slot both say which is selected', async () => {
     await show();
-    expect(button(t('food.slot.LUNCH'))).toBeSelected();
+    expect(screen.getByTestId('slot-LUNCH')).toBeSelected();
     await search('rice');
     await add(RICE);
     expect(button(t('meal.item.unitSpoken', { name: RICE.name, unit: '1 bowl' }))).toBeSelected();
@@ -295,36 +297,47 @@ describe('units are a track of their own, not the slot chips', () => {
 });
 
 describe('buttons by role', () => {
-  test('Scan is a text button with the barcode beside it', async () => {
+  // K1 (Evre 7 A): Scan was a text button with the barcode beside it; it is the barcode icon at the end of the search box, still one named button.
+  test('Scan is the barcode icon in the search box: a button of its own, no fill, no outline, named for VoiceOver', async () => {
     await show();
     const scan = button(t('meal.barcode.scan'));
     expect(flat(scan).backgroundColor).toBeUndefined();
     expect(flat(scan).borderWidth ?? 0).toBe(0);
-    expect(flat(screen.getByText(t('meal.barcode.scanShort'))).color).toBe(p.accent);
     expect(screen.getByTestId('scan-icon')).toBeOnTheScreen();
+    expect(screen.queryByText(t('meal.barcode.scanShort'))).toBeNull();
   });
 
-  test('Remove is a destructive text button, and it takes the item out', async () => {
+  test('Quick add and Create food are icon buttons on a filled pill, not text links', async () => {
+    await show();
+    for (const name of [t('meal.quickAdd.open'), t('meal.own.open')]) {
+      const pill = button(name);
+      expect(flat(pill).backgroundColor).toBe(p.surface);
+      expect(flat(pill).borderWidth ?? 0).toBe(0);
+    }
+  });
+
+  // K1 (Evre 7 A): Remove was the red text button of a food's card ("take the item out"); the portion step of a new food has a quiet x instead
+  // (nothing was added yet, so there is nothing to remove). The destructive Remove stays in a correction's sheet (meal-edit-screen.test.tsx).
+  test('the portion step\'s way out is a quiet x: no fill, no warning colour; closing adds nothing', async () => {
     await show();
     await search('rice');
     await add(RICE);
-    const remove = button(t('meal.item.removeSpoken', { name: RICE.name }));
-    expect(flat(remove).backgroundColor).toBeUndefined();
-    expect(flat(remove).borderWidth ?? 0).toBe(0);
-    expect(flat(screen.getByText(t('meal.item.remove'))).color).toBe(p.warn);
-    await act(async () => fireEvent.press(remove));
+    const close = screen.getByTestId('sheet-close');
+    expect(flat(close).backgroundColor).toBeUndefined();
+    expect(screen.queryByText(t('meal.item.remove'))).toBeNull();
+    await act(async () => fireEvent.press(close));
     expect(screen.queryByLabelText(t('meal.item.amount', { name: RICE.name }))).toBeNull();
+    expect(mockRecord).not.toHaveBeenCalled();
   });
 
-  test('"Log it" is the one primary of a meal being put together, and nothing else is filled or outlined', async () => {
+  test('"Add to Lunch" is the one primary of the portion step, and nothing else is filled or outlined', async () => {
     await show();
     await search('rice');
     await add(RICE);
-    expect(primaries().map((node) => node.props.accessibilityLabel)).toEqual([t('meal.save')]);
-    // No outlined pill: the only outlined things are choices (a choice, not an action): the four slot chips, and (K-1063) the item's portion chips.
+    expect(primaries().map((node) => node.props.accessibilityLabel)).toEqual([expect.stringMatching(/^Add to Lunch/)]);
+    // No outlined pill: the only outlined things are choices (a choice, not an action): the item's portion chips and the quantity chips.
     const outlined = screen.getAllByRole('button').filter((node) => ((flat(node).borderWidth as number | undefined) ?? 0) > 0);
     expect(outlined.map((node) => node.props.accessibilityLabel)).toEqual([
-      ...(['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK'] as const).map((slot) => t(`food.slot.${slot}`)),
       t('meal.item.unitSpoken', { name: RICE.name, unit: '1 bowl' }),
       t('meal.item.unitSpoken', { name: RICE.name, unit: t('meal.item.grams') }),
       // The quantity chips (half, 1, 2, 3) are choices too.
@@ -332,11 +345,11 @@ describe('buttons by role', () => {
     ]);
   });
 
-  test('nothing is picked yet: no "Log it", so no primary at all — Same as yesterday is a row, not a button', async () => {
+  test('nothing is picked yet and nothing logged: no primary at all — the past meal is a row, not a button', async () => {
     mockYesterday = [YESTERDAY_LUNCH];
     await show();
-    expect(screen.getByText(t('food.repeat.title'))).toBeOnTheScreen();
-    expect(screen.queryByRole('button', { name: t('meal.save') })).toBeNull();
+    expect(screen.getByText(t('meal.again.yesterday', { slot: t('food.slot.LUNCH').toLowerCase() }))).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: /^Add to / })).toBeNull();
     expect(primaries()).toHaveLength(0);
   });
 
@@ -351,27 +364,26 @@ describe('buttons by role', () => {
 });
 
 describe('results and recent foods are grouped list rows', () => {
-  test('a result row: the name, one kcal number for its portion under it, a press opens the portion step, the plus logs it', async () => {
+  test('a result row: the name, one kcal number for its portion at its end, the macros as marks, a press opens the portion step, the plus logs it', async () => {
     await show();
     await search('egg');
     const row = button(t('meal.search.add', { name: EGG.name }));
     expect(screen.getByText(EGG.name)).toBeOnTheScreen();
-    expect(screen.getByText(`Farm · ${t('meal.search.per100gSingle', { kcal: 145 })}`)).toBeOnTheScreen();
-    expect(screen.getByText(t('meal.search.per100gSingle', { kcal: 130 }))).toBeOnTheScreen();
-    expect(flat(row).minHeight).toBe(tokens.size.row); // as tall as a ListRow
+    expect(screen.getByText(`Farm · ${t('meal.search.per100gShort')}`)).toBeOnTheScreen();
+    expect(screen.getByTestId('result-fdc-9-kcal')).toHaveTextContent(t('food.single.kcal', { value: 145 }));
+    expect(flat(row).minHeight).toBeUndefined();
     await act(async () => fireEvent.press(row));
     expect(amountField(EGG)).toBeOnTheScreen();
     expect(mockRecord).not.toHaveBeenCalled();
   });
 
-  test('Recent: its own tab beside Frequent, Favorites and Log again; a row with its amount and one kcal number, the plus logs it', async () => {
+  test('Recent: a row with its amount and one kcal number, the plus logs it, in one list with the others (no tabs)', async () => {
     mockRecent = [YOGURT];
+    mockYesterday = [{ ...YESTERDAY_LUNCH, items: [{ ...YESTERDAY_LUNCH.items[0], foodId: 'fdc-yogurt', name: 'Greek yogurt' }] }];
     await show();
-    expect(button(t('meal.browse.recent'))).toBeSelected();
-    expect(button(t('meal.browse.frequent'))).not.toBeSelected();
-    const row = button(t('meal.search.add', { name: 'Greek yogurt' }));
-    expect(flat(row).minHeight).toBe(tokens.size.row);
-    expect(screen.getByText(new RegExp(single(150, 170)))).toBeOnTheScreen();
+    expect(screen.getByText(t('meal.home.recent'))).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'Frequent' })).toBeNull();
+    expect(screen.getByTestId('recent-fdc-yogurt-kcal')).toHaveTextContent(single(150, 170));
     const plus = button(t('food.suggestions.log', { name: 'Greek yogurt' }));
     expect(screen.getByTestId('recent-fdc-yogurt-log')).toBeOnTheScreen(); // the plus says a press adds
     await act(async () => fireEvent.press(plus));
@@ -382,28 +394,38 @@ describe('results and recent foods are grouped list rows', () => {
     });
   });
 
-  test('Same as yesterday: a row with the foods and one kcal number, one press logs it again', async () => {
+  test('A past meal: a row with the foods and one kcal number, one press logs it again', async () => {
     mockYesterday = [YESTERDAY_LUNCH];
     await show();
-    const row = button(t('food.repeat.spoken', { slot: t('food.slot.LUNCH'), items: 'Chicken rice bowl' }));
+    const row = button(t('meal.again.spoken', { slot: t('food.slot.LUNCH').toLowerCase(), items: 'Chicken rice bowl' }));
     expect(screen.getByText(single(610, 720))).toBeOnTheScreen();
     await act(async () => fireEvent.press(row));
     expect(mockRecord).toHaveBeenCalledWith({ kind: 'meal', body: expect.objectContaining({ repeatOf: 'm-lunch' }) });
   });
 });
 
-describe('the estimate card', () => {
-  test('one food shows its own numbers, one kcal number and its macros; a second brings the meal total, its ranges under Details (ADR-090 #5)', async () => {
+// K1 (Evre 7 A): "a second food brings the meal total" lived in the log screen, where a meal was put together item by item. One food shows its own
+// numbers in its portion step (here); a meal of several items is the items screen (meal-screen.test.tsx › a meal the coach read).
+describe('the portion step\'s numbers', () => {
+  test('one food shows its own numbers: one kcal number and its macros as a bar and three figures', async () => {
     await show();
     await search('rice');
     await add(RICE);
-    expect(screen.getByTestId('numbers-0')).toHaveTextContent(single(170, 240));
+    expect(screen.getByTestId('numbers-0')).toHaveTextContent('205');
     expect(screen.queryByTestId('estimate')).toBeNull();
+  });
+
+  test('a portioned food draws the bar and the three figures with their names', async () => {
+    mockPOST.mockImplementation(async (path: string, init: { body: never }) => {
+      if (path === '/v1/foods/search') return ok([PORTIONED]);
+      if (path === '/v1/food-estimates') return ok(estimateOf(init.body));
+      return refused(404, 'NOT_FOUND');
+    });
+    await show();
     await search('egg');
-    await add(EGG);
-    expect(screen.getByTestId('estimate')).toBeOnTheScreen();
-    expect(screen.getByText(t('meal.estimate.title'))).toBeOnTheScreen();
-    expect(screen.getByTestId('estimate-kcal')).toHaveTextContent(single(380, 530));
-    expect(screen.queryByText(`${t('format.range', { low: 380, high: 530 })} ${t('food.budget.kcalUnit')}`)).toBeNull();
+    await add(PORTIONED);
+    expect(screen.getByTestId('macro-bar')).toBeOnTheScreen();
+    for (const macro of ['protein', 'carbs', 'fat'] as const) expect(within(screen.getByTestId(`macro-figure-${macro}`)).getByText(t(`food.totals.${macro}`))).toBeOnTheScreen();
+    expect(within(screen.getByTestId('macro-figure-protein')).getByText('6 g')).toBeOnTheScreen();
   });
 });

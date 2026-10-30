@@ -11,6 +11,35 @@ type Slot = components['schemas']['MealSlot'];
 
 export const ALL_SLOTS: Slot[] = ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK'];
 
+const MINUTES_A_DAY = 24 * 60;
+const minutesOfDay = (at: Date) => at.getHours() * 60 + at.getMinutes();
+/** The distance between two times of day, the short way round the clock. */
+const gapBetween = (a: number, b: number) => {
+  const apart = Math.abs(a - b);
+  return Math.min(apart, MINUTES_A_DAY - apart);
+};
+
+/**
+ * The meal a new log is most likely for (Evre 7 A): from the user's own pattern when there is one — the slot whose usual time of day
+ * (the median of its logs in `history`, at least `slot_pattern_min_logs` of them) is nearest to now and within `slot_pattern_max_gap_min` —
+ * else `fallback`, the meal the clock says. Someone who has lunch at 15:00 gets Lunch at 14:30, not Snack.
+ */
+export function likelySlot(history: { slot: Slot; eatenAt: string }[], now: Date, fallback: Slot): Slot {
+  const nowAt = minutesOfDay(now);
+  let best: { slot: Slot; gap: number } | null = null;
+  for (const slot of ALL_SLOTS) {
+    const times = history
+      .filter((meal) => meal.slot === slot)
+      .map((meal) => minutesOfDay(new Date(meal.eatenAt)))
+      .sort((a, b) => a - b);
+    if (times.length < foodParams.slotPatternMinLogs) continue;
+    const usual = times[Math.floor(times.length / 2)];
+    const gap = gapBetween(usual, nowAt);
+    if (best === null || gap < best.gap) best = { slot, gap };
+  }
+  return best !== null && best.gap <= foodParams.slotPatternMaxGapMin ? best.slot : fallback;
+}
+
 /** The slots of the user's day, in the day's order: those of `history` (and `also`); all four until the pattern shows at least two. */
 export function usedSlots(history: { slot: Slot }[], also: Slot[] = []): Slot[] {
   const seen = new Set<Slot>([...history.map((meal) => meal.slot), ...also]);

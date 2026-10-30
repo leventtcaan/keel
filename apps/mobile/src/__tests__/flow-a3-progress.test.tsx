@@ -58,6 +58,8 @@ const mockServices = {
   photos: { checks: async () => [], forget: async () => {} },
   // drain: what waits on the phone is sent before Progress reads (K-1051); nothing waits here.
   queue: { record: jest.fn(async () => true), drain: async () => {} },
+  mealRecords: async () => [],
+  recentFoods: async () => [],
   consents: { granted: async () => true, remember: jest.fn(async () => {}) },
   report: jest.fn(),
 };

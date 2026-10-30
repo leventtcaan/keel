@@ -44,6 +44,14 @@ const light = {
   decisionLine: '#2A2F2F',
   /** `edge` inside the block. */
   decisionEdge: '#7E8888',
+  /**
+   * The three macros, the same everywhere a number of them is drawn (a food row, the portion step, the day's bars; Evre 7 A): protein in the
+   * brand's turquoise, carbs amber, fat violet. Each is 4.5:1 on the page and on a surface, and always beside its letter or name: colour
+   * alone never says which macro it is.
+   */
+  macroProtein: '#007684',
+  macroCarbs: '#A15C00',
+  macroFat: '#5B4FC4',
   /** The floating "+"'s shadow, the one control that sits over the content (K-1050). */
   shadow: '#0B0C0C',
 } as const;
@@ -78,6 +86,9 @@ const dark: Record<keyof typeof light, string> = {
   decisionMuted: '#4C5555',
   decisionLine: '#C9D0D0',
   decisionEdge: '#727D7D',
+  macroProtein: '#35D7CF',
+  macroCarbs: '#F2A33A',
+  macroFat: '#9C8CFF',
   shadow: '#000000',
 };
 
