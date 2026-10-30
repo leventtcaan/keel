@@ -18,7 +18,7 @@ import { workoutParams } from '@/train/params';
 import { dayName, exerciseName } from '@/train/program';
 import { repCount } from '@/train/reps';
 import { sessionMoves } from '@/train/workout';
-import { type UnitSystem, loadValue, volumeValue } from '@/units/units';
+import { type UnitSystem, formatLoad, volumeValue } from '@/units/units';
 
 import { type TodayCard as Card, type TodayParts, cardioLoggedToday, cardioToday } from './todayWorkout';
 import { nextSession, weekdayOf } from './week';
@@ -30,7 +30,7 @@ const FIRST_MOVES = 3;
 
 /**
  * The next session's target as the server set it, in the user's unit, written the way the session writes a set
- * (train/session.ts setText): a load ("72.5 × 9", prototype `#home`, the unit the Train tab's), an added load with its
+ * (train/session.ts setText): a load with its unit ("72.5 kg × 9", as the Train tab writes it), an added load with its
  * plus ("+10 × 7"), and the body alone (a bodyweight move, or a weighted one with nothing added) as its sets and reps
  * ("3 × 7"), never "0 ×". Before a target is known, the plan ("3 × 6-10").
  */
@@ -39,7 +39,7 @@ function targetOf(planned: Schemas['PlannedExercise'], move: Schemas['Exercise']
   if (reps === undefined) return t('train.setsReps', { sets: planned.sets, reps: repCount(planned.reps) });
   if (kg === undefined || kg === 0 || move?.load === 'BODYWEIGHT') return t('train.setsReps', { sets: planned.sets, reps });
   const key = move?.load === 'BODYWEIGHT_PLUS_EXTERNAL' ? 'thisWeek.today.added' : 'thisWeek.today.target';
-  return t(key, { load: loadValue(kg, units), reps });
+  return t(key, { load: formatLoad(kg, units), reps });
 }
 
 /** "8,420 kg": the load lifted, the server's sum, whole, in the user's unit. */

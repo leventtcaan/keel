@@ -4,14 +4,16 @@
  * history does not bring it back. Records and the estimated max are derived from the sets each time (ADR-033): an edit
  * changes them by itself.
  */
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 
 import WorkoutEditScreen from '@/app/workout-edit';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { ThemeProvider } from '@/theme/theme';
 import type { Move } from '@/train/trainData';
-import { weightInput } from '@/units/units';
+import { palettes, tokens } from '@/theme/tokens';
+import { loadText } from '@/train/session';
 
 type Schemas = components['schemas'];
 type Answer = { data?: unknown; error?: { code: string; message: string }; response: Response };
@@ -155,7 +157,7 @@ test('a forgotten set is added to one of the moves, on the server, and the sessi
 
 test("the add form starts from the move's last work set of the session (simulator: empty fields did not show)", async () => {
   await show();
-  expect(screen.getByLabelText(t('workout.loadLabel', { unit: t('units.kgUnit') })).props.value).toBe(weightInput(80, 'METRIC'));
+  expect(screen.getByLabelText(t('workout.loadLabel', { unit: t('units.kgUnit') })).props.value).toBe(loadText(80, 'METRIC'));
   expect(screen.getByLabelText(t('workout.repsLabel')).props.value).toBe('8');
   expect(screen.getByRole('button', { name: '1' })).toBeSelected();
 });
@@ -298,4 +300,42 @@ test('a superset in the session: each move says its partner', async () => {
   await show();
   expect(screen.getByText(t('superset.with', { names: squatName }))).toBeOnTheScreen();
   expect(screen.getByText(t('superset.with', { names: benchName }))).toBeOnTheScreen();
+});
+
+// Final walk of phase 7 (#684): the loads read as the rest of the app reads them, and the controls look like the app's.
+describe('a past session, in pounds and in the app\'s own controls (final pass 3)', () => {
+  test('in pounds the add form starts from the load read to the rack, not a raw decimal (90 kg is 200 lb, not 198.4)', async () => {
+    mockUnits = 'IMPERIAL';
+    mockWorkout = async () => ok({ ...WORKOUT, sets: [set('s1', 'bench_press', 'WORKING', 90, 8)] });
+    await show();
+    const field = screen.getByLabelText(t('workout.loadLabel', { unit: t('units.lbUnit') }));
+    expect(field.props.value).toBe('200');
+    expect(field.props.value).toBe(loadText(90, 'IMPERIAL'));
+  });
+
+  test('left as shown, the rack-read load is still saved as the kg it came from', async () => {
+    mockUnits = 'IMPERIAL';
+    mockWorkout = async () => ok({ ...WORKOUT, sets: [set('s1', 'bench_press', 'WORKING', 90, 8)] });
+    await show();
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('workout.log', { number: 2 }) })));
+    expect(mockPOST).toHaveBeenCalledWith('/v1/workouts/{id}/sets', expect.objectContaining({ body: expect.objectContaining({ loadKg: 90 }) }));
+  });
+
+  const words = (button: ReturnType<typeof screen.getByRole>) => StyleSheet.flatten(within(button).getByText(/./).props.style);
+
+  test('Delete is a destructive text button; asked, "Yes, delete it" and "Keep it" are text buttons of one height, side by side', async () => {
+    await show();
+    const first = screen.getAllByRole('button', { name: /^Delete / })[0];
+    expect(words(first).color).toBe(palettes.light.warn);
+    await act(async () => fireEvent.press(first));
+    const yes = screen.getByRole('button', { name: t('sessionEdit.confirmDelete') });
+    const keep = screen.getByRole('button', { name: t('sessionEdit.keep') });
+    expect(words(yes).color).toBe(palettes.light.warn);
+    expect(words(keep).color).toBe(palettes.light.accent);
+    for (const button of [yes, keep]) {
+      const style = StyleSheet.flatten(button.props.style);
+      expect(style.minHeight).toBe(tokens.size.touch);
+      expect(style.backgroundColor).toBeUndefined();
+    }
+  });
 });

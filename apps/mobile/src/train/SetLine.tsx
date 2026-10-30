@@ -31,14 +31,14 @@ export function SetLine({ set, line, asking, busy, problem, problemOccurrence, o
   const { color } = useTheme();
   const action = asking ? (
     <View style={styles.row}>
-      <Button label={t('sessionEdit.confirmDelete')} variant="warn" size="sm" onPress={() => onDelete(set)} disabled={busy} />
-      <Button label={t('sessionEdit.keep')} variant="ghost" size="sm" onPress={onKeep} disabled={busy} />
+      <Button label={t('sessionEdit.confirmDelete')} variant="destructive" size="sm" onPress={() => onDelete(set)} disabled={busy} />
+      <Button label={t('sessionEdit.keep')} variant="text" size="sm" onPress={onKeep} disabled={busy} />
     </View>
   ) : (
     <Button
       label={t('sessionEdit.delete')}
       accessibilityLabel={t('sessionEdit.deleteSpoken', { set: line })}
-      variant="ghost"
+      variant="destructive"
       size="sm"
       onPress={() => onAsk(set.id)}
       disabled={busy}

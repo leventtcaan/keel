@@ -299,7 +299,7 @@ test('Settings opens from Today, over the tabs (K-309, prototype 5.2); its way b
 
 // One back pattern for the screens pushed onto the stack: the system header with a back button naming the screen before it; no "Back" in the
 // screen. Each is opened cold from a link, so the tabs (This week) sit underneath, and each can be left.
-test.each(['/settings', '/settings-detail?part=sources', '/edit-program', '/build-program', '/import', '/call', '/check-in', '/share', '/food', '/state'])(
+test.each(['/settings', '/settings-detail?part=sources', '/edit-program', '/build-program', '/import', '/call', '/check-in', '/share', '/food', '/state', '/workout-edit?workout=w1'])(
   'a pushed screen (%s) has the system back, named for the screen before it, and none of its own',
   async (url) => {
     const router = renderRouter(APP, { initialUrl: url });

@@ -14,6 +14,7 @@ import { TextField } from '@/components/TextField';
 import { t } from '@/copy';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { NoAnswer } from '@/sync/queue';
+import { useSaved } from '@/saved/saved';
 import { newClientId } from '@/sync/send';
 import type { LocalRecord } from '@/sync/store';
 import { FocusMode, useTheme } from '@/theme/theme';
@@ -98,6 +99,7 @@ function Session() {
   const { day: opened } = useLocalSearchParams<{ day?: string }>();
   const units = useUnits();
   const { color } = useTheme();
+  const saved = useSaved();
   const [data, setData] = useState<TrainData | null>(null);
   const [own, setOwn] = useState<Move[]>([]);
   const [records, setRecords] = useState<LocalRecord[] | null>(null);
@@ -144,6 +146,9 @@ function Session() {
   const [left, setLeft] = useState<string[]>([]);
   // The last skip, swap or delete, said, and how to take it back (K-972).
   const [undo, setUndo] = useState<{ said: string; run: () => void } | null>(null);
+  // The room the page gives the bars that stand over its foot: the rest timer in the dock and the Undo overlay, as measured.
+  const [restHeight, setRestHeight] = useState(0);
+  const [undoHeight, setUndoHeight] = useState(0);
   // A set done being corrected (K-972): the set and its number as shown.
   const [editing, setEditing] = useState<{ set: components['schemas']['NewSet']; number: string } | null>(null);
   // A session open longer than the server keeps one open (unfinished_session_close_hours, K-961) shows no time: a day-old
@@ -169,6 +174,8 @@ function Session() {
   const [unclean, setUnclean] = useState<Set<string>>(() => new Set());
   const [sessionNote, setSessionNote] = useState('');
   const [busy, setBusy] = useState(false);
+  // The finish being kept (it can take seconds): said on its button, so the screen is never blank while it works.
+  const [closing, setClosing] = useState(false);
   const [problem, setProblem] = useState<{ row: string; text: string } | null>(null);
   // Two taps in one frame, before `busy` disables the button, must not log the set twice.
   const saving = useRef(false);
@@ -178,6 +185,12 @@ function Session() {
   const [failed, setFailed] = useState(false);
   // The "Add a move" search: null while closed, what is typed while open.
   const [adding, setAdding] = useState<string | null>(null);
+  // The page has been taken to the open "Add a move" panel: once per opening.
+  const panelScrolled = useRef(false);
+  const addOpen = adding !== null;
+  useEffect(() => {
+    if (!addOpen) panelScrolled.current = false;
+  }, [addOpen]);
   // Supersets (K-416, ADR-035): the ones read back from the sets, those made here before a set (by id), those undone.
   const [formed, setFormed] = useState<Map<string, string[]>>(() => new Map());
   const [unlinked, setUnlinked] = useState<string[]>([]);
@@ -484,10 +497,16 @@ function Session() {
     setBusy(false);
   };
 
+  /** Finish with no set logged at all: the person goes back to the week, and is told that nothing was kept, not left to wonder. */
+  const leaveEmpty = () => {
+    saved({ lead: t('workout.nothingSaved') });
+    router.back();
+  };
   const finish = async () => {
     if (saving.current || active === null) return;
     saving.current = true;
     setBusy(true);
+    setClosing(true);
     try {
       const end = new Date();
       // The time paused (K-998), within the session's length: the summary's minutes and Health's are the active time.
@@ -507,13 +526,14 @@ function Session() {
           void healthWriting.workoutFinished({ id: active.clientId, start: new Date(active.startedAt), end: new Date(end.getTime() - pausedMs) });
         }
         router.replace({ pathname: '/workout-end', params: { workout: active.clientId } });
-      } else router.back();
+      } else leaveEmpty();
     } catch (error) {
       named(error);
       setProblem({ row: FINISH, text: t('workout.finishFailed') });
     } finally {
       saving.current = false;
       setBusy(false);
+      setClosing(false);
     }
   };
   const finishProblem = problem !== null && problem.row === FINISH ? <ProblemText style={[styles.text, { color: color.text }]} occurrence={problem}>{problem.text}</ProblemText> : null;
@@ -540,6 +560,7 @@ function Session() {
       // Saved once: a clientId already on the phone (a try that said it failed) is not saved twice (queue.record).
       await queue.record({ kind: 'cardio', body: { clientId, day: sessionDay, minutes: cardioMinutes, source: 'MANUAL' } });
       setCardioDone(true);
+      setUndo(null);
       setProblem((said) => (said?.row === CARDIO ? null : said));
       // Said, not only shown (K-815).
       announce(t('workout.cardio.loggedSaid', { minutes: cardioMinutes }));
@@ -579,16 +600,14 @@ function Session() {
     setBusy(false);
   };
   // Later today and Skip today send nothing: no catch-up is made (U7, ADR-074 #3); a cardio done later is logged from "+".
+  // A choice is said in the Undo bar, which takes it back (the step is as it was); a Done is said on the step, with its own Undo.
   const chooseCardio = (choice: 'later' | 'skipped') => {
+    const said = t(choice === 'later' ? 'workout.cardio.laterSaid' : 'workout.cardio.skipSaid');
     setCardioChoice(choice);
-    announce(t(choice === 'later' ? 'workout.cardio.laterSaid' : 'workout.cardio.skipSaid'));
+    setUndo({ said, run: () => setCardioChoice(null) });
+    announce(said);
   };
-  const cardioSaid =
-    cardioStatus === null
-      ? null
-      : cardioStatus === 'done'
-        ? t('workout.cardio.loggedSaid', { minutes: cardioMinutes ?? 0 })
-        : t(cardioStatus === 'later' ? 'workout.cardio.laterSaid' : 'workout.cardio.skipSaid');
+  const cardioSaid = cardioStatus === 'done' ? t('workout.cardio.loggedSaid', { minutes: cardioMinutes ?? 0 }) : null;
   const cardioUndo = !cardioUndoable ? null : (
     <Pressable accessibilityRole="button" accessibilityLabel={t('workout.cardio.undoLabel')} onPress={() => void undoCardio()} disabled={busy} style={styles.link}>
       <Text style={[styles.text, { color: color.accent }]}>{t('workout.undo')}</Text>
@@ -607,7 +626,7 @@ function Session() {
   const movesLeft = entries.filter((_, i) => plans[i] != null && plans[i]?.current !== null && plans[i]?.skippedMove !== true).length;
   const onFinish = () => {
     setEnding(false);
-    if (active === null) router.back();
+    if (active === null) leaveEmpty();
     else if (worked.length === 0) void finish();
     else if (movesLeft > 0)
       askFirst({
@@ -757,7 +776,7 @@ function Session() {
     ) : null;
   const typedName = adding?.trim() ?? '';
   const createButton =
-    typedName === '' ? null : <Button label={t('workout.add.create', { name: typedName })} variant="ghost" size="sm" onPress={() => setCreating(typedName)} />;
+    typedName === '' ? null : <Button label={t('workout.add.create', { name: typedName })} variant="text" size="sm" onPress={() => setCreating(typedName)} />;
   const addPanel =
     day === null ? null : creating !== null ? (
       <OwnMoveForm
@@ -770,25 +789,39 @@ function Session() {
     ) : adding === null ? (
       <Button label={t('workout.add.open')} variant="ghost" size="sm" onPress={() => setAdding('')} />
     ) : (
-      <View style={styles.list}>
-        <TextField label={t('workout.add.search')} value={adding} onChangeText={setAdding} onSearch={() => undefined} /* live search: the key only closes the keyboard */ />
-        {/* Above the list: listed whole, its foot is a long way down (K-1013). */}
-        <Button label={t('workout.add.close')} variant="ghost" size="touch" onPress={() => setAdding(null)} />
+      <View
+        testID="add-panel"
+        style={styles.list}
+        onLayout={(event: LayoutChangeEvent) => {
+          // Opened low on the page, behind the dock: the page goes to the panel once, with the keyboard up (autoFocus), and a
+          // list that grows as the person types does not pull it again.
+          if (panelScrolled.current) return;
+          panelScrolled.current = true;
+          const to = Math.max(0, event.nativeEvent.layout.y - tokens.space.sm);
+          frame.current.scrolled = to;
+          scroller.current?.scrollTo({ y: to, animated: false });
+        }}>
+        <TextField label={t('workout.add.search')} value={adding} onChangeText={setAdding} onSearch={() => undefined} /* live search: the key only closes the keyboard */ autoFocus />
+        {/* Create and Close together right under the field (K-1013: listed whole, a list's foot is a long way down). */}
+        <View testID="add-actions" style={styles.addActions}>
+          {createButton}
+          <View style={styles.grow} />
+          <Button label={t('workout.add.close')} variant="text" size="sm" onPress={() => setAdding(null)} />
+        </View>
         {found.map((m) => (
           <Pressable
             key={m.id}
             accessibilityRole="button"
             accessibilityLabel={t('workout.add.pick', { name: exerciseName(m.id, moves) })}
             onPress={() => addMove(m.id)}
-            style={styles.move}>
-            <Text style={[styles.text, { color: color.text }]}>{exerciseName(m.id, moves)}</Text>
+            style={({ pressed }) => [styles.move, { backgroundColor: color.surface }, pressed && styles.dim]}>
+            <MoveThumb equipment={m.equipment} />
+            <Text style={[styles.text, styles.grow, { color: color.text }]}>{exerciseName(m.id, moves)}</Text>
           </Pressable>
         ))}
         {addNote}
-        {createButton}
       </View>
     );
-
 
   const name = (id: string) => exerciseName(id, moves);
   /** Skips kept with the workout once there is one; the last one can be undone. No rest goes on through a skip. */
@@ -987,6 +1020,8 @@ function Session() {
       onPick={(id) => {
         setPicked(id);
         setEditing(null);
+        // What was said on the cardio step stays with it.
+        if (cardioOpen) setUndo(null);
         setCardioOpen(false);
       }}
     />
@@ -1280,7 +1315,7 @@ function Session() {
   const cardioChoices =
     cardioMinutes === null || !cardioPending ? null : (
       <>
-        <Button label={t('workout.cardio.done', { minutes: cardioMinutes })} onPress={() => void logCardio()} disabled={busy} />
+        <Button label={t('workout.cardio.done', { minutes: cardioMinutes })} variant={cardioStatus === null ? 'primary' : 'ghost'} onPress={() => void logCardio()} disabled={busy} />
         <View style={styles.pair}>
           <View style={styles.grow}>
             <Button label={t('workout.cardio.later')} variant="ghost" onPress={() => chooseCardio('later')} disabled={busy} />
@@ -1314,12 +1349,16 @@ function Session() {
     ) : day === null && active === null ? null : cardioDue ? (
       <Button label={t('workout.cardio.next')} onPress={openCardio} />
     ) : (
-      <Button label={t('workout.finish')} onPress={onFinish} />
+      <Button label={t(closing ? 'workout.saving' : 'workout.finish')} onPress={onFinish} disabled={busy} busy={closing} />
     );
-  // The last skip, said, with its Undo (K-972): in the page, so nothing in the dock moves.
+  // The last skip, said, with its Undo (K-972): over the foot of the page, above the dock, so it takes no height and nothing under
+  // the finger moves when it comes (final walk of phase 7).
   const undoBar =
-    undo === null ? null : (
-      <View style={[styles.undo, { backgroundColor: color.surface }]}>
+    undo === null || discarded !== null ? null : (
+      <View
+        testID="undo-bar"
+        onLayout={(event: LayoutChangeEvent) => setUndoHeight(event.nativeEvent.layout.height)}
+        style={[styles.undo, styles.overlay, { backgroundColor: color.surface, borderColor: color.line }]}>
         <Text style={[styles.text, styles.grow, { color: color.text }]}>{undo.said}</Text>
         <Pressable accessibilityRole="button" accessibilityLabel={t('workout.undoLabel')} onPress={undoLast} style={styles.link}>
           <Text style={[styles.text, { color: color.accent }]}>{t('workout.undo')}</Text>
@@ -1374,7 +1413,12 @@ function Session() {
   );
   const restShown = pause.pausedAt !== null && discarded === null ? pausedBar : rest !== null ? <RestTimer since={rest} onEnd={endRest} onAdjust={(seconds) => void restAlert.start(rest + seconds * 1000)} /> : null;
   // Built outside the JSX (the raw-text guard reads what is inside it).
-  const restSlot = restShown === null ? null : <View testID="rest-slot">{restShown}</View>;
+  const restSlot =
+    restShown === null ? null : (
+      <View testID="rest-slot" onLayout={(event: LayoutChangeEvent) => setRestHeight(event.nativeEvent.layout.height)}>
+        {restShown}
+      </View>
+    );
   const swapSheet =
     moveId === undefined ? null : <SwapSheet move={name(moveId)} options={swapOptions} onPick={swapTo} onClose={() => setSwapping(false)} />;
   const takenSheet =
@@ -1427,6 +1471,7 @@ function Session() {
         onNote={setSessionNote}
         onFinish={() => void finish()}
         onBack={() => setFinishing(false)}
+        saving={closing}
       />
       {finishProblem}
     </>
@@ -1458,12 +1503,18 @@ function Session() {
   // Finish is on the page whenever something is logged, not only under End: the dock shows the set or Next, and a session that
   // goes on and on (a move that is never done) would have no visible way out (Evre 7, issue 684).
   const dockOffersFinish = !finishing && !cardioShown && ((move !== undefined && row !== null) || nextId !== undefined);
-  const finishLink =
-    active === null || worked.length === 0 || !dockOffersFinish ? null : (
-      <View testID="finish-link" style={styles.finish}>
-        <Button label={t('workout.finish')} variant="text" size="sm" onPress={onFinish} />
-      </View>
-    );
+  // Its place is kept from the start: before the first set it is there unseen and out of reach, so the link arriving moves nothing.
+  const finishShown = active !== null && worked.length > 0 && dockOffersFinish;
+  const finishLink = (
+    <View
+      testID="finish-link"
+      style={[styles.finish, !finishShown && styles.unseen]}
+      pointerEvents={finishShown ? 'auto' : 'none'}
+      accessibilityElementsHidden={!finishShown}
+      importantForAccessibility={finishShown ? 'auto' : 'no-hide-descendants'}>
+      <Button label={t('workout.finish')} variant="text" size="sm" onPress={onFinish} />
+    </View>
+  );
   const sheetBody = discarded !== null ? null : ending ? endSheet : swapping ? swapSheet : takingNow ? takenSheet : finishing ? form : null;
   const closeSheet = () => {
     if (ending) setEnding(false);
@@ -1477,7 +1528,6 @@ function Session() {
       {entries.length > 0 && dots}
       {/* Finish stays in the first view once a set is kept, right under the moves' dots (Evre 7 C2), not at the foot of a long page. */}
       {finishLink}
-      {undoBar}
       {head}
       {card}
       {upNext}
@@ -1488,6 +1538,10 @@ function Session() {
     </>
   );
 
+  // The foot of the page leaves room for what stands over it: the rest timer when the dock carries it (it takes height from the
+  // page), and the Undo bar (an overlay), each as measured, so the last rows are never left under them.
+  const roomBelow = tokens.space.lg + (dock !== null && restSlot !== null ? restHeight : 0) + (undoBar === null ? 0 : undoHeight);
+
   return (
     <SafeAreaView testID="screen" style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
       {/* The page and the dock rise above the keyboard (a number pad has no return key): Log set stays in reach. */}
@@ -1497,23 +1551,26 @@ function Session() {
           {/* Only when there is no dock to carry it (nothing to log): the rest is in the dock otherwise, so the page does not shift. */}
           {dock === null ? restSlot : null}
         </View>
-        <ScrollView
-          ref={scroller}
-          testID="session-scroll"
-          contentContainerStyle={styles.body}
-          keyboardShouldPersistTaps="handled"
-          scrollEventThrottle={16}
-          onScroll={(event) => {
-            frame.current.scrolled = event.nativeEvent.contentOffset.y;
-          }}
-          onLayout={(event) => {
-            frame.current.viewport = event.nativeEvent.layout.height;
-            reveal();
-          }}>
-          {data?.kept === true && <Text style={[styles.small, { color: color.muted }]}>{t('workout.kept')}</Text>}
-          {loadFailed}
-          {discarded !== null ? discardedPanel : cardioShown ? cardioPage : session}
-        </ScrollView>
+        <View style={styles.page}>
+          <ScrollView
+            ref={scroller}
+            testID="session-scroll"
+            contentContainerStyle={[styles.body, { paddingBottom: roomBelow }]}
+            keyboardShouldPersistTaps="handled"
+            scrollEventThrottle={16}
+            onScroll={(event) => {
+              frame.current.scrolled = event.nativeEvent.contentOffset.y;
+            }}
+            onLayout={(event) => {
+              frame.current.viewport = event.nativeEvent.layout.height;
+              reveal();
+            }}>
+            {data?.kept === true && <Text style={[styles.small, { color: color.muted }]}>{t('workout.kept')}</Text>}
+            {loadFailed}
+            {discarded !== null ? discardedPanel : cardioShown ? cardioPage : session}
+          </ScrollView>
+          {undoBar}
+        </View>
         {dock}
         {/* End, Swap, Taken and the finish question rise over the session as sheets of short rows (Evre 7 C4); the page stays behind them. */}
         {sheet}
@@ -1542,6 +1599,9 @@ const styles = StyleSheet.create({
   pair: { flexDirection: 'row', gap: tokens.space.sm },
   dock: { paddingHorizontal: tokens.space.lg, paddingVertical: tokens.space.sm, gap: tokens.space.sm, borderTopWidth: tokens.border.hairline, alignItems: 'stretch' },
   undo: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, padding: tokens.space.sm, borderRadius: tokens.radius.card },
+  page: { flex: 1 },
+  overlay: { position: 'absolute', left: tokens.space.lg, right: tokens.space.lg, bottom: tokens.space.sm, borderWidth: tokens.border.hairline },
+  unseen: { opacity: 0 },
   discarded: { gap: tokens.space.sm, padding: tokens.space.md, borderRadius: tokens.radius.card },
   actions: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: tokens.space.lg },
   list: { gap: tokens.space.xs },
@@ -1552,7 +1612,9 @@ const styles = StyleSheet.create({
   link: { minHeight: tokens.size.touch, justifyContent: 'center' },
   logRow: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
   skipSet: { minHeight: tokens.size.touch, justifyContent: 'center', paddingHorizontal: tokens.space.sm },
-  move: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, padding: tokens.space.sm, borderRadius: tokens.radius.button },
+  move: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, padding: tokens.space.sm, borderRadius: tokens.radius.card, minHeight: tokens.size.touch },
+  addActions: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
+  dim: { opacity: tokens.opacity.dim },
   grow: { flex: 1 },
   finish: { alignSelf: 'flex-end' },
   name: { fontFamily: tokens.font.display, fontSize: tokens.type.heading },

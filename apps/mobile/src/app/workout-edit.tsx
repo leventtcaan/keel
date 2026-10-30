@@ -20,8 +20,7 @@ import { SupersetLine } from '@/train/SupersetLink';
 import { exerciseName, shortDate } from '@/train/program';
 import { supersetPartners } from '@/train/superset';
 import { type Move, movesOf } from '@/train/trainData';
-import { buildSet, parseEntry, rirChoice, setLeftText, setText } from '@/train/session';
-import { weightInput } from '@/units/units';
+import { buildSet, loadText, parseEntry, rirChoice, setLeftText, setText } from '@/train/session';
 
 type Schemas = components['schemas'];
 type Problem = { at: string; text: string } | null;
@@ -80,7 +79,8 @@ export default function WorkoutEditScreen() {
     typed !== null && typed.key === entryKey
       ? typed.entry
       : {
-          load: last === undefined ? '' : weightInput(last.loadKg, units),
+          // Read to the rack as the session reads it (loadText): 90 kg is 200 lb, never the raw 198.4.
+          load: last === undefined ? '' : loadText(last.loadKg, units),
           reps: last === undefined ? '' : String(last.reps),
           rir: rirChoice(last?.rir ?? 0),
           note: null,

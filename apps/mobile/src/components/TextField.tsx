@@ -31,10 +31,12 @@ type Props = {
   multiline?: boolean;
   /** Words to look up rather than to write (a search): taken as typed, no capital, no autocorrect; the key searches. */
   onSearch?: () => void;
+  /** Opened to be typed in at once (a search panel the person just asked for): the keyboard comes up with it. */
+  autoFocus?: boolean;
 };
 
 /** A labelled field for a short answer: a number, a year, a time — or, multiline, a note. */
-export function TextField({ label, value, onChangeText, suffix, hint, problem, problemOccurrence, announceProblem = true, keyboardType, maxLength, multiline = false, onSearch }: Props) {
+export function TextField({ label, value, onChangeText, suffix, hint, problem, problemOccurrence, announceProblem = true, keyboardType, maxLength, multiline = false, onSearch, autoFocus = false }: Props) {
   const { color } = useTheme();
   const note = problem ?? hint;
   const numeric = isNumberPad(keyboardType);
@@ -52,6 +54,7 @@ export function TextField({ label, value, onChangeText, suffix, hint, problem, p
           keyboardType={keyboardType}
           maxLength={maxLength}
           multiline={multiline}
+          autoFocus={autoFocus}
           // On a card (surface on surface) an empty field would not show at all (K-416, simulator).
           inputAccessoryViewID={doneId}
           {...(numeric ? { placeholder: EMPTY, placeholderTextColor: color.muted } : {})}

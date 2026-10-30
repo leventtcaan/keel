@@ -21,6 +21,7 @@ import { formatLoad } from '@/units/units';
 
 import { haptics } from '@/train/haptics';
 import { nodeSqlite } from './support/nodeSqlite';
+import { WithSaved } from './support/saved';
 import { answerAlert } from './support/systemChoices';
 
 type Schemas = components['schemas'];
@@ -4024,6 +4025,31 @@ describe('the last step: cardio (K-973, ADR-074 #3, ADR-075 #6)', () => {
     expect(dock().getByRole('button', { name: t('workout.finish') })).toBeOnTheScreen();
   });
 
+  // Final walk of phase 7 (#684): a choice can be taken back, and one primary button shows at a time.
+  const filled = () => screen.getAllByRole('button').filter((b) => StyleSheet.flatten(b.props.style)?.backgroundColor === focusPalette.cta).map((b) => b.props.accessibilityLabel);
+
+  test('Later today and Skip today offer Undo (the Undo bar), and undone, the step is as it was', async () => {
+    await show();
+    await toCardio();
+    await fireEvent.press(dock().getByRole('button', { name: t('workout.cardio.later') }));
+    const bar = within(screen.getByTestId('undo-bar'));
+    expect(bar.getByText(t('workout.cardio.laterSaid'))).toBeOnTheScreen();
+    expect(screen.getAllByText(t('workout.cardio.laterSaid'))).toHaveLength(1);
+    await fireEvent.press(bar.getByRole('button', { name: t('workout.undoLabel') }));
+    expect(screen.queryByTestId('undo-bar')).toBeNull();
+    expect(screen.queryByText(t('workout.cardio.laterSaid'))).toBeNull();
+    await fireEvent.press(dock().getByRole('button', { name: t('workout.cardio.skip') }));
+    expect(within(screen.getByTestId('undo-bar')).getByText(t('workout.cardio.skipSaid'))).toBeOnTheScreen();
+  });
+
+  test('one primary button at a time: Done until a choice is made, then Finish workout', async () => {
+    await show();
+    await toCardio();
+    expect(filled()).toEqual([t('workout.cardio.done', { minutes: 30 })]);
+    await fireEvent.press(dock().getByRole('button', { name: t('workout.cardio.later') }));
+    expect(filled()).toEqual([t('workout.finish')]);
+  });
+
   test('a choice made, Next: cardio does not come back; the moves are one tap away on their dots', async () => {
     await show();
     await toCardio();
@@ -4882,5 +4908,125 @@ describe('Taken: a move whose equipment is busy', () => {
     await fireEvent.press(screen.getByRole('button', { name: t('swap.close') }));
     expect(head().getByText(PULLDOWN)).toBeOnTheScreen();
     expect(mockMore).toBeNull();
+  });
+});
+
+// Final walk of phase 7 (#684): what moved under the finger, and what the last step did not offer.
+describe('the page does not move under the finger (final pass 3)', () => {
+  const skipSet = () => fireEvent.press(within(screen.getByTestId('dock')).getByRole('button', { name: t('workout.skipSetLabel') }));
+
+  test('the Undo bar is an overlay above the dock: not in the scrolled content, absolute, and Undo still works', async () => {
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    await skipSet();
+    const bar = screen.getByTestId('undo-bar');
+    expect(within(screen.getByTestId('session-scroll')).queryByTestId('undo-bar')).toBeNull();
+    expect(StyleSheet.flatten(bar.props.style)).toMatchObject({ position: 'absolute' });
+    await fireEvent.press(within(bar).getByRole('button', { name: t('workout.undoLabel') }));
+    expect(screen.queryByTestId('undo-bar')).toBeNull();
+    expect(screen.getByText(t('workout.log', { number: 1 }))).toBeOnTheScreen();
+  });
+
+  test('the Finish link has its place from the start: hidden and out of reach before the first set, then the same node shown', async () => {
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    const before = screen.getByTestId('finish-link', { includeHiddenElements: true });
+    expect(StyleSheet.flatten(before.props.style)).toMatchObject({ opacity: 0 });
+    expect(before.props.pointerEvents).toBe('none');
+    expect(screen.queryByRole('button', { name: t('workout.finish') })).toBeNull();
+    await fireEvent.press(screen.getByText(t('workout.log', { number: 1 })));
+    await screen.findByText(t('workout.log', { number: 2 }));
+    const after = screen.getByTestId('finish-link');
+    expect(StyleSheet.flatten(after.props.style).opacity).not.toBe(0);
+    expect(screen.getByRole('button', { name: t('workout.finish') })).toBeOnTheScreen();
+  });
+
+  test('while the rest timer shows, the page leaves room for the footer it takes (measured), and gives it back', async () => {
+    await show();
+    await fireEvent.press(await screen.findByText(t('workout.log', { number: 1 })));
+    await screen.findByTestId('rest-slot');
+    const padding = () => StyleSheet.flatten(screen.getByTestId('session-scroll').props.contentContainerStyle).paddingBottom as number;
+    const base = padding();
+    await fireEvent(screen.getByTestId('rest-slot'), 'layout', { nativeEvent: { layout: { x: 0, y: 0, width: 300, height: 90 } } });
+    expect(padding()).toBe(base + 90);
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.rest.endLabel') }));
+    expect(padding()).toBe(base);
+  });
+});
+
+describe('finishing says what it is doing (final pass 3)', () => {
+  test('while the finish is being kept the button says Saving… and cannot be pressed again', async () => {
+    await show();
+    await fireEvent.press(await screen.findByText(t('workout.log', { number: 1 })));
+    await endAndFinish();
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    mockRecord.mockImplementation(async (outbound: Outbound) => {
+      if (outbound.kind === 'finish') await gate;
+      return keep(outbound);
+    });
+    await fireEvent.press(await screen.findByRole('button', { name: t('workout.finishNow') }));
+    const saving = await screen.findByRole('button', { name: t('workout.saving') });
+    expect(saving).toBeDisabled();
+    expect(screen.queryByRole('button', { name: t('workout.finishNow') })).toBeNull();
+    await act(async () => release());
+    await waitFor(() => expect(mockReplace).toHaveBeenCalled());
+  });
+
+  test('Finish with every move skipped and nothing logged says so on the way out, not nothing', async () => {
+    await render(
+      <ThemeProvider>
+        <WithSaved>
+          <WorkoutScreen />
+        </WithSaved>
+      </ThemeProvider>,
+    );
+    await screen.findByText(t('workout.log', { number: 1 }));
+    await fireEvent.press(await screen.findByRole('button', { name: t('workout.more') }));
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.skipMoveLabel', { name: 'Bench press' }) }));
+    await fireEvent.press(await screen.findByRole('button', { name: t('workout.more') }));
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.skipMoveLabel', { name: t('exercises.one_arm_dumbbell_row.name') }) }));
+    await fireEvent.press(await within(screen.getByTestId('dock')).findByRole('button', { name: t('workout.finish') }));
+    expect(mockBack).toHaveBeenCalled();
+    expect(within(screen.getByTestId('undo-banner')).getByText(t('workout.nothingSaved'))).toBeOnTheScreen();
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+});
+
+describe('Add a move opens where it can be used (final pass 3)', () => {
+  const scrolls = jest.spyOn(ScrollView.prototype, 'scrollTo');
+  beforeEach(() => scrolls.mockClear());
+  const LAT = { id: 'lat_pulldown', nameKey: 'exercises.lat_pulldown.name', load: 'EXTERNAL', unilateral: false, equipment: 'MACHINE' } as Schemas['Exercise'];
+  const open = async () => {
+    mockData = { ...mockData, exercises: { state: 'ready', value: [...EXERCISES, LAT] } };
+    await show();
+    await fireEvent.press(await screen.findByRole('button', { name: t('workout.add.open') }));
+  };
+
+  test('the search field takes the keyboard at once, and the page scrolls to the panel (once per opening)', async () => {
+    await open();
+    expect(screen.getByLabelText(t('workout.add.search')).props.autoFocus).toBe(true);
+    await act(async () => {
+      fireEvent(screen.getByTestId('add-panel'), 'layout', { nativeEvent: { layout: { x: 0, y: 640, width: 375, height: 300 } } });
+    });
+    expect(scrolls).toHaveBeenCalledTimes(1);
+    expect(scrolls).toHaveBeenCalledWith({ y: 640 - tokens.space.sm, animated: false });
+    await act(async () => {
+      fireEvent(screen.getByTestId('add-panel'), 'layout', { nativeEvent: { layout: { x: 0, y: 640, width: 375, height: 420 } } });
+    });
+    expect(scrolls).toHaveBeenCalledTimes(1); // a list that grows while typing does not pull the page again
+  });
+
+  test('Close and Create stand together under the field, as text buttons; the results are rows with the move\'s icon', async () => {
+    await open();
+    await fireEvent.changeText(screen.getByLabelText(t('workout.add.search')), 'lat');
+    const actions = within(screen.getByTestId('add-actions'));
+    expect(actions.getByRole('button', { name: t('workout.add.close') })).toBeOnTheScreen();
+    expect(actions.getByRole('button', { name: t('workout.add.create', { name: 'lat' }) })).toBeOnTheScreen();
+    const row = screen.getByRole('button', { name: t('workout.add.pick', { name: t('exercises.lat_pulldown.name') }) });
+    expect(within(row).getByTestId('move-thumb-MACHINE', { includeHiddenElements: true })).toBeTruthy(); // decorative: hidden from VoiceOver
+    expect(StyleSheet.flatten(row.props.style).minHeight).toBe(tokens.size.touch);
   });
 });
