@@ -14,6 +14,7 @@ import { GuideProvider } from '@/guide/GuideProvider';
 import { ThemeProvider } from '@/theme/theme';
 import { palettes } from '@/theme/tokens';
 import { weekRecordText } from '@/today/week';
+import { lastTodayLine } from '@/train/beforeWorkout';
 import { workoutParams } from '@/train/params';
 import { formatLoad } from '@/units/units';
 
@@ -597,6 +598,59 @@ describe("today's workout (#home)", () => {
     expect(screen.getByText(t('thisWeek.today.target', { load: formatLoad(80, 'IMPERIAL'), reps: 8 }))).toBeOnTheScreen();
     expect(screen.getByText(/ lb × 8$/)).toBeOnTheScreen();
     expect(screen.getByText(/ lb × 9$/)).toBeOnTheScreen();
+  });
+
+  describe('the last time beside today, as the Train card says it (Evre 7 final pass)', () => {
+    const squat = { id: 'squat', nameKey: 'exercises.squat.name', kind: 'COMPOUND', muscles: [], alternatives: [], load: 'BARBELL', equipment: 'BARBELL', unilateral: false, setupFields: [] } as unknown as Schemas['Exercise'];
+    const bench = { ...squat, id: 'bench_press', nameKey: 'exercises.bench_press.name' } as Schemas['Exercise'];
+    const lat = { ...squat, id: 'lat_pulldown', nameKey: 'exercises.lat_pulldown.name' } as Schemas['Exercise'];
+    const withHistory = () => {
+      const exercises = PROGRAM.days[2].exercises.map((e) =>
+        e.exerciseId === 'squat'
+          ? { ...e, lastBestSet: { loadKg: 77.5, reps: 7, rir: 1 } }
+          : e.exerciseId === 'lat_pulldown'
+            ? { ...e, lastBestSet: { loadKg: 50, reps: 10, rir: 1 } }
+            : e,
+      );
+      mockAnswers['/v1/exercises'] = ok([squat, bench, lat]);
+      mockAnswers['/v1/program'] = ok({ ...PROGRAM, days: [...PROGRAM.days.slice(0, 2), { ...PROGRAM.days[2], exercises }] });
+      return exercises;
+    };
+
+    test('a move with a last time shows the same line as Train under its name: last, then today', async () => {
+      const exercises = withHistory();
+      await show();
+      const squatLine = lastTodayLine(exercises[0], squat, 'METRIC');
+      expect(squatLine).toBe('Last 77.5 kg × 7 → 80 kg × 8');
+      expect(within(screen.getByTestId('move-squat')).getByText(squatLine as string)).toBeOnTheScreen();
+      // No target yet: the last time alone, and the plan stays on the right.
+      expect(within(screen.getByTestId('move-lat_pulldown')).getByText(lastTodayLine(exercises[2], lat, 'METRIC') as string)).toBeOnTheScreen();
+      // The line carries today's ask, so it is not said twice beside it.
+      expect(within(screen.getByTestId('move-squat')).queryByText('80 kg × 8')).toBeNull();
+    });
+
+    test('a move done for the first time has no line, and keeps its target', async () => {
+      withHistory();
+      await show();
+      const bench = within(screen.getByTestId('move-bench_press'));
+      expect(bench.queryByText(/^Last /)).toBeNull();
+      expect(bench.getByText('72.5 kg × 9')).toBeOnTheScreen();
+    });
+
+    test('in pounds, with the same words Train writes', async () => {
+      mockUnits = 'IMPERIAL';
+      const exercises = withHistory();
+      await show();
+      expect(within(screen.getByTestId('move-squat')).getByText(lastTodayLine(exercises[0], squat, 'IMPERIAL') as string)).toBeOnTheScreen();
+    });
+
+    test('without the moves read there is no line to word, only the target', async () => {
+      withHistory();
+      delete mockAnswers['/v1/exercises'];
+      await show();
+      expect(within(screen.getByTestId('move-squat')).queryByText(/^Last /)).toBeNull();
+      expect(within(screen.getByTestId('move-squat')).getByText('80 kg × 8')).toBeOnTheScreen();
+    });
   });
 
   test('the first three moves with their targets, the cardio line, Start; the fourth waits in the session', async () => {

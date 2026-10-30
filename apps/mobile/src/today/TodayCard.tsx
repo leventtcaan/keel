@@ -12,6 +12,7 @@ import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { type Changed, changeToday } from '@/train/changes';
+import { lastTodayLine } from '@/train/beforeWorkout';
 import { MoveThumb } from '@/train/MoveThumb';
 import { OpenElsewhere } from '@/train/OpenElsewhere';
 import { workoutParams } from '@/train/params';
@@ -271,11 +272,20 @@ export function TodayCard({ card, program, today, parts, onChanged }: Props) {
         .map((planned) => {
           const id = planned.exerciseId;
           const move = parts?.moves.get(id);
+          // The last time beside today's ask, by the Train card's own function (the same words); the headline moves only.
+          const before = lastTodayLine(planned, move, units);
+          // That line already carries today's ask when it has one, so the target is not said twice (as the Train card does).
+          const asked = before !== null && planned.nextLoadKg !== undefined && planned.nextReps !== undefined;
+          const last = before === null ? null : <Text style={[styles.last, { color: color.accent }]}>{before}</Text>;
+          const target = asked ? null : <Text style={[styles.target, { color: color.text }]}>{targetOf(planned, move, units)}</Text>;
           return (
             <View key={id} testID={`move-${id}`} style={styles.move}>
               <MoveThumb equipment={move?.equipment} />
-              <Text style={[styles.moveName, { color: color.text }]}>{exerciseName(id, parts?.moves)}</Text>
-              <Text style={[styles.target, { color: color.text }]}>{targetOf(planned, move, units)}</Text>
+              <View style={styles.moveText}>
+                <Text style={[styles.moveName, { color: color.text }]}>{exerciseName(id, parts?.moves)}</Text>
+                {last}
+              </View>
+              {target}
             </View>
           );
         });
@@ -322,7 +332,9 @@ const styles = StyleSheet.create({
   session: { fontFamily: tokens.font.displayBold, fontSize: tokens.type.heading },
   fine: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.semibold },
   move: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
-  moveName: { flex: 1, fontSize: tokens.type.body },
+  moveText: { flex: 1 },
+  last: { fontSize: tokens.type.bodySmall },
+  moveName: { fontSize: tokens.type.body },
   target: { fontSize: tokens.type.body, fontVariant: ['tabular-nums'] },
   cardio: { borderTopWidth: tokens.border.hairline, paddingTop: tokens.space.sm },
   icon: { width: tokens.size.touch, height: tokens.size.touch, alignItems: 'center', justifyContent: 'center' },

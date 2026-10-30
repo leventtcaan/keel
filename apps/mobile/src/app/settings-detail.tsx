@@ -41,7 +41,7 @@ export default function SettingsDetailScreen() {
     food: <FoodEditor />,
     routine: <RoutineEditor />,
     consent: <ConsentsSection only="HEALTH_DATA" bare />,
-    apple: <ConsentsSection only="APPLE_HEALTH" bare />,
+    apple: <ConsentsSection only="APPLE_HEALTH" bare why />,
     write: <HealthWriteSection bare />,
     // The weigh-in import reads health data: without the consent it says so in one line and gives the consent right here.
     import:

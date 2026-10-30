@@ -153,7 +153,7 @@ describe('the first days (ADR-078 #1)', () => {
     await show();
     expect(screen.getAllByTestId(/^target-/).map((b) => b.props.testID)).toEqual(['target-calories', 'target-protein', 'target-steps', 'target-cardio']);
     expect(words(box('calories'))).toContain('0');
-    expect(words(box('calories'))).toContain('/ 2,916');
+    expect(words(box('calories'))).toContain('/ 2,916 kcal');
     expect(words(box('protein'))).toContain('/ 114 g');
     expect(words(box('steps'))).toContain('3,240');
     expect(words(box('steps'))).toContain('/ 7,000');
@@ -573,7 +573,15 @@ describe('the tab keeps its other ways in', () => {
     expect(screen.getByRole('button', { name: t('plus.entry') })).toBeOnTheScreen();
   });
 
-  test('share your progress: the user starts it, from here (K-612)', async () => {
+  test('share your progress: nothing to share yet, no entry (the Share page would be a dead end)', async () => {
+    answers = firstDay();
+    await show();
+    expect(screen.queryByRole('button', { name: t('share.open') })).toBeNull();
+    expect(screen.queryByText(t('share.openNote'))).toBeNull();
+  });
+
+  test('share your progress: the user starts it, from here (K-612), once a sticker can be made', async () => {
+    answers = weekTwelve();
     await show();
     await fireEvent.press(screen.getByRole('button', { name: t('share.open') }));
     expect(mockPush).toHaveBeenCalledWith('/share');
@@ -788,6 +796,42 @@ describe('weight: the 7-day average (ADR-078 #2, Ek 3)', () => {
     mockUnits = 'IMPERIAL';
     await show();
     expect(screen.getByTestId('weight-latest')).toHaveTextContent('176.8 lb');
+  });
+
+  describe("the change over the window the chart shows (U1: the server's trend points only, U7: no judgement)", () => {
+    test('metric: a fall is a plain minus, one decimal, since the first day drawn', async () => {
+      await show();
+      expect(screen.getByTestId('weight-change')).toHaveTextContent('-3.9 kg since Oct 9');
+    });
+
+    test('imperial: the difference of the numbers shown, in pounds', async () => {
+      mockUnits = 'IMPERIAL';
+      await show();
+      expect(screen.getByTestId('weight-change')).toHaveTextContent('-8.6 lb since Oct 9');
+    });
+
+    test('a rise is a plus', async () => {
+      answers['/v1/weight-trend'] = ok(trendPoints([80.2, 80.9, 81.4]));
+      await show();
+      expect(screen.getByTestId('weight-change')).toHaveTextContent('+1.2 kg since Oct 13');
+    });
+
+    test('a change that rounds to nothing is steady', async () => {
+      answers['/v1/weight-trend'] = ok(trendPoints([80.2, 80.4, 80.22]));
+      await show();
+      expect(screen.getByTestId('weight-change')).toHaveTextContent('Steady since Oct 13');
+    });
+
+    test('one point: no line', async () => {
+      answers['/v1/weight-trend'] = ok(trendPoints([80.2]));
+      await show();
+      expect(screen.queryByTestId('weight-change')).toBeNull();
+    });
+
+    test('the line is in the text colour, never a red or a green', async () => {
+      await show();
+      expect(StyleSheet.flatten(screen.getByTestId('weight-change').props.style).color).toBe(palettes.light.text);
+    });
   });
 
   test('one point: the value, no chart', async () => {

@@ -199,6 +199,24 @@ describe('consents', () => {
     expect(screen.getAllByText(t('settings.consents.allowed'))).toHaveLength(1);
     expect(screen.getAllByRole('button', { name: new RegExp(`^${t('settings.consents.view')} `) })).toHaveLength(1);
   });
+  test('the Apple Health page says what it reads and why by default, and the off state is Off with Turn on, not Not allowed', async () => {
+    await showDetail('apple');
+    expect(screen.getByText(t('settings.consents.why.APPLE_HEALTH'))).toBeOnTheScreen();
+    expect(screen.getByText('Off')).toBeOnTheScreen();
+    expect(screen.queryByText('Not allowed')).toBeNull();
+    expect(button(`${t('settings.consents.allow')} ${row('APPLE_HEALTH')}`)).toBeOnTheScreen();
+    // The legal text stays behind View, whole.
+    expect(screen.queryByText(t('consent.apple_health.body'))).toBeNull();
+    await press(`${t('settings.consents.view')} ${row('APPLE_HEALTH')}`);
+    expect(screen.getByText(t('consent.apple_health.body'))).toBeOnTheScreen();
+  });
+
+  test('the one line is the first sentence of the text the consent is given to, and only the Apple Health page has it', async () => {
+    expect(t('consent.apple_health.body').startsWith(t('settings.consents.why.APPLE_HEALTH'))).toBe(true);
+    await showDetail('consent');
+    expect(screen.queryByText(t('settings.consents.why.APPLE_HEALTH'))).toBeNull();
+  });
+
   test('View shows the text the consent was given to', async () => {
     await showDetail('consent');
     await press(`${t('settings.consents.view')} ${row('HEALTH_DATA')}`);

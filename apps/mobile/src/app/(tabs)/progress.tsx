@@ -18,6 +18,7 @@ import { LockLine, MuscleBars, MusclesCard, StrengthCard } from '@/progress/Part
 import { WeightCard } from '@/progress/WeightCard';
 import { TargetsGrid } from '@/progress/TargetsGrid';
 import { type ProgressRead, loadProgress } from '@/progress/read';
+import { hasShareable } from '@/progress/shareable';
 import { callsOf, heroOf, phaseOf, strengthOf, targetsOf, weightOf } from '@/progress/sections';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
@@ -137,7 +138,7 @@ export default function ProgressScreen() {
         {targetsGrid}
         {parts}
         <PhotoCard today={day} flowWeek={flowWeek(firstWeeks)} />
-        <ShareEntry />
+        {hasShareable(progress, units) ? <ShareEntry /> : null}
       </>
     );
   }
@@ -156,7 +157,7 @@ export default function ProgressScreen() {
   );
 }
 
-/** Share your progress (K-612): only when the user asks — a card of weeks and calls, made on this phone. A grouped row (K-1054). */
+/** Share your progress (K-612): only when the user asks, and only once there is a sticker to make (hasShareable) — a card of weeks and calls, made on this phone. A grouped row (K-1054). */
 function ShareEntry() {
   return (
     <ListGroup footer={t('share.openNote')}>

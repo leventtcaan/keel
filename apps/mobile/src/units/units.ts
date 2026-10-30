@@ -84,6 +84,15 @@ export function formatWeight(kg: number, system: UnitSystem): string {
   return t(system === 'METRIC' ? 'units.kg' : 'units.lb', { value: weightInput(kg, system) });
 }
 
+/**
+ * How far one body weight is from another, as the two numbers on the screen differ (not the kilo difference converted: 176.8 lb
+ * after 185.4 lb is 8.6 lb): the signed `delta` in the shown unit to the shown decimal, and its size alone as text ("8.6 lb").
+ */
+export function weightChange(fromKg: number, toKg: number, system: UnitSystem): { delta: number; size: string } {
+  const delta = roundTo(Number(weightInput(toKg, system)) - Number(weightInput(fromKg, system)), P.weightDecimals);
+  return { delta, size: t(system === 'METRIC' ? 'units.kg' : 'units.lb', { value: Math.abs(delta).toFixed(P.weightDecimals) }) };
+}
+
 /** kg as the server keeps it, or null when the text is not a weight (empty, text, zero). */
 export function parseWeightKg(text: string, system: UnitSystem): number | null {
   const value = parseNumber(text);

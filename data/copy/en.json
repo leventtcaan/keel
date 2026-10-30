@@ -3319,8 +3319,11 @@
       "title": "Your data and consents",
       "HEALTH_DATA": "Health data",
       "APPLE_HEALTH": "Apple Health",
-      "allowed": "Allowed",
-      "notAllowed": "Not allowed",
+      "allowed": "On",
+      "notAllowed": "Off",
+      "why": {
+        "APPLE_HEALTH": "We read steps, sleep hours, weight from your scale, active energy and the workouts you do in other apps, so you type less and a calorie cut never goes too far."
+      },
       "outdatedShort": "Allow again",
     "outdated": "The text has changed since you allowed this. Allow it again to go on.",
       "view": "View",
@@ -3683,7 +3686,7 @@
       "protein": "Protein",
       "steps": "Steps",
       "cardio": "Cardio",
-      "ofKcal": "/ {target}",
+      "ofKcal": "/ {target} kcal",
       "ofGrams": "/ {target} g",
       "noSteps": "No steps yet",
       "ofSteps": "/ {target}",
@@ -3747,6 +3750,9 @@
       "spoken": "{count} of {min} weigh-ins so far",
       "chartTitle": "Weight",
       "average": "7-day average",
+      "down": "-{delta} since {date}",
+      "up": "+{delta} since {date}",
+      "steady": "Steady since {date}",
       "chartSpoken": "Weight, 7-day average: {first} on {firstDate}, {last} on {lastDate}. Lowest {low}, highest {high}."
     },
     "calls": {
