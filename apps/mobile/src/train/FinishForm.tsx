@@ -24,13 +24,15 @@ type Props = {
   onFinish: () => void;
   onBack: () => void;
   busy: boolean;
+  /** The finish is being kept: its button says so. */
+  saving?: boolean;
 };
 
 /**
  * Before the workout ends: was each move's form clean? A move that was not keeps its weight and reps next time (G6 K-31,
  * K-217). Clean is the default: the question is asked, never assumed against the user.
  */
-export function FinishForm({ moves, named, unclean, onMark, note, onNote, onFinish, onBack, busy }: Props) {
+export function FinishForm({ moves, named, unclean, onMark, note, onNote, onFinish, onBack, busy, saving = false }: Props) {
   const { color } = useTheme();
   return (
     <View style={styles.form}>
@@ -53,7 +55,7 @@ export function FinishForm({ moves, named, unclean, onMark, note, onNote, onFini
         </View>
       ))}
       <TextField label={t('workout.note.session')} value={note} onChangeText={onNote} maxLength={workoutParams.noteMaxChars} multiline />
-      <Button label={t('workout.finishNow')} onPress={onFinish} disabled={busy} />
+      <Button label={t(saving ? 'workout.saving' : 'workout.finishNow')} onPress={onFinish} disabled={busy} busy={saving} />
       <Button label={t('workout.keepGoing')} variant="ghost" onPress={onBack} disabled={busy} />
     </View>
   );

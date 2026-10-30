@@ -62,7 +62,7 @@ function AppStack() {
         <Stack.Screen name="workout-end" />
         <Stack.Screen name="exercise-history" options={pushed} />
         <Stack.Screen name="exercise" options={pushed} />
-        <Stack.Screen name="workout-edit" />
+        <Stack.Screen name="workout-edit" options={pushed} />
         <Stack.Screen name="check-in" options={pushed} />
         <Stack.Screen name="call" options={pushed} />
         <Stack.Screen name="state" options={pushed} />

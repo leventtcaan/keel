@@ -2,13 +2,15 @@
  * A move's history screen (K-415, ADR-033): its records on top, then every session that has it, newest first, each set as
  * it was done. Read from the server's list, kept on the phone, joined with what the phone has not sent yet.
  */
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import ExerciseHistoryScreen from '@/app/exercise-history';
 import type { LocalRecord } from '@/sync/store';
 import { ThemeProvider } from '@/theme/theme';
+import { palettes } from '@/theme/tokens';
 import type { Loaded } from '@/today/today';
 import type { Move, TrainData } from '@/train/trainData';
 
@@ -249,6 +251,12 @@ describe('editing a past session (K-416)', () => {
     await screen.findAllByText(/^Sep (21|28)$/);
     await act(async () => fireEvent.press(screen.getByRole('button', { name: t('sessionEdit.openSpoken', { day: 'Sep 28' }) })));
     expect(mockPush).toHaveBeenCalledWith({ pathname: '/workout-edit', params: { workout: 'b' } });
+  });
+
+  test('"Edit this session" is a text button in the accent, not bold black words', async () => {
+    await show();
+    const button = screen.getByRole('button', { name: t('sessionEdit.openSpoken', { day: 'Sep 28' }) });
+    expect(StyleSheet.flatten(within(button).getByText(t('sessionEdit.open')).props.style).color).toBe(palettes.light.accent);
   });
 
   test('a session still under way has no edit: it is edited in the session itself (review)', async () => {

@@ -91,7 +91,7 @@ export default function ExerciseHistoryScreen() {
       <Button
         label={t('sessionEdit.open')}
         accessibilityLabel={t('sessionEdit.openSpoken', { day: dayOf(session.startedAt) })}
-        variant="ghost"
+        variant="text"
         size="sm"
         onPress={() => router.push({ pathname: '/workout-edit', params: { workout: session.serverId } })}
       />

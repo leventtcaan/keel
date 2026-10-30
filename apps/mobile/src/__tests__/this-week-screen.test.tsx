@@ -15,6 +15,7 @@ import { ThemeProvider } from '@/theme/theme';
 import { palettes } from '@/theme/tokens';
 import { weekRecordText } from '@/today/week';
 import { workoutParams } from '@/train/params';
+import { formatLoad } from '@/units/units';
 
 import { Saver, WithSaved, banner, publishSave, undoButton } from './support/saved';
 
@@ -136,8 +137,12 @@ const mockServices = {
 };
 jest.mock('@/services/ServicesProvider', () => ({
   useAppServices: () => mockServices,
-  useUnits: () => 'METRIC',
+  useUnits: () => mockUnits,
 }));
+let mockUnits: 'METRIC' | 'IMPERIAL' = 'METRIC';
+afterEach(() => {
+  mockUnits = 'METRIC';
+});
 
 const REAL = [
   'hrtime',
@@ -580,12 +585,26 @@ const record = (seq: number, kind: string, clientId: string, parentClientId: str
 });
 
 describe("today's workout (#home)", () => {
+  test('the target carries its unit, in kilos and in pounds, as the Train tab writes it', async () => {
+    await show();
+    expect(screen.getByText('80 kg × 8')).toBeOnTheScreen();
+    expect(screen.getByText('72.5 kg × 9')).toBeOnTheScreen();
+  });
+
+  test('under Imperial the loads are pounds read to the rack, never a bare number', async () => {
+    mockUnits = 'IMPERIAL';
+    await show();
+    expect(screen.getByText(t('thisWeek.today.target', { load: formatLoad(80, 'IMPERIAL'), reps: 8 }))).toBeOnTheScreen();
+    expect(screen.getByText(/ lb × 8$/)).toBeOnTheScreen();
+    expect(screen.getByText(/ lb × 9$/)).toBeOnTheScreen();
+  });
+
   test('the first three moves with their targets, the cardio line, Start; the fourth waits in the session', async () => {
     await show();
     expect(screen.getByText(t('programDays.full_body_a.name'))).toBeOnTheScreen();
     expect(screen.getByText(t('exercises.squat.name'))).toBeOnTheScreen();
-    expect(screen.getByText(t('thisWeek.today.target', { load: 80, reps: 8 }))).toBeOnTheScreen();
-    expect(screen.getByText(t('thisWeek.today.target', { load: 72.5, reps: 9 }))).toBeOnTheScreen();
+    expect(screen.getByText(t('thisWeek.today.target', { load: formatLoad(80, 'METRIC'), reps: 8 }))).toBeOnTheScreen();
+    expect(screen.getByText(t('thisWeek.today.target', { load: formatLoad(72.5, 'METRIC'), reps: 9 }))).toBeOnTheScreen();
     expect(screen.getByText(t('train.setsReps', { sets: 3, reps: '8-12' }))).toBeOnTheScreen(); // no target yet
     expect(screen.queryByTestId('move-plank')).toBeNull();
     expect(screen.getByText(t('thisWeek.today.cardio', { minutes: 30 }))).toBeOnTheScreen();
@@ -658,7 +677,7 @@ describe("today's workout (#home)", () => {
     });
     await show();
     expect(screen.getAllByText(t('train.setsReps', { sets: 3, reps: 7 }))).toHaveLength(2); // the pull-up and the push-up
-    expect(screen.getByText(t('thisWeek.today.added', { load: 10, reps: 7 }))).toBeOnTheScreen();
+    expect(screen.getByText(t('thisWeek.today.added', { load: formatLoad(10, 'METRIC'), reps: 7 }))).toBeOnTheScreen();
     expect(JSON.stringify(screen.toJSON())).not.toMatch(/"0 ×/);
   });
 

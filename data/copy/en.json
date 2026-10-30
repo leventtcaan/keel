@@ -952,6 +952,8 @@
     "previousLabel": "Previous set, {set}",
     "finishEarly": { "one": "1 move left", "other": "{count} moves left", "body": "Finish now? What you logged is saved.", "finish": "Finish" },
     "finishNow": "Finish",
+    "saving": "Saving…",
+    "nothingSaved": "Nothing logged, nothing saved.",
     "keepGoing": "Keep going",
     "kept": "You're offline. Everything you log is saved on the phone and sent later.",
     "unknownMove": "This exercise isn't known to this version of the app.",
