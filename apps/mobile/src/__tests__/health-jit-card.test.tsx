@@ -94,6 +94,18 @@ test('Not now is free: no sheet, no consent, and never asked again', async () =>
   expect(await mockServices.healthAsk.asked()).toBe(true);
 });
 
+// Evre 7 final pass (#684): a permission ask at the moment of a task must not come back. Seen once is asked once, chosen or not.
+test('shown and left without a choice: that was the once, the card is not there the next time', async () => {
+  await show();
+  expect(screen.getByRole('button', { name: t('health.jit.continue') })).toBeOnTheScreen();
+  expect(await mockServices.healthAsk.asked()).toBe(false); // still on the screen: it can be answered
+  await screen.unmount();
+  await act(async () => {});
+  expect(await mockServices.healthAsk.asked()).toBe(true);
+  await show();
+  expect(screen.queryByRole('button', { name: t('health.jit.continue') })).toBeNull();
+});
+
 test('asked before: nothing on the screen, and nothing settled', async () => {
   await mockServices.healthAsk.markAsked();
   const settled = await show();

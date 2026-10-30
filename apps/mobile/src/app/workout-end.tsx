@@ -10,7 +10,6 @@ import { Button } from '@/components/Button';
 import { MuscleMap } from '@/components/MuscleMap';
 import { announce } from '@/components/ProblemText';
 import { t } from '@/copy';
-import { HealthJit } from '@/health/HealthJit';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { FocusMode, useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
@@ -108,8 +107,6 @@ function Body({ end, units, figure, workout, onRetry }: { end: WorkoutEnd | null
         {/* The screen's one primary is Done (ADR-070 Ek 2 #1); sharing is the alternative beside it. */}
         {share}
         <Button label={t('workoutEnd.done')} onPress={() => router.dismissTo('/train')} />
-        {/* Apple Health, asked the first time (K-980, ADR-018 Ek 1): after the achievement, below Done, never in the middle of it (Evre 7 C3). Nothing here once asked, or where it cannot be. */}
-        {end !== null && <HealthJit quiet />}
         {ready !== null && <Worked muscles={ready.summary.muscles} figure={figure} />}
       </ScrollView>
     </SafeAreaView>

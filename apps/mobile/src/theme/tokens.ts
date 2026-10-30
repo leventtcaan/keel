@@ -141,6 +141,8 @@ export const tokens = {
     buttonSmall: 14,
     /** The stepper's value, in the display face (prototype `.stp .sv b`). */
     stepperValue: 36,
+    /** The smallest a long stepper number is set (191.46 lb, a number past the usual length): shrinks to here, never below. */
+    stepperValueMin: 22,
     /** ADR-070 #5. */
     body: 17,
     bodySmall: 15,
@@ -187,6 +189,10 @@ export const tokens = {
     row: 52,
     /** The stepper's - and + (prototype `.stp .sb2`). */
     stepperButton: 48,
+    /** How many characters of the stepper's number fit at full size; more, and the number is set smaller (see `fitValue`). */
+    stepperFitChars: 5,
+    /** A display-face character is this many times its font size wide, at most (the box the number is given). */
+    stepperCharEm: 0.62,
     /** The undo banner's least height (prototype `.bnr`). */
     banner: 52,
     /** The progress photo intro's drawing of the two outlines (K-1055). */

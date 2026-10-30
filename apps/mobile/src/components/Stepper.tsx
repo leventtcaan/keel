@@ -37,6 +37,8 @@ type Props = {
    * set card, with two steppers and the reps-left row above the dock of an iPhone SE).
    */
   compact?: boolean;
+  /** Every shown value keeps all its decimals ("191.0", as the weigh-in's "Last" writes it) instead of dropping a trailing zero. */
+  fixed?: boolean;
 };
 
 const ACTIONS = [{ name: 'increment' }, { name: 'decrement' }];
@@ -52,9 +54,19 @@ function round(value: number, decimals: number): number {
   return Math.round(value * scale) / scale;
 }
 
-/** "72.5", and "72" for a whole number: no trailing zero. */
-function show(value: number, decimals: number): string {
-  return String(round(value, decimals));
+/** "72.5", and "72" for a whole number: no trailing zero; with `fixed`, "72.0". */
+function show(value: number, decimals: number, fixed = false): string {
+  return fixed ? round(value, decimals).toFixed(decimals) : String(round(value, decimals));
+}
+
+/**
+ * The number's size and box for the text it holds: full size up to the usual length, then smaller in proportion (never below
+ * the smallest), in a box as wide as all of it, so a long number ("191.46") is whole and never cut at the field's edge.
+ */
+export function fitValue(text: string): { fontSize: number; width: number } {
+  const chars = Math.max(text.length, 1);
+  const fontSize = Math.max(tokens.type.stepperValueMin, Math.floor((tokens.type.stepperValue * tokens.size.stepperFitChars) / Math.max(chars, tokens.size.stepperFitChars)));
+  return { fontSize, width: Math.max(tokens.size.touch, Math.ceil(chars * fontSize * tokens.size.stepperCharEm)) };
 }
 
 /** What was typed as a number, a comma or a dot for the decimal; null when it is no number yet ("", "-", "1,2,3"). */
@@ -68,7 +80,7 @@ function parse(text: string): number | null {
  * − value + as one component (ADR-070 Ek 2 #5): the value is a field one taps and types into (decimal keyboard, a comma or
  * a dot), the buttons step it. One adjustable control for VoiceOver: swipe up or down to step.
  */
-export function Stepper({ label, value, onChange, onEmpty, step, min = Number.NEGATIVE_INFINITY, max = Number.POSITIVE_INFINITY, unit, decimals, placeholder = '-', steps, compact = false }: Props) {
+export function Stepper({ label, value, onChange, onEmpty, step, min = Number.NEGATIVE_INFINITY, max = Number.POSITIVE_INFINITY, unit, decimals, placeholder = '-', steps, compact = false, fixed = false }: Props) {
   const { color } = useTheme();
   // Its pad has no Return key: the Done bar over the keyboard closes it (K-1065).
   const { id: doneId, bar } = useDoneBar(true);
@@ -105,7 +117,7 @@ export function Stepper({ label, value, onChange, onEmpty, step, min = Number.NE
     if (actionName === 'increment') stepBy(1);
     else if (actionName === 'decrement') stepBy(-1);
   };
-  const shown = value === null ? '' : show(value, places);
+  const shown = value === null ? '' : show(value, places, fixed);
   const typing = draft !== null && draft.value === value;
   const field = (
     <View style={styles.value}>
@@ -126,7 +138,7 @@ export function Stepper({ label, value, onChange, onEmpty, step, min = Number.NE
         keyboardType={places > 0 ? 'decimal-pad' : 'number-pad'}
         inputAccessoryViewID={doneId}
         selectTextOnFocus
-        style={[styles.input, compact && styles.inputCompact, { color: color.text, borderBottomColor: color.edge }]}
+        style={[styles.input, compact && styles.inputCompact, fitValue(typing ? draft.text : shown), { color: color.text, borderBottomColor: color.edge }]}
       />
       {unit !== undefined && <Text style={[styles.unit, { color: color.muted }]}>{unit}</Text>}
       {bar}

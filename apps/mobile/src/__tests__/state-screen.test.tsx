@@ -159,11 +159,24 @@ describe('the health data consent (ADR-077 Ek 6, K-1021): only Sick and In pain 
     await choose(kind);
     await press(t('state.screen.pause'));
     expect(consentTitle()).toBeOnTheScreen();
-    expect(screen.getByText(t('consent.health_data.points.collected'))).toBeOnTheScreen();
     expect(screen.getByText(t('state.consent.why'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('consent.health_data.points.collected'))).toBeNull();
+    await press(t('consent.step.fullText'));
+    expect(screen.getByText(t('consent.health_data.points.collected'))).toBeOnTheScreen();
     expect(screen.queryByText(t('state.screen.refused'))).toBeNull();
     expect(mockDeclare).not.toHaveBeenCalled();
     expect(mockBack).not.toHaveBeenCalled();
+  });
+
+  test('the first tap on Pause my week asks for the consent: nothing declared, no second tap needed; a consent the phone cannot read is not given', async () => {
+    mockGranted.mockRejectedValueOnce(new Error('keychain'));
+    await show();
+    await choose('sick');
+    await press(t('state.screen.pause'));
+    expect(consentTitle()).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: t('state.consent.allow') })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: t('state.consent.notNow') })).toBeOnTheScreen();
+    expect(mockDeclare).not.toHaveBeenCalled();
   });
 
   test('allowing records the consent, then declares what was chosen with its length, and leaves', async () => {

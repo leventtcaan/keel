@@ -29,6 +29,52 @@ beforeEach(() => {
   heard = [];
 });
 
+describe('a long number fits (Evre 7 final pass, #684: "191.46" was cut)', () => {
+  const style = () => StyleSheet.flatten(field().props.style);
+
+  test('up to the usual length the number is the full size', async () => {
+    await renderIt(<Held start={72.5} />);
+    expect(style().fontSize).toBe(tokens.type.stepperValue);
+  });
+
+  test('a longer number is set smaller and in a box wide enough for all of it, never below the smallest size', async () => {
+    await renderIt(<Held start={191.46} />);
+    await fireEvent.changeText(field(), '191.46');
+    expect(style().fontSize).toBeLessThan(tokens.type.stepperValue);
+    expect(style().fontSize).toBeGreaterThanOrEqual(tokens.type.stepperValueMin);
+    expect(style().width).toBeGreaterThanOrEqual('191.46'.length * style().fontSize! * 0.5);
+    await fireEvent.changeText(field(), '1234567890.123456');
+    expect(style().fontSize).toBe(tokens.type.stepperValueMin);
+  });
+
+  test('typing a comma for the decimal is a point: 191,5 is 191.5', async () => {
+    await renderIt(<Held start={190} step={0.1} />);
+    await fireEvent.changeText(field(), '191,5');
+    expect(heard.at(-1)).toBe(191.5);
+  });
+});
+
+describe('fixed decimals (a weight reads 191.0, as "Last" does)', () => {
+  test('a whole number keeps its decimal place when asked to', async () => {
+    await renderIt(<Held start={191} step={0.1} fixed />);
+    expect(field().props.value).toBe('191.0');
+  });
+
+  test('not asked, a whole number has no trailing zero (cardio minutes, loads)', async () => {
+    await renderIt(<Held start={191} step={0.1} />);
+    expect(field().props.value).toBe('191');
+  });
+
+  test('while it is typed the text is what the person wrote; on stepping it is fixed again', async () => {
+    await renderIt(<Held start={191} step={0.1} fixed />);
+    await fireEvent(field(), 'focus');
+    await fireEvent.changeText(field(), '192');
+    expect(field().props.value).toBe('192');
+    await fireEvent.press(screen.getByRole('button', { name: t('stepper.increase', { label: 'Weight' }) }));
+    expect(field().props.value).toBe('192.1');
+  });
+});
+
 describe('the value', () => {
   test('is shown with the unit beside it, a whole number without a trailing zero', async () => {
     await renderIt(<Held start={72} />);

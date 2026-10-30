@@ -12,6 +12,7 @@ import { AccessibilityInfo, Alert, StyleSheet } from 'react-native';
 import type { components } from '@/api/schema';
 import WeighInScreen from '@/app/weigh-in';
 import { t } from '@/copy';
+import { parseWeightKg } from '@/units/units';
 import { createHealthAsk } from '@/health/justInTime';
 import { NoAnswer, type SendResult, createSyncQueue } from '@/sync/queue';
 import { openRecordStore } from '@/sync/store';
@@ -224,7 +225,7 @@ describe('the last weight filled in, and a tenth at a time (K-980, ADR-018 Ek 1:
     mockUnits = 'IMPERIAL';
     mockAnswers = { '/v1/weigh-ins/summary': summary({ last: { ...LAST, kg: 81.65 } }) };
     await show();
-    expect(field()).toBe('180'); // the Stepper writes a whole number without a trailing zero
+    expect(field()).toBe('180.0'); // K1 (Evre 7 final pass): the weigh-in writes its tenth, as "Last" does
   });
 
   test('the step is the weigh-in\'s own tenth (units.json), the same in pounds', async () => {
@@ -242,6 +243,26 @@ describe('the last weight filled in, and a tenth at a time (K-980, ADR-018 Ek 1:
     await type('79.9');
     await press(t('weighIn.save'));
     expect(mockServices.queue.record).toHaveBeenCalledWith(expect.objectContaining({ body: expect.objectContaining({ kg: 79.9 }) }));
+  });
+
+  test('pounds: the field and "Last" write the same number the same way, one decimal (191.0, not 191)', async () => {
+    mockUnits = 'IMPERIAL';
+    mockAnswers = { '/v1/weigh-ins/summary': summary({ last: { ...LAST, kg: 86.64 } }) };
+    await show();
+    expect(field()).toBe('191.0');
+    expect(screen.getByText(t('weighIn.lastOn', { value: t('units.lb', { value: '191.0' }), date: 'Sep 30' }))).toBeOnTheScreen();
+  });
+
+  test('pounds, a long number typed with a decimal comma: 191,46 is accepted (rounded to the tenth) and kept in kg', async () => {
+    mockUnits = 'IMPERIAL';
+    mockAnswers = { '/v1/weigh-ins/summary': summary() };
+    await show();
+    await type('191,46');
+    await press(t('weighIn.save'));
+    // The field keeps the weigh-in's tenth (a number typed past it is rounded to it): 191.46 lb is 191.5 lb.
+    expect(mockServices.queue.record).toHaveBeenCalledWith(
+      expect.objectContaining({ body: expect.objectContaining({ kg: parseWeightKg('191.5', 'IMPERIAL') }) }),
+    );
   });
 
   test('a field cleared is no weight: Save says so rather than keeping the old number under an empty field', async () => {
@@ -569,6 +590,10 @@ describe('Apple Health under the entry, the first time (K-980, ADR-018 Ek 1; no 
 test('without the health data consent: the consent first, nothing to type, nothing kept (ADR-030 #25)', async () => {
   mockGranted = false;
   await show();
+  // One line of what it unlocks and two buttons; the legal words are one tap away, whole (Evre 7 final pass).
+  expect(screen.getByText(t('weighIn.consent.why'))).toBeOnTheScreen();
+  expect(screen.queryByText(t('consent.health_data.points.collected'))).toBeNull();
+  await press(t('consent.step.fullText'));
   expect(screen.getByText(t('consent.health_data.points.collected'))).toBeOnTheScreen();
   expect(screen.queryByRole('button', { name: t('weighIn.save') })).toBeNull();
 
