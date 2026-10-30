@@ -60,7 +60,7 @@ function AppStack() {
         <Stack.Screen name="cardio" options={{ presentation: 'modal' }} />
         <Stack.Screen name="workout" />
         <Stack.Screen name="workout-end" />
-        <Stack.Screen name="exercise-history" />
+        <Stack.Screen name="exercise-history" options={pushed} />
         <Stack.Screen name="exercise" options={pushed} />
         <Stack.Screen name="workout-edit" />
         <Stack.Screen name="check-in" options={pushed} />

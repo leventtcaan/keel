@@ -8,7 +8,7 @@ import { type UnitSystem, formatLoad, formatPlate, loadValue, parseLoadKg, weigh
 
 import { onboardingParams } from '@/onboarding/params';
 
-import { type GymWeights, lighter, plateUnits, platesFor, round, within } from './loadSteps';
+import { type GymWeights, imperialRack, lighter, plateUnits, platesFor, round, within } from './loadSteps';
 import { workoutParams } from './params';
 import type { ExercisePlan } from './workout';
 
@@ -148,6 +148,11 @@ export function parseEntry(
   return kg === null ? null : { loadKg: kg, reps: count };
 }
 
+/** A set with the reps it left, in plain words ("80 kg × 8 · 1 rep left"), never "RIR 1" (Evre 7 C). */
+export function setLeftText(set: string, rir: number): string {
+    return t(`summary.setLeft.${rir === 0 ? 'zero' : rir === 1 ? 'one' : 'other'}`, { set, count: rir });
+}
+
 /** The load typed, in kg as parseEntry reads it (the suggestion's own kg when left as shown); null when it is no load. */
 export function parseLoad(load: string, units: UnitSystem, suggestedKg: number | null): number | null {
   // The suggestion, or the load a step set (K-971), as shown: its own kg, not the rounded number read back.
@@ -157,10 +162,15 @@ export function parseLoad(load: string, units: UnitSystem, suggestedKg: number |
 }
 
 /** The plates a side for a load of an external-load move at the gym in use; null without a gym, or nothing to load. */
-export function platesLine(move: Schemas['Exercise'], loadKg: number, gym: GymWeights | undefined): string | null {
+export function platesLine(move: Schemas['Exercise'], loadKg: number, gym: GymWeights | undefined, units: UnitSystem = 'METRIC'): string | null {
   if (gym === undefined || move.load !== 'EXTERNAL') return null;
-  const plates = platesFor(move.equipment, loadKg, gym);
-  return plates === null ? null : platesText(plates, plateUnits(gym));
+  // A lb user whose gym is still the kilo default reads the standard US rack, for the load as it reads in lb (Evre 7): never "kg a side"
+  // under a load shown in pounds.
+  const inLb = units === 'IMPERIAL' && plateUnits(gym) === 'METRIC';
+  const rack = inLb ? imperialRack(gym) : gym;
+  const kg = inLb ? (parseLoadKg(String(loadValue(loadKg, 'IMPERIAL')), 'IMPERIAL') ?? loadKg) : loadKg;
+  const plates = platesFor(move.equipment, kg, rack);
+  return plates === null ? null : platesText(plates, plateUnits(rack));
 }
 
 /**

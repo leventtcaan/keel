@@ -21,7 +21,7 @@ import { dayName, exerciseName } from '@/train/program';
 import { MovedCard } from '@/train/MovedCard';
 import type { Move } from '@/train/trainData';
 import { type WorkoutEnd, loadWorkoutEnd } from '@/train/workoutEnd';
-import { type UnitSystem, formatLoad, loadValue } from '@/units/units';
+import { type UnitSystem, formatLoad, volumeValue } from '@/units/units';
 
 type Schemas = components['schemas'];
 
@@ -89,7 +89,7 @@ function Body({ end, units, figure, workout, onRetry }: { end: WorkoutEnd | null
   const ready = end?.kind === 'ready' ? end : null;
   const day = ready === null ? null : (ready.program?.days.find((d) => d.id === ready.programDayId) ?? null);
   let rest = null;
-  if (ready !== null) rest = <Facts end={ready} day={day} units={units} figure={figure} />;
+  if (ready !== null) rest = <Facts end={ready} day={day} units={units} />;
   else if (end !== null) {
     rest = (
       <View style={styles.rows}>
@@ -105,11 +105,12 @@ function Body({ end, units, figure, workout, onRetry }: { end: WorkoutEnd | null
       <ScrollView contentContainerStyle={styles.body}>
         <Hero dayName={day === null ? null : dayName(day)} />
         {rest}
-        {/* Apple Health, asked the first time (K-980, ADR-018 Ek 1): nothing here once asked, or where it cannot be. */}
-        {end !== null && <HealthJit />}
         {/* The screen's one primary is Done (ADR-070 Ek 2 #1); sharing is the alternative beside it. */}
         {share}
         <Button label={t('workoutEnd.done')} onPress={() => router.dismissTo('/train')} />
+        {/* Apple Health, asked the first time (K-980, ADR-018 Ek 1): after the achievement, below Done, never in the middle of it (Evre 7 C3). Nothing here once asked, or where it cannot be. */}
+        {end !== null && <HealthJit quiet />}
+        {ready !== null && <Worked muscles={ready.summary.muscles} figure={figure} />}
       </ScrollView>
     </SafeAreaView>
   );
@@ -143,32 +144,38 @@ function Hero({ dayName: name }: { dayName: string | null }) {
 
 type Ready = Extract<WorkoutEnd, { kind: 'ready' }>;
 
-function Facts({ end, day, units, figure }: { end: Ready; day: Schemas['ProgramDay'] | null; units: UnitSystem; figure: Figure }) {
+/** The muscles worked, on the one muscle map: below Done and the Health row, so the achievement and its buttons are in the first view. */
+function Worked({ muscles, figure }: { muscles: Schemas['MuscleSets'][]; figure: Figure }) {
+  const { color } = useTheme();
+  if (muscles.length === 0) return null;
+  return (
+    <View style={[styles.card, { backgroundColor: color.surface }]}>
+      <Text accessibilityRole="header" style={[styles.heading, { color: color.text }]}>
+        {t('workoutEnd.worked')}
+      </Text>
+      <MuscleMap muscles={muscles} figure={figure} />
+    </View>
+  );
+}
+
+function Facts({ end, day, units }: { end: Ready; day: Schemas['ProgramDay'] | null; units: UnitSystem }) {
   const { color } = useTheme();
   const { summary } = end;
   const plural = (key: string, n: number) => t(`${key}.${n === 1 ? 'one' : 'other'}`);
+  // Only a better session is compared (U7, Evre 7 C3): a short one, or one cut short, never shows "-94% vs last time".
   const change =
-    summary.liftedChangePercent === undefined
+    summary.liftedChangePercent === undefined || summary.liftedChangePercent <= 0
       ? undefined
-      : t('workoutEnd.change', { percent: summary.liftedChangePercent > 0 ? `+${summary.liftedChangePercent}` : String(summary.liftedChangePercent) });
+      : t('workoutEnd.change', { percent: `+${summary.liftedChangePercent}` });
   const stats: { key: string; value: string; label: string; note?: string }[] = [];
   if (summary.minutes !== undefined) stats.push({ key: 'min', value: String(summary.minutes), label: plural('workoutEnd.minutes', summary.minutes) });
   stats.push({
     key: 'kg',
-    value: NUMBER.format(loadValue(summary.liftedKg, units)),
+    value: NUMBER.format(volumeValue(summary.liftedKg, units)),
     label: t(units === 'METRIC' ? 'workoutEnd.liftedKg' : 'workoutEnd.liftedLb'),
     note: change,
   });
   stats.push({ key: 'sets', value: String(summary.workingSets), label: plural('workoutEnd.sets', summary.workingSets) });
-  const map =
-    summary.muscles.length === 0 ? null : (
-      <View style={[styles.card, { backgroundColor: color.surface }]}>
-        <Text accessibilityRole="header" style={[styles.heading, { color: color.text }]}>
-          {t('workoutEnd.worked')}
-        </Text>
-        <MuscleMap muscles={summary.muscles} figure={figure} />
-      </View>
-    );
   if (end.kcal !== undefined) stats.push({ key: 'kcal', value: NUMBER.format(end.kcal), label: t('workoutEnd.kcal'), note: t('workoutEnd.watch') });
 
   return (
@@ -183,30 +190,37 @@ function Facts({ end, day, units, figure }: { end: Ready; day: Schemas['ProgramD
         ))}
       </View>
       <Mark marks={summary.marks} day={day} units={units} known={end.moves} />
-      <MovedCard moves={summary.moves} units={units} known={end.moves} />
-      {map}
       {end.week !== null && end.week.planned > 0 && <Week done={end.week.done} planned={end.week.planned} />}
+      <MovedCard moves={summary.moves} units={units} known={end.moves} />
     </View>
   );
 }
 
 /**
- * The session's record (the first the server lists, in the order done: kilos across moves are not compared here; the
- * real set and its next target), or the baseline of a first session.
+ * The session's new bests (Evre 7 C3: a finish is an achievement): every record the server lists, in the order done, each the real
+ * set ("New best" over "Squat 100 kg × 8") with its next target from the program when it has one; or the baseline of a first
+ * session. Kilos across moves are not compared here.
  */
 function Mark({ marks, day, units, known }: { marks: Schemas['SetMark'][]; day: Schemas['ProgramDay'] | null; units: UnitSystem; known: ReadonlyMap<string, Move> }) {
   const { color } = useTheme();
   const set = (loadKg: number, reps: number) => t('workoutEnd.set', { load: formatLoad(loadKg, units), reps });
-  const best = marks.find((m) => m.kind === 'RECORD');
-  if (best !== undefined) {
-    const next = day?.exercises.find((e) => e.exerciseId === best.exerciseId);
-    const nextLine =
-      next?.nextLoadKg !== undefined && next.nextReps !== undefined ? t('workoutEnd.recordNext', { set: set(next.nextLoadKg, next.nextReps) }) : t('workoutEnd.recordBest');
+  const bests = marks.filter((m) => m.kind === 'RECORD');
+  if (bests.length > 0) {
     return (
       <View style={[styles.card, { backgroundColor: color.accentSoft }]}>
-        <Text style={[styles.small, styles.bold, { color: color.text }]}>{t('workoutEnd.recordKicker')}</Text>
-        <Text style={[styles.heading, { color: color.text }]}>{t('workoutEnd.record', { move: exerciseName(best.exerciseId, known), set: set(best.loadKg, best.reps) })}</Text>
-        <Text style={[styles.text, { color: color.text }]}>{nextLine}</Text>
+        <Text accessibilityRole="header" style={[styles.small, styles.bold, { color: color.text }]}>
+          {t('workoutEnd.recordKicker')}
+        </Text>
+        {bests.map((best) => {
+          const next = day?.exercises.find((e) => e.exerciseId === best.exerciseId);
+          const nextLine = next?.nextLoadKg !== undefined && next.nextReps !== undefined ? t('workoutEnd.recordNext', { set: set(next.nextLoadKg, next.nextReps) }) : null;
+          return (
+            <View key={best.exerciseId} testID="record" style={styles.record}>
+              <Text style={[styles.heading, { color: color.text }]}>{t('workoutEnd.record', { move: exerciseName(best.exerciseId, known), set: set(best.loadKg, best.reps) })}</Text>
+              {nextLine !== null && <Text style={[styles.small, { color: color.textSecondary }]}>{nextLine}</Text>}
+            </View>
+          );
+        })}
       </View>
     );
   }
@@ -214,7 +228,7 @@ function Mark({ marks, day, units, known }: { marks: Schemas['SetMark'][]; day: 
   return (
     <View style={[styles.card, { backgroundColor: color.surface }]}>
       <Text style={[styles.heading, { color: color.text }]}>{t('workoutEnd.baseline')}</Text>
-      <Text style={[styles.text, { color: color.textSecondary }]}>{t('workoutEnd.baselineBody')}</Text>
+      <Text style={[styles.small, { color: color.textSecondary }]}>{t('workoutEnd.baselineBody')}</Text>
     </View>
   );
 }
@@ -224,10 +238,7 @@ function Week({ done, planned }: { done: number; planned: number }) {
   const { color } = useTheme();
   return (
     <View accessible accessibilityLabel={t('workoutEnd.weekLabel', { done, planned })} style={styles.rows}>
-      <View style={styles.weekHead}>
-        <Text style={[styles.small, styles.bold, { color: color.textSecondary }]}>{t('workoutEnd.thisWeek')}</Text>
-        <Text style={[styles.number, { color: color.text }]}>{t('workoutEnd.week', { done, planned })}</Text>
-      </View>
+      <Text style={[styles.text, styles.bold, { color: color.text }]}>{t('workoutEnd.week', { done, planned })}</Text>
       <View style={styles.segments}>
         {Array.from({ length: planned }, (_, i) => (
           <Segment key={i} filled={i < done} />
@@ -258,7 +269,7 @@ const styles = StyleSheet.create({
   stats: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm },
   stat: { flexGrow: 1, flexBasis: 0, minWidth: tokens.size.primaryButton, borderRadius: tokens.radius.card, padding: tokens.space.sm, gap: tokens.space.xs },
   card: { borderRadius: tokens.radius.card, padding: tokens.space.md, gap: tokens.space.sm },
-  weekHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
+  record: { gap: tokens.space.xs },
   segments: { flexDirection: 'row', gap: tokens.space.xs },
   segment: { flex: 1, height: tokens.size.track, borderRadius: tokens.radius.track, borderWidth: tokens.border.hairline, overflow: 'hidden' },
   fill: { flex: 1 },

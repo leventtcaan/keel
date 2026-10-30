@@ -11,6 +11,7 @@ import SwapScreen from '@/app/swap';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { ThemeProvider } from '@/theme/theme';
+import { WithSaved, undoButton } from './support/saved';
 import type { LocalRecord } from '@/sync/store';
 import { type Move, type TrainData, ownMove } from '@/train/trainData';
 
@@ -126,6 +127,42 @@ test.each([
     body: { programDayId: 'a', exerciseId: 'bench_press', to: 'dumbbell_bench_press', scope: sent },
   });
   expect(mockBack).toHaveBeenCalledTimes(1);
+});
+
+// Evre 7 C (the walk: the card changed silently): the swap is said where the user lands, with Undo.
+test('a swap done is said with the banner, and its Undo swaps back (from now on)', async () => {
+  await render(
+    <ThemeProvider>
+      <WithSaved>
+        <SwapScreen />
+      </WithSaved>
+    </ThemeProvider>,
+  );
+  await fireEvent.press(await screen.findByText('Dumbbell bench press'));
+  await fireEvent.press(screen.getByText('From now on'));
+  expect(await screen.findByText(t('swap.swapped'))).toBeTruthy();
+  expect(screen.getByText(t('swap.swappedDetail', { from: 'Bench press', to: 'Dumbbell bench press' }))).toBeTruthy();
+  mockPost.mockClear();
+  await fireEvent.press(undoButton());
+  expect(mockPost).toHaveBeenCalledWith('/v1/program/swap', {
+    body: { programDayId: 'a', exerciseId: 'dumbbell_bench_press', to: 'bench_press', scope: 'FROM_NOW_ON' },
+  });
+});
+
+test("today only: its Undo is the server's undo of today's change", async () => {
+  await render(
+    <ThemeProvider>
+      <WithSaved>
+        <SwapScreen />
+      </WithSaved>
+    </ThemeProvider>,
+  );
+  await fireEvent.press(await screen.findByText('Dumbbell bench press'));
+  await fireEvent.press(screen.getByText('Today only'));
+  await screen.findByText(t('swap.swapped'));
+  mockPost.mockClear();
+  await fireEvent.press(undoButton());
+  expect(mockPost).toHaveBeenCalledWith('/v1/program/today', { body: { programDayId: 'a', change: 'UNDO' } });
 });
 
 test('swapped for today: titled by the move in its place; back to the planned move undoes the swap for today', async () => {

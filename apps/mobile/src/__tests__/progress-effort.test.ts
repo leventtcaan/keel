@@ -15,7 +15,7 @@ test.each([
   [{ kind: 'EASIER', loadKg: 100, reps: 8, repsLeft: 2, repsLeftBefore: 0 }, 'METRIC', 'Same 100 kg, now with 2 reps left.'],
   [{ kind: 'REPS_RISING', loadKg: 60, repsGained: 1, since: '2026-10-05', sessions: 3, weeks: 2 }, 'METRIC', 'Up 1 rep at 60 kg since Oct 5.'],
   [{ kind: 'REPS_RISING', loadKg: 60, repsGained: 3, since: '2026-10-05', sessions: 5, weeks: 4 }, 'METRIC', 'Up 3 reps at 60 kg since Oct 5.'],
-  [{ kind: 'STUCK', loadKg: 72.5, sessions: 3, held: false }, 'IMPERIAL', 'Stuck at 159.8 lb for 3 sessions.'],
+  [{ kind: 'STUCK', loadKg: 72.5, sessions: 3, held: false }, 'IMPERIAL', 'Stuck at 160 lb for 3 sessions.'],
 ] as [Effort, 'METRIC' | 'IMPERIAL', string][])('%j in %s reads "%s"', (effort, units, line) => {
   expect(effortLine(effort, units)).toBe(line);
 });

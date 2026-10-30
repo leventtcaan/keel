@@ -11,6 +11,12 @@ function param<T>(key: string): T {
 export const workoutParams = {
   restSecondsMin: param<number>('rest_seconds_min'),
   restSecondsMax: param<number>('rest_seconds_max'),
+  /** Today's card (Evre 7 C1): a set's own seconds, the rounding of the estimate, how many headline moves say their last time. */
+  sessionSetSeconds: param<number>('session_set_seconds'),
+  sessionMinutesRound: param<number>('session_minutes_round'),
+  headlineMovesShown: param<number>('headline_moves_shown'),
+  /** One tap of the rest timer's minus and plus (Evre 7 C2). */
+  restAdjustSeconds: param<number>('rest_adjust_seconds'),
   /** How long the undo banner stays after a save (ADR-070 Ek 2 #6, UndoBanner). */
   undoBannerMs: param<number>('undo_banner_ms'),
   rirChoices: param<number[]>('rir_choices'),

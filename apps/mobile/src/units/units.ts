@@ -31,6 +31,10 @@ const P = {
   storedKgDecimals: param<number>('stored_kg_decimals'),
   storedWaistDecimals: param<number>('stored_waist_cm_decimals'),
   imperialRegions: param<string[]>('imperial_regions'),
+  loadStepLb: param<number>('load_display_step_lb'),
+  loadSmallBelowLb: param<number>('load_display_small_below_lb'),
+  loadSmallStepLb: param<number>('load_display_small_step_lb'),
+  loadKgGrid: param<number>('load_display_kg_grid'),
 };
 
 /** The most decimals a typed load keeps (the stored kilo's, stored_kg_decimals): 11.34 kg is a 25 lb dumbbell. */
@@ -88,13 +92,41 @@ export function parseWeightKg(text: string, system: UnitSystem): number | null {
 }
 
 // ── loads ────────────────────────────────────────────────────────────────────────────────────────────────────
+/**
+ * A load as a pound reads. What the user typed in pounds on the half pound (to the kilo's stored hundredths) is shown
+ * back exactly as typed (ADR-029). A load that came from the kilos (a target the engine made: 180 kg is 396.8 lb to the decimal)
+ * is the nearest 5 lb (2.5 under 10 lb), a weight a gym really has (Evre 7, the walk of 30 Oct). Kilos are shown as the server keeps them.
+ */
+function lbOfLoad(kg: number): number {
+  const lb = kg / KG_PER_LB;
+  // How far a typed lb load can be from its pound once stored as kg to its decimals, in pounds.
+  const typedError = (0.5 * 10 ** -P.storedKgDecimals) / KG_PER_LB;
+  // A load on the kilo grid (a multiple of 1.25 kg, what the engine makes for a kilo gym) is a target made in kilos, however near a
+  // pound it falls by chance (110 kg is 242.51 lb, 160 kg is 352.74 lb): it reads to the rack. Only what is off that grid can be a
+  // load typed in pounds, and that is kept as typed on the half pound (every whole or half lb round-trips, ADR-029).
+  const grid = kg / P.loadKgGrid;
+  const derived = Math.abs(grid - Math.round(grid)) * P.loadKgGrid <= 0.5 * 10 ** -P.storedKgDecimals;
+  const halves = lb * 2;
+  if (!derived && Math.abs(halves - Math.round(halves)) / 2 <= typedError) return roundTo(lb, P.loadDecimals);
+  const step = lb < P.loadSmallBelowLb ? P.loadSmallStepLb : P.loadStepLb;
+  return roundTo(Math.round(lb / step) * step, P.loadDecimals);
+}
+
 /** A load's number as formatLoad writes it, in the user's unit: two loads with the same value read as one weight. */
 export function loadValue(kg: number, system: UnitSystem): number {
-  return roundTo(system === 'METRIC' ? kg : kg / KG_PER_LB, P.loadDecimals);
+  return system === 'METRIC' ? roundTo(kg, P.loadDecimals) : lbOfLoad(kg);
+}
+
+/**
+ * A volume (the kilos lifted over a session: a sum, no weight on any bar) as a whole number in the user's unit. It is not stepped to
+ * plates as a load is: 1,257 lb lifted is a total, and the nearest 5 would make it look guessed.
+ */
+export function volumeValue(kg: number, system: UnitSystem): number {
+  return Math.round(system === 'METRIC' ? kg : kg / KG_PER_LB);
 }
 
 export function formatLoad(kg: number, system: UnitSystem): string {
-  const value = trimmed(system === 'METRIC' ? kg : kg / KG_PER_LB, P.loadDecimals);
+  const value = system === 'METRIC' ? trimmed(kg, P.loadDecimals) : String(lbOfLoad(kg));
   return t(system === 'METRIC' ? 'units.kg' : 'units.lb', { value });
 }
 

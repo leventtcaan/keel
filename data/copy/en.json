@@ -24,7 +24,8 @@
     "hide": "Hide keyboard"
   },
   "modal": {
-    "close": "Close"
+    "close": "Close",
+    "dismiss": "Dismiss"
   },
   "guide": {
     "skip": "Skip",
@@ -216,6 +217,13 @@
     "onTrack": "{onTrack}/{counted} weeks on track",
     "onTrackOne": "{onTrack}/{counted} week on track",
     "countedByWeek": "Counted by week",
+    "day": {
+      "title": "{weekday} \u00b7 {session}",
+      "trained": "Trained",
+      "planned": "Planned",
+      "logged": "Weigh-in logged",
+      "rest": "Rest day"
+    },
     "strip": {
       "label": "This week",
       "mark": "{text}, {mark}",
@@ -479,6 +487,10 @@
     "retry": "Try again"
   },
   "train": {
+    "minutes": "about {minutes} min",
+    "metaMinutes": "{minutes} · {moves}",
+    "lastToday": "Last {last} \u2192 {today}",
+    "lastOnly": "Last {last}",
     "addDay": "Add a day",
     "addDayLabel": "Add a training day",
     "restNote": "A rest day helps you grow faster.",
@@ -661,6 +673,9 @@
     "whySingle": "Same muscles, on other equipment than {move}."
   },
   "swap": {
+    "swapped": "Swapped",
+    "swappedDetail": "{from} to {to}",
+    "undoFailed": "Couldn't put it back. Try again.",
     "title": "Swap {move}",
     "titleGeneric": "Swap a move",
     "notFound": "This move isn't in your program now.",
@@ -899,8 +914,13 @@
       "more": "2+"
     },
     "rest": {
-      "label": "Rest · {min}-{max}",
+      "label": "Rest",
+      "over": "Go when you are ready",
       "time": "{minutes}:{seconds}",
+      "less": "-{seconds}",
+      "more": "+{seconds}",
+      "lessLabel": "Rest {seconds} seconds shorter",
+      "moreLabel": "Rest {seconds} seconds longer",
       "end": "Ready",
       "endLabel": "End the rest",
       "alert": {
@@ -923,6 +943,9 @@
       "clean": "Clean",
       "unclean": "Not clean"
     },
+    "previous": "Previous",
+    "previousLabel": "Previous set, {set}",
+    "finishEarly": { "one": "1 move left", "other": "{count} moves left", "body": "Finish now? What you logged is saved.", "finish": "Finish" },
     "finishNow": "Finish",
     "keepGoing": "Keep going",
     "kept": "You're offline. Everything you log is saved on the phone and sent later.",
@@ -1042,16 +1065,14 @@
     "kcal": "kcal",
     "watch": "Apple Watch",
     "record": "{move} {set}",
-    "recordKicker": "Record",
-    "recordNext": "Best ever. Next: {set}.",
-    "recordBest": "Best ever.",
+    "recordKicker": "New best",
+    "recordNext": "Next: {set}",
     "moved": "What moved",
     "move": {
       "repsUp": { "one": "+{count} rep", "other": "+{count} reps" },
       "repsDown": { "one": "{count} rep fewer", "other": "{count} reps fewer" },
       "loadUp": "+{amount}",
-      "loadDown": "{amount} lighter",
-      "same": "same",
+        "same": "same",
       "held": "held",
       "first": "first time",
       "more": "{count} more",
@@ -1063,8 +1084,7 @@
     "baseline": "Baseline set",
     "baselineBody": "Next time every set has a target to beat.",
     "worked": "Worked today",
-    "thisWeek": "This week",
-    "week": "{done} of {planned}",
+    "week": "{done} of {planned} sessions this week",
     "weekLabel": "This week: {done} of {planned} sessions",
     "share": "Share your workout",
     "done": "Done",
@@ -1096,7 +1116,7 @@
     "first": "First time logged",
     "note": "RIR {rir}. Next time, aim for 0-{target}.",
     "done": "Done",
-    "setRir": "{set} · RIR {rir}",
+    "setLeft": { "zero": "{set} · none left", "one": "{set} · 1 rep left", "other": "{set} · {count} reps left" },
     "reachedOne": "{reached} of 1 exercise reached your target effort"
   },
   "food": {

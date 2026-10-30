@@ -8,12 +8,12 @@ import { Button } from '@/components/Button';
 import { ProblemText, useProblem } from '@/components/ProblemText';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
-import { useChangesOnClose } from '@/saved/saved';
+import { useChangesOnClose, useSaved } from '@/saved/saved';
 import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { useReadOnFocus } from '@/today/useReadOnFocus';
-import { swapMove } from '@/train/changes';
+import { changeToday, swapMove } from '@/train/changes';
 import { MoveThumb } from '@/train/MoveThumb';
 import { exerciseName } from '@/train/program';
 import { workoutParams } from '@/train/params';
@@ -79,6 +79,7 @@ export default function SwapScreen() {
   const target = programDay === null || planOnly === null ? null : (session ?? { day: programDay, session: planOnly });
   const choice = target === null || picked === null ? null : swapChoice(target, picked);
 
+  const saved = useSaved();
   const send = async (exerciseId: string, next: string, scope: Scope) => {
     if (params.day === undefined || sending.current) return;
     sending.current = true;
@@ -87,8 +88,21 @@ export default function SwapScreen() {
     sending.current = false;
     if (!shown.current) return;
     setBusy(false);
-    if (answer.kind === 'done') router.back();
-    else setProblem(t(SAID[answer.kind]));
+    if (answer.kind === 'done') {
+      // The result is said where the user lands, with Undo (the walk: "the card changes silently"): today's swap goes back with today's
+      // Undo, a swap from now on by swapping back.
+      const dayId = params.day;
+      saved({
+        lead: t('swap.swapped'),
+        detail: t('swap.swappedDetail', { from: name(exerciseId), to: name(next) }),
+        undo: async () => {
+          const back = scope === 'TODAY' ? await changeToday(api, dayId, 'UNDO') : await swapMove(api, { programDayId: dayId, exerciseId: next, to: exerciseId, scope });
+          if (back.kind === 'done') return { done: true };
+          return { done: false, message: t(back.kind === 'offline' ? 'swap.offline' : 'swap.undoFailed'), again: back.kind !== 'conflict' };
+        },
+      });
+      router.back();
+    } else setProblem(t(SAID[answer.kind]));
   };
 
   let title = t('swap.titleGeneric');

@@ -1,5 +1,5 @@
 import { SymbolView } from 'expo-symbols';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
@@ -18,9 +18,9 @@ function spoken(day: StripDay): string {
 /**
  * The week strip (ADR-077 #1, prototype `weekStrip`): above it the week's number while the server names one, and the
  * record of weeks on track ("Counted by week" until a week is over). A day trained has a tick, a day logged a dot, a day
- * still planned a ring; an empty day is only empty, never red (U7).
+ * still planned a ring; an empty day is only empty, never red (U7). A tap on a day opens it (`onDay`: its plan or its log).
  */
-export function WeekStrip({ head, days }: { head: WeekHead; days: StripDay[] }) {
+export function WeekStrip({ head, days, onDay }: { head: WeekHead; days: StripDay[]; onDay?: (day: StripDay) => void }) {
   const { color } = useTheme();
   // Built outside the JSX (the raw-text guard reads its children).
   const tick = <SymbolView testID="tick" name="checkmark" size={tokens.type.bodySmall} tintColor={color.onAccent} weight="bold" />;
@@ -37,7 +37,14 @@ export function WeekStrip({ head, days }: { head: WeekHead; days: StripDay[] }) 
       </View>
       <View testID="week-strip" accessibilityLabel={t('thisWeek.strip.label')} style={styles.week}>
         {days.map((day) => (
-          <View key={day.date} testID={`day-${day.date}`} accessible accessibilityLabel={spoken(day)} style={styles.day}>
+          <Pressable
+            key={day.date}
+            testID={`day-${day.date}`}
+            accessibilityRole={onDay === undefined ? undefined : 'button'}
+            accessibilityLabel={spoken(day)}
+            disabled={onDay === undefined}
+            onPress={() => onDay?.(day)}
+            style={styles.day}>
             {/* Today's ink ring stands off the mark (prototype `.mk.td`): a planned day keeps its accent ring inside it. */}
             <View testID={day.today ? `ring-${day.date}` : undefined} style={[styles.ring, { borderColor: day.today ? color.text : color.background }]}>
               <View
@@ -53,7 +60,7 @@ export function WeekStrip({ head, days }: { head: WeekHead; days: StripDay[] }) 
               </View>
             </View>
             <Text style={[styles.letter, { color: day.today ? color.text : color.muted }]}>{t(`thisWeek.strip.letter.${day.weekday}`)}</Text>
-          </View>
+          </Pressable>
         ))}
       </View>
     </View>

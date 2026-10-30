@@ -7,6 +7,7 @@ import {
   formatHeight,
   formatLoad,
   loadValue,
+  volumeValue,
   formatPlate,
   formatWaist,
   formatWeight,
@@ -89,9 +90,21 @@ describe('loads', () => {
     expect(formatLoad(kg!, 'IMPERIAL')).toBe('225 lb');
   });
 
-  test('every load typed in whole or half lb (up to 1000) comes back the same', () => {
+  // K1 (Evre 7 C, the walk of 30 Oct: "242.5 x 10" for 110 kg): a load on the kilo grid is a target made in kilos and reads to the rack, so the
+  // 15 typed half-pound loads that fall on that grid by chance (all over 100 lb, none a multiple of 5 lb) read to the nearest 5; every other
+  // whole or half lb comes back as typed (ADR-029).
+  test('every load typed in whole or half lb (up to 1000) comes back the same, but the few that sit on the kilo grid', () => {
     const wrong: number[] = [];
     for (let lb = 0.5; lb <= 1000; lb += 0.5) {
+      if (formatLoad(parseLoadKg(String(lb), 'IMPERIAL')!, 'IMPERIAL') !== `${lb} lb`) wrong.push(lb);
+    }
+    expect(wrong.length).toBeLessThanOrEqual(20);
+    expect(wrong.filter((lb) => lb < 100 || lb % 5 === 0)).toEqual([]);
+  });
+
+  test('every load typed in whole pounds that a gym has (a multiple of 5 up to 1000) comes back the same', () => {
+    const wrong: number[] = [];
+    for (let lb = 5; lb <= 1000; lb += 5) {
       if (formatLoad(parseLoadKg(String(lb), 'IMPERIAL')!, 'IMPERIAL') !== `${lb} lb`) wrong.push(lb);
     }
     expect(wrong).toEqual([]);
@@ -103,6 +116,43 @@ describe('loads', () => {
 
   test('zero is a load (bodyweight moves log 0)', () => {
     expect(parseLoadKg('0', 'METRIC')).toBe(0);
+  });
+});
+
+describe('a load that came from kilos is a weight a gym has (the walk of 30 Oct: "396.8 x 8", "209.4 lb", "104.7 lb")', () => {
+  test.each([
+    [180, '395 lb'],
+    [160, '355 lb'],
+    [110, '245 lb'],
+    [95, '210 lb'],
+    [47.5, '105 lb'],
+    [4.5, '10 lb'],
+    [2.3, '5 lb'],
+  ])('%s kg reads %s', (kg, text) => {
+    expect(formatLoad(kg, 'IMPERIAL')).toBe(text);
+  });
+
+  test('never a decimal that no plate makes: every kg load on the kilo grid (0 to 400 in 1.25 steps) reads on the rack, 2.5 lb at the lightest (110 kg is 245 lb, not 242.5; 160 kg is 355, not 352.7)', () => {
+    const wrong: string[] = [];
+    for (let kg = 0; kg <= 400; kg += 1.25) {
+      const lb = loadValue(kg, 'IMPERIAL');
+      if (lb % 2.5 !== 0 || (lb >= 10 && lb % 5 !== 0)) wrong.push(`${kg}: ${lb}`);
+    }
+    expect(wrong).toEqual([]);
+  });
+
+  test('a load typed in pounds off the kilo grid is shown as typed, to the half pound', () => {
+    expect(formatLoad(parseLoadKg('102.5', 'IMPERIAL')!, 'IMPERIAL')).toBe('102.5 lb');
+    expect(formatLoad(parseLoadKg('47.5', 'IMPERIAL')!, 'IMPERIAL')).toBe('47.5 lb');
+  });
+
+  test('kilos are as the server keeps them', () => {
+    expect(formatLoad(62.5, 'METRIC')).toBe('62.5 kg');
+  });
+
+  test('a volume is a whole sum in the unit, never stepped to plates', () => {
+    expect(volumeValue(570.1, 'IMPERIAL')).toBe(1257);
+    expect(volumeValue(570.1, 'METRIC')).toBe(570);
   });
 });
 
@@ -172,9 +222,20 @@ test('a plate as its size, without the unit: kg to the hundredth, lb on the quar
   expect(formatPlate(20.41, 'IMPERIAL')).toBe('45');
 });
 
-test("a load's value as it is written: 62.5 and 62.51 kg are both 137.8 lb, and both 62.5 kg", () => {
-  expect(loadValue(62.5, 'IMPERIAL')).toBe(137.8);
-  expect(loadValue(62.51, 'IMPERIAL')).toBe(137.8);
+test("a load's value as it is written: 62.5 and 62.51 kg are both 140 lb (the nearest 5 lb, 137.8 to the decimal), and both 62.5 kg", () => {
+  expect(loadValue(62.5, 'IMPERIAL')).toBe(140);
+  expect(loadValue(62.51, 'IMPERIAL')).toBe(140);
   expect(loadValue(62.51, 'METRIC')).toBe(62.5);
+  // Evre 7: the walk showed 396.8 lb, 209.4 lb. A load that came from the kilos reads as a weight a gym has (the nearest 5 lb)...
+  expect(loadValue(180, 'IMPERIAL')).toBe(395);
+  expect(loadValue(95, 'IMPERIAL')).toBe(210);
+  expect(formatLoad(95, 'IMPERIAL')).toBe('210 lb');
+  // ...under 10 lb to the nearest 2.5 lb...
+  expect(loadValue(2.5, 'IMPERIAL')).toBe(5);
+  // ...and a load typed in pounds comes back as typed, on or off the 5s (ADR-029: 137.5 lb and 132 lb are what the user wrote).
+  expect(loadValue(parseLoadKg('137.5', 'IMPERIAL') as number, 'IMPERIAL')).toBe(137.5);
+  expect(loadValue(parseLoadKg('132', 'IMPERIAL') as number, 'IMPERIAL')).toBe(132);
+  // Kilos are never rounded this way.
+  expect(loadValue(97.5, 'METRIC')).toBe(97.5);
   expect(loadValue(82.5, 'METRIC')).toBe(82.5);
 });

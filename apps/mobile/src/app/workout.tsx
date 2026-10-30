@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ProblemText, announce } from '@/components/ProblemText';
 import type { components } from '@/api/schema';
 
+import { BottomSheet } from '@/components/BottomSheet';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { TextField } from '@/components/TextField';
@@ -21,6 +22,7 @@ import { DoneSets } from '@/train/DoneSets';
 import { EditSet } from '@/train/EditSet';
 import { EndSheet } from '@/train/EndSheet';
 import { FinishForm } from '@/train/FinishForm';
+import { haptics } from '@/train/haptics';
 import { GoalLine } from '@/train/GoalLine';
 import { CardioStep } from '@/train/CardioStep';
 import { InsightLine } from '@/train/InsightLine';
@@ -34,6 +36,7 @@ import { MoveThumb } from '@/train/MoveThumb';
 import { OwnMoveForm, type SaveOutcome } from '@/train/OwnMoveForm';
 import { SupersetLink } from '@/train/SupersetLink';
 import { nextInGroup, supersetsInForce } from '@/train/superset';
+import { askFirst } from '@/settings/askFirst';
 import { RestTimer } from '@/train/RestTimer';
 import { SessionHeader } from '@/train/SessionHeader';
 import { ActiveSet, type Entry } from '@/train/ActiveSet';
@@ -49,7 +52,7 @@ import { TakenSheet } from '@/train/TakenSheet';
 import { orderBehind, pushBehind, takenChoices } from '@/train/taken';
 import { workoutParams } from '@/train/params';
 import { repsText } from '@/train/reps';
-import { buildSet, exerciseStatus, loadText, parseEntry, parseLoad, platesLine } from '@/train/session';
+import { buildSet, exerciseStatus, loadText, parseEntry, parseLoad, platesLine, setText } from '@/train/session';
 import { type Move, type TrainData, movesOf, ownMove } from '@/train/trainData';
 import { localDay } from '@/today/today';
 import { formatLoad } from '@/units/units';
@@ -419,6 +422,8 @@ function Session() {
     if (saved) {
       // A set logged: the keyboard that took its numbers goes, so it does not cover the next set and the dock.
       Keyboard.dismiss();
+      // The tick of a set done, felt (Evre 7 C2).
+      haptics.setDone();
       // The last skip is no longer the thing to undo, and a set being corrected is left as it was.
       setUndo(null);
       setEditing(null);
@@ -598,10 +603,20 @@ function Session() {
     (e, i) => e.planned !== undefined && plans[i] !== null && (worked.includes(e.exerciseId) || (e.base !== undefined && worked.includes(e.base.exerciseId))),
   ).length;
   // Nothing kept yet: close and send nothing. A workout kept without a working set: finish it, there is nothing to ask.
+  // Moves with sets still to do (a skipped move is done with); finishing early asks once (Evre 7 C2).
+  const movesLeft = entries.filter((_, i) => plans[i] != null && plans[i]?.current !== null && plans[i]?.skippedMove !== true).length;
   const onFinish = () => {
     setEnding(false);
     if (active === null) router.back();
     else if (worked.length === 0) void finish();
+    else if (movesLeft > 0)
+      askFirst({
+        title: t(movesLeft === 1 ? 'workout.finishEarly.one' : 'workout.finishEarly.other', { count: movesLeft }),
+        body: t('workout.finishEarly.body'),
+        confirmLabel: t('workout.finishEarly.finish'),
+        keepLabel: t('workout.keepGoing'),
+        onConfirm: () => setFinishing(true),
+      });
     else setFinishing(true);
   };
   // End (K-972): with nothing kept there is nothing to choose; else the three ways out.
@@ -1044,6 +1059,9 @@ function Session() {
         keep={{ label: t('workout.tooHeavy.keep', { load: formatLoad(typedKg, units) }), onPress: () => keepOffer(offer.calibrating) }}
       />
     );
+  // The same set last time (the phone's own record of it, else the server's best set of the move): Hevy's PREVIOUS, beside what is typed.
+  const lastSet = row?.last ?? planned?.lastBestSet;
+  const previousText = lastSet === undefined || lastSet === null || move === undefined ? null : setText(lastSet, move, units);
   // The one set under way (ADR-075 #1): the button that logs it is the dock's, so it never moves.
   const entryBlock =
     move === undefined || row === null ? null : (
@@ -1051,10 +1069,11 @@ function Session() {
         move={move}
         heading={heading}
         range={planned === undefined ? null : repsText(planned.reps)}
+        previous={previousText}
         // A move outside the plan has no aim for reps left: there is no plan to aim at.
         aim={planned?.targetRir ?? null}
         gym={data?.gym}
-        plates={typedKg === null ? null : platesLine(move, typedKg, data?.gym)}
+        plates={typedKg === null ? null : platesLine(move, typedKg, data?.gym, units)}
         entry={entry}
         onChange={setEntry}
         onTooHeavy={lighter === null ? null : askTooHeavy}
@@ -1353,7 +1372,7 @@ function Session() {
       </View>
     </View>
   );
-  const restShown = pause.pausedAt !== null && discarded === null ? pausedBar : rest !== null ? <RestTimer since={rest} onEnd={endRest} /> : null;
+  const restShown = pause.pausedAt !== null && discarded === null ? pausedBar : rest !== null ? <RestTimer since={rest} onEnd={endRest} onAdjust={(seconds) => void restAlert.start(rest + seconds * 1000)} /> : null;
   // Built outside the JSX (the raw-text guard reads what is inside it).
   const restSlot = restShown === null ? null : <View testID="rest-slot">{restShown}</View>;
   const swapSheet =
@@ -1376,8 +1395,10 @@ function Session() {
     );
   const takingNow = taking !== null && taking.move === moveId;
   const dock =
-    dockButton === null || ending || swapping || takingNow || discarded !== null ? null : (
+    dockButton === null || discarded !== null ? null : (
       <View testID="dock" style={[styles.dock, { borderTopColor: color.line }]}>
+        {/* The rest is the dock's own first line (Evre 7 C2): it comes and goes at the foot, so the set card above it never moves a finger's width. */}
+        {restSlot}
         {dockButton}
       </View>
     );
@@ -1438,17 +1459,30 @@ function Session() {
   // goes on and on (a move that is never done) would have no visible way out (Evre 7, issue 684).
   const dockOffersFinish = !finishing && !cardioShown && ((move !== undefined && row !== null) || nextId !== undefined);
   const finishLink =
-    active === null || worked.length === 0 || !dockOffersFinish ? null : <Button label={t('workout.finish')} variant="ghost" size="sm" onPress={onFinish} />;
+    active === null || worked.length === 0 || !dockOffersFinish ? null : (
+      <View testID="finish-link" style={styles.finish}>
+        <Button label={t('workout.finish')} variant="text" size="sm" onPress={onFinish} />
+      </View>
+    );
+  const sheetBody = discarded !== null ? null : ending ? endSheet : swapping ? swapSheet : takingNow ? takenSheet : finishing ? form : null;
+  const closeSheet = () => {
+    if (ending) setEnding(false);
+    else if (swapping) setSwapping(false);
+    else if (takingNow) closeTaken();
+    else setFinishing(false);
+  };
+  const sheet = sheetBody === null ? null : <BottomSheet onClose={closeSheet}>{sheetBody}</BottomSheet>;
   const session = (
     <>
       {entries.length > 0 && dots}
+      {/* Finish stays in the first view once a set is kept, right under the moves' dots (Evre 7 C2), not at the foot of a long page. */}
+      {finishLink}
       {undoBar}
       {head}
       {card}
       {upNext}
       {oneMore}
       {addPanel}
-      {finishLink}
       {dayGone}
       {finishProblem}
     </>
@@ -1460,8 +1494,8 @@ function Session() {
       <KeyboardAvoidingView testID="keyboard-avoiding" style={styles.safe} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.top}>
           <SessionHeader since={stale ? null : (startedAt ?? openedAt)} onEnd={onEnd} pause={discarded === null ? pause : NOT_PAUSED} onPause={discarded === null ? togglePause : null} subtitle={dayLine} />
-          {/* Room only while a rest (or the pause) shows: no empty band between the header and the progress (K-1048). */}
-          {restSlot}
+          {/* Only when there is no dock to carry it (nothing to log): the rest is in the dock otherwise, so the page does not shift. */}
+          {dock === null ? restSlot : null}
         </View>
         <ScrollView
           ref={scroller}
@@ -1478,9 +1512,11 @@ function Session() {
           }}>
           {data?.kept === true && <Text style={[styles.small, { color: color.muted }]}>{t('workout.kept')}</Text>}
           {loadFailed}
-          {discarded !== null ? discardedPanel : ending ? endSheet : swapping ? swapSheet : takingNow ? takenSheet : finishing ? form : cardioShown ? cardioPage : session}
+          {discarded !== null ? discardedPanel : cardioShown ? cardioPage : session}
         </ScrollView>
         {dock}
+        {/* End, Swap, Taken and the finish question rise over the session as sheets of short rows (Evre 7 C4); the page stays behind them. */}
+        {sheet}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -1504,7 +1540,7 @@ const styles = StyleSheet.create({
   body: { padding: tokens.space.lg, gap: tokens.space.sm },
   cardioDock: { gap: tokens.space.sm },
   pair: { flexDirection: 'row', gap: tokens.space.sm },
-  dock: { paddingHorizontal: tokens.space.lg, paddingVertical: tokens.space.sm, borderTopWidth: tokens.border.hairline, alignItems: 'stretch' },
+  dock: { paddingHorizontal: tokens.space.lg, paddingVertical: tokens.space.sm, gap: tokens.space.sm, borderTopWidth: tokens.border.hairline, alignItems: 'stretch' },
   undo: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, padding: tokens.space.sm, borderRadius: tokens.radius.card },
   discarded: { gap: tokens.space.sm, padding: tokens.space.md, borderRadius: tokens.radius.card },
   actions: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: tokens.space.lg },
@@ -1518,6 +1554,7 @@ const styles = StyleSheet.create({
   skipSet: { minHeight: tokens.size.touch, justifyContent: 'center', paddingHorizontal: tokens.space.sm },
   move: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, padding: tokens.space.sm, borderRadius: tokens.radius.button },
   grow: { flex: 1 },
+  finish: { alignSelf: 'flex-end' },
   name: { fontFamily: tokens.font.display, fontSize: tokens.type.heading },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },

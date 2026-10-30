@@ -2,8 +2,8 @@
  * "What moved" on the workout's end (K-974, ADR-075 #7 and Ek 2 "Ne arttı", K-1008). The server compares each move's
  * best working set with last time (`WorkoutSummary.moves`: LOAD / REPS with the signed `by`, SAME, HELD, FIRST); the
  * phone only writes it: the set and the difference in the user's unit, the move by the catalog's name. It subtracts
- * nothing and ranks nothing: the server's order, the first few (a parameter) and how many more. A drop is said calmly
- * ("lighter", "fewer"; U7), never as a warning. A session whose every move is a first has nothing that moved: no list
+ * nothing and ranks nothing: the server's order, the first few (a parameter) and how many more. A drop is not said at
+ * all (U7, Evre 7 C3): the set stands alone, never "lighter" or "fewer". A session whose every move is a first has nothing that moved: no list
  * (the baseline card is its card). No estimated max (B10).
  */
 import type { components } from '@/api/schema';
@@ -69,10 +69,11 @@ function changeText(move: Move, units: UnitSystem): string | null {
     case 'FIRST':
       return t('workoutEnd.move.first');
     case 'LOAD':
-      if (move.by === undefined || move.by === 0) return null;
-      return t(move.by > 0 ? 'workoutEnd.move.loadUp' : 'workoutEnd.move.loadDown', { amount: formatLoad(Math.abs(move.by), units) });
+      // A lighter day is not said at all (U7, Evre 7 C3: a finish shows what was done, never "fewer" or "lighter"): the set stands alone.
+      if (move.by === undefined || move.by <= 0) return null;
+      return t('workoutEnd.move.loadUp', { amount: formatLoad(move.by, units) });
     case 'REPS':
-      if (move.by === undefined || move.by === 0) return null;
-      return plural(move.by > 0 ? 'workoutEnd.move.repsUp' : 'workoutEnd.move.repsDown', Math.abs(move.by));
+      if (move.by === undefined || move.by <= 0) return null;
+      return plural('workoutEnd.move.repsUp', move.by);
   }
 }

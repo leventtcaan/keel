@@ -212,8 +212,10 @@ export function LogMeal({ day, slotParam }: Props) {
   };
 
   const undo = async () => {
-    if (toast === null) return;
-    const result = await toast.save.undo().catch(() => ({ done: false as const, message: t('undoBanner.failed'), again: true }));
+    // A save may have no Undo (the saved banner's `undo` is optional): then there is nothing to take back.
+    const takeBack = toast?.save.undo;
+    if (toast === null || takeBack === undefined) return;
+    const result = await takeBack().catch(() => ({ done: false as const, message: t('undoBanner.failed'), again: true }));
     if (result.done) {
       setMarks(new Set());
       changed();

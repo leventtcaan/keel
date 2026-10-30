@@ -14,6 +14,7 @@ import type { Outbound } from '@/sync/queue';
 import type { LocalRecord } from '@/sync/store';
 import { ThemeProvider } from '@/theme/theme';
 import type { Move, TrainData } from '@/train/trainData';
+import { answerAlert } from './support/systemChoices';
 
 
 type Schemas = components['schemas'];
@@ -207,6 +208,10 @@ function reset() {
   mockRecords = [...lastWeek(), record('workout', 'w1', { clientId: 'w1', startedAt: '2026-09-28T17:00:00Z', programDayId: 'day-a' })];
 }
 beforeEach(reset);
+// Finishing early with moves left asks once with the system alert (Evre 7 C2); the tests that finish answer it with Finish unless they test the question.
+beforeEach(() => {
+  answerAlert('confirm');
+});
 
 const show = () =>
   render(

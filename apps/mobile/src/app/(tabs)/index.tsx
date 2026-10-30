@@ -22,6 +22,9 @@ import { FoodLine } from '@/today/FoodLine';
 import { TodayCard } from '@/today/TodayCard';
 import { todayCardOf } from '@/today/todayWorkout';
 import { useToday } from '@/today/useToday';
+import { useUnits } from '@/services/ServicesProvider';
+import { DaySheet } from '@/today/DaySheet';
+import { dayView } from '@/today/dayView';
 import { WeekStrip } from '@/today/WeekStrip';
 import { BuildProgramPrompt } from '@/train/BuildProgramPrompt';
 import { todayFor } from '@/train/week';
@@ -49,6 +52,8 @@ export default function TodayScreen() {
     }, [arrive]),
   );
   const { day, data, reload } = useToday();
+  const units = useUnits();
+  const [openDay, setOpenDay] = useState<string | null>(null);
   const loaded = data !== null;
   useEffect(() => {
     loadedRef.current = loaded;
@@ -76,6 +81,7 @@ export default function TodayScreen() {
   ) : null;
 
   let top = null;
+  let daySheet = null;
   let guideLines: { workout?: string } = {};
   if (data !== null) {
     const monday = data.monday ?? weekMonday(data.consistency, data.program, day);
@@ -120,9 +126,22 @@ export default function TodayScreen() {
         </View>
       );
     guideLines = { workout: workoutLine(card, read?.program ?? null, today) };
+    const opened = openDay === null ? null : stripDays(monday, today, sessions, trainedDays(data.week?.workouts), loggedDays(data.week?.weighIns)).find((d) => d.date === openDay);
+    if (opened !== undefined && opened !== null)
+      daySheet = (
+        <DaySheet
+          day={opened}
+          view={dayView(opened, program, data.week?.workouts.state === 'ready' ? data.week.workouts.value : [], units)}
+          onClose={() => setOpenDay(null)}
+        />
+      );
     top = (
       <>
-        <WeekStrip head={weekHead(data.consistency, data.firstWeeks)} days={stripDays(monday, today, sessions, trainedDays(data.week?.workouts), loggedDays(data.week?.weighIns))} />
+        <WeekStrip
+          head={weekHead(data.consistency, data.firstWeeks)}
+          days={stripDays(monday, today, sessions, trainedDays(data.week?.workouts), loggedDays(data.week?.weighIns))}
+          onDay={(d) => setOpenDay(d.date)}
+        />
         {/* A paused week is the state's own card ("I'm back"); back, its welcome stays until another state is read. With the
             check-in open the Monday block is the one hero: the check-in asks whether the state still holds (word budget). */}
         {stateCard}
@@ -154,6 +173,7 @@ export default function TodayScreen() {
           {problem}
           {top}
         </ScrollView>
+        {daySheet}
         <PlusEntry buttonRef={plusRef} />
         <GuideOverlay targets={targets} scroll={scroll} lines={guideLines} />
       </View>

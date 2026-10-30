@@ -10,9 +10,11 @@ import { InverseSurface, useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { type UnitSystem, formatLoad } from '@/units/units';
 
+import { estimatedMinutes, lastTodayLine } from './beforeWorkout';
 import { MoveThumb } from './MoveThumb';
 import { OpenElsewhere } from './OpenElsewhere';
 import { dayName, exerciseName, rackNote } from './program';
+import { workoutParams } from './params';
 import { repCount } from './reps';
 import { swapChoice } from './swap';
 import type { Move } from './trainData';
@@ -124,6 +126,11 @@ function Body({ program, today, date, kind, stale, finishedDay, movedAway, moves
       <Button label={t('train.full')} variant="text" disabled={onChange === null} onPress={() => onChange?.(session.day.id, 'FULL')} />
     ) : null;
   const held = program.loadHeldSince !== undefined;
+  // Before the workout (Evre 7 C1): how long it takes, with the cardio after the weights when there is one.
+  const minutes = session === null || short ? null : estimatedMinutes(shown.map((m) => m.planned), cardio !== undefined && program.cardio !== undefined ? program.cardio.minutes : 0);
+  // Built outside the JSX (the raw-text guard reads it).
+  const aboutMinutes = minutes === null ? '' : t('train.minutes', { minutes });
+  const headMeta = minutes === null ? meta : t('train.metaMinutes', { minutes: aboutMinutes, moves: meta });
   const change = () => sheet({ pathname: '/today-change', params: { day: session?.day.id ?? '' } });
   let dock = null;
   if (underWay) dock = <Button label={t('train.continueWorkout')} onPress={() => router.push('/workout')} />;
@@ -131,10 +138,8 @@ function Body({ program, today, date, kind, stale, finishedDay, movedAway, moves
   else if (session !== null) {
     dock = (
       <View style={styles.dock}>
-        <View style={styles.grow}>
-          <Button label={t('train.start')} accessibilityLabel={t('train.startDay', { day: dayName(session.day) })} onPress={() => onStart(session.day.id)} />
-        </View>
-        <Button label={t('train.change')} accessibilityLabel={t('train.changeLabel')} variant="secondary" onPress={change} />
+        <Button label={t('train.start')} accessibilityLabel={t('train.startDay', { day: dayName(session.day) })} onPress={() => onStart(session.day.id)} />
+        <Button label={t('train.change')} accessibilityLabel={t('train.changeLabel')} variant="text" onPress={change} />
       </View>
     );
   }
@@ -142,7 +147,9 @@ function Body({ program, today, date, kind, stale, finishedDay, movedAway, moves
     <View testID="today-card" style={[styles.card, { backgroundColor: color.background }]}>
       <View style={styles.head}>
         <Text style={[styles.small, { color: color.muted }]}>{t('train.todayOn', { weekday: weekdayShort(date) })}</Text>
-        <Text style={[styles.small, { color: color.muted }]}>{short ? t('train.shortTag') : meta}</Text>
+        <Text style={[styles.small, { color: color.muted }]}>
+          {short ? t('train.shortTag') : headMeta}
+        </Text>
       </View>
       <Text accessibilityRole="header" style={[styles.title, { color: color.text }]}>
         {title}
@@ -153,7 +160,7 @@ function Body({ program, today, date, kind, stale, finishedDay, movedAway, moves
       {undo}
       {full}
       {notice}
-      {shown.map(({ planned, insteadOf }) => {
+      {shown.map(({ planned, insteadOf }, at) => {
         const name = exerciseName(planned.exerciseId, moves);
         // The swap names the program's move; a move swapped for today offers it back. None with nothing to swap to.
         const plannedId = insteadOf?.exerciseId ?? planned.exerciseId;
@@ -171,6 +178,8 @@ function Body({ program, today, date, kind, stale, finishedDay, movedAway, moves
         ) : null;
         const move = moves.get(planned.exerciseId);
         const rack = rackNote(planned);
+        // The headline lifts say what the last time was beside today's ask (Evre 7 C1).
+        const before = at < workoutParams.headlineMovesShown && session !== null && !underWay ? lastTodayLine(planned, move, units) : null;
         // No weight to aim for on a bodyweight move; an added load (a weighted dip) with its plus.
         const kg = planned.nextLoadKg === undefined || move?.load === 'BODYWEIGHT' ? null : formatLoad(planned.nextLoadKg, units);
         const load = kg !== null && move?.load === 'BODYWEIGHT_PLUS_EXTERNAL' ? t('train.addedLoad', { load: kg }) : kg;
@@ -184,9 +193,10 @@ function Body({ program, today, date, kind, stale, finishedDay, movedAway, moves
               style={styles.name}>
               <Text style={[styles.text, styles.bold, { color: color.text }]}>{name}</Text>
               <Text style={[styles.small, { color: color.textSecondary }]}>{t('train.setsReps', { sets: planned.sets, reps: repCount(planned.reps) })}</Text>
+              {before !== null && <Text style={[styles.small, { color: color.accent }]}>{before}</Text>}
               {rack !== null && <Text style={[styles.small, { color: color.textSecondary }]}>{rack}</Text>}
             </Pressable>
-            {load !== null && (
+            {load !== null && before === null && (
               <View style={styles.load}>
                 <Text style={[styles.text, { color: color.text }]}>{load}</Text>
                 {held && <Text style={[styles.small, { color: color.muted }]}>{t('train.held')}</Text>}
@@ -218,8 +228,7 @@ const styles = StyleSheet.create({
   name: { flex: 1, gap: tokens.space.xs },
   load: { alignItems: 'flex-end' },
   swap: { width: tokens.size.touch, height: tokens.size.touch, borderRadius: tokens.radius.button, alignItems: 'center', justifyContent: 'center' },
-  dock: { flexDirection: 'row', gap: tokens.space.sm, alignItems: 'center' },
-  grow: { flex: 1 },
+  dock: { gap: tokens.space.xs, alignItems: 'stretch' },
   text: { fontSize: tokens.type.body },
   bold: { fontWeight: tokens.weight.semibold },
   small: { fontSize: tokens.type.bodySmall },
