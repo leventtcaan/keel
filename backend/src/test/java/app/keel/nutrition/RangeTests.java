@@ -48,23 +48,25 @@ class RangeTests {
 
     @Test
     void weighedChicken() {
-        // 165 × 0.9 × 2 × 0.95 = 282.15 → 282; 165 × 1.1 × 2 × 1.05 = 381.15 → 382
+        // Ek 8: the number is 330. 330 × 0.9 × 0.95 = 282.15 is 47.85 under it, 330 × 1.1 × 1.05 = 381.15 is 51.15 over: the
+        // range is 330 ± 52, so the middle is the number and neither side is narrower than its worst case.
         assertThat(FoodRanges.item(CHICKEN, Source.ANALYSED, new BigDecimal("200"), Certainty.WEIGHED, P))
-                .isEqualTo(new Nutrients(new Range(282, 382), new Range(53, 72), new Range(0, 0), new Range(6, 9)));
+                .isEqualTo(new Nutrients(new Range(278, 382), new Range(52, 72), new Range(0, 0), new Range(5, 9)));
     }
 
     @Test
     void eyeballedCereal() {
-        // 400 × 0.9 × 0.5 × 0.5 = 90; 400 × 1.2 × 0.5 × 1.5 = 360
+        // Ek 8: the number is 200. 400 × 0.9 × 0.5 × 0.5 = 90 is 110 under it, 400 × 1.2 × 0.5 × 1.5 = 360 is 160 over: 200 ± 160.
         assertThat(FoodRanges.item(CEREAL, Source.BRANDED, new BigDecimal("50"), Certainty.ESTIMATED, P))
-                .isEqualTo(new Nutrients(new Range(90, 360), new Range(2, 9), new Range(14, 58), new Range(1, 8)));
+                .isEqualTo(new Nutrients(new Range(40, 360), new Range(1, 9), new Range(12, 58), new Range(0, 8)));
     }
 
     @Test
     void aCupOfRice() {
-        // 130 × 0.9 × 1.58 × 0.75 = 138.645 → 138; 130 × 1.1 × 1.58 × 1.25 = 282.425 → 283
+        // Ek 8: the number is 205 (205.4). 130 × 0.9 × 1.58 × 0.75 = 138.645 is 66.8 under it, 130 × 1.1 × 1.58 × 1.25 = 282.425 is
+        // 77.0 over: 205 ± 78.
         assertThat(FoodRanges.item(RICE, Source.ANALYSED, new BigDecimal("158"), Certainty.MEASURED, P).kcal())
-                .isEqualTo(new Range(138, 283));
+                .isEqualTo(new Range(127, 283));
     }
 
     @Test
@@ -73,7 +75,7 @@ class RangeTests {
         Nutrients cereal = FoodRanges.item(CEREAL, Source.BRANDED, new BigDecimal("50"), Certainty.ESTIMATED, P);
 
         assertThat(FoodRanges.total(List.of(chicken, cereal)))
-                .isEqualTo(new Nutrients(new Range(372, 742), new Range(55, 81), new Range(14, 58), new Range(7, 17)));
+                .isEqualTo(new Nutrients(new Range(318, 742), new Range(53, 81), new Range(12, 58), new Range(5, 17)));
     }
 
     @Test

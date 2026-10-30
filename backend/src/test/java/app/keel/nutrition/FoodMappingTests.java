@@ -113,16 +113,16 @@ class FoodMappingTests {
 
         assertThat(result).hasStatusOk();
         Map<String, Object> estimate = map(result);
-        assertThat(estimate).containsEntry("kcal", Map.of("low", 372, "high", 742)).containsEntry("proteinG", Map.of("low", 55, "high", 81));
+        assertThat(estimate).containsEntry("kcal", Map.of("low", 318, "high", 742)).containsEntry("proteinG", Map.of("low", 53, "high", 81));
         assertThat((List<Map<String, Object>>) estimate.get("items")).extracting(item -> item.get("kcal"))
-                .containsExactly(Map.of("low", 282, "high", 382), Map.of("low", 90, "high", 360));
+                .containsExactly(Map.of("low", 278, "high", 382), Map.of("low", 40, "high", 360));
         assertThat(estimate).containsEntry("question", Map.of("foodId", "fdc:1897574", "copyKey", "foodEstimate.question.grams"));
     }
 
     @Test
     void aServingIsAMeasureAndMillilitresNeedTheFoodsDensity() throws Exception {
         Map<String, Object> cup = map(post("/v1/food-estimates", Map.of("items", List.of(item("fdc:168878", 1, "1 cup", null)))));
-        assertThat(cup).containsEntry("kcal", Map.of("low", 138, "high", 283));
+        assertThat(cup).containsEntry("kcal", Map.of("low", 127, "high", 283));
 
         // 250 ml whole milk × 1.03 g/ml = 257.5 g, eyeballed: 61 × 0.9 × 2.575 × 0.5 = 70.68 → 70
         Map<String, Object> milk = map(post("/v1/food-estimates", Map.of("items", List.of(item("fdc:746782", 250, "ml", null)))));
