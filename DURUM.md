@@ -5,7 +5,14 @@ guncelleme: 2026-10-10
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (30 Eki — Evre 7 bitti, build 10 yolda)
+## ▶ DEVAM NOKTASI (7 Kas — 1.0 build 11 + abonelikler App Review'da, yayın ELLE)
+**Red (6 Kas, gönderim 0749ab29, build 10):** 2.1(b) App Completeness: abonelikler gönderimde yoktu. Neden: 28 Eki gönderimi build değiştirmek için
+geri çekilince grup ve iki abonelik "Developer Rejected"e düştü; 30 Eki gönderimine yalnız sürüm girdi. Kod sorunu değil (Apple'ın iPad görüntüsünde paywall fiyatları doğru).
+**Düzeltme (7 Kas, Levent onayıyla agent):** build 11 (kod aynı, `main` `7b6b524b`, EAS `87701d90`) → sürüme bağlandı; inceleme notuna 2.1(b) bölümü; reddedilen gönderim
+iptal edildi, sürüm + grup + iki abonelik tek taslakta → **Waiting for Review** (4 öğe). Yayın şekli ELLE; Release Levent'te.
+**Ders:** gönderimi geri çekmek ya da build değiştirmek ilk aboneliklerini gönderimden düşürür; yeniden gönderirken sürüm + grup + abonelikler aynı taslakta olmalı.
+
+## (önceki) DEVAM NOKTASI (30 Eki — Evre 7 bitti, build 10 yolda)
 Evre 7 (`plan/evre-7-urun-hissi.md`, inceleme + envanter `plan/evre-7-inceleme.md`, rakipler `arastirma/ham/evre7-rakip-kaliplari.md`): #688-#706 birleşti
 (dört hata kök nedeni; Log a meal + Today's food yeniden; Add a move seçici, boş gün yok, gün silme onaylı; Edit program sade, Rebuild sonucu söylüyor;
 antrenman öncesi/an/sonrası, geriye sayan dinlenme, Imperial plaka yuvarlama, nötr bitiş; tek kcal gerçeği; haptics; son basma turu 186/210).
