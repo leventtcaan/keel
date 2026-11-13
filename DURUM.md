@@ -5,7 +5,11 @@ guncelleme: 2026-10-10
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (7 Kas — 1.0 build 11 + abonelikler App Review'da, yayın ELLE)
+## ▶ DEVAM NOKTASI (13 Kas — 1.0 ONAYLANDI, Release Levent'te)
+**13 Kas 09:51 UTC:** App Review tamam, "eligible for distribution" (gönderim 98753acc: 1.0 build 11 + grup + 2 abonelik). Yayın şekli ELLE: mağazaya Levent'in Release'iyle çıkar.
+Release öncesi bakılacaklar: (1) SANDBOX kabulü (ADR-080 Ek 1 "onaydan sonra kapat" diyor; ama sonraki sürümlerin incelemesi de sandbox satın alır, kapatılırsa 1.0.1 incelemesi kilitlenir → karar gerekli); (2) K-1035 Turkcell/duckdns engeli (Türkiye'de Turkcell kullanıcısı sunucuya ulaşamayabilir); (3) Small Business Program, RevenueCat e-posta doğrulaması.
+
+## (önceki) DEVAM NOKTASI (7 Kas — 1.0 build 11 + abonelikler App Review'da, yayın ELLE)
 **Red (6 Kas, gönderim 0749ab29, build 10):** 2.1(b) App Completeness: abonelikler gönderimde yoktu. Neden: 28 Eki gönderimi build değiştirmek için
 geri çekilince grup ve iki abonelik "Developer Rejected"e düştü; 30 Eki gönderimine yalnız sürüm girdi. Kod sorunu değil (Apple'ın iPad görüntüsünde paywall fiyatları doğru).
 **Düzeltme (7 Kas, Levent onayıyla agent):** build 11 (kod aynı, `main` `7b6b524b`, EAS `87701d90`) → sürüme bağlandı; inceleme notuna 2.1(b) bölümü; reddedilen gönderim
