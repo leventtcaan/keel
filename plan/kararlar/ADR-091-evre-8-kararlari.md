@@ -163,3 +163,10 @@ ikinci tam karar 403/okuma/uygulanmama, abone olunca açılma; veritabanı, CI),
 
 ### Açık nokta
 Hukuk sitesi `terms.md` "Coaching needs a subscription" diyor; ücretsiz katmanla uyum için Levent'in gözünden geçmeli (metin ürün/hukuk).
+
+## Ek 3 · Levent onayları (2026-11-24, Part 8a-1 sonu)
+- Ücretsiz katmanda ilk tam haftalık karardan sonraki kararlar saklanır ama plana **uygulanmaz** (plan donar); abone olunca yalnız bu haftanın kararı açılır ve uygulanır (Ek 1). **KABUL.**
+- Yükü azaltan kararlar (deload, tam dinlenme, yük artışını durdur, toparlanmayı düzelt) ücretsizde de açık, kilitlenmez ve ücretsiz hakkı harcamaz (#1'deki "deload ücretli" ifadesinin yerine). **KABUL.**
+- `legacy_clients_unlocked_until: "2027-01-15"`. **KABUL.**
+- Onboarding sonunda kullanıcının kendi plan önizlemesiyle kapatılabilir teklif bir kez (ADR-072 #7 yumuşak hâli); ana ekran sözcük bütçesi 68 → 70. **KABUL.**
+- Agent kararı (bilgi için): dışa aktarma kilitli kararları da içerir (kullanıcının kendi verisine erişim hakkı). Bekleyen: `terms.md` taslağı (`plan/evre-8-terms-taslak.diff`) 1.0.1 gönderiminde (K-1209) Levent'e.
