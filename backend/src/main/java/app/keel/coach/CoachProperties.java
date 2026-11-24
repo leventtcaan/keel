@@ -30,6 +30,11 @@ record CoachProperties(String provider, String providerName, String model, Integ
                 || dataTypes.values().stream().anyMatch(type -> type == null || type.isBlank())) {
             throw new IllegalStateException("keel.coach.data-types names, for every purpose, the data the AI consent calls it (V2)");
         }
+        // A real provider is paid by the token: a price of nothing is a mistake, and the budget would count it as free (ADR-092 #4).
+        if ("openai".equals(provider) && ((inputPricePerMillion != null && inputPricePerMillion.signum() == 0)
+                || (outputPricePerMillion != null && outputPricePerMillion.signum() == 0))) {
+            throw new IllegalStateException("keel.coach prices for openai are more than zero (unset, until checked, counts each call at the high estimate)");
+        }
         dataTypes = Map.copyOf(dataTypes);
         if (maxQuestionChars == null || maxQuestionChars < 1 || maxReplyChars == null || maxReplyChars < 1) {
             throw new IllegalStateException("keel.coach.max-question-chars and max-reply-chars are at least 1");

@@ -22,7 +22,7 @@ final class ReplyRules {
     static ReplyRules fromClasspath() {
         Map<String, Object> file = PatternList.json("data/coach/reply-rules.json");
         List<PatternList.Entry> entries = new ArrayList<>(((List<Map<String, Object>>) file.get("rules")).stream()
-                .map(rule -> PatternList.entry(rule, (String) rule.get("id"), Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE)).toList());
+                .map(rule -> PatternList.entry(rule, (String) rule.get("id"), Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE | Pattern.UNICODE_CHARACTER_CLASS)).toList());
         return new ReplyRules(new PatternList(entries));
     }
 

@@ -17,7 +17,8 @@ import org.springframework.stereotype.Component;
  * What the user asked the coach to remember about them (ADR-092 #3): at most {@code coach_memory_max_items} short sentences
  * in the user's own words, written only by the user's own "remember this" — never by the model — and viewable, correctable and
  * deletable by them. They go to the model as facts about the person (never as numbers: the reply check allows none of them) and
- * must be what the coach could say itself: no phrase the reply rules or the forbidden list stop. A conversation that ends with the
+ * must be what the coach could say itself: no phrase the reply rules or the forbidden list stop, no health or medical word (the coach
+ * does not carry those into a question, U6) and no word that gives it orders ("ignore the rules"). A conversation that ends with the
  * AI consent, the health data consent or the account ends them too (CoachAccountData).
  */
 @Component
@@ -36,6 +37,8 @@ class CoachMemory {
     private final CoachLimits limits;
     private final ForbiddenWords forbidden = ForbiddenWords.fromClasspath();
     private final ReplyRules rules = ReplyRules.fromClasspath();
+    private final Signals health = Signals.health();
+    private final Signals injection = Signals.injection();
 
     CoachMemory(JdbcClient jdbc, Clock clock, CoachLimits limits) {
         this.jdbc = jdbc;
@@ -91,7 +94,7 @@ class CoachMemory {
         }
         String kept = text.strip().replaceAll("\\s+", " ");
         if (kept.isEmpty() || kept.length() > limits.memoryMaxChars() || kept.chars().anyMatch(Character::isISOControl)
-                || !forbidden.found(kept).isEmpty() || !rules.found(kept).isEmpty()) {
+                || !forbidden.found(kept).isEmpty() || !rules.found(kept).isEmpty() || !health.found(kept).isEmpty() || !injection.found(kept).isEmpty()) {
             throw new ApiException(ErrorCode.VALIDATION_FAILED);
         }
         return kept;

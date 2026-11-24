@@ -23,8 +23,10 @@ class SubscriptionAccountData implements AccountDataExport {
     private final FreeCallUse uses;
     private final LockedCallsClients clients;
     private final CoachTrialUse trial;
+    private final CoachAccountSpend accountSpend;
 
-    SubscriptionAccountData(JdbcClient jdbc, FreeCallUse uses, LockedCallsClients clients, CoachTrialUse trial) {
+    SubscriptionAccountData(JdbcClient jdbc, FreeCallUse uses, LockedCallsClients clients, CoachTrialUse trial, CoachAccountSpend accountSpend) {
+        this.accountSpend = accountSpend;
         this.clients = clients;
         this.trial = trial;
         this.jdbc = jdbc;
@@ -33,7 +35,7 @@ class SubscriptionAccountData implements AccountDataExport {
 
     @ApplicationModuleListener
     void on(AccountDeletionRequested deletion) {
-        for (String table : new String[] {"subscription.daily_use", "subscription.free_call_use", "subscription.coach_trial_use", "subscription.locked_calls_client", "subscription.subscription", "subscription.webhook_event"}) {
+        for (String table : new String[] {"subscription.daily_use", "subscription.free_call_use", "subscription.coach_trial_use", "subscription.coach_account_spend", "subscription.locked_calls_client", "subscription.subscription", "subscription.webhook_event"}) {
             jdbc.sql("delete from " + table + " where account_id = :account").param("account", deletion.account().value()).update();
         }
     }
@@ -61,6 +63,10 @@ class SubscriptionAccountData implements AccountDataExport {
         int freeCoachQuestions = trial.used(account);
         if (freeCoachQuestions > 0) {
             section.put("freeCoachQuestionsUsed", freeCoachQuestions);
+        }
+        List<Map<String, Object>> coachSpend = accountSpend.all(account);
+        if (!coachSpend.isEmpty()) {
+            section.put("coachSpend", coachSpend);
         }
         if (clients.marked(account)) {
             section.put("lockedCallsClient", true);

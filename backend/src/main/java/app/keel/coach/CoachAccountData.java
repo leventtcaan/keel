@@ -53,7 +53,7 @@ class CoachAccountData implements AccountDataExport {
     @Override
     public Object export(AccountId account) {
         Map<String, Object> section = new LinkedHashMap<>();
-        section.put("messages", conversation.history(account).stream().map(message -> {
+        section.put("messages", conversation.all(account).stream().map(message -> {
             Map<String, Object> entry = new LinkedHashMap<>();
             entry.put("at", message.at().toString());
             entry.put("role", message.role().name());

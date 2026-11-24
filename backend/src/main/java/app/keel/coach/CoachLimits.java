@@ -24,18 +24,23 @@ final class CoachLimits {
     private final int memoryMaxItems;
     private final int memoryMaxChars;
     private final int freeTrialQuestions;
+    private final BigDecimal monthlyCapPerAccountUsd;
 
     CoachLimits(BigDecimal monthlyBudgetUsd, BigDecimal unpricedCallCostUsd) {
-        this(monthlyBudgetUsd, unpricedCallCostUsd, 30, 6, 50, 10, 200, 3);
+        this(monthlyBudgetUsd, unpricedCallCostUsd, 30, 6, 50, 10, 200, 3, new BigDecimal("2"));
     }
 
     CoachLimits(BigDecimal monthlyBudgetUsd, BigDecimal unpricedCallCostUsd, int historyDays, int historyTurnsInPrompt, int historyPage, int memoryMaxItems,
             int memoryMaxChars) {
-        this(monthlyBudgetUsd, unpricedCallCostUsd, historyDays, historyTurnsInPrompt, historyPage, memoryMaxItems, memoryMaxChars, 3);
+        this(monthlyBudgetUsd, unpricedCallCostUsd, historyDays, historyTurnsInPrompt, historyPage, memoryMaxItems, memoryMaxChars, 3, new BigDecimal("2"));
     }
 
     CoachLimits(BigDecimal monthlyBudgetUsd, BigDecimal unpricedCallCostUsd, int historyDays, int historyTurnsInPrompt, int historyPage, int memoryMaxItems,
-            int memoryMaxChars, int freeTrialQuestions) {
+            int memoryMaxChars, int freeTrialQuestions, BigDecimal monthlyCapPerAccountUsd) {
+        if (monthlyCapPerAccountUsd.signum() <= 0) {
+            throw new IllegalStateException("coach.yaml: the cap per account is more than zero");
+        }
+        this.monthlyCapPerAccountUsd = monthlyCapPerAccountUsd;
         if (monthlyBudgetUsd.signum() <= 0 || unpricedCallCostUsd.signum() <= 0) {
             throw new IllegalStateException("coach.yaml: the budget and the unpriced call's cost are more than zero");
         }
@@ -67,7 +72,7 @@ final class CoachLimits {
         List<Map<String, Object>> parameters = (List<Map<String, Object>>) ((Map<String, Object>) new Yaml(strict).load(in)).get("parameters");
         return new CoachLimits(number(parameters, "coach_monthly_budget_usd"), number(parameters, "coach_unpriced_call_cost_usd"),
                 whole(parameters, "coach_history_days"), whole(parameters, "coach_history_turns_in_prompt"), whole(parameters, "coach_history_page"),
-                whole(parameters, "coach_memory_max_items"), whole(parameters, "coach_memory_max_chars"), whole(parameters, "coach_free_trial_questions"));
+                whole(parameters, "coach_memory_max_items"), whole(parameters, "coach_memory_max_chars"), whole(parameters, "coach_free_trial_questions"), number(parameters, "coach_monthly_cap_per_account_usd"));
     }
 
     private static int whole(List<Map<String, Object>> parameters, String key) {
@@ -110,6 +115,11 @@ final class CoachLimits {
     /** The longest one of them. */
     int memoryMaxChars() {
         return memoryMaxChars;
+    }
+
+    /** The most one account's questions may cost in a month, beside the budget for everyone. */
+    BigDecimal monthlyCapPerAccountUsd() {
+        return monthlyCapPerAccountUsd;
     }
 
     /** The questions an account may ask the coach without a subscription, once in its life (0: none). */

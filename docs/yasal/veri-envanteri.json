@@ -809,7 +809,8 @@
     "copy_key",
     "topic",
     "decision_id",
-    "created_at"
+    "created_at",
+    "blocked"
    ],
    "basis": "explicit consent (GDPR Art. 9(2)(a)) — HEALTH_DATA",
    "gated_by": "HEALTH_DATA",
@@ -870,6 +871,28 @@
    ],
    "exported": true,
    "export_key": "freeCoachQuestionsUsed",
+   "policy": "data-subscription",
+   "app_privacy": [
+    "Usage Data › Product Interaction"
+   ]
+  },
+  {
+   "table": "subscription.coach_account_spend",
+   "module": "subscription",
+   "class": "subscription",
+   "purpose": "What the AI coach's model has cost for your account in a month: money only, no text. It keeps one account from using the whole month's budget.",
+   "columns": [
+    "account_id",
+    "month",
+    "cost_usd"
+   ],
+   "basis": "contract (Art. 6(1)(b))",
+   "gated_by": null,
+   "erased_by": [
+    "account_deletion"
+   ],
+   "exported": true,
+   "export_key": "coachSpend",
    "policy": "data-subscription",
    "app_privacy": [
     "Usage Data › Product Interaction"

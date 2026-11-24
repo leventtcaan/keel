@@ -39,6 +39,8 @@ class Explanation {
     static final String CALL_WORDS = "coach.answer.call";
     static final String NO_CALL_WORDS = "coach.answer.no_call";
     static final String DAILY_LIMIT_WORDS = "coach.answer.daily_limit";
+    /** The topic sentence for a doctor or a health matter (coach.topic.health): the coach is not care (U6). */
+    static final String HEALTH_WORDS = "coach.topic.health";
 
     private static final ModelRequest.Schema REPLY_SCHEMA = replySchema();
 
@@ -70,6 +72,8 @@ class Explanation {
     private final CoachMemory memory;
     private final TrialQuestions trial;
     private final ReplyValidator validator;
+    private final Signals health = Signals.health();
+    private final Signals injection = Signals.injection();
     private final String instructions;
 
     Explanation(CallReader calls, Quota quota, Entitlements entitlements, Clock clock, CoachModel model, CoachSpend spend, CoachConversation conversation,
@@ -99,9 +103,11 @@ class Explanation {
 
     private void remember(AccountId account, String question, Answer answer) {
         UUID call = answer.call().decisionId();
-        conversation.append(account, CoachConversation.Role.USER, question, null, null, call);
+        // A question the server stopped before it could be sent stays in the user's view and export, marked, and is never sent later.
+        boolean blocked = !health.found(question).isEmpty() || !injection.found(question).isEmpty();
+        conversation.append(account, CoachConversation.Role.USER, question, null, null, call, blocked);
         conversation.append(account, CoachConversation.Role.COACH, answer.reply(), answer.reply() == null ? (answer.copyKey() != null ? answer.copyKey() : "coach.topic."
-                + answer.topic().name().toLowerCase(java.util.Locale.ROOT)) : null, answer.topic(), call);
+                + answer.topic().name().toLowerCase(java.util.Locale.ROOT)) : null, answer.topic(), call, blocked);
     }
 
     private Optional<Answer> compute(AccountId account, String question, Optional<UUID> decisionId) {
@@ -112,6 +118,16 @@ class Explanation {
         CallFacts call = found.get();
         Call told = new Call(call.id(), call.copyKey(), call.nextReview(), call.nextCallOn());
         if (!call.tellable()) {
+            return Optional.of(new Answer(Mode.DETERMINISTIC, null, null, null, CALL_WORDS, told));
+        }
+        // Before anything else that could send a word out (ADR-092 #2, U6): a question or a memory with a health, medical, injury or
+        // eating-disorder word gets the engine's safe sentence, one that tries to give the coach orders the call as it stands — no
+        // model, no count, nothing sent. Deterministic, from lists in data/coach.
+        List<String> memories = memory.list(account).stream().map(CoachMemory.Item::text).toList();
+        if (touchesHealth(question, memories)) {
+            return Optional.of(new Answer(Mode.DETERMINISTIC, null, null, null, HEALTH_WORDS, told));
+        }
+        if (givesOrders(question, memories)) {
             return Optional.of(new Answer(Mode.DETERMINISTIC, null, null, null, CALL_WORDS, told));
         }
         // The model is what the subscription pays for (K-703, ADR-056 #10): without one, refused before the consents are
@@ -126,7 +142,7 @@ class Explanation {
             throw new ApiException(ErrorCode.CONSENT_REQUIRED);
         }
         // The month's budget (ADR-092 #4): once spent, the engine's words for everyone — before a use of the day is taken.
-        if (spend.exhausted()) {
+        if (spend.exhausted(account)) {
             return Optional.of(new Answer(Mode.DETERMINISTIC, null, null, null, CALL_WORDS, told));
         }
         // The day's limit (K-508): past it, the call as it stands — no hard stop. A use is given back if the call never ran.
@@ -140,8 +156,8 @@ class Explanation {
             quota.giveBack(account, Quota.Use.COACH_MESSAGE, taken.get());
             throw new ApiException(ErrorCode.ENTITLEMENT_REQUIRED);
         }
-        CoachFacts facts = CoachFacts.of(call, memory.list(account).stream().map(CoachMemory.Item::text).toList());
-        List<Turn> turns = new java.util.ArrayList<>(conversation.turns(account));
+        CoachFacts facts = CoachFacts.of(call, memories);
+        List<Turn> turns = sendable(conversation.turns(account));
         turns.add(Turn.user(question));
         ModelReply said;
         try {
@@ -158,6 +174,24 @@ class Explanation {
         return Optional.of(validator.read(said.text(), call, facts)
                 .map(valid -> new Answer(Mode.MODEL, valid.topic(), valid.rule(), valid.reply(), null, told))
                 .orElseGet(() -> new Answer(Mode.DETERMINISTIC, null, null, null, CALL_WORDS, told)));
+    }
+
+    /**
+     * The earlier turns that may go out with this question: the signals run over every one of them, as they ran over the question — a
+     * turn that touches health or gives orders (kept before the lists said so, or written by hand) is not sent, and since the rest
+     * would no longer follow from it, nothing of the history is: the question goes alone (fail closed).
+     */
+    private List<Turn> sendable(List<Turn> earlier) {
+        boolean clean = earlier.stream().allMatch(turn -> health.found(turn.text()).isEmpty() && injection.found(turn.text()).isEmpty());
+        return clean ? new java.util.ArrayList<>(earlier) : new java.util.ArrayList<>();
+    }
+
+    private boolean touchesHealth(String question, List<String> memories) {
+        return !health.found(question).isEmpty() || memories.stream().anyMatch(item -> !health.found(item).isEmpty());
+    }
+
+    private boolean givesOrders(String question, List<String> memories) {
+        return !injection.found(question).isEmpty() || memories.stream().anyMatch(item -> !injection.found(item).isEmpty());
     }
 
     private void giveBack(AccountId account, LocalDate day, boolean onTrial, RuntimeException failure) {

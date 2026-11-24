@@ -9,6 +9,10 @@ import org.junit.jupiter.api.Test;
 /** The numbers a reply says, however they are written (ADR-092 #2), and when one is a fact's. */
 class ReplyNumbersTests {
 
+    private static ReplyNumbers.Fact fact(BigDecimal value) {
+        return new ReplyNumbers.Fact(value, ReplyNumbers.Unit.NONE);
+    }
+
     private static List<String> values(String text) {
         return ReplyNumbers.in(text).stream().map(said -> said.value().toPlainString()).toList();
     }
@@ -26,7 +30,7 @@ class ReplyNumbersTests {
     void numberWordsAreNumbersInEnglishAndTurkish() {
         assertThat(values("Two sessions, fifty percent, twice, half.")).containsExactlyInAnyOrder("2", "50", "2", "0.5");
         assertThat(values("Üç gün ve yarım saat.")).containsExactlyInAnyOrder("3", "0.5");
-        assertThat(values("TWO hundred")).containsExactlyInAnyOrder("2", "100");
+        assertThat(values("TWO hundred")).containsExactly("200");
     }
 
     @Test
@@ -44,12 +48,12 @@ class ReplyNumbersTests {
     @Test
     void aNumberIsAFactBySizeOrRoundedToItsOwnDecimals() {
         ReplyNumbers.Said five = new ReplyNumbers.Said(new BigDecimal("500"), false);
-        assertThat(ReplyNumbers.matches(five, new BigDecimal("-500"))).isTrue();
-        assertThat(ReplyNumbers.matches(five, new BigDecimal("500.4"))).as("rounded to whole").isTrue();
-        assertThat(ReplyNumbers.matches(five, new BigDecimal("501"))).isFalse();
-        assertThat(ReplyNumbers.matches(new ReplyNumbers.Said(new BigDecimal("0.1"), false), new BigDecimal("0.14"))).isTrue();
-        assertThat(ReplyNumbers.matches(new ReplyNumbers.Said(new BigDecimal("0.15"), false), new BigDecimal("0.1"))).as("more decimals than the fact").isFalse();
-        assertThat(ReplyNumbers.matches(new ReplyNumbers.Said(new BigDecimal("50"), true), new BigDecimal("0.5"))).as("percent of a fraction").isTrue();
-        assertThat(ReplyNumbers.matches(new ReplyNumbers.Said(new BigDecimal("50"), false), new BigDecimal("0.5"))).as("no percent sign").isFalse();
+        assertThat(ReplyNumbers.matches(five, fact(new BigDecimal("-500")))).isTrue();
+        assertThat(ReplyNumbers.matches(five, fact(new BigDecimal("500.4")))).as("rounded to whole").isTrue();
+        assertThat(ReplyNumbers.matches(five, fact(new BigDecimal("501")))).isFalse();
+        assertThat(ReplyNumbers.matches(new ReplyNumbers.Said(new BigDecimal("0.1"), false), fact(new BigDecimal("0.14")))).isTrue();
+        assertThat(ReplyNumbers.matches(new ReplyNumbers.Said(new BigDecimal("0.15"), false), fact(new BigDecimal("0.1")))).as("more decimals than the fact").isFalse();
+        assertThat(ReplyNumbers.matches(new ReplyNumbers.Said(new BigDecimal("50"), true), fact(new BigDecimal("0.5")))).as("percent of a fraction").isTrue();
+        assertThat(ReplyNumbers.matches(new ReplyNumbers.Said(new BigDecimal("50"), false), fact(new BigDecimal("0.5")))).as("no percent sign").isFalse();
     }
 }

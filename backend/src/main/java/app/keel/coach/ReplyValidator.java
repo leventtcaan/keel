@@ -89,7 +89,7 @@ final class ReplyValidator {
     private static List<String> numberProblems(String text, List<BigDecimal> used, CoachFacts facts) {
         List<String> problems = new ArrayList<>();
         for (ReplyNumbers.Said said : ReplyNumbers.in(text)) {
-            if (facts.numbers().stream().noneMatch(fact -> ReplyNumbers.matches(said, fact))) {
+            if (facts.facts().stream().noneMatch(fact -> ReplyNumbers.matches(said, fact))) {
                 problems.add("number-not-a-fact:" + said.value().toPlainString());
             } else if (used.stream().noneMatch(listed -> ReplyNumbers.listed(said, listed))) {
                 problems.add("number-not-listed:" + said.value().toPlainString());
@@ -98,8 +98,8 @@ final class ReplyValidator {
         // A number the model lists is a fact too, whether the reply says it or not.
         for (BigDecimal listed : used) {
             // As a percent too: 50 listed for the fraction 0.5, which the reply writes "50%".
-            if (facts.numbers().stream().noneMatch(fact -> ReplyNumbers.matches(new ReplyNumbers.Said(listed, false), fact)
-                    || ReplyNumbers.matches(new ReplyNumbers.Said(listed, true), fact))) {
+            if (facts.numbers().stream().noneMatch(fact -> ReplyNumbers.sameValue(new ReplyNumbers.Said(listed, false), fact)
+                    || ReplyNumbers.sameValue(new ReplyNumbers.Said(listed, true), fact))) {
                 problems.add("listed-not-a-fact:" + listed.toPlainString());
             }
         }
