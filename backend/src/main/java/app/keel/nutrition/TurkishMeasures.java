@@ -78,10 +78,10 @@ final class TurkishMeasures {
             group.path("grams").properties().forEach(entry -> {
                 String unit = entry.getKey();
                 JsonNode value = entry.getValue();
-                if (!units.contains(unit) || value.decimalValue().signum() <= 0) {
+                if (!units.contains(unit) || !value.path("grams").isNumber() || value.path("grams").decimalValue().signum() <= 0) {
                     throw new IllegalArgumentException("not a measure of " + group.path("id").asString() + ": " + unit);
                 }
-                grams.put(unit, value.decimalValue());
+                grams.put(unit, value.path("grams").decimalValue());
             });
             groups.add(new Group(group.path("id").asString(), words(group.path("first")), words(group.path("also")), words(group.path("except")), grams));
         }

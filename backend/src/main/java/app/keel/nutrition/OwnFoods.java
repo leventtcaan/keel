@@ -89,11 +89,9 @@ class OwnFoods {
         StringBuilder where = new StringBuilder("account_id = :account");
         params.put("account", account.value());
         for (int i = 0; i < terms.words().size(); i++) {
-            where.append(" and lower(translate(name || ' ' || coalesce(brand, ''), cast(:turkish as text), cast(:plain as text))) like :w").append(i).append(" escape '\\'");
+            where.append(" and nutrition.fold_text(name || ' ' || coalesce(brand, '')) like :w").append(i).append(" escape '\\'");
             params.put("w" + i, "%" + terms.words().get(i).replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%");
         }
-        params.put("turkish", FoodSearchTerms.TURKISH_LETTERS);
-        params.put("plain", FoodSearchTerms.PLAIN_LETTERS);
         params.put("limit", limit);
         return jdbc.sql("select * from nutrition.own_food where " + where + " order by created_at desc, id limit :limit").params(params)
                 .query((row, n) -> food(row)).list();

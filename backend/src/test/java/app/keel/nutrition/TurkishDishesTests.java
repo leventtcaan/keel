@@ -27,7 +27,7 @@ class TurkishDishesTests {
     void theNutrientsAreTheIngredientsSummedAndPutPer100gOfTheDish() {
         TurkishDishes.Dish soup = TurkishDishes.read(ONE).getFirst();
 
-        FoodRanges.Per100g per100g = TurkishDishes.per100g(soup, name -> Optional.ofNullable(Map.of("Lentils", LENTILS, "Oil", OIL).get(name))).orElseThrow();
+        FoodRanges.Per100g per100g = TurkishDishes.per100g(soup, part -> Optional.ofNullable(Map.of("Lentils", LENTILS, "Oil", OIL).get(part.food()))).orElseThrow();
 
         // 100 g lentils (116 kcal) + 10 g oil (88.4 kcal) in a 250 g bowl: 204.4 kcal per 250 g, 81.76 per 100 g.
         assertThat(per100g.kcal()).isEqualByComparingTo("81.76");
@@ -41,7 +41,17 @@ class TurkishDishesTests {
     void aDishWithAnIngredientTheDatabaseDoesNotHaveIsNeverGuessed() {
         TurkishDishes.Dish soup = TurkishDishes.read(ONE).getFirst();
 
-        assertThat(TurkishDishes.per100g(soup, name -> name.equals("Lentils") ? Optional.of(LENTILS) : Optional.empty())).isEmpty();
+        assertThat(TurkishDishes.per100g(soup, part -> part.food().equals("Lentils") ? Optional.of(LENTILS) : Optional.empty())).isEmpty();
+    }
+
+    @Test
+    void anIngredientMayCarryItsFdcIdAndAlternativeDescriptions() {
+        TurkishDishes.Dish dish = TurkishDishes.read(ONE.replace("{\"food\": \"Oil\", \"grams\": 10}",
+                "{\"food\": \"Oil\", \"fdcId\": 171413, \"or\": [\"Oil, other\"], \"grams\": 10}")).getFirst();
+
+        assertThat(dish.ingredients().get(1).fdcId()).isEqualTo(171413);
+        assertThat(dish.ingredients().get(1).names()).containsExactly("Oil", "Oil, other");
+        assertThat(dish.ingredients().getFirst().fdcId()).isNull();
     }
 
     @Test

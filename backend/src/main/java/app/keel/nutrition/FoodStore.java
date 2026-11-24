@@ -32,6 +32,9 @@ class FoodStore {
     }
 
     private static final String NO_REGION = "";
+    // The column the words are matched in: the generated search_text (V52, ı İ folded) and the filled search_folded (V62, all folded).
+    private static final String LEGACY = "search_text";
+    private static final String FOLDED = "search_folded";
     private static final UUID NOBODY = new UUID(0, 0);
     // The columns a Food is read from; the search adds its score.
     private static final String COLUMNS = "id, name, brand, source, region, kcal, protein_g, carbs_g, fat_g, grams_per_ml";
@@ -40,8 +43,11 @@ class FoodStore {
     private final FoodRanking.Weights weights;
     private final FoodScoring.Settings scoring;
     private final TransactionTemplate transaction;
+    private final SearchFoldBackfill folding;
 
-    FoodStore(JdbcClient jdbc, FoodRanking.Weights weights, FoodScoring.Settings scoring, PlatformTransactionManager transactions) {
+    FoodStore(JdbcClient jdbc, FoodRanking.Weights weights, FoodScoring.Settings scoring, PlatformTransactionManager transactions,
+            SearchFoldBackfill folding) {
+        this.folding = folding;
         this.jdbc = jdbc;
         this.weights = weights;
         this.scoring = scoring;
@@ -71,7 +77,9 @@ class FoodStore {
      * the logs (recency-weighted) and the favorites and cuts.
      */
     List<Food> search(String query, int limit, Searcher searcher, List<Food> made) {
-        FoodSearchTerms terms = FoodSearchTerms.of(query);
+        // The folded text (every Turkish letter plain) once its backfill is done; until then the old search text, which folds ı and İ only.
+        boolean folded = folding.ready();
+        FoodSearchTerms terms = folded ? FoodSearchTerms.of(query) : FoodSearchTerms.ofLegacy(query);
         if (terms.words().isEmpty()) {
             return List.of();
         }
@@ -87,15 +95,15 @@ class FoodStore {
                 rows.putIfAbsent(row.food().id(), row);
             }
         };
-        searcher.account().ifPresent(account -> ownLogged(terms, account).forEach(add));
-        List<Row> exact = candidates(terms, searcher, false, pool);
+        searcher.account().ifPresent(account -> ownLogged(terms, account, folded).forEach(add));
+        List<Row> exact = candidates(terms, searcher, false, pool, folded);
         exact.forEach(add);
         made.forEach(food -> rows.put(food.id(), new Row(food, "BRANDED", NO_REGION, true)));
         boolean typoWorthLookingFor = java.util.stream.IntStream.range(0, terms.words().size()).anyMatch(terms::fuzzy);
         // Typos are looked for (a costly read) when the exact search found few foods, or none that answers the query well.
         boolean exactIsPoor = exact.size() < scoring.typoBelowExactHits() || exact.stream().mapToDouble(text).max().orElse(0) < scoring.typoWeakScore();
         if (typoWorthLookingFor && exactIsPoor) {
-            typos(terms, searcher, pool).forEach(add);
+            typos(terms, searcher, pool, folded).forEach(add);
         }
         List<String> ids = List.copyOf(rows.keySet());
         Set<String> starred = favorites(ids, searcher.account());
@@ -109,16 +117,16 @@ class FoodStore {
      * (keel.nutrition.search.typo-similarity: "chiken" is 0.50 of "chicken", "avacado" 0.45 of "avocado"; the database's 0.6 would
      * miss them) — the operator is served by the index at any threshold.
      */
-    private List<Row> typos(FoodSearchTerms terms, Searcher searcher, int pool) {
+    private List<Row> typos(FoodSearchTerms terms, Searcher searcher, int pool, boolean folded) {
         return transaction.execute(status -> {
             jdbc.sql("select set_config('pg_trgm.word_similarity_threshold', :threshold, true)")
                     .param("threshold", Double.toString(weights.typoSimilarity())).query().singleValue();
-            return candidates(terms, searcher, true, pool);
+            return candidates(terms, searcher, true, pool, folded);
         });
     }
 
-    private List<Row> candidates(FoodSearchTerms terms, Searcher searcher, boolean typos, int pool) {
-        Statement statement = statement(terms, searcher, typos, pool, weights);
+    private List<Row> candidates(FoodSearchTerms terms, Searcher searcher, boolean typos, int pool, boolean folded) {
+        Statement statement = statement(terms, searcher, typos, pool, weights, folded);
         return jdbc.sql(statement.sql()).params(statement.params()).query((row, n) -> row(row)).list();
     }
 
@@ -134,12 +142,12 @@ class FoodStore {
      * The foods the user logged within {@code own-lookback-days} that hold every word, the {@code own-pool} they eat most (each log weighs
      * 1 today and half as much {@code own-half-life-days} ago): the pool cut must not lose a staple to a hundred better texts.
      */
-    private List<Row> ownLogged(FoodSearchTerms terms, UUID account) {
+    private List<Row> ownLogged(FoodSearchTerms terms, UUID account, boolean folded) {
         if (scoring.ownPool() == 0) {
             return List.of();
         }
         Map<String, Object> params = new LinkedHashMap<>();
-        String matches = matches(terms, false, params);
+        String matches = matches(terms, false, params, folded ? FOLDED : LEGACY);
         params.put("account", account);
         params.put("half", scoring.ownHalfLifeDays());
         params.put("lookback", scoring.ownLookbackDays());
@@ -167,17 +175,17 @@ class FoodStore {
     }
 
     /** The WHERE of a search: every word held (or, with typos, held by a look-alike), the words' parameters put into {@code params}. */
-    private static String matches(FoodSearchTerms terms, boolean typos, Map<String, Object> params) {
+    private static String matches(FoodSearchTerms terms, boolean typos, Map<String, Object> params, String column) {
         StringBuilder matches = new StringBuilder();
         for (int i = 0; i < terms.words().size(); i++) {
-            String like = "f.search_text like any (cast(:w" + i + " as text[]))";
+            String like = "f." + column + " like any (cast(:w" + i + " as text[]))";
             params.put("w" + i, terms.containsAny(i));
             if (i > 0) {
                 matches.append(" and ");
             }
             if (typos && terms.fuzzy(i)) {
                 // <% is pg_trgm's word similarity (its threshold, 0.6, is the database's): the index serves it.
-                matches.append("(").append(like).append(" or cast(:t").append(i).append(" as text) <% f.search_text)");
+                matches.append("(").append(like).append(" or cast(:t").append(i).append(" as text) <% f.").append(column).append(")");
                 params.put("t" + i, terms.words().get(i));
             } else {
                 matches.append(like);
@@ -190,18 +198,23 @@ class FoodStore {
     record Statement(String sql, Map<String, Object> params) {
     }
 
+    /** The search over the old search text (V52), which folds ı and İ only: for the time before the folded text is filled. */
     static Statement statement(FoodSearchTerms terms, Searcher searcher, boolean typos, int pool, FoodRanking.Weights weights) {
+        return statement(terms, searcher, typos, pool, weights, false);
+    }
+
+    /** {@code folded}: over search_folded (every Turkish letter plain, V62) and names folded by nutrition.fold_text. */
+    static Statement statement(FoodSearchTerms terms, Searcher searcher, boolean typos, int pool, FoodRanking.Weights weights, boolean folded) {
         FoodSearchTerms singular = terms.singulars();
         Map<String, Object> params = new LinkedHashMap<>();
-        String matches = matches(terms, typos, params);
+        String column = folded ? FOLDED : LEGACY;
+        String matches = matches(terms, typos, params, column);
         // How many words of the query start a word of the name: the coarse all-words part of the pool's cut (FoodScoring is the final score).
         StringBuilder started = new StringBuilder("0");
         for (int i = 0; i < terms.words().size(); i++) {
             started.append(" + (case when spaced_name like '% ' || cast(:p").append(i).append(" as text) || '%' then 1 else 0 end)");
             params.put("p" + i, terms.escapedWord(i));
         }
-        params.put("turkish", FoodSearchTerms.TURKISH_LETTERS);
-        params.put("plain", FoodSearchTerms.PLAIN_LETTERS);
         params.put("whole", terms.whole());
         params.put("first", terms.first());
         params.put("firstLike", terms.firstEscaped());
@@ -217,16 +230,18 @@ class FoodStore {
         String alike = "0";
         for (int i = 0; typos && i < terms.words().size(); i++) {
             if (terms.fuzzy(i)) {
-                alike = "cast(round(word_similarity(cast(:t" + i + " as text), search_text) * cast(:rankStep as int) * 2) as int)";
+                alike = "cast(round(word_similarity(cast(:t" + i + " as text), " + column + ") * cast(:rankStep as int) * 2) as int)";
                 break;
             }
         }
         params.put("pool", pool);
+        String foldedName = folded ? "nutrition.fold_text(f.name)" : "lower(translate(f.name, 'ıİ', 'ii'))";
+        String foldedBrand = folded ? "nutrition.fold_text(coalesce(f.brand, ''))" : "lower(translate(coalesce(f.brand, ''), 'ıİ', 'ii'))";
         String sql = """
                 with matching as (
                     select f.*,
-                           lower(translate(f.name, cast(:turkish as text), cast(:plain as text))) as folded_name,
-                           lower(translate(coalesce(f.brand, ''), cast(:turkish as text), cast(:plain as text))) as folded_brand
+                           {folded_name} as folded_name,
+                           {folded_brand} as folded_brand
                     from nutrition.food f
                     where {matches}),
                 spaced as (
@@ -254,7 +269,7 @@ class FoodStore {
                     order by folded_name, coalesce(brand, ''), score desc, source_rank, length(name), name, id) best
                 order by score desc, source_rank, length(name), name, id
                 limit :pool"""
-                .replace("{matches}", matches).replace("{started}", started).replace("{alike}", alike).replace("{rank}", rankCase("whole", "first", "firstLike"))
+                .replace("{folded_name}", foldedName).replace("{folded_brand}", foldedBrand).replace("{matches}", matches).replace("{started}", started).replace("{alike}", alike).replace("{rank}", rankCase("whole", "first", "firstLike"))
                 .replace("{rankS}", rankCase("wholeS", "firstS", "firstLikeS")).replace("{columns}", COLUMNS);
         return new Statement(sql, params);
     }

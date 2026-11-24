@@ -940,7 +940,8 @@
     "region",
     "import_release",
     "search_text",
-    "aliases"
+    "aliases",
+    "search_folded"
    ],
    "basis": "not personal data",
    "gated_by": null,

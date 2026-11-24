@@ -19,4 +19,12 @@ yazılmaz (eksik değer uydurulmaz) ve sayısı `nutrition.food_import` (dataset
 aynı besinin başka FDC adlarıdır (USDA sürümler arası ad değiştirir).
 Aralık: tarif tahminidir, `recipe_estimate_value_error_ratio` (0,25, `data/parameters/nutrition.yaml`) ile analiz değerinden geniş (U5).
 TürKomp kullanılmaz (ticari lisans gerekir, API yok). Tarifler projenin tahminidir, **[doğrulanmadı]**.
+Bir malzeme bu sürümde yoksa o yemek yeniden hesaplanmaz ama önceki iyi satırı kalır (silinen yalnız dosyadan çıkarılan yemektir). Sunucuda hangi malzeme adlarının bulunduğunu `tools/check_tr_ingredients.sql` gösterir (salt okunur; dosya değişince `python3 tools/gen_check_tr_ingredients.py`). `fdcId` bilinince malzemeye yazılır ve önce o denenir.
 Yeni yemek: dosyaya ekle, `TurkishDishesTests` biçimi doğrular.
+
+## Arama metni (V62, V63)
+`nutrition.food.search_folded`: ad + marka + yemeğin İngilizce adları; NFC, ı İ ş ğ ç ö ü düz harf (tek liste: `FoodSearchTerms` ve
+`nutrition.fold_text`, `SearchFoldedTests` ikisini karşılaştırır). V62 yalnız boş sütun, fonksiyon ve tetikleyici ekler (tablo yeniden
+yazılmaz); eski satırları açılıştan sonra arka planda `SearchFoldBackfill` doldurur (yığın boyutu ve bekleme `keel.nutrition.search.fold-backfill`),
+V63 indeksi `CONCURRENTLY` kurar. Dolum bitene kadar arama eski `search_text`'i kullanır (yalnız ı İ katlı); bitince `food_import`'a
+(`SEARCH_FOLDED`, `done`) yazılır ve arama `search_folded`'a geçer.

@@ -1,7 +1,7 @@
 {
  "version": 1,
  "source": "recipe-estimate",
- "note": "Each dish is a recipe of USDA FoodData Central ingredients (public domain, ADR-008), named by their description (resolved in the imported release; `or` are other descriptions of the same food), with the grams of each in one standard portion (`servingG` is what the portion weighs cooked). The ingredients and grams are an estimate of a typical home recipe by the project, not a measurement and not from TürKomp (licensed, not used): [doğrulanmadı] against a dietitian or a published recipe. Descriptions marked verified were read in FDC's search on 2026-11-24 (verified: lentils raw, bulgur, lamb ground, semolina, grape leaves, tahini, okra, yogurt, pasta dry, chicken breast, olive oil); the others are from memory and an ingredient the release does not have leaves its dishes out (reported by the import).",
+ "note": "Each dish is a recipe of USDA FoodData Central ingredients (public domain, ADR-008), named by their description (resolved in the imported release; `or` are other descriptions of the same food), with the grams of each in one standard portion (`servingG` is what the portion weighs cooked). The ingredients and grams are an estimate of a typical home recipe by the project, not a measurement and not from TürKomp (licensed, not used): [doğrulanmadı] against a dietitian or a published recipe. Descriptions marked verified were read in FDC's search on 2026-11-24 (verified: lentils raw, bulgur, lamb ground, semolina, grape leaves, tahini, okra, yogurt, pasta dry, chicken breast, olive oil); the others are from memory (the ones with an fdcId were read with it; the id is tried first) and an ingredient the release does not have leaves its dishes out (reported by the import).",
  "dishes": [
   {
    "id": "mercimek-corbasi",
@@ -14,6 +14,7 @@
    "ingredients": [
     {
      "food": "Lentils, raw",
+     "fdcId": 172420,
      "grams": 35
     },
     {
@@ -46,10 +47,12 @@
    "ingredients": [
     {
      "food": "Lentils, raw",
+     "fdcId": 172420,
      "grams": 25
     },
     {
      "food": "Bulgur, dry",
+     "fdcId": 170688,
      "or": [
       "Bulgur, dry, raw"
      ],
@@ -131,6 +134,7 @@
     },
     {
      "food": "Yogurt, plain, whole milk",
+     "fdcId": 171284,
      "grams": 15
     },
     {
@@ -158,6 +162,7 @@
    "ingredients": [
     {
      "food": "Yogurt, plain, whole milk",
+     "fdcId": 171284,
      "grams": 80
     },
     {
@@ -277,6 +282,7 @@
     },
     {
      "food": "Oil, olive, salad or cooking",
+     "fdcId": 171413,
      "grams": 12
     }
    ]
@@ -345,6 +351,7 @@
     },
     {
      "food": "Oil, olive, salad or cooking",
+     "fdcId": 171413,
      "grams": 15
     },
     {
@@ -377,10 +384,12 @@
     },
     {
      "food": "Grape leaves, raw",
+     "fdcId": 168575,
      "grams": 15
     },
     {
      "food": "Oil, olive, salad or cooking",
+     "fdcId": 171413,
      "grams": 8
     },
     {
@@ -511,6 +520,7 @@
     },
     {
      "food": "Yogurt, plain, whole milk",
+     "fdcId": 171284,
      "grams": 100
     },
     {
@@ -587,6 +597,7 @@
    "ingredients": [
     {
      "food": "Bulgur, cooked",
+     "fdcId": 170287,
      "grams": 150
     },
     {
@@ -647,6 +658,7 @@
     },
     {
      "food": "Pasta, dry, enriched",
+     "fdcId": 169736,
      "grams": 10
     },
     {
@@ -666,6 +678,7 @@
    "ingredients": [
     {
      "food": "Pasta, dry, enriched",
+     "fdcId": 169736,
      "grams": 80
     },
     {
@@ -677,6 +690,7 @@
     },
     {
      "food": "Oil, olive, salad or cooking",
+     "fdcId": 171413,
      "grams": 8
     }
    ]
@@ -763,6 +777,7 @@
    "ingredients": [
     {
      "food": "Okra, raw",
+     "fdcId": 169260,
      "grams": 150
     },
     {
@@ -775,6 +790,7 @@
     },
     {
      "food": "Oil, olive, salad or cooking",
+     "fdcId": 171413,
      "grams": 10
     }
    ]
@@ -916,6 +932,7 @@
    "ingredients": [
     {
      "food": "Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw",
+     "fdcId": 171077,
      "or": [
       "Chicken, broilers or fryers, breast, meat only, raw"
      ],
@@ -923,10 +940,12 @@
     },
     {
      "food": "Yogurt, plain, whole milk",
+     "fdcId": 171284,
      "grams": 20
     },
     {
      "food": "Oil, olive, salad or cooking",
+     "fdcId": 171413,
      "grams": 5
     },
     {
@@ -949,6 +968,7 @@
    "ingredients": [
     {
      "food": "Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw",
+     "fdcId": 171077,
      "or": [
       "Chicken, broilers or fryers, breast, meat only, raw"
      ],
@@ -1027,6 +1047,7 @@
     },
     {
      "food": "Yogurt, plain, whole milk",
+     "fdcId": 171284,
      "grams": 15
     }
    ]
@@ -1065,6 +1086,7 @@
     },
     {
      "food": "Yogurt, plain, whole milk",
+     "fdcId": 171284,
      "grams": 80
     }
    ]
@@ -1081,6 +1103,7 @@
    "ingredients": [
     {
      "food": "Lamb, ground, raw",
+     "fdcId": 174370,
      "grams": 90
     },
     {
@@ -1269,6 +1292,7 @@
     },
     {
      "food": "Yogurt, plain, whole milk",
+     "fdcId": 171284,
      "grams": 8
     },
     {
@@ -1469,6 +1493,7 @@
    "ingredients": [
     {
      "food": "Bulgur, dry",
+     "fdcId": 170688,
      "or": [
       "Bulgur, dry, raw"
      ],
@@ -1511,6 +1536,7 @@
     },
     {
      "food": "Bulgur, dry",
+     "fdcId": 170688,
      "or": [
       "Bulgur, dry, raw"
      ],
@@ -1529,6 +1555,7 @@
     },
     {
      "food": "Oil, olive, salad or cooking",
+     "fdcId": 171413,
      "grams": 6
     }
    ]
@@ -1546,6 +1573,7 @@
    "ingredients": [
     {
      "food": "Yogurt, plain, whole milk",
+     "fdcId": 171284,
      "grams": 90
     }
    ]
@@ -1562,6 +1590,7 @@
    "ingredients": [
     {
      "food": "Yogurt, plain, whole milk",
+     "fdcId": 171284,
      "grams": 120
     },
     {
@@ -1574,6 +1603,7 @@
     },
     {
      "food": "Oil, olive, salad or cooking",
+     "fdcId": 171413,
      "grams": 2
     }
    ]
@@ -1606,6 +1636,7 @@
     },
     {
      "food": "Oil, olive, salad or cooking",
+     "fdcId": 171413,
      "grams": 8
     },
     {
@@ -1629,6 +1660,7 @@
     },
     {
      "food": "Seeds, sesame butter, tahini, type of kernels unspecified",
+     "fdcId": 168604,
      "grams": 12
     },
     {
@@ -1637,6 +1669,7 @@
     },
     {
      "food": "Oil, olive, salad or cooking",
+     "fdcId": 171413,
      "grams": 5
     },
     {
@@ -1661,10 +1694,12 @@
     },
     {
      "food": "Yogurt, plain, whole milk",
+     "fdcId": 171284,
      "grams": 20
     },
     {
      "food": "Oil, olive, salad or cooking",
+     "fdcId": 171413,
      "grams": 6
     },
     {
@@ -1684,6 +1719,7 @@
    "ingredients": [
     {
      "food": "Yogurt, plain, whole milk",
+     "fdcId": 171284,
      "grams": 90
     },
     {
@@ -1696,6 +1732,7 @@
     },
     {
      "food": "Oil, olive, salad or cooking",
+     "fdcId": 171413,
      "grams": 3
     }
    ]
@@ -1712,6 +1749,7 @@
    "ingredients": [
     {
      "food": "Bulgur, dry",
+     "fdcId": 170688,
      "or": [
       "Bulgur, dry, raw"
      ],
@@ -1734,6 +1772,7 @@
     },
     {
      "food": "Oil, olive, salad or cooking",
+     "fdcId": 171413,
      "grams": 10
     },
     {
@@ -1813,6 +1852,7 @@
    "ingredients": [
     {
      "food": "Semolina, enriched",
+     "fdcId": 169715,
      "grams": 30
     },
     {
@@ -1843,6 +1883,7 @@
    "ingredients": [
     {
      "food": "Semolina, enriched",
+     "fdcId": 169715,
      "grams": 20
     },
     {
@@ -1862,6 +1903,7 @@
     },
     {
      "food": "Yogurt, plain, whole milk",
+     "fdcId": 171284,
      "grams": 15
     },
     {

@@ -21,6 +21,10 @@ spring:
   # from V1 (ADR-023); Modulith's own schema creation is off by default and stated here so it stays off.
   flyway:
     locations: classpath:db/migration
+    # Flyway's advisory lock is held in a transaction by default, and that open transaction makes CREATE INDEX CONCURRENTLY (V63) wait
+    # for it for ever: the lock is taken for the session instead.
+    postgresql:
+      transactional-lock: false
   modulith:
     events:
       jdbc:
@@ -179,6 +183,12 @@ keel:
     # (the block "score" below) to break the ties. The logs on top: their own 8 a log (weighted
     # by age, FoodScoring.Settings) up to 5 logs, other accounts' 4 a natural-log unit, at most 19 (one step less than a name-match step).
     search:
+      # The folded search text's backfill (K-1213, V62; SearchFoldBackfill): rows per batch and the pause between batches (so the
+      # database is not kept busy), run after start on the import thread. A product choice (K2), no research value.
+      fold-backfill:
+        batch-size: 5000
+        pause-millis: 200
+        enabled: true
       rank-step: 20
       generic-bonus: 25
       brand-bonus: 30

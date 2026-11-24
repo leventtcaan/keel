@@ -22,6 +22,9 @@ record FoodSearchTerms(List<String> words) {
     static final String TURKISH_LETTERS = "ıİşŞğĞçÇöÖüÜ";
     static final String PLAIN_LETTERS = "iisSgGcCoOuU";
 
+    /** U+0307, the dot a decomposed or lower-cased İ leaves behind: dropped by the fold, in the code and in the database. */
+    static final char COMBINING_DOT = '\u0307';
+
     /** A word shorter than this is matched as typed only: a typo in three letters is another word ("egg" and "leg"). */
     static final int MIN_FUZZY_LENGTH = 4;
 
@@ -29,12 +32,31 @@ record FoodSearchTerms(List<String> words) {
         return new FoodSearchTerms(Arrays.stream(fold(query).trim().split("\\s+")).filter(word -> !word.isEmpty()).toList());
     }
 
-    /** Lower case with the Turkish letters as plain ones; the replacement comes first, since lower-casing İ alone leaves a combining dot. */
+    /**
+     * The words as the old search text holds them (V52: lower case, ı and İ as i, the other Turkish letters kept), for the time before
+     * the folded text is filled (nutrition.food.search_folded, see SearchFoldBackfill).
+     */
+    static FoodSearchTerms ofLegacy(String query) {
+        return new FoodSearchTerms(Arrays.stream(java.text.Normalizer.normalize(query, java.text.Normalizer.Form.NFC).replace('ı', 'i')
+                .replace('İ', 'i').toLowerCase(Locale.ROOT).trim().split("\\s+")).filter(word -> !word.isEmpty()).toList());
+    }
+
+    /**
+     * Composed (NFC: a letter and its accent mark are one letter), then lower case with the Turkish letters as plain ones, and a
+     * stray dot above dropped; the replacement comes first, since lower-casing İ alone leaves a combining dot. The database folds
+     * with nutrition.fold_text (V62), made of the same lists.
+     */
     static String fold(String text) {
-        StringBuilder folded = new StringBuilder(text.length());
-        for (int i = 0; i < text.length(); i++) {
-            int at = TURKISH_LETTERS.indexOf(text.charAt(i));
-            folded.append(at < 0 ? text.charAt(i) : PLAIN_LETTERS.charAt(at));
+        String composed = java.text.Normalizer.normalize(text, java.text.Normalizer.Form.NFC);
+        StringBuilder folded = new StringBuilder(composed.length());
+        for (int i = 0; i < composed.length(); i++) {
+            char letter = composed.charAt(i);
+            int at = TURKISH_LETTERS.indexOf(letter);
+            if (at >= 0) {
+                folded.append(PLAIN_LETTERS.charAt(at));
+            } else if (letter != COMBINING_DOT) {
+                folded.append(letter);
+            }
         }
         return folded.toString().toLowerCase(Locale.ROOT);
     }

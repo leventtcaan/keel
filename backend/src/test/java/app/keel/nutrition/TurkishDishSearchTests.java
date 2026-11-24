@@ -45,6 +45,9 @@ class TurkishDishSearchTests {
     @Autowired
     TurkishDishImporter importer;
 
+    @Autowired
+    SearchFoldBackfill backfill;
+
     private static List<TurkishDishes.Dish> dishes() {
         return TurkishDishes.read("""
                 {"version": 1, "source": "recipe-estimate", "dishes": [
@@ -62,6 +65,8 @@ class TurkishDishSearchTests {
                 insert into nutrition.food (id, name, brand, source, kcal, protein_g, carbs_g, fat_g, region)
                 values ('k1213:product', 'Mercimek Çorbası', 'Knorr', 'BRANDED', 60, 2, 10, 1, 'TR') on conflict (id) do nothing""").update();
         importer.load(dishes(), "test");
+        // The search reads the folded text once the backfill is done; the rows written above got theirs from the trigger.
+        backfill.run(1000);
     }
 
     @AfterEach
@@ -83,8 +88,20 @@ class TurkishDishSearchTests {
     }
 
     @Test
-    void loadingAgainChangesNothingAndTakesBackADishTheFileNoLongerHas() {
+    void loadingAgainChangesNothingAndADishWhoseIngredientIsMissingThisRunKeepsItsLastGoodRow() {
         importer.load(dishes(), "test");
+        jdbc.sql("update nutrition.food set name = 'k1213 Lentils, renamed' where id = 'k1213:lentils'").update();
+
+        TurkishDishImporter.Imported again = importer.load(dishes(), "test");
+
+        assertThat(again.dishes()).isZero();
+        assertThat(again.kept()).isEqualTo(1);
+        assertThat(jdbc.sql("select count(*) from nutrition.food where id = 'tr:k1213-soup'").query(Integer.class).single()).isEqualTo(1);
+        assertThat(((Number) jdbc.sql("select kcal from nutrition.food where id = 'tr:k1213-soup'").query().singleRow().get("kcal")).doubleValue()).isEqualTo(81.76);
+    }
+
+    @Test
+    void aDishTheFileNoLongerHasIsTakenBack() {
         importer.load(dishes().subList(1, 2), "test");
 
         assertThat(jdbc.sql("select count(*) from nutrition.food where id like 'tr:k1213-%'").query(Integer.class).single()).isZero();

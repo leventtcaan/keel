@@ -21,7 +21,7 @@ class MigrationConventionTests {
     void theRepositorysMigrationsFollowTheConventions() throws IOException {
         List<String> files;
         try (Stream<Path> migrations = Files.list(MigrationConventions.DIRECTORY)) {
-            files = migrations.map(file -> file.getFileName().toString()).filter(name -> !name.startsWith(".")).sorted().toList();
+            files = migrations.map(file -> file.getFileName().toString()).filter(name -> !name.startsWith(".") && !name.endsWith(".conf")).sorted().toList();
         }
 
         assertThat(files).isNotEmpty();

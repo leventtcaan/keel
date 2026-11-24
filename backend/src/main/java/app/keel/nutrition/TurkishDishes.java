@@ -27,9 +27,10 @@ final class TurkishDishes {
 
     /**
      * {@code grams} of the USDA food {@code food} (its description) in one portion. {@code or} are other descriptions of the same food,
-     * tried in order when the release has none called {@code food} (USDA renames a food between releases).
+     * tried in order when the release has none called {@code food} (USDA renames a food between releases). {@code fdcId} is the food's
+     * FoodData Central id when it is known (null until then): it is tried first, and the description is what is read when it is not.
      */
-    record Ingredient(String food, List<String> or, BigDecimal grams) {
+    record Ingredient(String food, Integer fdcId, List<String> or, BigDecimal grams) {
         List<String> names() {
             List<String> names = new ArrayList<>(List.of(food));
             names.addAll(or);
@@ -88,7 +89,8 @@ final class TurkishDishes {
                 }
                 List<String> or = new ArrayList<>();
                 ingredient.path("or").forEach(other -> or.add(other.asString()));
-                ingredients.add(new Ingredient(ingredient.path("food").asString(), List.copyOf(or), grams));
+                ingredients.add(new Ingredient(ingredient.path("food").asString(),
+                        ingredient.path("fdcId").isInt() ? ingredient.path("fdcId").intValue() : null, List.copyOf(or), grams));
             }
             List<String> aliases = new ArrayList<>();
             dish.path("aliases").forEach(alias -> aliases.add(alias.asString()));
@@ -101,13 +103,13 @@ final class TurkishDishes {
      * What 100 g of the dish holds: the ingredients' nutrients for their grams, summed, over the portion's weight. Empty when any
      * ingredient is unknown — a dish is not worked out from some of its parts (a value missing, never guessed).
      */
-    static Optional<FoodRanges.Per100g> per100g(Dish dish, Function<String, Optional<FoodRanges.Per100g>> ingredient) {
+    static Optional<FoodRanges.Per100g> per100g(Dish dish, Function<Ingredient, Optional<FoodRanges.Per100g>> ingredient) {
         BigDecimal kcal = BigDecimal.ZERO;
         BigDecimal protein = BigDecimal.ZERO;
         BigDecimal carbs = BigDecimal.ZERO;
         BigDecimal fat = BigDecimal.ZERO;
         for (Ingredient part : dish.ingredients()) {
-            Optional<FoodRanges.Per100g> value = part.names().stream().map(ingredient).flatMap(Optional::stream).findFirst();
+            Optional<FoodRanges.Per100g> value = ingredient.apply(part);
             if (value.isEmpty()) {
                 return Optional.empty();
             }

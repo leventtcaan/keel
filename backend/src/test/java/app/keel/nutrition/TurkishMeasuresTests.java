@@ -50,6 +50,22 @@ class TurkishMeasuresTests {
     }
 
     @Test
+    void everyMeasureValueIsTaggedUnverifiedOnItsOwnAndNamesItsTable() throws Exception {
+        tools.jackson.databind.JsonNode root = tools.jackson.databind.json.JsonMapper.builder().build()
+                .readTree(java.nio.file.Files.readString(java.nio.file.Path.of("../data/food/tr-measures.json")));
+        int values = 0;
+        for (tools.jackson.databind.JsonNode group : root.path("classes")) {
+            for (var entry : group.path("grams").properties()) {
+                values++;
+                assertThat(entry.getValue().path("grams").isNumber()).as(entry.getKey()).isTrue();
+                assertThat(entry.getValue().path("status").asString()).as(group.path("id").asString() + "/" + entry.getKey()).isEqualTo("[doğrulanmadı]");
+                assertThat(entry.getValue().path("table").asString()).isIn("Tablo 1", "Tablo 2", "Tablo 1 (hacim)");
+            }
+        }
+        assertThat(values).isGreaterThan(30);
+    }
+
+    @Test
     void everyUnitHasItsWordsInBothLanguagesAndItsSourceIsOnTheRecordAsUnverified() {
         assertThat(MEASURES.units()).isNotEmpty();
         assertThat(MEASURES.source()).contains("TÜBER 2022").contains("Rakıcıoğlu").contains("[doğrulanmadı]");
