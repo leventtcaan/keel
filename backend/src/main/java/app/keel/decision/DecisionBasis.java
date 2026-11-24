@@ -58,7 +58,7 @@ record DecisionBasis(Phase phase, List<WeekMean> weeks, BigDecimal changeKgPerWe
         // A call that stopped before the weekly spine (not enough data yet, a safety stop, a declared week, a gate) read no
         // weekly mean: none is shown as its data. One that read it found a weigh-in in every week (DataSufficiency).
         List<WeekMean> weeks = DecisionPipeline.windowRead(read, parameters)
-                ? WeeklySpine.windowMeans(read.weights(), read.today(), parameters).stream()
+                ? WeeklySpine.windowMeans(read, parameters).stream()
                         .map(week -> new WeekMean(week.ends(), week.kg().orElseThrow())).toList()
                 : List.of();
         StoredSnapshot.Answered answered = snapshot.checkIn();

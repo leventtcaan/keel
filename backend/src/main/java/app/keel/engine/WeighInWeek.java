@@ -40,6 +40,12 @@ public record WeighInWeek(LocalDate from, LocalDate to, List<LocalDate> weighedD
      * @param weights the weigh-ins the engine reads (one a day, none imported), up to today
      */
     public static WeighInWeek of(LocalDate today, LocalDate checkIn, LocalDate planStart, WeightSeries weights, Parameters parameters) {
+        return of(today, checkIn, planStart, Phase.BULK, false, weights, parameters);
+    }
+
+    /** The same for a plan of {@code phase}, {@code observingMaintenance} while it is still the starting estimate (K-1203). */
+    public static WeighInWeek of(LocalDate today, LocalDate checkIn, LocalDate planStart, Phase phase, boolean observingMaintenance,
+            WeightSeries weights, Parameters parameters) {
         Objects.requireNonNull(today, "today");
         Objects.requireNonNull(checkIn, "checkIn");
         Objects.requireNonNull(planStart, "planStart");
@@ -57,7 +63,7 @@ public record WeighInWeek(LocalDate from, LocalDate to, List<LocalDate> weighedD
         long left = firstLeft.datesUntil(checkIn.plusDays(1)).filter(day -> !weighed.contains(day)).count();
         int needed = parameters.wholeNumber(ParameterKey.MIN_WEIGHINS_PER_WEEK);
         Optional<LocalDate> callsFrom = weighed.size() + left < needed
-                ? Optional.of(DataSufficiency.earliestEnoughDay(today, planStart, weights, parameters))
+                ? Optional.of(DataSufficiency.earliestEnoughDay(today, planStart, phase, observingMaintenance, weights, parameters))
                 : Optional.empty();
         return new WeighInWeek(from, checkIn, weighed, needed, callsFrom);
     }

@@ -160,7 +160,7 @@ public final class DecisionPipeline {
 
     private static boolean denseWindow(Snapshot snapshot, Parameters parameters) {
         int dense = parameters.wholeNumber(ParameterKey.DENSE_WEIGHINS_PER_WEEK);
-        int weeks = parameters.wholeNumber(ParameterKey.DECISION_WINDOW_DAYS) / DAYS_PER_WEEK;
+        int weeks = DecisionWindow.days(snapshot, parameters) / DAYS_PER_WEEK;
         for (int week = 0; week < weeks; week++) {
             LocalDate weekEnd = snapshot.today().minusDays((long) week * DAYS_PER_WEEK);
             if (snapshot.weights().countBetween(weekEnd.minusDays(DAYS_PER_WEEK - 1L), weekEnd) < dense) {

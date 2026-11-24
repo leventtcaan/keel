@@ -43,18 +43,20 @@ public final class DataSufficiency {
 
     /** The first of the three checks that fails today, in order; empty if all pass. */
     private static Optional<Gap> firstGap(Snapshot snapshot, Parameters parameters) {
-        return firstGap(snapshot.today(), snapshot.planStart(), snapshot.weights(), parameters);
+        return firstGap(snapshot.today(), snapshot.planStart(), snapshot.phase(), snapshot.observingMaintenance(),
+                DecisionWindow.confidentlyFlat(snapshot.weights(), snapshot.today(), parameters), snapshot.weights(), parameters);
     }
 
     /** The checks read only the day, the plan's start and the weigh-ins: the same ones on a day that is not a Snapshot's. */
-    private static Optional<Gap> firstGap(LocalDate today, LocalDate planStart, WeightSeries weights, Parameters parameters) {
+    private static Optional<Gap> firstGap(LocalDate today, LocalDate planStart, Phase phase, boolean observing, boolean flat,
+            WeightSeries weights, Parameters parameters) {
         int noInterpretationDays = parameters.wholeNumber(ParameterKey.NO_INTERPRETATION_DAYS);
         Optional<LocalDate> first = weights.firstDay();
         if (first.isEmpty() || today.isBefore(first.get().plusDays(noInterpretationDays - 1L))) {
             return Optional.of(new Gap(DATA_INSUFFICIENT, MEASUREMENT));
         }
 
-        int window = parameters.wholeNumber(ParameterKey.DECISION_WINDOW_DAYS);
+        int window = DecisionWindow.days(phase, observing, planStart, today, flat, parameters);
         if (today.isBefore(planStart.plusDays(window - 1L))) {
             return Optional.of(new Gap(WINDOW_NOT_FULL, CYCLE_WINDOW));
         }
@@ -79,7 +81,8 @@ public final class DataSufficiency {
      * window holds only the daily weigh-ins, and every check stays passed.
      */
     private static LocalDate earliestEnoughDay(Snapshot snapshot, Parameters parameters) {
-        return earliestEnoughDay(snapshot.today(), snapshot.planStart(), snapshot.weights(), parameters);
+        return earliestEnoughDay(snapshot.today(), snapshot.planStart(), snapshot.phase(), snapshot.observingMaintenance(), snapshot.weights(),
+                parameters);
     }
 
     /**
@@ -87,10 +90,13 @@ public final class DataSufficiency {
      * short is told the call can read the data is the one formula, not a copy of it). {@code planStart} may be a day to come:
      * the plan a first call has not started yet. Its window starts then, so the search reaches that many days further.
      */
-    static LocalDate earliestEnoughDay(LocalDate today, LocalDate planStart, WeightSeries weights, Parameters parameters) {
+    static LocalDate earliestEnoughDay(LocalDate today, LocalDate planStart, Phase phase, boolean observing, WeightSeries weights,
+            Parameters parameters) {
         int daysToPlanStart = (int) Math.max(0, ChronoUnit.DAYS.between(today, planStart));
         int horizon = daysToPlanStart + Math.max(parameters.wholeNumber(ParameterKey.NO_INTERPRETATION_DAYS),
                 parameters.wholeNumber(ParameterKey.DECISION_WINDOW_DAYS));
+        // Whether the observation reads as flat is judged on the weigh-ins there are; the days to come only add dates.
+        boolean flat = DecisionWindow.confidentlyFlat(weights, today, parameters);
         List<WeighIn> weighIns = new ArrayList<>(weights.weighIns());
         BigDecimal lastKg = weighIns.isEmpty() ? BigDecimal.ONE : weighIns.getLast().kg();
         LocalDate lastShort = today;
@@ -98,7 +104,7 @@ public final class DataSufficiency {
             LocalDate day = today.plusDays(ahead);
             // Only the dates matter to these checks; the weight value is a placeholder.
             weighIns.add(new WeighIn(day, lastKg));
-            if (firstGap(day, planStart, new WeightSeries(weighIns), parameters).isPresent()) {
+            if (firstGap(day, planStart, phase, observing, flat, new WeightSeries(weighIns), parameters).isPresent()) {
                 lastShort = day;
             }
         }

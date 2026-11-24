@@ -142,6 +142,7 @@ public enum ParameterKey {
     WHAT_IF_TREND_STEP_MARGINS(ParameterDomain.WINDOWS, Unit.MARGINS),
     WHAT_IF_CUT_STEP_OF_LOSS_CAP(ParameterDomain.WINDOWS, Unit.RATIO),
     FLAT_MARGIN_KG(ParameterDomain.WINDOWS, Unit.KG),
+    OBSERVATION_FLAT_FRACTION(ParameterDomain.WINDOWS, Unit.RATIO),
     FLAT_WAIT_WEEKS(ParameterDomain.WINDOWS, Unit.WEEKS),
     DENSE_WEIGHINS_PER_WEEK(ParameterDomain.WINDOWS, Unit.WEIGHINS_PER_WEEK),
 

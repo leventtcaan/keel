@@ -72,7 +72,7 @@ public final class WhatIf {
 
     // The latest week's mean the call read; without one, its last weigh-in; none without any.
     private static Optional<BigDecimal> latest(Snapshot call, Parameters parameters) {
-        List<WeeklySpine.WeekMean> weeks = WeeklySpine.windowMeans(call.weights(), call.today(), parameters);
+        List<WeeklySpine.WeekMean> weeks = WeeklySpine.windowMeans(call, parameters);
         return weeks.getLast().kg().or(() -> call.weights().weighIns().stream().reduce((a, b) -> b).map(WeighIn::kg));
     }
 
