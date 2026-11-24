@@ -9,7 +9,8 @@ import type { ApiClient } from '@/api/client';
 import type { components } from '@/api/schema';
 import { mid } from '@/food/single';
 import { progressParams } from '@/progress/params';
-import { type UnitSystem, weightChange, weightDecimals } from '@/units/units';
+import { t } from '@/copy';
+import { type UnitSystem, weightChange } from '@/units/units';
 
 import { type Loaded, load, localDay } from './today';
 
@@ -29,8 +30,16 @@ export async function loadWeight(api: ApiClient, day: string): Promise<WeightRea
 }
 
 export type WeightNumber =
-  | { kind: 'trend'; kg: number; change: { direction: 'down' | 'up' | 'steady'; delta: string; size: string; since: string } | null }
+  | { kind: 'trend'; kg: number; change: { direction: 'down' | 'up' | 'steady'; size: string; span: string; since: string } | null }
   | { kind: 'waiting'; count: number; min: number };
+
+/** The period the change covers, as it is spoken (the accessibility label, not the first view's words): whole weeks ("12 weeks"), under a week in days ("5 days"). */
+function spanText(from: string, to: string): string {
+  const days = Math.round((Date.parse(`${to}T12:00:00Z`) - Date.parse(`${from}T12:00:00Z`)) / DAY_MS);
+  const weeks = Math.round(days / 7);
+  if (days < 7) return t(days === 1 ? 'thisWeek.numbers.spanDay' : 'thisWeek.numbers.spanDays', { days });
+  return t(weeks === 1 ? 'thisWeek.numbers.spanWeek' : 'thisWeek.numbers.spanWeeks', { weeks });
+}
 
 /**
  * The weight tile: the latest trend value and its change over the window the chart shows (the first day drawn to the latest);
@@ -48,7 +57,7 @@ export function weightNumber(read: WeightRead | undefined, units: UnitSystem): W
   const [from, to] = [points[0], points[points.length - 1]];
   if (from.day === to.day) return { kind: 'trend', kg: to.kg, change: null };
   const { delta, size } = weightChange(from.kg, to.kg, units);
-  return { kind: 'trend', kg: to.kg, change: { direction: delta === 0 ? 'steady' : delta < 0 ? 'down' : 'up', delta: Math.abs(delta).toFixed(weightDecimals), size, since: from.day } };
+  return { kind: 'trend', kg: to.kg, change: { direction: delta === 0 ? 'steady' : delta < 0 ? 'down' : 'up', size, span: spanText(from.day, to.day), since: from.day } };
 }
 
 /** Protein eaten (the middle of the server's range, as the food line shows its number, ADR-090 #5) against the day's target. */

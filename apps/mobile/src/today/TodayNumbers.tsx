@@ -7,7 +7,6 @@ import { t } from '@/copy';
 import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
-import { shortDate } from '@/train/program';
 import { type UnitSystem, formatWeight } from '@/units/units';
 import { openDetail } from '@/settings/detail';
 
@@ -15,10 +14,10 @@ import type { WeightNumber } from './numbers';
 
 const num = (n: number) => n.toLocaleString('en-US');
 
-type TileProps = { id: string; icon: SFSymbol; value: string; note?: string | null; label: string; hint: string; onPress: () => void };
+type TileProps = { id: string; icon: SFSymbol; value: string; note?: string | null; badge?: SFSymbol; label: string; hint: string; onPress: () => void };
 
 /** One number of today: its glyph, the number, and (the weight only) the change under it. The whole tile is the way to its place. */
-function Tile({ id, icon, value, note = null, label, hint, onPress }: TileProps) {
+function Tile({ id, icon, value, note = null, badge, label, hint, onPress }: TileProps) {
   const { color } = useTheme();
   const noteText =
     note === null ? null : (
@@ -26,6 +25,14 @@ function Tile({ id, icon, value, note = null, label, hint, onPress }: TileProps)
         {note}
       </Text>
     );
+  // Built outside the JSX children (the raw-text guard reads them).
+  const mark = badge === undefined ? null : <Icon name={badge} size="small" tone="muted" testID={`number-${id}-badge`} />;
+  const head = (
+    <View style={styles.head}>
+      <Icon name={icon} size="small" tone="muted" />
+      {mark}
+    </View>
+  );
   return (
     <Pressable
       testID={`number-${id}`}
@@ -34,7 +41,7 @@ function Tile({ id, icon, value, note = null, label, hint, onPress }: TileProps)
       accessibilityHint={hint}
       onPress={onPress}
       style={({ pressed }) => [styles.tile, { backgroundColor: color.background }, pressed && styles.dim]}>
-      <Icon name={icon} size="small" tone="muted" />
+      {head}
       <Text style={[styles.value, { color: color.text }]}>
         {value}
       </Text>
@@ -69,7 +76,7 @@ export function TodayNumbers({ protein, steps, weight, units }: Props) {
     const target = num(steps.target);
     if (steps.steps === null) {
       tiles.push(
-        <Tile key="steps" id="steps" icon="figure.walk" value={t('thisWeek.numbers.stepsNone', { target })} label={t('progress.targets.label.stepsOff', { target })}
+        <Tile key="steps" id="steps" icon="figure.walk" value={t('thisWeek.numbers.stepsNone', { target })} badge="link" label={t('progress.targets.label.stepsOff', { target })}
           hint={t('progress.targets.hint.connect')} onPress={() => openDetail('apple')} />,
       );
     } else {
@@ -94,10 +101,10 @@ export function TodayNumbers({ protein, steps, weight, units }: Props) {
         ? t('thisWeek.numbers.weightLabel', { weight: shown })
         : t('thisWeek.numbers.weightLabelChange', {
             weight: shown,
-            change: change.direction === 'steady' ? t('progress.weight.steady', { date: shortDate(change.since) }) : t(change.direction === 'down' ? 'progress.weight.down' : 'progress.weight.up', { delta: change.size, date: shortDate(change.since) }),
+            change: t(`thisWeek.numbers.spoken${change.direction === 'down' ? 'Down' : change.direction === 'up' ? 'Up' : 'Steady'}`, { size: change.size, span: change.span }),
           });
     tiles.push(
-      <Tile key="weight" id="weight" icon="scalemass" value={shown} note={change === null ? null : t(`thisWeek.numbers.${change.direction}`, { delta: change.delta })} label={label}
+      <Tile key="weight" id="weight" icon="scalemass" value={shown} note={change === null ? null : t(`thisWeek.numbers.${change.direction}`, { size: change.size })} label={label}
         hint={t('thisWeek.numbers.weightHint')} onPress={() => router.navigate('/progress')} />,
     );
   }
@@ -107,7 +114,8 @@ export function TodayNumbers({ protein, steps, weight, units }: Props) {
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: tokens.space.sm },
-  tile: { flex: 1, minHeight: tokens.size.touch, borderRadius: tokens.radius.card, padding: tokens.space.sm, gap: tokens.space.xs },
+  tile: { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0, minHeight: tokens.size.touch, borderRadius: tokens.radius.card, padding: tokens.space.sm, gap: tokens.space.xs },
+  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   value: { fontFamily: tokens.font.displayBold, fontSize: tokens.type.body, fontVariant: ['tabular-nums'] },
   note: { fontSize: tokens.type.label, fontWeight: tokens.weight.semibold, fontVariant: ['tabular-nums'] },
   dim: { opacity: tokens.opacity.dim },

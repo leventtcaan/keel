@@ -4,7 +4,7 @@
  * not there says so in the words of Progress, never as a zero.
  */
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
-import { Linking } from 'react-native';
+import { Linking, StyleSheet } from 'react-native';
 
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
@@ -69,28 +69,41 @@ describe('the four numbers', () => {
 
   test('the weight change over the window is the two trend numbers apart, a plain sign, no judgement', async () => {
     await show();
-    expect(screen.getByText(t('thisWeek.numbers.down', { delta: '0.7' }))).toBeOnTheScreen();
+    expect(screen.getByText('-0.7 kg')).toBeOnTheScreen();
+  });
+
+  test('the change names its unit and its period, as the Progress weight card does (the first day drawn to the latest)', async () => {
+    await show({ weight: { ...READY_WEIGHT, trend: ready([{ day: '2026-10-02', kg: 85.2 }, { day: '2026-12-25', kg: 80.5 }]) } });
+    expect(screen.getByText('-4.7 kg')).toBeOnTheScreen();
+    expect(screen.queryByText(/ wk| d$/)).toBeNull();
+    expect(screen.getByLabelText(/Down 4\.7 kg over 12 weeks/)).toBeOnTheScreen();
+    await screen.unmount();
+    await show({ weight: { ...READY_WEIGHT, trend: ready([{ day: '2026-12-20', kg: 80 }, { day: '2026-12-25', kg: 80.5 }]) } });
+    expect(screen.getByText('+0.5 kg')).toBeOnTheScreen();
+    expect(screen.getByLabelText(/Up 0\.5 kg over 5 days/)).toBeOnTheScreen();
   });
 
   test('up and steady read the same way', async () => {
     await show({ weight: { ...READY_WEIGHT, trend: ready([{ day: '2026-12-04', kg: 80 }, { day: '2026-12-25', kg: 80.5 }]) } });
-    expect(screen.getByText(t('thisWeek.numbers.up', { delta: '0.5' }))).toBeOnTheScreen();
+    expect(screen.getByText('+0.5 kg')).toBeOnTheScreen();
     await screen.unmount();
     await show({ weight: { ...READY_WEIGHT, trend: ready([{ day: '2026-12-04', kg: 80.3 }, { day: '2026-12-25', kg: 80.3 }]) } });
-    expect(screen.getByText(t('thisWeek.numbers.steady', { delta: '0.0' }))).toBeOnTheScreen();
+    expect(screen.getByText('0.0 kg')).toBeOnTheScreen();
   });
 
   test('pounds for a user on pounds, the change as the two shown numbers differ', async () => {
     await show({ units: 'IMPERIAL' });
     expect(screen.getByText(formatWeight(80.3, 'IMPERIAL'))).toBeOnTheScreen();
+    expect(screen.getByText('-1.6 lb')).toBeOnTheScreen();
     expect(screen.queryByText(formatWeight(80.3, 'METRIC'))).toBeNull();
-    expect(screen.getByLabelText(new RegExp(t('progress.weight.down', { delta: '1.6 lb', date: 'Dec 4' }).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))).toBeOnTheScreen();
+    expect(screen.getByLabelText(/Down 1\.6 lb over 3 weeks/)).toBeOnTheScreen();
   });
 
   test('one day of trend is the value alone: no change to say', async () => {
     await show({ weight: { ...READY_WEIGHT, trend: ready([{ day: '2026-12-25', kg: 80.3 }]) } });
     expect(screen.getByText(formatWeight(80.3, 'METRIC'))).toBeOnTheScreen();
     expect(screen.queryByText(/^[+-]\d/)).toBeNull();
+    expect(screen.queryByText(/ wk$| d$/)).toBeNull();
   });
 });
 
@@ -127,6 +140,8 @@ describe('what is not there is said, not zero', () => {
   test('steps without Apple Health: the target alone, and a tap leads to connecting it', async () => {
     await show({ stepsToday: null });
     expect(screen.getByText(t('thisWeek.numbers.stepsNone', { target: '10,000' }))).toBeOnTheScreen();
+    expect(screen.getByTestId('number-steps-badge')).toBeOnTheScreen();
+    expect(screen.queryByText(/^[-–] \//)).toBeNull();
     expect(screen.queryByText(/^0 \//)).toBeNull();
     await press(t('progress.targets.label.stepsOff', { target: '10,000' }));
     expect(mockPush).toHaveBeenCalledWith({ pathname: '/settings-detail', params: { part: 'apple' } });
@@ -200,6 +215,19 @@ describe('each number opens its place', () => {
     await show({ weight: { summary: ready(SUMMARY(3, false)), trend: null } });
     await press(t('progress.weight.spoken', { count: 3, min: 7 }));
     expect(mockPush).toHaveBeenCalledWith('/weigh-in');
+  });
+});
+
+describe('the tiles share the row', () => {
+  test('every tile is an equal share of the row, inside the plus gutter', async () => {
+    await show();
+    const tiles = ['protein', 'steps', 'weight'].map((id) => StyleSheet.flatten(screen.getByTestId(`number-${id}`).props.style));
+    for (const style of tiles) expect(style).toMatchObject({ flexGrow: 1, flexBasis: 0, minWidth: 0 });
+    const row = StyleSheet.flatten(screen.getByTestId('number-protein').parent?.props.style);
+    expect(row.paddingRight ?? 0).toBe(0);
+    // The card keeps the floating "+" gutter on its right end, tiles included (K-1066): nothing is under the "+".
+    const card = StyleSheet.flatten(screen.getByTestId('food-line').props.style);
+    expect(card.paddingRight).toBeGreaterThan(card.paddingLeft ?? card.padding ?? 0);
   });
 });
 
