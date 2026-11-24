@@ -32,7 +32,7 @@ class FoodStore {
     }
 
     private static final String NO_REGION = "";
-    // The column the words are matched in: the generated search_text (V52, ı İ folded) and the filled search_folded (V62, all folded).
+    // The column the words are matched in: the generated search_text (V52, ı İ folded) and the filled search_folded (V64, all folded).
     private static final String LEGACY = "search_text";
     private static final String FOLDED = "search_folded";
     private static final UUID NOBODY = new UUID(0, 0);
@@ -203,7 +203,7 @@ class FoodStore {
         return statement(terms, searcher, typos, pool, weights, false);
     }
 
-    /** {@code folded}: over search_folded (every Turkish letter plain, V62) and names folded by nutrition.fold_text. */
+    /** {@code folded}: over search_folded (every Turkish letter plain, V64) and names folded by nutrition.fold_text. */
     static Statement statement(FoodSearchTerms terms, Searcher searcher, boolean typos, int pool, FoodRanking.Weights weights, boolean folded) {
         FoodSearchTerms singular = terms.singulars();
         Map<String, Object> params = new LinkedHashMap<>();

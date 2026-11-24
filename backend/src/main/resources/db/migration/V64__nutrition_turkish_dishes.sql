@@ -1,6 +1,6 @@
 -- Turkish home dishes and a search that finds them by their plain letters (K-1213, ADR-088 Ek 2). Small and quick: no row of
 -- the food table is rewritten here and no index is built (the table has about two million rows, and a deploy waits for the
--- migrations). The folded search text is filled in the background (SearchFoldBackfill) and indexed by V63.
+-- migrations). The folded search text is filled in the background (SearchFoldBackfill) and indexed by V65.
 
 -- A dish is a source of generic foods beside Foundation, SR Legacy and Survey, and a dataset of its own (an FDC or Open Food
 -- Facts import never touches it). Its English names, searched but not shown.

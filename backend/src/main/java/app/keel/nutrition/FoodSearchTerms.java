@@ -44,7 +44,7 @@ record FoodSearchTerms(List<String> words) {
     /**
      * Composed (NFC: a letter and its accent mark are one letter), then lower case with the Turkish letters as plain ones, and a
      * stray dot above dropped; the replacement comes first, since lower-casing İ alone leaves a combining dot. The database folds
-     * with nutrition.fold_text (V62), made of the same lists.
+     * with nutrition.fold_text (V64), made of the same lists.
      */
     static String fold(String text) {
         String composed = java.text.Normalizer.normalize(text, java.text.Normalizer.Form.NFC);

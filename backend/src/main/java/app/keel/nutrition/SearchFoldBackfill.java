@@ -14,7 +14,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 
 /**
- * Fills nutrition.food.search_folded (V62) for the rows that were there before it existed (K-1213): after the application has
+ * Fills nutrition.food.search_folded (V64) for the rows that were there before it existed (K-1213): after the application has
  * started, on the import thread, {@code batch-size} rows by id at a time — each batch its own short transaction, so no lock is held
  * and the server answers all the while — and {@code pause} between batches. A row is filled by the table's own trigger (setting its
  * name to itself fires it), so the fold is written once, in the database. Idempotent and resumable: a row already filled is left,

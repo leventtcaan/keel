@@ -40,7 +40,7 @@ class FoodSearchTermsTests {
 
     @Test
     void theLetterListTheMigrationFoldsWithIsTheOneTheCodeFoldsWith() throws Exception {
-        String sql = java.nio.file.Files.readString(java.nio.file.Path.of("src/main/resources/db/migration/V62__nutrition_turkish_dishes.sql"));
+        String sql = java.nio.file.Files.readString(java.nio.file.Path.of("src/main/resources/db/migration/V64__nutrition_turkish_dishes.sql"));
 
         assertThat(sql).contains("'" + FoodSearchTerms.TURKISH_LETTERS + "' || chr(" + (int) FoodSearchTerms.COMBINING_DOT + ")")
                 .contains("'" + FoodSearchTerms.PLAIN_LETTERS + "'");

@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 /**
- * The folded search text (K-1213, V62, V63): the database folds as {@link FoodSearchTerms#fold} does, on every write, and the
+ * The folded search text (K-1213, V64, V65): the database folds as {@link FoodSearchTerms#fold} does, on every write, and the
  * background backfill fills the rows that were there before and says when it is done. Runs in CI (a database).
  */
 @SpringBootTest
