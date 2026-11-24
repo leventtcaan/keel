@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import Body, { type Slug } from 'react-native-body-highlighter';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -13,6 +13,7 @@ import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { type Figure, drawingAreas, mapAreas, tipsFor } from '@/train/demo';
+import { formImage } from '@/train/formImages';
 import { workoutParams } from '@/train/params';
 import { exerciseName } from '@/train/program';
 import { type Move, type TrainData, movesOf } from '@/train/trainData';
@@ -26,6 +27,8 @@ import { type Move, type TrainData, movesOf } from '@/train/trainData';
 const SIDES = ['front', 'back'] as const;
 // Two drawings side by side across the screen's width (the library draws at 200 × 400 at scale 1).
 const MAP_SCALE = 0.75;
+// The form image is drawn two panels in one portrait picture, 1023 x 1350 (tools/media_gen.sh).
+const FORM_IMAGE_RATIO = 1023 / 1350;
 
 export default function ExerciseScreen() {
   const { api, training, report, bodyFigure } = useAppServices();
@@ -124,6 +127,20 @@ export default function ExerciseScreen() {
         {muscleMap}
       </View>
     );
+  // The drawn form image (ADR-091 #4), above the cues: only when the server gives it (its review passed) and this build has the file.
+  const formSource = formImage(move?.image);
+  const form =
+    formSource === undefined ? null : (
+      <Image
+        testID="form-image"
+        source={formSource}
+        resizeMode="contain"
+        accessible
+        accessibilityRole="image"
+        accessibilityLabel={t('demo.formImage', { exercise: exerciseName(exercise, moves) })}
+        style={styles.form}
+      />
+    );
   const about =
     move === undefined ? null : (
       <>
@@ -131,6 +148,7 @@ export default function ExerciseScreen() {
           {pill(t(`ownMove.equipments.${move.equipment}`))}
           {pill(t(`demo.kind.${move.kind}`))}
         </View>
+        {form}
         <View style={styles.section}>
           <Text accessibilityRole="header" style={[styles.heading, { color: color.text }]}>
             {t('demo.tips')}
@@ -163,6 +181,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   body: { padding: tokens.space.lg, gap: tokens.space.md },
   section: { gap: tokens.space.sm },
+  form: { width: '100%', aspectRatio: FORM_IMAGE_RATIO, borderRadius: tokens.radius.chip },
   map: { flexDirection: 'row', justifyContent: 'center', gap: tokens.space.md },
   heading: { fontSize: tokens.type.body, fontWeight: tokens.weight.bold },
   text: { fontSize: tokens.type.body },

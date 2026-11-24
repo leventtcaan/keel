@@ -36,6 +36,9 @@ const move = (id: string, extra: Partial<Schemas['Exercise']>): Schemas['Exercis
 });
 const CATALOG = [
   move('leg_press', { muscles: ['quads', 'glutes'], setupFields: ['seat_height', 'foot_position'] }),
+  move('squat', { muscles: ['quads', 'glutes'], equipment: 'BARBELL', image: 'exercises/squat/form.webp' }),
+  move('romanian_deadlift', { muscles: ['hamstrings'], equipment: 'BARBELL' }),
+  move('future_move', { muscles: ['chest'], image: 'exercises/future_move/form.webp' }),
   move('lateral_raise', { kind: 'ISOLATION', muscles: ['side_delts'], equipment: 'DUMBBELL' }),
 ];
 let mockSetups: Record<string, Record<string, string>> = {};
@@ -223,4 +226,31 @@ describe('the figure follows the profile (ADR-037 › 49)', () => {
     const drawing = new Set(drawingAreas('female'));
     expect(Object.values(workoutParams.muscleMapAreas).flat().filter((area) => !drawing.has(area))).toEqual([]);
   });
+});
+
+test('the drawn form image (ADR-091 #4) is shown above the cues when the server gives it', async () => {
+  mockParams = { exercise: 'squat' };
+  await show();
+  const image = await screen.findByLabelText(t('demo.formImage', { exercise: t('exercises.squat.name') }));
+  expect(image).toBeOnTheScreen();
+  expect(screen.getByTestId('form-image')).toBe(image);
+  // Above the cues: the image comes before the "Key cues" heading in the tree.
+  const order = screen.toJSON() as unknown;
+  const flat = JSON.stringify(order);
+  expect(flat.indexOf('form-image')).toBeGreaterThan(-1);
+  expect(flat.indexOf('form-image')).toBeLessThan(flat.indexOf(t('demo.tips')));
+});
+
+test('no image when the server gives none (its review has not passed)', async () => {
+  mockParams = { exercise: 'romanian_deadlift' };
+  await show();
+  expect(await screen.findByText(t('demo.tips'))).toBeOnTheScreen();
+  expect(screen.queryByTestId('form-image')).toBeNull();
+});
+
+test('no image when this build has no file for the path the server names', async () => {
+  mockParams = { exercise: 'future_move' };
+  await show();
+  expect(await screen.findByText(t('demo.tips'))).toBeOnTheScreen();
+  expect(screen.queryByTestId('form-image')).toBeNull();
 });

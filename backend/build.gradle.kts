@@ -59,6 +59,7 @@ tasks.processResources {
     }
     // The exercise catalog (K-210): one move per file, loaded and checked by the training module.
     from("../data/exercises") {
+        exclude("media/**") // prompt template and poses for the form images: tooling, not catalog
         into("data/exercises")
     }
     // The program templates (K-211), checked against the catalog as they load.

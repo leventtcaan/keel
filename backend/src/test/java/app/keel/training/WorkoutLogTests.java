@@ -59,6 +59,14 @@ class WorkoutLogTests {
     }
 
     @Test
+    void aFormImageIsServedOnlyOnceItsReviewPasses() throws Exception {
+        // ADR-091 #4: the pilot images are drawn but their review is pending, so the phone is not given them yet.
+        List<Map<String, Object>> exercises = list(get(TestSessions.newAccount(), "/v1/exercises"));
+
+        assertThat(exercises).anySatisfy(move -> assertThat(move).containsEntry("id", "squat").doesNotContainKey("image"));
+    }
+
+    @Test
     void aWorkoutIsStartedItsSetsLoggedAndItIsFinished() throws Exception {
         AccountId account = TestSessions.newAccount();
         String workout = start(account, "2026-09-30T15:40:00Z");

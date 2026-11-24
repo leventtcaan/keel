@@ -1,0 +1,282 @@
+{
+  "lat_pulldown": {
+    "apparatus": "a cable lat pulldown station: tall frame with a pulley at the top, a long straight pulldown bar, a weight stack behind, a seat with a padded thigh roller locking the thighs",
+    "view": "side view, mannequin seen from the side (never from behind), facing left toward the bar, barbell seen end-on, one plate face-on, bar pointing toward the viewer; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "seated upright, thighs held under the thigh pad, shins vertical, arms fully extended overhead holding the bar slightly wider than shoulder width, torso leaning back about 10 degrees, shoulder blades lifted",
+    "end": "bar pulled down to the upper chest, elbows driven down and slightly back beside the ribs, chest up, torso still leaning back about 10 degrees, shoulder blades pulled down",
+    "path": "the bar travels in a smooth vertical arc from overhead down to the upper chest"
+  },
+  "close_grip_lat_pulldown": {
+    "apparatus": "a cable lat pulldown station with a pulley at the top, a weight stack behind, a seat with a thigh roller, and a close-grip V handle on the cable",
+    "view": "side view, mannequin facing left toward the handle; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "seated upright, thighs under the thigh pad, arms fully extended overhead holding the V handle with palms facing each other, torso leaning back about 10 degrees",
+    "end": "handle pulled down to the upper chest, elbows pointing down and back close to the ribs, chest up",
+    "path": "the handle travels down in a vertical line from overhead to the upper chest"
+  },
+  "pull_up": {
+    "apparatus": "a pull-up bar mounted high on a rack, no other equipment",
+    "view": "side view, mannequin facing left, barbell seen end-on, one plate face-on, bar pointing toward the viewer; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "dead hang from the bar, arms fully straight, shoulder blades gently pulled down, legs slightly bent behind, body straight",
+    "end": "chin just above the bar, elbows pointing down toward the ribs, chest toward the bar, legs still slightly bent behind",
+    "path": "the body travels straight up and down along a vertical line, shown by the arrow beside the torso"
+  },
+  "squat": {
+    "apparatus": "a barbell squat rack with the bar resting on the upper back (high-bar position), plates on both ends of the bar, a flat floor",
+    "view": "side view, mannequin facing left, the whole body and the bar visible, barbell seen end-on, one plate face-on, bar pointing toward the viewer; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "standing tall, feet shoulder-width apart with toes slightly turned out, bar across the upper back, hands gripping the bar, chest up, spine neutral, knees and hips fully extended",
+    "end": "bottom of the squat: thighs parallel to the floor or just below, knees tracking over the toes, torso leaning forward about 45 degrees with a neutral spine, heels flat on the floor, bar still directly over mid-foot",
+    "path": "the bar travels straight up and down in a vertical line over the middle of the foot"
+  },
+  "hack_squat": {
+    "apparatus": "a plate-loaded hack squat machine: a back pad angled about 45 degrees, a foot platform, shoulder pads, plates on a sled",
+    "view": "side view, mannequin facing left; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "standing on the platform with the back flat against the pad, shoulders under the shoulder pads, feet shoulder-width, knees and hips extended",
+    "end": "deep squat down the slide, thighs below parallel, knees tracking over the toes, back and hips staying flat against the pad",
+    "path": "the body and sled travel down and up along the angled slide of the machine"
+  },
+  "leg_press": {
+    "apparatus": "a 45-degree plate-loaded leg press machine: an inclined sled with plates, a reclined back pad, a foot platform, handles at the seat",
+    "view": "side view, mannequin facing left; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "reclined on the back pad, feet shoulder-width on the middle of the platform, legs extended but knees not locked, hips and lower back flat against the pad",
+    "end": "knees bent to about 90 degrees toward the chest, hips and lower back still flat on the pad, feet flat on the platform",
+    "path": "the sled travels along the inclined rails, shown by the arrow along the rail"
+  },
+  "bulgarian_split_squat": {
+    "apparatus": "a flat bench behind the mannequin with the rear foot resting on it, a dumbbell held in each hand at the sides",
+    "view": "side view, mannequin facing left, the front leg nearest the viewer; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "standing on the front leg, rear foot resting on the bench behind, front foot about two steps ahead of the bench, torso upright, a dumbbell hanging in each hand, front knee nearly straight",
+    "end": "front thigh about parallel to the floor, front knee tracking over the toes, torso slightly leaning forward with a neutral spine, rear knee bent and pointing toward the floor",
+    "path": "the hips travel straight down and up in a vertical line"
+  },
+  "leg_extension": {
+    "apparatus": "a seated leg extension machine: a back pad, a seat, a padded roller on the front of the ankles, a weight stack",
+    "view": "side view, mannequin facing left; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "seated with the back flat against the pad, knees bent about 90 degrees at the edge of the seat, ankles behind the roller",
+    "end": "legs fully extended, knees straight but not hyperextended, the quadriceps visibly contracted, back still against the pad",
+    "path": "the shin and roller travel in an arc from bent knee to straight leg"
+  },
+  "lying_leg_curl": {
+    "apparatus": "a lying leg curl machine: a flat padded bench lying face down, an ankle roller above the heels, a weight stack",
+    "view": "side view, mannequin facing left, lying face down; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "lying face down, hips pressed to the bench, legs almost straight, the ankle roller just above the heels",
+    "end": "heels curled toward the glutes with the knees bent about 90 degrees or more, hips still pressed to the bench",
+    "path": "the ankles travel in an arc from the straight leg up toward the glutes"
+  },
+  "seated_leg_curl": {
+    "apparatus": "a seated leg curl machine: a back pad, a thigh pad pressing down on the thighs, an ankle pad under the calves, a weight stack",
+    "view": "side view, mannequin facing left; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "seated with the back against the pad, thighs held down by the thigh pad, legs extended straight in front with the ankle pad over the lower calves",
+    "end": "knees bent to about 90 degrees or more, heels pulled down and back under the seat, thighs still held down",
+    "path": "the ankles travel in an arc from the straight leg down and back toward the seat"
+  },
+  "romanian_deadlift": {
+    "apparatus": "a barbell with plates held in front of the thighs, flat floor",
+    "view": "side view, mannequin facing left, the whole body from head to feet visible, barbell seen end-on, one plate face-on, bar pointing toward the viewer; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "standing tall, feet hip-width apart, barbell held with an overhand grip hanging against the front of the thighs, knees soft (slightly bent), chest up, spine neutral",
+    "end": "hips pushed far back, torso tipped forward until it is nearly parallel to the floor with a flat neutral spine, knees only slightly bent and unchanged, the barbell hanging close to the shins just below the knees",
+    "path": "the bar slides straight down and up in a vertical line close to the thighs and shins"
+  },
+  "hip_thrust": {
+    "apparatus": "a flat bench with the mannequin's upper back resting on its edge, a barbell with plates across the hips (padded), flat floor",
+    "view": "side view, mannequin facing right, the shoulder blades on the bench edge, barbell seen end-on, one plate face-on, bar pointing toward the viewer; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "upper back on the bench, hips lowered close to the floor, knees bent about 90 degrees, feet flat on the floor shoulder-width, barbell resting across the hips, chin tucked",
+    "end": "hips fully raised so that the torso and thighs form a straight line, shins vertical, knees bent about 90 degrees, glutes squeezed, ribs down",
+    "path": "the bar travels straight up and down in a vertical line over the hips"
+  },
+  "seated_calf_raise": {
+    "apparatus": "a plate-loaded seated calf raise machine: a seat, knee pads pressing on the thighs, a foot block under the balls of the feet",
+    "view": "side view, mannequin facing left; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "seated upright, knees under the pad, balls of the feet on the block, heels lowered below the block for a full stretch of the calves",
+    "end": "heels lifted as high as possible, standing on the balls of the feet, calves fully contracted, knees still under the pad",
+    "path": "the heels travel straight up and down in a vertical line"
+  },
+  "standing_calf_raise": {
+    "apparatus": "a standing calf raise machine: shoulder pads, a foot block under the balls of the feet, a weight stack",
+    "view": "side view, mannequin facing left; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "standing upright with the shoulders under the pads, balls of the feet on the block, heels lowered well below the block for a full calf stretch, legs straight",
+    "end": "heels lifted as high as possible, on the balls of the feet, calves fully contracted, legs straight, torso upright",
+    "path": "the heels travel straight up and down in a vertical line"
+  },
+  "bench_press": {
+    "apparatus": "a flat bench with a barbell on it, plates on both ends of the bar, a rack, feet flat on the floor",
+    "view": "side view, mannequin facing left, lying on the bench, feet flat on the floor, barbell seen end-on, one plate face-on, bar pointing toward the viewer; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "lying on the bench with the shoulder blades pinched together, slight arch in the lower back, feet flat on the floor, the barbell held above the mid-chest with straight arms, grip slightly wider than shoulders",
+    "end": "the barbell lowered to touch the mid-chest, forearms vertical, elbows about 45 degrees from the torso (not flared out)",
+    "path": "the bar travels in a slight arc between the mid-chest and straight above the shoulders"
+  },
+  "dumbbell_bench_press": {
+    "apparatus": "a flat bench, a dumbbell in each hand, feet flat on the floor",
+    "view": "side view, mannequin facing left, lying on the bench; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "lying on the bench with the shoulder blades pinched together, feet flat on the floor, dumbbells held above the chest with straight arms, palms facing the feet",
+    "end": "dumbbells lowered to the sides of the chest, upper arms about 45 degrees from the torso, forearms vertical, a deep chest stretch",
+    "path": "the dumbbells travel in a slight arc from beside the chest up to above the shoulders"
+  },
+  "incline_dumbbell_press": {
+    "apparatus": "an adjustable bench set to about 30 degrees incline, a dumbbell in each hand, feet flat on the floor",
+    "view": "side view, mannequin facing left, lying back on the inclined bench; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "back against the incline bench, shoulder blades pinched together, feet flat on the floor, dumbbells held above the upper chest with straight arms, palms facing forward",
+    "end": "dumbbells lowered to the sides of the upper chest, upper arms about 45 degrees from the torso, forearms vertical, a deep chest stretch",
+    "path": "the dumbbells travel in a slight arc from beside the upper chest up to above the shoulders"
+  },
+  "machine_chest_press": {
+    "apparatus": "a seated chest press machine: an adjustable seat, a back pad, two handles at chest height, a weight stack",
+    "view": "side view, mannequin facing left; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "seated with the back flat against the pad, shoulder blades pinched back, hands holding the handles at mid-chest height with elbows bent, handles near the chest",
+    "end": "arms pressed forward until almost straight, elbows soft, handles at mid-chest height, shoulders kept down and back",
+    "path": "the handles travel in a straight horizontal line forward from the chest"
+  },
+  "cable_fly": {
+    "apparatus": "two cable stations with pulleys at about chest height and a D-handle on each cable, the mannequin standing between them in a staggered stance",
+    "view": "front view of the mannequin standing between two cable towers, seen from the front (still faceless); neck neutral; arrow beside the figure, never over it",
+    "start": "standing in a staggered stance, arms open wide at shoulder height with a slight bend in the elbows, hands holding the handles, chest stretched",
+    "end": "hands brought together in front of the chest in a hugging arc, elbows keeping the same slight bend, chest squeezed",
+    "path": "each hand travels in a wide arc from the open position to meeting in front of the chest"
+  },
+  "pec_deck": {
+    "apparatus": "a pec deck (butterfly) machine: a seat, a back pad, two vertical arms with handles or pads, a weight stack",
+    "view": "front view of the mannequin seated in the machine, seen from the front (still faceless); neck neutral; arrow beside the figure, never over it",
+    "start": "seated with the back flat against the pad, upper arms and forearms on the pads with elbows at shoulder height and opened wide, chest stretched",
+    "end": "the arms brought together in front of the chest, elbows at shoulder height, chest squeezed, back still flat against the pad",
+    "path": "each arm travels in an arc from wide open to meeting in front of the chest"
+  },
+  "push_up": {
+    "apparatus": "a flat floor, no equipment",
+    "view": "side view, mannequin facing left, the whole body from head to feet visible; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "high plank: hands on the floor under the shoulders, arms straight, body in one straight line from head to heels, feet together",
+    "end": "chest lowered close to the floor, elbows about 45 degrees from the torso, body still in one straight line, hips not sagging",
+    "path": "the whole body travels straight down and up as one stiff plank"
+  },
+  "dip": {
+    "apparatus": "two parallel dip bars at hip height, nothing else",
+    "view": "side view, mannequin facing left, barbell seen end-on, one plate face-on, bar pointing toward the viewer; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "supported on straight arms above the dip bars, shoulders pushed down, torso leaning slightly forward, legs crossed behind or hanging",
+    "end": "body lowered until the upper arms are about parallel to the floor, elbows bent about 90 degrees pointing back, chest slightly forward, legs behind",
+    "path": "the body travels straight down and up between the bars"
+  },
+  "overhead_press": {
+    "apparatus": "a barbell with plates, a standing position, a flat floor",
+    "view": "side view, mannequin facing left, barbell seen end-on, one plate face-on, bar pointing toward the viewer; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "standing with feet hip-width apart, barbell resting on the front of the shoulders held at shoulder width, elbows slightly in front of the bar, ribs down, glutes tight",
+    "end": "barbell locked out directly above the middle of the feet with straight arms, head pushed slightly forward through the arms, ribs down, torso upright",
+    "path": "the bar travels in a near-vertical line, moving slightly around the face and finishing over the mid-foot"
+  },
+  "dumbbell_shoulder_press": {
+    "apparatus": "a bench with the backrest set upright at about 80 degrees, a dumbbell in each hand",
+    "view": "side view, mannequin facing left, seated with the back against the upright bench; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "seated with the back against the backrest, feet flat on the floor, dumbbells held at shoulder height with elbows bent about 90 degrees, palms facing forward",
+    "end": "dumbbells pressed overhead until the arms are straight, dumbbells nearly touching above the head, ribs down, back against the backrest",
+    "path": "the dumbbells travel in a slight inward arc from the shoulders to above the head"
+  },
+  "lateral_raise": {
+    "apparatus": "a dumbbell in each hand, standing, flat floor",
+    "view": "front view of the mannequin standing, seen from the front (still faceless); neck neutral; arrow beside the figure, never over it",
+    "start": "standing tall with a dumbbell hanging at each side, slight bend in the elbows, torso upright, shoulders relaxed",
+    "end": "arms lifted out to the sides until the upper arms are about shoulder height, a slight bend in the elbows kept, wrists not higher than the elbows",
+    "path": "each arm travels in a wide arc from the hip out to shoulder height"
+  },
+  "cable_lateral_raise": {
+    "apparatus": "a cable station with the pulley set low and a single D-handle, the mannequin standing sideways beside the tower holding the handle with the far hand",
+    "view": "front view of the mannequin standing, seen from the front (still faceless), the cable tower beside the working arm; neck neutral; arrow beside the figure, never over it",
+    "start": "standing tall, the working arm across the front of the body holding the handle at the hip, slight bend in the elbow, torso upright",
+    "end": "the working arm lifted out to the side until the upper arm is about shoulder height, slight bend in the elbow kept",
+    "path": "the hand travels in an arc from across the hip out to shoulder height"
+  },
+  "rear_delt_fly": {
+    "apparatus": "a bench set to about 45 degrees with the mannequin leaning chest-down on it, a light dumbbell in each hand, feet on the floor",
+    "view": "side view, mannequin facing left, chest supported on the incline bench; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "chest on the inclined bench, arms hanging straight down toward the floor holding the dumbbells, a slight bend in the elbows, neck neutral",
+    "end": "arms raised out to the sides until the upper arms are about parallel to the floor, slight elbow bend kept, shoulder blades gently squeezed",
+    "path": "each arm travels in a wide arc from hanging down to out to the sides"
+  },
+  "reverse_pec_deck": {
+    "apparatus": "a pec deck machine used in reverse: the mannequin seated facing the pad, chest against the chest pad, handles in front at shoulder height, a weight stack",
+    "view": "side view, mannequin facing left, chest on the pad; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "seated with the chest against the pad, arms extended forward holding the handles at shoulder height, slight bend in the elbows",
+    "end": "arms swept out and back until the upper arms are in line with the shoulders, shoulder blades squeezed, chest still against the pad",
+    "path": "each arm travels in a wide arc from in front to out to the sides"
+  },
+  "face_pull": {
+    "apparatus": "a cable station with the pulley set at about face height and a rope attachment, a weight stack",
+    "view": "side view, mannequin facing left toward the rope; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "standing with feet staggered, arms extended forward holding the two ends of the rope at face height, slight lean back, shoulders down",
+    "end": "rope pulled toward the face, the hands splitting apart on either side of the head, elbows high and wide at shoulder height, shoulder blades squeezed",
+    "path": "the rope travels in a straight horizontal line from the pulley to the face"
+  },
+  "barbell_row": {
+    "apparatus": "a barbell with plates on the floor, the mannequin standing over it, flat floor",
+    "view": "side view, mannequin facing left, the whole body from head to feet visible, barbell seen end-on, one plate face-on, bar pointing toward the viewer; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "hinged forward at the hips with the torso about 45 degrees to the floor, flat neutral spine, knees slightly bent, arms hanging straight down holding the barbell at the knees with an overhand grip",
+    "end": "the barbell pulled to the lower ribs, elbows pointing back past the torso, shoulder blades squeezed, torso angle unchanged",
+    "path": "the bar travels in a straight line from the knees up to the lower ribs, close to the body"
+  },
+  "one_arm_dumbbell_row": {
+    "apparatus": "a flat bench with the mannequin's same-side hand and knee resting on it, a dumbbell in the free hand, flat floor",
+    "view": "side view, mannequin facing left, one hand and one knee on the bench; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "one hand and the same-side knee on the bench, the other foot on the floor, back flat and nearly parallel to the floor, the free arm hanging straight down holding the dumbbell",
+    "end": "the dumbbell pulled to the hip, elbow pointing up and back past the torso, back still flat, shoulder blade squeezed",
+    "path": "the dumbbell travels in a straight line from below the shoulder to the hip"
+  },
+  "chest_supported_row": {
+    "apparatus": "a chest-supported row machine: an inclined chest pad, a seat, two handles in front at arm's length, a weight stack",
+    "view": "side view, mannequin facing left, chest on the pad; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "chest against the pad, arms extended forward gripping the handles, shoulder blades spread slightly apart, back flat",
+    "end": "handles pulled back until the elbows are behind the torso, shoulder blades squeezed together, chest still on the pad",
+    "path": "the handles travel in a straight horizontal line from in front toward the torso"
+  },
+  "seated_row": {
+    "apparatus": "a seated cable row station: a low pulley, a V handle on the cable, a foot plate, a seat, a weight stack",
+    "view": "side view, mannequin facing left toward the cable; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "seated upright with the feet on the plate and the knees slightly bent, torso leaning slightly forward, arms extended forward holding the handle, shoulder blades slightly protracted",
+    "end": "torso upright (not leaning back), the handle pulled to the lower stomach, elbows pointing back past the torso, shoulder blades squeezed",
+    "path": "the handle travels in a straight horizontal line from in front to the lower stomach"
+  },
+  "t_bar_row": {
+    "apparatus": "a plate-loaded T-bar row setup: a landmine bar anchored at one end with plates on the free end, a V handle across the bar, the mannequin straddling the bar",
+    "view": "side view, mannequin facing left, barbell seen end-on, one plate face-on, bar pointing toward the viewer; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "straddling the bar, hinged forward at the hips with the torso about 45 degrees, flat neutral spine, knees slightly bent, arms extended down holding the handle",
+    "end": "handle pulled up to the chest, elbows pointing back past the torso, shoulder blades squeezed, torso angle unchanged",
+    "path": "the handle travels in an arc from below the chest up to the chest, following the lever of the bar"
+  },
+  "barbell_curl": {
+    "apparatus": "a straight barbell with plates, standing, flat floor",
+    "view": "side view, mannequin facing left, barbell seen end-on, one plate face-on, bar pointing toward the viewer; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "standing tall, barbell held with an underhand shoulder-width grip hanging against the thighs, elbows tucked at the sides, arms straight",
+    "end": "barbell curled up to shoulder height, elbows still pinned at the sides, biceps fully contracted, torso not swinging",
+    "path": "the bar travels in an arc from the thighs to the front of the shoulders, elbows fixed"
+  },
+  "dumbbell_curl": {
+    "apparatus": "a dumbbell in each hand, standing, flat floor",
+    "view": "side view, mannequin facing left; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "standing tall, dumbbells hanging at the sides with palms facing forward, elbows tucked at the sides, arms straight",
+    "end": "dumbbells curled up to shoulder height, elbows still pinned at the sides, biceps fully contracted, torso not swinging",
+    "path": "each dumbbell travels in an arc from the thigh to the front of the shoulder, elbow fixed"
+  },
+  "hammer_curl": {
+    "apparatus": "a dumbbell in each hand, standing, flat floor",
+    "view": "side view, mannequin facing left; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "standing tall, dumbbells hanging at the sides with palms facing the thighs (neutral grip), elbows tucked at the sides, arms straight",
+    "end": "dumbbells curled up to shoulder height with the palms still facing each other, elbows pinned at the sides, torso not swinging",
+    "path": "each dumbbell travels in an arc from the thigh to the front of the shoulder, elbow fixed"
+  },
+  "reverse_curl": {
+    "apparatus": "a straight or EZ barbell with plates, standing, flat floor",
+    "view": "side view, mannequin facing left, barbell seen end-on, one plate face-on, bar pointing toward the viewer; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "standing tall, barbell held with an overhand grip (palms facing down) shoulder-width, hanging against the thighs, elbows tucked at the sides",
+    "end": "barbell curled up to shoulder height with the overhand grip, wrists straight, elbows pinned at the sides, torso not swinging",
+    "path": "the bar travels in an arc from the thighs to the front of the shoulders, elbows fixed"
+  },
+  "triceps_pushdown": {
+    "apparatus": "a cable station with the pulley set high and a short bar or rope attachment, standing in front of it",
+    "view": "side view, mannequin facing left toward the cable, barbell seen end-on, one plate face-on, bar pointing toward the viewer; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "standing tall with a slight forward lean, upper arms pinned at the sides, elbows bent about 90 degrees, hands holding the attachment at chest height",
+    "end": "arms pushed down until fully straight, attachment at the thighs, upper arms still pinned at the sides, triceps contracted",
+    "path": "the hands travel in a vertical arc from chest height down to the thighs, elbows fixed"
+  },
+  "overhead_triceps_extension": {
+    "apparatus": "a cable station with the pulley set low and a rope attachment, the mannequin standing facing away from the tower in a staggered stance",
+    "view": "side view, mannequin facing right (away from the tower), cable running up behind the neck; machines drawn from the same side; neck neutral; arrow beside the figure, never over it",
+    "start": "standing in a staggered stance, upper arms raised beside the ears pointing up, elbows bent so the rope is behind the head, triceps stretched",
+    "end": "arms extended fully overhead, elbows straight, upper arms still beside the ears, triceps contracted",
+    "path": "the hands travel in an arc from behind the head up to overhead, elbows fixed"
+  }
+}

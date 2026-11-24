@@ -1002,6 +1002,7 @@
   "demo": {
     "open": "How to",
     "openLabel": "{exercise}: how to",
+    "formImage": "{exercise}: start and end positions",
     "setup": "Your setup",
     "setupNote": "Kept on this phone. Set it the same way every time.",
     "save": "Save setup",
