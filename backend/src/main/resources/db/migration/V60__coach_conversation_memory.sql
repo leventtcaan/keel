@@ -1,5 +1,5 @@
 -- The coach's conversation and what the user asked it to remember (ADR-092 #3): the user's words and the coach's checked
--- replies, kept coach_history_days (data/parameters/coach.yaml); memory items only through the user's own "remember this"
+-- replies, kept coach_history_days (data/parameters/coach.yaml); memory items only through the user's own remember-this
 -- (an item is the user's sentence, nothing the model wrote). Health-adjacent, so both go with the account, with the AI
 -- consent and with the health data consent, and are in the export. No foreign key to another module's table (ADR-023).
 create table coach.message
