@@ -140,6 +140,18 @@ public final class WeeklySpine {
         if (pace.compareTo(floor) >= 0) {
             return Optional.empty();
         }
+        // Consistently slow: each of the last cut_pace_slow_weeks weekly changes is under the floor too, so one paused week after
+        // good ones is not a slow cut (K-1205, Levent). A window too short to show that many weeks has no step.
+        int slowWeeks = parameters.wholeNumber(ParameterKey.CUT_PACE_SLOW_WEEKS);
+        int weeks = window.weeks().size();
+        if (weeks < slowWeeks + 1) {
+            return Optional.empty();
+        }
+        for (int i = weeks - slowWeeks; i < weeks; i++) {
+            if (window.weeks().get(i - 1).subtract(window.weeks().get(i)).compareTo(floor) >= 0) {
+                return Optional.empty();
+            }
+        }
         BigDecimal stepKgPerWeek = BigDecimal.valueOf(parameters.wholeNumber(ParameterKey.CUT_STEP_MIN_KCAL))
                 .multiply(BigDecimal.valueOf(DAYS_PER_WEEK))
                 .divide(line(ParameterKey.KCAL_PER_KG_FAT, parameters), MathContext.DECIMAL64);

@@ -335,7 +335,10 @@ scenarios:
     # last week is flat against the one before (1 flat week) and 0.7 under the one before that → 1 ≤ flat_wait_weeks →
     # wait. Week 5 [80.7, 80.0, 80.0, 80.0]: 0.7 → moving. Week 6 all 80.0: 3 flat weeks → 2432 − 500 = 1932.
     weeks: [80.0, 80.7, 80.0, 80.0, 80.0, 80.0]
-    expect: [observing, observing, observing, wait_one_more_week, continue/toward_goal, "adjust_calories:-500/not_toward_goal"]
+    # K1 (ADR-091 Ek 4, K-1205): week 5 [80.7, 80.0, 80.0, 80.0] moves 0.7 over the window (0.23 a week, under the floor 0.40) and
+    # its last two weekly changes are 0.0: consistently slow, so the step comes a week earlier (below_target_pace); the new
+    # plan's window then runs in week 6.
+    expect: [observing, observing, observing, wait_one_more_week, "adjust_calories:-500/below_target_pace", window_not_full]
 
   - id: GS-37
     title: "Woman training very hard on maintenance food: raised to the energy floor, more than one step (J1 L2.1)"
@@ -362,5 +365,7 @@ scenarios:
     mornings: 5
     weeks: [87.0, 86.6, 86.3, 85.9, 85.5, 85.1]
     overrides: {2: {mornings: 3}, 3: {adherence: 0.6}}
-    expect: [observing, data_insufficient, continue/toward_goal, continue/toward_goal,
-             {is: continue/toward_goal, confidence: medium}, continue/toward_goal]
+    # K1 (ADR-091 Ek 4, K-1205): week 4 means 86.6, 86.3, 85.9: 0.35 a week, under the floor 0.43 (0.5 % of 85.9), changes 0.3 and
+    # 0.4 both under it: consistently slow, the step (below_target_pace); weeks 5-6 are the new plan's window.
+    expect: [observing, data_insufficient, continue/toward_goal, "adjust_calories:-500/below_target_pace",
+             window_not_full, window_not_full]

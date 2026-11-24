@@ -60,6 +60,15 @@ class TargetPaceTests {
     }
 
     @Test
+    void aPausedLoserAfterGoodWeeksIsNotStepped() {
+        // Weekly means 80.0, 79.2, 78.4, 78.4 over the window 79.2, 78.4, 78.4: the last change is 0.0 but the one before is 0.8,
+        // over the floor 0.39: not consistently slow (and the window's own pace is 0.4, just over): keeps going.
+        assertThat(call(cut(79.2, 78.4, 78.4, 0.9, CheckIn.Training.STABLE, 3000))).isEqualTo("continue/toward_goal");
+        // The same with a window pace under the floor: 0.8 then 0.0 → 0.4 a week at 100 kg (floor 0.5), still no step.
+        assertThat(call(cut(100.8, 100.0, 100.0, 0.9, CheckIn.Training.STABLE, 3400))).isEqualTo("continue/toward_goal");
+    }
+
+    @Test
     void atOrOverTheFloorItKeepsGoing() {
         // 90 kg: 0.45 a week is over 0.4465.
         assertThat(call(cut(90.0, 89.55, 89.1, 0.9, CheckIn.Training.STABLE, 3200))).isEqualTo("continue/toward_goal");
@@ -110,6 +119,26 @@ class TargetPaceTests {
         return Arbitraries.integers().between(500, 1500).flatMap(weight -> Arbitraries.integers().between(0, 70).flatMap(loss ->
                 Arbitraries.integers().between(40, 100).flatMap(adherence ->
                         Arbitraries.integers().between(-200, 900).map(offset -> new Journey(weight, loss, adherence, offset)))));
+    }
+
+    @Property
+    void neverStepsWhenAnyOfTheLastTwoWeeklyChangesIsAtOrOverTheFloor(@ForAll("paths") int[] hundredths) {
+        // Three weekly means from 90 kg: the two weekly changes in hundredths of a kilogram.
+        BigDecimal first = new BigDecimal("90.00");
+        BigDecimal second = first.subtract(BigDecimal.valueOf(hundredths[0], 2));
+        BigDecimal third = second.subtract(BigDecimal.valueOf(hundredths[1], 2));
+        Snapshot snapshot = cut(first.doubleValue(), second.doubleValue(), third.doubleValue(), 0.9, CheckIn.Training.STABLE, 3400);
+        BigDecimal floor = third.multiply(new BigDecimal("0.005"));
+        boolean anyAtFloor = BigDecimal.valueOf(hundredths[0], 2).compareTo(floor) >= 0 || BigDecimal.valueOf(hundredths[1], 2).compareTo(floor) >= 0;
+
+        if (anyAtFloor) {
+            assertThat(DecisionPipeline.decide(snapshot, MALE).reasons().getFirst().rule().value()).isNotEqualTo("below_target_pace");
+        }
+    }
+
+    @Provide
+    Arbitrary<int[]> paths() {
+        return Arbitraries.integers().between(0, 120).list().ofSize(2).map(list -> new int[] {list.get(0), list.get(1)});
     }
 
     @Property
