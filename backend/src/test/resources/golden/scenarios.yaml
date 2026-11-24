@@ -14,8 +14,8 @@
 # a 30-year-old 180 cm man at 80 kg, (800 + 1125 − 150 + 5) × 1.6 = 2848 kcal. Timing: a man is observed 14 days, so
 # week 1 observes, week 2 waits for the 21-day window and week 3 is the first call; a woman is observed 28 days and her
 # first call is week 4. K-1203 (ADR-091 Ek 4): when a man's cut is flat over those 14 days (the weekly means differ by under
-# half the 0.58 kg margin toward the goal) the first call is week 2 and the deficit starts on day 15; a cut that is
-# losing keeps the 21-day read. Movement is "the window's first and last weekly means differ by more than 0.58 kg" (L-10).
+# a quarter of the 0.58 kg margin, either way) the first call is week 2 and the deficit starts on day 15; a cut that is
+# losing or gaining more keeps the 21-day read. Movement is "the window's first and last weekly means differ by more than 0.58 kg" (L-10).
 
 scenarios:
   - id: GS-01
@@ -300,20 +300,16 @@ scenarios:
     # high week is the first one now, 0.7 → reads as moving. Week 5 all 80.0: two flat weeks → −500.
     # (In a man's 3-week window this pattern is the only way to a wait: one flat week after a clear drop already
     # reads as moving — K-64 by construction, ADR-021.)
-    # K-1203: week 2 [80.0, 80.7] is a gain, under half the margin toward the goal: the observation read as flat, so the
-    # deficit starts at once (−500) and the pattern above is not reached; the new plan's window is full in week 5.
     weeks: [80.0, 80.7, 80.0, 80.0, 80.0]
-    expect: [observing, "adjust_calories:-500/not_toward_goal", {is: window_not_full, next: 14, confidence: low}, window_not_full,
+    expect: [observing, window_not_full, {is: wait_one_more_week, next: 7, confidence: low}, continue/toward_goal,
              "adjust_calories:-500/not_toward_goal"]
 
   - id: GS-34
     title: "The same week with the waist going up: no waiting, one step down (G2 K-64: weight and waist flat)"
     user: {sex: male, phase: cut}
     weeks: [80.0, 80.7, 80.0, 80.0, 80.0]
-    # K-1203: the deficit already starts in week 2 (flat observation), so the week-3 waist answer meets a window that is not
-    # full: this journey no longer reaches the waist rule (it differs from GS-33 only in a week nothing reads).
     overrides: {3: {waist: up}}
-    expect: [observing, "adjust_calories:-500/not_toward_goal", window_not_full, window_not_full, "adjust_calories:-500/not_toward_goal"]
+    expect: [observing, window_not_full, "adjust_calories:-500/not_toward_goal", window_not_full, window_not_full]
 
   - id: GS-35
     title: "No adherence answer on a flat week: the engine asks for it, calories stay (U3)"
