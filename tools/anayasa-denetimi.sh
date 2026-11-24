@@ -14,6 +14,7 @@ echo "== app: text, code, store listing and routes"
 # Each file's first line is "// constitution-audit".
 MOBILE_SUITES=(
   forbidden-phrases.test.ts
+  copy-tr.test.ts
   copy-literals.test.ts
   copy-keys.test.ts
   copy-dashes.test.ts

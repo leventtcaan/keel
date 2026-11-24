@@ -32,11 +32,22 @@ test('a device locale tag is matched on its language, anything else is English',
   expect(matchLocale(undefined)).toBe('en');
 });
 
-test('a key the active language lacks falls back to English, key by key', () => {
+test('the active language is read first: Turkish text for a Turkish key, and an unknown key is marked, not crashed', () => {
   setActiveLocale('tr');
-  // tr.json is empty until K-1212: every key is the English one, none is "[missing: ...]".
-  expect(t('tabs.food')).toBe('Food');
+  expect(t('tabs.food')).toBe((tr as Json & { tabs: { food: string } }).tabs.food);
+  expect(t('tabs.food')).not.toBe('Food');
   expect(t('does.not.exist')).toBe('[missing: does.not.exist]');
+});
+
+test('a key the active language lacks falls back to English, key by key', () => {
+  jest.isolateModules(() => {
+    jest.doMock('../../../../data/copy/tr.json', () => ({ tabs: { food: 'Yemek' } }));
+    const copy = jest.requireActual<typeof import('@/copy')>('@/copy');
+    const locales = jest.requireActual<typeof import('@/copy/locales')>('@/copy/locales');
+    locales.setActiveLocale('tr');
+    expect(copy.t('tabs.today')).toBe('This week');
+    expect(copy.t('does.not.exist')).toBe('[missing: does.not.exist]');
+  });
 });
 
 test('a key the language has wins over English', () => {
@@ -85,5 +96,5 @@ test('tp picks the plural form for the count and fills {count}', () => {
   expect(tp('callScreen.weighInsLeft', 1)).toBe('1 more weigh-in needed');
   expect(tp('callScreen.weighInsLeft', 3)).toBe('3 more weigh-ins needed');
   setActiveLocale('tr');
-  expect(tp('callScreen.weighInsLeft', 3)).toBe('3 more weigh-ins needed'); // English fallback
+  expect(tp('callScreen.weighInsLeft', 3)).toBe('3 tartı daha gerekli'); // Turkish, read with its own plural table
 });

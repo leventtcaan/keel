@@ -6,6 +6,9 @@
  * - K-408: the photo picker's permission texts, the same way (one camera text for barcodes, meal and progress photos).
  * - K-976: the one URL scheme the app may ask about (Instagram Stories); the Facebook App ID those Stories need is not here
  *   but EXPO_PUBLIC_FACEBOOK_APP_ID, read in the app (src/share/storyConfig.ts).
+ * - K-1212: the permission prompts follow the phone's language, not the in-app choice (iOS reads the prompt text from the app
+ *   bundle before the app runs): the Turkish texts go into tr.lproj/InfoPlist.strings by Expo's own `locales` field, no
+ *   dependency. English stays the base text above.
  * - K-601: no motion permission — the accelerometer needs none.
  * - K-308: the bundle id is configuration — the temporary dev.leventtcaan.keel until the product has its name
  *   (KEEL_IOS_BUNDLE_ID; the server's KEEL_APPLE_CLIENT_ID must be the same, ADR-028). The EAS project id is not a
@@ -14,6 +17,7 @@
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
 import en from '../../data/copy/en.json';
+import tr from '../../data/copy/tr.json';
 
 const TEMPORARY_BUNDLE_ID = 'dev.leventtcaan.keel';
 
@@ -28,7 +32,16 @@ export default ({ config }: ConfigContext): ExpoConfig =>
       bundleIdentifier: process.env.KEEL_IOS_BUNDLE_ID ?? TEMPORARY_BUNDLE_ID,
       // K-976: Instagram Stories. The app may ask whether Instagram is there (canOpenURL) by this one scheme and no other.
       // react-native-share's own plugin would write the same list but needs expo-build-properties, which the app does not use.
-      infoPlist: { ...config.ios?.infoPlist, LSApplicationQueriesSchemes: [...(config.ios?.infoPlist?.LSApplicationQueriesSchemes ?? []), 'instagram-stories'] },
+      infoPlist: { ...config.ios?.infoPlist, CFBundleAllowMixedLocalizations: true, LSApplicationQueriesSchemes: [...(config.ios?.infoPlist?.LSApplicationQueriesSchemes ?? []), 'instagram-stories'] },
+    },
+    locales: {
+      ...config.locales,
+      tr: {
+        NSCameraUsageDescription: tr.permissions.camera,
+        NSPhotoLibraryUsageDescription: tr.permissions.photos,
+        NSHealthShareUsageDescription: tr.permissions.healthRead,
+        NSHealthUpdateUsageDescription: tr.permissions.healthWrite,
+      },
     },
     plugins: [
       ...(config.plugins ?? []),

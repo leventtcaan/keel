@@ -9,8 +9,9 @@ import * as path from 'path';
 
 import budgets from '../../../../data/copy/word-budgets.json';
 import en from '../../../../data/copy/en.json';
+import tr from '../../../../data/copy/tr.json';
 
-import { accountedKeys, budgetProblems, type Copy, keysUsedIn, prototypeBudgets, type ScreenBudget, taskStatuses, wordsOf } from './support/copyBudget';
+import { accountedKeys, budgetProblems, localeBudget, type Copy, keysUsedIn, prototypeBudgets, type ScreenBudget, taskStatuses, wordsOf } from './support/copyBudget';
 
 const ROOT = path.resolve(__dirname, '../../../..');
 const MOBILE = path.resolve(__dirname, '../..');
@@ -30,6 +31,19 @@ describe('counting words as the prototype did', () => {
     ['', 0],
   ])('"%s" is %i words', (text, words) => {
     expect(wordsOf(text)).toBe(words);
+  });
+});
+
+describe('the locale budget', () => {
+  test('English is never scaled; Turkish is the English budget x 1.25, rounded', () => {
+    expect(budgets.localeBudgetFactor.tr).toBe(1.25);
+    expect([25, 45, 10, 30].map((n) => localeBudget(n, budgets.localeBudgetFactor.tr))).toEqual([31, 56, 13, 38]);
+  });
+
+  test('a Turkish text over the scaled budget fails with its count', () => {
+    const turkish: Copy = { a: { one: 'Bir iki üç', two: 'Dört beş' } };
+    expect(budgetProblems(turkish, { screen: 's', budget: localeBudget(4, 1.25), keys: ['a.one', 'a.two'] })).toEqual([]);
+    expect(budgetProblems(turkish, { screen: 's', budget: localeBudget(3, 1.25), keys: ['a.one', 'a.two'] })).toEqual(['s: 5 words, budget 4']);
   });
 });
 
@@ -117,6 +131,11 @@ if (built.length > 0) {
   describe.each(built.map((s) => [s.screen, s] as const))('%s', (_, screen) => {
     test('stays within its words', () => {
       expect(budgetProblems(en as Copy, screen)).toEqual([]);
+    });
+
+    test('stays within its words in Turkish (English budget x the locale factor, rounded)', () => {
+      const budget = localeBudget(screen.budget, budgets.localeBudgetFactor.tr);
+      expect(budgetProblems(tr as Copy, { ...screen, budget }).map((problem) => problem.replace('en.json', 'tr.json'))).toEqual([]);
     });
 
     test('every key its file and its parts use is counted, or said to be off the first view', () => {
