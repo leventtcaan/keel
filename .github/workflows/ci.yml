@@ -54,6 +54,8 @@ jobs:
         run: python3 tools/test_git_guard.py
       - name: Clip tool tests (K-419; the real cut runs where ffmpeg is installed)
         run: python3 tools/test_clip.py
+      - name: Form image prompt tests (K-1219, ADR-091 #4)
+        run: python3 tools/test_media_prompt.py
       - name: Language model check script (K-511)
         run: python3 tools/test_llm_eval.py
       - name: Data inventory matches the migrations and the privacy policy (K-801, ADR-060)
