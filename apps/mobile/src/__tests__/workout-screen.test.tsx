@@ -10,6 +10,7 @@ import { AccessibilityInfo, AppState, Keyboard, ScrollView, StyleSheet } from 'r
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import WorkoutScreen from '@/app/workout';
+import type { RestChoice } from '@/train/restBand';
 import { NoAnswer, type Outbound, createSyncQueue, recordClientId } from '@/sync/queue';
 import { type LocalRecord, openRecordStore } from '@/sync/store';
 import { ThemeProvider } from '@/theme/theme';
@@ -111,6 +112,7 @@ const keep = async (outbound: Outbound) => {
 };
 const mockRecord = jest.fn(keep);
 let mockUnits: 'METRIC' | 'IMPERIAL' = 'METRIC';
+let mockRestChoice: RestChoice = { mode: 'RECOMMENDED', custom: { COMPOUND: 120, ISOLATION: 120 } };
 let mockPause: { workout: string; pause: { pausedAt: number | null; pausedMs: number } } | null = null;
 let mockSkips: { workout: string; skips: Record<string, unknown> } | null = null;
 let mockSwaps: { workout: string; swaps: Record<string, string> } | null = null;
@@ -156,7 +158,9 @@ const mockServices = {
   queue: { record: (outbound: Outbound) => mockRecord(outbound) },
   report: jest.fn(),
   // The rest timer's voice in the background (K-411).
-  restAlert: { start: jest.fn(async (_since: number) => {}), stop: jest.fn(async () => {}) },
+  restAlert: { start: jest.fn(async (_since: number, _low?: number) => {}), stop: jest.fn(async () => {}) },
+  // The rest the timer aims for (K-1214): the recommended band unless a test chooses its own.
+  restPreference: { current: () => mockRestChoice, subscribe: () => () => {}, set: jest.fn(async () => {}) },
   // What was skipped in the open session, kept with its workout (K-972).
   sessionSkips: {
     read: jest.fn(async (workout: string) => (mockSkips?.workout === workout ? mockSkips.skips : {})),
@@ -198,7 +202,7 @@ const mockServices = {
   // Apple Health writing (K-412): the switch decides inside; the screen only says a session finished.
   healthWriting: { workoutFinished: jest.fn(async (_workout: unknown) => {}) },
 };
-jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => mockUnits }));
+jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => mockUnits, useRestChoice: () => mockRestChoice }));
 
 function reset() {
   jest.clearAllMocks();
@@ -207,6 +211,7 @@ function reset() {
   mockWorkoutRecords.mockImplementation(async () => mockRecords);
   mockRecord.mockImplementation(keep);
   mockPause = null;
+  mockRestChoice = { mode: 'RECOMMENDED', custom: { COMPOUND: 120, ISOLATION: 120 } };
   mockSkips = null;
   mockSwaps = null;
   mockMore = null;
@@ -1338,6 +1343,45 @@ describe('the rest taken is kept on the next set (K-1214)', () => {
       await fireEvent.press(within(screen.getByTestId('session-header')).getByRole('button', { name: t('workout.resumeLabel') }));
       await fireEvent.press(await screen.findByText('Log set 2'));
       expect(rests()).toEqual([undefined, undefined]);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+});
+
+describe("the rest band and the user's own rest (K-1214)", () => {
+  const logFirstSet = async () => {
+    await show();
+    await fireEvent.press(await screen.findByText('Log set 1'));
+    return within(await screen.findByTestId('rest'));
+  };
+
+  test('the recommended band: the clock from 2:00, the band 2-3 min under it, the alert at the low end', async () => {
+    const rest = await logFirstSet();
+    expect(rest.getByText('2:00')).toBeTruthy();
+    expect(rest.getByTestId('rest-band')).toHaveTextContent('2-3 min');
+    expect(mockServices.restAlert.start).toHaveBeenLastCalledWith(expect.any(Number), 120);
+  });
+
+  test("the user's own value for the move's kind: the clock from it, no band shown, the alert at it", async () => {
+    mockRestChoice = { mode: 'CUSTOM', custom: { COMPOUND: 90, ISOLATION: 60 } };
+    mockData = { ...mockData, exercises: { state: 'ready', value: EXERCISES.map((m) => ({ ...m, kind: 'COMPOUND' as const })) } };
+    const rest = await logFirstSet();
+    expect(rest.getByText('1:30')).toBeTruthy();
+    expect(rest.queryByTestId('rest-band')).toBeNull();
+    expect(mockServices.restAlert.start).toHaveBeenLastCalledWith(expect.any(Number), 90);
+  });
+
+  test('past the high end the clock says so, without blame', async () => {
+    jest.useFakeTimers({ advanceTimers: true });
+    try {
+      const rest = await logFirstSet();
+      await act(async () => {
+        jest.setSystemTime(Date.now() + 181_000);
+        jest.advanceTimersByTime(1000);
+      });
+      expect(rest.getByText(t('workout.rest.past', { high: '3:00' }))).toBeTruthy();
+      expect(rest.getByText('0:00')).toBeTruthy();
     } finally {
       jest.useRealTimers();
     }
@@ -5438,6 +5482,7 @@ describe('the rest is its own state (K-1207)', () => {
     expect(labels).toEqual([
       '[session-header]',
       '2:00',
+      '2-3 min', // the band, quiet under the clock (K-1214)
       '[button Rest 15 seconds shorter]',
       '[button Rest 15 seconds longer]',
       '+1 rep vs last time.',
@@ -5524,7 +5569,7 @@ describe('the rest is its own state (K-1207)', () => {
     const sheet = within(screen.getByTestId('rest-adjust'));
     await fireEvent.press(sheet.getByRole('button', { name: t('workout.rest.moreLabel', { seconds: 15 }) }));
     expect(within(screen.getByTestId('rest')).getAllByText('2:15').length).toBeGreaterThan(0);
-    expect(mockServices.restAlert.start).toHaveBeenLastCalledWith(expect.any(Number));
+    expect(mockServices.restAlert.start).toHaveBeenLastCalledWith(expect.any(Number), 120); // the band's low end, the move's own (K-1214)
     await fireEvent.press(sheet.getByRole('button', { name: t('workout.rest.lessLabel', { seconds: 15 }) }));
     await fireEvent.press(sheet.getByRole('button', { name: t('workout.rest.lessLabel', { seconds: 15 }) }));
     await fireEvent.press(screen.getByRole('button', { name: t('modal.dismiss') }));

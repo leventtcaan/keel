@@ -35,6 +35,12 @@ export function restText(seconds: number): string {
   return t('workout.rest.time', { minutes: Math.floor(seconds / 60), seconds: String(seconds % 60).padStart(2, '0') });
 }
 
+/** The band as one quiet line: "2-3 min" where both ends are whole minutes, otherwise "1:45-2:45" (K-1214). */
+export function bandText(low: number, high: number): string {
+  if (low % 60 === 0 && high % 60 === 0) return t('workout.rest.band', { low: low / 60, high: high / 60 });
+  return t('workout.rest.bandExact', { low: restText(low), high: restText(high) });
+}
+
 /** The session's time (K-971): minutes and seconds, and the hours in front once past one. */
 export function clockText(seconds: number): string {
   const minutes = Math.floor(seconds / 60);

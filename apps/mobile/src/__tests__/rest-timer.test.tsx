@@ -8,16 +8,17 @@ import { FocusMode, ThemeProvider } from '@/theme/theme';
 import { focusPalette } from '@/theme/tokens';
 import { haptics } from '@/train/haptics';
 import { workoutParams } from '@/train/params';
+import { type RestBand, recommendedBand } from '@/train/restBand';
 import { RestTimer } from '@/train/RestTimer';
 
 beforeAll(() => jest.useFakeTimers({ now: new Date(2026, 9, 1, 18, 0, 0) }));
 afterAll(() => jest.useRealTimers());
 
-const show = (since: number, onAdjust?: (seconds: number) => void) =>
+const show = (since: number, onAdjust?: (seconds: number) => void, band: RestBand = recommendedBand()) =>
   render(
     <ThemeProvider>
       <FocusMode>
-        <RestTimer since={since} onAdjust={onAdjust} />
+        <RestTimer since={since} band={band} onAdjust={onAdjust} />
       </FocusMode>
     </ThemeProvider>,
   );
@@ -66,8 +67,9 @@ test('a screen reader swipes the clock up or down by the same 15 seconds', async
   expect(adjusted).toEqual([15, 0]);
 });
 
+// K1 (K-1214): 200 s is past the band's upper end now (3:00), which has its own line; the same check at 150 s, between the band's ends.
 test('past its end it stops at 0:00 and says so calmly, in the accent, never a negative time', async () => {
-  await show(Date.now() - 200_000);
+  await show(Date.now() - 150_000);
   expect(screen.getByText('0:00')).toBeTruthy();
   expect(screen.getByText('0:00')).toHaveStyle({ color: focusPalette.accent });
   expect(screen.getByText('Go when you are ready')).toBeTruthy();
@@ -113,4 +115,32 @@ describe('felt in its last seconds (K-1207)', () => {
       end.mockRestore();
     }
   });
+});
+
+// K-1214: the band is said quietly under the clock while it counts; past its upper end the clock says so, with no word of blame.
+test('the band 2-3 min is under the clock while it counts; at the low end the line is "go when you are ready"; past the high end it names it', async () => {
+  await show(Date.now() - 30_000);
+  expect(screen.getByTestId('rest-band')).toHaveTextContent('2-3 min');
+  await act(async () => jest.advanceTimersByTime(95_000)); // 2:05 in
+  expect(screen.queryByTestId('rest-band')).toBeNull();
+  expect(screen.getByText('Go when you are ready')).toBeTruthy();
+  await act(async () => jest.advanceTimersByTime(60_000)); // 3:05 in
+  expect(screen.getByText('Past 3:00. Go when you are ready')).toBeTruthy();
+  expect(screen.getByText('0:00')).toBeTruthy();
+});
+
+test("the user's own value counts down from it and shows no band, so there is no past", async () => {
+  await show(Date.now() - 30_000, undefined, { low: 90, high: null });
+  expect(screen.getByText('1:00')).toBeTruthy();
+  expect(screen.queryByTestId('rest-band')).toBeNull();
+  await act(async () => jest.advanceTimersByTime(400_000));
+  expect(screen.getByText('Go when you are ready')).toBeTruthy();
+  expect(screen.queryByText(/^Past/)).toBeNull();
+});
+
+test('the 15 s change moves the band with the clock', async () => {
+  await show(Date.now(), undefined);
+  await fireEvent.press(screen.getByRole('button', { name: 'Rest 15 seconds longer' }));
+  expect(screen.getByText('2:15')).toBeTruthy();
+  expect(screen.getByTestId('rest-band')).toHaveTextContent('2:15-3:15');
 });

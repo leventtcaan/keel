@@ -188,7 +188,11 @@ const mockServices = {
   // Apple Health writing (K-412): the switch decides inside; the screen only says a session finished.
   healthWriting: { workoutFinished: jest.fn(async (_workout: unknown) => {}) },
 };
-jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => mockUnits }));
+jest.mock('@/services/ServicesProvider', () => ({
+  useAppServices: () => mockServices,
+  useUnits: () => mockUnits,
+  useRestChoice: () => ({ mode: 'RECOMMENDED', custom: { COMPOUND: 120, ISOLATION: 120 } }),
+}));
 
 function reset() {
   jest.clearAllMocks();

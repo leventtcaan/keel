@@ -12,7 +12,7 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { TextField } from '@/components/TextField';
 import { t } from '@/copy';
-import { useAppServices, useUnits } from '@/services/ServicesProvider';
+import { useAppServices, useRestChoice, useUnits } from '@/services/ServicesProvider';
 import { NoAnswer } from '@/sync/queue';
 import { useSaved } from '@/saved/saved';
 import { newClientId } from '@/sync/send';
@@ -39,6 +39,7 @@ import { SupersetLink } from '@/train/SupersetLink';
 import { nextInGroup, supersetsInForce } from '@/train/superset';
 import { askFirst } from '@/settings/askFirst';
 import { RestTimer } from '@/train/RestTimer';
+import { type RestBand, bandFor, recommendedBand } from '@/train/restBand';
 import { type RestSpan, readySpan, restSecondsOf, startSpan } from '@/train/restRecord';
 import { SessionHeader } from '@/train/SessionHeader';
 import { ActiveSet, type Entry } from '@/train/ActiveSet';
@@ -111,10 +112,13 @@ function Session() {
   const [rest, setRest] = useState<number | null>(null);
   // The move the set that started the rest was of (K-1207): the rest screen names the next move only where it is another one.
   const [restMove, setRestMove] = useState<string | null>(null);
+  // The band this rest aims for: the recommended one, or the user's own value for the kind of move it followed (K-1214).
+  const restChoice = useRestChoice();
+  const [restBand, setRestBand] = useState<RestBand>(recommendedBand);
   // The rest's voice in the background (K-411): set when a rest starts, moved by the next, gone when the session is left.
   useEffect(() => {
-    if (rest !== null) void restAlert.start(rest);
-  }, [rest, restAlert]);
+    if (rest !== null) void restAlert.start(rest, restBand.low);
+  }, [rest, restBand, restAlert]);
   useEffect(() => () => void restAlert.stop(), [restAlert]);
   // The rest as taken (K-1214), for the next set's restSeconds: it begins with the rest, ends with Ready, and any other end
   // (a pause, a skip, a swap, the move's last set, leaving) voids it, so nothing but a rest between two sets is ever sent.
@@ -129,10 +133,11 @@ function Session() {
     endRest();
     restSpan.current = taken;
   };
-  const startRest = (fromMove: string) => {
+  const startRest = (from: Move) => {
     const now = new Date().getTime();
     restSpan.current = startSpan(now);
-    setRestMove(fromMove);
+    setRestBand(bandFor(from.kind, restChoice));
+    setRestMove(from.id);
     setRest(now);
   };
   // The session's start while nothing is kept yet: the moment it was opened, which its first set keeps as its start.
@@ -472,7 +477,7 @@ function Session() {
         if (plan.current === plan.rows.length - 1) {
           endRest();
           setPicked(move.id);
-        } else if (resting) startRest(move.id);
+        } else if (resting) startRest(move);
       } else {
         // In a superset the partner comes next (a one-sided move's right side first); the rest comes after the round,
         // unless the round was the group's last.
@@ -484,7 +489,7 @@ function Session() {
           groupDone = found.next === null;
           setPicked(found.next ?? move.id);
         }
-        if (roundDone && !groupDone && resting) startRest(move.id);
+        if (roundDone && !groupDone && resting) startRest(move);
         // A set inside a round ends the last round's rest: its timer goes, and its alert must not sound mid-round (K-411).
         else endRest();
       }
@@ -1326,7 +1331,7 @@ function Session() {
   const restPage =
     !resting || rest === null ? null : (
       <>
-        <RestTimer since={rest} onAdjust={(seconds) => void restAlert.start(rest + seconds * 1000)} />
+        <RestTimer since={rest} band={restBand} onAdjust={(seconds) => void restAlert.start(rest + seconds * 1000, restBand.low)} />
         {/* What the set said (the weight found, or the analysis against last time) is said here, where there is room for it. */}
         {weightFound ?? (analysis === null ? null : <InsightLine text={analysis} />)}
         {nextSet}

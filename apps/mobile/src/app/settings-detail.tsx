@@ -12,6 +12,7 @@ import { FoodEditor } from '@/settings/FoodEditor';
 import { ActivityEditor, BornEditor, CheckInEditor, GoalEditor, HeightEditor } from '@/settings/ProfileEditors';
 import { HealthWriteSection } from '@/settings/HealthWriteSection';
 import { ImportSection } from '@/settings/ImportSection';
+import { RestSection } from '@/settings/RestSection';
 import { RoutineEditor } from '@/settings/RoutineEditor';
 import { WalksEditor } from '@/settings/WalksEditor';
 import { WalksGroup } from '@/settings/WalksGroup';
@@ -61,6 +62,7 @@ export default function SettingsDetailScreen() {
           <ConsentsSection only="HEALTH_DATA" bare onChanged={() => setAsked((n) => n + 1)} />
         </View>
       ) : null,
+    rest: <RestSection />,
     sources: <DataSourcesPage />,
   };
   return (
