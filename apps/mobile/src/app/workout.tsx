@@ -364,7 +364,6 @@ function Session() {
           reps: row === null || row.suggested.reps === null ? '' : String(row.suggested.reps),
           // A move outside the plan has no target of its own: the work sets' aim (G1 K-5, target_rir_max).
           rir: planned?.targetRir ?? workoutParams.targetRirMax,
-          rirPicked: false,
           note: null,
         };
   const setEntry = (change: Partial<typeof entry>) => setTyped({ ...entry, ...change });
@@ -1099,7 +1098,6 @@ function Session() {
     move === undefined || row === null ? null : (
       <ActiveSet
         move={move}
-        heading={planned === undefined ? heading : [heading, repsText(planned.reps)].join(', ')}
         // A move outside the plan has no aim for reps left: there is no plan to aim at.
         aim={planned?.targetRir ?? null}
         gym={data?.gym}
@@ -1205,13 +1203,20 @@ function Session() {
     </View>
   );
   const openHowTo = () => router.push({ pathname: '/exercise', params: { exercise: moveId } });
+  // "Set 2 of 3, 6-10 reps": said with the move's name (a screen reader reaches the name; the card shows no heading, Log set names the set).
+  const setSaid = heading === '' ? '' : planned === undefined ? heading : [heading, repsText(planned.reps)].join(', ');
   const head =
     moveId === undefined ? null : (
       <View testID="move-head" style={styles.head}>
         <View style={styles.nameRow}>
           {/* Only the equipment class, and only when it is known (ADR-070 Ek 2 #3): a picture, not a control or a text (K-1207). */}
           {move?.equipment === undefined ? null : <MoveThumb equipment={move.equipment} />}
-          <Text style={[styles.name, styles.grow, { color: color.text }]}>{name(moveId)}</Text>
+          <Text
+            accessibilityRole="header"
+            accessibilityLabel={[name(moveId), setSaid].filter((part) => part !== '').join(', ')}
+            style={[styles.name, styles.grow, { color: color.text }]}>
+            {name(moveId)}
+          </Text>
           <Button label={t('workout.more')} variant="secondary" size="touch" onPress={() => setMoreOpen(true)} />
         </View>
         {supersetBlock}
@@ -1458,8 +1463,13 @@ function Session() {
       />
     );
   const moreSheet =
-    moveId === undefined || move === undefined ? null : (
-      <MoreSheet move={name(moveId)} info={typedKg === null || row === null ? null : platesLine(move, typedKg, data?.gym, units)} rows={moreRows} onPick={pickMore} />
+    moveId === undefined ? null : (
+      <MoreSheet
+        move={name(moveId)}
+        info={move === undefined || typedKg === null || row === null ? null : platesLine(move, typedKg, data?.gym, units)}
+        rows={moreRows}
+        onPick={pickMore}
+      />
     );
   const sheetBody =
     discarded !== null ? null : ending ? endSheet : swapping ? swapSheet : takingNow ? takenSheet : finishing ? form : moreOpen ? moreSheet : null;

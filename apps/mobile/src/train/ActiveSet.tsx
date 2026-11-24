@@ -28,15 +28,11 @@ export type Entry = {
   reps: string;
   /** The reps left that is logged with the set: the plan's aim until the person picks one (what was always sent). */
   rir: number;
-  /** Whether the person picked it: the row is an optional answer and shows none until they do (K-1207). */
-  rirPicked: boolean;
   note: string | null;
 };
 
 type Props = {
   move: Schemas['Exercise'];
-  /** "Set 2 of 3, 6-10 reps" for a screen reader: the card shows no heading (the button that logs it names the set). */
-  heading: string;
   /** The work sets' aim for reps left (the plan's target RIR); null outside the plan. Said to a screen reader, not written on the card. */
   aim: number | null;
   gym: GymWeights | undefined;
@@ -54,7 +50,7 @@ type Props = {
  * be typed too, filled with the suggestion; reps left picked from 0, 1 and 2+. A bodyweight move has no weight; a weighted
  * one steps what is added. The button that logs it is the screen's, in its dock, so it never moves.
  */
-export function ActiveSet({ move, heading, aim, gym, entry, onChange, problem, problemOccurrence, onLayout }: Props) {
+export function ActiveSet({ move, aim, gym, entry, onChange, problem, problemOccurrence, onLayout }: Props) {
   const { color } = useTheme();
   const units = useUnits();
   const unit = t(units === 'METRIC' ? 'units.kgUnit' : 'units.lbUnit');
@@ -108,11 +104,11 @@ export function ActiveSet({ move, heading, aim, gym, entry, onChange, problem, p
         multiline
       />
     );
-  // Reps left (RIR): one optional row, no answer shown until one is picked; a tap on the picked one takes it back. What is logged
-  // with a set that has none picked is the plan's aim, as it always was (the aim is said to a screen reader, not written here).
+  // Reps left (RIR): one compact row with the plan's aim selected, as it always was, so what is logged when it is left alone is what the
+  // person sees. The aim is said by the row's own text ("Reps left"), which a screen reader reaches, as its hint.
   const aimHint = aim === null ? undefined : t('workout.targetRir', { max: aim });
   return (
-    <View testID="active-set" accessibilityLabel={heading} onLayout={onLayout} style={styles.entry}>
+    <View testID="active-set" onLayout={onLayout} style={styles.entry}>
       <View style={styles.steppers}>
         {load}
         <Stepper
@@ -128,17 +124,13 @@ export function ActiveSet({ move, heading, aim, gym, entry, onChange, problem, p
         />
       </View>
       {picking ? <Text style={[styles.small, { color: color.muted }]}>{t('workout.pick.why')}</Text> : null}
-      <View testID="rir-row" accessibilityHint={aimHint} style={styles.rir}>
-        <Text style={[styles.small, styles.grow, { color: color.muted }]}>{t('workout.rir.short')}</Text>
+      <View testID="rir-row" style={styles.rir}>
+        <Text accessibilityHint={aimHint} style={[styles.small, styles.grow, { color: color.muted }]}>
+          {t('workout.rir.short')}
+        </Text>
         {workoutParams.rirChoices.map((rir, i) => {
-          const picked = entry.rirPicked && rirChoice(entry.rir) === rir;
           return (
-            <Chip
-              key={rir}
-              label={i === last ? t('workout.rir.more') : String(rir)}
-              selected={picked}
-              onPress={() => onChange(picked ? { rir: aim ?? workoutParams.targetRirMax, rirPicked: false } : { rir, rirPicked: true })}
-            />
+            <Chip key={rir} label={i === last ? t('workout.rir.more') : String(rir)} selected={rirChoice(entry.rir) === rir} onPress={() => onChange({ rir })} />
           );
         })}
       </View>
