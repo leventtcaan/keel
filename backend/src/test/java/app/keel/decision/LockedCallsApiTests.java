@@ -192,14 +192,19 @@ class LockedCallsApiTests {
     @SuppressWarnings("unchecked")
     void aSafetyCallPastTheAllowanceIsNeverHeldBackAndSpendsNothing() throws Exception {
         // Losing far too fast: the safety net speaks (U6). The account's free call is already spent and it has no subscription.
-        AccountId account = onACut(0.3);
+        // The weights FALL 0.3 kg a day (a negative "gain" per day below): 2.1 kg a week, over the cap of min(1 kg, 1 % of 82 kg) a week.
+        AccountId account = onACut(-0.3);
         uses().record(account);
 
         Map<String, Object> call = checkIn(account);
 
+        // The premise first, from what was stored (a locked view would carry no reasons): the call rests on the safety net.
+        String stored = jdbc.sql("select decision::text from decision.weekly_call where account_id = :a").param("a", account.value())
+                .query(String.class).single();
+        Map<String, Object> kept = JSON.readValue(stored, Map.class);
+        assertThat(((List<Map<String, Object>>) kept.get("reasons")).stream().map(reason -> reason.get("rule")))
+                .as("the scenario is a safety call: " + stored).anyMatch(rule -> app.keel.engine.SafetyNet.RULES.stream().anyMatch(known -> known.value().equals(rule)));
         assertThat(call).as("a whole view").containsKey("action").doesNotContainKey("locked");
-        assertThat(((List<Map<String, Object>>) call.get("reasons")).stream().map(reason -> reason.get("rule")))
-                .as("the scenario is a safety call").anyMatch(rule -> app.keel.engine.SafetyNet.RULES.stream().anyMatch(known -> known.value().equals(rule)));
         assertThat(jdbc.sql("select held_back from decision.weekly_call where account_id = :a").param("a", account.value()).query(Boolean.class).single())
                 .isFalse();
         assertThat((Map<String, Object>) call.get("application")).containsEntry("state", "APPLIED");
@@ -318,7 +323,7 @@ class LockedCallsApiTests {
         return onACut(0.05);
     }
 
-    private AccountId onACut(double lossPerDayKg) {
+    private AccountId onACut(double gainPerDayKg) {
         AccountId account = TestSessions.newAccount();
         assertThat(send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA))).hasStatusOk();
         assertThat(send(account, "PUT", "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "MALE", "heightCm", 180, "birthYear", 1996,
@@ -331,7 +336,7 @@ class LockedCallsApiTests {
                 values (:a, 'CUT', :began, :began, 2600, false)""").param("a", account.value()).param("began", today.minusDays(60)).update();
         for (int day = 28; day >= 1; day--) {
             assertThat(send(account, "POST", "/v1/weigh-ins", Map.of("clientId", UUID.randomUUID(), "measuredAt",
-                    today.minusDays(day).atTime(LocalTime.of(7, 0)).toInstant(ZoneOffset.UTC).toString(), "kg", 82.0 - day * lossPerDayKg,
+                    today.minusDays(day).atTime(LocalTime.of(7, 0)).toInstant(ZoneOffset.UTC).toString(), "kg", 82.0 - day * gainPerDayKg,
                     "source", "MANUAL")).getResponse().getStatus()).isLessThan(300);
         }
         return account;

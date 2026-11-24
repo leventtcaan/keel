@@ -59,6 +59,18 @@ class FreeCallsTests {
     }
 
     @Test
+    void aSafetyCallPastTheAllowanceOfAnAccountWithoutTheSubscriptionIsNotHeldBack() {
+        // The path checkIn takes: full(...) feeds heldBack(...). U6: the safety net is always applied, whatever the account has used.
+        FreeCalls free = new FreeCalls(1);
+        for (var rule : SafetyNet.RULES) {
+            boolean full = FreeCalls.full(true, call("INCREASE_CALORIES", rule.value()));
+            assertThat(free.heldBack(true, full, 7, false)).as(rule.value()).isFalse();
+        }
+        boolean cycle = FreeCalls.full(true, call("NO_DECISION_YET", SafetyHold.CYCLE_CHECK_NEEDED.value()));
+        assertThat(free.heldBack(true, cycle, 7, false)).isFalse();
+    }
+
+    @Test
     void theFirstFullCallIsFreeTheNextOnesWaitForTheSubscription() {
         FreeCalls free = new FreeCalls(1);
 
