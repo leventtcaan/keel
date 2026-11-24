@@ -1,11 +1,22 @@
 ---
-guncelleme: 2026-10-10
+guncelleme: 2026-11-24
 ---
 # DURUM
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (13 Kas — 1.0 ONAYLANDI, Release Levent'te)
+## ▶ DEVAM NOKTASI (24 Kas — Evre 8 planlandı; 1.0 yayında)
+**1.0 yayında** (Levent, 24 Kas). Levent 1.0'ı kullandı, 12 madde getirdi ("rakiplerin yaptığını yapamıyor, para istiyoruz, acımasız").
+Dört kod denetimi + rakip araştırması (Antigravity) + Codex form görseli pilotu → `plan/evre-8-butun-urun.md`. Doğrulanan ana bulgular: premium yalnız
+AI'ı açıyor, AI üretimde kapalı; ilk yemek kararı ~5. hafta, haftada 4 tartı şartı, hedef kayıp hızı yok; antrenman ekranında ~53 öğe; ana ekranda
+protein/adım/kilo yok; arama yalnız ilk sözcükle sıralıyor; 33 yerde 'en-US'.
+**Kararlar → ADR-091 (KABUL, Levent):** kayıt bedava + karar ücretli (zorunlu paywall kalkar, ADR-058 #107 yerine) · düzeltmeler 1.0.1 · motor
+düzeltmeleri kaynakla önerilir (eşikler Levent onayına) · AI form görseli ve videosu insan denetimiyle (ADR-017 yasağı yerine).
+**Kartlar:** M12 · K-1201..K-1224 (GitHub'a eşitlendi). **Sıradaki: Part 8a-1** → istem `plan/oturum-promptlari/evre-8.md` › "Part 8a-1 istemi".
+**Açık:** rakip raporunun doğrulama turu (Antigravity, `arastirma/ham/rakip-dogrulama-2026-11-24.md` gelince depoya) · SANDBOX kabulü (13 Kas notu) ·
+K-1035 Turkcell/duckdns engeli. Yerel `keel/` checkout'u dalsız eski commit'te (stash: "local paywall-review jpg"); çalışma kopyası `keel-main`.
+
+## (önceki) DEVAM NOKTASI (13 Kas — 1.0 ONAYLANDI, Release Levent'te)
 **13 Kas 09:51 UTC:** App Review tamam, "eligible for distribution" (gönderim 98753acc: 1.0 build 11 + grup + 2 abonelik). Yayın şekli ELLE: mağazaya Levent'in Release'iyle çıkar.
 Release öncesi bakılacaklar: (1) SANDBOX kabulü (ADR-080 Ek 1 "onaydan sonra kapat" diyor; ama sonraki sürümlerin incelemesi de sandbox satın alır, kapatılırsa 1.0.1 incelemesi kilitlenir → karar gerekli); (2) K-1035 Turkcell/duckdns engeli (Türkiye'de Turkcell kullanıcısı sunucuya ulaşamayabilir); (3) Small Business Program, RevenueCat e-posta doğrulaması.
 

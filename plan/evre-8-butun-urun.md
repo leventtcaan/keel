@@ -81,7 +81,7 @@ dinlenme sayacı, yemek kaydı + arama + **barkod ücretsiz** (MyFitnessPal'ın 
 | Rakip modeli | Bevel (AI Pro'da) | MacroFactor / RP (karar ücretli), Hevy / Cronometer (kayıt ücretsiz) |
 
 **Öneri B**, çünkü (1) tek benzersiz varlığımız motor; onu bedava verip yalnız AI satmak, metalaşan ve maliyetli şeyi satmak olur;
-(2) "kayıt bedava" ücretsiz kullanıcının "acımasız" hissini kaldırır; (3) sert paywall'un dönüşüm avantajı (RevenueCat %10,7 / %2,1, doğrulama bekliyor)
+(2) "kayıt bedava" ücretsiz kullanıcının "acımasız" hissini kaldırır; (3) sert paywall'un dönüşüm avantajı (RevenueCat %10,7 / %2,1; doğrulama turu ve K5 ile örtüşüyor)
 çekirdek değer kilitli kaldığı için kısmen korunur. Yükseltme anı rastgele değil: ilk tam haftalık karardan sonraki hafta ("sıradaki karar
 Premium'da"), "neden?" dokunuşu ve üçüncü elle öğün kaydında fotoğraf/metin önerisi. ADR-012'nin "kredi" sözcüğü yasağı ve kota bitince deterministik mod korunur.
 
@@ -92,7 +92,12 @@ Premium'da"), "neden?" dokunuşu ve üçüncü elle öğün kaydında fotoğraf/
 | **8b · 1.1 (≈2-3 hafta)** | Türkçe (+ Türk yemekleri tohum verisi) · gerçek dinlenme kaydı + hareket başına aralık + RIR/geri bildirimle öğrenme · adım açığını somut yürüyüşe çeviren öneri (önce konumsuz) · günlük döngü (sabah / antrenman sonu / akşam bağları) · M4 (set kaydından antrenman durumu) | K-3, K-4 |
 | **8c · 1.2 (≈3-4 hafta)** | Konuşan koç (ücretli): motor gerçekleri girer, şemayla doğrulanan cümle çıkar · kişi hafızası (silinebilir) · ses (önce cihaz içi dikte) · form görselleri | K-5, K-6, K-7 |
 
-## 3. Levent'in kararları (bekliyor)
+## 3. Levent'in kararları
+**24 Kas cevapları → ADR-091 (KABUL):** K-1 = **B** · K-2 = 1.0 zaten yayında, düzeltmeler 1.0.1; Levent yayın sonrası geliştirici alışkanlıklarını
+öğrenmek istiyor (K-1210) · K-3 = evet, kaynakla öner · K-7 = **video dahil aç**. Bekleyen: K-4, K-5, K-6 (8b/8c başında).
+Kartlar: `plan/backlog.yaml` › M12, istemler `plan/oturum-promptlari/evre-8.md`.
+
+Soruların ilk hali:
 - **K-1 Para:** zorunlu paywall kalksın; §2.1'deki A mı B mi (öneri B). ADR-058 #107 ve ADR-012'yi değiştirir. K5 araştırması sert paywall'un
   dönüşümü ~5 kat yüksek dediğini hatırlatırım (%10,7 ve %2,1, 35. gün); karşı kanıt: ödenen şeyin bugün karşılığı yok.
 - **K-2 1.0 yayını:** 1.0'ı şimdi mi yayınlarız, yoksa ücretsiz çekirdekli 1.0.1 ile mi açarız? (Öneri: 1.0.1 ile; sert paywall + boş ürün ilk yorumları yakar.)
@@ -109,7 +114,7 @@ Değerlendirme: kas vurgusu (lats) ve bar yolu doğru; bitiş pozisyonu makul. Z
 bacağı tam kilitlemiyor; 1,3 MB (uygulamada ≈100 KB'a sıkıştırılmalı). Hareketsiz iki kare, "son tekrar yavaşlaması" klibinin yerini tutmaz;
 **kurulum kartı ve başlangıç/bitiş görseli** için uygun aday. Standart istem şablonu + kontrol listesi + `review` kaydı ile 40 hareket ≈ 1 gün.
 
-## 5. Rakipler (özet; tam rapor `arastirma/ham/rakip-ozellik-2026-11-24.md`, doğrulama bekliyor)
+## 5. Rakipler (özet; tam rapor `arastirma/ham/rakip-ozellik-2026-11-24.md`; doğrulama `rakip-dogrulama-2026-11-24.md`: Strong'da Türkçe yok, Alpha Progression $79.99/yıl, tırnaklı yorumların hepsi uydurma)
 | Özellik | Lider | Bizim alacağımız | Bizim farkımız |
 |---|---|---|---|
 | Türkçe | Yazio, FatSecret | Türk porsiyonları (kaşık, su bardağı, kase), yerel barkod, Türkçe mağaza sayfası; tohum veri için TürKomp [lisansı doğrulanmadı] | Türkçe karar motoru: pazarda yok |

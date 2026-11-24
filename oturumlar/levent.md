@@ -261,3 +261,10 @@
 - takıldım: ego lite'ta ASC oturumu yoktu (Levent girdi); ASC'nin yeni sayfa düzeninde ekran görüntüleri "Header and Search Results" açılır menüsünün altında; EAS submit izlemesi yerel DNS hatasıyla koptu, build TestFlight'a yine de düştü
 - sıradaki: Levent Resubmit; sonra 1.0.1 (K-1034, K-1035), Dependabot #611
 - AI: kod, test, ASC işleri, build agent; Levent ASC girişi yaptı
+
+## 2026-11-24 · Evre 8 planı (1.0 sonrası geri bildirim) — Opus düzenleyici, Sonnet denetçiler, Antigravity + Codex
+- yaptım: Codex/Antigravity erişimi doğrulandı; 4 kod denetimi (motor, antrenman+dil, ana ekran+yemek, AI/adım/para/klip), ana bulgular kodda yeniden doğrulandı; Antigravity rakip raporu + doğrulama turu; Codex lat pulldown form pilotu; `plan/evre-8-butun-urun.md`, ADR-091, M12 kartları K-1201..K-1224 (GitHub), `plan/oturum-promptlari/evre-8.md`
+- karar: Levent — kayıt bedava + karar ücretli (B), 1.0 yayında → 1.0.1, motor düzeltmeleri kaynakla, AI form görseli ve videosu açık (ADR-091). Antigravity'de Gemini 3.8 Flash (Carbon/Neon kota yer)
+- takıldım: yerel `keel/` dalsız eski commit'teydi (çalışma `keel-main`); Antigravity/Codex pencereleri başka Space'te arka plan girdisi almadı (kısa tam ekran + Codex CLI); Antigravity raporunda tırnaklı yorumlar uydurma, Strong Türkçe değil, Alpha Progression fiyatı yanlış
+- sıradaki: Part 8a-1 (K-1201, K-1202, K-1208, K-1206) yeni oturumda
+- AI: denetim ve sentez agent (Opus + 4 Sonnet), araştırma Antigravity (Gemini 3.8 Flash), görsel Codex (gpt-6-luna); Levent 4 karar verdi

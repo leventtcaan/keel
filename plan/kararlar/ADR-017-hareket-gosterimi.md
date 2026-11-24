@@ -17,7 +17,7 @@ yasaklıyor. **AI ile üretilmiş egzersiz videosu** göze gerçekçi ama eklem 
   Saniye cinsinden tempo yok (Güray tempo sayısı vermiyor).
 - **Kurulum kartı:** koltuk, ped, tutuş notu cihazda saklanır, hareket açılınca ilk görünür (Güray standardizasyon kuralı).
 - **Kas haritası:** MIT lisanslı bileşen.
-- **AI üretimi egzersiz görseli/videosu kullanılmaz.**
+- ~~**AI üretimi egzersiz görseli/videosu kullanılmaz.**~~ **YERİNİ ALDI → ADR-091 #4 (2026-11-24, Levent):** Codex ile üretilen görsel ve video, kontrol listesi + Levent onayıyla kullanılabilir.
 - **Form kontrolü:** uzman Levent. Her klip `docs/hareket-cekim-kontrol-listesi.md`'den geçer (Güray ipuçlarına göre).
 - Hukuki: salondan çekim izni; kadrajda başka üye yok; başka biri oynarsa yazılı model izni.
 

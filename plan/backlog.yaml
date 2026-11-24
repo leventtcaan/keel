@@ -21,6 +21,7 @@ milestones:
   - {id: M9, title: "Yayın öncesi", goal: "Dağıtım, TestFlight, 2 haftalık dış beta, öncü göstergeler, yayın sertliği (ADR-080)"}
   - {id: M10, title: "Mağazaya çıkış", goal: "İsim, vergi + banka, EN-US ASO, ekran görüntüleri, mağaza başvurusu: sessiz yayın (ADR-080)"}
   - {id: M11, title: "Yayın sonrası: pazarlama + güncellemeler", goal: "Pazarlama lansmanı (Featuring, Product Hunt, CPP, yerelleştirme), hareket klipleri, AI katmanı ve ilk yayında olmayan işler (ADR-080)"}
+  - {id: M12, title: "Evre 8 · Bütün ürün", goal: "1.0 sonrası: kayıt bedava + karar ücretli, motor düzeltmeleri, odak ekranı, Türkçe, dinlenme takibi, adım önerisi, form gösterimi, konuşan koç (ADR-091, plan/evre-8-butun-urun.md). 8a = 1.0.1, 8b = 1.1, 8c = 1.2"}
 
 tasks:
 
@@ -5681,3 +5682,382 @@ tasks:
     tests: ["python3 tools/test_deploy.py"]
     refs: ["deploy/Caddyfile", "deploy/compose.yaml"]
     learn: ["Caddy import ile birden çok site"]
+
+# ───────────────────────────── M12 · Evre 8 · Bütün ürün (ADR-091) ─────────────────────────────
+# 8a · 1.0.1
+  - id: K-1201
+    title: "Kayıt bedava, karar ücretli: sunucu yetkisi"
+    milestone: M12
+    module: subscription
+    type: feature
+    size: M
+    status: todo
+    depends_on: []
+    why: "ADR-091 #1: premium bugün yalnız AI yollarını açıyor, AI kapalı; ödenen şeyin karşılığı yok"
+    acceptance:
+      - "Premium olmadan: kayıt (antrenman, yemek, barkod, tartı, kardiyo), arama, trend, başlangıç kararı ve ilk tam haftalık karar okunur"
+      - "İkinci tam haftalık kararın ayrıntısı, /basis ve /what-if premium yokken 403 ENTITLEMENT_REQUIRED; karar başlığı ve sıradaki karar günü görünür"
+      - "Sözleşme önce (contracts/openapi.yaml), sınırın hangi karardan başladığı parametre dosyasında (K2)"
+      - "Silme ve dışa aktarma ödemesiz çalışır (App Review 5.1.1(v))"
+    tests: ["./gradlew test (subscription, decision API)", "tools/anayasa-denetimi.sh"]
+    refs: ["plan/evre-8-butun-urun.md", "plan/kararlar/ADR-091-evre-8-kararlari.md"]
+
+  - id: K-1202
+    title: "Zorunlu paywall kalkar; yükseltme anları ve metinleri"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-1201]
+    why: "ADR-091 #1: hiç abone olmamış hesap kapatılamayan paywall görüyor (gate.ts, ADR-058 #107 yerini aldı)"
+    acceptance:
+      - "Hiç abone olmamış hesap onboarding sonunda sekmelere ulaşır; paywall kapatılabilir, deneme teklifi aynı kalır"
+      - "Kilitli karar ekranı: başlık görünür, ayrıntı yerine tek ekran açıklama + paywall; 'kredi' sözcüğü yok (ADR-012)"
+      - "Üç yükseltme anı: ilk tam karardan sonraki karar günü, 'neden?' dokunuşu, elle üçüncü öğün kaydında fotoğraf önerisi (AI açık değilse gizli)"
+      - "Paywall metni yeni modele göre (en.json), mağaza açıklaması store.en.json; simülatör kanıtı"
+    tests: ["npm run check (gate, paywall, call testleri)", "simülatör: yeni hesap → sekmeler"]
+    refs: ["plan/evre-8-butun-urun.md", "plan/kararlar/ADR-091-evre-8-kararlari.md"]
+
+  - id: K-1203
+    title: "Motor: ilk açık 1. günden (kesimde bakımda bekleme yok)"
+    milestone: M12
+    module: engine
+    type: feature
+    size: M
+    status: todo
+    depends_on: []
+    why: "Denetim M1: ilk açık ~5. hafta, ilk yargı ~7. hafta (DataSufficiency.java:53,58; GS-01/02)"
+    acceptance:
+      - "kural-ekle ile: kaynak (arastirma/ham/guray ya da [literatür]) + parametre + test; kural metni ve eşik Levent onayı"
+      - "Kesim hedefinde plan başlangıç açığıyla başlar; golden senaryolar güncellenir, beklenti değişiklikleri K1 listesinde Levent'e"
+      - "Güvenlik ağı ve kadın gözlem kuralı değişmez (ya da ayrı onay)"
+    tests: ["./gradlew test (engine, GoldenScenarioTests)", "property-based: açık hiçbir zaman güvenlik tavanını aşmaz"]
+    refs: ["plan/evre-8-butun-urun.md", "plan/kararlar/ADR-091-evre-8-kararlari.md"]
+
+  - id: K-1204
+    title: "Motor: esnek veri yeterliliği (eldeki tartıların ortalaması)"
+    milestone: M12
+    module: engine
+    type: feature
+    size: M
+    status: todo
+    depends_on: []
+    why: "Denetim M2: haftada 4 tartı şartı tek kaçan sabahta 3 check-in'i düşürüyor; haftada 1 tartan hiç kilo kararı almıyor (windows.yaml:31, GS-20)"
+    acceptance:
+      - "kural-ekle: kaynak + parametre + test; Levent onayı"
+      - "Seyrek tartıda pencere uzar ya da güven düşer, 'henüz karar yok' yalnız gerçekten yetersizse (U3)"
+      - "flat_margin_kg ve gürültü hesabı nokta sayısına göre (ADR-020 L-10 türetimi korunur)"
+    tests: ["./gradlew test (DataSufficiency, golden)"]
+    refs: ["plan/evre-8-butun-urun.md", "plan/kararlar/ADR-091-evre-8-kararlari.md"]
+
+  - id: K-1205
+    title: "Motor: kiloya oranlı hedef kayıp hızı"
+    milestone: M12
+    module: engine
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-1204]
+    why: "Denetim M3: 'hareket ediyor' 0,58 kg / 14 gün sabit; 90 kg'da haftada 0,3 kg sonsuza dek 'devam'; %0,5-1/hafta hiç zorlanmıyor"
+    acceptance:
+      - "kural-ekle: hedef hız aralığı kaynakla (Güray G2 ya da literatür), parametre dosyasında; Levent onayı"
+      - "Hızın altında ve uyum iyiyse kalori adımı; üstünde güvenlik ağı aynen"
+      - "Kalori adımı kiloya/hıza oranlı mı sabit mi: ayrı karar (M8 bulgusu) — öneri ADR ekinde"
+    tests: ["./gradlew test (WeeklySpine, golden)", "property-based"]
+    refs: ["plan/evre-8-butun-urun.md", "plan/kararlar/ADR-091-evre-8-kararlari.md"]
+
+  - id: K-1206
+    title: "Ana ekran: protein, adım, kilo; yemek kartı yukarı"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: []
+    why: "Denetim 1.4: ana ekranda protein/adım/kilo yok, TodayList ölü kod, hedef ızgarası yalnız ilk karardan önce; yemek kartı ekran altına düşüyor"
+    acceptance:
+      - "This week: kalan kcal + protein (yenen/hedef) + adım (atılan/hedef) + kilo trendi tek satır; en fazla 4 sayı"
+      - "Yemek kartı ilk ekranda; öğün ekranında arama kutusu kendiliğinden odaklı"
+      - "TodayList ya kullanılır ya silinir (ölü kod kalmaz)"
+      - "Simülatör kanıtı iki tema; Kalın Metin"
+    tests: ["npm run check", "simülatör ekran görüntüsü"]
+    refs: ["plan/evre-8-butun-urun.md", "plan/kararlar/ADR-091-evre-8-kararlari.md"]
+
+  - id: K-1207
+    title: "Antrenman odak ekranı: tek şey, dinlenme ayrı durum, renk rolleri"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: L
+    status: todo
+    depends_on: []
+    why: "Denetim 1.3: set sırasında ~53, dinlenmede ~58 öğe; tek turkuaz beş rolde; Levent: 'çok yazı var, ADHD'm tutuyor'"
+    acceptance:
+      - "L: başlamadan ikiye bölünür (set ekranı · dinlenme ekranı)"
+      - "Set sırasında ekranda en fazla ~10 öğe: hareket adı, hedef (kg × tekrar), iki adımlayıcı, tek 'Log set'; geri kalanı tek menüde"
+      - "Dinlenme ayrı durum: büyük geri sayım, tek 'Ready', sıradaki set; set kartı gizli"
+      - "Vurgu rengi yalnız 'şimdi yapılacak şey' ve sayaç; bağlantı/işaret/seçim nötr; beyaz çerçeve yok; gri seviyesi en fazla 3"
+      - "Haptik: set kaydında güçlü, dinlenmenin son 3 saniyesinde hafif"
+      - "Hiçbir özellik kaybolmaz (swap, history, how to, not, too heavy erişilebilir); simülatör kanıtı + öğe sayımı"
+    tests: ["npm run check (workout testleri)", "simülatör: set ve dinlenme ekran görüntüsü"]
+    refs: ["plan/evre-8-butun-urun.md", "plan/kararlar/ADR-091-evre-8-kararlari.md"]
+
+  - id: K-1208
+    title: "Yemek araması v2: bütün sözcükler, kişinin yemekleri havuzda, yakınlık"
+    milestone: M12
+    module: nutrition
+    type: feature
+    size: M
+    status: todo
+    depends_on: []
+    why: "Denetim 1.4: sıralamayı yalnız ilk sözcük etkiliyor; kendi kayıtlar 100'lük havuzdan sonra sayılıyor; yakınlık ve favori yok; liste her tuşta siliniyor"
+    acceptance:
+      - "Skor bütün sözcükleri ve sırasını okur; kullanıcının sık/son yedikleri havuza önce girer; kayıt sayısı yerine zamanla azalan ağırlık; favori öne"
+      - "Jenerik sorguda marka geri; yazım hatası geçişi tam sonuç sayısından bağımsız"
+      - "Ağırlıklar parametre dosyasında (K2); FoodUsSearchTests'e 'chicken breast' marka seli ve günlük yemek testleri"
+      - "Telefonda önceki liste arama sürerken soluk kalır (titreme yok)"
+    tests: ["./gradlew test (FoodUsSearchTests, FoodRanking)", "npm run check (food-*)"]
+    refs: ["plan/evre-8-butun-urun.md", "plan/kararlar/ADR-091-evre-8-kararlari.md"]
+
+  - id: K-1209
+    title: "1.0.1 yayını: build, inceleme notu, gönderim"
+    milestone: M12
+    module: product
+    type: human
+    size: S
+    status: todo
+    depends_on: [K-1202, K-1206, K-1207, K-1208]
+    why: "ADR-091 #2: 1.0 yayında; düzeltmeler 1.0.1 güncellemesi"
+    acceptance:
+      - "EAS production build, TestFlight; Levent telefonda 5 dk"
+      - "ASC 1.0.1: sürüm notu, App Review notu (yeni ücretsiz katman, hesap silme yolu)"
+      - "Submit Levent"
+    tests: ["eas build -p ios --profile production"]
+    refs: ["plan/evre-8-butun-urun.md", "plan/kararlar/ADR-091-evre-8-kararlari.md"]
+
+  - id: K-1210
+    title: "Yayın sonrası geliştirici alışkanlıkları rehberi"
+    milestone: M12
+    module: docs
+    type: docs
+    size: S
+    status: todo
+    depends_on: []
+    why: "Levent (24 Kas): uygulama sahibinin yayından sonra uygulamaya nasıl baktığını, tanıdığa nasıl verdiğini, nasıl test ettiğini öğrenmek istiyor"
+    acceptance:
+      - "Antigravity araştırması (promo/offer code, TestFlight dış grup, Analytics/Sales, çökme ve yorum takibi, haftalık ritim) + doğrulama turu"
+      - "Türkçe kısa rehber: docs/yayin-sonrasi-rutin.md; bizim araçlarımızla (ASC, RevenueCat, weekly-report.sh)"
+    tests: ["—"]
+    refs: ["plan/evre-8-butun-urun.md", "plan/kararlar/ADR-091-evre-8-kararlari.md"]
+
+# 8b · 1.1
+  - id: K-1211
+    title: "Çok dil altyapısı: yerel ayar, biçimlendirme, dil seçimi"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: []
+    why: "Denetim 1.6: t() tek dil, expo-localization yok, 33 yerde 'en-US' sabit"
+    acceptance:
+      - "t() yerel ayar + en yedeği; çoğul kuralı; Ayarlar'da dil"
+      - "Tek formatNumber/formatDate; 'en-US' sabiti kalmaz (test korur)"
+      - "Bağımlılık sürümü package.json'da doğrulanır (K6)"
+    tests: ["npm run check"]
+    refs: ["plan/evre-8-butun-urun.md", "plan/kararlar/ADR-091-evre-8-kararlari.md"]
+
+  - id: K-1212
+    title: "Türkçe metinler, yasak ifadeler, mağaza ve izin metinleri"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: L
+    status: todo
+    depends_on: [K-1211]
+    why: "Levent: Türkçe önce"
+    acceptance:
+      - "L: bölünür (uygulama metni · mağaza/izin)"
+      - "tr.json bütün anahtarlar; Türkçe yasak ifade listeleri (U4, U6); sözcük bütçeleri tr"
+      - "Yerli okuma Levent; mağaza tr sayfası ve ekran görüntüleri"
+    tests: ["npm run check (copy-*)", "tools/anayasa-denetimi.sh"]
+    refs: ["plan/evre-8-butun-urun.md", "plan/kararlar/ADR-091-evre-8-kararlari.md"]
+
+  - id: K-1213
+    title: "Türk yemekleri ve porsiyonları"
+    milestone: M12
+    module: nutrition
+    type: feature
+    size: M
+    status: todo
+    depends_on: []
+    why: "Rakip raporu §1: Türk mutfağı ve ev ölçüleri (kaşık, su bardağı, kase); bugün yemek verisi ABD + OFF TR barkod"
+    acceptance:
+      - "Kaynak ve lisans doğrulanır (TürKomp vb., K6); lisans uygun değilse alternatif"
+      - "Ev ölçüsü birimleri parametre dosyasında"
+      - "Arama 'mercimek çorbası', 'menemen' gibi sorgularda jenerik kayıt döner"
+    tests: ["./gradlew test (food)"]
+    refs: ["plan/evre-8-butun-urun.md", "plan/kararlar/ADR-091-evre-8-kararlari.md"]
+
+  - id: K-1214
+    title: "Gerçek dinlenme kaydı ve hareket başına aralık"
+    milestone: M12
+    module: training
+    type: feature
+    size: M
+    status: todo
+    depends_on: []
+    why: "Denetim 1.3: dinlenme her harekette 120 sn, rest_seconds_max kullanılmıyor, gerçek dinlenme kaydedilmiyor; Levent: aralıkta tutmak ve geri bildirimden öğrenmek"
+    acceptance:
+      - "Sözleşme: set kaydında dinlenme süresi; şema migration"
+      - "Bileşik/izolasyon için kaynaklı aralık (G1 K-49 + literatür), kullanıcı tercihi"
+      - "Öğrenme kuralı kural-ekle ile (RIR, başarısız set); Levent onayı"
+    tests: ["./gradlew test", "npm run check"]
+    refs: ["plan/evre-8-butun-urun.md", "plan/kararlar/ADR-091-evre-8-kararlari.md"]
+
+  - id: K-1215
+    title: "Dinlenme Live Activity ve Dynamic Island"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-1214]
+    why: "Rakip raporu §2: Hevy'nin en övülen özelliği; bizde yok (workout.json K-411 notu)"
+    acceptance:
+      - "Kilit ekranında kalan süre + sonraki set; ±15 sn"
+      - "Native modül açılışta çökmez (K-1026 dersi)"
+      - "Cihaz kanıtı"
+    tests: ["cihaz"]
+    refs: ["plan/evre-8-butun-urun.md", "plan/kararlar/ADR-091-evre-8-kararlari.md"]
+
+  - id: K-1216
+    title: "Adım açığını somut yürüyüşe çevir"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: []
+    why: "Levent: 'evden salona kaç adım', 6k/10k → 'şu kadar yürü' hissi; altyapıda adım hedefi var, mesafe/yer yok"
+    acceptance:
+      - "Kalan adım → dakika (deterministik, kadans HealthKit ya da varsayılan); motor hedefi U1"
+      - "Kullanıcı bir kez 'ev ↔ salon' mesafesini girer (konumsuz ilk sürüm); öneri 'salona yürüyüp dön' gibi"
+      - "Suçlama/telafi dili yok (U7); konum ve MapKit sonraki kart, rıza sürümüyle (K-4)"
+    tests: ["npm run check"]
+    refs: ["plan/evre-8-butun-urun.md", "plan/kararlar/ADR-091-evre-8-kararlari.md"]
+
+  - id: K-1217
+    title: "Günlük döngü: ekranlar birbirini ansın"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-1206]
+    why: "Denetim 1.5: bir gün 4+ ayrı yer; antrenman sonu yemeği, yemek antrenman gününü, karar ekranı günlük işleri anmıyor"
+    acceptance:
+      - "Antrenman sonu: protein kalanı + öğün kaydı bağı"
+      - "Tartı sonrası: bugünün planı"
+      - "Karar ekranı: değişen şeyin günlük karşılığı (yemek, antrenman)"
+      - "Simülatör yürüyüşü bir gün"
+    tests: ["npm run check", "persona yürüyüşü"]
+    refs: ["plan/evre-8-butun-urun.md", "plan/kararlar/ADR-091-evre-8-kararlari.md"]
+
+  - id: K-1218
+    title: "Motor: antrenman durumu set kaydından"
+    milestone: M12
+    module: engine
+    type: feature
+    size: M
+    status: todo
+    depends_on: []
+    why: "Denetim M4: Training/Recovery yalnız kullanıcı cevabı (DecisionService.java:291)"
+    acceptance:
+      - "kural-ekle: e1RM/tekrar trendinden durum, kaynakla"
+      - "Kullanıcı cevabı ile kayıt çelişirse kural tanımlı"
+      - "Levent onayı"
+    tests: ["./gradlew test"]
+    refs: ["plan/evre-8-butun-urun.md", "plan/kararlar/ADR-091-evre-8-kararlari.md"]
+
+  - id: K-1219
+    title: "Form gösterimi: Codex ile standart görsel ve video, 40 hareket"
+    milestone: M12
+    module: training
+    type: feature
+    size: L
+    status: todo
+    depends_on: []
+    why: "ADR-091 #4: AI üretimi video dahil açık; 40/40 hareket bekliyor; pilot lat_pulldown_v1"
+    acceptance:
+      - "L: bölünür (istem şablonu + üretim betiği · oynatma · 40 hareket)"
+      - "Standart istem şablonu dosyada; üretim Codex (model ve tarih review notunda)"
+      - "Her dosya kontrol listesinden geçer, review by: levent"
+      - "expo-video ile oynatma, boyut bütçesi testi (tools/clip.py)"
+    tests: ["katalog testi", "npm run check"]
+    refs: ["plan/evre-8-butun-urun.md", "plan/kararlar/ADR-091-evre-8-kararlari.md"]
+
+# 8c · 1.2
+  - id: K-1221
+    title: "Konuşan koç ADR: gerçek girer, doğrulanmış cümle çıkar"
+    milestone: M12
+    module: coach
+    type: docs
+    size: S
+    status: todo
+    depends_on: []
+    why: "ADR-043 #76 modelin yalnız sınıflandırmasını söylüyor; Levent konuşan, kişiyi tanıyan koç istiyor"
+    acceptance:
+      - "ADR: girdi yalnız motor gerçekleri (CallFacts, ReasonFacts), çıktı şemayla doğrulanır, sayı motordan; U1, U2, U6, U10"
+      - "Levent KABUL"
+    tests: ["—"]
+    refs: ["plan/evre-8-butun-urun.md", "plan/kararlar/ADR-091-evre-8-kararlari.md"]
+
+  - id: K-1222
+    title: "LLM sağlayıcısı, sıfır saklama, rıza metni"
+    milestone: M12
+    module: coach
+    type: human
+    size: M
+    status: todo
+    depends_on: [K-1221]
+    why: "Üretimde sağlayıcı yok (yalnız fake/off); ADR-041/044 sıfır saklama şartı"
+    acceptance:
+      - "Sağlayıcı seçimi + ZDR onayı (Levent: para/veri)"
+      - "Rıza metni sağlayıcıyı adıyla söyler (V2)"
+      - "Gerçek adaptör + maliyet kaydı + aylık tavan"
+    tests: ["./gradlew test (EgressGate)"]
+    refs: ["plan/evre-8-butun-urun.md", "plan/kararlar/ADR-091-evre-8-kararlari.md"]
+
+  - id: K-1223
+    title: "Koç sohbeti, kişi hafızası, kota"
+    milestone: M12
+    module: coach
+    type: feature
+    size: L
+    status: todo
+    depends_on: [K-1222]
+    why: "Rakip raporu §8: hazır soru hapları, veriyle cevap, haftalık soru hakkı"
+    acceptance:
+      - "L: bölünür"
+      - "Çok turlu geçmiş + silinebilir kişi özeti (V6)"
+      - "Kota parametre dosyasında; bitince deterministik mod"
+    tests: ["./gradlew test", "npm run check"]
+    refs: ["plan/evre-8-butun-urun.md", "plan/kararlar/ADR-091-evre-8-kararlari.md"]
+
+  - id: K-1224
+    title: "Sesle konuşma"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-1223]
+    why: "Levent: konuşma işinin entegre edilmesi şart"
+    acceptance:
+      - "Önce cihaz içi dikte; bulut ses ayrı rıza ve ADR"
+      - "Mikrofon izni metni copy dosyasında"
+    tests: ["cihaz"]
+    refs: ["plan/evre-8-butun-urun.md", "plan/kararlar/ADR-091-evre-8-kararlari.md"]
+

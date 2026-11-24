@@ -10,6 +10,7 @@ Play; ADR-056 `SUBSCRIPTION_PAUSED`'ı Play'e özgü yazıyor; ADR-057). Prototi
 
 ## Karar
 ### 107 · Onboarding sonunda zorunlu paywall (K-706)
+> **YERİNİ ALDI → ADR-091 #1 (2026-11-24, Levent):** zorunlu paywall kalktı; kayıt bedava, karar ücretli.
 Hiç abone olmamış hesap onboarding'i bitirince paywall'a gelir; deneme başlatmadan
 (ya da geri yüklemeden) sekmelere geçemez. Kapatma düğmesi yok; Restore ve yasal bağlantılar var. **Aboneliği biten** (sunucuda bir durumu
 olan: EXPIRED, REFUNDED, CANCELLED süresi geçmiş…) kullanıcı kapıya takılmaz: deterministik mod (K-703, ADR-056 #10) — kaydı, geçmişi,
