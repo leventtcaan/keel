@@ -268,3 +268,4 @@
 - takıldım: yerel `keel/` dalsız eski commit'teydi (çalışma `keel-main`); Antigravity/Codex pencereleri başka Space'te arka plan girdisi almadı (kısa tam ekran + Codex CLI); Antigravity raporunda tırnaklı yorumlar uydurma, Strong Türkçe değil, Alpha Progression fiyatı yanlış
 - sıradaki: Part 8a-1 (K-1201, K-1202, K-1208, K-1206) yeni oturumda
 - AI: denetim ve sentez agent (Opus + 4 Sonnet), araştırma Antigravity (Gemini 3.8 Flash), görsel Codex (gpt-6-luna); Levent 4 karar verdi
+- ek (24 Kas gece, Part 8a-1): #732 K-1206, #733 K-1208, #734 K-1201, #735 K-1202 birleşti (ücretsiz çekirdek + kilitli karar + arama v2 + ana ekran sayıları); güvenlik incelemesi iki açığı yakaladı (hak sayacı sıfırlanması, başlıkla kilit atlama) → kapatıldı; canlı 1.0'ı kıracak sözleşme değişikliği yetenek başlığıyla korundu; simülatörde yürüdü. Sıradaki Part 8a-2

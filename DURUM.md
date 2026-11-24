@@ -5,7 +5,24 @@ guncelleme: 2026-11-24
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (24 Kas — Evre 8 planlandı; 1.0 yayında)
+## ▶ DEVAM NOKTASI (24 Kas gece — Part 8a-1 BİTTİ)
+**Part 8a-1 ÇIKIŞ (main `c8218d9f`):** #732 K-1206 ana ekranda yemek kalanı + protein + adım + kilo trendi (TodayList ölü kodu silindi) · #733 K-1208 yemek
+araması v2 (bütün sözcükler, ADR-085 sırası kesin katman, kişinin son yedikleri havuzda, 14 gün yarı ömür, favori, kendi yemekleri porsiyonuyla, yazım hatası
+geçişi daraltıldı, "egg" → Eggs) · #734 K-1201 kayıt bedava + karar ücretli sunucuda (ADR-091 Ek 1: `free_full_calls: 1`, kilitli karar saklanır ama
+uygulanmaz, güvenlik/döngü/deload/dinlenme kararları hiç kilitlenmez, kilit yalnız `X-Keel-Features: locked-calls` diyen istemciye + hesap bir kez
+işaretlenince kalıcı, eski 1.0 istemcisi kilitli kararda 403 alır, hak sayacı sağlık verisi silinince sıfırlanmaz, V55-V57) · #735 K-1202 zorunlu paywall
+kalktı, onboarding sonunda kişisel plan önizlemeli kapatılabilir teklif bir kez, kilitli karar ekranı "Your call is ready / See plans", karar tipleri `oneOf`.
+**Kanıt:** CI dördünde yeşil; simülatörde (fikstür + `/__sim/lock`) ana ekran sayıları ve kilitli karar → paywall → Close → sekmeler yürüdü; yumuşak teklif
+testi mutasyonla doğrulandı. Güvenlik incelemesi iki açık buldu (sağlık verisi silinince hak sıfırlanıyordu; başlıksız istekle kilit atlanıyordu) → kapatıldı.
+**Levent'e sorulacaklar (toplu):** (1) ücretsiz katmanda ilk tam karardan sonra plan donar, abone olunca yalnız bu haftanın kararı uygulanır ·
+(2) deload/dinlenme/toparlanma kararları ücretsizde de açık (ADR-091 #1'de ücretliydi) · (3) `legacy_clients_unlocked_until: "2027-01-15"` ·
+(4) dışa aktarma kilitli kararları da içerir (erişim hakkı) · (5) ana ekran sözcük bütçesi 68 → 70 · (6) onboarding sonu tek seferlik teklif ·
+(7) `terms.md` taslağı `plan/evre-8-terms-taslak.diff` (1.0.1 ile yayına) · (8) K1 listeleri PR #734, #735 gövdelerinde.
+**Sıradaki: Part 8a-2** → `plan/oturum-promptlari/evre-8.md` › "Part 8a-2 istemi" (K-1207 odak ekranı, K-1203/1204/1205 motor, K-1225 cila).
+**Not:** sunucu `main`'den VPS'e dağıtıldı; 1.0 istemcileri başlık göndermediği için davranışları değişmedi. Simülatör düzeneği `keel-sim/.sim` (MAIN=keel-main,
+fikstürde `/__sim/lock`/`unlock`).
+
+## (önceki) DEVAM NOKTASI (24 Kas — Evre 8 planlandı; 1.0 yayında)
 **1.0 yayında** (Levent, 24 Kas). Levent 1.0'ı kullandı, 12 madde getirdi ("rakiplerin yaptığını yapamıyor, para istiyoruz, acımasız").
 Dört kod denetimi + rakip araştırması (Antigravity) + Codex form görseli pilotu → `plan/evre-8-butun-urun.md`. Doğrulanan ana bulgular: premium yalnız
 AI'ı açıyor, AI üretimde kapalı; ilk yemek kararı ~5. hafta, haftada 4 tartı şartı, hedef kayıp hızı yok; antrenman ekranında ~53 öğe; ana ekranda

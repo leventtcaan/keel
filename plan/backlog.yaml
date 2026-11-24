@@ -5691,7 +5691,7 @@ tasks:
     module: subscription
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: []
     why: "ADR-091 #1: premium bugün yalnız AI yollarını açıyor, AI kapalı; ödenen şeyin karşılığı yok"
     acceptance:
@@ -5708,7 +5708,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-1201]
     why: "ADR-091 #1: hiç abone olmamış hesap kapatılamayan paywall görüyor (gate.ts, ADR-058 #107 yerini aldı)"
     acceptance:
@@ -5773,7 +5773,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: []
     why: "Denetim 1.4: ana ekranda protein/adım/kilo yok, TodayList ölü kod, hedef ızgarası yalnız ilk karardan önce; yemek kartı ekran altına düşüyor"
     acceptance:
@@ -5809,7 +5809,7 @@ tasks:
     module: nutrition
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: []
     why: "Denetim 1.4: sıralamayı yalnız ilk sözcük etkiliyor; kendi kayıtlar 100'lük havuzdan sonra sayılıyor; yakınlık ve favori yok; liste her tuşta siliniyor"
     acceptance:
@@ -5849,6 +5849,23 @@ tasks:
       - "Antigravity araştırması (promo/offer code, TestFlight dış grup, Analytics/Sales, çökme ve yorum takibi, haftalık ritim) + doğrulama turu"
       - "Türkçe kısa rehber: docs/yayin-sonrasi-rutin.md; bizim araçlarımızla (ASC, RevenueCat, weekly-report.sh)"
     tests: ["—"]
+    refs: ["plan/evre-8-butun-urun.md", "plan/kararlar/ADR-091-evre-8-kararlari.md"]
+
+  - id: K-1225
+    title: "Ana ekran sayı kutuları cilası: kilo değişimi birimi ve dönemi, kutular satırı doldurur, adım boşken tire yok"
+    milestone: M12
+    module: mobile
+    type: fix
+    size: S
+    status: todo
+    depends_on: [K-1206]
+    why: "Simülatör (24 Kas, K-1206 sonrası): kilo kutusunda '-4.7' birimsiz ve dönemsiz; üç kutu satırın sağında boşluk bırakıyor; Health yokken adım '- / 10,000'"
+    acceptance:
+      - "Kilo değişimi birim ve dönemle (ör. '−4.7 kg · 12 wk'), Progress'teki WeightCard ile aynı dil"
+      - "Kutular satır genişliğini eşit paylaşır (iki tema, Kalın Metin, SE genişliği)"
+      - "Health bağlı değilken adım kutusu hedefi ve 'Connect' ipucunu gösterir, tire yok"
+      - "Simülatör kanıtı"
+    tests: ["jest today-numbers", "simülatör"]
     refs: ["plan/evre-8-butun-urun.md", "plan/kararlar/ADR-091-evre-8-kararlari.md"]
 
 # 8b · 1.1

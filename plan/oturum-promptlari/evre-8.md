@@ -34,3 +34,12 @@ keel, Evre 8 Part 8a-1. Önce plan/oturum-promptlari/evre-8.md'yi oku ve ortak k
 K-1206 (ana ekranda protein/adım/kilo, yemek kartı yukarı). K-1208 ve K-1206 K-1201'den bağımsız, paralel ajanlara verilebilir.
 Bitti = üç PR birleşti, simülatörde yeni hesap paywall'suz sekmelere ulaşıyor ve ana ekranda dört sayı görünüyor, Part 8a-1 ÇIKIŞ yazıldı.
 ```
+
+## Part 8a-2 istemi (yeni oturuma yapıştır)
+```
+keel, Evre 8 Part 8a-2. Önce plan/oturum-promptlari/evre-8.md'yi ve DURUM › Part 8a-1 ÇIKIŞ'ı oku, ortak kurallara uy. Çalışma kopyası
+/Users/leventcanceylan/Projects/keel-main (worktree'leri origin/main'den aç). Kartlar: K-1207 (antrenman odak ekranı; L, önce ikiye böl: set ekranı ·
+dinlenme ekranı), K-1225 (ana ekran kutuları cilası), K-1203 → K-1204 → K-1205 (motor; kural-ekle, kaynak + eşik Levent onayına toplu).
+Part 8a-1'den Levent'e sorulacak 8 madde DURUM'da: part başında topla ve sor. Bitti = PR'lar birleşti, simülatörde set ekranında ≤10 öğe, motor
+kuralları onaylı ve golden senaryolar güncel, Part 8a-2 ÇIKIŞ yazıldı.
+```
