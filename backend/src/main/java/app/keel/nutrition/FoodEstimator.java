@@ -176,6 +176,8 @@ class FoodEstimator {
         return parameters.forSex(profiles.of(account).map(facts -> Sex.valueOf(facts.sex().name())).orElse(Sex.MALE));
     }
 
+    private static final TurkishMeasures TURKISH_MEASURES = TurkishMeasures.load();
+
     private record Measured(BigDecimal grams, FoodRanges.Certainty certainty) {
     }
 
@@ -193,6 +195,10 @@ class FoodEstimator {
                 yield new Measured(amount.quantity().multiply(food.gramsPerMl()), scale);
             }
             default -> {
+                Optional<BigDecimal> turkish = TURKISH_MEASURES.grams(food.name(), amount.unit().strip().toLowerCase(Locale.ROOT));
+                if (turkish.isPresent()) {
+                    yield new Measured(amount.quantity().multiply(turkish.get()), FoodRanges.Certainty.MEASURED);
+                }
                 Optional<FoodStore.Serving> serving = food.servings().stream()
                         .filter(candidate -> candidate.name().equalsIgnoreCase(amount.unit().strip())).findFirst();
                 require(serving.isPresent());

@@ -939,7 +939,8 @@
     "dataset",
     "region",
     "import_release",
-    "search_text"
+    "search_text",
+    "aliases"
    ],
    "basis": "not personal data",
    "gated_by": null,

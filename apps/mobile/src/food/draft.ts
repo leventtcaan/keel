@@ -11,6 +11,7 @@ import { t } from '@/copy';
 import type { HandedMeal } from './handoff';
 import { amountGrams, parseQuantity } from './meals';
 import { foodParams } from './params';
+import { isOffered } from './turkishMeasures';
 import { mid } from './single';
 
 type Schemas = components['schemas'];
@@ -46,7 +47,8 @@ const isVolume = (serving: string) => VOLUME.test(serving.toLowerCase().replace(
 
 /** The food as a draft item, opened on `amount` (a recent food's last amount) or, without one, on its natural portion. */
 export function itemOf(food: Schemas['Food'], amount?: Pick<Schemas['Amount'], 'quantity' | 'unit'>): DraftItem {
-  const portions = food.portions ?? [];
+  // The Turkish household measures (K-1213) are for a phone showing Turkish.
+  const portions = (food.portions ?? []).filter((portion) => isOffered(portion.unit));
   if (portions.length > 0) {
     // The server's list (ADR-090 #1): the natural portion first and chosen ("1 large" egg), g and oz always last; a recent food keeps
     // the amount it was had in when that portion still exists.

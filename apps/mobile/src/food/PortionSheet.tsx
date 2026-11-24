@@ -17,7 +17,7 @@ import { tokens } from '@/theme/tokens';
 import { useReduceMotion } from '@/theme/useReduceMotion';
 import { parseNumber } from '@/units/units';
 
-import { unitAfterNumber, unitLabel } from './amountText';
+import { portionLabel, unitAfterNumber, unitLabel } from './amountText';
 import { type DraftItem, type KnownFoods, type KnownRecipes, PORTION, itemProblem } from './draft';
 import { PROBLEM_KEYS, numbersOf } from './ItemRows';
 import { MacroBar } from './MacroBar';
@@ -150,7 +150,7 @@ export function PortionSheet({ item, index, known, recipes, estimate, logged, sl
         {item.units.map((unit) => (
           <Chip
             key={unit}
-            label={item.portions?.find((p) => p.unit === unit)?.label ?? unitLabel(unit)}
+            label={portionLabel(item.portions, unit)}
             accessibilityLabel={t('meal.item.unitSpoken', { name: item.name, unit: unitLabel(unit) })}
             selected={unit === item.unit}
             onPress={() => unit !== item.unit && onChange({ unit, quantity: quantityInPortion(item, unit) })}

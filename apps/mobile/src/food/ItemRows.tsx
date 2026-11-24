@@ -13,7 +13,7 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { parseNumber } from '@/units/units';
 
-import { amountPhrase, unitAfterNumber, unitLabel } from './amountText';
+import { amountPhrase, portionLabel, unitAfterNumber, unitLabel } from './amountText';
 import { type DraftItem, type KnownFoods, type KnownRecipes, PORTION, itemProblem } from './draft';
 import { parseQuantity } from './meals';
 import { foodParams } from './params';
@@ -204,7 +204,7 @@ function OpenItem({
         {item.units.map((unit) => (
           <Chip
             key={unit}
-            label={item.portions?.find((p) => p.unit === unit)?.label ?? unitLabel(unit)}
+            label={portionLabel(item.portions, unit)}
             accessibilityLabel={t('meal.item.unitSpoken', { name: item.name, unit: unitLabel(unit) })}
             selected={unit === item.unit}
             onPress={() => unit !== item.unit && onChange(index, { unit, quantity: quantityInPortion(item, unit) })}

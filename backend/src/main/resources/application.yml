@@ -221,6 +221,7 @@ keel:
           FOUNDATION: 12
           SR_LEGACY: 8
           FNDDS: 4
+          RECIPE: 8
           BRANDED: 0
         typo-penalty: 30
         typo-max-edits: 2

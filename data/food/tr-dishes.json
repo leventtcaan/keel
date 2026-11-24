@@ -1,0 +1,1909 @@
+{
+ "version": 1,
+ "source": "recipe-estimate",
+ "note": "Each dish is a recipe of USDA FoodData Central ingredients (public domain, ADR-008), named by their description (resolved in the imported release; `or` are other descriptions of the same food), with the grams of each in one standard portion (`servingG` is what the portion weighs cooked). The ingredients and grams are an estimate of a typical home recipe by the project, not a measurement and not from TürKomp (licensed, not used): [doğrulanmadı] against a dietitian or a published recipe. Descriptions marked verified were read in FDC's search on 2026-11-24 (verified: lentils raw, bulgur, lamb ground, semolina, grape leaves, tahini, okra, yogurt, pasta dry, chicken breast, olive oil); the others are from memory and an ingredient the release does not have leaves its dishes out (reported by the import).",
+ "dishes": [
+  {
+   "id": "mercimek-corbasi",
+   "name": "Mercimek çorbası",
+   "aliases": [
+    "lentil soup"
+   ],
+   "serving": "1 bowl",
+   "servingG": 250,
+   "ingredients": [
+    {
+     "food": "Lentils, raw",
+     "grams": 35
+    },
+    {
+     "food": "Onions, raw",
+     "grams": 20
+    },
+    {
+     "food": "Carrots, raw",
+     "grams": 20
+    },
+    {
+     "food": "Potatoes, flesh and skin, raw",
+     "grams": 20
+    },
+    {
+     "food": "Butter, salted",
+     "grams": 6
+    }
+   ]
+  },
+  {
+   "id": "ezogelin-corbasi",
+   "name": "Ezogelin çorbası",
+   "aliases": [
+    "ezogelin soup",
+    "red lentil bulgur soup"
+   ],
+   "serving": "1 bowl",
+   "servingG": 250,
+   "ingredients": [
+    {
+     "food": "Lentils, raw",
+     "grams": 25
+    },
+    {
+     "food": "Bulgur, dry",
+     "or": [
+      "Bulgur, dry, raw"
+     ],
+     "grams": 10
+    },
+    {
+     "food": "Rice, white, long-grain, regular, raw, enriched",
+     "or": [
+      "Rice, white, long-grain, regular, raw, enriched, unspecified"
+     ],
+     "grams": 5
+    },
+    {
+     "food": "Onions, raw",
+     "grams": 20
+    },
+    {
+     "food": "Tomato products, canned, paste, without salt added (Includes foods for USDA's Food Distribution Program)",
+     "or": [
+      "Tomato products, canned, paste, without salt added"
+     ],
+     "grams": 10
+    },
+    {
+     "food": "Butter, salted",
+     "grams": 6
+    }
+   ]
+  },
+  {
+   "id": "domates-corbasi",
+   "name": "Domates çorbası",
+   "aliases": [
+    "tomato soup"
+   ],
+   "serving": "1 bowl",
+   "servingG": 250,
+   "ingredients": [
+    {
+     "food": "Tomatoes, red, ripe, raw, year round average",
+     "grams": 150
+    },
+    {
+     "food": "Wheat flour, white, all-purpose, enriched, bleached",
+     "or": [
+      "Wheat flour, white, all-purpose, enriched, unbleached"
+     ],
+     "grams": 8
+    },
+    {
+     "food": "Butter, salted",
+     "grams": 8
+    },
+    {
+     "food": "Milk, whole, 3.25% milkfat, with added vitamin D",
+     "or": [
+      "Milk, whole, 3.25% milkfat, without added vitamin A and vitamin D"
+     ],
+     "grams": 40
+    }
+   ]
+  },
+  {
+   "id": "tarhana-corbasi",
+   "name": "Tarhana çorbası",
+   "aliases": [
+    "tarhana soup",
+    "fermented yogurt and grain soup"
+   ],
+   "serving": "1 bowl",
+   "servingG": 250,
+   "ingredients": [
+    {
+     "food": "Wheat flour, white, all-purpose, enriched, bleached",
+     "or": [
+      "Wheat flour, white, all-purpose, enriched, unbleached"
+     ],
+     "grams": 25
+    },
+    {
+     "food": "Yogurt, plain, whole milk",
+     "grams": 15
+    },
+    {
+     "food": "Tomato products, canned, paste, without salt added (Includes foods for USDA's Food Distribution Program)",
+     "or": [
+      "Tomato products, canned, paste, without salt added"
+     ],
+     "grams": 5
+    },
+    {
+     "food": "Butter, salted",
+     "grams": 6
+    }
+   ]
+  },
+  {
+   "id": "yayla-corbasi",
+   "name": "Yayla çorbası",
+   "aliases": [
+    "yogurt soup",
+    "rice yogurt soup"
+   ],
+   "serving": "1 bowl",
+   "servingG": 250,
+   "ingredients": [
+    {
+     "food": "Yogurt, plain, whole milk",
+     "grams": 80
+    },
+    {
+     "food": "Rice, white, long-grain, regular, raw, enriched",
+     "or": [
+      "Rice, white, long-grain, regular, raw, enriched, unspecified"
+     ],
+     "grams": 12
+    },
+    {
+     "food": "Egg, whole, raw, fresh",
+     "grams": 10
+    },
+    {
+     "food": "Butter, salted",
+     "grams": 6
+    },
+    {
+     "food": "Wheat flour, white, all-purpose, enriched, bleached",
+     "or": [
+      "Wheat flour, white, all-purpose, enriched, unbleached"
+     ],
+     "grams": 6
+    }
+   ]
+  },
+  {
+   "id": "kuru-fasulye",
+   "name": "Kuru fasulye",
+   "aliases": [
+    "white bean stew",
+    "dried beans"
+   ],
+   "serving": "1 plate",
+   "servingG": 260,
+   "ingredients": [
+    {
+     "food": "Beans, white, mature seeds, cooked, boiled, without salt",
+     "grams": 160
+    },
+    {
+     "food": "Onions, raw",
+     "grams": 25
+    },
+    {
+     "food": "Tomato products, canned, paste, without salt added (Includes foods for USDA's Food Distribution Program)",
+     "or": [
+      "Tomato products, canned, paste, without salt added"
+     ],
+     "grams": 15
+    },
+    {
+     "food": "Oil, sunflower, linoleic (less than 60%)",
+     "or": [
+      "Oil, sunflower, linoleic, (approx. 65%)",
+      "Oil, sunflower, linoleic (approx. 65%)"
+     ],
+     "grams": 10
+    }
+   ]
+  },
+  {
+   "id": "nohut-yemegi",
+   "name": "Nohut yemeği",
+   "aliases": [
+    "chickpea stew"
+   ],
+   "serving": "1 plate",
+   "servingG": 250,
+   "ingredients": [
+    {
+     "food": "Chickpeas (garbanzo beans, bengal gram), mature seeds, cooked, boiled, without salt",
+     "grams": 150
+    },
+    {
+     "food": "Onions, raw",
+     "grams": 25
+    },
+    {
+     "food": "Tomato products, canned, paste, without salt added (Includes foods for USDA's Food Distribution Program)",
+     "or": [
+      "Tomato products, canned, paste, without salt added"
+     ],
+     "grams": 12
+    },
+    {
+     "food": "Oil, sunflower, linoleic (less than 60%)",
+     "or": [
+      "Oil, sunflower, linoleic, (approx. 65%)",
+      "Oil, sunflower, linoleic (approx. 65%)"
+     ],
+     "grams": 10
+    }
+   ]
+  },
+  {
+   "id": "taze-fasulye",
+   "name": "Zeytinyağlı taze fasulye",
+   "aliases": [
+    "green beans in olive oil",
+    "taze fasulye"
+   ],
+   "serving": "1 plate",
+   "servingG": 220,
+   "ingredients": [
+    {
+     "food": "Beans, snap, green, raw",
+     "grams": 150
+    },
+    {
+     "food": "Onions, raw",
+     "grams": 25
+    },
+    {
+     "food": "Tomatoes, red, ripe, raw, year round average",
+     "grams": 50
+    },
+    {
+     "food": "Oil, olive, salad or cooking",
+     "grams": 12
+    }
+   ]
+  },
+  {
+   "id": "karniyarik",
+   "name": "Karnıyarık",
+   "aliases": [
+    "stuffed eggplant with minced meat",
+    "karniyarik"
+   ],
+   "serving": "1 plate",
+   "servingG": 250,
+   "ingredients": [
+    {
+     "food": "Eggplant, raw",
+     "grams": 150
+    },
+    {
+     "food": "Beef, ground, 85% lean meat / 15% fat, raw",
+     "grams": 50
+    },
+    {
+     "food": "Onions, raw",
+     "grams": 25
+    },
+    {
+     "food": "Tomatoes, red, ripe, raw, year round average",
+     "grams": 40
+    },
+    {
+     "food": "Peppers, sweet, green, raw",
+     "grams": 15
+    },
+    {
+     "food": "Oil, sunflower, linoleic (less than 60%)",
+     "or": [
+      "Oil, sunflower, linoleic, (approx. 65%)",
+      "Oil, sunflower, linoleic (approx. 65%)"
+     ],
+     "grams": 15
+    }
+   ]
+  },
+  {
+   "id": "imam-bayildi",
+   "name": "İmam bayıldı",
+   "aliases": [
+    "imam bayildi",
+    "eggplant stuffed with onion and tomato"
+   ],
+   "serving": "1 plate",
+   "servingG": 230,
+   "ingredients": [
+    {
+     "food": "Eggplant, raw",
+     "grams": 150
+    },
+    {
+     "food": "Onions, raw",
+     "grams": 50
+    },
+    {
+     "food": "Tomatoes, red, ripe, raw, year round average",
+     "grams": 50
+    },
+    {
+     "food": "Oil, olive, salad or cooking",
+     "grams": 15
+    },
+    {
+     "food": "Garlic, raw",
+     "grams": 3
+    }
+   ]
+  },
+  {
+   "id": "yaprak-sarma",
+   "name": "Zeytinyağlı yaprak sarma",
+   "aliases": [
+    "stuffed grape leaves",
+    "dolma",
+    "yaprak sarma"
+   ],
+   "serving": "5 pieces",
+   "servingG": 130,
+   "ingredients": [
+    {
+     "food": "Rice, white, long-grain, regular, raw, enriched",
+     "or": [
+      "Rice, white, long-grain, regular, raw, enriched, unspecified"
+     ],
+     "grams": 25
+    },
+    {
+     "food": "Onions, raw",
+     "grams": 25
+    },
+    {
+     "food": "Grape leaves, raw",
+     "grams": 15
+    },
+    {
+     "food": "Oil, olive, salad or cooking",
+     "grams": 8
+    },
+    {
+     "food": "Tomato products, canned, paste, without salt added (Includes foods for USDA's Food Distribution Program)",
+     "or": [
+      "Tomato products, canned, paste, without salt added"
+     ],
+     "grams": 5
+    }
+   ]
+  },
+  {
+   "id": "biber-dolmasi",
+   "name": "Biber dolması",
+   "aliases": [
+    "stuffed peppers",
+    "dolma"
+   ],
+   "serving": "2 pieces",
+   "servingG": 220,
+   "ingredients": [
+    {
+     "food": "Peppers, sweet, green, raw",
+     "grams": 100
+    },
+    {
+     "food": "Rice, white, long-grain, regular, raw, enriched",
+     "or": [
+      "Rice, white, long-grain, regular, raw, enriched, unspecified"
+     ],
+     "grams": 25
+    },
+    {
+     "food": "Beef, ground, 85% lean meat / 15% fat, raw",
+     "grams": 25
+    },
+    {
+     "food": "Onions, raw",
+     "grams": 20
+    },
+    {
+     "food": "Tomatoes, red, ripe, raw, year round average",
+     "grams": 20
+    },
+    {
+     "food": "Oil, sunflower, linoleic (less than 60%)",
+     "or": [
+      "Oil, sunflower, linoleic, (approx. 65%)",
+      "Oil, sunflower, linoleic (approx. 65%)"
+     ],
+     "grams": 8
+    }
+   ]
+  },
+  {
+   "id": "lahana-sarmasi",
+   "name": "Lahana sarması",
+   "aliases": [
+    "stuffed cabbage rolls"
+   ],
+   "serving": "1 plate",
+   "servingG": 220,
+   "ingredients": [
+    {
+     "food": "Cabbage, raw",
+     "grams": 100
+    },
+    {
+     "food": "Beef, ground, 85% lean meat / 15% fat, raw",
+     "grams": 35
+    },
+    {
+     "food": "Rice, white, long-grain, regular, raw, enriched",
+     "or": [
+      "Rice, white, long-grain, regular, raw, enriched, unspecified"
+     ],
+     "grams": 20
+    },
+    {
+     "food": "Onions, raw",
+     "grams": 15
+    },
+    {
+     "food": "Tomato products, canned, paste, without salt added (Includes foods for USDA's Food Distribution Program)",
+     "or": [
+      "Tomato products, canned, paste, without salt added"
+     ],
+     "grams": 8
+    },
+    {
+     "food": "Oil, sunflower, linoleic (less than 60%)",
+     "or": [
+      "Oil, sunflower, linoleic, (approx. 65%)",
+      "Oil, sunflower, linoleic (approx. 65%)"
+     ],
+     "grams": 6
+    }
+   ]
+  },
+  {
+   "id": "manti",
+   "name": "Mantı",
+   "aliases": [
+    "turkish dumplings with yogurt",
+    "manti"
+   ],
+   "serving": "1 plate",
+   "servingG": 250,
+   "ingredients": [
+    {
+     "food": "Wheat flour, white, all-purpose, enriched, bleached",
+     "or": [
+      "Wheat flour, white, all-purpose, enriched, unbleached"
+     ],
+     "grams": 60
+    },
+    {
+     "food": "Beef, ground, 85% lean meat / 15% fat, raw",
+     "grams": 40
+    },
+    {
+     "food": "Onions, raw",
+     "grams": 15
+    },
+    {
+     "food": "Egg, whole, raw, fresh",
+     "grams": 10
+    },
+    {
+     "food": "Yogurt, plain, whole milk",
+     "grams": 100
+    },
+    {
+     "food": "Butter, salted",
+     "grams": 10
+    },
+    {
+     "food": "Tomato products, canned, paste, without salt added (Includes foods for USDA's Food Distribution Program)",
+     "or": [
+      "Tomato products, canned, paste, without salt added"
+     ],
+     "grams": 5
+    }
+   ]
+  },
+  {
+   "id": "menemen",
+   "name": "Menemen",
+   "aliases": [
+    "turkish scrambled eggs with tomato and pepper"
+   ],
+   "serving": "1 plate",
+   "servingG": 220,
+   "ingredients": [
+    {
+     "food": "Egg, whole, raw, fresh",
+     "grams": 100
+    },
+    {
+     "food": "Tomatoes, red, ripe, raw, year round average",
+     "grams": 80
+    },
+    {
+     "food": "Peppers, sweet, green, raw",
+     "grams": 40
+    },
+    {
+     "food": "Butter, salted",
+     "grams": 8
+    }
+   ]
+  },
+  {
+   "id": "peynirli-omlet",
+   "name": "Peynirli omlet",
+   "aliases": [
+    "cheese omelette"
+   ],
+   "serving": "1 piece",
+   "servingG": 125,
+   "ingredients": [
+    {
+     "food": "Egg, whole, raw, fresh",
+     "grams": 100
+    },
+    {
+     "food": "Cheese, feta",
+     "grams": 25
+    },
+    {
+     "food": "Butter, salted",
+     "grams": 6
+    }
+   ]
+  },
+  {
+   "id": "bulgur-pilavi",
+   "name": "Bulgur pilavı",
+   "aliases": [
+    "bulgur pilaf"
+   ],
+   "serving": "1 plate",
+   "servingG": 170,
+   "ingredients": [
+    {
+     "food": "Bulgur, cooked",
+     "grams": 150
+    },
+    {
+     "food": "Onions, raw",
+     "grams": 10
+    },
+    {
+     "food": "Tomato products, canned, paste, without salt added (Includes foods for USDA's Food Distribution Program)",
+     "or": [
+      "Tomato products, canned, paste, without salt added"
+     ],
+     "grams": 5
+    },
+    {
+     "food": "Butter, salted",
+     "grams": 6
+    }
+   ]
+  },
+  {
+   "id": "pirinc-pilavi",
+   "name": "Pirinç pilavı",
+   "aliases": [
+    "rice pilaf",
+    "sade pilav"
+   ],
+   "serving": "1 plate",
+   "servingG": 160,
+   "ingredients": [
+    {
+     "food": "Rice, white, long-grain, regular, raw, enriched",
+     "or": [
+      "Rice, white, long-grain, regular, raw, enriched, unspecified"
+     ],
+     "grams": 55
+    },
+    {
+     "food": "Butter, salted",
+     "grams": 8
+    }
+   ]
+  },
+  {
+   "id": "sehriyeli-pilav",
+   "name": "Şehriyeli pilav",
+   "aliases": [
+    "rice pilaf with vermicelli"
+   ],
+   "serving": "1 plate",
+   "servingG": 160,
+   "ingredients": [
+    {
+     "food": "Rice, white, long-grain, regular, raw, enriched",
+     "or": [
+      "Rice, white, long-grain, regular, raw, enriched, unspecified"
+     ],
+     "grams": 45
+    },
+    {
+     "food": "Pasta, dry, enriched",
+     "grams": 10
+    },
+    {
+     "food": "Butter, salted",
+     "grams": 8
+    }
+   ]
+  },
+  {
+   "id": "domatesli-makarna",
+   "name": "Domatesli makarna",
+   "aliases": [
+    "pasta with tomato sauce"
+   ],
+   "serving": "1 plate",
+   "servingG": 250,
+   "ingredients": [
+    {
+     "food": "Pasta, dry, enriched",
+     "grams": 80
+    },
+    {
+     "food": "Tomato products, canned, paste, without salt added (Includes foods for USDA's Food Distribution Program)",
+     "or": [
+      "Tomato products, canned, paste, without salt added"
+     ],
+     "grams": 15
+    },
+    {
+     "food": "Oil, olive, salad or cooking",
+     "grams": 8
+    }
+   ]
+  },
+  {
+   "id": "ispanak-yemegi",
+   "name": "Ispanak yemeği",
+   "aliases": [
+    "spinach stew",
+    "spinach with rice"
+   ],
+   "serving": "1 plate",
+   "servingG": 200,
+   "ingredients": [
+    {
+     "food": "Spinach, raw",
+     "grams": 200
+    },
+    {
+     "food": "Onions, raw",
+     "grams": 20
+    },
+    {
+     "food": "Rice, white, long-grain, regular, raw, enriched",
+     "or": [
+      "Rice, white, long-grain, regular, raw, enriched, unspecified"
+     ],
+     "grams": 15
+    },
+    {
+     "food": "Oil, sunflower, linoleic (less than 60%)",
+     "or": [
+      "Oil, sunflower, linoleic, (approx. 65%)",
+      "Oil, sunflower, linoleic (approx. 65%)"
+     ],
+     "grams": 10
+    }
+   ]
+  },
+  {
+   "id": "musakka",
+   "name": "Musakka",
+   "aliases": [
+    "moussaka",
+    "eggplant and minced meat stew"
+   ],
+   "serving": "1 plate",
+   "servingG": 250,
+   "ingredients": [
+    {
+     "food": "Eggplant, raw",
+     "grams": 120
+    },
+    {
+     "food": "Beef, ground, 85% lean meat / 15% fat, raw",
+     "grams": 50
+    },
+    {
+     "food": "Onions, raw",
+     "grams": 20
+    },
+    {
+     "food": "Tomatoes, red, ripe, raw, year round average",
+     "grams": 50
+    },
+    {
+     "food": "Oil, sunflower, linoleic (less than 60%)",
+     "or": [
+      "Oil, sunflower, linoleic, (approx. 65%)",
+      "Oil, sunflower, linoleic (approx. 65%)"
+     ],
+     "grams": 15
+    }
+   ]
+  },
+  {
+   "id": "bamya-yemegi",
+   "name": "Bamya yemeği",
+   "aliases": [
+    "okra stew"
+   ],
+   "serving": "1 plate",
+   "servingG": 200,
+   "ingredients": [
+    {
+     "food": "Okra, raw",
+     "grams": 150
+    },
+    {
+     "food": "Tomatoes, red, ripe, raw, year round average",
+     "grams": 40
+    },
+    {
+     "food": "Onions, raw",
+     "grams": 20
+    },
+    {
+     "food": "Oil, olive, salad or cooking",
+     "grams": 10
+    }
+   ]
+  },
+  {
+   "id": "kabak-mucver",
+   "name": "Kabak mücver",
+   "aliases": [
+    "zucchini fritters",
+    "mucver"
+   ],
+   "serving": "1 plate",
+   "servingG": 180,
+   "ingredients": [
+    {
+     "food": "Squash, summer, zucchini, includes skin, raw",
+     "grams": 120
+    },
+    {
+     "food": "Egg, whole, raw, fresh",
+     "grams": 30
+    },
+    {
+     "food": "Wheat flour, white, all-purpose, enriched, bleached",
+     "or": [
+      "Wheat flour, white, all-purpose, enriched, unbleached"
+     ],
+     "grams": 25
+    },
+    {
+     "food": "Cheese, feta",
+     "grams": 20
+    },
+    {
+     "food": "Oil, sunflower, linoleic (less than 60%)",
+     "or": [
+      "Oil, sunflower, linoleic, (approx. 65%)",
+      "Oil, sunflower, linoleic (approx. 65%)"
+     ],
+     "grams": 15
+    }
+   ]
+  },
+  {
+   "id": "patates-kizartmasi",
+   "name": "Patates kızartması",
+   "aliases": [
+    "french fries",
+    "fried potatoes"
+   ],
+   "serving": "1 plate",
+   "servingG": 140,
+   "ingredients": [
+    {
+     "food": "Potatoes, flesh and skin, raw",
+     "grams": 150
+    },
+    {
+     "food": "Oil, sunflower, linoleic (less than 60%)",
+     "or": [
+      "Oil, sunflower, linoleic, (approx. 65%)",
+      "Oil, sunflower, linoleic (approx. 65%)"
+     ],
+     "grams": 12
+    }
+   ]
+  },
+  {
+   "id": "izgara-kofte",
+   "name": "Izgara köfte",
+   "aliases": [
+    "grilled meatballs",
+    "kofte"
+   ],
+   "serving": "1 portion",
+   "servingG": 120,
+   "ingredients": [
+    {
+     "food": "Beef, ground, 85% lean meat / 15% fat, raw",
+     "grams": 120
+    },
+    {
+     "food": "Onions, raw",
+     "grams": 15
+    },
+    {
+     "food": "Bread, white, commercially prepared (includes soft bread crumbs)",
+     "or": [
+      "Bread, white wheat"
+     ],
+     "grams": 10
+    }
+   ]
+  },
+  {
+   "id": "izmir-kofte",
+   "name": "İzmir köfte",
+   "aliases": [
+    "izmir meatballs with potatoes"
+   ],
+   "serving": "1 plate",
+   "servingG": 250,
+   "ingredients": [
+    {
+     "food": "Beef, ground, 85% lean meat / 15% fat, raw",
+     "grams": 90
+    },
+    {
+     "food": "Potatoes, flesh and skin, raw",
+     "grams": 100
+    },
+    {
+     "food": "Tomatoes, red, ripe, raw, year round average",
+     "grams": 80
+    },
+    {
+     "food": "Onions, raw",
+     "grams": 15
+    },
+    {
+     "food": "Oil, sunflower, linoleic (less than 60%)",
+     "or": [
+      "Oil, sunflower, linoleic, (approx. 65%)",
+      "Oil, sunflower, linoleic (approx. 65%)"
+     ],
+     "grams": 8
+    }
+   ]
+  },
+  {
+   "id": "tavuk-sis",
+   "name": "Tavuk şiş",
+   "aliases": [
+    "chicken skewers",
+    "chicken shish"
+   ],
+   "serving": "1 portion",
+   "servingG": 130,
+   "ingredients": [
+    {
+     "food": "Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw",
+     "or": [
+      "Chicken, broilers or fryers, breast, meat only, raw"
+     ],
+     "grams": 150
+    },
+    {
+     "food": "Yogurt, plain, whole milk",
+     "grams": 20
+    },
+    {
+     "food": "Oil, olive, salad or cooking",
+     "grams": 5
+    },
+    {
+     "food": "Tomato products, canned, paste, without salt added (Includes foods for USDA's Food Distribution Program)",
+     "or": [
+      "Tomato products, canned, paste, without salt added"
+     ],
+     "grams": 3
+    }
+   ]
+  },
+  {
+   "id": "tavuk-sote",
+   "name": "Tavuk sote",
+   "aliases": [
+    "chicken saute with peppers and tomato"
+   ],
+   "serving": "1 plate",
+   "servingG": 230,
+   "ingredients": [
+    {
+     "food": "Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw",
+     "or": [
+      "Chicken, broilers or fryers, breast, meat only, raw"
+     ],
+     "grams": 130
+    },
+    {
+     "food": "Peppers, sweet, green, raw",
+     "grams": 40
+    },
+    {
+     "food": "Tomatoes, red, ripe, raw, year round average",
+     "grams": 60
+    },
+    {
+     "food": "Onions, raw",
+     "grams": 20
+    },
+    {
+     "food": "Oil, sunflower, linoleic (less than 60%)",
+     "or": [
+      "Oil, sunflower, linoleic, (approx. 65%)",
+      "Oil, sunflower, linoleic (approx. 65%)"
+     ],
+     "grams": 10
+    }
+   ]
+  },
+  {
+   "id": "doner",
+   "name": "Döner (et)",
+   "aliases": [
+    "doner kebab",
+    "doner meat",
+    "beef doner"
+   ],
+   "serving": "1 portion",
+   "servingG": 110,
+   "ingredients": [
+    {
+     "food": "Beef, ground, 85% lean meat / 15% fat, raw",
+     "grams": 120
+    },
+    {
+     "food": "Oil, sunflower, linoleic (less than 60%)",
+     "or": [
+      "Oil, sunflower, linoleic, (approx. 65%)",
+      "Oil, sunflower, linoleic (approx. 65%)"
+     ],
+     "grams": 5
+    }
+   ]
+  },
+  {
+   "id": "tavuk-doner",
+   "name": "Tavuk döner",
+   "aliases": [
+    "chicken doner"
+   ],
+   "serving": "1 portion",
+   "servingG": 120,
+   "ingredients": [
+    {
+     "food": "Chicken, broilers or fryers, thigh, meat only, raw",
+     "or": [
+      "Chicken, broiler or fryers, thigh, meat only, raw"
+     ],
+     "grams": 140
+    },
+    {
+     "food": "Oil, sunflower, linoleic (less than 60%)",
+     "or": [
+      "Oil, sunflower, linoleic, (approx. 65%)",
+      "Oil, sunflower, linoleic (approx. 65%)"
+     ],
+     "grams": 5
+    },
+    {
+     "food": "Yogurt, plain, whole milk",
+     "grams": 15
+    }
+   ]
+  },
+  {
+   "id": "iskender",
+   "name": "İskender",
+   "aliases": [
+    "iskender kebab",
+    "doner on bread with tomato sauce and yogurt"
+   ],
+   "serving": "1 plate",
+   "servingG": 300,
+   "ingredients": [
+    {
+     "food": "Beef, ground, 85% lean meat / 15% fat, raw",
+     "grams": 130
+    },
+    {
+     "food": "Bread, white, commercially prepared (includes soft bread crumbs)",
+     "or": [
+      "Bread, white wheat"
+     ],
+     "grams": 60
+    },
+    {
+     "food": "Tomato products, canned, paste, without salt added (Includes foods for USDA's Food Distribution Program)",
+     "or": [
+      "Tomato products, canned, paste, without salt added"
+     ],
+     "grams": 20
+    },
+    {
+     "food": "Butter, salted",
+     "grams": 15
+    },
+    {
+     "food": "Yogurt, plain, whole milk",
+     "grams": 80
+    }
+   ]
+  },
+  {
+   "id": "adana-kebap",
+   "name": "Adana kebap",
+   "aliases": [
+    "adana kebab",
+    "minced lamb kebab"
+   ],
+   "serving": "1 portion",
+   "servingG": 130,
+   "ingredients": [
+    {
+     "food": "Lamb, ground, raw",
+     "grams": 90
+    },
+    {
+     "food": "Beef, ground, 85% lean meat / 15% fat, raw",
+     "grams": 40
+    },
+    {
+     "food": "Onions, raw",
+     "grams": 10
+    },
+    {
+     "food": "Peppers, sweet, red, raw",
+     "grams": 10
+    }
+   ]
+  },
+  {
+   "id": "lahmacun",
+   "name": "Lahmacun",
+   "aliases": [
+    "turkish flatbread with minced meat"
+   ],
+   "serving": "1 piece",
+   "servingG": 120,
+   "ingredients": [
+    {
+     "food": "Wheat flour, white, all-purpose, enriched, bleached",
+     "or": [
+      "Wheat flour, white, all-purpose, enriched, unbleached"
+     ],
+     "grams": 55
+    },
+    {
+     "food": "Beef, ground, 85% lean meat / 15% fat, raw",
+     "grams": 30
+    },
+    {
+     "food": "Onions, raw",
+     "grams": 15
+    },
+    {
+     "food": "Tomatoes, red, ripe, raw, year round average",
+     "grams": 15
+    },
+    {
+     "food": "Peppers, sweet, red, raw",
+     "grams": 10
+    },
+    {
+     "food": "Parsley, fresh",
+     "grams": 5
+    },
+    {
+     "food": "Oil, sunflower, linoleic (less than 60%)",
+     "or": [
+      "Oil, sunflower, linoleic, (approx. 65%)",
+      "Oil, sunflower, linoleic (approx. 65%)"
+     ],
+     "grams": 5
+    }
+   ]
+  },
+  {
+   "id": "kiymali-pide",
+   "name": "Kıymalı pide",
+   "aliases": [
+    "pide with minced meat"
+   ],
+   "serving": "1 piece",
+   "servingG": 280,
+   "ingredients": [
+    {
+     "food": "Wheat flour, white, all-purpose, enriched, bleached",
+     "or": [
+      "Wheat flour, white, all-purpose, enriched, unbleached"
+     ],
+     "grams": 140
+    },
+    {
+     "food": "Beef, ground, 85% lean meat / 15% fat, raw",
+     "grams": 70
+    },
+    {
+     "food": "Onions, raw",
+     "grams": 25
+    },
+    {
+     "food": "Tomatoes, red, ripe, raw, year round average",
+     "grams": 25
+    },
+    {
+     "food": "Peppers, sweet, green, raw",
+     "grams": 15
+    },
+    {
+     "food": "Butter, salted",
+     "grams": 10
+    },
+    {
+     "food": "Egg, whole, raw, fresh",
+     "grams": 10
+    }
+   ]
+  },
+  {
+   "id": "kasarli-pide",
+   "name": "Kaşarlı pide",
+   "aliases": [
+    "pide with cheese"
+   ],
+   "serving": "1 piece",
+   "servingG": 270,
+   "ingredients": [
+    {
+     "food": "Wheat flour, white, all-purpose, enriched, bleached",
+     "or": [
+      "Wheat flour, white, all-purpose, enriched, unbleached"
+     ],
+     "grams": 140
+    },
+    {
+     "food": "Cheese, mozzarella, whole milk",
+     "grams": 90
+    },
+    {
+     "food": "Butter, salted",
+     "grams": 10
+    },
+    {
+     "food": "Egg, whole, raw, fresh",
+     "grams": 10
+    }
+   ]
+  },
+  {
+   "id": "simit",
+   "name": "Simit",
+   "aliases": [
+    "turkish bagel",
+    "sesame bread ring"
+   ],
+   "serving": "1 piece",
+   "servingG": 110,
+   "ingredients": [
+    {
+     "food": "Wheat flour, white, all-purpose, enriched, bleached",
+     "or": [
+      "Wheat flour, white, all-purpose, enriched, unbleached"
+     ],
+     "grams": 85
+    },
+    {
+     "food": "Seeds, sesame seeds, whole, dried",
+     "grams": 8
+    },
+    {
+     "food": "Sugars, granulated",
+     "grams": 5
+    }
+   ]
+  },
+  {
+   "id": "pogaca",
+   "name": "Poğaça",
+   "aliases": [
+    "turkish savory pastry",
+    "cheese pogaca"
+   ],
+   "serving": "1 piece",
+   "servingG": 70,
+   "ingredients": [
+    {
+     "food": "Wheat flour, white, all-purpose, enriched, bleached",
+     "or": [
+      "Wheat flour, white, all-purpose, enriched, unbleached"
+     ],
+     "grams": 40
+    },
+    {
+     "food": "Oil, sunflower, linoleic (less than 60%)",
+     "or": [
+      "Oil, sunflower, linoleic, (approx. 65%)",
+      "Oil, sunflower, linoleic (approx. 65%)"
+     ],
+     "grams": 10
+    },
+    {
+     "food": "Yogurt, plain, whole milk",
+     "grams": 8
+    },
+    {
+     "food": "Cheese, feta",
+     "grams": 8
+    },
+    {
+     "food": "Egg, whole, raw, fresh",
+     "grams": 5
+    }
+   ]
+  },
+  {
+   "id": "su-boregi",
+   "name": "Su böreği",
+   "aliases": [
+    "water borek",
+    "layered cheese pastry"
+   ],
+   "serving": "1 slice",
+   "servingG": 150,
+   "ingredients": [
+    {
+     "food": "Wheat flour, white, all-purpose, enriched, bleached",
+     "or": [
+      "Wheat flour, white, all-purpose, enriched, unbleached"
+     ],
+     "grams": 50
+    },
+    {
+     "food": "Egg, whole, raw, fresh",
+     "grams": 25
+    },
+    {
+     "food": "Cheese, feta",
+     "grams": 40
+    },
+    {
+     "food": "Milk, whole, 3.25% milkfat, with added vitamin D",
+     "or": [
+      "Milk, whole, 3.25% milkfat, without added vitamin A and vitamin D"
+     ],
+     "grams": 40
+    },
+    {
+     "food": "Butter, salted",
+     "grams": 12
+    }
+   ]
+  },
+  {
+   "id": "sigara-boregi",
+   "name": "Sigara böreği",
+   "aliases": [
+    "cheese rolls",
+    "fried cheese pastry roll"
+   ],
+   "serving": "1 piece",
+   "servingG": 40,
+   "ingredients": [
+    {
+     "food": "Wheat flour, white, all-purpose, enriched, bleached",
+     "or": [
+      "Wheat flour, white, all-purpose, enriched, unbleached"
+     ],
+     "grams": 18
+    },
+    {
+     "food": "Cheese, feta",
+     "grams": 12
+    },
+    {
+     "food": "Oil, sunflower, linoleic (less than 60%)",
+     "or": [
+      "Oil, sunflower, linoleic, (approx. 65%)",
+      "Oil, sunflower, linoleic (approx. 65%)"
+     ],
+     "grams": 7
+    },
+    {
+     "food": "Egg, whole, raw, fresh",
+     "grams": 3
+    },
+    {
+     "food": "Parsley, fresh",
+     "grams": 2
+    }
+   ]
+  },
+  {
+   "id": "ispanakli-borek",
+   "name": "Ispanaklı börek",
+   "aliases": [
+    "spinach borek",
+    "spinach pastry"
+   ],
+   "serving": "1 slice",
+   "servingG": 150,
+   "ingredients": [
+    {
+     "food": "Wheat flour, white, all-purpose, enriched, bleached",
+     "or": [
+      "Wheat flour, white, all-purpose, enriched, unbleached"
+     ],
+     "grams": 55
+    },
+    {
+     "food": "Spinach, raw",
+     "grams": 60
+    },
+    {
+     "food": "Cheese, feta",
+     "grams": 20
+    },
+    {
+     "food": "Egg, whole, raw, fresh",
+     "grams": 12
+    },
+    {
+     "food": "Oil, sunflower, linoleic (less than 60%)",
+     "or": [
+      "Oil, sunflower, linoleic, (approx. 65%)",
+      "Oil, sunflower, linoleic (approx. 65%)"
+     ],
+     "grams": 10
+    },
+    {
+     "food": "Milk, whole, 3.25% milkfat, with added vitamin D",
+     "or": [
+      "Milk, whole, 3.25% milkfat, without added vitamin A and vitamin D"
+     ],
+     "grams": 20
+    }
+   ]
+  },
+  {
+   "id": "peynirli-gozleme",
+   "name": "Peynirli gözleme",
+   "aliases": [
+    "cheese gozleme",
+    "stuffed flatbread"
+   ],
+   "serving": "1 piece",
+   "servingG": 150,
+   "ingredients": [
+    {
+     "food": "Wheat flour, white, all-purpose, enriched, bleached",
+     "or": [
+      "Wheat flour, white, all-purpose, enriched, unbleached"
+     ],
+     "grams": 80
+    },
+    {
+     "food": "Cheese, feta",
+     "grams": 40
+    },
+    {
+     "food": "Butter, salted",
+     "grams": 8
+    }
+   ]
+  },
+  {
+   "id": "kasarli-tost",
+   "name": "Kaşarlı tost",
+   "aliases": [
+    "toasted cheese sandwich"
+   ],
+   "serving": "1 piece",
+   "servingG": 110,
+   "ingredients": [
+    {
+     "food": "Bread, white, commercially prepared (includes soft bread crumbs)",
+     "or": [
+      "Bread, white wheat"
+     ],
+     "grams": 70
+    },
+    {
+     "food": "Cheese, mozzarella, whole milk",
+     "grams": 40
+    },
+    {
+     "food": "Butter, salted",
+     "grams": 5
+    }
+   ]
+  },
+  {
+   "id": "cig-kofte",
+   "name": "Çiğ köfte",
+   "aliases": [
+    "raw kofte",
+    "bulgur kofte"
+   ],
+   "serving": "6 pieces",
+   "servingG": 150,
+   "ingredients": [
+    {
+     "food": "Bulgur, dry",
+     "or": [
+      "Bulgur, dry, raw"
+     ],
+     "grams": 50
+    },
+    {
+     "food": "Tomato products, canned, paste, without salt added (Includes foods for USDA's Food Distribution Program)",
+     "or": [
+      "Tomato products, canned, paste, without salt added"
+     ],
+     "grams": 20
+    },
+    {
+     "food": "Onions, raw",
+     "grams": 20
+    },
+    {
+     "food": "Oil, sunflower, linoleic (less than 60%)",
+     "or": [
+      "Oil, sunflower, linoleic, (approx. 65%)",
+      "Oil, sunflower, linoleic (approx. 65%)"
+     ],
+     "grams": 8
+    }
+   ]
+  },
+  {
+   "id": "mercimek-koftesi",
+   "name": "Mercimek köftesi",
+   "aliases": [
+    "lentil balls",
+    "lentil kofte"
+   ],
+   "serving": "5 pieces",
+   "servingG": 120,
+   "ingredients": [
+    {
+     "food": "Lentils, mature seeds, cooked, boiled, without salt",
+     "grams": 60
+    },
+    {
+     "food": "Bulgur, dry",
+     "or": [
+      "Bulgur, dry, raw"
+     ],
+     "grams": 15
+    },
+    {
+     "food": "Onions, raw",
+     "grams": 15
+    },
+    {
+     "food": "Tomato products, canned, paste, without salt added (Includes foods for USDA's Food Distribution Program)",
+     "or": [
+      "Tomato products, canned, paste, without salt added"
+     ],
+     "grams": 8
+    },
+    {
+     "food": "Oil, olive, salad or cooking",
+     "grams": 6
+    }
+   ]
+  },
+  {
+   "id": "ayran",
+   "name": "Ayran",
+   "aliases": [
+    "yogurt drink",
+    "buttermilk",
+    "turkish yogurt drink"
+   ],
+   "serving": "1 glass",
+   "servingG": 200,
+   "ingredients": [
+    {
+     "food": "Yogurt, plain, whole milk",
+     "grams": 90
+    }
+   ]
+  },
+  {
+   "id": "cacik",
+   "name": "Cacık",
+   "aliases": [
+    "tzatziki",
+    "yogurt with cucumber"
+   ],
+   "serving": "1 bowl",
+   "servingG": 160,
+   "ingredients": [
+    {
+     "food": "Yogurt, plain, whole milk",
+     "grams": 120
+    },
+    {
+     "food": "Cucumber, with peel, raw",
+     "grams": 40
+    },
+    {
+     "food": "Garlic, raw",
+     "grams": 1
+    },
+    {
+     "food": "Oil, olive, salad or cooking",
+     "grams": 2
+    }
+   ]
+  },
+  {
+   "id": "coban-salata",
+   "name": "Çoban salata",
+   "aliases": [
+    "shepherd salad",
+    "tomato cucumber salad"
+   ],
+   "serving": "1 plate",
+   "servingG": 210,
+   "ingredients": [
+    {
+     "food": "Tomatoes, red, ripe, raw, year round average",
+     "grams": 100
+    },
+    {
+     "food": "Cucumber, with peel, raw",
+     "grams": 70
+    },
+    {
+     "food": "Onions, raw",
+     "grams": 15
+    },
+    {
+     "food": "Peppers, sweet, green, raw",
+     "grams": 15
+    },
+    {
+     "food": "Oil, olive, salad or cooking",
+     "grams": 8
+    },
+    {
+     "food": "Lemon juice, raw",
+     "grams": 5
+    }
+   ]
+  },
+  {
+   "id": "humus",
+   "name": "Humus",
+   "aliases": [
+    "hummus"
+   ],
+   "serving": "1 portion",
+   "servingG": 60,
+   "ingredients": [
+    {
+     "food": "Chickpeas (garbanzo beans, bengal gram), mature seeds, cooked, boiled, without salt",
+     "grams": 40
+    },
+    {
+     "food": "Seeds, sesame butter, tahini, type of kernels unspecified",
+     "grams": 12
+    },
+    {
+     "food": "Lemon juice, raw",
+     "grams": 5
+    },
+    {
+     "food": "Oil, olive, salad or cooking",
+     "grams": 5
+    },
+    {
+     "food": "Garlic, raw",
+     "grams": 1
+    }
+   ]
+  },
+  {
+   "id": "patlican-salatasi",
+   "name": "Patlıcan salatası",
+   "aliases": [
+    "eggplant salad",
+    "smoked eggplant salad"
+   ],
+   "serving": "1 portion",
+   "servingG": 130,
+   "ingredients": [
+    {
+     "food": "Eggplant, raw",
+     "grams": 120
+    },
+    {
+     "food": "Yogurt, plain, whole milk",
+     "grams": 20
+    },
+    {
+     "food": "Oil, olive, salad or cooking",
+     "grams": 6
+    },
+    {
+     "food": "Garlic, raw",
+     "grams": 2
+    }
+   ]
+  },
+  {
+   "id": "haydari",
+   "name": "Haydari",
+   "aliases": [
+    "yogurt and cheese dip"
+   ],
+   "serving": "1 portion",
+   "servingG": 110,
+   "ingredients": [
+    {
+     "food": "Yogurt, plain, whole milk",
+     "grams": 90
+    },
+    {
+     "food": "Cheese, feta",
+     "grams": 20
+    },
+    {
+     "food": "Garlic, raw",
+     "grams": 2
+    },
+    {
+     "food": "Oil, olive, salad or cooking",
+     "grams": 3
+    }
+   ]
+  },
+  {
+   "id": "kisir",
+   "name": "Kısır",
+   "aliases": [
+    "bulgur salad",
+    "kisir"
+   ],
+   "serving": "1 plate",
+   "servingG": 170,
+   "ingredients": [
+    {
+     "food": "Bulgur, dry",
+     "or": [
+      "Bulgur, dry, raw"
+     ],
+     "grams": 40
+    },
+    {
+     "food": "Tomato products, canned, paste, without salt added (Includes foods for USDA's Food Distribution Program)",
+     "or": [
+      "Tomato products, canned, paste, without salt added"
+     ],
+     "grams": 15
+    },
+    {
+     "food": "Tomatoes, red, ripe, raw, year round average",
+     "grams": 30
+    },
+    {
+     "food": "Parsley, fresh",
+     "grams": 10
+    },
+    {
+     "food": "Oil, olive, salad or cooking",
+     "grams": 10
+    },
+    {
+     "food": "Lemon juice, raw",
+     "grams": 5
+    }
+   ]
+  },
+  {
+   "id": "sutlac",
+   "name": "Sütlaç",
+   "aliases": [
+    "rice pudding",
+    "turkish rice pudding"
+   ],
+   "serving": "1 bowl",
+   "servingG": 180,
+   "ingredients": [
+    {
+     "food": "Milk, whole, 3.25% milkfat, with added vitamin D",
+     "or": [
+      "Milk, whole, 3.25% milkfat, without added vitamin A and vitamin D"
+     ],
+     "grams": 150
+    },
+    {
+     "food": "Rice, white, long-grain, regular, raw, enriched",
+     "or": [
+      "Rice, white, long-grain, regular, raw, enriched, unspecified"
+     ],
+     "grams": 12
+    },
+    {
+     "food": "Sugars, granulated",
+     "grams": 18
+    },
+    {
+     "food": "Cornstarch",
+     "grams": 3
+    }
+   ]
+  },
+  {
+   "id": "muhallebi",
+   "name": "Muhallebi",
+   "aliases": [
+    "milk pudding"
+   ],
+   "serving": "1 bowl",
+   "servingG": 150,
+   "ingredients": [
+    {
+     "food": "Milk, whole, 3.25% milkfat, with added vitamin D",
+     "or": [
+      "Milk, whole, 3.25% milkfat, without added vitamin A and vitamin D"
+     ],
+     "grams": 140
+    },
+    {
+     "food": "Sugars, granulated",
+     "grams": 15
+    },
+    {
+     "food": "Cornstarch",
+     "grams": 8
+    }
+   ]
+  },
+  {
+   "id": "irmik-helvasi",
+   "name": "İrmik helvası",
+   "aliases": [
+    "semolina halva"
+   ],
+   "serving": "1 portion",
+   "servingG": 110,
+   "ingredients": [
+    {
+     "food": "Semolina, enriched",
+     "grams": 30
+    },
+    {
+     "food": "Butter, salted",
+     "grams": 20
+    },
+    {
+     "food": "Sugars, granulated",
+     "grams": 25
+    },
+    {
+     "food": "Milk, whole, 3.25% milkfat, with added vitamin D",
+     "or": [
+      "Milk, whole, 3.25% milkfat, without added vitamin A and vitamin D"
+     ],
+     "grams": 60
+    }
+   ]
+  },
+  {
+   "id": "revani",
+   "name": "Revani",
+   "aliases": [
+    "semolina cake in syrup"
+   ],
+   "serving": "1 slice",
+   "servingG": 95,
+   "ingredients": [
+    {
+     "food": "Semolina, enriched",
+     "grams": 20
+    },
+    {
+     "food": "Wheat flour, white, all-purpose, enriched, bleached",
+     "or": [
+      "Wheat flour, white, all-purpose, enriched, unbleached"
+     ],
+     "grams": 12
+    },
+    {
+     "food": "Egg, whole, raw, fresh",
+     "grams": 20
+    },
+    {
+     "food": "Sugars, granulated",
+     "grams": 35
+    },
+    {
+     "food": "Yogurt, plain, whole milk",
+     "grams": 15
+    },
+    {
+     "food": "Oil, sunflower, linoleic (less than 60%)",
+     "or": [
+      "Oil, sunflower, linoleic, (approx. 65%)",
+      "Oil, sunflower, linoleic (approx. 65%)"
+     ],
+     "grams": 8
+    }
+   ]
+  },
+  {
+   "id": "baklava",
+   "name": "Baklava",
+   "aliases": [
+    "pistachio baklava",
+    "walnut baklava"
+   ],
+   "serving": "1 piece",
+   "servingG": 50,
+   "ingredients": [
+    {
+     "food": "Wheat flour, white, all-purpose, enriched, bleached",
+     "or": [
+      "Wheat flour, white, all-purpose, enriched, unbleached"
+     ],
+     "grams": 15
+    },
+    {
+     "food": "Nuts, walnuts, english",
+     "grams": 12
+    },
+    {
+     "food": "Butter, salted",
+     "grams": 8
+    },
+    {
+     "food": "Sugars, granulated",
+     "grams": 14
+    }
+   ]
+  }
+ ]
+}

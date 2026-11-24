@@ -1484,6 +1484,15 @@
       "amountTitle": "Amount",
       "unitTitle": "Unit",
       "servingOf": "× {unit}",
+      "measure": {
+        "su-bardagi": "Turkish cup (200 ml)",
+        "cay-bardagi": "Tea glass (100 ml)",
+        "yemek-kasigi": "Tablespoon (yemek kaşığı)",
+        "tatli-kasigi": "Dessert spoon (tatlı kaşığı)",
+        "cay-kasigi": "Teaspoon (çay kaşığı)",
+        "corba-kepcesi": "Soup ladle (çorba kepçesi)",
+        "servis-kepcesi": "Serving ladle (servis kepçesi)"
+      },
       "grams": "g",
       "unitSpoken": "{name} in {unit}",
       "weighed": "Weighed",

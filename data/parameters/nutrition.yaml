@@ -244,3 +244,9 @@ parameters:
     tag: urun
     source: "arastirma/ham/H7-besin-araligi.md#6"
     note: "FDC Foundation/SR Legacy analiz ortalaması; örnekler arası değişkenlik için sayısal kaynak okunmadı. Onay listesinde."
+  - key: recipe_estimate_value_error_ratio
+    value: 0.25
+    unit: ratio
+    tag: urun
+    source: "arastirma/ham/H7-besin-araligi.md#6"
+    note: "K-1213: bir yemek, USDA malzemelerinden standart porsiyon tarifiyle hesaplanır (evde her tarif değişir: yağ, su, pişme kaybı). Analiz değerinin (0,10) üstünde, tarif değişkenliği için sayısal kaynak okunmadı; ürün seçimi, onay listesinde."

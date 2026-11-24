@@ -1687,6 +1687,15 @@
       "amountTitle": "Miktar",
       "unitTitle": "Birim",
       "servingOf": "× {unit}",
+      "measure": {
+        "su-bardagi": "su bardağı (200 ml)",
+        "cay-bardagi": "çay bardağı (100 ml)",
+        "yemek-kasigi": "yemek kaşığı",
+        "tatli-kasigi": "tatlı kaşığı",
+        "cay-kasigi": "çay kaşığı",
+        "corba-kepcesi": "çorba kepçesi",
+        "servis-kepcesi": "servis kepçesi"
+      },
       "grams": "g",
       "unitSpoken": "{name}, birim: {unit}",
       "weighed": "Tartıldı",

@@ -75,6 +75,10 @@ tasks.processResources {
     from("../data/coach") {
         into("data/coach")
     }
+    // The Turkish dishes and household measures (K-1213): read by the nutrition module.
+    from("../data/food") {
+        into("data/food")
+    }
     from(files("../data/copy/forbidden-phrases.json")) {
         into("data/copy")
     }

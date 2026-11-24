@@ -12,7 +12,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * The ways to log a food (K-1061, ADR-090 #1 and #5): its household measures ("1 large", "1 slice", "1 cup"), a product's
- * label serving, and always g and oz (ml where the density is known) — each with the food's numbers for one of it, as single
+ * label serving, the Turkish household measures of its kind ({@link TurkishMeasures}), and always g and oz (ml where the density is known) — each with the food's numbers for one of it, as single
  * numbers (the middle of the range; a product's label value). And where the app starts: a natural portion, not 100 g.
  *
  * <p>The start: a product, its label serving. Otherwise a countable — "1 large" for an egg, "1 medium" for a banana (of
@@ -41,6 +41,7 @@ final class FoodPortions {
     static final String OUNCES = "oz";
     static final String MILLILITRES = "ml";
     private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
+    private static final TurkishMeasures TURKISH_MEASURES = TurkishMeasures.load();
     // A gram's or a millilitre's worth is a small number the app multiplies by hundreds: four decimals, not two.
     static final int DECIMALS = 4;
     private static final int GRAMS_DECIMALS = 3;
@@ -60,6 +61,8 @@ final class FoodPortions {
         List<Portion> portions = new ArrayList<>();
         start.ifPresent(portions::add);
         measures.stream().filter(measure -> start.isEmpty() || measure != start.get()).forEach(portions::add);
+        // A Turkish household measure of what the food is (K-1213): su bardağı, kaşık, kepçe; the app offers them in Turkish.
+        TURKISH_MEASURES.forFood(food.name()).forEach(measure -> portions.add(portion(food, measure.unit(), measure.unit(), Kind.MEASURE, measure.grams())));
         portions.add(portion(food, GRAMS, GRAMS, Kind.WEIGHT, BigDecimal.ONE));
         portions.add(portion(food, OUNCES, OUNCES, Kind.WEIGHT, Measures.OUNCE_GRAMS));
         if (food.gramsPerMl() != null) {

@@ -16,6 +16,16 @@ class FoodSearchTermsTests {
     }
 
     @Test
+    void theTurkishLettersAreFoldedToTheirPlainLettersSoAKeyboardWithoutThemFindsTheDish() {
+        assertThat(FoodSearchTerms.fold("Mercimek Çorbası")).isEqualTo("mercimek corbasi");
+        assertThat(FoodSearchTerms.fold("ŞİŞ KÖFTE ÜZÜM Ğ")).isEqualTo("sis kofte uzum g");
+        assertThat(FoodSearchTerms.fold("çoban salata")).isEqualTo(FoodSearchTerms.fold("COBAN SALATA"));
+        assertThat(FoodSearchTerms.TURKISH_LETTERS).as("the database's translate() maps one letter to one letter")
+                .hasSameSizeAs(FoodSearchTerms.PLAIN_LETTERS);
+        assertThat(FoodSearchTerms.of("corbasi").words()).containsExactly("corbasi");
+    }
+
+    @Test
     void theWordsAreFoldedSplitOnWhitespaceAndTheFirstOneLeads() {
         FoodSearchTerms terms = FoodSearchTerms.of("  Rice   WHITE ");
 

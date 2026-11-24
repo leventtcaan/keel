@@ -26,8 +26,8 @@ import java.util.Optional;
  */
 final class FoodRanges {
 
-    /** Where the per-100 g value comes from: a product's label, or a laboratory analysis mean. */
-    enum Source { BRANDED, ANALYSED }
+    /** Where the per-100 g value comes from: a product's label, a laboratory analysis mean, or a dish worked out from its recipe (K-1213). */
+    enum Source { BRANDED, ANALYSED, RECIPE }
 
     /** How the amount is known: on a scale, as a serving (spoon, cup, piece), or by eye. */
     enum Certainty { WEIGHED, MEASURED, ESTIMATED }
@@ -101,7 +101,8 @@ final class FoodRanges {
     private static Nutrients ranges(Per100g value, Source source, BigDecimal grams, BigDecimal amountError, boolean centred,
             Parameters parameters) {
         BigDecimal portion = grams.divide(HUNDRED);
-        BigDecimal analysed = ratio(parameters, ParameterKey.ANALYSED_VALUE_ERROR_RATIO);
+        // A dish worked out from a recipe is an analysed value of its ingredients with the recipe's own variation on top (K-1213).
+        BigDecimal analysed = ratio(parameters, source == Source.RECIPE ? ParameterKey.RECIPE_ESTIMATE_VALUE_ERROR_RATIO : ParameterKey.ANALYSED_VALUE_ERROR_RATIO);
         BigDecimal label = ratio(parameters, ParameterKey.LABEL_VALUE_TOLERANCE_RATIO);
         boolean branded = source == Source.BRANDED;
         // A label (21 CFR 101.9): energy and fat at most `label` over it ((g)(5)), protein and carbs at most `label` under

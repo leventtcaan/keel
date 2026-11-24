@@ -61,7 +61,7 @@ class FoodStore {
     /**
      * Foods whose name or brand holds every word of the query (ADR-085 #7-9, K-1061, K-1208), best first, each name once.
      *
-     * <p>Names and words are folded alike (lower case, ı and İ as i; the translate comes before lower, which leaves İ with a
+     * <p>Names and words are folded alike (lower case, the Turkish letters as plain ones: ı and İ as i, ş ğ ç ö ü as s g c o u; the translate comes before lower, which leaves İ with a
      * combining dot) in nutrition.food.search_text, which a trigram index serves. The words are matched as text: LIKE's % and _
      * are escaped. A plural is read as its singular too ("eggs" holds "egg"). The database cuts a pool of the best candidates by a
      * coarse score (how the name holds the first word, how many words start a word of it, generic or brand, region); the pool then
@@ -200,7 +200,8 @@ class FoodStore {
             started.append(" + (case when spaced_name like '% ' || cast(:p").append(i).append(" as text) || '%' then 1 else 0 end)");
             params.put("p" + i, terms.escapedWord(i));
         }
-        params.put("dotted", FoodSearchTerms.DOTTED_AND_DOTLESS);
+        params.put("turkish", FoodSearchTerms.TURKISH_LETTERS);
+        params.put("plain", FoodSearchTerms.PLAIN_LETTERS);
         params.put("whole", terms.whole());
         params.put("first", terms.first());
         params.put("firstLike", terms.firstEscaped());
@@ -224,8 +225,8 @@ class FoodStore {
         String sql = """
                 with matching as (
                     select f.*,
-                           lower(translate(f.name, :dotted, 'ii')) as folded_name,
-                           lower(translate(coalesce(f.brand, ''), :dotted, 'ii')) as folded_brand
+                           lower(translate(f.name, cast(:turkish as text), cast(:plain as text))) as folded_name,
+                           lower(translate(coalesce(f.brand, ''), cast(:turkish as text), cast(:plain as text))) as folded_brand
                     from nutrition.food f
                     where {matches}),
                 spaced as (
@@ -327,7 +328,11 @@ class FoodStore {
 
     private static Food food(java.sql.ResultSet row) throws java.sql.SQLException {
         return new Food(row.getString("id"), row.getString("name"), row.getString("brand"),
-                "BRANDED".equals(row.getString("source")) ? FoodRanges.Source.BRANDED : FoodRanges.Source.ANALYSED,
+                switch (row.getString("source")) {
+                    case "BRANDED" -> FoodRanges.Source.BRANDED;
+                    case "RECIPE" -> FoodRanges.Source.RECIPE;
+                    default -> FoodRanges.Source.ANALYSED;
+                },
                 new FoodRanges.Per100g(row.getBigDecimal("kcal"), row.getBigDecimal("protein_g"), row.getBigDecimal("carbs_g"),
                         row.getBigDecimal("fat_g")),
                 row.getBigDecimal("grams_per_ml"), List.of());
