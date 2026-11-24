@@ -1,0 +1,76 @@
+{
+  "parameters": [
+    {
+      "key": "walk_routes_max",
+      "value": 3,
+      "unit": "count",
+      "tag": "urun",
+      "source": "arastirma/ham/rakip-ozellik-2026-11-24.md#9.",
+      "note": "K-1216: the most named routes (Settings, My walks) the user keeps: a few places they really walk to, not a list to manage."
+    },
+    {
+      "key": "walk_route_name_max_chars",
+      "value": 24,
+      "unit": "count",
+      "tag": "urun",
+      "source": "arastirma/ham/rakip-ozellik-2026-11-24.md#9.",
+      "note": "A route's name must fit on one line on the first screen."
+    },
+    {
+      "key": "walk_route_max_km",
+      "value": 50,
+      "unit": "km",
+      "tag": "urun",
+      "source": "arastirma/ham/rakip-ozellik-2026-11-24.md#9.",
+      "note": "The longest one-way distance taken; a typo like 18 for 1.8 is caught by the user's eyes, a 500 is refused."
+    },
+    {
+      "key": "walk_distance_decimals",
+      "value": 1,
+      "unit": "count",
+      "tag": "urun",
+      "source": "arastirma/ham/rakip-ozellik-2026-11-24.md#9.",
+      "note": "A route's distance is kept and shown to one decimal in km or mi (1.8 km)."
+    },
+    {
+      "key": "walk_cadence_steps_per_min",
+      "value": 110,
+      "unit": "steps_per_min",
+      "tag": "urun",
+      "source": "arastirma/ham/rakip-dogrulama-2026-11-24.md#3.",
+      "note": "Minutes of walking = steps / this. The research marks the 100-115 steps/min band of everyday walking as verified (Tudor-Locke, 2018, in the rival verification table); 110 is the research's own worked example (3,500 steps = 31.8 min), the product's pick inside the band, not a measurement of the user. Apple Health's own cadence is not read."
+    },
+    {
+      "key": "walk_stride_height_factor",
+      "value": 0.415,
+      "unit": "ratio",
+      "tag": "urun",
+      "source": "arastirma/ham/rakip-ozellik-2026-11-24.md#9.",
+      "note": "[kaynak yok] Stride length = this x height; steps per km = 1000 / stride. 0.415 is the figure commonly quoted for a walking stride, but NO file in arastirma/ holds it and it was not checked against a primary source (K6): until one is found it is a product estimate. Walking distance and step length are not read from Apple Health (not in READ_TYPES; this card adds none)."
+    },
+    {
+      "key": "walk_steps_per_km_default",
+      "value": 1400,
+      "unit": "steps_per_km",
+      "tag": "urun",
+      "source": "arastirma/ham/rakip-ozellik-2026-11-24.md#9.",
+      "note": "[kaynak yok] Used when the profile's height is not known: what the factor above gives for a 170 cm adult (1000 / (0.415 x 1.70) = 1,417), rounded. A product estimate, not a sourced value."
+    },
+    {
+      "key": "walk_min_remaining_steps",
+      "value": 500,
+      "unit": "steps",
+      "tag": "urun",
+      "source": "arastirma/ham/rakip-ozellik-2026-11-24.md#9.",
+      "note": "Below this many steps left the line says nothing: a few hundred steps is a lap round the flat, not a walk to suggest."
+    },
+    {
+      "key": "walk_max_overshoot_ratio",
+      "value": 1.5,
+      "unit": "ratio",
+      "tag": "urun",
+      "source": "arastirma/ham/rakip-ozellik-2026-11-24.md#9.",
+      "note": "A route's round trip is suggested only when it covers the steps left and is at most this times them; a longer route would be a far bigger walk than the gap, and the line falls back to minutes."
+    }
+  ]
+}

@@ -7,7 +7,10 @@ import { useAppServices } from '@/services/ServicesProvider';
 import { type TodayData, loadToday } from './today';
 import { loadTodayParts, todayCardOf } from './todayWorkout';
 import { useReadOnFocus } from './useReadOnFocus';
-import { loadStarting, loadWeight } from './numbers';
+import { readWalk } from '@/walks/read';
+import { walkLabel } from '@/walks/words';
+
+import { loadStarting, loadWeight, stepsNumber } from './numbers';
 import { loadWeekLogs, weekMonday } from './week';
 
 /**
@@ -19,10 +22,10 @@ import { loadWeekLogs, weekMonday } from './week';
  * start a new read each render.
  */
 export function useToday(): { day: string; data: TodayData | null; reload: () => void } {
-  const { api, syncHealth, queue, report, reminders, state, opens, workoutRecords, training } = useAppServices();
-  const latest = useRef({ syncHealth, queue, report, reminders, state, opens, workoutRecords, training });
+  const { api, syncHealth, queue, report, reminders, state, opens, workoutRecords, training, walks } = useAppServices();
+  const latest = useRef({ syncHealth, queue, report, reminders, state, opens, workoutRecords, training, walks });
   useEffect(() => {
-    latest.current = { syncHealth, queue, report, reminders, state, opens, workoutRecords, training };
+    latest.current = { syncHealth, queue, report, reminders, state, opens, workoutRecords, training, walks };
   });
   return useReadOnFocus(
     useCallback(
@@ -82,6 +85,13 @@ export function useToday(): { day: string; data: TodayData | null; reload: () =>
         }
         // The user's usual meal times, for the meal reminder (ADR-090 #2): learned from the last weeks' logs at each read.
         void keepMealRhythm(api, remind, readAt, era).catch(named);
+        // The steps left as a walk (K-1216): the engine's target less Health's count, against the user's own routes. A read that fails
+        // says nothing (no line), and the evening nudge (a flag, off as shipped) follows the same read.
+        const walk = await readWalk({ api, walks: latest.current.walks, steps: stepsNumber(today.targets, starting, health?.stepsToday) }).catch((error: unknown) => {
+          named(error);
+          return null;
+        });
+        void (async () => remind.keepWalkNudge(walk === null ? null : { day, remaining: walk.remaining, body: walkLabel(walk.remaining, walk.suggestion) }, era))().catch(named);
         // A state declared, kept on the phone for the reminders (K-518) — not for an account that left during the read.
         if (today.state !== undefined && remind.era() === era) await declared.keep(today.state).catch(named);
         // Today's open counted, the one before read (K-521): the week-5 risk's "the app not opened", on the phone only.
@@ -89,7 +99,7 @@ export function useToday(): { day: string; data: TodayData | null; reload: () =>
           named(error);
           return null;
         });
-        return { ...today, stepsToday: health?.stepsToday ?? null, previousOpen, monday, week, weight, starting, cardProgram, records, readAt, todayParts };
+        return { ...today, stepsToday: health?.stepsToday ?? null, previousOpen, monday, week, weight, starting, walk, cardProgram, records, readAt, todayParts };
       },
       [api],
     ),

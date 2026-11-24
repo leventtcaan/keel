@@ -129,3 +129,8 @@ gram), kayıt hatırlatması yok, 7 gün antrenman akışı yok.
 - "call" kelimesi ve ürün adı Next Call şimdilik kalır; yayından sonra kullanıcı geri bildirimiyle bakılır.
 - Antrenman bitişindeki kısa form kalır (ilerleme motoruna veri verir).
 - Evre 7 K1 test beklentisi değişiklikleri (#688-#706) onaylı (`.envanter/notes.md`).
+
+## Ek 10 · Akşam yürüyüşü hatırlatması beşinci tür (K-1216, #724; Levent onayı 25 Kas 2026)
+- **Karar:** hatırlatma türleri dörtten beşe çıkar: antrenman, check-in sabahı, sessizlik, öğün ve **akşam yürüyüşü** (`walk`). Bildirimlerde kullanıcı anahtarı (Ayarlar › Reminders › Evening walk idea) **varsayılan kapalı**; açıkken `walk_nudge_time` (18:00) saatinde, o günün son adım okumasında `walk_nudge_min_remaining_steps` (2.000) ya da fazlası kalmışsa tek yerel bildirim. Suçlama ve telafi dili yok (U7); metin ana ekrandaki satırla aynı: kalan adım ve tanıdığı rota ya da dakika.
+- **Neden:** rakip araştırması (`arastirma/ham/rakip-ozellik-2026-11-24.md` bölüm 9) somut öneriyi ("Gym and back") sade "5000 adım kaldı" bildiriminden ayırır; kapalı varsayılan, beşinci türün hatırlatma bütçesini kendiliğinden artırmamasını sağlar.
+- **Etki:** `data/parameters/notifications.json` (`walk_nudge_*`); `walk_nudge_enabled` türün var olduğunu söyler (false: tür kalkar). Telefonda `reminders.walkOn` ve `reminders.walkNudge` (veri envanterinde, sunucuya gitmez). Ana ekran kelime bütçesi 70 → 74 (K-1216).

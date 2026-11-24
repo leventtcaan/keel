@@ -533,7 +533,7 @@
         "settings.reminders.onlyCheckIn",
         "settings.reminders.title",
         "settings.reminders.routine",
-        "settings.reminders.meals",
+        "settings.reminders.meals", "settings.reminders.walk",
         "settings.subscription.none",
         "settings.subscription.failed",
         "settings.subscription.title",
@@ -605,8 +605,8 @@
     },
     {
       "screen": "home",
-      "budget": 70,
-      "source": "ADR-069 #4, raised from 40 to 68 by ADR-089 (the weigh-in counter in the hero card, prototype yeniden-yapim 11), then to 70 by K-1206 (the units of protein and of the weight, 'g' and 'kg', on the first screen; labels are glyphs, the words are in the accessibility labels)",
+      "budget": 74,
+      "source": "ADR-069 #4, raised from 40 to 68 by ADR-089 (the weigh-in counter in the hero card, prototype yeniden-yapim 11), then to 70 by K-1206 (the units of protein and of the weight, 'g' and 'kg', on the first screen; labels are glyphs, the words are in the accessibility labels), then to 74 by K-1216 (Levent, 25 Nov: the steps-left walk line under the steps tile, '4,000 left: Gym and back')",
       "task": "K-969",
       "file": "src/app/(tabs)/index.tsx",
       "keys": [
@@ -637,20 +637,22 @@
         "thisWeek.food.log",
         "thisWeek.numbers.protein",
         ["thisWeek.numbers.steps", "thisWeek.numbers.stepsNone"],
+        ["walks.line.route", "walks.line.minutes"],
         ["units.kg", "units.lb", "progress.weight.count"],
         ["thisWeek.numbers.down", "thisWeek.numbers.up", "thisWeek.numbers.steady"]
       ],
       "dynamic": [
         { "what": "the counter's call day and, in a short week, the date (Monday, Wed, Nov 18)", "words": 3 },
-        { "what": "the next call's weekday (Monday)", "words": 1 }
+        { "what": "the next call's weekday (Monday)", "words": 1 },
+        { "what": "a walk's name (Gym), the route in the steps-left line (K-1216)", "words": 1 }
       ],
       "uncounted": ["thisWeek.numbers.spanWeeks", "thisWeek.numbers.spanDays", "thisWeek.strip.letter.MONDAY", "thisWeek.strip.letter.TUESDAY", "thisWeek.strip.letter.WEDNESDAY", "thisWeek.strip.letter.THURSDAY", "thisWeek.strip.letter.FRIDAY", "thisWeek.strip.letter.SATURDAY", "thisWeek.strip.letter.SUNDAY"],
       "notFirstView": [
         "lockedCall.title",
         "lockedCall.line",
         "subscription.seePlans",
-      "food.totals.barLabel","today.failed", "today.retry", "thisWeek.counter.label", "thisWeek.counter.labelReached", "thisWeek.settings", "thisWeek.strip.label", "thisWeek.strip.mark", "thisWeek.hero.settingsLabel", "thisWeek.hero.openCall", "thisWeek.hero.monday.openLabel", "thisWeek.today.label", "thisWeek.today.changeLabel", "thisWeek.today.restWeek", "thisWeek.today.startLabel", "thisWeek.today.doneLabel", "thisWeek.food.allowLabel", "thisWeek.food.lineLabel", "thisWeek.food.lineLabelAround", "thisWeek.food.logLabel", "thisWeek.food.range", "thisWeek.food.showRange", "thisWeek.food.hideRange", "food.budget.single", "format.range", "today.state.declare", "thisWeek.hero.monday.readyNoWeek", "thisWeek.hero.monday.ready", "thisWeek.hero.monday.one", "thisWeek.hero.monday.other", "thisWeek.hero.monday.open", "thisWeek.hero.monday.yourCall", "openElsewhere.continue", "openElsewhere.continueLabel", "openElsewhere.later", "openElsewhere.laterLabel", "openElsewhere.laterSaid", "openElsewhere.discard", "openElsewhere.discardLabel", "openElsewhere.discarded", "openElsewhere.discardOffline", "openElsewhere.offline", "openElsewhere.failed", "openElsewhere.closed", "openElsewhere.gone", "workout.ending.discardAsk", "workout.ending.discardNote", "workout.ending.confirm", "workout.ending.keep", "workout.ending.failed", "progress.targets.label.protein", "progress.targets.label.steps", "progress.targets.label.stepsOff", "progress.targets.hint.meal", "progress.targets.hint.health", "progress.targets.hint.connect", "thisWeek.numbers.weightLabel", "thisWeek.numbers.weightLabelChange", "thisWeek.numbers.spokenDown", "thisWeek.numbers.spokenUp", "thisWeek.numbers.spokenSteady", "thisWeek.numbers.spanWeek", "thisWeek.numbers.spanWeeks", "thisWeek.numbers.spanDay", "thisWeek.numbers.spanDays", "thisWeek.numbers.weightWaitingHint", "thisWeek.numbers.weightHint", "progress.weight.spoken", "progress.weight.down", "progress.weight.up", "progress.weight.steady"],
-      "parts": ["src/today/LockedCallView.tsx", "src/today/Hero.tsx", "src/today/WeighInCounter.tsx", "src/today/WeekStrip.tsx", "src/today/TodayCard.tsx", "src/today/FoodLine.tsx", "src/today/TodayNumbers.tsx", "src/today/StateCard.tsx", "src/train/OpenElsewhere.tsx"],
+      "walks.label.route", "walks.label.minutes", "food.totals.barLabel","today.failed", "today.retry", "thisWeek.counter.label", "thisWeek.counter.labelReached", "thisWeek.settings", "thisWeek.strip.label", "thisWeek.strip.mark", "thisWeek.hero.settingsLabel", "thisWeek.hero.openCall", "thisWeek.hero.monday.openLabel", "thisWeek.today.label", "thisWeek.today.changeLabel", "thisWeek.today.restWeek", "thisWeek.today.startLabel", "thisWeek.today.doneLabel", "thisWeek.food.allowLabel", "thisWeek.food.lineLabel", "thisWeek.food.lineLabelAround", "thisWeek.food.logLabel", "thisWeek.food.range", "thisWeek.food.showRange", "thisWeek.food.hideRange", "food.budget.single", "format.range", "today.state.declare", "thisWeek.hero.monday.readyNoWeek", "thisWeek.hero.monday.ready", "thisWeek.hero.monday.one", "thisWeek.hero.monday.other", "thisWeek.hero.monday.open", "thisWeek.hero.monday.yourCall", "openElsewhere.continue", "openElsewhere.continueLabel", "openElsewhere.later", "openElsewhere.laterLabel", "openElsewhere.laterSaid", "openElsewhere.discard", "openElsewhere.discardLabel", "openElsewhere.discarded", "openElsewhere.discardOffline", "openElsewhere.offline", "openElsewhere.failed", "openElsewhere.closed", "openElsewhere.gone", "workout.ending.discardAsk", "workout.ending.discardNote", "workout.ending.confirm", "workout.ending.keep", "workout.ending.failed", "progress.targets.label.protein", "progress.targets.label.steps", "progress.targets.label.stepsOff", "progress.targets.hint.meal", "progress.targets.hint.health", "progress.targets.hint.connect", "thisWeek.numbers.weightLabel", "thisWeek.numbers.weightLabelChange", "thisWeek.numbers.spokenDown", "thisWeek.numbers.spokenUp", "thisWeek.numbers.spokenSteady", "thisWeek.numbers.spanWeek", "thisWeek.numbers.spanWeeks", "thisWeek.numbers.spanDay", "thisWeek.numbers.spanDays", "thisWeek.numbers.weightWaitingHint", "thisWeek.numbers.weightHint", "progress.weight.spoken", "progress.weight.down", "progress.weight.up", "progress.weight.steady"],
+      "parts": ["src/today/LockedCallView.tsx", "src/today/Hero.tsx", "src/today/WeighInCounter.tsx", "src/today/WeekStrip.tsx", "src/today/TodayCard.tsx", "src/today/FoodLine.tsx", "src/today/TodayNumbers.tsx", "src/walks/words.ts", "src/today/StateCard.tsx", "src/train/OpenElsewhere.tsx"],
       "faces": [
         {
           "face": "the short version",
@@ -682,12 +684,14 @@
             "thisWeek.food.log",
             "thisWeek.numbers.protein",
             ["thisWeek.numbers.steps", "thisWeek.numbers.stepsNone"],
+        ["walks.line.route", "walks.line.minutes"],
             ["units.kg", "units.lb", "progress.weight.count"],
             ["thisWeek.numbers.down", "thisWeek.numbers.up", "thisWeek.numbers.steady"]
           ],
           "dynamic": [
             { "what": "the counter's call day and, in a short week, the date (Monday, Wed, Nov 18)", "words": 3 },
-            { "what": "the next call's weekday (Monday)", "words": 1 }
+            { "what": "the next call's weekday (Monday)", "words": 1 },
+        { "what": "a walk's name (Gym), the route in the steps-left line (K-1216)", "words": 1 }
           ]
         },
         {
@@ -713,12 +717,14 @@
             "thisWeek.food.log",
             "thisWeek.numbers.protein",
             ["thisWeek.numbers.steps", "thisWeek.numbers.stepsNone"],
+        ["walks.line.route", "walks.line.minutes"],
             ["units.kg", "units.lb", "progress.weight.count"],
             ["thisWeek.numbers.down", "thisWeek.numbers.up", "thisWeek.numbers.steady"]
           ],
           "dynamic": [
             { "what": "the counter's call day and, in a short week, the date (Monday, Wed, Nov 18)", "words": 3 },
-            { "what": "the next call's weekday (Monday)", "words": 1 }
+            { "what": "the next call's weekday (Monday)", "words": 1 },
+        { "what": "a walk's name (Gym), the route in the steps-left line (K-1216)", "words": 1 }
           ]
         },
         {
@@ -743,12 +749,14 @@
             "thisWeek.food.log",
             "thisWeek.numbers.protein",
             ["thisWeek.numbers.steps", "thisWeek.numbers.stepsNone"],
+        ["walks.line.route", "walks.line.minutes"],
             ["units.kg", "units.lb", "progress.weight.count"],
             ["thisWeek.numbers.down", "thisWeek.numbers.up", "thisWeek.numbers.steady"]
           ],
           "dynamic": [
             { "what": "the counter's call day and, in a short week, the date (Monday, Wed, Nov 18)", "words": 3 },
             { "what": "the next call's weekday (Monday)", "words": 1 },
+        { "what": "a walk's name (Gym), the route in the steps-left line (K-1216)", "words": 1 },
             { "what": "the load lifted's unit (8,420 kg)", "words": 1 }
           ]
         },
@@ -775,12 +783,14 @@
             "thisWeek.food.log",
             "thisWeek.numbers.protein",
             ["thisWeek.numbers.steps", "thisWeek.numbers.stepsNone"],
+        ["walks.line.route", "walks.line.minutes"],
             ["units.kg", "units.lb", "progress.weight.count"],
             ["thisWeek.numbers.down", "thisWeek.numbers.up", "thisWeek.numbers.steady"]
           ],
           "dynamic": [
             { "what": "the counter's call day and, in a short week, the date (Monday, Wed, Nov 18)", "words": 3 },
             { "what": "the next call's weekday (Monday)", "words": 1 },
+        { "what": "a walk's name (Gym), the route in the steps-left line (K-1216)", "words": 1 },
             { "what": "the next session's name and weekday (Full body A, Friday)", "words": 4 }
           ]
         },
@@ -807,12 +817,14 @@
             "thisWeek.food.log",
             "thisWeek.numbers.protein",
             ["thisWeek.numbers.steps", "thisWeek.numbers.stepsNone"],
+        ["walks.line.route", "walks.line.minutes"],
             ["units.kg", "units.lb", "progress.weight.count"],
             ["thisWeek.numbers.down", "thisWeek.numbers.up", "thisWeek.numbers.steady"]
           ],
           "dynamic": [
             { "what": "the counter's call day and, in a short week, the date (Monday, Wed, Nov 18)", "words": 3 },
             { "what": "the next call's weekday (Monday)", "words": 1 },
+        { "what": "a walk's name (Gym), the route in the steps-left line (K-1216)", "words": 1 },
             { "what": "the day it moved to, or the check-in day", "words": 1 }
           ]
         },
@@ -846,6 +858,7 @@
             "thisWeek.food.log",
             "thisWeek.numbers.protein",
             ["thisWeek.numbers.steps", "thisWeek.numbers.stepsNone"],
+        ["walks.line.route", "walks.line.minutes"],
             ["units.kg", "units.lb", "progress.weight.count"],
             ["thisWeek.numbers.down", "thisWeek.numbers.up", "thisWeek.numbers.steady"]
           ],
@@ -884,6 +897,7 @@
             "thisWeek.food.log",
             "thisWeek.numbers.protein",
             ["thisWeek.numbers.steps", "thisWeek.numbers.stepsNone"],
+        ["walks.line.route", "walks.line.minutes"],
             ["units.kg", "units.lb", "progress.weight.count"],
             ["thisWeek.numbers.down", "thisWeek.numbers.up", "thisWeek.numbers.steady"]
           ],
@@ -938,6 +952,7 @@
             "thisWeek.food.log",
             "thisWeek.numbers.protein",
             ["thisWeek.numbers.steps", "thisWeek.numbers.stepsNone"],
+        ["walks.line.route", "walks.line.minutes"],
             ["units.kg", "units.lb", "progress.weight.count"],
             ["thisWeek.numbers.down", "thisWeek.numbers.up", "thisWeek.numbers.steady"]
           ],

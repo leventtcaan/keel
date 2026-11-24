@@ -27,6 +27,7 @@ MOBILE_SUITES=(
   retired-entries.test.ts
   kv-keys.test.ts
   no-fixed-locale.test.ts
+  walks-words-and-privacy.test.ts
 )
 (cd apps/mobile && npx --no-install jest --ci "${MOBILE_SUITES[@]/#/src/__tests__/}")
 

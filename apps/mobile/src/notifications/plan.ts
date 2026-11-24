@@ -20,7 +20,7 @@ import { type MealRhythm, mealMoments } from './mealRhythm';
 import { notificationParams as P } from './params';
 
 export type Schedule = components['schemas']['Schedule'];
-export type ReminderKind = 'training' | 'check_in' | 'quiet' | 'meal';
+export type ReminderKind = 'training' | 'check_in' | 'quiet' | 'meal' | 'walk';
 /** Weekly: the phone's calendar, weekday 1 = Sunday … 7 = Saturday (expo-notifications' WeeklyTriggerInput). Once: a moment. */
 export type ReminderTime = { weekday: number; hour: number; minute: number } | { at: Date };
 export type Reminder = { id: string; kind: ReminderKind; when: ReminderTime; title: string; body: string };
@@ -43,6 +43,12 @@ export function weighInFactsOf(week: components['schemas']['WeighInWeek']): Weig
   const weighed = week.weighedDays.filter((day) => day >= week.from && day <= week.to).length;
   return { from: week.from, to: week.to, weighed, needed: week.needed, short: week.callsFrom !== undefined };
 }
+
+/**
+ * What the evening walk nudge goes by (K-1216): the day of the last read of the steps, how many were left then (the engine's target
+ * less Apple Health's count) and the line to say (the route and back, or the minutes). Kept on the phone from that read.
+ */
+export type WalkNudgeFacts = { day: string; remaining: number; body: string };
 
 export type PlanInput = {
   schedule: Schedule | null;
@@ -71,6 +77,8 @@ export type PlanInput = {
   meals?: MealRhythm | null;
   /** The meal reminder switched off on its own (the other kinds stay). */
   mealsOff?: boolean;
+  /** The steps left at the last read (K-1216); none, or absent: no nudge. Only ever given while the flag is on (reminders.ts). */
+  walkNudge?: WalkNudgeFacts | null;
 };
 
 const WEEKDAYS: Schedule['checkInDay'][] = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
@@ -124,7 +132,7 @@ function weighInLine(facts: PlanInput['weighInWeek'], firstCall: FirstCall, day:
   return t(missing === 1 ? 'reminders.training.weighIns.one' : 'reminders.training.weighIns.other', { count: missing, day: t(`onboarding.schedule.dayName.${weekday}`) });
 }
 
-export function planReminders({ schedule: kept, programDays, cue, lastOpened, now, muted, mutedUntil, restUntil, firstCall, weighInWeek, meals, mealsOff }: PlanInput): Reminder[] {
+export function planReminders({ schedule: kept, programDays, cue, lastOpened, now, muted, mutedUntil, restUntil, firstCall, weighInWeek, meals, mealsOff, walkNudge }: PlanInput): Reminder[] {
   // The program's weekdays are the training days (one source, ADR-090 Ek 1); the schedule keeps the rest (check-in day, time).
   const schedule: Schedule | null = kept === null ? null : { ...kept, trainingDays: programDays != null && programDays.length > 0 ? programDays : kept.trainingDays };
   if (muted && mutedUntil === null) return [];
@@ -201,6 +209,13 @@ export function planReminders({ schedule: kept, programDays, cue, lastOpened, no
       if (until !== null && day <= until) continue;
       plan.push({ id: `meal-${day}-${slot}`, kind: 'meal', when: { at }, title: t('reminders.meal.title', { slot: t(`food.slot.${slot}`) }), body: t('reminders.meal.body') });
     }
+  }
+
+  // The evening walk nudge (K-1216, behind a flag): today only, by date, when enough steps were left at the last read and the time is
+  // still ahead. Not inside a state still on. The words are the line the home screen shows: an offer, never a debt (U7).
+  if (walkNudge != null && walkNudge.day === dayOf(now) && walkNudge.remaining >= P.walkNudgeMinRemaining && (until === null || walkNudge.day > until)) {
+    const at = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, minutesOf(P.walkNudgeTime));
+    if (at > now) plan.push({ id: `walk-${walkNudge.day}`, kind: 'walk', when: { at }, title: t('reminders.walk.title'), body: walkNudge.body });
   }
 
   return plan;

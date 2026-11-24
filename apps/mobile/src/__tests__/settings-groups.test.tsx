@@ -100,7 +100,10 @@ let mockAppearance: Appearance = 'light';
 const mockAppearanceListeners = new Set<() => void>();
 const mockRemindersOff = { enabled: false, cue: '' };
 const mockHealthWriteOff = { workouts: false, weighIns: false };
+// My walks (K-1216): none kept; one array, as useSyncExternalStore compares by identity.
+const mockNoWalks: never[] = [];
 const mockServices = {
+  walks: { current: () => mockNoWalks, subscribe: () => () => {} },
   api,
   units: { set: jest.fn(async (_system: string) => 'profile' as const) },
   appearance: {

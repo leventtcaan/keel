@@ -46,6 +46,7 @@ import { type LocalRecord, type SqlDatabase, openRecordStore } from '@/sync/stor
 import { type LanguagePreference, createLanguage } from '@/copy/language';
 import { type AppearancePreference, createAppearance } from '@/theme/appearance';
 import { type KeyValue, type UnitsPreference, createUnitsPreference } from '@/units/preference';
+import { type Walks, createWalks } from '@/walks/store';
 
 // The cardio done with a workout (K-973) is read with it: the session finds it again, and does not offer the step twice.
 const WORKOUT_KINDS = ['workout', 'set', 'finish', 'cardio'];
@@ -175,6 +176,8 @@ export type AppServices = {
   planPreviews: PlanPreviews;
   /** Whether the first-use guide was shown on this phone (K-1065). */
   guide: GuideMark;
+  /** The user's named walks, one-way distances typed by them, on this phone only (K-1216). */
+  walks: Walks;
 };
 
 export async function createAppServices({
@@ -240,6 +243,7 @@ export async function createAppServices({
   const trialReminder = createTrialReminder({ kv, alerts, ask: () => notifications.request(), now });
   const planPreviews = createPlanPreviews();
   const guide = createGuideMark({ kv });
+  const walks = await createWalks({ kv });
   // Each answer the gate reads (every start, every sign-in) lets the trial reminder follow it: a trial cancelled anywhere —
   // in Apple's sheet, in iOS Settings — loses its reminder at the next start (K-707 review).
   const gate = await createSubscriptionGate({ kv, api, purchases, links, report, onRead: (read) => void trialReminder.keep(read).catch(reportName) });
@@ -252,6 +256,7 @@ export async function createAppServices({
     await reminders.forget(); // and reminders turned on, with someone's own sentence (K-410)
     await kv.removeItemAsync(FIGURE); // and the profile's sex (ADR-037 › 49)
     await guide.forget(); // and the first-use guide's mark (K-1065)
+    await walks.forget(); // and the walks (K-1216)
     await projectionSwitch.forget(); // and the projection's switch and what it showed (K-606)
     // Not the progress photos (ADR-055 › 101): the only copy, and the person may be the same one coming back; whose they
     // are is settled at the next sign-in (claimPhotos).
@@ -318,6 +323,7 @@ export async function createAppServices({
     trialReminder.forget().catch(reportError); // and the trial reminder: the account's, not the next person's (K-707)
     planPreviews.forget(); // and the plan just shown, kept in memory for the paywall (K-967)
     guide.forget().catch(reportError); // and the first-use guide's mark: the next person has not seen it (K-1065)
+    walks.forget().catch(reportError); // and the user's walks: personal, the next person starts with none (K-1216)
     gate.forget().catch(reportError); // and whether this account met the paywall: the next one is asked afresh (K-706)
     photoCache.clear().catch(reportError); // and a meal photo's files a read cut short left in the cache (K-811, V1)
     purchases.forget().catch(reportError); // and the App Store's account: the next person's purchases are not this account's (K-702)
@@ -347,6 +353,7 @@ export async function createAppServices({
     trialReminder,
     planPreviews,
     guide,
+    walks,
     bodyFigure: async () => ((await kv.getItemAsync(FIGURE)) === 'female' ? 'female' : 'male'),
     restAlert,
     sessionPause,

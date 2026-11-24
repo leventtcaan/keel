@@ -22,7 +22,10 @@ let mockUnits: 'METRIC' | 'IMPERIAL' = 'METRIC';
 const mockHealthWriteOff = { workouts: false, weighIns: false };
 const mockRemindersOff = { enabled: false, cue: '' }; // one object: useSyncExternalStore compares by identity
 const ok = (data: unknown) => ({ data, response: new Response(null, { status: 200 }) });
+// My walks (K-1216): none kept; one array, as useSyncExternalStore compares by identity.
+const mockNoWalks: never[] = [];
 const mockServices = {
+  walks: { current: () => mockNoWalks, subscribe: () => () => {} },
   api: {
     GET: jest.fn(async (_path: string) =>
       ok(Object.entries(mockConsents).map(([kind, status]) => ({ kind, status, ...(mockVersions[kind] === undefined ? {} : { textVersion: mockVersions[kind] }) }))),

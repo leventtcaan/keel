@@ -13,6 +13,8 @@ import { ActivityEditor, BornEditor, CheckInEditor, GoalEditor, HeightEditor } f
 import { HealthWriteSection } from '@/settings/HealthWriteSection';
 import { ImportSection } from '@/settings/ImportSection';
 import { RoutineEditor } from '@/settings/RoutineEditor';
+import { WalksEditor } from '@/settings/WalksEditor';
+import { WalksGroup } from '@/settings/WalksGroup';
 import { useHealthConsent } from '@/settings/useHealthConsent';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
@@ -36,7 +38,13 @@ export default function SettingsDetailScreen() {
     goal: <GoalEditor />,
     checkin: <CheckInEditor />,
     height: <HeightEditor />,
-    activity: <ActivityEditor />,
+    activity: (
+      <View style={styles.activity}>
+        <ActivityEditor />
+        <WalksGroup />
+      </View>
+    ),
+    walks: <WalksEditor />,
     born: <BornEditor />,
     food: <FoodEditor />,
     routine: <RoutineEditor />,
@@ -70,4 +78,5 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: tokens.space.lg, paddingVertical: tokens.space.md, gap: tokens.space.xl },
   note: { fontSize: tokens.type.bodySmall },
   locked: { gap: tokens.space.md },
+  activity: { gap: tokens.space.xl },
 });
