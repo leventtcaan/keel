@@ -139,7 +139,10 @@ public final class WeeklySpine {
         boolean waistAgainst = cut && checkIn.waist() == Waist.UP;
         // A cut that moved the week before this one waits too, however slowly it was losing (ADR-027 #0): within the
         // margin a 0.5 kg-a-week loser looks flat for two weeks, and one flat week is not a plateau.
-        boolean stillEarly = cut ? window.flatWeeks() <= parameters.wholeNumber(ParameterKey.FLAT_WAIT_WEEKS) || window.movedLastWeek()
+        // The exception is the maintenance observation read as the window (K-1203, G2 K-8): its two flat weeks are the
+        // "weight the same two weeks running" that finds maintenance, so there is no further week to wait.
+        boolean stillEarly = cut ? !DecisionWindow.observationIsTheWindow(snapshot, parameters)
+                && (window.flatWeeks() <= parameters.wholeNumber(ParameterKey.FLAT_WAIT_WEEKS) || window.movedLastWeek())
                 : window.flatWeeks() < parameters.wholeNumber(ParameterKey.BULK_STALL_WEEKS);
         if (!window.wrongWay() && !waistAgainst && stillEarly) {
             return decided(snapshot, new Action.NoDecisionYet(), WAIT_ONE_MORE_WEEK, cut ? ONE_FLAT_WEEK : BULK_STEP);
@@ -185,7 +188,16 @@ public final class WeeklySpine {
      * women; J1 D1): what the spine reads, and what "Why this call" shows (K-519).
      */
     public static List<WeekMean> windowMeans(WeightSeries weights, LocalDate today, Parameters parameters) {
-        int weekCount = parameters.wholeNumber(ParameterKey.DECISION_WINDOW_DAYS) / DAYS_PER_WEEK;
+        return windowMeans(weights, today, parameters.wholeNumber(ParameterKey.DECISION_WINDOW_DAYS));
+    }
+
+    /** The same for the window the call reads today: the maintenance observation alone for a cut still on it (K-1203). */
+    public static List<WeekMean> windowMeans(Snapshot snapshot, Parameters parameters) {
+        return windowMeans(snapshot.weights(), snapshot.today(), DecisionWindow.days(snapshot, parameters));
+    }
+
+    static List<WeekMean> windowMeans(WeightSeries weights, LocalDate today, int windowDays) {
+        int weekCount = windowDays / DAYS_PER_WEEK;
         List<WeekMean> weeks = new ArrayList<>();
         for (int week = weekCount - 1; week >= 0; week--) {
             LocalDate weekEnd = today.minusDays((long) week * DAYS_PER_WEEK);
@@ -205,7 +217,7 @@ public final class WeeklySpine {
     private record Window(List<BigDecimal> weeks, BigDecimal margin, boolean cut) {
 
         static Window of(Snapshot snapshot, Parameters parameters) {
-            List<BigDecimal> means = windowMeans(snapshot.weights(), snapshot.today(), parameters).stream()
+            List<BigDecimal> means = windowMeans(snapshot, parameters).stream()
                     .map(week -> week.kg().orElseThrow(() -> new IllegalStateException("A week of the window has no weigh-in"))).toList();
             return new Window(means, line(ParameterKey.FLAT_MARGIN_KG, parameters), snapshot.phase() == Phase.CUT);
         }

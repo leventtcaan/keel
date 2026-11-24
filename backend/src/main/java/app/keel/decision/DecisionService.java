@@ -798,8 +798,10 @@ class DecisionService {
         LocalDate checkIn = nextCallOn(account, profile, today).orElseThrow();
         // The weigh-ins the call reads: the evaluation window, as the check-in's Snapshot has them (week()).
         List<WeighIn> weights = measurements.dailyWeights(account, today.minusDays(p.wholeNumber(ParameterKey.EVALUATION_WINDOW_DAYS) - 1L), today);
-        LocalDate planStart = calls.plan(account).map(CallStore.Plan::planStart).orElse(checkIn);
-        return Optional.of(WeighInWeek.of(today, checkIn, planStart, new WeightSeries(weights), p));
+        Optional<CallStore.Plan> plan = calls.plan(account);
+        LocalDate planStart = plan.map(CallStore.Plan::planStart).orElse(checkIn);
+        return Optional.of(WeighInWeek.of(today, checkIn, planStart, plan.map(CallStore.Plan::phase).orElse(Phase.BULK),
+                plan.map(CallStore.Plan::observingMaintenance).orElse(false), new WeightSeries(weights), p));
     }
 
     /**

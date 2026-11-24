@@ -54,7 +54,12 @@ public final class CalorieLadder {
         int target = snapshot.energy().map(EnergyBudget::targetKcal)
                 .orElseThrow(() -> new IllegalArgumentException("A calorie step needs the plan's current target"));
         LocalDate earliest = snapshot.planStart().plusWeeks(parameters.wholeNumber(ParameterKey.CALORIE_CHANGE_MIN_WAIT_WEEKS));
-        if (snapshot.today().isBefore(earliest)) {
+        // The first deficit out of a cut's maintenance observation (K-1203): the observation's own days were the wait, the
+        // estimate stood unchanged for as long as the spacing asks, so there is no earlier change to space this one from.
+        boolean observed = DecisionWindow.observationIsTheWindow(snapshot, parameters)
+                && parameters.wholeNumber(ParameterKey.MAINTENANCE_OBSERVATION_DAYS)
+                        >= DAYS_PER_WEEK * parameters.wholeNumber(ParameterKey.CALORIE_CHANGE_MIN_WAIT_WEEKS);
+        if (!observed && snapshot.today().isBefore(earliest)) {
             return decision(snapshot, new Action.NoDecisionYet(), List.of(new Reason(CALORIE_CHANGE_TOO_SOON, SPACING)), earliest);
         }
 

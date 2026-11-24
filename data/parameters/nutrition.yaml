@@ -92,7 +92,7 @@ parameters:
     unit: days
     tag: tecrube
     source: "arastirma/ham/guray/G2-kilo-verme.md#K-8"
-    note: "Kadın değeri 28: J1 D1 (döngü sinyali 28 günde sıfırlanır) ve H3 Ç5, ADR-020 L-7 ile Güray'ın 1-2 haftasının yerine; erkek değeri Güray. Başlangıç hedefi (formül tahmini) bu kadar gün değişmez; kilo sabitse o kalori kişinin bakımıdır (K-8 'gözlem formülü yener'). Erkek 14: Güray 1-2 hafta, literatür en az 2 (H3 B3); tam iki haftalık döngü (H6 A4). Kadın 28: döngü sinyali (J1 D1, H3 Ç5) — ADR-020 L-7."
+    note: "Kadın değeri 28: J1 D1 (döngü sinyali 28 günde sıfırlanır) ve H3 Ç5, ADR-020 L-7 ile Güray'ın 1-2 haftasının yerine; erkek değeri Güray. Başlangıç hedefi (formül tahmini) bu kadar gün değişmez; kilo sabitse o kalori kişinin bakımıdır (K-8 'gözlem formülü yener'). Erkek 14: Güray 1-2 hafta, literatür en az 2 (H3 B3); tam iki haftalık döngü (H6 A4). Kadın 28: döngü sinyali (J1 D1, H3 Ç5) — ADR-020 L-7. K-1203 (ADR-091 Ek 4): erkek 14, K-8'in 1-2 haftalık gözleminin ÜST SINIRIDIR; kesimde gözlem bitince (gün 14) karar penceresi bu gözlemdir, 21 günlük pencerenin dolması beklenmez: kilo sabitse açık 15. günde başlar. Kadında gözlem zaten pencereyle aynı (28), davranış değişmez; yalnız kesim, yığılma (bulk) etkilenmez."
   - key: resting_kcal_per_kg
     value: 10
     unit: kcal_per_kg_per_day

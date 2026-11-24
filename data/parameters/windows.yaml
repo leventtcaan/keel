@@ -52,6 +52,12 @@ parameters:
     tag: literatur
     source: "arastirma/ham/H1-olcum.md#3.4"
     note: "TÜRETİLMİŞ (ADR-020 L-10). Karar penceresinin ilk ve son haftasının ortalama farkı bu payı hedef yönde aşmıyorsa kilo 'sabit' sayılır. min_weighins_per_week ile aynı hesap: 1,96 · 0,42 · √(2/4) ≈ 0,58 kg. Erkekte 14 gün arayla ≈ 0,3 kg/hafta ve üstü 'hareket'. Güray'da plato tanımı yok (G2 K-64 notu). 'Kilo sabit' sinyali (K-603) de bu payı kullanır: ilk ve son hafta farkı payı iki yönde de aşmıyorsa."
+  - key: observation_flat_fraction
+    value: 0.5
+    unit: ratio
+    tag: literatur
+    source: "arastirma/ham/H1-olcum.md#3.4"
+    note: "TÜRETİLMİŞ (K-1203, ADR-091 Ek 4; ADR-020 L-10 gürültü payı + Güray G2 K-8 'kilo sabit kalana kadar gözlenir'), ürün seçimi: [literatur] etiketi gürültü payının H1 §3.4 türetmesinden gelir, 0,5 katsayısı kaynaksızdır. Kesimde 14 günlük gözlem okunur (açık 15. günde başlar) YALNIZ ilk ve son haftanın ortalaması arasındaki hedef yönündeki kayıp flat_margin_kg × bu oran'ın (0,58 × 0,5 = 0,29 kg) altındaysa; kilo alımı da altındadır. 2 haftalık pencere 0,5 kg/hafta kaybı sabitten ayıramaz: belirsiz kaybeden (≥ 0,29) açığa eklenen ekstra kesinti yerine olduğu gibi 21 günlük okumada kalır (main'deki davranış). Sınır: tam 0,29 belirsiz sayılır (altı sabit)."
   - key: what_if_trend_step_margins
     value: 1.25
     unit: margins
