@@ -83,6 +83,17 @@ export function RestTimer({ since, band, onAdjust }: { since: number; band: Rest
       </View>
     </BottomSheet>
   );
+  // One quiet line under the clock: the band while it counts, then what the clock has reached (no word of blame, U7).
+  const line =
+    past && band.high !== null ? (
+      <Text style={[styles.label, { color: color.muted }]}>{t('workout.rest.past', { high: restText(band.high + change) })}</Text>
+    ) : over ? (
+      <Text style={[styles.label, { color: color.muted }]}>{t('workout.rest.over')}</Text>
+    ) : band.high !== null ? (
+      <Text testID="rest-band" style={[styles.label, { color: color.muted }]}>
+        {bandText(band.low + change, band.high + change)}
+      </Text>
+    ) : null;
   return (
     <View testID="rest" accessibilityRole="timer" style={styles.rest}>
       <Pressable
@@ -99,14 +110,7 @@ export function RestTimer({ since, band, onAdjust }: { since: number; band: Rest
           {time}
         </Text>
       </Pressable>
-      {/* One quiet line under the clock: the band while it counts, then what the clock has reached (no word of blame, U7). */}
-      {past && band.high !== null ? (
-        <Text style={[styles.label, { color: color.muted }]}>{t('workout.rest.past', { high: restText(band.high + change) })}</Text>
-      ) : over ? (
-        <Text style={[styles.label, { color: color.muted }]}>{t('workout.rest.over')}</Text>
-      ) : band.high !== null ? (
-        <Text testID="rest-band" style={[styles.label, { color: color.muted }]}>{bandText(band.low + change, band.high + change)}</Text>
-      ) : null}
+      {line}
       {/* One centred row under the clock, never over its digits (simulator check of K-1207). */}
       <View testID="rest-steps" style={styles.line}>
         {step15(-step, 'less')}

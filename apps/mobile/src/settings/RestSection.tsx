@@ -10,10 +10,8 @@ import { bandText, restText } from '@/train/session';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
-const MODES = [
-  { value: 'RECOMMENDED', key: 'settings.rest.recommended' },
-  { value: 'CUSTOM', key: 'settings.rest.custom' },
-] as const;
+const MODE_KEYS = { RECOMMENDED: 'settings.rest.recommended', CUSTOM: 'settings.rest.custom' } as const;
+const MODES = Object.keys(MODE_KEYS) as (keyof typeof MODE_KEYS)[];
 const KINDS: { kind: RestKind; key: string }[] = [
   { kind: 'COMPOUND', key: 'settings.rest.compound' },
   { kind: 'ISOLATION', key: 'settings.rest.isolation' },
@@ -36,17 +34,18 @@ export function RestSection() {
   const { color } = useTheme();
   const band = recommendedBand();
   const step = workoutParams.restAdjustSeconds;
+  const recommended = choice.mode === 'RECOMMENDED';
   const save = (next: RestChoice) => void restPreference.set(next);
   const move = (kind: RestKind, by: number) => save({ ...choice, custom: { ...choice.custom, [kind]: clampCustom(choice.custom[kind] + by) } });
   return (
     <View style={styles.section}>
       <Segmented
         testID="rest-mode"
-        options={MODES.map((m) => ({ value: m.value, label: t(m.key) }))}
+        options={MODES.map((mode) => ({ value: mode, label: t(MODE_KEYS[mode]) }))}
         value={choice.mode}
         onChange={(mode) => save({ ...choice, mode })}
       />
-      {choice.mode === 'RECOMMENDED' ? (
+      {recommended ? (
         <Text style={[styles.note, { color: color.muted }]}>{t('settings.rest.recommendedNote', { band: bandText(band.low, band.high ?? band.low) })}</Text>
       ) : (
         <>
