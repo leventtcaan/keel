@@ -17,3 +17,9 @@ Squat and romanian_deadlift: body in side view but the barbell drawn horizontall
 (front-view perspective). Lat pulldown: machine seen from behind. Squat arrow overlaps the body; lat pulldown neck not neutral.
 Fix in the template and `poses.json`: bar end-on with one face-on plate, machines from the same side, arrow beside the
 figure, neck neutral. The three pilots were made before this rule and need regenerating once quota allows.
+
+## Toplu üretim 1 (25 Kas 2026, 40 hareket, gpt-6-luna, şablon + poses.json perspektif kuralları)
+Orkestratör ön bakışı (küçük boyutta, toplu görünüm): genel stil tutarlı; tek yüz-face-on plaka kuralı çoğunda tuttu.
+- **Yeniden üret:** `dip` (paralel barlar çizilmemiş, figür havada) · `squat` (bar konumu: başın arkasında mı belirsiz; front squat'a benziyor).
+- **Bakılacak:** çerçeve ve "Start/End" yazı boyutu karelere göre değişiyor (stil tutarlılığı).
+- Hepsi `image_review: pending`; Levent kontrol listesiyle tek tek onaylar (`by: levent, checklist: pass`), onaylanan sunucudan gelir.
