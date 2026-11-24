@@ -1587,7 +1587,10 @@ export interface paths {
         };
         /**
          * The call in force and the targets it set
-         * @description NOT_FOUND before the first check-in has produced a call.
+         * @description NOT_FOUND before the first check-in has produced a call. A full call past the free allowance of an account with no
+         *     active subscription (ADR-091 Ek 1, K-1201) comes as a LockedDecision: its week and the day the next call opens,
+         *     `locked: true`, nothing of what it says. The 200 schema stays Decision until the phone handles the locked view
+         *     (K-1202 makes it a oneOf with LockedDecision) and ships with this server change.
          */
         get: operations["getCurrentDecision"];
         put?: never;
@@ -1607,6 +1610,7 @@ export interface paths {
             };
             cookie?: never;
         };
+        /** @description As the current call: a locked call comes as a LockedDecision (ADR-091 Ek 1, K-1201). So in the ledger's items. */
         get: operations["getDecision"];
         put?: never;
         post?: never;
@@ -1628,7 +1632,8 @@ export interface paths {
         /**
          * @description What the call read, as the rows "Why this call" shows (K-519, Ö-25): from the call's own stored snapshot, nothing
          *     else. Never a fat estimate (U4), never the cycle answer (never kept). Health data: CONSENT_REQUIRED without the
-         *     HEALTH_DATA consent, as every /v1/decisions route; NOT_FOUND for a call that is not the user's.
+         *     HEALTH_DATA consent, as every /v1/decisions route; NOT_FOUND for a call that is not the user's. ENTITLEMENT_REQUIRED
+         *     (403) for a locked call (ADR-091 Ek 1, K-1201).
          */
         get: operations["getDecisionBasis"];
         put?: never;
@@ -1652,7 +1657,7 @@ export interface paths {
          * @description "What would change the call" (K-610, L3 Y3): the same rules run on example data a week from the call — every
          *     combination of next week's trend, plan kept and training. Example data, never the user's own, and labelled so.
          *     NOT_FOUND for a safety call (it says nothing of why, ADR-028 #24) and for a call that is not the user's;
-         *     CONSENT_REQUIRED without the HEALTH_DATA consent.
+         *     CONSENT_REQUIRED without the HEALTH_DATA consent; ENTITLEMENT_REQUIRED (403) for a locked call (ADR-091 Ek 1, K-1201).
          */
         get: operations["getDecisionWhatIf"];
         put?: never;
@@ -1710,6 +1715,7 @@ export interface paths {
          *     (NOT_NEEDED), one undone, a training call without a program to change. The deload ladder's calls change the
          *     program (K-217): hold the load from today; a lighter week or a week off from today to the day before the call's
          *     nextReview. NOT_FOUND for an unknown id. Health data: CONSENT_REQUIRED without the HEALTH_DATA consent.
+         *     ENTITLEMENT_REQUIRED (403) for a locked call: it is not applied until the account has a subscription (ADR-091 Ek 1).
          */
         post: operations["applyDecision"];
         delete?: never;
@@ -3728,6 +3734,32 @@ export interface components {
             undoneAt?: string;
             /** Format: date-time */
             declinedAt?: string;
+        };
+        /**
+         * @description A full weekly call the account has not unlocked (ADR-091 Ek 1, K-1201: "logging free, the call paid"): kept by the
+         *     server, not applied to the plan, and shown as its week and the day the next call opens only. No action, changes,
+         *     reasons or confidence. A call resting on the safety net is never locked (U6). When the account has a subscription
+         *     the call comes as a Decision (the latest, this week's, is applied then; older ones stay history). Sent by
+         *     GET /v1/decisions/current, GET /v1/decisions/{id} and the items of GET /v1/decisions in place of a Decision;
+         *     the responses are typed as Decision until K-1202 (phone) makes them a oneOf, so the mobile types do not change here.
+         */
+        LockedDecision: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date */
+            madeOn: string;
+            /**
+             * Format: date
+             * @description The check-in week the call is for (the day the week began on the user's calendar).
+             */
+            weekOf: string;
+            /**
+             * Format: date
+             * @description The day the next call opens, as on Decision.
+             */
+            nextCallOn: string;
+            /** @enum {boolean} */
+            locked: true;
         };
         DecisionPage: {
             items: components["schemas"]["Decision"][];
@@ -6207,7 +6239,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The current call */
+            /** @description The current call; its locked view (LockedDecision) when it is locked */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -6230,7 +6262,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The call */
+            /** @description The call; its locked view (LockedDecision) when it is locked */
             200: {
                 headers: {
                     [name: string]: unknown;
