@@ -8,7 +8,7 @@ with wanted (description, fdc_id, rank, dishes) as (
     values
     ('Beans, snap, green, raw', null, 0, 1),
     ('Beans, white, mature seeds, cooked, boiled, without salt', null, 0, 1),
-    ('Beef, ground, 85% lean meat / 15% fat, raw', null, 0, 12),
+    ('Beef, ground, 85% lean meat / 15% fat, raw (Includes foods for USDA''s Food Distribution Program)', null, 0, 12),
     ('Bread, white, commercially prepared (includes soft bread crumbs)', null, 0, 3),
     ('Bulgur, cooked', 170287, 0, 1),
     ('Bulgur, dry', 170688, 0, 4),
@@ -18,7 +18,7 @@ with wanted (description, fdc_id, rank, dishes) as (
     ('Cheese, feta', null, 0, 8),
     ('Cheese, mozzarella, whole milk', null, 0, 2),
     ('Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw', 171077, 0, 2),
-    ('Chicken, broilers or fryers, thigh, meat only, raw', null, 0, 1),
+    ('Chicken, thigh, boneless, skinless, raw', null, 0, 1),
     ('Chickpeas (garbanzo beans, bengal gram), mature seeds, cooked, boiled, without salt', null, 0, 2),
     ('Cornstarch', null, 0, 2),
     ('Cucumber, with peel, raw', null, 0, 2),

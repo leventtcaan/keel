@@ -302,7 +302,7 @@
      "grams": 150
     },
     {
-     "food": "Beef, ground, 85% lean meat / 15% fat, raw",
+     "food": "Beef, ground, 85% lean meat / 15% fat, raw (Includes foods for USDA's Food Distribution Program)",
      "grams": 50
     },
     {
@@ -423,7 +423,7 @@
      "grams": 25
     },
     {
-     "food": "Beef, ground, 85% lean meat / 15% fat, raw",
+     "food": "Beef, ground, 85% lean meat / 15% fat, raw (Includes foods for USDA's Food Distribution Program)",
      "grams": 25
     },
     {
@@ -458,7 +458,7 @@
      "grams": 100
     },
     {
-     "food": "Beef, ground, 85% lean meat / 15% fat, raw",
+     "food": "Beef, ground, 85% lean meat / 15% fat, raw (Includes foods for USDA's Food Distribution Program)",
      "grams": 35
     },
     {
@@ -507,7 +507,7 @@
      "grams": 60
     },
     {
-     "food": "Beef, ground, 85% lean meat / 15% fat, raw",
+     "food": "Beef, ground, 85% lean meat / 15% fat, raw (Includes foods for USDA's Food Distribution Program)",
      "grams": 40
     },
     {
@@ -745,7 +745,7 @@
      "grams": 120
     },
     {
-     "food": "Beef, ground, 85% lean meat / 15% fat, raw",
+     "food": "Beef, ground, 85% lean meat / 15% fat, raw (Includes foods for USDA's Food Distribution Program)",
      "grams": 50
     },
     {
@@ -869,7 +869,7 @@
    "servingG": 120,
    "ingredients": [
     {
-     "food": "Beef, ground, 85% lean meat / 15% fat, raw",
+     "food": "Beef, ground, 85% lean meat / 15% fat, raw (Includes foods for USDA's Food Distribution Program)",
      "grams": 120
     },
     {
@@ -895,7 +895,7 @@
    "servingG": 250,
    "ingredients": [
     {
-     "food": "Beef, ground, 85% lean meat / 15% fat, raw",
+     "food": "Beef, ground, 85% lean meat / 15% fat, raw (Includes foods for USDA's Food Distribution Program)",
      "grams": 90
     },
     {
@@ -1008,7 +1008,7 @@
    "servingG": 110,
    "ingredients": [
     {
-     "food": "Beef, ground, 85% lean meat / 15% fat, raw",
+     "food": "Beef, ground, 85% lean meat / 15% fat, raw (Includes foods for USDA's Food Distribution Program)",
      "grams": 120
     },
     {
@@ -1031,7 +1031,7 @@
    "servingG": 120,
    "ingredients": [
     {
-     "food": "Chicken, broilers or fryers, thigh, meat only, raw",
+     "food": "Chicken, thigh, boneless, skinless, raw",
      "or": [
       "Chicken, broiler or fryers, thigh, meat only, raw"
      ],
@@ -1063,7 +1063,7 @@
    "servingG": 300,
    "ingredients": [
     {
-     "food": "Beef, ground, 85% lean meat / 15% fat, raw",
+     "food": "Beef, ground, 85% lean meat / 15% fat, raw (Includes foods for USDA's Food Distribution Program)",
      "grams": 130
     },
     {
@@ -1107,7 +1107,7 @@
      "grams": 90
     },
     {
-     "food": "Beef, ground, 85% lean meat / 15% fat, raw",
+     "food": "Beef, ground, 85% lean meat / 15% fat, raw (Includes foods for USDA's Food Distribution Program)",
      "grams": 40
     },
     {
@@ -1137,7 +1137,7 @@
      "grams": 55
     },
     {
-     "food": "Beef, ground, 85% lean meat / 15% fat, raw",
+     "food": "Beef, ground, 85% lean meat / 15% fat, raw (Includes foods for USDA's Food Distribution Program)",
      "grams": 30
     },
     {
@@ -1183,7 +1183,7 @@
      "grams": 140
     },
     {
-     "food": "Beef, ground, 85% lean meat / 15% fat, raw",
+     "food": "Beef, ground, 85% lean meat / 15% fat, raw (Includes foods for USDA's Food Distribution Program)",
      "grams": 70
     },
     {
