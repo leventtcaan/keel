@@ -16,6 +16,7 @@ import ProgressScreen from '@/app/(tabs)/progress';
 import TrainScreen from '@/app/(tabs)/train';
 import { t } from '@/copy';
 import { RETIRED, TABS, type TabRoute } from '@/navigation/tabs';
+import { createPlanPreviews } from '@/subscription/planPreview';
 import { ThemeProvider } from '@/theme/theme';
 
 jest.mock('expo-font', () => ({ useFonts: () => [true, null] }));
@@ -77,7 +78,7 @@ const mockServices = {
   gate: { refresh: async () => {} },
   // The first-use guide (K-1065): shown already, so it never opens over these tabs.
   guide: { seen: async () => true, markSeen: async () => {}, forget: async () => {} },
-  planPreviews: { current: () => null }, // no plan just shown: the gate met on opening the app (K-967)
+  planPreviews: createPlanPreviews(), // the plan just shown at the end of onboarding, once (ADR-072 #7, K-967); none on a new launch
   purchases: { available: false },
   pendingCount: async () => 0,
 };
@@ -120,6 +121,42 @@ test('the paywall is a screen like any other: a link opens it over the tabs, and
   expect(router.getPathname()).toBe('/paywall');
   await act(async () => appRouter.back());
   expect(router.getPathname()).toBe('/');
+});
+
+const JUST_SHOWN = {
+  own: false,
+  days: 3,
+  firstWorkout: 'MONDAY',
+  firstCall: null,
+  checkInDay: 'MONDAY',
+  hasCardio: false,
+  startingKcal: null,
+  workoutName: 'Full body',
+  workoutMoves: 5,
+  workoutToday: false,
+} as const;
+
+describe('the soft offer right after onboarding (ADR-072 #7, ADR-091 #1, K-1202)', () => {
+  beforeEach(() => mockServices.planPreviews.forget());
+
+  test('the plan just shown opens the closable paywall once; Close lands on the tabs; it does not come back by itself', async () => {
+    mockServices.planPreviews.keep(JUST_SHOWN);
+    const router = renderRouter(APP, { initialUrl: '/' });
+    await router;
+    expect(router.getPathname()).toBe('/paywall');
+    await fireEvent.press(await screen.findByRole('button', { name: t('subscription.close') }));
+    expect(router.getPathname()).toBe('/');
+    expect(router.getSegments()).toEqual(['(tabs)']);
+    await act(async () => appRouter.push('/settings'));
+    await act(async () => appRouter.back());
+    expect(router.getPathname()).toBe('/');
+  });
+
+  test('a second launch (nothing kept in memory) goes straight to the tabs', async () => {
+    const router = renderRouter(APP, { initialUrl: '/' });
+    await router;
+    expect(router.getPathname()).toBe('/');
+  });
 });
 
 test('the gate screen is retired: a link to it does not open it', async () => {

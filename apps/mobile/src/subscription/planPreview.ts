@@ -35,9 +35,25 @@ export type PlanPreviews = ReturnType<typeof createPlanPreviews>;
 
 export function createPlanPreviews() {
   let kept: PlanPreview | null = null;
+  let offered = false;
   return {
-    keep: (preview: PlanPreview) => void (kept = preview),
+    keep: (preview: PlanPreview) => {
+      kept = preview;
+      offered = false;
+    },
     current: (): PlanPreview | null => kept,
-    forget: () => void (kept = null),
+    /**
+     * The soft offer right after onboarding (ADR-072 #7, ADR-091 #1): the plan just shown, once. Asked a second time it is null; kept
+     * in memory only, so a new launch never has one.
+     */
+    takeOffer: (): PlanPreview | null => {
+      if (kept === null || offered) return null;
+      offered = true;
+      return kept;
+    },
+    forget: () => {
+      kept = null;
+      offered = false;
+    },
   };
 }

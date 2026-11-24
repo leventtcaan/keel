@@ -2670,7 +2670,7 @@
     "rangeSpoken": "between {low} and {high}"
   },
   "coach": {
-    "subscription": "Questions to the coach come with a subscription. This week's call and its reasons are here without one.",
+    "subscription": "Questions to the coach come with a subscription. Your log and your first full call work without one.",
     "mealSubscription": "Reading a meal from your words comes with a subscription. You can still log it by name.",
     "entry": "Ask the coach",
     "answer": {
@@ -3138,8 +3138,8 @@
       "own": "Your program, tuned",
       "call": "A call every {day}, with the reason",
       "weeklyCall": "A call every week, with the reason",
-    "after": "Every call after your first one",
-    "coach": "The coach, to ask about your week",
+      "after": "Every call after your first one",
+      "coach": "The coach, to ask about your week",
       "adjust": "Cardio and food that adjust to your week",
       "cardio": "Cardio planned around your lifting",
       "swap": "Swap any move, any time"
@@ -3229,7 +3229,7 @@
     },
     "subscription": {
       "title": "Subscription",
-      "none": "Not subscribed. Your log, your weekly call and its reasons work without one.",
+      "none": "Not subscribed. Your log and your first full call work without one. Each call after that comes with a subscription.",
       "status": {
         "TRIAL": "Free trial until {date}",
         "ACTIVE": "Renews on {date}",

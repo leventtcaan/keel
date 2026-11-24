@@ -24,7 +24,8 @@ before you start. You decide whether to apply a call; you are responsible for ho
 
 ## Subscription, trial and cancellation {#subscription}
 
-- Coaching needs a subscription, billed by Apple to your Apple Account. Plans, prices and any free trial are shown in the app
+- Logging your training, food and weight is free, and so is your first full weekly call. The weekly calls after that, and any AI
+  features, need a subscription, billed by Apple to your Apple Account. Plans, prices and any free trial are shown in the app
   before you buy, in your currency, as the App Store gives them.
 - **It renews automatically** at the end of each period, at the same price, unless you cancel at least 24 hours before the
   period ends. Your Apple Account is charged within the 24 hours before renewal.

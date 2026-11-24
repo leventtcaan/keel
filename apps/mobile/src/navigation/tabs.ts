@@ -27,6 +27,6 @@ export const TABS: readonly TabRoute[] = [
 /**
  * Screens taken off the surface (ADR-069 #3): their code stays, and nothing opens them, a link neither (the root layout
  * holds them behind a guard that is never true). The coach and the meal photo among them: with the AI off, no dead end
- * (K-909). Order as in the root layout. The gate screen `subscribe` (K-706) went with ADR-091 #1: the paywall is optional (K-1202). `food` came back as a page, not a tab (ADR-086): This week's food line opens it.
+ * (K-909). Order as in the root layout. `subscribe` (the K-706 gate) went with ADR-091 #1. `food` came back as a page, not a tab (ADR-086): This week's food line opens it.
  */
 export const RETIRED = ['coach', 'meal-photo', 'recipes', 'recipe', 'why', 'scoff', 'projection', 'ledger', 'what-if', 'workout-summary', 'subscribe'] as const;

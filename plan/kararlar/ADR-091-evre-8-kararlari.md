@@ -144,6 +144,8 @@ ikinci tam karar 403/okuma/uygulanmama, abone olunca açılma; veritabanı, CI),
 
 ### Karar
 1. **Kapı kalkar.** `subscription/gate.ts` hiç abone olmamış hesabı artık kapatmaz (`required` üretilmez); onboarding sonrası sekmeler açılır.
+   **Yumuşak teklif (ADR-072 #7):** onboarding biter bitmez kapatılabilir `/paywall` bir kez, kullanıcının az önce gördüğü plan önizlemesiyle açılır
+   (`planPreviews.takeOffer`, yalnız bellekte); Kapat → sekmeler; kendiliğinden bir daha açılmaz, yeni açılışta hiç açılmaz.
    Gate yalnız "hesabın aboneliği ne" sorusunu sorar (deneme hatırlatması okur, K-707). Kök yerleşimde `subscribe` ekranı emekli grupta;
    `/paywall` sıradan, kapatılabilir ekran, deneme teklifi aynı.
 2. **Başlık tek yerde:** `api/client.ts` her isteğe `X-Keel-Features: locked-calls` koyar (fetch sarmalayıcısında; 401 sonrası yeniden denemede de).
@@ -153,7 +155,7 @@ ikinci tam karar 403/okuma/uygulanmama, abone olunca açılma; veritabanı, CI),
    `readCall` ile böler (`ready` tam karar, `locked` kilitli); `action`/`reasons`'a `locked` dalı olmadan dokunan kod derlenmez.
 4. **Kilitli karar arayüzü:** This week kahramanı ve karar ekranı aynı bileşeni (`LockedCallView`) gösterir: "Your call is ready", hafta tarihi, tek satır, tek
    düğme (See plans). Eylem, sayı, gerekçe yok; "kredi" sözcüğü yok.
-5. **Yükseltme anları:** (a) kilitli karar kendisi, (b) "neden"/what-if'te 403 `ENTITLEMENT_REQUIRED` → paywall'a giden not + düğme, (c) günün elle üçüncü
+5. **Yükseltme anları:** (a) kilitli karar kendisi, (b) "neden"/what-if'te 403 `ENTITLEMENT_REQUIRED` → paywall'a giden not + düğme (kodlandı ama `why` ve `what-if` ekranları emekli olduğu sürece **ulaşılamaz**; ekranlar dönünce çalışır), (c) günün elle üçüncü
    öğününde fotoğraf/cümle önerisi: `photo_suggestion_after_manual_meals: 3`, yalnız AI açıksa. AI açıklığı: telefonda tek anahtar, `meal-photo` ekranının
    emekli listesinden (`RETIRED`) çıkması (`food/aiLogging.ts`); bugün kapalı, hiçbir şey çizilmez.
 6. **Paywall metni:** satılan şey haftalık karar ("Every call after your first one"); kayıt, program, ağırlıklar ücretsiz olduğu için satılmaz; koç yalnız ekranı açıksa
