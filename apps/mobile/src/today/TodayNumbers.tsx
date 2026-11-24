@@ -1,5 +1,6 @@
 import { formatNumber } from '@/copy/format';
 import { router } from 'expo-router';
+import { useState } from 'react';
 import type { SFSymbol } from 'expo-symbols';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -10,6 +11,8 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { type UnitSystem, formatWeight } from '@/units/units';
 import { openDetail } from '@/settings/detail';
+import type { WalkRead } from '@/walks/read';
+import { walkLabel, walkLine } from '@/walks/words';
 
 import type { WeightNumber } from './numbers';
 
@@ -55,6 +58,8 @@ type Props = {
   protein: { eaten: number; target: number } | null;
   steps: { steps: number | null; target: number } | null;
   weight: WeightNumber | null;
+  /** The steps left as a walk the user knows (K-1216): one line under the numbers. */
+  walk?: WalkRead | null;
   units: UnitSystem;
 };
 
@@ -63,8 +68,12 @@ type Props = {
  * drawn only when its part was read; a number that is not there is said as such (steps without Apple Health: the target alone, the
  * connect step on a tap), never a zero. Nothing is worked out here (U1): the figures are `numbers.ts`'s.
  */
-export function TodayNumbers({ protein, steps, weight, units }: Props) {
+export function TodayNumbers({ protein, steps, weight, walk = null, units }: Props) {
   const { report } = useAppServices();
+  const { color } = useTheme();
+  // The walk (K-1216) is behind the steps tile (the home screen's words are at their budget): a tap shows it, a tap on it opens Health.
+  const [walkShown, setWalkShown] = useState(false);
+  const openHealth = () => void Linking.openURL('x-apple-health://').catch((error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' }));
   const tiles = [];
   if (protein !== null) {
     const [eaten, target] = [num(protein.eaten), num(protein.target)];
@@ -82,10 +91,10 @@ export function TodayNumbers({ protein, steps, weight, units }: Props) {
       );
     } else {
       const count = num(steps.steps);
-      const open = () => void Linking.openURL('x-apple-health://').catch((error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' }));
+      const open = openHealth;
       tiles.push(
         <Tile key="steps" id="steps" icon="figure.walk" value={t('thisWeek.numbers.steps', { steps: count, target })} label={t('progress.targets.label.steps', { steps: count, target })}
-          hint={t('progress.targets.hint.health')} onPress={open} />,
+          hint={t(walk === null ? 'progress.targets.hint.health' : 'progress.targets.hint.walk')} onPress={walk === null ? open : () => setWalkShown((shown) => !shown)} />,
       );
     }
   }
@@ -110,11 +119,26 @@ export function TodayNumbers({ protein, steps, weight, units }: Props) {
     );
   }
   if (tiles.length === 0) return null;
-  return <View style={styles.row}>{tiles}</View>;
+  // The steps left as a walk (K-1216), under the numbers once the steps tile is tapped: an offer in one line, never a debt (U7).
+  const walkText =
+    walk === null || steps?.steps == null || !walkShown ? null : (
+      <Pressable testID="walk-line" accessibilityRole="button" accessibilityLabel={walkLabel(walk.remaining, walk.suggestion)} accessibilityHint={t('progress.targets.hint.health')} onPress={openHealth}>
+        <Text style={[styles.walk, { color: color.textSecondary }]}>{walkLine(walk.remaining, walk.suggestion)}</Text>
+      </Pressable>
+    );
+  if (walkText === null) return <View style={styles.row}>{tiles}</View>;
+  return (
+    <View style={styles.stack}>
+      <View style={styles.row}>{tiles}</View>
+      {walkText}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
+  stack: { gap: tokens.space.sm },
   row: { flexDirection: 'row', gap: tokens.space.sm },
+  walk: { fontSize: tokens.type.label, fontWeight: tokens.weight.semibold, fontVariant: ['tabular-nums'] },
   tile: { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0, minHeight: tokens.size.touch, borderRadius: tokens.radius.card, padding: tokens.space.sm, gap: tokens.space.xs },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   value: { fontFamily: tokens.font.displayBold, fontSize: tokens.type.body, fontVariant: ['tabular-nums'] },

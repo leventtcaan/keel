@@ -9,6 +9,7 @@ import type { ApiClient } from '@/api/client';
 import type { components } from '@/api/schema';
 import { has } from '@/copy';
 import type { LocalRecord } from '@/sync/store';
+import type { WalkRead } from '@/walks/read';
 
 import type { WeightRead } from './numbers';
 import type { TodayParts } from './todayWorkout';
@@ -53,6 +54,8 @@ export type TodayData = {
   budget: Loaded<Schemas['DayBudget']>;
   /** Today's steps as Apple Health counts them, read on the phone (K-404); null when Health was not read. */
   stepsToday?: number | null;
+  /** The steps left as a walk the user knows (K-1216); none when nothing is left, or Health was not read. */
+  walk?: WalkRead | null;
   /** The weight trend's reads for the numbers block (K-1206): the weigh-in count, and the trend once the server says it is ready. */
   weight?: WeightRead;
   /** The starting plan's targets (K-1206): read only while /v1/targets has none (before the first call), for the steps target. */

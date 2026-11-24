@@ -22,4 +22,8 @@ export const notificationParams = {
   mealMaxPerDay: param<number>('meal_reminder_max_per_day'),
   mealAfterMinutes: param<number>('meal_reminder_after_minutes'),
   mealDaysAhead: param<number>('meal_reminder_days_ahead'),
+  /** The evening walk nudge (K-1216), a fifth kind behind a flag: OFF until the product owner decides. */
+  walkNudgeEnabled: param<boolean>('walk_nudge_enabled'),
+  walkNudgeTime: param<string>('walk_nudge_time'),
+  walkNudgeMinRemaining: param<number>('walk_nudge_min_remaining_steps'),
 };

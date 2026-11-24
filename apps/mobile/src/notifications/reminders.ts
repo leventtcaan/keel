@@ -11,7 +11,7 @@ import type { KeyValue } from '@/units/preference';
 
 import { notificationParams as P } from './params';
 import type { MealRhythm } from './mealRhythm';
-import { type FirstCall, type Reminder, type ReminderKind, type Schedule, type WeighInFacts, planReminders } from './plan';
+import { type FirstCall, type Reminder, type ReminderKind, type Schedule, type WalkNudgeFacts, type WeighInFacts, planReminders } from './plan';
 
 /** What iOS answers about notifications: allowed or not, and whether its sheet can still be shown. */
 export type NotificationPermission = { granted: boolean; canAskAgain: boolean };
@@ -43,6 +43,8 @@ type Options = {
   muted?: () => Promise<boolean>;
   /** Its last day, if it has one (K-518): the slots after it are planned by date, so they return with no open needed. */
   mutedUntil?: () => Promise<string | null>;
+  /** The evening walk nudge (K-1216), a fifth kind: the parameter's flag, OFF as shipped. */
+  walkNudge?: boolean;
 };
 
 const KEY = {
@@ -57,6 +59,7 @@ const KEY = {
   weighIns: 'reminders.weighIns',
   meals: 'reminders.meals',
   mealsOff: 'reminders.mealsOff',
+  walkNudge: 'reminders.walkNudge',
 };
 const ON = 'on';
 
@@ -113,6 +116,17 @@ function rhythmOf(kept: string | null): MealRhythm | null {
   }
 }
 
+/** The walk nudge's facts kept by an earlier run; anything that is not them counts as none. */
+function walkNudgeOf(kept: string | null): WalkNudgeFacts | null {
+  if (kept === null) return null;
+  try {
+    const v = JSON.parse(kept) as Partial<WalkNudgeFacts> | null;
+    return v !== null && typeof v.day === 'string' && typeof v.remaining === 'number' && typeof v.body === 'string' ? (v as WalkNudgeFacts) : null;
+  } catch {
+    return null;
+  }
+}
+
 function dateOf(kept: string | null): Date | null {
   const date = kept === null ? null : new Date(kept);
   return date !== null && !Number.isNaN(date.getTime()) ? date : null;
@@ -120,7 +134,7 @@ function dateOf(kept: string | null): Date | null {
 
 export type Reminders = Awaited<ReturnType<typeof createReminders>>;
 
-export async function createReminders({ kv, access, now, report, muted = async () => false, mutedUntil = async () => null }: Options) {
+export async function createReminders({ kv, access, now, report, muted = async () => false, mutedUntil = async () => null, walkNudge = P.walkNudgeEnabled }: Options) {
   const keptOnly = await kv.getItemAsync(KEY.only);
   let settings: ReminderSettings = {
     enabled: (await kv.getItemAsync(KEY.enabled)) === ON,
@@ -177,6 +191,7 @@ export async function createReminders({ kv, access, now, report, muted = async (
       weighInWeek: weighInsOf(await kv.getItemAsync(KEY.weighIns)),
       meals: rhythmOf(await kv.getItemAsync(KEY.meals)),
       mealsOff: settings.mealsOff === true,
+      walkNudge: walkNudge ? walkNudgeOf(await kv.getItemAsync(KEY.walkNudge)) : null,
     });
     await access.replace(settings.only === undefined ? plan : plan.filter((reminder) => reminder.kind === settings.only));
   }
@@ -326,6 +341,21 @@ export async function createReminders({ kv, access, now, report, muted = async (
         if ((await kv.getItemAsync(KEY.meals)) === kept) return;
         if (kept === null) await kv.removeItemAsync(KEY.meals);
         else await kv.setItemAsync(KEY.meals, kept);
+        await reschedule();
+      }),
+
+    /**
+     * The steps left today (K-1216), kept at each read of Today for the evening walk nudge: the day, how many, and the line. Nothing
+     * while the flag is off (as shipped): nothing kept, nothing planned. No permission asked. `era` as keepRestUntil's; the same
+     * facts again change nothing.
+     */
+    keepWalkNudge: (facts: WalkNudgeFacts | null, era: number = generation): Promise<void> =>
+      inTurn(async () => {
+        if (!walkNudge || era !== generation) return;
+        const kept = facts === null ? null : JSON.stringify(facts);
+        if ((await kv.getItemAsync(KEY.walkNudge)) === kept) return;
+        if (kept === null) await kv.removeItemAsync(KEY.walkNudge);
+        else await kv.setItemAsync(KEY.walkNudge, kept);
         await reschedule();
       }),
 

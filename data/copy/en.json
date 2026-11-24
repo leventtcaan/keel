@@ -2775,6 +2775,18 @@
       "byName": "Log by name"
     }
   },
+  "walks": {
+    "km": "{value} km",
+    "mi": "{value} mi",
+    "line": {
+      "route": "{steps} left: {name} and back",
+      "minutes": "{steps} left, about {minutes} min"
+    },
+    "label": {
+      "route": "{steps} steps left today. {name} and back is about {minutes} minutes of walking.",
+      "minutes": "{steps} steps left today. That is about {minutes} minutes of walking."
+    }
+  },
   "units": {
     "kg": "{value} kg",
     "lb": "{value} lb",
@@ -2786,6 +2798,8 @@
     "inUnit": "in",
     "kgUnit": "kg",
     "lbUnit": "lb",
+    "kmUnit": "km",
+    "miUnit": "mi",
     "minUnit": "min",
     "kgSpoken": "kilograms",
     "lbSpoken": "pounds"
@@ -3083,6 +3097,9 @@
     "serverError": "Something went wrong on our side. Try again in a moment."
   },
   "reminders": {
+    "walk": {
+      "title": "A walk before the day ends"
+    },
     "training": {
       "title": "Training in {minutes} minutes",
       "body": "Your session is coming up.",
@@ -3285,6 +3302,22 @@
       "light": "Light",
       "dark": "Dark",
       "system": "System",
+      "failed": "Couldn't save that. Try again."
+    },
+    "walks": {
+      "title": "My walks",
+      "hint": "Walks you really take, one way. When steps are left today, Next Call can name the one that is about right. This stays on this phone.",
+      "none": "None yet",
+      "count": "{count} saved",
+      "name": "Name",
+      "distance": "Distance, one way",
+      "add": "Add",
+      "addLabel": "Add this walk",
+      "remove": "Remove",
+      "removeLabel": "Remove {name}",
+      "rowLabel": "{name}, {distance} one way",
+      "full": "Three walks is the most. Remove one to add another.",
+      "invalid": "Give it a name and a distance, like 1.8.",
       "failed": "Couldn't save that. Try again."
     },
     "units": {
@@ -3738,6 +3771,7 @@
       "hint": {
         "meal": "Opens the meal log",
         "health": "Opens Apple Health",
+        "walk": "Shows a walk for the steps left",
         "connect": "Opens Settings to connect Apple Health",
         "cardio": "Opens the log"
       }

@@ -4,7 +4,7 @@ import { t } from '@/copy';
 
 /**
  * The pages one level under Settings (ADR-070 Ek 2 #2: a long explanation, an editor or a consent text goes to a page of its
- * own, never under a row): the profile's five answers (K-1062), the foods, the routine, the consents, the Apple Health write
+ * own, never under a row): the profile's five answers (K-1062), the walks (K-1216), the foods, the routine, the consents, the Apple Health write
  * switches, the weigh-in import and the data sources. One route, `settings-detail`, shows the part named in its `part` parameter; the title of each
  * is the label of the row that opens it.
  */
@@ -13,6 +13,7 @@ export const DETAIL_PARTS = {
   checkin: 'settings.profile.checkIn',
   height: 'settings.profile.height',
   activity: 'settings.profile.activity',
+  walks: 'settings.walks.title',
   born: 'settings.profile.born',
   food: 'settings.food.avoid',
   routine: 'settings.reminders.routine',
