@@ -91,7 +91,7 @@ export function RestTimer({ since, onAdjust }: { since: number; onAdjust?: (seco
         onAccessibilityAction={spoken}
         onLongPress={() => setAdjusting(true)}
         delayLongPress={400}>
-        <Text adjustsFontSizeToFit numberOfLines={1} style={[styles.time, { color: over ? color.accent : color.text }]}>
+        <Text style={[styles.time, { color: over ? color.accent : color.text }]}>
           {time}
         </Text>
       </Pressable>
