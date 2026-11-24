@@ -805,7 +805,7 @@
     "seq",
     "account_id",
     "role",
-    "text",
+    "spoken",
     "copy_key",
     "topic",
     "decision_id",
@@ -836,7 +836,7 @@
    "columns": [
     "id",
     "account_id",
-    "text",
+    "sentence",
     "created_at"
    ],
    "basis": "explicit consent (GDPR Art. 9(2)(a)) — HEALTH_DATA",

@@ -44,7 +44,7 @@ class CoachConversation {
 
     void append(AccountId account, Role role, String text, String copyKey, Topic topic, UUID decisionId) {
         jdbc.sql("""
-                insert into coach.message (id, account_id, role, text, copy_key, topic, decision_id, created_at)
+                insert into coach.message (id, account_id, role, spoken, copy_key, topic, decision_id, created_at)
                 values (:id, :account, :role, :text, :copyKey, :topic, :decision, :at)""")
                 .param("id", UUID.randomUUID()).param("account", account.value()).param("role", role.name()).param("text", text).param("copyKey", copyKey)
                 .param("topic", topic == null ? null : topic.name()).param("decision", decisionId).param("at", now()).update();
@@ -53,7 +53,7 @@ class CoachConversation {
     /** The last messages, oldest first, at most one page (coach_history_page). */
     List<Message> history(AccountId account) {
         List<Message> latest = new ArrayList<>(jdbc.sql("""
-                select id, role, text, copy_key, topic, decision_id, created_at from coach.message where account_id = :account
+                select id, role, spoken as text, copy_key, topic, decision_id, created_at from coach.message where account_id = :account
                 order by seq desc limit :limit""").param("account", account.value()).param("limit", limits.historyPage())
                 .query((row, n) -> new Message(row.getObject("id", UUID.class), Role.valueOf(row.getString("role")), row.getString("text"),
                         row.getString("copy_key"), row.getString("topic") == null ? null : Topic.valueOf(row.getString("topic")),
@@ -66,7 +66,7 @@ class CoachConversation {
     /** What goes to the model before the next question: the last few messages with words in them (the engine's sentences are not the model's to continue). */
     List<Turn> turns(AccountId account) {
         List<Message> latest = new ArrayList<>(jdbc.sql("""
-                select role, text from coach.message where account_id = :account and text is not null
+                select role, spoken as text from coach.message where account_id = :account and spoken is not null
                 order by seq desc limit :limit""").param("account", account.value()).param("limit", limits.historyTurnsInPrompt())
                 .query((row, n) -> new Message(null, Role.valueOf(row.getString("role")), row.getString("text"), null, null, null, null)).list());
         Collections.reverse(latest);

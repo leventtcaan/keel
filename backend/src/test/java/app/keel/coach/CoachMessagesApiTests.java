@@ -512,15 +512,15 @@ class CoachMessagesApiTests {
     @Test
     void theConversationOlderThanTheLimitGoesInTheNightlyCleanup() throws Exception {
         AccountId account = withACutStep();
-        jdbc.sql("insert into coach.message (id, account_id, role, text, created_at) values (gen_random_uuid(), :a, 'USER', 'old', now() - interval '31 days')")
+        jdbc.sql("insert into coach.message (id, account_id, role, spoken, created_at) values (gen_random_uuid(), :a, 'USER', 'old', now() - interval '31 days')")
                 .param("a", account.value()).update();
-        jdbc.sql("insert into coach.message (id, account_id, role, text, created_at) values (gen_random_uuid(), :a, 'USER', 'recent', now() - interval '29 days')")
+        jdbc.sql("insert into coach.message (id, account_id, role, spoken, created_at) values (gen_random_uuid(), :a, 'USER', 'recent', now() - interval '29 days')")
                 .param("a", account.value()).update();
 
         context.getBean(CoachCleanup.class).nightly();
         Thread.sleep(300); // @Async in a test context runs on its own thread, or at once when async is off
 
-        assertThat(jdbc.sql("select text from coach.message where account_id = :a").param("a", account.value()).query(String.class).list()).containsExactly("recent");
+        assertThat(jdbc.sql("select spoken from coach.message where account_id = :a").param("a", account.value()).query(String.class).list()).containsExactly("recent");
     }
 
     private int messagesOf(AccountId account) {

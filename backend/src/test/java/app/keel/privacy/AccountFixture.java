@@ -119,11 +119,11 @@ final class AccountFixture {
         // A state declared (K-516): sickness is health data (traveling, a busy week and a new gym are not, K-1021).
         send(account, "PUT", "/v1/state", Map.of("kind", "SICK"));
         // A conversation with the coach and a thing it was asked to remember (ADR-092 #3): about the calls, so health data.
-        jdbc.sql("insert into coach.message (id, account_id, role, text, created_at) values (gen_random_uuid(), :account, 'USER', 'Why less food?', now())")
+        jdbc.sql("insert into coach.message (id, account_id, role, spoken, created_at) values (gen_random_uuid(), :account, 'USER', 'Why less food?', now())")
                 .param("account", account.value()).update();
         jdbc.sql("insert into coach.message (id, account_id, role, copy_key, topic, created_at) values (gen_random_uuid(), :account, 'COACH', 'coach.topic.why', 'WHY', now())")
                 .param("account", account.value()).update();
-        jdbc.sql("insert into coach.memory_item (id, account_id, text, created_at) values (gen_random_uuid(), :account, 'I train early in the morning', now())")
+        jdbc.sql("insert into coach.memory_item (id, account_id, sentence, created_at) values (gen_random_uuid(), :account, 'I train early in the morning', now())")
                 .param("account", account.value()).update();
         // A day's use of the coach (K-508): a count, the account's.
         assertThat(context.getBean(app.keel.subscription.Quota.class).take(account, app.keel.subscription.Quota.Use.COACH_MESSAGE)).isPresent();

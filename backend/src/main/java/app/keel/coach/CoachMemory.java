@@ -48,7 +48,7 @@ class CoachMemory {
     }
 
     List<Item> list(AccountId account) {
-        return jdbc.sql("select id, text, created_at from coach.memory_item where account_id = :account order by created_at, id")
+        return jdbc.sql("select id, sentence as text, created_at from coach.memory_item where account_id = :account order by created_at, id")
                 .param("account", account.value()).query((row, n) -> new Item(row.getObject("id", UUID.class), row.getString("text"),
                         row.getObject("created_at", OffsetDateTime.class).toInstant())).list();
     }
@@ -59,7 +59,7 @@ class CoachMemory {
         // One statement, so two requests at once never go over the limit.
         UUID id = UUID.randomUUID();
         int added = jdbc.sql("""
-                insert into coach.memory_item (id, account_id, text, created_at)
+                insert into coach.memory_item (id, account_id, sentence, created_at)
                 select :id, :account, :text, :at where (select count(*) from coach.memory_item where account_id = :account) < :max""")
                 .param("id", id).param("account", account.value()).param("text", kept).param("at", clock.instant().atOffset(ZoneOffset.UTC))
                 .param("max", limits.memoryMaxItems()).update();
@@ -71,7 +71,7 @@ class CoachMemory {
 
     Optional<Item> correct(AccountId account, UUID id, String text) {
         String kept = checked(text);
-        int updated = jdbc.sql("update coach.memory_item set text = :text where id = :id and account_id = :account").param("text", kept).param("id", id)
+        int updated = jdbc.sql("update coach.memory_item set sentence = :text where id = :id and account_id = :account").param("text", kept).param("id", id)
                 .param("account", account.value()).update();
         return updated == 0 ? Optional.empty() : list(account).stream().filter(item -> item.id().equals(id)).findFirst();
     }
