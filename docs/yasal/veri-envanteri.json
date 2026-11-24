@@ -809,7 +809,8 @@
     "copy_key",
     "topic",
     "decision_id",
-    "created_at"
+    "created_at",
+    "blocked"
    ],
    "basis": "explicit consent (GDPR Art. 9(2)(a)) — HEALTH_DATA",
    "gated_by": "HEALTH_DATA",

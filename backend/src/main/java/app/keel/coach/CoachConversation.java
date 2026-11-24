@@ -42,12 +42,12 @@ class CoachConversation {
         this.limits = limits;
     }
 
-    void append(AccountId account, Role role, String text, String copyKey, Topic topic, UUID decisionId) {
+    void append(AccountId account, Role role, String text, String copyKey, Topic topic, UUID decisionId, boolean blocked) {
         jdbc.sql("""
-                insert into coach.message (id, account_id, role, spoken, copy_key, topic, decision_id, created_at)
-                values (:id, :account, :role, :text, :copyKey, :topic, :decision, :at)""")
+                insert into coach.message (id, account_id, role, spoken, copy_key, topic, decision_id, created_at, blocked)
+                values (:id, :account, :role, :text, :copyKey, :topic, :decision, :at, :blocked)""")
                 .param("id", UUID.randomUUID()).param("account", account.value()).param("role", role.name()).param("text", text).param("copyKey", copyKey)
-                .param("topic", topic == null ? null : topic.name()).param("decision", decisionId).param("at", now()).update();
+                .param("topic", topic == null ? null : topic.name()).param("decision", decisionId).param("at", now()).param("blocked", blocked).update();
     }
 
     /** The last messages, oldest first, at most one page (coach_history_page). */
@@ -74,10 +74,10 @@ class CoachConversation {
                 .list();
     }
 
-    /** What goes to the model before the next question: the last few messages with words in them (the engine's sentences are not the model's to continue). */
+    /** What may go to the model before the next question: the last few messages with words in them, never one the server stopped (blocked) (the engine's sentences are not the model's to continue). */
     List<Turn> turns(AccountId account) {
         List<Message> latest = new ArrayList<>(jdbc.sql("""
-                select role, spoken as text from coach.message where account_id = :account and spoken is not null
+                select role, spoken as text from coach.message where account_id = :account and spoken is not null and not blocked
                 order by seq desc limit :limit""").param("account", account.value()).param("limit", limits.historyTurnsInPrompt())
                 .query((row, n) -> new Message(null, Role.valueOf(row.getString("role")), row.getString("text"), null, null, null, null)).list());
         Collections.reverse(latest);

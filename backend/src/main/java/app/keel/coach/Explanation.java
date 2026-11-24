@@ -103,9 +103,11 @@ class Explanation {
 
     private void remember(AccountId account, String question, Answer answer) {
         UUID call = answer.call().decisionId();
-        conversation.append(account, CoachConversation.Role.USER, question, null, null, call);
+        // A question the server stopped before it could be sent stays in the user's view and export, marked, and is never sent later.
+        boolean blocked = !health.found(question).isEmpty() || !injection.found(question).isEmpty();
+        conversation.append(account, CoachConversation.Role.USER, question, null, null, call, blocked);
         conversation.append(account, CoachConversation.Role.COACH, answer.reply(), answer.reply() == null ? (answer.copyKey() != null ? answer.copyKey() : "coach.topic."
-                + answer.topic().name().toLowerCase(java.util.Locale.ROOT)) : null, answer.topic(), call);
+                + answer.topic().name().toLowerCase(java.util.Locale.ROOT)) : null, answer.topic(), call, blocked);
     }
 
     private Optional<Answer> compute(AccountId account, String question, Optional<UUID> decisionId) {
@@ -155,7 +157,7 @@ class Explanation {
             throw new ApiException(ErrorCode.ENTITLEMENT_REQUIRED);
         }
         CoachFacts facts = CoachFacts.of(call, memories);
-        List<Turn> turns = new java.util.ArrayList<>(conversation.turns(account));
+        List<Turn> turns = sendable(conversation.turns(account));
         turns.add(Turn.user(question));
         ModelReply said;
         try {
@@ -172,6 +174,16 @@ class Explanation {
         return Optional.of(validator.read(said.text(), call, facts)
                 .map(valid -> new Answer(Mode.MODEL, valid.topic(), valid.rule(), valid.reply(), null, told))
                 .orElseGet(() -> new Answer(Mode.DETERMINISTIC, null, null, null, CALL_WORDS, told)));
+    }
+
+    /**
+     * The earlier turns that may go out with this question: the signals run over every one of them, as they ran over the question — a
+     * turn that touches health or gives orders (kept before the lists said so, or written by hand) is not sent, and since the rest
+     * would no longer follow from it, nothing of the history is: the question goes alone (fail closed).
+     */
+    private List<Turn> sendable(List<Turn> earlier) {
+        boolean clean = earlier.stream().allMatch(turn -> health.found(turn.text()).isEmpty() && injection.found(turn.text()).isEmpty());
+        return clean ? new java.util.ArrayList<>(earlier) : new java.util.ArrayList<>();
     }
 
     private boolean touchesHealth(String question, List<String> memories) {
