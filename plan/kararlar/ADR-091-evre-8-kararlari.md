@@ -88,17 +88,24 @@ karar olsa bile **hiçbir hesapta kilitlenmez, her zaman uygulanır** (U6, sağl
 kilitlidir (`held_back`). Abonelik bitince yeni tam kararlar yine kilitlenir; hak yenilenmez (abone iken verilen tam kararlar da sayılır).
 Harcanan hak **sağlık verisinin dışında**, `subscription.free_call_use` sayacında tutulur (`FreeCallUse`, `checkIn` her tam karar
 saklandığında artırır): kararlar sağlık verisidir ve onay geri çekilince silinir; sayım onlardan yapılsaydı veriyi silmek hakkı yenilerdi.
+Yük azaltan çağrılar (`DELOAD`, `FULL_REST_WEEK`, `STOP_LOAD_INCREASE`, `FIX_RECOVERY`) tam karar sayılmaz: asla tutulmaz, hakkı harcamaz
+(yorgun kullanıcıya deload esirgenmez; **Levent'in onayı gerekir**; ADR-091 #1 "deload ücretli" demişti, bu istisna onunla çelişir).
 Sayaç yalnız hesapla birlikte silinir (V6), dışa aktarmada `freeCallsUsed`, veri envanterinde sağlık-dışı hesap verisi.
 
-### Kilit yalnız bunu bildiren istemci için (sürüm uyumu)
-Mağazadaki 1.0 kilitli görünümü tanımaz (`.action` okur). Bu yüzden kilit **yalnız `X-Keel-Features` istek başlığında `locked-calls`
-belirteci olan** istemciye uygulanır (virgülle ayrılmış liste, büyük/küçük harf duyarsız; başlık adı ve belirteç `quota.yaml`'da
-`client_features_header` / `locked_calls_feature_token`, K2; sözleşmede `ClientFeatures` isteğe bağlı başlık parametresi). Başlıksız istemci
-(1.0) için sunucu bugünkü gibi davranır:
-- Check-in: karar **tam karar sayılır** (hak cihazlar arasında tutarlı kalır) ama **hiç tutulmaz**: varsayılan-uygula, tam görünüm.
-- Okuma, `/basis`, `/what-if`, apply/undo/decline: eskisi gibi; 403 yok.
-- Kenar durum (kabul): yeni istemciyle tutulmuş bir kararı eski istemci tam görünümde okur; eski istemcinin kilit göstermesi mümkün değil.
-Aynı hesabın eski telefonda verdiği ikinci tam karar hakkı harcar ama kilitlenmez; kilit yalnız yeni istemciyle verilen karara gelir.
+### Kilit istemciye değil hesaba bağlı (sürüm uyumu ve tehdit modeli)
+Mağazadaki 1.0 kilitli görünümü tanımaz (`.action` okur). Ama `X-Keel-Features: locked-calls` başlığı istemcinin kendi sözüdür: kapı
+olamaz, yoksa başlığı göndermeyen herkes duvarı sonsuza dek aşar. Bu yüzden:
+- Başlığı bir kez gönderen hesap sunucuda **işaretlenir** (`subscription.locked_calls_client`, sağlık dışı hesap verisi, hesapla silinir;
+  `LockedCallsClients`). İşaretli hesapta başlık sonradan eksik olsa da kilit açıktır; check-in eskisi gibi tutar.
+- `quota.yaml › legacy_clients_unlocked_until` (tırnaklı tarih, başlangıç **2027-01-15**, **Levent'in onayı gerekir**; 1.0.1 benimsenince
+  Levent ayarlar): o günün sonuna dek hiç işaretlenmemiş hesap (yalnız 1.0 kullanan) bugünkü gibi sunulur: tutulmaz, tam görünüm,
+  403 yok. Tarihten sonra başlık önemsizdir: ücretsiz hakkı geçmiş her abonesiz hesap kilitlidir. Başlık adı ve belirteç de
+  `quota.yaml`'da (`client_features_header`, `locked_calls_feature_token`; K2); sözleşmede `ClientFeatures` isteğe bağlı başlık.
+- Kilitli bir kararı başlıksız (eski) istemci okuyunca indirgenmiş şekil **verilmez** (çökerdi): 1.0'ın zaten işlediği 403
+  `ENTITLEMENT_REQUIRED` (current, `/{id}`, `/basis`, `/what-if`, apply/undo/decline ve o kararı üreten check-in cevabı); defter o çağrıyı
+  atlar. Kilitsiz çağrılar tam görünümde gelir. Başlıklı (yeni) istemci indirgenmiş görünümü alır.
+- apply/undo/decline/basis/what-if tutulan çağrıda başlığa bakmadan 403 verir: abonesiz hesapta tutulan çağrı asla uygulanmaz.
+- Başlıksız ve işaretsiz istemcinin (tarihten önce) tam kararı da **sayılır** (hak cihazlar arasında tutarlı), yalnız tutulmaz.
 
 ### Kilit nerede
 Karar yine **hesaplanır ve saklanır** (abone olunca açılsın). Kilit sunucuda, üç yerde:
@@ -113,7 +120,8 @@ Kilit **okuma anında** hesaplanır (`held_back` ve abonelik şimdi), kayıtta k
 `Entitlements`'ı belirler (ADR-056).
 
 ### Abone olunca
-Karar okuma uçlarından biri çağrıldığında (`releaseHeld`, tek işlemde): abone hesabın bütün `held_back` işaretleri kalkar; **yalnız
+Karar okuma uçlarından biri ya da check-in cevabı çağrıldığında (`releaseHeld`, tek işlemde; hatası `HeldRelease` ile warn olarak, hesapsız
+loglanır ve okumayı düşürmez, çağrılar tutulu kalıp sonraki okumada yeniden denenir; abonelik süresi dolunca kilit geri gelir, yenilenince açılır): abone hesabın bütün `held_back` işaretleri kalkar; **yalnız
 en son çağrı ve yalnız içinde bulunulan hafta ise** normal varsayılan-uygula yoluyla uygulanır. Eski kilitli çağrılar geçmiş olarak
 görünür hâle gelir ama geriye dönük uygulanmaz (`apply` zaten yalnız en son çağrıyı kabul eder). Abonelik sonra düşse bile
 işareti kalkmış çağrılar açık kalır: ödenmiş şeydir.

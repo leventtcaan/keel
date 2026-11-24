@@ -198,9 +198,9 @@ class DecisionService {
         return checkIn(account, clientId, weekOf, answered, false);
     }
 
-    /** {@code lockAware}: the client declared it can show a locked call (ClientFeatures); only then may the call be held back (ADR-091 Ek 1). */
+    /** {@code enforced}: the lock applies to this client (ClientFeatures.enforced, ADR-091 Ek 1); only then may the call be held back. */
     @Transactional
-    CallStore.Call checkIn(AccountId account, UUID clientId, LocalDate weekOf, List<Answers.Answer> answered, boolean lockAware) {
+    CallStore.Call checkIn(AccountId account, UUID clientId, LocalDate weekOf, List<Answers.Answer> answered, boolean enforced) {
         consent.require(account, ConsentKind.HEALTH_DATA);
         Optional<CallStore.Call> replay = calls.byClient(account, clientId);
         if (replay.isPresent()) {
@@ -248,7 +248,7 @@ class DecisionService {
         // Logging free, the call paid (ADR-091 Ek 1): a full call past the free allowance of an account without the subscription is
         // kept, so subscribing shows it, but not applied: the plan stays as it was. The safety net is never full, so never held (U6).
         boolean full = FreeCalls.full(DecisionPipeline.windowRead(snapshot, week.parameters()), kept);
-        boolean held = full && lockAware && freeCalls.heldBack(true, true, freeCallUse.used(account), entitlements.active(account, clock.instant()));
+        boolean held = full && freeCalls.heldBack(enforced, true, freeCallUse.used(account), entitlements.active(account, clock.instant()));
         CallStore.Call call = new CallStore.Call(UUID.randomUUID(), clientId, weekOf, week.today(), clock.instant(), parameters.versionHash(),
                 StoredSnapshot.of(snapshot, counted, week.waistSpanDays()), kept, application(decision));
         if (!calls.keep(account, call, held)) {
@@ -553,13 +553,8 @@ class DecisionService {
      */
     @Transactional
     PlanTargets apply(AccountId account, UUID id) {
-        return apply(account, id, false);
-    }
-
-    @Transactional
-    PlanTargets apply(AccountId account, UUID id, boolean lockAware) {
         consent.require(account, ConsentKind.HEALTH_DATA);
-        CallStore.Call call = latest(account, id, lockAware);
+        CallStore.Call call = latest(account, id);
         if (call.application() == CallStore.Application.APPLIED) {
             return targetsAfter(account);
         }
@@ -608,13 +603,8 @@ class DecisionService {
      */
     @Transactional
     PlanTargets undo(AccountId account, UUID id) {
-        return undo(account, id, false);
-    }
-
-    @Transactional
-    PlanTargets undo(AccountId account, UUID id, boolean lockAware) {
         consent.require(account, ConsentKind.HEALTH_DATA);
-        CallStore.Call call = latest(account, id, lockAware);
+        CallStore.Call call = latest(account, id);
         if (call.application() == CallStore.Application.UNDONE) {
             return targetsAfter(account);
         }
@@ -645,13 +635,8 @@ class DecisionService {
      */
     @Transactional
     PlanTargets decline(AccountId account, UUID id) {
-        return decline(account, id, false);
-    }
-
-    @Transactional
-    PlanTargets decline(AccountId account, UUID id, boolean lockAware) {
         consent.require(account, ConsentKind.HEALTH_DATA);
-        CallStore.Call call = latest(account, id, lockAware);
+        CallStore.Call call = latest(account, id);
         if (SafetyCalls.restsOnTheSafetyNet(call.decision())) {
             throw new ApiException(ErrorCode.CONFLICT);
         }
@@ -953,11 +938,10 @@ class DecisionService {
     }
 
     /** The call, if it is the latest: an older one is history (CONFLICT), a missing one NOT_FOUND. */
-    private CallStore.Call latest(AccountId account, UUID id, boolean lockAware) {
+    private CallStore.Call latest(AccountId account, UUID id) {
         CallStore.Call call = calls.lockedById(account, id).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
-        if (lockAware) {
-            requireUnlocked(account, call);
-        }
+        // Never applied, undone or declined while held back, whatever the client says (ADR-091 Ek 1).
+        requireUnlocked(account, call);
         boolean latest = calls.newestFirst(account, Optional.empty(), 1).stream().findFirst().map(newest -> newest.id().equals(id)).orElse(false);
         if (!latest) {
             throw new ApiException(ErrorCode.CONFLICT);
@@ -1025,15 +1009,9 @@ class DecisionService {
      * None for a safety call (ADR-028 #24) or an older one.
      */
     Optional<Map<String, Object>> whatIf(AccountId account, UUID id) {
-        return whatIf(account, id, false);
-    }
-
-    Optional<Map<String, Object>> whatIf(AccountId account, UUID id, boolean lockAware) {
         Optional<CallStore.Call> latest = current(account).filter(call -> call.id().equals(id))
                 .filter(call -> !Boolean.TRUE.equals(call.decision().get("safety")));
-        if (lockAware) {
-            latest.ifPresent(call -> requireUnlocked(account, call));
-        }
+        latest.ifPresent(call -> requireUnlocked(account, call));
         Optional<CallStore.Plan> plan = calls.plan(account);
         if (latest.isEmpty() || plan.isEmpty()) {
             return Optional.empty();
@@ -1090,14 +1068,8 @@ class DecisionService {
 
     /** What the call read, from its own stored snapshot (K-519): read with the parameters for the sex it was made for. */
     Optional<DecisionBasis> basis(AccountId account, UUID id) {
-        return basis(account, id, false);
-    }
-
-    Optional<DecisionBasis> basis(AccountId account, UUID id, boolean lockAware) {
         return find(account, id).map(call -> {
-            if (lockAware) {
-                requireUnlocked(account, call);
-            }
+            requireUnlocked(account, call);
             return DecisionBasis.of(call.snapshot(), parameters.forSex(call.snapshot().sex()));
         });
     }

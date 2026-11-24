@@ -4256,10 +4256,12 @@ export interface components {
     parameters: {
         /**
          * @description The features the phone can show, comma separated, case-insensitive (ADR-091 Ek 1, K-1201; name and token are in
-         *     data/parameters/quota.yaml). `locked-calls`: the phone shows a LockedDecision. Only with it may the server hold a
-         *     full call back (not applied, locked view) and answer 403 ENTITLEMENT_REQUIRED on a call's basis, what-if, apply,
-         *     undo and decline. Without it (the 1.0 phone) every route answers as before the locked call existed: the call is
-         *     never held back and is read in full, also one a newer phone had held back.
+         *     data/parameters/quota.yaml). `locked-calls`: the phone shows a LockedDecision. The server remembers the account that
+         *     sent it once: from then on, and for every account after `legacy_clients_unlocked_until`, the lock does not depend on
+         *     the header. A held-back call is read as a LockedDecision by a phone that sends the token; a phone that does not (the
+         *     1.0) gets 403 ENTITLEMENT_REQUIRED on it (current, by id, basis, what-if, apply, undo, decline, and the check-in answer
+         *     that made it), and the ledger leaves it out. Before that date, an account that never sent the token is served as
+         *     before the locked call existed: its call is never held back.
          */
         ClientFeatures: string;
         Id: string;
@@ -6014,10 +6016,12 @@ export interface operations {
             header?: {
                 /**
                  * @description The features the phone can show, comma separated, case-insensitive (ADR-091 Ek 1, K-1201; name and token are in
-                 *     data/parameters/quota.yaml). `locked-calls`: the phone shows a LockedDecision. Only with it may the server hold a
-                 *     full call back (not applied, locked view) and answer 403 ENTITLEMENT_REQUIRED on a call's basis, what-if, apply,
-                 *     undo and decline. Without it (the 1.0 phone) every route answers as before the locked call existed: the call is
-                 *     never held back and is read in full, also one a newer phone had held back.
+                 *     data/parameters/quota.yaml). `locked-calls`: the phone shows a LockedDecision. The server remembers the account that
+                 *     sent it once: from then on, and for every account after `legacy_clients_unlocked_until`, the lock does not depend on
+                 *     the header. A held-back call is read as a LockedDecision by a phone that sends the token; a phone that does not (the
+                 *     1.0) gets 403 ENTITLEMENT_REQUIRED on it (current, by id, basis, what-if, apply, undo, decline, and the check-in answer
+                 *     that made it), and the ledger leaves it out. Before that date, an account that never sent the token is served as
+                 *     before the locked call existed: its call is never held back.
                  */
                 "X-Keel-Features"?: components["parameters"]["ClientFeatures"];
             };
@@ -6232,10 +6236,12 @@ export interface operations {
             header?: {
                 /**
                  * @description The features the phone can show, comma separated, case-insensitive (ADR-091 Ek 1, K-1201; name and token are in
-                 *     data/parameters/quota.yaml). `locked-calls`: the phone shows a LockedDecision. Only with it may the server hold a
-                 *     full call back (not applied, locked view) and answer 403 ENTITLEMENT_REQUIRED on a call's basis, what-if, apply,
-                 *     undo and decline. Without it (the 1.0 phone) every route answers as before the locked call existed: the call is
-                 *     never held back and is read in full, also one a newer phone had held back.
+                 *     data/parameters/quota.yaml). `locked-calls`: the phone shows a LockedDecision. The server remembers the account that
+                 *     sent it once: from then on, and for every account after `legacy_clients_unlocked_until`, the lock does not depend on
+                 *     the header. A held-back call is read as a LockedDecision by a phone that sends the token; a phone that does not (the
+                 *     1.0) gets 403 ENTITLEMENT_REQUIRED on it (current, by id, basis, what-if, apply, undo, decline, and the check-in answer
+                 *     that made it), and the ledger leaves it out. Before that date, an account that never sent the token is served as
+                 *     before the locked call existed: its call is never held back.
                  */
                 "X-Keel-Features"?: components["parameters"]["ClientFeatures"];
             };
@@ -6262,10 +6268,12 @@ export interface operations {
             header?: {
                 /**
                  * @description The features the phone can show, comma separated, case-insensitive (ADR-091 Ek 1, K-1201; name and token are in
-                 *     data/parameters/quota.yaml). `locked-calls`: the phone shows a LockedDecision. Only with it may the server hold a
-                 *     full call back (not applied, locked view) and answer 403 ENTITLEMENT_REQUIRED on a call's basis, what-if, apply,
-                 *     undo and decline. Without it (the 1.0 phone) every route answers as before the locked call existed: the call is
-                 *     never held back and is read in full, also one a newer phone had held back.
+                 *     data/parameters/quota.yaml). `locked-calls`: the phone shows a LockedDecision. The server remembers the account that
+                 *     sent it once: from then on, and for every account after `legacy_clients_unlocked_until`, the lock does not depend on
+                 *     the header. A held-back call is read as a LockedDecision by a phone that sends the token; a phone that does not (the
+                 *     1.0) gets 403 ENTITLEMENT_REQUIRED on it (current, by id, basis, what-if, apply, undo, decline, and the check-in answer
+                 *     that made it), and the ledger leaves it out. Before that date, an account that never sent the token is served as
+                 *     before the locked call existed: its call is never held back.
                  */
                 "X-Keel-Features"?: components["parameters"]["ClientFeatures"];
             };
@@ -6292,10 +6300,12 @@ export interface operations {
             header?: {
                 /**
                  * @description The features the phone can show, comma separated, case-insensitive (ADR-091 Ek 1, K-1201; name and token are in
-                 *     data/parameters/quota.yaml). `locked-calls`: the phone shows a LockedDecision. Only with it may the server hold a
-                 *     full call back (not applied, locked view) and answer 403 ENTITLEMENT_REQUIRED on a call's basis, what-if, apply,
-                 *     undo and decline. Without it (the 1.0 phone) every route answers as before the locked call existed: the call is
-                 *     never held back and is read in full, also one a newer phone had held back.
+                 *     data/parameters/quota.yaml). `locked-calls`: the phone shows a LockedDecision. The server remembers the account that
+                 *     sent it once: from then on, and for every account after `legacy_clients_unlocked_until`, the lock does not depend on
+                 *     the header. A held-back call is read as a LockedDecision by a phone that sends the token; a phone that does not (the
+                 *     1.0) gets 403 ENTITLEMENT_REQUIRED on it (current, by id, basis, what-if, apply, undo, decline, and the check-in answer
+                 *     that made it), and the ledger leaves it out. Before that date, an account that never sent the token is served as
+                 *     before the locked call existed: its call is never held back.
                  */
                 "X-Keel-Features"?: components["parameters"]["ClientFeatures"];
             };
@@ -6324,10 +6334,12 @@ export interface operations {
             header?: {
                 /**
                  * @description The features the phone can show, comma separated, case-insensitive (ADR-091 Ek 1, K-1201; name and token are in
-                 *     data/parameters/quota.yaml). `locked-calls`: the phone shows a LockedDecision. Only with it may the server hold a
-                 *     full call back (not applied, locked view) and answer 403 ENTITLEMENT_REQUIRED on a call's basis, what-if, apply,
-                 *     undo and decline. Without it (the 1.0 phone) every route answers as before the locked call existed: the call is
-                 *     never held back and is read in full, also one a newer phone had held back.
+                 *     data/parameters/quota.yaml). `locked-calls`: the phone shows a LockedDecision. The server remembers the account that
+                 *     sent it once: from then on, and for every account after `legacy_clients_unlocked_until`, the lock does not depend on
+                 *     the header. A held-back call is read as a LockedDecision by a phone that sends the token; a phone that does not (the
+                 *     1.0) gets 403 ENTITLEMENT_REQUIRED on it (current, by id, basis, what-if, apply, undo, decline, and the check-in answer
+                 *     that made it), and the ledger leaves it out. Before that date, an account that never sent the token is served as
+                 *     before the locked call existed: its call is never held back.
                  */
                 "X-Keel-Features"?: components["parameters"]["ClientFeatures"];
             };
@@ -6356,10 +6368,12 @@ export interface operations {
             header?: {
                 /**
                  * @description The features the phone can show, comma separated, case-insensitive (ADR-091 Ek 1, K-1201; name and token are in
-                 *     data/parameters/quota.yaml). `locked-calls`: the phone shows a LockedDecision. Only with it may the server hold a
-                 *     full call back (not applied, locked view) and answer 403 ENTITLEMENT_REQUIRED on a call's basis, what-if, apply,
-                 *     undo and decline. Without it (the 1.0 phone) every route answers as before the locked call existed: the call is
-                 *     never held back and is read in full, also one a newer phone had held back.
+                 *     data/parameters/quota.yaml). `locked-calls`: the phone shows a LockedDecision. The server remembers the account that
+                 *     sent it once: from then on, and for every account after `legacy_clients_unlocked_until`, the lock does not depend on
+                 *     the header. A held-back call is read as a LockedDecision by a phone that sends the token; a phone that does not (the
+                 *     1.0) gets 403 ENTITLEMENT_REQUIRED on it (current, by id, basis, what-if, apply, undo, decline, and the check-in answer
+                 *     that made it), and the ledger leaves it out. Before that date, an account that never sent the token is served as
+                 *     before the locked call existed: its call is never held back.
                  */
                 "X-Keel-Features"?: components["parameters"]["ClientFeatures"];
             };
@@ -6409,10 +6423,12 @@ export interface operations {
             header?: {
                 /**
                  * @description The features the phone can show, comma separated, case-insensitive (ADR-091 Ek 1, K-1201; name and token are in
-                 *     data/parameters/quota.yaml). `locked-calls`: the phone shows a LockedDecision. Only with it may the server hold a
-                 *     full call back (not applied, locked view) and answer 403 ENTITLEMENT_REQUIRED on a call's basis, what-if, apply,
-                 *     undo and decline. Without it (the 1.0 phone) every route answers as before the locked call existed: the call is
-                 *     never held back and is read in full, also one a newer phone had held back.
+                 *     data/parameters/quota.yaml). `locked-calls`: the phone shows a LockedDecision. The server remembers the account that
+                 *     sent it once: from then on, and for every account after `legacy_clients_unlocked_until`, the lock does not depend on
+                 *     the header. A held-back call is read as a LockedDecision by a phone that sends the token; a phone that does not (the
+                 *     1.0) gets 403 ENTITLEMENT_REQUIRED on it (current, by id, basis, what-if, apply, undo, decline, and the check-in answer
+                 *     that made it), and the ledger leaves it out. Before that date, an account that never sent the token is served as
+                 *     before the locked call existed: its call is never held back.
                  */
                 "X-Keel-Features"?: components["parameters"]["ClientFeatures"];
             };
@@ -6441,10 +6457,12 @@ export interface operations {
             header?: {
                 /**
                  * @description The features the phone can show, comma separated, case-insensitive (ADR-091 Ek 1, K-1201; name and token are in
-                 *     data/parameters/quota.yaml). `locked-calls`: the phone shows a LockedDecision. Only with it may the server hold a
-                 *     full call back (not applied, locked view) and answer 403 ENTITLEMENT_REQUIRED on a call's basis, what-if, apply,
-                 *     undo and decline. Without it (the 1.0 phone) every route answers as before the locked call existed: the call is
-                 *     never held back and is read in full, also one a newer phone had held back.
+                 *     data/parameters/quota.yaml). `locked-calls`: the phone shows a LockedDecision. The server remembers the account that
+                 *     sent it once: from then on, and for every account after `legacy_clients_unlocked_until`, the lock does not depend on
+                 *     the header. A held-back call is read as a LockedDecision by a phone that sends the token; a phone that does not (the
+                 *     1.0) gets 403 ENTITLEMENT_REQUIRED on it (current, by id, basis, what-if, apply, undo, decline, and the check-in answer
+                 *     that made it), and the ledger leaves it out. Before that date, an account that never sent the token is served as
+                 *     before the locked call existed: its call is never held back.
                  */
                 "X-Keel-Features"?: components["parameters"]["ClientFeatures"];
             };
@@ -6473,10 +6491,12 @@ export interface operations {
             header?: {
                 /**
                  * @description The features the phone can show, comma separated, case-insensitive (ADR-091 Ek 1, K-1201; name and token are in
-                 *     data/parameters/quota.yaml). `locked-calls`: the phone shows a LockedDecision. Only with it may the server hold a
-                 *     full call back (not applied, locked view) and answer 403 ENTITLEMENT_REQUIRED on a call's basis, what-if, apply,
-                 *     undo and decline. Without it (the 1.0 phone) every route answers as before the locked call existed: the call is
-                 *     never held back and is read in full, also one a newer phone had held back.
+                 *     data/parameters/quota.yaml). `locked-calls`: the phone shows a LockedDecision. The server remembers the account that
+                 *     sent it once: from then on, and for every account after `legacy_clients_unlocked_until`, the lock does not depend on
+                 *     the header. A held-back call is read as a LockedDecision by a phone that sends the token; a phone that does not (the
+                 *     1.0) gets 403 ENTITLEMENT_REQUIRED on it (current, by id, basis, what-if, apply, undo, decline, and the check-in answer
+                 *     that made it), and the ledger leaves it out. Before that date, an account that never sent the token is served as
+                 *     before the locked call existed: its call is never held back.
                  */
                 "X-Keel-Features"?: components["parameters"]["ClientFeatures"];
             };

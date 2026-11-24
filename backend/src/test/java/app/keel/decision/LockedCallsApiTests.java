@@ -13,6 +13,7 @@ import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -152,8 +153,9 @@ class LockedCallsApiTests {
     }
 
     @Test
-    void aCallHeldBackForANewPhoneIsReadInFullByTheOldOne() throws Exception {
-        // The accepted edge (ADR-091 Ek 1): the old phone has no lock to show, and it is served as it always was.
+    @SuppressWarnings("unchecked")
+    void leavingTheHeaderOffOnAMarkedAccountStillLocksAndTheOldPhoneGetsTheErrorItHandles() throws Exception {
+        // ADR-091 Ek 1, threat model: the header is the client's word. The account said once that its phone shows locked calls.
         AccountId account = onACut();
         pushBackAWeek(checkIn(account));
         Map<String, Object> locked = checkIn(account);
@@ -161,8 +163,116 @@ class LockedCallsApiTests {
 
         features = null;
 
-        assertThat(send(account, "GET", "/v1/decisions/current")).hasStatusOk().bodyJson().extractingPath("$.action").isNotNull();
-        assertThat(send(account, "GET", "/v1/decisions/" + locked.get("id") + "/basis")).hasStatusOk();
+        for (String path : List.of("/v1/decisions/current", "/v1/decisions/" + locked.get("id"), "/v1/decisions/" + locked.get("id") + "/basis",
+                "/v1/decisions/" + locked.get("id") + "/what-if")) {
+            assertThat(send(account, "GET", path)).as(path).hasStatus(403).bodyJson().extractingPath("$.code").isEqualTo("ENTITLEMENT_REQUIRED");
+        }
+        for (String path : List.of("/apply", "/undo", "/decline")) {
+            assertThat(send(account, "POST", "/v1/decisions/" + locked.get("id") + path)).as(path).hasStatus(403);
+        }
+        // No reduced view for a phone that would crash on it: the ledger holds the calls it can read.
+        assertThat((List<Map<String, Object>>) JSON.readValue(send(account, "GET", "/v1/decisions").getResponse().getContentAsString(), Map.class)
+                .get("items")).hasSize(1).allSatisfy(call -> assertThat(call).containsKey("action"));
+    }
+
+    @Test
+    void aCheckInWithoutTheHeaderOnAMarkedAccountIsHeldBackAsWell() throws Exception {
+        AccountId account = onACut();
+        pushBackAWeek(checkIn(account)); // marks the account
+        features = null;
+
+        assertThat(send(account, "POST", "/v1/check-ins/current/answers", Map.of("clientId", UUID.randomUUID(), "weekOf",
+                CheckInWeek.weekOf(LocalDate.now(ZoneOffset.UTC), DayOfWeek.MONDAY).toString(),
+                "answers", List.of(Map.of("kind", "TRAINING", "choice", "STABLE"))))).hasStatus(403);
+        assertThat(jdbc.sql("select count(*) from decision.weekly_call where account_id = :a and held_back").param("a", account.value())
+                .query(Long.class).single()).as("kept, held back").isEqualTo(1);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void aSafetyCallPastTheAllowanceIsNeverHeldBackAndSpendsNothing() throws Exception {
+        // Losing far too fast: the safety net speaks (U6). The account's free call is already spent and it has no subscription.
+        AccountId account = onACut(0.3);
+        uses().record(account);
+
+        Map<String, Object> call = checkIn(account);
+
+        assertThat(call).as("a whole view").containsKey("action").doesNotContainKey("locked");
+        assertThat(((List<Map<String, Object>>) call.get("reasons")).stream().map(reason -> reason.get("rule")))
+                .as("the scenario is a safety call").anyMatch(rule -> app.keel.engine.SafetyNet.RULES.stream().anyMatch(known -> known.value().equals(rule)));
+        assertThat(jdbc.sql("select held_back from decision.weekly_call where account_id = :a").param("a", account.value()).query(Boolean.class).single())
+                .isFalse();
+        assertThat((Map<String, Object>) call.get("application")).containsEntry("state", "APPLIED");
+        assertThat(uses().used(account)).as("counter unchanged").isEqualTo(1);
+    }
+
+    @Test
+    void aReplayedCheckInDoesNotSpendTheFreeCallTwice() throws Exception {
+        AccountId account = onACut();
+        Map<String, Object> body = Map.of("clientId", UUID.randomUUID(), "weekOf", CheckInWeek.weekOf(LocalDate.now(ZoneOffset.UTC), DayOfWeek.MONDAY).toString(),
+                "answers", List.of(Map.of("kind", "TRAINING", "choice", "STABLE")));
+
+        assertThat(send(account, "POST", "/v1/check-ins/current/answers", body)).hasStatusOk();
+        assertThat(send(account, "POST", "/v1/check-ins/current/answers", body)).hasStatusOk();
+
+        assertThat(uses().used(account)).isEqualTo(1);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void subscribingAppliesTheHeldCallOfThisWeekThroughTheOneApplyPath() throws Exception {
+        AccountId account = onACut();
+        pushBackAWeek(checkIn(account));
+        Map<String, Object> locked = checkIn(account);
+        // A call that moves the plan, held (the engine's own call this week changes nothing): setup only.
+        jdbc.sql("""
+                update decision.weekly_call set application = 'PENDING',
+                decision = jsonb_set(decision, '{action}', '{"type":"INCREASE_CALORIES","kcalPerDay":100}')
+                where id = :id""").param("id", UUID.fromString((String) locked.get("id"))).update();
+        String before = send(account, "GET", "/v1/targets").getResponse().getContentAsString();
+        assertThat(send(account, "GET", "/v1/decisions/current")).hasStatusOk().bodyJson().extractingPath("$.locked").isEqualTo(true);
+
+        subscribe(account, "now() + interval '30 days'");
+
+        assertThat(send(account, "GET", "/v1/decisions/current")).hasStatusOk().bodyJson().extractingPath("$.application.state").isEqualTo("APPLIED");
+        assertThat(jdbc.sql("select plan_after is not null from decision.weekly_call where id = :id").param("id", UUID.fromString((String) locked.get("id")))
+                .query(Boolean.class).single()).isTrue();
+        assertThat(send(account, "GET", "/v1/targets").getResponse().getContentAsString()).as("the plan moved").isNotEqualTo(before);
+    }
+
+    @Test
+    void theCoachDoesNotSeeAHeldCallUntilTheAccountSubscribes() throws Exception {
+        AccountId account = onACut();
+        pushBackAWeek(checkIn(account));
+        checkIn(account);
+        CallReader reader = context.getBean(CallReader.class);
+
+        assertThat(reader.call(account, Optional.empty())).as("held: not found").isEmpty();
+
+        subscribe(account, "now() + interval '30 days'");
+        assertThat(reader.call(account, Optional.empty())).isPresent();
+    }
+
+    @Test
+    void aLapsedSubscriptionLocksAgainAndARenewedOneReleases() throws Exception {
+        AccountId account = onACut();
+        pushBackAWeek(checkIn(account));
+        checkIn(account);
+
+        subscribe(account, "now() - interval '1 day'");
+        assertThat(send(account, "GET", "/v1/decisions/current")).as("access_until in the past").hasStatusOk().bodyJson().extractingPath("$.locked").isEqualTo(true);
+
+        jdbc.sql("update subscription.subscription set access_until = now() + interval '30 days' where account_id = :a").param("a", account.value()).update();
+        assertThat(send(account, "GET", "/v1/decisions/current")).as("renewed").hasStatusOk().bodyJson().extractingPath("$.action").isNotNull();
+    }
+
+    private app.keel.subscription.FreeCallUse uses() {
+        return context.getBean(app.keel.subscription.FreeCallUse.class);
+    }
+
+    private void subscribe(AccountId account, String accessUntil) {
+        jdbc.sql("insert into subscription.subscription (account_id, status, access_until, last_event_at) values (:a, 'ACTIVE', " + accessUntil + ", now())")
+                .param("a", account.value()).update();
     }
 
     /** Makes the call last week's: the account's next check-in is this week's. */
@@ -177,6 +287,10 @@ class LockedCallsApiTests {
 
     /** A man on UTC on a cut begun two months ago, weighed every morning for the last four weeks. */
     private AccountId onACut() {
+        return onACut(0.05);
+    }
+
+    private AccountId onACut(double lossPerDayKg) {
         AccountId account = TestSessions.newAccount();
         assertThat(send(account, "PUT", "/v1/consents/HEALTH_DATA", Map.of("textVersion", ConsentTextVersions.HEALTH_DATA))).hasStatusOk();
         assertThat(send(account, "PUT", "/v1/profile", Map.of("goal", "LOSE_FAT", "sex", "MALE", "heightCm", 180, "birthYear", 1996,
@@ -189,7 +303,7 @@ class LockedCallsApiTests {
                 values (:a, 'CUT', :began, :began, 2600, false)""").param("a", account.value()).param("began", today.minusDays(60)).update();
         for (int day = 28; day >= 1; day--) {
             assertThat(send(account, "POST", "/v1/weigh-ins", Map.of("clientId", UUID.randomUUID(), "measuredAt",
-                    today.minusDays(day).atTime(LocalTime.of(7, 0)).toInstant(ZoneOffset.UTC).toString(), "kg", 82.0 - day * 0.05,
+                    today.minusDays(day).atTime(LocalTime.of(7, 0)).toInstant(ZoneOffset.UTC).toString(), "kg", 82.0 - day * lossPerDayKg,
                     "source", "MANUAL")).getResponse().getStatus()).isLessThan(300);
         }
         return account;

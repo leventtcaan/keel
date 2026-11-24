@@ -45,3 +45,9 @@ parameters:
     tag: urun
     source: "plan/kararlar/ADR-091-evre-8-kararlari.md#Ek 1"
     note: "The token of client_features_header that says the phone shows a locked call (LockedDecision). Only for such a client may the server hold a call back or answer 403 ENTITLEMENT_REQUIRED on a call's detail (ADR-091 Ek 1)."
+  - key: legacy_clients_unlocked_until
+    value: "2027-01-15"
+    unit: date
+    tag: urun
+    source: "plan/kararlar/ADR-091-evre-8-kararlari.md#Ek 1"
+    note: "Quoted date. A phone that never said it shows locked calls (the 1.0 in the stores) is served as before up to and including this day, for an account that never used a phone that says it. After it the header is irrelevant: the lock is on for every client (a 1.0 gets 403 ENTITLEMENT_REQUIRED on a held call). Set after 1.0.1 adoption (Levent's decision)."

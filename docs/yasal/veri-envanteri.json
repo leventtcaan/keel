@@ -1202,6 +1202,27 @@
    ]
   },
   {
+   "table": "subscription.locked_calls_client",
+   "module": "subscription",
+   "class": "subscription",
+   "purpose": "Whether you have used a version of the app that can show a call waiting for the subscription, and since when. It keeps the free weekly call from being used again by leaving that information out of a request.",
+   "columns": [
+    "account_id",
+    "since"
+   ],
+   "basis": "contract (Art. 6(1)(b))",
+   "gated_by": null,
+   "erased_by": [
+    "account_deletion"
+   ],
+   "exported": true,
+   "export_key": "lockedCallsClient",
+   "policy": "data-subscription",
+   "app_privacy": [
+    "Usage Data › Product Interaction"
+   ]
+  },
+  {
    "table": "subscription.subscription",
    "module": "subscription",
    "class": "subscription",

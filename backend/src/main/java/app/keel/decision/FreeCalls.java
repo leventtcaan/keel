@@ -1,11 +1,13 @@
 package app.keel.decision;
 
+import app.keel.engine.ActionType;
 import app.keel.engine.SafetyHold;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.springframework.core.io.ClassPathResource;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -36,9 +38,21 @@ record FreeCalls(int allowance) {
         }
     }
 
-    /** Whether the kept call is a full one: the window was read, and it rests on neither the safety net nor the cycle question. */
+    /**
+     * The calls that take load off, never held and never spending the allowance (ADR-091 Ek 1; the product owner's nod is pending): a fatigued
+     * user is not denied a lighter week, a week off, a hold of the load or the recovery fix.
+     */
+    private static final Set<String> LOAD_REDUCING = Set.of(ActionType.DELOAD.name(), ActionType.FULL_REST_WEEK.name(),
+            ActionType.STOP_LOAD_INCREASE.name(), ActionType.FIX_RECOVERY.name());
+
+    /**
+     * Whether the kept call is a full one: the window was read, and it rests on neither the safety net nor the cycle question,
+     * and it is no call that takes load off.
+     */
+    @SuppressWarnings("unchecked")
     static boolean full(boolean windowRead, Map<String, Object> kept) {
-        return windowRead && !SafetyCalls.restsOnTheSafetyNet(kept) && !waitsForTheCycleQuestion(kept);
+        Object type = ((Map<String, Object>) kept.getOrDefault("action", Map.of())).get("type");
+        return windowRead && !SafetyCalls.restsOnTheSafetyNet(kept) && !waitsForTheCycleQuestion(kept) && !LOAD_REDUCING.contains(type);
     }
 
     @SuppressWarnings("unchecked")

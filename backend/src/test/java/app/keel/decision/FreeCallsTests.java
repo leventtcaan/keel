@@ -50,6 +50,15 @@ class FreeCallsTests {
     }
 
     @Test
+    void theCallsThatTakeLoadOffAreNeverFullSoNeverHeldNorSpendTheFreeCall() {
+        // ADR-091 Ek 1 (needs Levent's nod): a fatigued user is not denied a deload or a week off.
+        for (String type : List.of("DELOAD", "FULL_REST_WEEK", "STOP_LOAD_INCREASE", "FIX_RECOVERY")) {
+            assertThat(FreeCalls.full(true, call(type, "deload_ladder"))).as(type).isFalse();
+        }
+        assertThat(FreeCalls.full(true, call("INCREASE_CALORIES", "calorie_ladder_step"))).isTrue();
+    }
+
+    @Test
     void theFirstFullCallIsFreeTheNextOnesWaitForTheSubscription() {
         FreeCalls free = new FreeCalls(1);
 
