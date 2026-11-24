@@ -1,5 +1,5 @@
 /**
- * The app's haptics, as a port (ADR-075 Ek 5). `setDone()` is the light tick of a set kept (Evre 7 C2, ADR-090 Ek 7); `record()` is
+ * The app's haptics, as a port (ADR-075 Ek 5). `setDone()` is the light tick of a set kept (Evre 7 C2, ADR-090 Ek 7); `restTick()` and `restEnd()` count a rest's last seconds and its end (K-1207); `record()` is
  * felt when a workout ends with a record (ADR-075 #7). Both are `expo-haptics` (SDK 57 module, no data, nothing leaves the phone).
  * iOS plays them only when the phone's own System Haptics setting is on (Settings › Sounds & Haptics), so the user's choice is the
  * system's; the app has no switch of its own. A phone whose build does not have the native module yet (an older development build)
@@ -37,6 +37,14 @@ export const haptics = {
   /** A set logged (Evre 7 C2, the check of a Hevy-like row): a light tick. */
   setDone(): void {
     play((h) => h.impactAsync(h.ImpactFeedbackStyle.Light));
+  },
+  /** One of the rest's last seconds (K-1207): a light tick, the same hand as a set kept. */
+  restTick(): void {
+    play((h) => h.impactAsync(h.ImpactFeedbackStyle.Light));
+  },
+  /** The rest is over (K-1207): a stronger one than the ticks before it. */
+  restEnd(): void {
+    play((h) => h.impactAsync(h.ImpactFeedbackStyle.Heavy));
   },
   /** A record at the end of a workout (ADR-075 Ek 5): the success notification. */
   record(): void {

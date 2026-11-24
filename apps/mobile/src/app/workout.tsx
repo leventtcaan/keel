@@ -53,7 +53,7 @@ import { TakenSheet } from '@/train/TakenSheet';
 import { orderBehind, pushBehind, takenChoices } from '@/train/taken';
 import { workoutParams } from '@/train/params';
 import { repsText } from '@/train/reps';
-import { buildSet, exerciseStatus, loadText, parseEntry, parseLoad, platesLine } from '@/train/session';
+import { buildSet, exerciseStatus, loadText, parseEntry, parseLoad, platesLine, setText } from '@/train/session';
 import { type Move, type TrainData, movesOf, ownMove } from '@/train/trainData';
 import { localDay } from '@/today/today';
 import { formatLoad } from '@/units/units';
@@ -108,6 +108,8 @@ function Session() {
   const [records, setRecords] = useState<LocalRecord[] | null>(null);
   const [picked, setPicked] = useState<string | null>(null);
   const [rest, setRest] = useState<number | null>(null);
+  // The move the set that started the rest was of (K-1207): the rest screen names the next move only where it is another one.
+  const [restMove, setRestMove] = useState<string | null>(null);
   // The rest's voice in the background (K-411): set when a rest starts, moved by the next, gone when the session is left.
   useEffect(() => {
     if (rest !== null) void restAlert.start(rest);
@@ -116,6 +118,10 @@ function Session() {
   const endRest = () => {
     setRest(null);
     void restAlert.stop();
+  };
+  const startRest = (fromMove: string) => {
+    setRestMove(fromMove);
+    setRest(new Date().getTime());
   };
   // The session's start while nothing is kept yet: the moment it was opened, which its first set keeps as its start.
   const [openedAt] = useState(() => Date.now());
@@ -451,7 +457,7 @@ function Session() {
         if (plan.current === plan.rows.length - 1) {
           endRest();
           setPicked(move.id);
-        } else if (resting) setRest(new Date().getTime());
+        } else if (resting) startRest(move.id);
       } else {
         // In a superset the partner comes next (a one-sided move's right side first); the rest comes after the round,
         // unless the round was the group's last.
@@ -463,7 +469,7 @@ function Session() {
           groupDone = found.next === null;
           setPicked(found.next ?? move.id);
         }
-        if (roundDone && !groupDone && resting) setRest(new Date().getTime());
+        if (roundDone && !groupDone && resting) startRest(move.id);
         // A set inside a round ends the last round's rest: its timer goes, and its alert must not sound mid-round (K-411).
         else endRest();
       }
@@ -1261,7 +1267,7 @@ function Session() {
   const partner = group === undefined || moveId === undefined ? null : nextInGroup(group[1], moveId, leftAfterThis).next;
   const upNextId = partner !== null && partner !== moveId ? partner : nextId;
   const upNext =
-    upNextId === undefined || row === null ? null : (
+    upNextId === undefined ? null : (
       <UpNext
         name={name(upNextId)}
         equipment={moves.get(upNextId)?.equipment}
@@ -1277,8 +1283,46 @@ function Session() {
       />
     );
 
+  // The rest is its own state (K-1207): the set card is gone while it counts, and comes back with Ready or when the rest is over and Ready
+  // is tapped. Not while paused (the pause ends the rest), nor over the cardio step or a discarded workout.
+  const resting = rest !== null && pause.pausedAt === null && discarded === null && !cardioShown && move !== undefined && row !== null && plan !== null && plan.current !== null;
+  const nextNumber = Math.floor((plan?.current ?? 0) / sides) + 1;
+  // The next set to make, as one line (kg × reps): the suggestion for the row that is next; its set and side are the spoken label.
+  const nextSet = (() => {
+    if (!resting || row === null || move === undefined) return null;
+    const { loadKg, reps } = row.suggested;
+    const set = loadKg !== null && reps !== null ? setText({ loadKg, reps }, move, units) : reps !== null ? t('workout.goal.reps', { reps }) : t('workout.setNumber', { number: nextNumber });
+    const said =
+      row.side === 'BOTH'
+        ? t('workout.rest.nextLabel', { number: nextNumber, set })
+        : t('workout.rest.nextSideLabel', { number: nextNumber, side: t(`workout.sideName.${row.side}`), set });
+    return (
+      <Text testID="rest-next" accessibilityLabel={said} style={[styles.nextSet, { color: color.text }]}>
+        {set}
+      </Text>
+    );
+  })();
+  // Up next only where the move changes (a superset's round done: the next set is its partner's), named with its Taken?; the move after
+  // this one is the done move's (Next in the dock) and not for the rest between its sets.
+  const restUpNext =
+    moveId === undefined || restMove === null || moveId === restMove ? null : (
+      <UpNext name={name(moveId)} equipment={move?.equipment} onTaken={() => setTaking({ move: moveId, back: null })} />
+    );
+  const restPage =
+    !resting || rest === null ? null : (
+      <>
+        <RestTimer since={rest} onAdjust={(seconds) => void restAlert.start(rest + seconds * 1000)} />
+        {/* What the set said (the weight found, or the analysis against last time) is said here, where there is room for it. */}
+        {weightFound ?? (analysis === null ? null : <InsightLine text={analysis} />)}
+        {nextSet}
+        {/* A weight offered for the next set ("That weight is light", Use or Keep) is decided here, while resting. */}
+        {offerNote}
+        {restUpNext}
+      </>
+    );
+
   // The dock (ADR-075 #1): one place for the one thing to do now, so the button never moves. The set under way; the
-  // move done, the next one with sets left; nothing left, the finish.
+  // move done, the next one with sets left; nothing left, the finish. While the rest counts, Ready.
   const logLabel =
     row === null
       ? ''
@@ -1314,6 +1358,8 @@ function Session() {
   const dockButton =
     finishing ? null : cardioShown ? (
       cardioDock
+    ) : resting ? (
+      <Button label={t('workout.rest.end')} accessibilityLabel={t('workout.rest.readyLabel', { number: nextNumber })} onPress={endRest} />
     ) : move !== undefined && row !== null ? (
       // The one thing to do now, full width (K-1207): Skip set is a row of the More sheet.
       <Button label={logLabel} onPress={() => void log()} disabled={busy || needsWeight} />
@@ -1373,7 +1419,7 @@ function Session() {
       </View>
     </View>
   );
-  const restShown = pause.pausedAt !== null && discarded === null ? pausedBar : rest !== null ? <RestTimer since={rest} onEnd={endRest} onAdjust={(seconds) => void restAlert.start(rest + seconds * 1000)} /> : null;
+  const restShown = pause.pausedAt !== null && discarded === null ? pausedBar : null;
   // Built outside the JSX (the raw-text guard reads what is inside it).
   const restSlot =
     restShown === null ? null : (
@@ -1486,8 +1532,8 @@ function Session() {
       {entries.length > 0 && dots}
       {head}
       {card}
-      {/* Up next is for the rest, not for the set (K-1207): while one runs it is under the card. */}
-      {rest !== null ? upNext : null}
+      {/* Up next is for the move done, whose Next is in the dock, and for the rest where the move changes; not for the set (K-1207). */}
+      {row === null ? upNext : null}
       {oneMore}
       {addPanel}
       {dayGone}
@@ -1524,7 +1570,7 @@ function Session() {
             }}>
             {data?.kept === true && <Text style={[styles.small, { color: color.muted }]}>{t('workout.kept')}</Text>}
             {loadFailed}
-            {discarded !== null ? discardedPanel : cardioShown ? cardioPage : session}
+            {discarded !== null ? discardedPanel : cardioShown ? cardioPage : resting ? restPage : session}
           </ScrollView>
           {undoBar}
         </View>
@@ -1572,4 +1618,5 @@ const styles = StyleSheet.create({
   name: { fontFamily: tokens.font.display, fontSize: tokens.type.heading },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },
+  nextSet: { fontFamily: tokens.font.display, fontSize: tokens.type.heading, textAlign: 'center' },
 });

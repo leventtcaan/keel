@@ -5,7 +5,7 @@
  * one, and a session left in the middle and opened again. They found no loop inside the screen: the dead end was a day with no way to
  * start it (train-screen.test.tsx, the "any day" rows); these pin that the rest of the way holds.
  */
-import { fireEvent, render, screen, within } from '@testing-library/react-native';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
@@ -269,7 +269,18 @@ function threeMoves() {
   mockRecords = [];
   mockParams = { day: 'day-a' };
 }
-const logNext = async (n: number) => fireEvent.press(await screen.findByText(t('workout.log', { number: n })));
+/** After a set the rest has the screen (K-1207): Ready gives the set card back. Waits for either, taps Ready if it is the one there. */
+const toSet = async (name: string) => {
+  const found = await waitFor(() => {
+    const ready = screen.queryByRole('button', { name: /^Ready for set/ });
+    const log = screen.queryByText(name);
+    if (ready === null && log === null) throw new Error(`neither Ready nor ${name}`);
+    return { ready, log };
+  });
+  if (found.ready !== null) await fireEvent.press(found.ready);
+  return screen.findByText(name);
+};
+const logNext = async (n: number) => fireEvent.press(await toSet(t('workout.log', { number: n })));
 const finishedRecords = () => mockRecord.mock.calls.map(([o]) => o).filter((o) => o.kind === 'finish');
 
 describe('a full session, to the end', () => {
@@ -302,12 +313,12 @@ describe('a full session, to the end', () => {
 
   test('Taken on the next move, Do it later: the move under way stays, the taken one comes last', async () => {
     await show();
-    // K1 (K-1207): Up next, and so the next move's Taken?, is for the rest: it comes up after the first set.
+    // K1 (K-1207): Up next, and so the next move's Taken?, is for the move done (Next is the dock), not for the sets of it.
     await logNext(1);
+    await logNext(2);
     await fireEvent.press(await screen.findByTestId('up-next-taken'));
     await fireEvent.press(await screen.findByText(t('taken.later')));
     expect(within(screen.getByTestId('up-next')).getByText('Barbell row')).toBeTruthy();
-    await logNext(2);
     await fireEvent.press(await screen.findByRole('button', { name: t('workout.next', { name: 'Barbell row' }) }));
     await logNext(1);
     await logNext(2);
