@@ -14,7 +14,7 @@ kesimde kalori düşüşü yalnız son iki hafta yoğun veriyle — kayıp tavan
 (`cut_pace_slow_weeks: 2`), adım 500 (G7 K-97), yalnız GS-23 değişti.
 **Kanıt:** CI hepsinde yeşil; simülatörde set ve dinlenme ekranı, geri sayım, ana ekran kutuları yürüdü. Bağımsız incelemeler: odak ekranında VoiceOver + RIR anlamı,
 motorda seyrek veride güvenlik körlüğü ve %24 yanlış "sabit" okuma → düzeltildi.
-**Levent'e (K1, toplu, Part 8a-3 başında):** PR gövdelerinde listeli: #740 golden GS-20/26/27/39 + DataSufficiency/WeighInWeek test yeniden yazımları ·
+**K1 Levent onayladı (24 Kas):** PR gövdelerinde listeli: #740 golden GS-20/26/27/39 + DataSufficiency/WeighInWeek test yeniden yazımları ·
 #742 WeeklySpineTests 2 vaka · #744 GS-33/34 eski haline · #738/#741 ~190 mekanik test değişikliği (önce More/Ready'ye dokun). Bilgi: K-1205 kuralı K-97'nin 500 kcal adımı +
 güvenlik tavanı yüzünden 80 kg'da dar aralıkta, ≤60 kg'da hiç çalışmıyor (ADR-091 Ek 4) · tartı sayacı metni "N of 4" artık fazla söylüyor (izleyen iş).
 **Sıradaki: Part 8a-3** → `plan/oturum-promptlari/evre-8.md` › "Part 8a-3 istemi" (K-1226 seyrek tavan, K-1209 1.0.1 yayını, K-1210 yayın sonrası rutin).
