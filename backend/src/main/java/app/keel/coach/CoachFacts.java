@@ -22,11 +22,11 @@ final class CoachFacts {
     private static final Pattern DATED = Pattern.compile("\\d{4}-\\d{2}-\\d{2}");
 
     private final String json;
-    private final List<BigDecimal> numbers;
+    private final List<ReplyNumbers.Fact> facts;
 
-    private CoachFacts(String json, List<BigDecimal> numbers) {
+    private CoachFacts(String json, List<ReplyNumbers.Fact> facts) {
         this.json = json;
-        this.numbers = List.copyOf(numbers);
+        this.facts = List.copyOf(facts);
     }
 
     static CoachFacts of(CallFacts call) {
@@ -53,8 +53,8 @@ final class CoachFacts {
         Map<String, Object> facts = new LinkedHashMap<>();
         facts.put("call", callPart);
         facts.putAll(clean(call.context()));
-        List<BigDecimal> numbers = new ArrayList<>();
-        collect(facts, numbers);
+        List<ReplyNumbers.Fact> numbers = new ArrayList<>();
+        collect("", "", facts, numbers);
         if (!memory.isEmpty()) {
             facts.put("memory", List.copyOf(memory));
         }
@@ -66,9 +66,14 @@ final class CoachFacts {
         return json;
     }
 
-    /** Every number in the facts, as written (signs kept; the check reads them by size). */
+    /** Every number in the facts, as written (signs kept; the check reads them by size), with what it counts. */
+    List<ReplyNumbers.Fact> facts() {
+        return facts;
+    }
+
+    /** The values alone. */
     List<BigDecimal> numbers() {
-        return numbers;
+        return facts.stream().map(ReplyNumbers.Fact::value).toList();
     }
 
     private static Map<String, Object> clean(Map<String, Object> source) {
@@ -99,13 +104,31 @@ final class CoachFacts {
         return null;
     }
 
-    private static void collect(Object value, List<BigDecimal> numbers) {
+    private static void collect(String parent, String key, Object value, List<ReplyNumbers.Fact> numbers) {
         if (value instanceof Number number) {
-            numbers.add(new BigDecimal(number.toString()));
+            numbers.add(new ReplyNumbers.Fact(new BigDecimal(number.toString()), unitOf(parent, key)));
         } else if (value instanceof Map<?, ?> map) {
-            map.values().forEach(item -> collect(item, numbers));
+            map.forEach((name, item) -> collect(key, String.valueOf(name), item, numbers));
         } else if (value instanceof List<?> list) {
-            list.forEach(item -> collect(item, numbers));
+            list.forEach(item -> collect(parent, key, item, numbers));
         }
+    }
+
+    /** What a fact counts, from its own name: kcalPerDay is kcal, kgPerWeek kg, stepsPerDay steps, weeks (and the weeks on track) weeks; a count of sessions is none. */
+    private static ReplyNumbers.Unit unitOf(String parent, String key) {
+        String name = key.toLowerCase(java.util.Locale.ROOT);
+        if (name.contains("kcal")) {
+            return ReplyNumbers.Unit.KCAL;
+        }
+        if (name.startsWith("kg")) {
+            return ReplyNumbers.Unit.KG;
+        }
+        if (name.startsWith("steps") && name.contains("perday")) {
+            return ReplyNumbers.Unit.STEPS;
+        }
+        if (name.equals("weeks") || name.endsWith("weeks")) {
+            return ReplyNumbers.Unit.WEEKS;
+        }
+        return ReplyNumbers.Unit.NONE;
     }
 }

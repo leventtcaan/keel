@@ -4,7 +4,7 @@
     {
       "id": "changes-the-call-en",
       "rule": "U1/U2",
-      "pattern": "\\b(i('|\\s)?ll|i\\s+will|i\\s+have|i've|we('|\\s)?ll|let's|we\\s+can|we\\s+could|i\\s+can|i\\s+could)\\s+(change|adjust|lower|raise|reduce|increase|cut|drop|soften|postpone|delay|skip|move|switch|swap|ease|lighten|make\\s+(it|that|the\\s+(call|cut|step)))\\b|\\b(you('|\\s)?re|you\\s+are)\\s+(absolutely\\s+|totally\\s+|completely\\s+)?(right|correct)\\b|\\b(good|fair)\\s+(point|enough)\\b|\\b(cut|reduce|lower|drop|slash|increase|raise|skip|stop)\\s+(your\\s+|the\\s+|some\\s+)?(daily\\s+|weekly\\s+)?(calories|kcal|carbs|protein|fat|food|meals?|sets|reps|training|workouts?|steps|cardio)\\b|\\b(eat|consume|train|lift|walk)\\s+(a\\s+bit\\s+|a\\s+little\\s+)?(less|more|fewer)\\b|\\binstead\\s+of\\s+the\\s+(call|plan|cut|step)\\b|\\b(new|updated|revised|changed)\\s+(call|target|step|plan)\\b|\\b(maintenance|deload)\\s+(this|next)\\s+week\\b",
+      "pattern": "\\b(i('|\\s)?ll|i\\s+will|i\\s+have|i've|we('|\\s)?ll|let's|we\\s+can|we\\s+could|i\\s+can|i\\s+could)\\s+(change|adjust|lower|raise|reduce|increase|cut|drop|soften|postpone|delay|skip|move|switch|swap|ease|lighten|make\\s+(it|that|the\\s+(call|cut|step)))\\b|\\b(you('|\\s)?re|you\\s+are)\\s+(absolutely\\s+|totally\\s+|completely\\s+)?(right|correct)\\b|\\b(good|fair)\\s+(point|enough)\\b|\\b(cut|reduce|lower|drop|slash|increase|raise|skip|stop)\\s+(your\\s+|the\\s+|some\\s+)?(daily\\s+|weekly\\s+)?(calories|kcal|carbs|protein|fat|food|meals?|sets|reps|training|workouts?|steps|cardio)\\b|\\b(eat|consume|train|lift|walk)\\s+(a\\s+bit\\s+|a\\s+little\\s+)?(less|more|fewer)\\b|\\binstead\\s+of\\s+the\\s+(call|plan|cut|step)\\b|\\b(new|updated|revised|changed)\\s+(call|target|step|plan)\\b|\\b(maintenance|deload)\\s+(this|next)\\s+week\\b|\\bi\\s+agree\\b|\\byou\\s+(have|ve\\s+got|'ve\\s+got)\\s+a\\s+point\\b|\\byou\\s+make\\s+a\\s+(good\\s+)?point\\b|\\bthat\\s+makes\\s+sense,?\\s+(so\\s+)?(let|we|i)\\b",
       "examples": [
         "You're right, I'll lower the cut this week.",
         "Let's make it smaller for now.",
@@ -13,7 +13,9 @@
         "Try to cut your calories a little more.",
         "You could eat more on training days.",
         "Here is the new call for this week.",
-        "Take maintenance this week."
+        "Take maintenance this week.",
+        "I agree, a smaller step is fine.",
+        "You have a point, we'll ease off."
       ],
       "nonExamples": [
         "The call stands this week: the weight is not moving toward your goal.",
@@ -25,12 +27,16 @@
     {
       "id": "changes-the-call-tr",
       "rule": "U1/U2",
-      "pattern": "haklısın|haklısınız|haklı\\s+olabilirsin|\\b(kalori|kcal|karbonhidrat|protein)\\w*\\s+(düşür|azalt|kıs|artır|arttır|kes)\\w*|\\b(düşür|azalt|kıs|artır|arttır|kes|atla)\\w*\\s+(kalori|kcal)|\\w*(değiştir|ertele|yumuşat|düşür|azalt)(elim|ebiliriz|ebilirim|eceğim|irim|iyorum)\\b|\\byeni\\s+(karar|hedef|adım|plan)\\b|\\b(daha\\s+az|daha\\s+fazla)\\s+(ye|ye\\w*|antren\\w*)\\b",
+      "pattern": "haklısın|haklısınız|haklı\\s+olabilirsin|\\b(kalori|kcal|karbonhidrat|protein)\\w*\\s+(düşür|azalt|kıs|artır|arttır|kes)\\w*|\\b(düşür|azalt|kıs|artır|arttır|kes|atla)\\w*\\s+(kalori|kcal)|\\w*(değiştir|ertele|yumuşat|düşür|azalt)(elim|ebiliriz|ebilirim|eceğim|irim|iyorum)\\b|\\byeni\\s+(karar|hedef|adım|plan)\\b|\\b(daha\\s+az|daha\\s+fazla)\\s+(ye|ye\\w*|antren\\w*)\\b|doğru\\s+söylüyorsun|haklı\\s+bir\\s+noktaya|katılıyorum|\\b(azalt|ertele|yumuşat|atla|düşür|değiştir|artır|arttır|kıs|kes|bırak|hafiflet)\\w{0,4}(alım|elim|ayalım|eyelim|abilirim|ebilirim|abiliriz|ebiliriz|acağım|eceğim|ırım|irim)\\b",
       "examples": [
         "Haklısın, bu hafta kaloriyi düşürelim.",
         "Kaloriyi azalt, daha rahat olur.",
         "Adımı değiştirebiliriz.",
-        "Bu haftaki yeni karar şu."
+        "Bu haftaki yeni karar şu.",
+        "Doğru söylüyorsun, azaltalım.",
+        "Bu haftayı erteleyelim.",
+        "Adımı yumuşatalım.",
+        "O öğünü atlayalım."
       ],
       "nonExamples": [
         "Karar bu hafta aynı kalıyor: kilo hedefe doğru gitmiyor.",
@@ -40,9 +46,20 @@
     {
       "id": "medical-tr",
       "rule": "U6",
-      "pattern": "\\b(teşhis|tanı\\s+koy\\w*|tedavi\\w*|ilaç\\w*|reçete\\w*|hastalık\\w*|diyabet\\w*|insülin\\w*|tiroid\\w*|obezite\\w*|yeme\\s+bozukluğ\\w*|belirti\\w*|hormon\\w*|sağlık\\s+sorun\\w*)",
-      "examples": ["Eğer ilaç kullanıyorsan doktoruna sor.", "Bu bir belirti olabilir.", "Tiroid sorunu olabilir."],
-      "nonExamples": ["Karar bu hafta aynı kalıyor.", "Antrenman günlerini koruyalım."]
+      "pattern": "\\b(teşhis|tanı\\s+koy\\w*|tedavi\\w*|ilaç\\w*|reçete\\w*|hastalık\\w*|diyabet\\w*|insülin\\w*|tiroid\\w*|obezite\\w*|yeme\\s+bozukluğ\\w*|belirti\\w*|hormon\\w*|sağlık\\s+sorun\\w*|kan\\s+şeker\\w*|kolesterol\\w*|kanser\\w*|\\bağrı\\w*|hamile\\w*|metformin|\\bacil\\b|sakatlık\\w*)",
+      "examples": [
+        "Eğer ilaç kullanıyorsan doktoruna sor.",
+        "Bu bir belirti olabilir.",
+        "Tiroid sorunu olabilir.",
+        "Kan şekerin yüksek olabilir.",
+        "Kolesterol için dikkat et.",
+        "Hamilelikte bu uygun olmaz.",
+        "Ağrın varsa dinlen."
+      ],
+      "nonExamples": [
+        "Karar bu hafta aynı kalıyor.",
+        "Antrenman günlerini koruyalım."
+      ]
     },
     {
       "id": "blame-and-make-up",
@@ -63,15 +80,78 @@
       "id": "self-reference",
       "rule": "U10",
       "pattern": "\\bas\\s+an?\\s+(ai|a\\.i\\.|language\\s+model|assistant|chatbot)\\b|\\bchat\\s?gpt\\b|\\bopen\\s?ai\\b|\\bgpt-?\\d|\\bmy\\s+name\\s+is\\b|\\bi\\s+am\\s+(an?\\s+)?(ai|chatbot|bot)\\b|\\bbir\\s+yapay\\s+zek\\w*",
-      "examples": ["As an AI, I cannot say.", "I'm ChatGPT and I think so.", "My name is Coach.", "Bir yapay zeka olarak söyleyemem."],
-      "nonExamples": ["The call stands because the data says so."]
+      "examples": [
+        "As an AI, I cannot say.",
+        "I'm ChatGPT and I think so.",
+        "My name is Coach.",
+        "Bir yapay zeka olarak söyleyemem."
+      ],
+      "nonExamples": [
+        "The call stands because the data says so."
+      ]
     },
     {
       "id": "links-and-markup",
       "rule": "form",
       "pattern": "https?://|\\bwww\\.|\\]\\([^)]*\\)|<\\s*/?\\s*[a-z][^>]*>|'''|^\\s*[-*•]\\s",
-      "examples": ["See https://example.com for more.", "Read [this](http://x.y).", "```code```", "- one\n- two"],
-      "nonExamples": ["The call stands this week.", "3 of 4 sessions are done."]
+      "examples": [
+        "See https://example.com for more.",
+        "Read [this](http://x.y).",
+        "```code```",
+        "- one\n- two"
+      ],
+      "nonExamples": [
+        "The call stands this week.",
+        "3 of 4 sessions are done."
+      ]
+    },
+    {
+      "id": "diet-instructions",
+      "rule": "U1/U6",
+      "pattern": "\\b(skip|miss|drop|cut\\s+out)\\s+(your\\s+|the\\s+)?(dinner|lunch|breakfast|meals?|snacks?)\\b|\\bstop\\s+eating\\b|\\b(don't|do\\s+not|never)\\s+eat\\b|\\beat\\s+only\\b|\\bonly\\s+eat\\b|\\b(intermittent\\s+)?fast(ing)?\\s+(for|until|today|tomorrow|tonight|\\d)|\\bno\\s+(carbs|sugar|food)\\b|\\b(akşam|öğle|sabah)\\s+yemeğini\\s+atla\\w*|\\bkahvaltıyı\\s+atla\\w*|\\böğün\\s+atla\\w*|\\baç\\s+kal\\w*|\\boruç\\b|\\byalnızca\\s+\\w+\\s+ye\\b|\\bsadece\\s+\\w+\\s+ye\\b|\\bhiçbir\\s+şey\\s+yeme\\w*",
+      "examples": [
+        "Skip dinner tonight.",
+        "Stop eating after 6.",
+        "Eat only protein today.",
+        "Try fasting for 16 hours.",
+        "Akşam yemeğini atla.",
+        "Aç kal biraz.",
+        "Sadece protein ye."
+      ],
+      "nonExamples": [
+        "The call stands this week.",
+        "Eating enough protein supports training.",
+        "Antrenman günlerini koruyalım."
+      ]
+    },
+    {
+      "id": "medical-en",
+      "rule": "U6",
+      "pattern": "\\b(take|stop|skip|increase|lower|change)\\s+(your\\s+|the\\s+)?(medication|meds|pills?|insulin|metformin|dose)\\b|\\bmetformin\\b|\\bcholesterol\\b|\\bcancer\\b|\\bpregnan\\w*|\\bchest\\s+pain\\b|\\bblood\\s+pressure\\b|\\binjur(y|ies|ed)\\b|\\bpain\\b|\\bsee\\s+a\\s+doctor\\b",
+      "examples": [
+        "Take your medication with food.",
+        "Cholesterol matters here.",
+        "That could be an injury.",
+        "If you are pregnant, ask first."
+      ],
+      "nonExamples": [
+        "The call stands this week.",
+        "Three of four sessions are done."
+      ]
+    },
+    {
+      "id": "body-fat-tr",
+      "rule": "U4",
+      "pattern": "vücut\\s+yağ\\w*|yağ\\s+(oranı|yüzdesi|oranın|yüzden)\\w*|yağ\\s+kütle\\w*|%\\s*\\d+\\s*yağ|yağ\\s*%\\s*\\d+",
+      "examples": [
+        "Vücut yağ oranın düşük.",
+        "Yağ yüzdesi yüzde 20.",
+        "Yağ kütlen arttı."
+      ],
+      "nonExamples": [
+        "Karar bu hafta aynı kalıyor.",
+        "Yağsız protein seç."
+      ]
     }
   ]
 }

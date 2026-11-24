@@ -1,0 +1,72 @@
+{
+  "_about": "What is checked in the user's question and in what the coach was asked to remember BEFORE anything goes to the model (ADR-092 #1, U6): health, injury, medication and eating-disorder signals; a hit means the engine's own safe sentence and no call to the provider. Lists are data (K2), each with examples and near-misses (HealthSignalsTests). Fail closed: a harmless question the lists also catch gets the plain sentence.",
+  "rules": [
+    {
+      "id": "pain-injury",
+      "pattern": "\\b(pain|painful|hurts?|hurting|injur\\w*|sprain\\w*|strain\\w*|torn|fractur\\w*|broken\\s+\\w+|surgery|operation|dizz\\w*|faint\\w*|chest|numb\\w*|swollen|swelling)\\b|\\bağrı\\w*|\\bağrıyor|\\bacıyor|\\bacı\\s+çek\\w*|sakat\\w*|yaralan\\w*|ameliyat\\w*|bayıl\\w*|baş\\s+dönm\\w*|göğüs\\s+\\w*ağrı\\w*|şişlik|uyuşma\\w*",
+      "examples": [
+        "my knee hurts when I squat",
+        "I had surgery last month",
+        "I feel dizzy",
+        "dizim ağrıyor",
+        "sakatlandım",
+        "ameliyat oldum",
+        "bayılacak gibiyim"
+      ],
+      "nonExamples": [
+        "why is the cut 500 kcal",
+        "what should I do this week",
+        "haftalık karar neden böyle"
+      ]
+    },
+    {
+      "id": "medication-condition",
+      "pattern": "\\b(medication|medicine|meds|prescri\\w*|pills?|insulin|metformin|antidepress\\w*|steroid\\w*|doctor|physician|diagnos\\w*|diabet\\w*|thyroid|cholesterol|cancer|blood\\s+(sugar|pressure)|hypertens\\w*|asthma|pcos|pregnan\\w*|breastfeed\\w*|nursing)\\b|\\bilaç\\w*|doktor\\w*|hekim\\w*|teşhis\\w*|diyabet\\w*|şeker\\s+hastası|tansiyon\\w*|kolesterol\\w*|kanser\\w*|kan\\s+şeker\\w*|hamile\\w*|emzir\\w*|tiroid\\w*|metformin|reçete\\w*",
+      "examples": [
+        "my doctor changed my medication",
+        "I take metformin",
+        "I am pregnant",
+        "doktorum ilaç verdi",
+        "hamileyim",
+        "kan şekerim yüksek",
+        "tansiyonum var"
+      ],
+      "nonExamples": [
+        "why is the cut 500 kcal",
+        "can we move leg day",
+        "bu hafta ne yapmalıyım"
+      ]
+    },
+    {
+      "id": "eating-disorder",
+      "pattern": "\\b(anorex\\w*|bulim\\w*|binge\\w*|purg\\w*|laxative\\w*|vomit\\w*|throw\\w*\\s+up|starv\\w*|not\\s+eating|stop\\s+eating|barely\\s+eat\\w*|hate\\s+my\\s+body|eating\\s+disorder)\\b|yeme\\s+bozukluğ\\w*|kusuyorum|kusmak|kusma\\w*|müshil\\w*|aç\\s+kalıyorum|hiç\\s+yemiyorum|yemek\\s+yiyemiyorum|vücudumdan\\s+nefret",
+      "examples": [
+        "I have been starving myself",
+        "I binge and then purge",
+        "I'm not eating at all",
+        "hiç yemiyorum",
+        "kusuyorum yemekten sonra",
+        "aç kalıyorum"
+      ],
+      "nonExamples": [
+        "I'm hungry after training",
+        "can I eat more protein",
+        "karnım çok acıkıyor"
+      ]
+    },
+    {
+      "id": "self-harm",
+      "pattern": "\\b(suicid\\w*|kill\\s+myself|self[-\\s]?harm\\w*|end\\s+it\\s+all|want\\s+to\\s+die|hurt\\s+myself)\\b|intihar\\w*|kendime\\s+zarar|ölmek\\s+istiyorum|kendimi\\s+öldür\\w*",
+      "examples": [
+        "I want to die",
+        "thinking about suicide",
+        "intihar etmeyi düşünüyorum",
+        "kendime zarar vermek istiyorum"
+      ],
+      "nonExamples": [
+        "why is the call lighter",
+        "what if I skip leg day"
+      ]
+    }
+  ]
+}

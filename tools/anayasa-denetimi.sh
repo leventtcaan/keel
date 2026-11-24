@@ -35,10 +35,12 @@ MOBILE_SUITES=(
 echo "== server: architecture rules and the coach's text checks"
 # The database-free tests that read the phrase lists, outside the architecture package (run whole).
 SERVER_SUITES=(
+  app.keel.coach.AdversarialCoachTests
   app.keel.coach.ForbiddenWordsTests
   app.keel.coach.MealReplyCheckTests
   app.keel.coach.NoCaloriesFromModelTests
   app.keel.coach.PhotoAnalysisSchemaTests
+  app.keel.coach.ReplyHardeningTests
   app.keel.coach.ReplyValidatorTests
   app.keel.coach.SycophancyEvalTests
 )

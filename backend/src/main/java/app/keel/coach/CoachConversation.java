@@ -63,6 +63,17 @@ class CoachConversation {
         return latest;
     }
 
+    /** Every message there is, oldest first: what the export holds (V6), not a page. */
+    List<Message> all(AccountId account) {
+        return jdbc.sql("""
+                select id, role, spoken as text, copy_key, topic, decision_id, created_at from coach.message where account_id = :account
+                order by seq""").param("account", account.value())
+                .query((row, n) -> new Message(row.getObject("id", UUID.class), Role.valueOf(row.getString("role")), row.getString("text"),
+                        row.getString("copy_key"), row.getString("topic") == null ? null : Topic.valueOf(row.getString("topic")),
+                        row.getObject("decision_id", UUID.class), row.getObject("created_at", OffsetDateTime.class).toInstant()))
+                .list();
+    }
+
     /** What goes to the model before the next question: the last few messages with words in them (the engine's sentences are not the model's to continue). */
     List<Turn> turns(AccountId account) {
         List<Message> latest = new ArrayList<>(jdbc.sql("""

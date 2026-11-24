@@ -106,6 +106,7 @@ the import can carry body weight; imported sessions then stay in the training lo
   the event, by the nightly cleanup (at most about 31 days). No price, country or payment data.
 - **Free coach questions:** how many of the few free introductory questions to the coach you have asked (a count, no content),
   so the allowance can't be spent twice; kept until you delete your account.
+- **AI coach cost:** what the AI coach's model has cost for your account this month and last (money only, no text), so one account cannot use the whole month's budget; older months are removed as a new one starts, and all of it with your account.
 - **Daily use:** how many coach messages and meal photo analyses you used each day — a count, no content. A day's count
   is kept through the following day, then deleted by a nightly cleanup (at most about three days).
 

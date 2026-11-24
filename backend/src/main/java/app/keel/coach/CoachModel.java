@@ -39,8 +39,14 @@ class CoachModel {
         String dataType = properties.dataTypes().get(purpose);
         ModelRequest request = new ModelRequest(purpose, properties.model(), properties.maxOutput(), system, turns, schema,
                 egress.aiChannel(account, properties.providerName(), dataType));
-        ModelReply reply = egress.sendToAi(account, properties.providerName(), dataType, () -> model.complete(request));
-        spend.record(reply);
+        ModelReply reply;
+        try {
+            reply = egress.sendToAi(account, properties.providerName(), dataType, () -> model.complete(request));
+        } catch (ModelUnavailable failed) {
+            spend.recordFailed(account);
+            throw failed;
+        }
+        spend.record(account, reply);
         return reply;
     }
 }

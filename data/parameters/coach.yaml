@@ -47,3 +47,9 @@ parameters:
     tag: urun
     source: "plan/kararlar/ADR-092-konusan-koc.md#Karar"
     note: "Abonelik olmadan, hesabın ömür boyu ilk bu kadar koç sorusu (yalnız kilitsiz ilk tam karar hakkında, ADR-091 Ek 1; AI rızası şart); sonrası 403 ENTITLEMENT_REQUIRED ve paywall (ADR-091 yükseltme anı b). Öneri 3; Levent onaylar."
+  - key: coach_monthly_cap_per_account_usd
+    value: 2
+    unit: usd_per_month
+    tag: urun
+    source: "plan/kararlar/ADR-092-konusan-koc.md#Karar"
+    note: "Bir hesabın bir ayda koça harcayabileceği en çok model maliyeti (genel tavana ek, ADR-092 #4): tek hesap bütün bütçeyi yiyemez. Aşılınca o hesap ay sonuna dek motorun cümlesini görür. Öneri 2; Levent onaylar."
