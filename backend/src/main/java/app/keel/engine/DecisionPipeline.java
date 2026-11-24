@@ -102,13 +102,28 @@ public final class DecisionPipeline {
         }
         Decision weekly = switch (WeeklySpine.evaluate(snapshot, parameters)) {
             case SpineResult.Decided(Decision decided) -> decided;
-            case SpineResult.CaloriesNeeded need -> MiniCutGate.running(snapshot).orElseGet(() -> calorieStep(need, snapshot, parameters));
+            case SpineResult.CaloriesNeeded need -> MiniCutGate.running(snapshot).orElseGet(() -> belowPace(need)
+                    ? paceStep(need, snapshot, parameters) : calorieStep(need, snapshot, parameters));
         };
         boolean quiet = weekly.action() instanceof Action.Continue || weekly.action() instanceof Action.NoDecisionYet;
         if (quiet && ladder.isPresent()) {
             return new Outcome(ladder.get(), true);
         }
         return new Outcome(withDensity(weekly, snapshot, parameters), true);
+    }
+
+    private static boolean belowPace(SpineResult.CaloriesNeeded need) {
+        return need.reasons().getFirst().rule().equals(WeeklySpine.BELOW_TARGET_PACE);
+    }
+
+    /**
+     * The step for a cut that moves but under its pace (K-1205). It goes through the same floors as any step down; where they
+     * stop it (the low-energy, BMR or macro floors, a missing profile or fat estimate, the spacing) the user is still moving
+     * toward the goal and the call stays "continue": a step the floors forbid is not made (ADR-091 Ek 4).
+     */
+    private static Decision paceStep(SpineResult.CaloriesNeeded need, Snapshot snapshot, Parameters parameters) {
+        Decision step = calorieStep(need, snapshot, parameters);
+        return step.action() instanceof Action.AdjustCalories ? step : WeeklySpine.keepGoing(snapshot);
     }
 
     private static boolean trainingGoingWrong(Decision ladder) {

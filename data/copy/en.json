@@ -1798,6 +1798,7 @@
       "check_in_needed_training": "Before food changes, the coach checks that your lifts are holding up.",
       "closer_to_failure": "Work sets count most when they end close to failure; sets left far from it get a nudge closer.",
       "cut_step": "Calories change by one clear step: big enough to show on the scale, small enough to keep up.",
+      "below_target_pace": "Losing slower than a steady pace for your body weight, with the plan followed, calls for a calorie step.",
       "cycle_check_needed": "After a pause for low energy, one question comes before eating under your needs again.",
       "data_insufficient": "A few regular weigh-ins show the trend; a single morning is mostly water.",
       "declared_context": "A week you told us was disrupted isn't judged: its scale moves are mostly water and salt.",
@@ -1904,6 +1905,7 @@
       "mini_cut_over": "The short cut has run its weeks.",
       "mini_cut_running": "The short cut runs its planned weeks first.",
       "no_session_last_week": "No session last week, early on, is worth a word.",
+      "below_target_pace": "{kgPerWeek} a week over {weeks} weeks, under your pace.",
       "not_toward_goal": "{kgPerWeek} a week over {weeks} weeks, not toward your goal.",
       "observing": "Starting calories are an estimate until real maintenance shows.",
       "performance_red_flag": "Sessions stalled: {sessions}. Food doesn't drop until lifts hold.",
@@ -2142,6 +2144,10 @@
       "not_toward_goal": {
         "title": "Time for a new calorie target.",
         "body": "You followed the plan and your weight hasn't moved the way it should over the last few weeks. One clear step now, then a few weeks to see it work."
+      },
+      "below_target_pace": {
+        "title": "One step to pick up the pace.",
+        "body": "You followed the plan and your weight is moving, but slower than a steady pace for your body weight. One clear step now, then a few weeks to see it work."
       },
       "genetic_limit": {
         "title": "Ease the pace a little.",

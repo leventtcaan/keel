@@ -21,7 +21,7 @@ final class ReasonFacts {
     // Not the safety net's rapid_loss and loss_rate_cap: they judge the trend a week and eight weeks back, not this window,
     // and a safety call reads no window (DecisionPipeline.windowRead): their window figure would not be the one they read (U1).
     private static final Set<String> WINDOW = Set.of("toward_goal", "not_toward_goal", "stall_window", "bulk_stall", "wait_one_more_week",
-            "genetic_limit", "weight_steady_waist_down");
+            "genetic_limit", "weight_steady_waist_down", "below_target_pace");
     // The rules that read how much of the plan happened (K-526's counts).
     private static final Set<String> ADHERENCE = Set.of("adherence_low", "adherence_partial");
     // The first week's (K-962): the sessions done of the planned.
