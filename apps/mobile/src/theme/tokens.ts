@@ -137,6 +137,8 @@ export const tokens = {
     tile: 56,
     /** The photo timer's countdown over the viewfinder (prototype `.cnt`), in the display face. */
     countdown: 140,
+    /** The workout rest's clock (K-1207): the one big thing on the screen while it counts, in the display face. */
+    restClock: 96,
     button: 16,
     buttonSmall: 14,
     /** The stepper's value, in the display face (prototype `.stp .sv b`). */

@@ -936,6 +936,11 @@
       "moreLabel": "Rest {seconds} seconds longer",
       "end": "Ready",
       "endLabel": "End the rest",
+      "readyLabel": "Ready for set {number}",
+      "nextLabel": "Next: set {number}, {set}",
+      "nextSideLabel": "Next: set {number}, {side}, {set}",
+      "adjustHint": "Press and hold to change the rest",
+      "adjustTitle": "Rest",
       "alert": {
         "title": "Rest's up",
         "body": "{min} of rest. Next set when you're ready."
