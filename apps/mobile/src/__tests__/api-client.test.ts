@@ -2,8 +2,14 @@
  * The API client is typed from the contract (K3, ADR-006) and signs every request with the current session token
  * (K-303). The server is a fake fetch here; the real session store arrives in K-305 and refresh in K-304.
  */
+import * as fs from 'fs';
+import * as path from 'path';
+
 import { type AccessTokenSource, createApiClient } from '@/api/client';
+import { clientFeatures } from '@/api/features';
 import { parseBaseUrl } from '@/api/config';
+
+const ROOT = path.resolve(__dirname, '../../../..');
 
 function fakeServer(body: unknown = { status: 'UP' }, status = 200) {
   return jest.fn(
@@ -94,5 +100,33 @@ describe('base URL from configuration (K2: never in code)', () => {
   test('missing configuration fails loudly with the variable name', () => {
     expect(() => parseBaseUrl(undefined)).toThrow(/EXPO_PUBLIC_API_URL/);
     expect(() => parseBaseUrl('  ')).toThrow(/EXPO_PUBLIC_API_URL/);
+  });
+});
+
+describe('the features the phone shows (ADR-091 Ek 1, K-1202)', () => {
+  test('every request says the phone shows a locked call, signed in or not', async () => {
+    const fetch = fakeServer();
+    const signedOut = createApiClient({ baseUrl: 'https://api.example.test', accessToken: noSession, fetch });
+    const signedIn = createApiClient({ baseUrl: 'https://api.example.test', accessToken: async () => 'tok-1', fetch });
+    await signedOut.GET('/health');
+    await signedIn.GET('/health');
+    expect(fetch.mock.calls.map(([request]) => request.headers.get('X-Keel-Features'))).toEqual(['locked-calls', 'locked-calls']);
+  });
+
+  test('a request retried after a refresh says it again', async () => {
+    const fetch = jest
+      .fn<Promise<Response>, [Request]>()
+      .mockResolvedValueOnce(new Response('{}', { status: 401 }))
+      .mockResolvedValueOnce(new Response('{"status":"UP"}', { status: 200, headers: { 'Content-Type': 'application/json' } }));
+    const api = createApiClient({ baseUrl: 'https://api.example.test', accessToken: async () => 'old', refresh: async () => 'new', fetch });
+    await api.GET('/health');
+    expect(fetch.mock.calls.map(([request]) => request.headers.get('X-Keel-Features'))).toEqual(['locked-calls', 'locked-calls']);
+  });
+
+  test('the header name and its token are the ones the server reads (data/parameters/quota.yaml): one source, no drift', () => {
+    const quota = fs.readFileSync(path.join(ROOT, 'data/parameters/quota.yaml'), 'utf8');
+    const valueOf = (key: string) => new RegExp(`- key: ${key}\\n\\s+value: "([^"]+)"`).exec(quota)?.[1];
+    expect(clientFeatures.header).toBe(valueOf('client_features_header'));
+    expect(clientFeatures.lockedCalls).toBe(valueOf('locked_calls_feature_token'));
   });
 });

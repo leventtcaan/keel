@@ -6,6 +6,7 @@
  */
 import createClient, { type Client, type Middleware } from 'openapi-fetch';
 
+import { clientFeatures } from './features';
 import type { paths } from './schema';
 
 /** Returns the current access token, or null when signed out. Read before every request. */
@@ -61,7 +62,13 @@ export function retryOnceAfterRefresh(fetch: Fetch, refresh: RefreshSource, auth
 }
 
 export function createApiClient({ baseUrl, accessToken, refresh, fetch }: Options): ApiClient {
-  const send: Fetch = fetch ?? ((request) => globalThis.fetch(request));
+  const base: Fetch = fetch ?? ((request) => globalThis.fetch(request));
+  // The one place every request says what this phone shows (a locked call, ADR-091 Ek 1, K-1202). At the fetch, so a request
+  // retried after a refresh says it again, and it takes no turn of its own in the middleware chain.
+  const send: Fetch = (request) => {
+    request.headers.set(clientFeatures.header, clientFeatures.lockedCalls);
+    return base(request);
+  };
   const signed = refresh === undefined ? send : retryOnceAfterRefresh(send, refresh, `${baseUrl}/v1/auth/`);
   // The API never redirects; refusing one keeps the Authorization header from following it to another host.
   const client = createClient<paths>({ baseUrl, fetch: signed, redirect: 'error' });

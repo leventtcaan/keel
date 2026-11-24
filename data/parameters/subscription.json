@@ -39,6 +39,30 @@
       "tag": "urun",
       "source": "plan/kararlar/ADR-072-teklif-ve-onboarding.md#Ek 3",
       "note": "The yearly plan shows \"Save X%\" only when it is at least this much cheaper than twelve months of the monthly plan, in the same currency (K-1033, paywall v2): a small saving is not worth a badge."
+    },
+    {
+      "key": "client_features_header",
+      "value": "X-Keel-Features",
+      "unit": "header_name",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-091-evre-8-kararlari.md#Ek 1",
+      "note": "The header in which the phone lists the features it can show (K-1202). The server reads the same name from data/parameters/quota.yaml (client_features_header); api-client.test.ts holds the two equal. JSON here because the phone cannot read the YAML."
+    },
+    {
+      "key": "locked_calls_feature_token",
+      "value": "locked-calls",
+      "unit": "token",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-091-evre-8-kararlari.md#Ek 1",
+      "note": "The token the phone sends in client_features_header to say it shows a locked call (K-1202). Equal to quota.yaml locked_calls_feature_token; without it the server never holds a call back."
+    },
+    {
+      "key": "photo_suggestion_after_manual_meals",
+      "value": 3,
+      "unit": "count",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-091-evre-8-kararlari.md#Ek 2",
+      "note": "The upgrade moment of the meal log (ADR-091 #1, K-1202): from this many meals typed by hand in one day, a line suggests logging by photo or text, only while the server says the AI is on. Off in production today, so nothing shows."
     }
   ]
 }
