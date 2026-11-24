@@ -45,13 +45,16 @@ export function createRestAlert({ access, report }: Options) {
   // Bumped by every start and stop: a start still asking iOS when a newer start or a stop came must set nothing.
   let generation = 0;
   return {
-    /** A rest began at `since` (ms): "rest's up" at the band's lower end, replacing any rest alert before it. */
-    start: async (since: number): Promise<void> => {
+    /**
+     * A rest began at `since` (ms): "rest's up" at the band's lower end (`low` seconds: the move's own, K-1214; the recommended
+     * band's when not said), replacing any rest alert before it.
+     */
+    start: async (since: number, low: number = workoutParams.restSecondsMin): Promise<void> => {
       const mine = ++generation;
       try {
         if (!(await access.permission()).granted || mine !== generation) return;
-        const at = new Date(since + workoutParams.restSecondsMin * 1000);
-        const min = restText(workoutParams.restSecondsMin);
+        const at = new Date(since + low * 1000);
+        const min = restText(low);
         await access.alertAt(ID, at, t('workout.rest.alert.title'), t('workout.rest.alert.body', { min }));
       } catch (error) {
         reportError(error);

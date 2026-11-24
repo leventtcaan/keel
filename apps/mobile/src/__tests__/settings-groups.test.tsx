@@ -149,6 +149,7 @@ jest.mock('@/services/ServicesProvider', () => ({
   useUnits: () => mockUnits,
   useAppearance: () => mockUseSyncExternalStore(mockServices.appearance.subscribe, mockServices.appearance.current),
   useLanguage: () => 'system',
+  useRestChoice: () => ({ mode: 'RECOMMENDED', custom: { COMPOUND: 120, ISOLATION: 120 } }),
 }));
 
 // Delete account asks in a system alert (ADR-087 #1).
@@ -327,6 +328,12 @@ describe('training', () => {
     await show();
     await press(`${t('settings.training.import')}, ${t('settings.training.importFrom')}`);
     expect(mockPush).toHaveBeenCalledWith('/import');
+  });
+
+  test('Rest between sets says the recommended band and opens its page (K-1214)', async () => {
+    await show();
+    await press(`${t('settings.rest.title')}, 2-3 min`);
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/settings-detail', params: { part: 'rest' } });
   });
 
   test('the program comes from the server, read when Settings opens; the gyms are not asked for (K-1062)', async () => {

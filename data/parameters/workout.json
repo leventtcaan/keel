@@ -6,7 +6,7 @@
       "unit": "seconds",
       "tag": "tecrube",
       "source": "arastirma/ham/guray/G1-antrenman.md#K-49",
-      "note": "Rest between work sets, low volume and high intensity (coaching experience, K-49: 2-3 minutes; the aim is mechanical tension, not metabolic stress). The session's rest timer counts up and shows the band (K-405); the timer in the background and the Live Activity are K-411."
+      "note": "Rest between work sets, low volume and high intensity (coaching experience, K-49: 2-3 minutes; the aim is mechanical tension, not metabolic stress). The rest timer counts down to this low end and shows the band 2-3 min (K-1214); the timer in the background is K-411, the Live Activity K-1215. One band for every move: no source in arastirma/ gives a different range for isolation moves [kaynak yok], so none is made up; the Schoenfeld 2016 numbers in rakip-ozellik-2026-11-24.md (3-4 min compound, 1:30-2 isolation) are an unverified model summary and are not used. A user picks their own value per kind in Settings (rest_custom_*)."
     },
     {
       "key": "rest_seconds_max",
@@ -14,6 +14,22 @@
       "unit": "seconds",
       "tag": "tecrube",
       "source": "arastirma/ham/guray/G1-antrenman.md#K-49"
+    },
+    {
+      "key": "rest_custom_min_seconds",
+      "value": 30,
+      "unit": "seconds",
+      "tag": "urun",
+      "source": "plan/evre-8-butun-urun.md#1.3",
+      "note": "K-1214: the shortest rest a user can set in Settings > Training > Rest (a bound for the stepper, not a coaching rule; nothing says what the best rest is below the band [kaynak yok])."
+    },
+    {
+      "key": "rest_custom_max_seconds",
+      "value": 600,
+      "unit": "seconds",
+      "tag": "urun",
+      "source": "plan/evre-8-butun-urun.md#1.3",
+      "note": "K-1214: the longest rest a user can set (ten minutes), the stepper's upper bound."
     },
     {
       "key": "session_set_max_elements",

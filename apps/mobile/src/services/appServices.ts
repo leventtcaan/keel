@@ -45,6 +45,7 @@ import { type TakeBack, createTakeBack } from '@/sync/takeBack';
 import { type LocalRecord, type SqlDatabase, openRecordStore } from '@/sync/store';
 import { type LanguagePreference, createLanguage } from '@/copy/language';
 import { type AppearancePreference, createAppearance } from '@/theme/appearance';
+import { type RestPreference, createRestPreference } from '@/train/restBand';
 import { type KeyValue, type UnitsPreference, createUnitsPreference } from '@/units/preference';
 import { type Walks, createWalks } from '@/walks/store';
 
@@ -94,6 +95,8 @@ export type AppServices = {
   appearance: AppearancePreference;
   /** System, English or Türkçe (K-1211): the copy and the number and date formats follow it. */
   language: LanguagePreference;
+  /** The rest the timer aims for: recommended, or the user's own (K-1214). */
+  restPreference: RestPreference;
   /**
    * The SCOFF gate's result for the shape projection (K-607, ADR-050), on this phone only. At sign-out "unavailable" stays
    * (signing out must not re-open the gate) and "clear" goes (the next person is asked).
@@ -205,6 +208,7 @@ export async function createAppServices({
   const units = await createUnitsPreference({ kv, api, locale });
   const appearance = await createAppearance({ kv });
   const language = await createLanguage({ kv, deviceLocale: locale });
+  const restPreference = await createRestPreference({ kv });
   const projection = await createProjectionAccess({ kv, locale });
   const projectionSwitch = await createProjectionSwitch({ kv, access: projection });
   const reportName = (error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' });
@@ -302,8 +306,9 @@ export async function createAppServices({
     }
     store.clear().catch(reportError);
     units.forget().catch(reportError); // the preference belongs to the account too
-    appearance.forget().catch(reportError);
-    language.forget().catch(reportError); // and the language chosen: the next person starts on System // and the appearance chosen: the next person starts on Light
+    appearance.forget().catch(reportError); // and the appearance chosen: the next person starts on Light
+    language.forget().catch(reportError); // and the language chosen: the next person starts on System
+    restPreference.forget().catch(reportError); // and their own rest: the next person starts on the recommended band (K-1214)
     profile.forget().catch(reportError); // and so does "onboarding done"
     consents.forget().catch(reportError); // and what the phone knew of its consents
     forgetSentActivityDays(kv).catch(reportError); // and which Health days it sent (K-404)
@@ -338,6 +343,7 @@ export async function createAppServices({
     units,
     appearance,
     language,
+    restPreference,
     projection,
     projectionSwitch,
     profile,

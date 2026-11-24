@@ -22,6 +22,7 @@ import { trackOpens } from '@/notifications/reminders';
 import type { OnboardingState } from '@/onboarding/profileStatus';
 import { devicePhotoCache } from '@/food/photoTools';
 import { devicePhotoFiles } from '@/photos/photoFiles';
+import type { RestChoice } from '@/train/restBand';
 import { type SignInResult, appleReauthorization, deviceNonce, signInWithApple } from '@/session/appleSignIn';
 import type { GateState } from '@/subscription/gate';
 import { useGateState } from '@/subscription/useGate';
@@ -190,6 +191,12 @@ export function useAppServices(): PhoneServices {
 export function useUnits(): UnitSystem {
   const { units } = useAppServices();
   return useSyncExternalStore(units.subscribe, units.current);
+}
+
+/** The rest the timer aims for: recommended, or the user's own value per kind of move (K-1214). */
+export function useRestChoice(): RestChoice {
+  const { restPreference } = useAppServices();
+  return useSyncExternalStore(restPreference.subscribe, restPreference.current);
 }
 
 /** Light, Dark or System as chosen in Settings (ADR-070 #3); the root layout themes the app with it. */

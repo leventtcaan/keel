@@ -34,6 +34,9 @@ export const workoutParams = {
   calibrationRirMin: param<number>('calibration_rir_min'),
   maxLoadKg: param<number>('set_max_load_kg'),
   maxReps: param<number>('set_max_reps'),
+  /** The bounds of a rest the user sets for themselves (K-1214). */
+  restCustomMinSeconds: param<number>('rest_custom_min_seconds'),
+  restCustomMaxSeconds: param<number>('rest_custom_max_seconds'),
   /** The longest rest the phone sends with a set (K-1214, NewSet.restSeconds). */
   restRecordMaxSeconds: param<number>('rest_record_max_seconds'),
   /** How long the server keeps a session open before it closes it (K-961); the session shows no time past it. */

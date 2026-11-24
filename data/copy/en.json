@@ -929,6 +929,9 @@
     "rest": {
       "label": "Rest",
       "over": "Go when you are ready",
+      "past": "Past {high}. Go when you are ready",
+      "band": "{low}-{high} min",
+      "bandExact": "{low}-{high}",
       "time": "{minutes}:{seconds}",
       "less": "-{seconds}",
       "more": "+{seconds}",
@@ -3452,6 +3455,17 @@
       "importFrom": "Strong, Hevy",
       "none": "None yet",
       "unread": "Couldn't load"
+    },
+    "rest": {
+      "title": "Rest between sets",
+      "recommended": "Recommended",
+      "custom": "Your own",
+      "recommendedNote": "{band}. The timer counts down to the short end and says when you are past the long end.",
+      "customNote": "The timer counts down to your time. No range is shown.",
+      "compound": "Compound moves",
+      "isolation": "Isolation moves",
+      "lessLabel": "{what}: {seconds} seconds shorter",
+      "moreLabel": "{what}: {seconds} seconds longer"
     },
     "food": {
       "title": "Food",
