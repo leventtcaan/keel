@@ -42,7 +42,7 @@ function Tile({ id, icon, value, note = null, badge, label, hint, onPress }: Til
       onPress={onPress}
       style={({ pressed }) => [styles.tile, { backgroundColor: color.background }, pressed && styles.dim]}>
       {head}
-      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={[styles.value, { color: color.text }]}>
+      <Text style={[styles.value, { color: color.text }]}>
         {value}
       </Text>
       {noteText}
