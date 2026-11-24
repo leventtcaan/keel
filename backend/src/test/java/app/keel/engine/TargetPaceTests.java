@@ -160,4 +160,43 @@ class TargetPaceTests {
                 .isGreaterThanOrEqualTo(InitialTarget.restingKcal(Sex.MALE, latest, new Profile(30, 180), MALE));
         assertThat(journey.adherencePct()).isGreaterThanOrEqualTo(70);
     }
+
+    @Test
+    void aWindowWithAThinWeekIsNotSteppedOn() {
+        // The 90 kg loser of the first case, but the middle week has 3 weigh-ins: the pace is not read from thin weeks.
+        List<WeighIn> weighIns = new ArrayList<>(daily(PLAN_START, PLAN_START.plusDays(6), "90.0"));
+        weighIns.addAll(daily(PLAN_START.plusDays(10), PLAN_START.plusDays(12), "89.65"));
+        weighIns.addAll(daily(PLAN_START.plusDays(14), TODAY, "89.3"));
+        Snapshot snapshot = new Snapshot(TODAY, Sex.MALE, Phase.CUT, PLAN_START, series(weighIns), Optional.empty())
+                .withEnergy(new EnergyBudget(3200, 300)).withProfile(new Profile(30, 180)).withObservingMaintenance(false)
+                .withCheckIn(CheckIn.NONE.withAdherence(new BigDecimal("0.9")).withTraining(CheckIn.Training.STABLE));
+
+        assertThat(call(snapshot)).isEqualTo("continue/toward_goal");
+    }
+
+    @Test
+    void aWindowThatHasStoppedMovingGoesTheFlatPathNotTheStep() {
+        // 80.7, 80.0, 80.0: the last two weekly changes are 0.7 and 0.0 (a drop, then flat): the existing path (GS-36's week 5).
+        assertThat(call(cut(80.7, 80.0, 80.0, 0.9, CheckIn.Training.STABLE, 3000))).doesNotContain("below_target_pace");
+    }
+
+    @Property
+    void aConsistentlySlowDenseLoserIsSteppedWhereTheCapAllowsIt(@ForAll("slowLosers") int[] loser) {
+        // Positive side, random weights: weekly change d (hundredths, from the spine's per-week 0.29 up to under the floor),
+        // the cap leaves room for the 0.5 step, plan followed, a target far above resting energy.
+        BigDecimal first = BigDecimal.valueOf(loser[0], 1);
+        BigDecimal d = BigDecimal.valueOf(loser[1], 2);
+        BigDecimal third = first.subtract(d).subtract(d);
+        BigDecimal floor = third.multiply(new BigDecimal("0.005"));
+        if (d.compareTo(floor) < 0 && d.add(new BigDecimal("0.5")).compareTo(SafetyNet.weeklyLossCapKg(third, MALE)) <= 0) {
+            Snapshot snapshot = cut(first.doubleValue(), first.subtract(d).doubleValue(), third.doubleValue(), 0.9, CheckIn.Training.STABLE, 4500);
+            assertThat(call(snapshot)).isEqualTo("adjust_calories:-500/below_target_pace");
+        }
+    }
+
+    @Provide
+    Arbitrary<int[]> slowLosers() {
+        return Arbitraries.integers().between(800, 1500).flatMap(weight -> Arbitraries.integers().between(29, 75)
+                .map(change -> new int[] {weight, change}));
+    }
 }

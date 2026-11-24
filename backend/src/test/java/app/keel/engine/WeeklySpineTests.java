@@ -228,9 +228,9 @@ class WeeklySpineTests {
         // flat_margin_kg (0.58 kg, ADR-020 L-10): 0.58 kg down over the window is not movement over the window; 0.59 kg
         // is. Since ADR-027 #0 a flat window whose last step still lost 0.30 kg (≥ the per-week 0.29) is a slow loser
         // moving; two steps of 0.28 are the plateau that cuts.
-        // K1 (ADR-091 Ek 4, K-1205): moving, but each week under 0.5 % of 80 kg (0.40) and the plan followed, so the calorie step
-        // comes (reason below_target_pace); before, "continue" (ADR-027 #0).
-        assertThat(spine(Sex.MALE, Phase.CUT, ON_PLAN, "80.58", "80.30", "80.00")).isEqualTo(belowTargetPace());
+        // K1 (ADR-091 Ek 4, K-1205): the second case: moving by the per-week share (0.29, 0.30) but under 0.5 % of 80 kg (0.40), plan
+        // followed: the calorie step (below_target_pace); before, "continue" (ADR-027 #0). The first stays: its 0.28 week is no move.
+        assertThat(decided(spine(Sex.MALE, Phase.CUT, ON_PLAN, "80.58", "80.30", "80.00")).action()).isEqualTo(new Action.Continue());
         assertThat(spine(Sex.MALE, Phase.CUT, ON_PLAN, "80.59", "80.30", "80.00")).isEqualTo(belowTargetPace());
         assertThat(spine(Sex.MALE, Phase.CUT, ON_PLAN, "80.56", "80.28", "80.00")).isInstanceOf(SpineResult.CaloriesNeeded.class);
         // The margin itself, where the new rule does not reach (a rise then a drop): 0.58 over the window is flat → a

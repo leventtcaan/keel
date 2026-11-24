@@ -140,17 +140,25 @@ public final class WeeklySpine {
         if (pace.compareTo(floor) >= 0) {
             return Optional.empty();
         }
-        // Consistently slow: each of the last cut_pace_slow_weeks weekly changes is under the floor too, so one paused week after
-        // good ones is not a slow cut (K-1205, Levent). A window too short to show that many weeks has no step.
+        // Consistently slow and still moving: each of the last cut_pace_slow_weeks weekly changes is under the floor and at least the
+        // spine's own per-week share of the margin (the "moving this week" line): one paused week after good ones is not a slow cut,
+        // and a window that has stopped moving is a flat one, which goes through the K-64 path (K-1205, Levent). A window too short
+        // to show that many weeks has no step.
         int slowWeeks = parameters.wholeNumber(ParameterKey.CUT_PACE_SLOW_WEEKS);
         int weeks = window.weeks().size();
         if (weeks < slowWeeks + 1) {
             return Optional.empty();
         }
         for (int i = weeks - slowWeeks; i < weeks; i++) {
-            if (window.weeks().get(i - 1).subtract(window.weeks().get(i)).compareTo(floor) >= 0) {
+            BigDecimal change = window.weeks().get(i - 1).subtract(window.weeks().get(i));
+            if (change.compareTo(floor) >= 0 || change.compareTo(window.perWeek()) < 0) {
                 return Optional.empty();
             }
+        }
+        // Every week of the window has the full count of weigh-ins: a pace read from thin weeks is not one to step on.
+        int full = parameters.wholeNumber(ParameterKey.MIN_WEIGHINS_PER_WEEK);
+        if (java.util.Arrays.stream(DecisionWindow.weekCounts(snapshot.weights(), snapshot.today(), weeks)).anyMatch(count -> count < full)) {
+            return Optional.empty();
         }
         BigDecimal stepKgPerWeek = BigDecimal.valueOf(parameters.wholeNumber(ParameterKey.CUT_STEP_MIN_KCAL))
                 .multiply(BigDecimal.valueOf(DAYS_PER_WEEK))
@@ -310,7 +318,7 @@ public final class WeeklySpine {
             return n >= 3 && step(weeks.get(n - 3), weeks.get(n - 2)).compareTo(perWeek()) >= 0;
         }
 
-        private BigDecimal perWeek() {
+        BigDecimal perWeek() {
             return margin.divide(BigDecimal.valueOf(weeks.size() - 1L), MathContext.DECIMAL64);
         }
 
