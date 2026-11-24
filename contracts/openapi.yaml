@@ -265,6 +265,23 @@ paths:
                   $ref: "#/components/schemas/Consent"
         default:
           $ref: "#/components/responses/Error"
+  /v1/consents/ai-offer:
+    get:
+      tags: [consent]
+      operationId: aiConsentOffer
+      summary: The provider and the data an AI consent would name now
+      description: |
+        What a grant of THIRD_PARTY_AI must name (V2, Apple 5.1.2(i)): exactly the provider and the data the server sends. 404 while
+        the server has no AI provider (the AI consent cannot be given then).
+      responses:
+        "200":
+          description: The offer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiConsentOffer"
+        default:
+          $ref: "#/components/responses/Error"
   /v1/consents/{kind}:
     parameters:
       - $ref: "#/components/parameters/ConsentKind"
@@ -2174,6 +2191,112 @@ paths:
                 $ref: "#/components/schemas/CoachAnswer"
         "429":
           $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /v1/coach/history:
+    get:
+      tags: [coach]
+      operationId: coachHistory
+      summary: The last messages of the conversation with the coach, oldest first
+      description: |
+        What the user said and what the coach answered (the model's checked words, or the key of the engine's own sentence),
+        the last coach_history_page messages of the last coach_history_days days (data/parameters/coach.yaml; ADR-092 #3).
+        Gone with the account, with the AI consent and with the health data consent; in the data export.
+      responses:
+        "200":
+          description: The conversation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CoachHistory"
+        default:
+          $ref: "#/components/responses/Error"
+    delete:
+      tags: [coach]
+      operationId: clearCoachHistory
+      summary: Delete the whole conversation, for good
+      description: What the coach was asked to remember is a separate list (/v1/coach/memory) and stays.
+      responses:
+        "204":
+          description: Deleted
+        default:
+          $ref: "#/components/responses/Error"
+
+  /v1/coach/memory:
+    get:
+      tags: [coach]
+      operationId: coachMemory
+      summary: What the coach was asked to remember about the user
+      responses:
+        "200":
+          description: The items, oldest first, and how many the coach can hold (coach_memory_max_items)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CoachMemory"
+        default:
+          $ref: "#/components/responses/Error"
+    post:
+      tags: [coach]
+      operationId: rememberForCoach
+      summary: The user's own "remember this" — the only way the coach remembers anything
+      description: |
+        One short sentence in the user's words (coach_memory_max_chars), kept until they delete it. Words the coach itself could
+        not say — a forbidden phrase, a change of the call, blame — are refused (400); a full list is 409 CONFLICT. As the coach:
+        an active subscription (403 ENTITLEMENT_REQUIRED) and the AI consent (403 CONSENT_REQUIRED). The model never writes here.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CoachMemoryWords"
+      responses:
+        "201":
+          description: Remembered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CoachMemoryItem"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /v1/coach/memory/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      tags: [coach]
+      operationId: correctCoachMemory
+      summary: The user corrects their own sentence
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CoachMemoryWords"
+      responses:
+        "200":
+          description: Corrected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CoachMemoryItem"
+        default:
+          $ref: "#/components/responses/Error"
+    delete:
+      tags: [coach]
+      operationId: forgetCoachMemory
+      summary: Forget it; the next question is asked without it
+      responses:
+        "204":
+          description: Forgotten
         default:
           $ref: "#/components/responses/Error"
 
@@ -5795,6 +5918,81 @@ components:
           description: The engine's own words, in DETERMINISTIC mode (data/copy/en.json › coach.answer.*).
         call:
           $ref: "#/components/schemas/CoachCall"
+    CoachMessage:
+      type: object
+      required: [id, role, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [USER, COACH]
+        text:
+          type: string
+          description: The user's words, or the model's checked reply. Absent when the coach's answer was the engine's own sentence.
+        copyKey:
+          type: string
+          description: The engine's own sentence or the topic's, in the app's copy (coach.answer.*, coach.topic.*), when there is no `text`.
+        topic:
+          type: string
+          enum: [LESS, MORE, LATER, HUNGER, DOUBTS_DATA, FEELS_FINE, WORRY, FRUSTRATED, HEALTH, WHY, OFF_TOPIC]
+        decisionId:
+          type: string
+          format: uuid
+          description: The call the exchange was about.
+        createdAt:
+          type: string
+          format: date-time
+    CoachHistory:
+      type: object
+      required: [messages]
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/CoachMessage"
+    CoachMemoryWords:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+          maxLength: 200
+          description: One short sentence in the user's own words (at most coach_memory_max_chars).
+    CoachMemoryItem:
+      type: object
+      required: [id, text, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        text:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    CoachMemory:
+      type: object
+      required: [items, maxItems]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CoachMemoryItem"
+        maxItems:
+          type: integer
+          description: coach_memory_max_items.
+    AiConsentOffer:
+      type: object
+      required: [provider, dataTypes]
+      properties:
+        provider:
+          type: string
+        dataTypes:
+          type: array
+          items:
+            type: string
     MealWords:
       type: object
       required: [text]

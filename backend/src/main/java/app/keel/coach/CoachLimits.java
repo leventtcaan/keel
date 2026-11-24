@@ -18,13 +18,31 @@ final class CoachLimits {
 
     private final BigDecimal monthlyBudgetUsd;
     private final BigDecimal unpricedCallCostUsd;
+    private final int historyDays;
+    private final int historyTurnsInPrompt;
+    private final int historyPage;
+    private final int memoryMaxItems;
+    private final int memoryMaxChars;
 
     CoachLimits(BigDecimal monthlyBudgetUsd, BigDecimal unpricedCallCostUsd) {
+        this(monthlyBudgetUsd, unpricedCallCostUsd, 30, 6, 50, 10, 200);
+    }
+
+    CoachLimits(BigDecimal monthlyBudgetUsd, BigDecimal unpricedCallCostUsd, int historyDays, int historyTurnsInPrompt, int historyPage, int memoryMaxItems,
+            int memoryMaxChars) {
         if (monthlyBudgetUsd.signum() <= 0 || unpricedCallCostUsd.signum() <= 0) {
             throw new IllegalStateException("coach.yaml: the budget and the unpriced call's cost are more than zero");
         }
+        if (historyDays < 1 || historyTurnsInPrompt < 1 || historyPage < 1 || memoryMaxItems < 1 || memoryMaxChars < 1) {
+            throw new IllegalStateException("coach.yaml: the history and memory limits are whole numbers of at least 1");
+        }
         this.monthlyBudgetUsd = monthlyBudgetUsd;
         this.unpricedCallCostUsd = unpricedCallCostUsd;
+        this.historyDays = historyDays;
+        this.historyTurnsInPrompt = historyTurnsInPrompt;
+        this.historyPage = historyPage;
+        this.memoryMaxItems = memoryMaxItems;
+        this.memoryMaxChars = memoryMaxChars;
     }
 
     static CoachLimits fromClasspath() {
@@ -40,7 +58,15 @@ final class CoachLimits {
         LoaderOptions strict = new LoaderOptions();
         strict.setAllowDuplicateKeys(false);
         List<Map<String, Object>> parameters = (List<Map<String, Object>>) ((Map<String, Object>) new Yaml(strict).load(in)).get("parameters");
-        return new CoachLimits(number(parameters, "coach_monthly_budget_usd"), number(parameters, "coach_unpriced_call_cost_usd"));
+        return new CoachLimits(number(parameters, "coach_monthly_budget_usd"), number(parameters, "coach_unpriced_call_cost_usd"),
+                whole(parameters, "coach_history_days"), whole(parameters, "coach_history_turns_in_prompt"), whole(parameters, "coach_history_page"),
+                whole(parameters, "coach_memory_max_items"), whole(parameters, "coach_memory_max_chars"));
+    }
+
+    private static int whole(List<Map<String, Object>> parameters, String key) {
+        return parameters.stream().filter(parameter -> key.equals(parameter.get("key"))).map(parameter -> parameter.get("value"))
+                .filter(value -> value instanceof Integer).map(Integer.class::cast).findFirst()
+                .orElseThrow(() -> new IllegalStateException("coach.yaml: " + key + " is missing or not a whole number"));
     }
 
     private static BigDecimal number(List<Map<String, Object>> parameters, String key) {
@@ -52,6 +78,31 @@ final class CoachLimits {
     /** The most the model may cost in a month, for everyone. */
     BigDecimal monthlyBudgetUsd() {
         return monthlyBudgetUsd;
+    }
+
+    /** How many days a conversation is kept (ADR-092 #3). */
+    int historyDays() {
+        return historyDays;
+    }
+
+    /** How many of the last messages go to the model with a question. */
+    int historyTurnsInPrompt() {
+        return historyTurnsInPrompt;
+    }
+
+    /** The most messages one read of the history returns. */
+    int historyPage() {
+        return historyPage;
+    }
+
+    /** The most things the coach is asked to remember about a person. */
+    int memoryMaxItems() {
+        return memoryMaxItems;
+    }
+
+    /** The longest one of them. */
+    int memoryMaxChars() {
+        return memoryMaxChars;
     }
 
     /** What a call counts as while the provider's prices are not known. */

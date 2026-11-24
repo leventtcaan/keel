@@ -65,21 +65,43 @@ class Explanation {
     private final Clock clock;
     private final CoachModel model;
     private final CoachSpend spend;
+    private final CoachConversation conversation;
+    private final CoachMemory memory;
     private final ReplyValidator validator;
     private final String instructions;
 
-    Explanation(CallReader calls, Quota quota, Entitlements entitlements, Clock clock, CoachModel model, CoachSpend spend, CoachProperties properties) {
+    Explanation(CallReader calls, Quota quota, Entitlements entitlements, Clock clock, CoachModel model, CoachSpend spend, CoachConversation conversation,
+            CoachMemory memory, CoachProperties properties) {
         this.calls = calls;
         this.quota = quota;
         this.entitlements = entitlements;
         this.clock = clock;
         this.model = model;
         this.spend = spend;
+        this.conversation = conversation;
+        this.memory = memory;
         this.validator = new ReplyValidator(properties.maxReplyChars(), ForbiddenWords.fromClasspath(), ReplyRules.fromClasspath());
         this.instructions = CoachInstructions.read("explain.md");
     }
 
+    /**
+     * The answer, and — when the model could have been asked, so with the AI consent — the exchange kept for the conversation
+     * (ADR-092 #3; the engine's own "no call yet" is no exchange).
+     */
     Optional<Answer> answer(AccountId account, String question, Optional<UUID> decisionId) {
+        Optional<Answer> answered = compute(account, question, decisionId);
+        answered.filter(answer -> answer.call() != null).filter(answer -> model.mayAsk(account, Purpose.EXPLAIN)).ifPresent(answer -> remember(account, question, answer));
+        return answered;
+    }
+
+    private void remember(AccountId account, String question, Answer answer) {
+        UUID call = answer.call().decisionId();
+        conversation.append(account, CoachConversation.Role.USER, question, null, null, call);
+        conversation.append(account, CoachConversation.Role.COACH, answer.reply(), answer.reply() == null ? (answer.copyKey() != null ? answer.copyKey() : "coach.topic."
+                + answer.topic().name().toLowerCase(java.util.Locale.ROOT)) : null, answer.topic(), call);
+    }
+
+    private Optional<Answer> compute(AccountId account, String question, Optional<UUID> decisionId) {
         Optional<CallFacts> found = calls.call(account, decisionId);
         if (found.isEmpty()) {
             return decisionId.isPresent() ? Optional.empty() : Optional.of(new Answer(Mode.DETERMINISTIC, null, null, null, NO_CALL_WORDS, null));
@@ -107,10 +129,12 @@ class Explanation {
         if (taken.isEmpty()) {
             return Optional.of(new Answer(Mode.DETERMINISTIC, null, null, null, DAILY_LIMIT_WORDS, told));
         }
-        CoachFacts facts = CoachFacts.of(call);
+        CoachFacts facts = CoachFacts.of(call, memory.list(account).stream().map(CoachMemory.Item::text).toList());
+        List<Turn> turns = new java.util.ArrayList<>(conversation.turns(account));
+        turns.add(Turn.user(question));
         ModelReply said;
         try {
-            said = model.ask(account, Purpose.EXPLAIN, instructions + "\n\n" + facts.json(), List.of(Turn.user(question)), REPLY_SCHEMA);
+            said = model.ask(account, Purpose.EXPLAIN, instructions + "\n\n" + facts.json(), turns, REPLY_SCHEMA);
         } catch (ModelUnavailable down) {
             // The provider is down, over its limit or refuses our key: the call in the engine's words, and the use given back.
             giveBack(account, taken.get(), down);

@@ -82,6 +82,22 @@ class ConsentTests {
     }
 
     @Test
+    void theAiOfferIsTheProviderAndDataAGrantMustNameAndItGrants() throws Exception {
+        // ADR-092 #5: the phone cannot know the provider and the data by itself (V2); the server says them.
+        AccountId account = TestSessions.newAccount();
+        MvcTestResult offer = mvc.get().uri("/v1/consents/ai-offer").header("Authorization", bearer(account)).exchange();
+
+        assertThat(offer).hasStatusOk();
+        Map<String, Object> said = read(offer);
+        assertThat(said).containsEntry("provider", "Example AI");
+        assertThat((List<String>) said.get("dataTypes")).containsExactlyInAnyOrder("meal photo", "meal note", "coach question");
+        assertThat(put(account, "THIRD_PARTY_AI", Map.of("textVersion", ConsentTextVersions.THIRD_PARTY_AI, "provider", said.get("provider"),
+                "dataTypes", said.get("dataTypes")))).hasStatusOk();
+        assertThat(gate.granted(account, ConsentKind.THIRD_PARTY_AI)).isTrue();
+        assertThat(mvc.get().uri("/v1/consents/ai-offer").exchange()).hasStatus(401);
+    }
+
+    @Test
     void aTextTheUserWasNotShownCannotBeAgreedTo() {
         assertThat(put(TestSessions.newAccount(), "HEALTH_DATA", Map.of("textVersion", "0-old"))).hasStatus(400)
                 .bodyJson().extractingPath("$.code").isEqualTo("VALIDATION_FAILED");

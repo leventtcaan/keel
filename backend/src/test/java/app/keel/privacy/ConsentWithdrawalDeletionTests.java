@@ -40,7 +40,7 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
 class ConsentWithdrawalDeletionTests {
 
     /** The schemas whose every account row is health data; a module added later that keeps health data joins here. */
-    private static final List<String> HEALTH_SCHEMAS = List.of("measurement.", "nutrition.", "decision.");
+    private static final List<String> HEALTH_SCHEMAS = List.of("measurement.", "nutrition.", "decision.", "coach.");
 
     @Autowired
     MockMvcTester mvc;

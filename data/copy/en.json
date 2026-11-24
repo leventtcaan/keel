@@ -2243,9 +2243,9 @@
       "body": "We read steps, sleep hours, weight from your scale, active energy and the workouts you do in other apps, so you type less and a calorie cut never goes too far. We don't read heart data, cycle data, medications, health records or location. Adding your logged workouts to Apple Health is a separate choice in Settings. You can withdraw this at any time."
     },
     "third_party_ai": {
-      "version": "1-draft",
-      "title": "Before you analyze a meal",
-      "body": "Meal photos you choose to analyze, and any text you add, are sent to {provider} to estimate portions. Nothing else is sent: never your progress photos, weight, Health data, name or email. The AI explains; it doesn't decide. Weekly calls come from fixed rules you can read in every \"Why this call\". You can withdraw this in Settings at any time."
+      "version": "2-draft",
+      "title": "Before the coach talks with you",
+      "body": "To answer you in words, the coach sends {provider} what you write to it, this week's call with the rules and numbers behind it, how this week's plan went (done of planned), your goal, experience and training days, the last few messages of your conversation, and anything you asked it to remember. When you choose to analyze a meal, that photo and any text you add go too. Never your progress photos, your weight log, Apple Health data, name or email. {provider} does not use what it receives through its API to train its models, and may keep it for a limited time (up to 30 days) to check for abuse. The coach explains; it doesn't decide: weekly calls come from fixed rules you can read in every \"Why this call\", and every number it says is checked against them. Your conversation stays on our server for 30 days at most, and what you asked it to remember until you delete it. You can withdraw this in Settings at any time; withdrawing deletes both."
     }
   },
   "exercises": {

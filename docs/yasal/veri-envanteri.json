@@ -796,6 +796,65 @@
    "kept_for": "about 10 minutes (the second pass removes it)"
   },
   {
+   "table": "coach.message",
+   "module": "coach",
+   "class": "health",
+   "purpose": "Your conversation with the coach: what you wrote and what it answered (its checked words, or which of the app's own sentences it was), for 30 days.",
+   "columns": [
+    "id",
+    "seq",
+    "account_id",
+    "role",
+    "text",
+    "copy_key",
+    "topic",
+    "decision_id",
+    "created_at"
+   ],
+   "basis": "explicit consent (GDPR Art. 9(2)(a)) — HEALTH_DATA",
+   "gated_by": "HEALTH_DATA",
+   "erased_by": [
+    "account_deletion",
+    "withdraw:HEALTH_DATA",
+    "withdraw:THIRD_PARTY_AI",
+    "time"
+   ],
+   "exported": true,
+   "export_key": "messages",
+   "policy": "data-coach",
+   "app_privacy": [
+    "Health & Fitness › Health"
+   ],
+   "kept_for": "coach_history_days (30), then the nightly cleanup (CoachCleanup, 03:15 UTC); you can clear it any time (DELETE /v1/coach/history)",
+   "note": "The last few messages also go to the AI provider with your next question (ADR-092 #1), under the AI consent."
+  },
+  {
+   "table": "coach.memory_item",
+   "module": "coach",
+   "class": "health",
+   "purpose": "What you asked the coach to remember about you: short sentences in your own words, written only when you say \"remember this\".",
+   "columns": [
+    "id",
+    "account_id",
+    "text",
+    "created_at"
+   ],
+   "basis": "explicit consent (GDPR Art. 9(2)(a)) — HEALTH_DATA",
+   "gated_by": "HEALTH_DATA",
+   "erased_by": [
+    "account_deletion",
+    "withdraw:HEALTH_DATA",
+    "withdraw:THIRD_PARTY_AI"
+   ],
+   "exported": true,
+   "export_key": "memory",
+   "policy": "data-coach",
+   "app_privacy": [
+    "Health & Fitness › Health"
+   ],
+   "note": "At most coach_memory_max_items (10) items; you see, correct and delete them in Settings. They go to the AI provider with your questions."
+  },
+  {
    "table": "coach.model_spend",
    "module": "coach",
    "class": "technical",
@@ -1493,8 +1552,8 @@
    "app_privacy": []
   },
   {
-   "recipient": "AI provider",
-   "data": "What you write to the coach with the kind of this week's call and its rules (no numbers); meal notes you type; meal photos you choose to analyze.",
+   "recipient": "OpenAI",
+   "data": "What you write to the coach and the last few messages of the conversation; this week's call with its rules and the numbers they read, how this week's plan went (done of planned), your goal, experience and training days; what you asked the coach to remember; meal notes you type; meal photos you choose to analyze.",
    "when": "only with the separate AI consent naming the provider",
    "basis": "explicit consent",
    "active": false,

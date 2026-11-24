@@ -62,3 +62,10 @@ Orta: sağlayıcı kapısı (`LanguageModel`, `EgressGate`) zaten soyut; `coach.
 - Aylık tavan aşılınca deterministik mod (test, sahte saat).
 - Hafıza silinince istemde yer almaz; hesap silmede tablo boş (AccountDataTests).
 - Gerçek sağlayıcıyla duman testi yalnız sentetik veriyle (CI'da değil, elle).
+
+## Ek 1 · Uygulama ayrıntıları (agent, 2026-11-25; PR #755 ve devamı)
+- **Doğrulayıcı** (`ReplyValidator`): tam şema `{reply, topic, numbersUsed}`; her sayı (rakam ya da sözcük, en/tr) girdideki bir gerçekle eşleşir ve listelenir; kullanıcının kendi sayısı gerçek değildir, düşer. HEALTH ve OFF_TOPIC konularında model cümlesi gösterilmez (uygulamanın kendi cümlesi; U6). Kurallar: `data/coach/reply-rules.json` (örnek ve yakın-kaçak testli).
+- **Bütçe:** `coach.model_spend` (ay başına tek satır, hesap yok); fiyatlar boşken her çağrı `coach_unpriced_call_cost_usd` ile sayılır. Parametreler: `data/parameters/coach.yaml`.
+- **Hafıza** kullanıcının kendi cümlesidir (modelin yazdığı değil): "hatırla" onayı `POST /v1/coach/memory`; koçun söyleyemeyeceği ifade reddedilir; dolunca 409. Geçmiş ve hafıza `coach.message` / `coach.memory_item`; sağlık verisi sayılır (konuşma kararlar hakkında): HEALTH_DATA ve THIRD_PARTY_AI geri çekilince, hesap silinince silinir; dışa aktarmada `coach` bölümü.
+- **Modül sınırı:** `coach` artık `consent`'e bağlı (`ConsentWithdrawn` dinlemek için); ADR-015 haritasındaki modül listesi değişmedi.
+- **Rıza metni 2-draft** (OpenAI adıyla; Levent onaylayınca "-draft" kalkar). Telefonun hangi sağlayıcı ve veri adıyla rıza vereceğini sunucu söyler: `GET /v1/consents/ai-offer`.

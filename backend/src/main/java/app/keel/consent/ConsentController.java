@@ -53,6 +53,16 @@ class ConsentController {
         this.publisher = publisher;
     }
 
+    /** Contract AiConsentOffer. */
+    record AiOffer(String provider, List<String> dataTypes) {
+    }
+
+    /** What a grant of the AI consent must name (V2): the provider and the data the server sends; none until it has a provider. */
+    @GetMapping("/ai-offer")
+    AiOffer aiOffer() {
+        return properties.ai().map(ai -> new AiOffer(ai.provider(), ai.dataTypes())).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+    }
+
     @GetMapping
     List<Consent> list(AccountId account) {
         return Arrays.stream(ConsentKind.values()).map(kind -> Consent.of(kind, events.latest(account, kind))).toList();

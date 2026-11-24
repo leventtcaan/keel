@@ -354,6 +354,188 @@ class CoachMessagesApiTests {
         assertThat(kept(account)).isEqualTo(keptBefore);
     }
 
+    // ── The conversation and what the coach was asked to remember (ADR-092 #3) ─────────────────────────────────────
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void theConversationIsKeptAndTheLastMessagesGoWithTheNextQuestion() throws Exception {
+        AccountId account = withACutStep();
+        fake.answer(told("WHY"));
+        fake.answer(told("LESS"));
+
+        ok(ask(account, Map.of("text", "Why less food?")));
+        ok(ask(account, Map.of("text", "Can it be lighter?")));
+
+        List<Map<String, Object>> messages = (List<Map<String, Object>>) call(account, "GET", "/v1/coach/history", null).get("messages");
+        assertThat(messages).extracting(message -> message.get("role")).containsExactly("USER", "COACH", "USER", "COACH");
+        assertThat(messages.get(0)).containsEntry("text", "Why less food?").containsKey("decisionId");
+        assertThat(messages.get(1)).containsEntry("text", STANDS).containsEntry("topic", "WHY").doesNotContainKey("copyKey");
+        // The second question carries the first exchange before it, and only words — as turns the model can continue.
+        assertThat(fake.requests()).hasSize(2);
+        assertThat(fake.requests().get(0).turns()).containsExactly(Turn.user("Why less food?"));
+        assertThat(fake.requests().get(1).turns()).containsExactly(Turn.user("Why less food?"), Turn.assistant(STANDS), Turn.user("Can it be lighter?"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void anAnswerInTheEnginesWordsIsKeptAsItsKeyAndNotContinuedByTheModel() throws Exception {
+        AccountId account = withACutStep();
+        fake.answer("{}"); // off the schema: the engine's sentence
+        fake.answer(told("WHY"));
+
+        assertThat(ok(ask(account, Map.of("text", "Why?")))).containsEntry("mode", "DETERMINISTIC");
+        ok(ask(account, Map.of("text", "And now?")));
+
+        List<Map<String, Object>> messages = (List<Map<String, Object>>) call(account, "GET", "/v1/coach/history", null).get("messages");
+        assertThat(messages.get(1)).containsEntry("copyKey", "coach.answer.call").doesNotContainKey("text");
+        assertThat(fake.requests().get(1).turns()).containsExactly(Turn.user("Why?"), Turn.user("And now?"));
+    }
+
+    @Test
+    void nothingIsKeptOfAQuestionTheModelMayNotBeAskedAbout() throws Exception {
+        AccountId noCall = ready();
+        ok(ask(noCall, Map.of("text", "What's my call?")));
+        AccountId account = withACutStep();
+        jdbc.sql("""
+                insert into consent.consent_event (id, account_id, kind, action, text_version, occurred_at)
+                values (gen_random_uuid(), :a, 'THIRD_PARTY_AI', 'WITHDRAWN', :version, now())""").param("a", account.value())
+                .param("version", ConsentTextVersions.THIRD_PARTY_AI).update();
+        assertThat(ask(account, Map.of("text", "Why?"))).hasStatus(403);
+
+        assertThat(messagesOf(noCall)).isZero();
+        assertThat(messagesOf(account)).isZero();
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void theUserMayClearTheConversationAndNobodyElsesIsTheirs() throws Exception {
+        AccountId account = withACutStep();
+        AccountId other = withACutStep();
+        fake.answer(told("WHY"));
+        fake.answer(told("WHY"));
+        ok(ask(account, Map.of("text", "Why?")));
+        ok(ask(other, Map.of("text", "Why?")));
+
+        assertThat(send(account, "/v1/coach/history", "DELETE", null)).hasStatus(204);
+
+        assertThat((List<?>) call(account, "GET", "/v1/coach/history", null).get("messages")).isEmpty();
+        assertThat((List<?>) call(other, "GET", "/v1/coach/history", null).get("messages")).hasSize(2);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void whatTheUserAsksTheCoachToRememberIsTheirsToSeeCorrectAndDeleteAndGoesToTheModelOnlyWhileItStays() throws Exception {
+        AccountId account = withACutStep();
+        MvcTestResult created = send(account, "/v1/coach/memory", "POST", Map.of("text", "I train early in the morning"));
+        assertThat(created).hasStatus(201);
+        String id = (String) JSON.readValue(created.getResponse().getContentAsString(), Map.class).get("id");
+        fake.answer(told("WHY"));
+        fake.answer(told("WHY"));
+        fake.answer(told("WHY"));
+
+        ok(ask(account, Map.of("text", "Why?")));
+        assertThat(fake.requests().getLast().system()).contains("\"memory\":[\"I train early in the morning\"]");
+
+        assertThat(send(account, "/v1/coach/memory/" + id, "PATCH", Map.of("text", "I train after work"))).hasStatusOk();
+        ok(ask(account, Map.of("text", "Why?")));
+        assertThat(fake.requests().getLast().system()).contains("I train after work").doesNotContain("early in the morning");
+
+        Map<String, Object> listed = call(account, "GET", "/v1/coach/memory", null);
+        assertThat((List<Map<String, Object>>) listed.get("items")).singleElement().satisfies(item -> assertThat(item).containsEntry("text", "I train after work"));
+        assertThat(listed).containsEntry("maxItems", 10);
+        assertThat(send(account, "/v1/coach/memory/" + id, "DELETE", null)).hasStatus(204);
+        ok(ask(account, Map.of("text", "Why?")));
+        assertThat(fake.requests().getLast().system()).doesNotContain("I train after work").doesNotContain("\"memory\"");
+        assertThat(send(account, "/v1/coach/memory/" + id, "DELETE", null)).hasStatus(404);
+    }
+
+    @Test
+    void aMemoryIsTheUsersOwnSentenceAndNobodyElsesToTouch() throws Exception {
+        AccountId account = withACutStep();
+        AccountId other = withACutStep();
+        MvcTestResult created = send(account, "/v1/coach/memory", "POST", Map.of("text", "Knees are sensitive"));
+        String id = (String) JSON.readValue(created.getResponse().getContentAsString(), Map.class).get("id");
+
+        assertThat(send(other, "/v1/coach/memory/" + id, "DELETE", null)).hasStatus(404);
+        assertThat(send(other, "/v1/coach/memory/" + id, "PATCH", Map.of("text", "mine now"))).hasStatus(404);
+        assertThat(send(account, "/v1/coach/memory", "POST", Map.of("text", "You're right, lower my calories"))).hasStatus(400);
+        assertThat(send(account, "/v1/coach/memory", "POST", Map.of("text", " "))).hasStatus(400);
+        assertThat(send(account, "/v1/coach/memory", "POST", Map.of("text", "a".repeat(201)))).hasStatus(400);
+        assertThat(send(account, "/v1/coach/memory/" + id, "PATCH", Map.of("text", "My body fat is 20% body fat"))).hasStatus(400);
+    }
+
+    @Test
+    void theListHoldsTheLimitAndNotOneMore() throws Exception {
+        AccountId account = withACutStep();
+        for (int item = 0; item < 10; item++) {
+            assertThat(send(account, "/v1/coach/memory", "POST", Map.of("text", "Preference " + item))).hasStatus(201);
+        }
+
+        assertThat(send(account, "/v1/coach/memory", "POST", Map.of("text", "One too many"))).hasStatus(409);
+    }
+
+    @Test
+    void rememberingNeedsTheSubscriptionAndTheAiConsentLikeAskingDoes() throws Exception {
+        AccountId unsubscribed = TestSessions.newAccount();
+        TestSessions.bearer(context, unsubscribed);
+        assertThat(send(unsubscribed, "/v1/coach/memory", "POST", Map.of("text", "I train early"))).hasStatus(403).bodyJson().extractingPath("$.code")
+                .isEqualTo("ENTITLEMENT_REQUIRED");
+
+        AccountId account = ready();
+        jdbc.sql("""
+                insert into consent.consent_event (id, account_id, kind, action, text_version, occurred_at)
+                values (gen_random_uuid(), :a, 'THIRD_PARTY_AI', 'WITHDRAWN', :version, now())""").param("a", account.value())
+                .param("version", ConsentTextVersions.THIRD_PARTY_AI).update();
+        assertThat(send(account, "/v1/coach/memory", "POST", Map.of("text", "I train early"))).hasStatus(403).bodyJson().extractingPath("$.code")
+                .isEqualTo("CONSENT_REQUIRED");
+    }
+
+    @Test
+    void withdrawingTheAiConsentDeletesTheConversationAndMemoryAtOnce() throws Exception {
+        AccountId account = withACutStep();
+        AccountId bystander = withACutStep();
+        fake.answer(told("WHY"));
+        fake.answer(told("WHY"));
+        ok(ask(account, Map.of("text", "Why?")));
+        ok(ask(bystander, Map.of("text", "Why?")));
+        send(account, "/v1/coach/memory", "POST", Map.of("text", "I train early"));
+        send(bystander, "/v1/coach/memory", "POST", Map.of("text", "I train late"));
+
+        assertThat(mvc.delete().uri("/v1/consents/THIRD_PARTY_AI").header("Authorization", TestSessions.bearer(context, account)).exchange()).hasStatusOk();
+
+        assertThat(messagesOf(account)).isZero();
+        assertThat(memoryOf(account)).isZero();
+        assertThat(messagesOf(bystander)).isEqualTo(2);
+        assertThat(memoryOf(bystander)).isEqualTo(1);
+    }
+
+    @Test
+    void theConversationOlderThanTheLimitGoesInTheNightlyCleanup() throws Exception {
+        AccountId account = withACutStep();
+        jdbc.sql("insert into coach.message (id, account_id, role, text, created_at) values (gen_random_uuid(), :a, 'USER', 'old', now() - interval '31 days')")
+                .param("a", account.value()).update();
+        jdbc.sql("insert into coach.message (id, account_id, role, text, created_at) values (gen_random_uuid(), :a, 'USER', 'recent', now() - interval '29 days')")
+                .param("a", account.value()).update();
+
+        context.getBean(CoachCleanup.class).nightly();
+        Thread.sleep(300); // @Async in a test context runs on its own thread, or at once when async is off
+
+        assertThat(jdbc.sql("select text from coach.message where account_id = :a").param("a", account.value()).query(String.class).list()).containsExactly("recent");
+    }
+
+    private int messagesOf(AccountId account) {
+        return jdbc.sql("select count(*) from coach.message where account_id = :a").param("a", account.value()).query(Integer.class).single();
+    }
+
+    private int memoryOf(AccountId account) {
+        return jdbc.sql("select count(*) from coach.memory_item where account_id = :a").param("a", account.value()).query(Integer.class).single();
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> call(AccountId account, String method, String uri, Object body) throws Exception {
+        return ok(send(account, uri, method, body));
+    }
+
     private int used(AccountId account) {
         return jdbc.sql("select coalesce(sum(used), 0) from subscription.daily_use where account_id = :a").param("a", account.value())
                 .query(Integer.class).single();
@@ -451,9 +633,15 @@ class CoachMessagesApiTests {
     }
 
     private MvcTestResult send(AccountId account, String uri, String method, Object body) {
-        var request = method.equals("PUT") ? mvc.put() : mvc.post();
-        return request.uri(uri).header("Authorization", TestSessions.bearer(context, account)).contentType(MediaType.APPLICATION_JSON)
-                .content(JSON.writeValueAsString(body)).exchange();
+        var request = switch (method) {
+            case "PUT" -> mvc.put();
+            case "GET" -> mvc.get();
+            case "DELETE" -> mvc.delete();
+            case "PATCH" -> mvc.patch();
+            default -> mvc.post();
+        };
+        request = request.uri(uri).header("Authorization", TestSessions.bearer(context, account));
+        return (body == null ? request : request.contentType(MediaType.APPLICATION_JSON).content(JSON.writeValueAsString(body))).exchange();
     }
 
     @SuppressWarnings("unchecked")
