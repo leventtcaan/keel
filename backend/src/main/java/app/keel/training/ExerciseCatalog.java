@@ -38,10 +38,11 @@ public final class ExerciseCatalog {
     /**
      * A move. {@code setup}: what the user sets on the machine, kept on the phone (ADR-017 setup card). {@code clips}:
      * its two demonstrations; {@code reviewed}: they passed docs/hareket-cekim-kontrol-listesi.md — until then the app
-     * is not given them.
+     * is not given them. {@code image}: the drawn form image (ADR-091 #4), null when the move has none; {@code imageReviewed}:
+     * it passed the checklist, a review of its own apart from the clips' — until then the app is not given it.
      */
     public record Exercise(String id, Kind kind, List<String> muscles, List<String> alternatives, Load load, Equipment equipment,
-            boolean unilateral, List<String> setup, Clips clips, boolean reviewed) {
+            boolean unilateral, List<String> setup, Clips clips, boolean reviewed, String image, boolean imageReviewed) {
 
         /** The name's key in data/copy/en.json. */
         public String nameKey() {
@@ -63,7 +64,7 @@ public final class ExerciseCatalog {
 
     /** The catalog from its files (file name → parsed YAML); IllegalArgumentException naming the first problem. */
     // Every field a move file may have; anything else is a typo that would silently drop data (K-210 review).
-    private static final Set<String> FIELDS = Set.of("id", "kind", "muscles", "alternatives", "load", "equipment", "unilateral", "setup", "clips", "review");
+    private static final Set<String> FIELDS = Set.of("id", "kind", "muscles", "alternatives", "load", "equipment", "unilateral", "setup", "clips", "review", "image", "image_review");
 
     /** The region a muscle belongs to (data/muscles.yaml); the load step depends on it (K-217). */
     public Region region(String muscle) {
@@ -119,6 +120,9 @@ public final class ExerciseCatalog {
             }
             Clips clips = clips(file, id, move.get("clips"));
             boolean reviewed = reviewed(file, move.get("review"));
+            String image = image(file, id, move.get("image"));
+            require((image == null) == !move.containsKey("image_review"), file + ": a form image and its image_review come together");
+            boolean imageReviewed = image != null && reviewed(file, move.get("image_review"));
             require(!alternatives.contains(id), file + ": a move is not its own alternative");
             require(move.get("unilateral") instanceof Boolean, file + ": unilateral is true or false");
             Load load = value(Load.class, move.get("load"), file);
@@ -127,7 +131,7 @@ public final class ExerciseCatalog {
             require((equipment == Equipment.BODYWEIGHT) == (load != Load.EXTERNAL), file + ": equipment bodyweight goes with a bodyweight load");
             moves.add(new Exercise(id, value(Kind.class, move.get("kind"), file), muscles.stream().map(String.class::cast).toList(),
                     List.copyOf(alternatives),
-                    load, equipment, (Boolean) move.get("unilateral"), List.copyOf(setup), clips, reviewed));
+                    load, equipment, (Boolean) move.get("unilateral"), List.copyOf(setup), clips, reviewed, image, imageReviewed));
         });
         Map<String, Exercise> byId = moves.stream().sorted(Comparator.comparing(Exercise::id))
                 .collect(Collectors.toMap(Exercise::id, Function.identity(), (a, b) -> a, java.util.LinkedHashMap::new));
@@ -174,6 +178,16 @@ public final class ExerciseCatalog {
         require(String.format(FIRST_REP, id).equals(clips.get("first_rep")), file + ": first_rep is " + String.format(FIRST_REP, id));
         require(String.format(LAST_REP, id).equals(clips.get("last_rep")), file + ": last_rep is " + String.format(LAST_REP, id));
         return new Clips((String) clips.get("first_rep"), (String) clips.get("last_rep"));
+    }
+
+    /** The drawn form image (ADR-091 #4): optional; its path is the move's own, WebP or PNG, inside the app's assets. */
+    private static String image(String file, String id, Object raw) {
+        if (raw == null) {
+            return null;
+        }
+        require(("exercises/" + id + "/form.webp").equals(raw) || ("exercises/" + id + "/form.png").equals(raw),
+                file + ": image is exercises/" + id + "/form.webp (or .png)");
+        return (String) raw;
     }
 
     /** "pending" until filmed and checked; then the checklist's record, which must say pass. */

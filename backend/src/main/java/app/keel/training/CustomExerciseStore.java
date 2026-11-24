@@ -25,7 +25,7 @@ class CustomExerciseStore {
 
         /** As the catalog's moves are read by the set rules: no muscles, alternatives, setup or clips of its own. */
         ExerciseCatalog.Exercise asExercise() {
-            return new ExerciseCatalog.Exercise(exerciseId(), kind, List.of(), List.of(), load, equipment, unilateral, List.of(), null, false);
+            return new ExerciseCatalog.Exercise(exerciseId(), kind, List.of(), List.of(), load, equipment, unilateral, List.of(), null, false, null, false);
         }
     }
 

@@ -205,6 +205,57 @@ class ExerciseCatalogTests {
     }
 
     @Test
+    void aMoveMayHaveAFormImageWithItsOwnReview() {
+        // ADR-091 #4: an AI-drawn form image is optional and has a review of its own, apart from the clips'.
+        Map<String, Object> squat = move("squat", "compound", List.of("quads"), List.of());
+        Map<String, Object> drawn = with(with(squat, "image", "exercises/squat/form.webp"), "image_review", "pending");
+        Map<String, Object> passed = Map.of("date", "2026-11-25", "by", "levent", "checklist", "pass", "notes", "angles right");
+
+        assertThat(ExerciseCatalog.of(Map.of("squat.yaml", squat), MUSCLES).find("squat")).hasValueSatisfying(move -> {
+            assertThat(move.image()).isNull();
+            assertThat(move.imageReviewed()).isFalse();
+        });
+        assertThat(ExerciseCatalog.of(Map.of("squat.yaml", drawn), MUSCLES).find("squat")).hasValueSatisfying(move -> {
+            assertThat(move.image()).isEqualTo("exercises/squat/form.webp");
+            assertThat(move.imageReviewed()).isFalse();
+        });
+        assertThat(ExerciseCatalog.of(Map.of("squat.yaml", with(drawn, "image_review", passed)), MUSCLES).find("squat")).hasValueSatisfying(move -> {
+            assertThat(move.imageReviewed()).isTrue();
+            assertThat(move.reviewed()).as("the clips' review is its own").isFalse();
+        });
+        assertThat(ExerciseCatalog.of(Map.of("squat.yaml", with(with(drawn, "image", "exercises/squat/form.png"), "image_review", "pending")), MUSCLES)
+                .find("squat")).hasValueSatisfying(move -> assertThat(move.image()).isEqualTo("exercises/squat/form.png"));
+    }
+
+    @Test
+    void aFormImageMustBeTheMovesOwnAndHaveAReview() {
+        Map<String, Object> squat = move("squat", "compound", List.of("quads"), List.of());
+        Map<String, Object> drawn = with(with(squat, "image", "exercises/squat/form.webp"), "image_review", "pending");
+
+        assertThatIllegalArgumentException().as("another move's image").isThrownBy(() -> ExerciseCatalog.of(Map.of("squat.yaml",
+                with(drawn, "image", "exercises/bench_press/form.webp")), MUSCLES));
+        assertThatIllegalArgumentException().as("not webp or png").isThrownBy(() -> ExerciseCatalog.of(Map.of("squat.yaml",
+                with(drawn, "image", "exercises/squat/form.gif")), MUSCLES));
+        assertThatIllegalArgumentException().as("an image with no review").isThrownBy(() -> ExerciseCatalog.of(Map.of("squat.yaml",
+                with(squat, "image", "exercises/squat/form.webp")), MUSCLES));
+        assertThatIllegalArgumentException().as("a review with no image").isThrownBy(() -> ExerciseCatalog.of(Map.of("squat.yaml",
+                with(squat, "image_review", "pending")), MUSCLES));
+        assertThatIllegalArgumentException().as("a failed image review").isThrownBy(() -> ExerciseCatalog.of(Map.of("squat.yaml",
+                with(drawn, "image_review", Map.of("date", "2026-11-25", "by", "levent", "checklist", "fail"))), MUSCLES));
+    }
+
+    @Test
+    void aReviewedFormImageIsInTheApp() throws IOException {
+        // Served only once its review passes (WorkoutController); then the phone must have the file.
+        ExerciseCatalog catalog = ExerciseCatalog.of(repository(), vocabulary());
+
+        assertThat(catalog.all().stream().filter(ExerciseCatalog.Exercise::imageReviewed))
+                .allSatisfy(move -> assertThat(APP_ASSETS.resolve(move.image())).as(move.id()).exists());
+        assertThat(catalog.all().stream().filter(move -> move.image() != null).map(ExerciseCatalog.Exercise::id))
+                .contains("lat_pulldown", "squat", "romanian_deadlift");
+    }
+
+    @Test
     void anUnknownFieldIsRefusedSoATypoCannotDropData() {
         // "alternates" for "alternatives" would otherwise load as no alternatives at all.
         Map<String, Object> typo = new HashMap<>(move("squat", "compound", List.of("quads"), List.of()));

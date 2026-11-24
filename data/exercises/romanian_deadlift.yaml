@@ -13,3 +13,5 @@ clips:
   first_rep: clips/romanian_deadlift/first-rep.mp4
   last_rep: clips/romanian_deadlift/last-rep.mp4
 review: pending
+image: exercises/romanian_deadlift/form.webp
+image_review: pending
