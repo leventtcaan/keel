@@ -1305,6 +1305,45 @@ describe('supersets (K-416, ADR-035): an id on the sets, the partner next, the r
   });
 });
 
+describe('the rest taken is kept on the next set (K-1214)', () => {
+  const rests = () => sets().map((o) => (o.kind === 'set' ? o.body.restSeconds : undefined));
+
+  test('the first set of a move carries none; the next, the seconds from the set logged to Ready', async () => {
+    jest.useFakeTimers({ advanceTimers: true });
+    try {
+      await show();
+      await fireEvent.press(await screen.findByText('Log set 1'));
+      await screen.findByTestId('rest');
+      jest.setSystemTime(Date.now() + 135_000);
+      await fireEvent.press(screen.getByRole('button', { name: /^Ready for set 2/ }));
+      // The set itself takes a minute; it is not rest.
+      jest.setSystemTime(Date.now() + 60_000);
+      await fireEvent.press(await screen.findByText('Log set 2'));
+      await screen.findByTestId('rest');
+      expect(rests()).toEqual([undefined, expect.closeTo(135, 0)]);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  test('a pause ends the rest: the set after it carries none', async () => {
+    jest.useFakeTimers({ advanceTimers: true });
+    try {
+      await show();
+      await fireEvent.press(await screen.findByText('Log set 1'));
+      await screen.findByTestId('rest');
+      jest.setSystemTime(Date.now() + 90_000);
+      await fireEvent.press(screen.getByRole('button', { name: t('workout.pauseLabel') }));
+      jest.setSystemTime(Date.now() + 600_000);
+      await fireEvent.press(within(screen.getByTestId('session-header')).getByRole('button', { name: t('workout.resumeLabel') }));
+      await fireEvent.press(await screen.findByText('Log set 2'));
+      expect(rests()).toEqual([undefined, undefined]);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+});
+
 describe('the rest in the background (K-411)', () => {
   test('a work set starts the rest and its alert, from the moment it was logged; the next set moves it', async () => {
     await show();

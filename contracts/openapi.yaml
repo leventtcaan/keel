@@ -4349,6 +4349,16 @@ components:
             The user's own words on this set (K-422). Kept without outer spaces; only spaces is no note (absent). Over 500
             characters, or a NUL character, is VALIDATION_FAILED, never cut. Never logged; not sent to an AI without its
             consent (V2).
+        restSeconds:
+          type: integer
+          minimum: 0
+          maximum: 7200
+          description: |
+            The rest the user took before this set (K-1214), measured by the phone: whole seconds from the moment the previous set
+            of the move (a superset: of the round) was logged to the moment the user said Ready, or logged this set when Ready was
+            not used. Absent for a move's first set, for a set after a pause (the pause ends a rest), for a set the user entered
+            later, and from a phone that does not send it. Negative or above the maximum is VALIDATION_FAILED. Part of the
+            exported training data (V3 inventory: training.workout_set.rest_seconds).
     NewCustomExercise:
       type: object
       required: [clientId, name, kind, load, equipment, unilateral]

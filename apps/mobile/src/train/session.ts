@@ -197,7 +197,7 @@ export function rirChoice(rir: number): number {
   return Math.min(rir, workoutParams.rirChoices[workoutParams.rirChoices.length - 1]);
 }
 
-/** A work set with the row's side, the RIR picked and its note, if any. */
+/** A work set with the row's side, the RIR picked, its note and the rest taken before it, if any (K-1214). */
 export function buildSet(
   clientId: string,
   move: Schemas['Exercise'],
@@ -206,6 +206,7 @@ export function buildSet(
   rir: number,
   note?: string,
   supersetId?: string,
+  restSeconds?: number | null,
 ): Schemas['NewSet'] {
   const words = noteOf(note);
   return {
@@ -218,5 +219,6 @@ export function buildSet(
     side,
     ...(words === null ? {} : { note: words }),
     ...(supersetId === undefined ? {} : { supersetId }),
+    ...(restSeconds == null ? {} : { restSeconds }),
   };
 }

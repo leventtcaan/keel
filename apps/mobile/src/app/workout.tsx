@@ -39,6 +39,7 @@ import { SupersetLink } from '@/train/SupersetLink';
 import { nextInGroup, supersetsInForce } from '@/train/superset';
 import { askFirst } from '@/settings/askFirst';
 import { RestTimer } from '@/train/RestTimer';
+import { type RestSpan, readySpan, restSecondsOf, startSpan } from '@/train/restRecord';
 import { SessionHeader } from '@/train/SessionHeader';
 import { ActiveSet, type Entry } from '@/train/ActiveSet';
 import { UpNext } from '@/train/UpNext';
@@ -115,13 +116,24 @@ function Session() {
     if (rest !== null) void restAlert.start(rest);
   }, [rest, restAlert]);
   useEffect(() => () => void restAlert.stop(), [restAlert]);
+  // The rest as taken (K-1214), for the next set's restSeconds: it begins with the rest, ends with Ready, and any other end
+  // (a pause, a skip, a swap, the move's last set, leaving) voids it, so nothing but a rest between two sets is ever sent.
+  const restSpan = useRef<RestSpan | null>(null);
   const endRest = () => {
+    restSpan.current = null;
     setRest(null);
     void restAlert.stop();
   };
+  const readyRest = () => {
+    const taken = readySpan(restSpan.current, new Date().getTime());
+    endRest();
+    restSpan.current = taken;
+  };
   const startRest = (fromMove: string) => {
+    const now = new Date().getTime();
+    restSpan.current = startSpan(now);
     setRestMove(fromMove);
-    setRest(new Date().getTime());
+    setRest(now);
   };
   // The session's start while nothing is kept yet: the moment it was opened, which its first set keeps as its start.
   const [openedAt] = useState(() => Date.now());
@@ -435,9 +447,12 @@ function Session() {
       // The warm-ups waiting go first, under their own ids: one already saved before a failure is not saved twice.
       for (const warmup of held) await queue.record({ kind: 'set', workoutClientId, body: warmup });
       setHeld([]);
-      const body = buildSet(newClientId(), move, row.side, parsed, entry.rir, entry.note ?? undefined, group?.[0]);
+      const restSeconds = restSecondsOf(restSpan.current, new Date().getTime(), workoutParams.restRecordMaxSeconds);
+      const body = buildSet(newClientId(), move, row.side, parsed, entry.rir, entry.note ?? undefined, group?.[0], restSeconds);
       await queue.record({ kind: 'set', workoutClientId, body });
       saved = true;
+      // That rest belonged to this set; the next one measures its own.
+      restSpan.current = null;
     } catch (error) {
       named(error);
       setProblem({ row: rowKey, text: t('workout.saveFailed') });
@@ -1359,7 +1374,7 @@ function Session() {
     finishing ? null : cardioShown ? (
       cardioDock
     ) : resting ? (
-      <Button label={t('workout.rest.end')} accessibilityLabel={t('workout.rest.readyLabel', { number: nextNumber })} onPress={endRest} />
+      <Button label={t('workout.rest.end')} accessibilityLabel={t('workout.rest.readyLabel', { number: nextNumber })} onPress={readyRest} />
     ) : move !== undefined && row !== null ? (
       // The one thing to do now, full width (K-1207): Skip set is a row of the More sheet.
       <Button label={logLabel} onPress={() => void log()} disabled={busy || needsWeight} />

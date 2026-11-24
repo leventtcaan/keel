@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 class WorkoutNoteRulesTests {
 
     private static final WorkoutController.TrainingLimits LIMITS = new WorkoutController.TrainingLimits(new BigDecimal("1000"), 100, 10, 20,
-            20, 60, 5);
+            20, 60, 5, 7200);
 
     @Test
     void aNoteIsTheWordsWithoutTheirOuterSpacesAndOnlySpacesAreNone() {

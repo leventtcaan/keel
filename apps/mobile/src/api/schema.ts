@@ -3120,6 +3120,14 @@ export interface components {
              *     consent (V2).
              */
             note?: string;
+            /**
+             * @description The rest the user took before this set (K-1214), measured by the phone: whole seconds from the moment the previous set
+             *     of the move (a superset: of the round) was logged to the moment the user said Ready, or logged this set when Ready was
+             *     not used. Absent for a move's first set, for a set after a pause (the pause ends a rest), for a set the user entered
+             *     later, and from a phone that does not send it. Negative or above the maximum is VALIDATION_FAILED. Part of the
+             *     exported training data (V3 inventory: training.workout_set.rest_seconds).
+             */
+            restSeconds?: number;
         };
         NewCustomExercise: {
             clientId: components["schemas"]["ClientId"];
