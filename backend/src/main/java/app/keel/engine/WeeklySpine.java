@@ -41,6 +41,7 @@ public final class WeeklySpine {
     static final RuleId TOWARD_GOAL = new RuleId("toward_goal");
     static final RuleId NOT_TOWARD_GOAL = new RuleId("not_toward_goal");
     static final RuleId STALL_WINDOW = new RuleId("stall_window");
+    static final RuleId BELOW_TARGET_PACE = new RuleId("below_target_pace");
     static final RuleId BULK_STALL = new RuleId("bulk_stall");
     static final RuleId WAIT_ONE_MORE_WEEK = new RuleId("wait_one_more_week");
     static final RuleId ADHERENCE_LOW = new RuleId("adherence_low");
@@ -59,6 +60,7 @@ public final class WeeklySpine {
     private static final Source ONE_FLAT_WEEK = new Source("arastirma/ham/guray/G2-kilo-verme.md#K-64", SourceTag.EXPERIENCE);
     private static final Source BULK_STEP = new Source("arastirma/ham/guray/G3-kilo-alma-beslenme.md#K-10", SourceTag.EXPERIENCE);
     private static final Source TRAINING_IS_THE_GAUGE = new Source("arastirma/ham/guray/G7-whisper-arsiv.md#K-98", SourceTag.EXPERIENCE);
+    private static final Source TARGET_PACE = new Source("arastirma/ham/H3-bosluk-literatur.md#B3", SourceTag.LITERATURE);
     private static final Source HOW_LONG_FLAT = new Source("arastirma/ham/H3-bosluk-literatur.md#B3", SourceTag.LITERATURE);
 
     private static final int DAYS_PER_WEEK = 7;
@@ -74,15 +76,15 @@ public final class WeeklySpine {
         Window window = Window.of(snapshot, parameters);
         // Toward the goal over the window — or, on a cut the window cannot tell from flat, moving this week (ADR-027 #0).
         boolean moving = window.towardGoal(window.first()) > 0 || (window.cut() && !window.wrongWay() && window.movingThisWeek());
-        return moving ? towardGoal(snapshot, parameters) : notTowardGoal(snapshot, window, parameters);
+        return moving ? towardGoal(snapshot, window, parameters) : notTowardGoal(snapshot, window, parameters);
     }
 
-    private static SpineResult towardGoal(Snapshot snapshot, Parameters parameters) {
+    private static SpineResult towardGoal(Snapshot snapshot, Window window, Parameters parameters) {
         CheckIn checkIn = snapshot.checkIn();
         // "Looks better?" — yes → continue. SAME and "no photo this week" continue too: nothing says the plan needs
         // help, and continuing changes nothing (ADR-021, open question for the product owner).
         if (checkIn.look() != Look.WORSE) {
-            return decided(snapshot, new Action.Continue(), TOWARD_GOAL, TREE);
+            return belowTargetPace(snapshot, window, parameters).orElseGet(() -> decided(snapshot, new Action.Continue(), TOWARD_GOAL, TREE));
         }
         if (checkIn.training() == Training.UNKNOWN) {
             return checkInNeeded(snapshot, CHECK_IN_NEEDED_TRAINING);
@@ -111,6 +113,60 @@ public final class WeeklySpine {
         }
         CalorieDirection back = snapshot.phase() == Phase.BULK ? CalorieDirection.DOWN : CalorieDirection.UP;
         return new SpineResult.CaloriesNeeded(back, List.of(new Reason(GENETIC_LIMIT, TREE)));
+    }
+
+    /**
+     * A cut that is moving but slower than the pace for its body weight (K-1205, ADR-091 Ek 4): the weekly loss over the window
+     * is under cut_pace_floor_pct_bodyweight of the trend weight (H3 B3), the plan was followed (adherence, the same gate as the
+     * other calorie calls) and training holds (G7 K-98): the calorie step comes, "below target pace". No step where it would take
+     * the pace past the weekly loss cap (the step's kcal over kcal_per_kg_fat, G2 K-18), and the ladder's own floors still run
+     * after this (a step they stop is no call here: see DecisionPipeline). Anything else is a "continue", as it was.
+     */
+    /** "Moving toward the goal, continue" for this check-in. */
+    static Decision keepGoing(Snapshot snapshot) {
+        return ((SpineResult.Decided) decided(snapshot, new Action.Continue(), TOWARD_GOAL, TREE)).decision();
+    }
+
+    private static Optional<SpineResult> belowTargetPace(Snapshot snapshot, Window window, Parameters parameters) {
+        CheckIn checkIn = snapshot.checkIn();
+        boolean trainingHolds = checkIn.training() != Training.UNKNOWN && checkIn.training() != Training.DECLINING
+                && checkIn.training() != Training.NOT_TRAINED;
+        if (snapshot.phase() != Phase.CUT || window.weeks().size() < 2 || !trainingHolds || adherenceGate(snapshot, parameters).isPresent()) {
+            return Optional.empty();
+        }
+        BigDecimal weight = window.latest();
+        BigDecimal pace = window.first().subtract(window.latest()).divide(BigDecimal.valueOf(window.weeks().size() - 1L), MathContext.DECIMAL64);
+        BigDecimal floor = weight.multiply(line(ParameterKey.CUT_PACE_FLOOR_PCT_BODYWEIGHT, parameters));
+        if (pace.compareTo(floor) >= 0) {
+            return Optional.empty();
+        }
+        // Consistently slow and still moving: each of the last cut_pace_slow_weeks weekly changes is under the floor and at least the
+        // spine's own per-week share of the margin (the "moving this week" line): one paused week after good ones is not a slow cut,
+        // and a window that has stopped moving is a flat one, which goes through the K-64 path (K-1205). A window too short
+        // to show that many weeks has no step.
+        int slowWeeks = parameters.wholeNumber(ParameterKey.CUT_PACE_SLOW_WEEKS);
+        int weeks = window.weeks().size();
+        if (weeks < slowWeeks + 1) {
+            return Optional.empty();
+        }
+        for (int i = weeks - slowWeeks; i < weeks; i++) {
+            BigDecimal change = window.weeks().get(i - 1).subtract(window.weeks().get(i));
+            if (change.compareTo(floor) >= 0 || change.compareTo(window.perWeek()) < 0) {
+                return Optional.empty();
+            }
+        }
+        // Every week of the window has the full count of weigh-ins: a pace read from thin weeks is not one to step on.
+        int full = parameters.wholeNumber(ParameterKey.MIN_WEIGHINS_PER_WEEK);
+        if (java.util.Arrays.stream(DecisionWindow.weekCounts(snapshot.weights(), snapshot.today(), weeks)).anyMatch(count -> count < full)) {
+            return Optional.empty();
+        }
+        BigDecimal stepKgPerWeek = BigDecimal.valueOf(parameters.wholeNumber(ParameterKey.CUT_STEP_MIN_KCAL))
+                .multiply(BigDecimal.valueOf(DAYS_PER_WEEK))
+                .divide(line(ParameterKey.KCAL_PER_KG_FAT, parameters), MathContext.DECIMAL64);
+        if (pace.add(stepKgPerWeek).compareTo(SafetyNet.weeklyLossCapKg(weight, parameters)) > 0) {
+            return Optional.empty();
+        }
+        return Optional.of(new SpineResult.CaloriesNeeded(CalorieDirection.DOWN, List.of(new Reason(BELOW_TARGET_PACE, TARGET_PACE))));
     }
 
     private static SpineResult notTowardGoal(Snapshot snapshot, Window window, Parameters parameters) {
@@ -262,7 +318,7 @@ public final class WeeklySpine {
             return n >= 3 && step(weeks.get(n - 3), weeks.get(n - 2)).compareTo(perWeek()) >= 0;
         }
 
-        private BigDecimal perWeek() {
+        BigDecimal perWeek() {
             return margin.divide(BigDecimal.valueOf(weeks.size() - 1L), MathContext.DECIMAL64);
         }
 

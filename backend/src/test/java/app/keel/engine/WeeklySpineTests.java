@@ -228,9 +228,10 @@ class WeeklySpineTests {
         // flat_margin_kg (0.58 kg, ADR-020 L-10): 0.58 kg down over the window is not movement over the window; 0.59 kg
         // is. Since ADR-027 #0 a flat window whose last step still lost 0.30 kg (≥ the per-week 0.29) is a slow loser
         // moving; two steps of 0.28 are the plateau that cuts.
+        // K1 (ADR-091 Ek 4, K-1205): the second case: moving by the per-week share (0.29, 0.30) but under 0.5 % of 80 kg (0.40), plan
+        // followed: the calorie step (below_target_pace); before, "continue" (ADR-027 #0). The first stays: its 0.28 week is no move.
         assertThat(decided(spine(Sex.MALE, Phase.CUT, ON_PLAN, "80.58", "80.30", "80.00")).action()).isEqualTo(new Action.Continue());
-        assertThat(decided(spine(Sex.MALE, Phase.CUT, ON_PLAN, "80.59", "80.30", "80.00")).action())
-                .isEqualTo(new Action.Continue());
+        assertThat(spine(Sex.MALE, Phase.CUT, ON_PLAN, "80.59", "80.30", "80.00")).isEqualTo(belowTargetPace());
         assertThat(spine(Sex.MALE, Phase.CUT, ON_PLAN, "80.56", "80.28", "80.00")).isInstanceOf(SpineResult.CaloriesNeeded.class);
         // The margin itself, where the new rule does not reach (a rise then a drop): 0.58 over the window is flat → a
         // wait; 0.59 is toward the goal (K-223 review: the boundary had lost its test).
@@ -451,7 +452,8 @@ class WeeklySpineTests {
     @Test
     void aSteadySlowLoserKeepsGoingAndOnlyADropAfterARiseWaits() {
         // 0.29 kg a week, every week: moving (continue), not a plateau every week (ADR-027 #0).
-        assertThat(decided(spine(Sex.MALE, Phase.CUT, ON_PLAN, "80.58", "80.29", "80.00")).action()).isEqualTo(new Action.Continue());
+        // K1 (ADR-091 Ek 4, K-1205): the 0.29 kg a week loser is moving but under the pace floor (0.40 at 80 kg): the step.
+        assertThat(spine(Sex.MALE, Phase.CUT, ON_PLAN, "80.58", "80.29", "80.00")).isEqualTo(belowTargetPace());
         // Up 0.7 then down 0.7: this week's drop only undoes the rise — wait, not "moving" (aDropThisWeek… below).
         assertThat(decided(spine(Sex.MALE, Phase.CUT, ON_PLAN, "80.0", "80.7", "80.0")).action()).isEqualTo(new Action.NoDecisionYet());
     }
@@ -622,5 +624,10 @@ class WeeklySpineTests {
         assertThat(decision.action()).isEqualTo(new Action.NoDecisionYet());
         assertThat(decision.reasons().getFirst().rule()).isEqualTo(new RuleId("check_in_needed_" + signal));
         assertThat(decision.copyKey()).isEqualTo(new CopyKey("decision.no_decision_yet.check_in_needed_" + signal));
+    }
+
+    private static SpineResult belowTargetPace() {
+        return new SpineResult.CaloriesNeeded(CalorieDirection.DOWN, List.of(new Reason(new RuleId("below_target_pace"),
+                new Source("arastirma/ham/H3-bosluk-literatur.md#B3", SourceTag.LITERATURE))));
     }
 }

@@ -196,8 +196,10 @@ scenarios:
     user: {sex: male, phase: cut}
     # The window's 0.58 kg is inside the margin (L-10), but a steady loss at flat_margin_kg's own "≈ 0.3 kg/week is
     # movement" is a slow loser, not a plateau. (Before ADR-027: one step down.)
+    # K1 (ADR-091 Ek 4, K-1205, approved): 0.29 kg a week is under 0.5 % of 79.42 kg (0.397), the plan is followed, and
+    # 0.29 + 0.5 ≤ the cap min(1, 0.794): the calorie step. ADR-027 #0's "continue" gives way at this point.
     weeks: [80.00, 79.71, 79.42]
-    expect: [observing, window_not_full, continue/toward_goal]
+    expect: [observing, window_not_full, "adjust_calories:-500/below_target_pace"]
 
   - id: GS-24
     title: "Man losing 0.5 kg a week, one flat week: one flat week is not a plateau, he waits (ADR-027 #0, K-64)"

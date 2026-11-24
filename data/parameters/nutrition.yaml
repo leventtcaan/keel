@@ -51,6 +51,24 @@ parameters:
     tag: tecrube
     source: "arastirma/ham/guray/G7-whisper-arsiv.md#K-97"
     note: "Literatür %5-10 (100-250 kcal) diyor (H3 B3). Güray: 300-400 ölçüm gürültüsü. Çelişkide Güray kazanır. Adım hiç kısaltılmaz: enerji tabanı (LEA) adımı keserse kalori sabit kalır, BMR ya da makro tabanı keserse hareket artar (K-107). Açık karbdan çıkar (kart, 03 §2.3); G7 K-117 'yağdan ver' çelişkisi DURUM'da."
+  - key: cut_pace_floor_pct_bodyweight
+    value: 0.005
+    unit: ratio
+    tag: literatur
+    source: "arastirma/ham/H3-bosluk-literatur.md#B3"
+    note: "K-1205 (ADR-091 Ek 4): kesimde haftalık kayıp hızı tabanı = bu oran × trend kilosu (80 kg'da 0,40 kg/hafta). H3 B3 'hedef kayıp hızı %0,5-1,0 VA/hafta' (Helms 2014) alt ucu. Güray G2 K-15 (yağ oranına göre %0,4-1,25) konuşmacısı belirsiz ('konuğun kendi infografiği', 03 §2.5 'doğrulanmalı'): Güray kuralı diye etiketlenmez, kullanılmaz; yağ oranına göre ayrım (%0,4 / 100-150 g) bu sürümde yok. Hareket ediyor ama hız bunun altındaysa ve uyum ≥ on_track_min_ratio ise kalori adımı (cut_step_min_kcal) atılır; adım güvenlik tavanını (min(weekly_loss_cap_kg, VA × weekly_loss_cap_pct_bodyweight)) aşacaksa atılmaz. ADR-027 #0'ın 'yavaş ama hareket ediyor, devam' kararının yerini alır (GS-23, K1 Levent onaylı)."
+  - key: cut_pace_slow_weeks
+    value: 2
+    unit: weeks
+    tag: urun
+    source: "arastirma/ham/H3-bosluk-literatur.md#B3"
+    note: "SEÇİM, ürün (K-1205, Levent kararı): kalori adımı yalnız pencerenin hızı tabanın altındaysa VE son bu kadar haftalık değişimin her biri de tabanın altındaysa atılır: tutarlı yavaşlık. İyi haftalardan sonra tek duraklayan hafta adım gerektirmez (GS-24'ün 'bir hafta durdu' örüntüsü). Kaynak yok."
+  - key: kcal_per_kg_fat
+    value: 7000
+    unit: kcal_per_kg_weight_change
+    tag: tecrube
+    source: "arastirma/ham/guray/G2-kilo-verme.md#K-18"
+    note: "1 kg yağ ≈ 7000 kcal (G2 K-18; 'metinde 99.000 kalori yazıyor' ASR şüphesi, 7 kcal ≈ 1 g aritmetiği). Yalnız kalori adımının kg/hafta karşılığı için (cut_pace_floor kuralının tavan koruması): 500 kcal/gün × 7 / 7000 = 0,5 kg/hafta. energy_per_kg_weight_change (7700) bu karar kuralında kullanılmaz; o yalnız kayıt sapmasını öğrenir (K-115)."
   - key: bulk_step_kcal
     value: 250
     unit: kcal_per_day
