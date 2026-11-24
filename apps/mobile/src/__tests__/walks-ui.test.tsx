@@ -46,18 +46,15 @@ const block = (props: Partial<React.ComponentProps<typeof TodayBlock>>) => (
   </ThemeProvider>
 );
 
-describe('the line under the numbers, behind the steps tile (the home screen is at its word budget)', () => {
-  test('hidden until the steps tile is tapped; then the route and back, said as an offer, with a whole sentence for a screen reader', async () => {
+describe('the line under the numbers, on the first screen (home budget 74, K-1216)', () => {
+  test('the route and back, said as an offer, with a whole sentence for a screen reader', async () => {
     await render(block({ walk: { remaining: 4000, suggestion: { kind: 'route', route: { id: '1', name: 'Gym', km: 1.8 }, roundTripSteps: 5040, minutes: 36 } } }));
-    expect(screen.queryByTestId('walk-line')).toBeNull();
-    await fireEvent.press(screen.getByTestId('number-steps'));
     expect(screen.getByTestId('walk-line')).toHaveTextContent('4,000 left: Gym and back');
     expect(screen.getByTestId('walk-line').props.accessibilityLabel).toContain('about 36 minutes of walking');
   });
 
   test('or the minutes', async () => {
     await render(block({ walk: { remaining: 3500, suggestion: { kind: 'minutes', minutes: 32 } } }));
-    await fireEvent.press(screen.getByTestId('number-steps'));
     expect(screen.getByTestId('walk-line')).toHaveTextContent('3,500 left, about 32 min');
   });
 

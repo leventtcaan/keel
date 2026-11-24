@@ -1,3 +1,4 @@
+// constitution-audit (tools/anayasa-denetimi.sh)
 /** The words of the walk line (K-1216, U7) and the promise that nothing here knows where the phone is (the Apple Health text says the app does not read location). */
 import * as fs from 'fs';
 import * as path from 'path';

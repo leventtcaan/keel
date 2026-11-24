@@ -27,11 +27,12 @@ export type NotificationAccess = {
 };
 
 /**
+ * `walkOn`: the evening walk nudge (K-1216) the user switched on; absent, it is off.
  * `only`: one kind alone, turned on that way (the plan's Monday morning switch, K-967); absent, all four. `mealsOff`: the meal reminder
  * (ADR-090 #2) switched off on its own; absent, it follows the rest. `noCalls`: the
  * server makes no calls (no health data consent, K-992), so no check-in morning is planned whatever is on.
  */
-export type ReminderSettings = { enabled: boolean; cue: string; only?: ReminderKind; noCalls?: true; mealsOff?: true };
+export type ReminderSettings = { enabled: boolean; cue: string; only?: ReminderKind; noCalls?: true; mealsOff?: true; walkOn?: true };
 
 type Options = {
   kv: KeyValue;
@@ -60,6 +61,7 @@ const KEY = {
   meals: 'reminders.meals',
   mealsOff: 'reminders.mealsOff',
   walkNudge: 'reminders.walkNudge',
+  walkOn: 'reminders.walkOn',
 };
 const ON = 'on';
 
@@ -142,6 +144,7 @@ export async function createReminders({ kv, access, now, report, muted = async (
     ...(keptOnly === 'check_in' ? { only: keptOnly } : {}),
     ...(firstCallOf(await kv.getItemAsync(KEY.firstCall)) === 'off' ? { noCalls: true as const } : {}),
     ...((await kv.getItemAsync(KEY.mealsOff)) === ON ? { mealsOff: true as const } : {}),
+    ...((await kv.getItemAsync(KEY.walkOn)) === ON ? { walkOn: true as const } : {}),
   };
   const listeners = new Set<() => void>();
 
@@ -191,7 +194,7 @@ export async function createReminders({ kv, access, now, report, muted = async (
       weighInWeek: weighInsOf(await kv.getItemAsync(KEY.weighIns)),
       meals: rhythmOf(await kv.getItemAsync(KEY.meals)),
       mealsOff: settings.mealsOff === true,
-      walkNudge: walkNudge ? walkNudgeOf(await kv.getItemAsync(KEY.walkNudge)) : null,
+      walkNudge: walkNudge && settings.walkOn === true ? walkNudgeOf(await kv.getItemAsync(KEY.walkNudge)) : null,
     });
     await access.replace(settings.only === undefined ? plan : plan.filter((reminder) => reminder.kind === settings.only));
   }
@@ -358,6 +361,19 @@ export async function createReminders({ kv, access, now, report, muted = async (
         else await kv.setItemAsync(KEY.walkNudge, kept);
         await reschedule();
       }),
+
+    /** The evening walk nudge on or off on its own (Settings > Reminders); off by default (ADR-090 Ek 10). */
+    setWalk: (on: boolean): Promise<void> =>
+      inTurn(
+        async () => {
+          if (on) await kv.setItemAsync(KEY.walkOn, ON);
+          else await kv.removeItemAsync(KEY.walkOn);
+          const { walkOn: _, ...rest } = settings;
+          become(on ? { ...rest, walkOn: true } : rest);
+          await quietly(reschedule());
+        },
+        { rethrow: true },
+      ),
 
     /** The meal reminder on or off on its own (Settings › Reminders); the others stay as they are. */
     setMeals: (on: boolean): Promise<void> =>

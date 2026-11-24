@@ -102,6 +102,13 @@ export function RemindersSection() {
           switch={{ value: on && settings.mealsOff !== true, onValueChange: (next) => void run(() => reminders.setMeals(next), {}, 'settings.reminders.failed') }}
           disabled={busy || !on}
         />
+        {/* The evening walk nudge (K-1216, the fifth kind): its own switch, off until the user turns it on. */}
+        <ListRow
+          icon="figure.walk"
+          label={t('settings.reminders.walk')}
+          switch={{ value: on && settings.walkOn === true, onValueChange: (next) => void run(() => reminders.setWalk(next), {}, 'settings.reminders.failed') }}
+          disabled={busy || !on}
+        />
         <TrialReminderRow />
       </ListGroup>
       {stepButton}

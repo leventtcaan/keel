@@ -90,11 +90,11 @@
     },
     {
       "key": "walk_nudge_enabled",
-      "value": false,
+      "value": true,
       "unit": "flag",
       "tag": "urun",
       "source": "arastirma/ham/rakip-ozellik-2026-11-24.md#9.",
-      "note": "K-1216: the evening walk nudge, a fifth reminder kind (ADR-090 fixed four). OFF until the product owner decides: with it off nothing is planned and no setting shows. Needs a product decision (a fifth kind, rival research section 9 warns that step nudges that scold get switched off)."
+      "note": "K-1216: the evening walk nudge, a fifth reminder kind, approved by the product owner on 25 Nov 2026 (ADR-090 Ek 10). This flag says the kind exists; the user's own switch (Settings > Reminders, Evening walk) is OFF by default, and nothing is planned until they turn it on. Set false to remove the kind."
     },
     {
       "key": "walk_nudge_time",

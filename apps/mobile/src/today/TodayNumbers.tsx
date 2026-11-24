@@ -1,6 +1,5 @@
 import { formatNumber } from '@/copy/format';
 import { router } from 'expo-router';
-import { useState } from 'react';
 import type { SFSymbol } from 'expo-symbols';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -71,8 +70,6 @@ type Props = {
 export function TodayNumbers({ protein, steps, weight, walk = null, units }: Props) {
   const { report } = useAppServices();
   const { color } = useTheme();
-  // The walk (K-1216) is behind the steps tile (the home screen's words are at their budget): a tap shows it, a tap on it opens Health.
-  const [walkShown, setWalkShown] = useState(false);
   const openHealth = () => void Linking.openURL('x-apple-health://').catch((error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' }));
   const tiles = [];
   if (protein !== null) {
@@ -94,7 +91,7 @@ export function TodayNumbers({ protein, steps, weight, walk = null, units }: Pro
       const open = openHealth;
       tiles.push(
         <Tile key="steps" id="steps" icon="figure.walk" value={t('thisWeek.numbers.steps', { steps: count, target })} label={t('progress.targets.label.steps', { steps: count, target })}
-          hint={t(walk === null ? 'progress.targets.hint.health' : 'progress.targets.hint.walk')} onPress={walk === null ? open : () => setWalkShown((shown) => !shown)} />,
+          hint={t('progress.targets.hint.health')} onPress={open} />,
       );
     }
   }
@@ -119,9 +116,9 @@ export function TodayNumbers({ protein, steps, weight, walk = null, units }: Pro
     );
   }
   if (tiles.length === 0) return null;
-  // The steps left as a walk (K-1216), under the numbers once the steps tile is tapped: an offer in one line, never a debt (U7).
+  // The steps left as a walk (K-1216), under the numbers (first screen, budget 74, K-1216): an offer in one line, never a debt (U7).
   const walkText =
-    walk === null || steps?.steps == null || !walkShown ? null : (
+    walk === null || steps?.steps == null ? null : (
       <Pressable testID="walk-line" accessibilityRole="button" accessibilityLabel={walkLabel(walk.remaining, walk.suggestion)} accessibilityHint={t('progress.targets.hint.health')} onPress={openHealth}>
         <Text style={[styles.walk, { color: color.textSecondary }]}>{walkLine(walk.remaining, walk.suggestion)}</Text>
       </Pressable>

@@ -3333,6 +3333,7 @@
       "routine": "Your routine",
       "what": "Four reminders: training ({minutes} minutes before), the check-in morning, your usual meal times, and a note after a quiet week. All stay on this phone.",
       "meals": "Meal reminders",
+      "walk": "Evening walk idea",
       "turnOn": "Turn on reminders",
     "onlyCheckIn": "Only the check-in morning reminder is on.",
     "noCalls": "No weekly calls without your OK for health data, so the check-in morning reminder waits.",
@@ -3771,7 +3772,6 @@
       "hint": {
         "meal": "Opens the meal log",
         "health": "Opens Apple Health",
-        "walk": "Shows a walk for the steps left",
         "connect": "Opens Settings to connect Apple Health",
         "cardio": "Opens the log"
       }
