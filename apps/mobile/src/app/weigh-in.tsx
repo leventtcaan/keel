@@ -24,6 +24,7 @@ import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { newClientId } from '@/sync/send';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
+import { type DayPlan, planLine, readDayPlan } from '@/today/dayPlan';
 import { type Loaded, load, localDay } from '@/today/today';
 import { formatWeight, parseWeightKg, weightDecimals, weightInput, weightStep } from '@/units/units';
 import { lastWeighInDate, prefillKg } from '@/weighIn/last';
@@ -46,7 +47,7 @@ const DAY_MS = 24 * 3600 * 1000;
  * instead of any word on the trend (U8).
  */
 export default function WeighInScreen() {
-  const { api, queue, consents, report, healthWriting, takeBack } = useAppServices();
+  const { api, queue, consents, report, healthWriting, takeBack, workoutRecords } = useAppServices();
   const saved = useSaved();
   const units = useUnits();
   const { color } = useTheme();
@@ -90,6 +91,22 @@ export default function WeighInScreen() {
       live = false;
     };
   }, [api, step, units]);
+
+  // Today's plan for the banner that follows the save (K-1217): read while the entry is on screen, so saving never waits for it. Unread
+  // when Save is pressed: the banner says the weight, as it did.
+  const plan = useRef<DayPlan | null>(null);
+  useEffect(() => {
+    if (step !== 'entry') return;
+    let live = true;
+    void readDayPlan({ api, workoutRecords }, new Date())
+      .then((read) => {
+        if (live) plan.current = read;
+      })
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [api, workoutRecords, step]);
 
   const trendReady = summary?.state === 'ready' && summary.value.trendReady;
   useEffect(() => {
@@ -137,7 +154,8 @@ export default function WeighInScreen() {
       // lock stays on: a second tap while the sheet goes would keep a second weigh-in.
       router.back();
       saved({
-        detail: formatWeight(kg, units),
+        // The day's plan in one phrase when it was read (K-1217); else the weight. Never the scale's change (U7, U8).
+        detail: (plan.current === null ? null : planLine(plan.current)) ?? formatWeight(kg, units),
         undo: undoThrough(
           () => takeBack(weighIn.clientId, async (id) => (await api.DELETE('/v1/weigh-ins/{id}', { params: { path: { id } } })).response.status),
           report,

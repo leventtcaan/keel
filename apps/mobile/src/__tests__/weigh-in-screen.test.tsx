@@ -19,6 +19,7 @@ import { openRecordStore } from '@/sync/store';
 import { createTakeBack } from '@/sync/takeBack';
 import { ThemeProvider } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
+import { localDay } from '@/today/today';
 
 import { nodeSqlite } from './support/nodeSqlite';
 import { WithSaved, banner, undoButton } from './support/saved';
@@ -694,5 +695,70 @@ describe('the way out and the keyboard (K-1065)', () => {
     expect(screen.getByRole('button', { name: t('keyboard.hide') })).toBeOnTheScreen();
     expect(screen.getByTestId('keyboard-frame')).toBeOnTheScreen();
     expect(within(screen.getByTestId('keyboard-frame')).getByRole('button', { name: t('weighIn.save') })).toBeOnTheScreen();
+  });
+});
+
+// K-1217 (#725): saved, the banner on the screen the sheet returns to says today's plan in one phrase: the training day (the Train
+// card's) and the calories left (the server's budget, one number). The scale's own change is never said (U7, U8).
+describe("the day's plan on the banner (K-1217)", () => {
+  const restores: (() => void)[] = [];
+  const afterTest = (restore: () => void) => restores.push(restore);
+  afterEach(() => restores.splice(0).forEach((restore) => restore()));
+  const TODAY = localDay(new Date('2026-10-01T05:30:00Z'));
+  const DAY: Schemas['ProgramDay'] = { id: 'a', nameKey: 'programDays.full_body_a.name', weekday: 'THURSDAY', exercises: [] };
+  const program = (week: Schemas['Program']['week']): Answer => ok({ id: 'p', source: 'GENERATED', days: [DAY], today: TODAY, weekOf: TODAY, week });
+  const session: Schemas['WeekSession'] = { programDayId: 'a', date: TODAY, exerciseIds: [] };
+  const budget = (low: number, high: number): Answer =>
+    ok({
+      day: TODAY,
+      targetKcal: 2300,
+      targetProteinG: 140,
+      eaten: { kcal: { low: 1000, high: 1200 }, proteinG: { low: 60, high: 80 } },
+      left: { kcal: { low, high }, proteinG: { low: 60, high: 80 } },
+    });
+
+  test('a training day with food left: "Saved" and "Today: Full body A · 1,136 kcal left", with Undo', async () => {
+    mockAnswers = { '/v1/weigh-ins/summary': summary(), '/v1/program': program([session]), '/v1/days/{day}/budget': budget(1100, 1172) };
+    await show();
+    await type('82,4');
+    await press(t('weighIn.save'));
+    expect(mockBack).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(t('undoBanner.saved'))).toBeOnTheScreen();
+    expect(screen.getByText('Today: Full body A · 1,136 kcal left')).toBeOnTheScreen();
+    expect(undoButton()).toBeOnTheScreen();
+  });
+
+  test('a rest day: only the food; the weight and its change are not said (U7, U8)', async () => {
+    mockAnswers = { '/v1/weigh-ins/summary': summary(), '/v1/program': program([]), '/v1/days/{day}/budget': budget(1100, 1172) };
+    await show();
+    await type('82,4');
+    await press(t('weighIn.save'));
+    expect(screen.getByText('Today: 1,136 kcal left')).toBeOnTheScreen();
+    expect(screen.queryByText(t('units.kg', { value: '82.4' }))).toBeNull();
+    expect(screen.queryByText(/[+−-]\s?\d/)).toBeNull();
+  });
+
+  test('nothing about the day could be read: the banner is the weight, as it was', async () => {
+    mockAnswers = { '/v1/weigh-ins/summary': summary() };
+    await show();
+    await type('82,4');
+    await press(t('weighIn.save'));
+    expect(screen.getByText(t('units.kg', { value: '82.4' }))).toBeOnTheScreen();
+    expect(screen.queryByText(/^Today:/)).toBeNull();
+  });
+
+  test('the plan is read while the entry is on screen: saving never waits for it', async () => {
+    mockAnswers = { '/v1/weigh-ins/summary': summary() };
+    const original = mockServices.api.GET.getMockImplementation();
+    afterTest(() => mockServices.api.GET.mockImplementation(original));
+    mockServices.api.GET.mockImplementation(async (path: string) => {
+      if (path === '/v1/program' || path === '/v1/days/{day}/budget') return new Promise<never>(() => {});
+      return mockAnswers[path] ?? { error: { code: 'NOT_FOUND', message: 'x' }, response: new Response(null, { status: 404 }) };
+    });
+    await show();
+    await type('82,4');
+    await press(t('weighIn.save'));
+    expect(mockBack).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(t('units.kg', { value: '82.4' }))).toBeOnTheScreen();
   });
 });

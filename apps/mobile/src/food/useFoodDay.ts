@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 
 import type { components } from '@/api/schema';
 import { useAppServices } from '@/services/ServicesProvider';
+import { trainingToday } from '@/today/dayPlan';
 import { type Loaded, load } from '@/today/today';
 import { useReadOnFocus } from '@/today/useReadOnFocus';
 
@@ -37,6 +38,8 @@ export type FoodDay = {
   slots: Schemas['MealSlot'][];
   /** On how many different days of the recent window the user logged a meal: the pattern the slots and the per-meal hint rest on. */
   patternDays: number;
+  /** Today's program day when today is a training day (K-1217): the Train card's own rule; none on another day, a rest day, or unread. */
+  training: Schemas['ProgramDay'] | null;
 };
 
 /**
@@ -46,18 +49,18 @@ export type FoodDay = {
  * for it. Choosing another day reads again.
  */
 export function useFoodDay(selected: string | null): { today: string; day: string; data: FoodDay | null; reload: () => void } {
-  const { api, queue, mealRecords, report } = useAppServices();
-  const latest = useRef({ queue, mealRecords, report });
+  const { api, queue, mealRecords, report, workoutRecords } = useAppServices();
+  const latest = useRef({ queue, mealRecords, report, workoutRecords });
   useEffect(() => {
-    latest.current = { queue, mealRecords, report };
+    latest.current = { queue, mealRecords, report, workoutRecords };
   });
   const read = useCallback(
     async (today: string): Promise<FoodDay> => {
       const day = selected ?? today;
-      const { queue: waiting, mealRecords: records, report: tell } = latest.current;
+      const { queue: waiting, mealRecords: records, report: tell, workoutRecords: workouts } = latest.current;
       const named = (error: unknown) => tell({ name: error instanceof Error ? error.name : 'Unknown' });
       await waiting.drain().catch(named);
-      const [budget, targets, shown, before, local, suggested, days, history] = await Promise.all([
+      const [budget, targets, shown, before, local, suggested, days, history, training] = await Promise.all([
         load(() => api.GET('/v1/days/{day}/budget', { params: { path: { day } } })),
         load(() => api.GET('/v1/targets')),
         load(() => api.GET('/v1/meals', { params: { query: { day } } })),
@@ -69,6 +72,8 @@ export function useFoodDay(selected: string | null): { today: string; day: strin
         day === today ? load(() => api.GET('/v1/days/{day}/suggestions', { params: { path: { day } } })) : Promise.resolve(null),
         load(() => api.GET('/v1/days', { params: { query: { from: addDays(today, -(foodParams.dayStripDays - 1)), to: today } } })),
         load(() => api.GET('/v1/meals', { params: { query: { from: addDays(today, -(foodParams.slotsUsedWindowDays - 1)), to: today } } })),
+        // Only today is a training day to say; a read that fails is no line (K-1217).
+        day === today ? trainingToday({ api, workoutRecords: workouts }, new Date()).catch(() => null) : Promise.resolve(null),
       ]);
       const suggestions = suggested !== null && suggested.state === 'ready' ? suggested.value : [];
       const summaries = days.state === 'ready' ? days.value.filter((entry) => entry.meals > 0) : [];
@@ -79,7 +84,7 @@ export function useFoodDay(selected: string | null): { today: string; day: strin
       const logged = history.state === 'ready' ? history.value : [];
       const slots = usedSlots(logged, shownSlots);
       const patternDays = new Set(logged.map((meal) => localDay(new Date(meal.eatenAt)))).size;
-      if (shown.state === 'consent') return { day, budget, targets, meals: null, mealsRead: false, offers: [], suggestions: [], summary, loggedDays, summaries, slots, patternDays };
+      if (shown.state === 'consent') return { day, budget, targets, meals: null, mealsRead: false, offers: [], suggestions: [], summary, loggedDays, summaries, slots, patternDays, training };
       const mealsRead = shown.state === 'ready';
       const meals = dayMeals(mealsRead ? shown.value : null, local, day);
       if (mealsRead) {
@@ -88,7 +93,7 @@ export function useFoodDay(selected: string | null): { today: string; day: strin
       }
       // Without the day's list a slot already logged could be offered again.
       const offers = mealsRead && before.state === 'ready' ? repeatOffers(before.value, meals) : [];
-      return { day, budget, targets, meals, mealsRead, offers, suggestions, summary, loggedDays, summaries, slots, patternDays };
+      return { day, budget, targets, meals, mealsRead, offers, suggestions, summary, loggedDays, summaries, slots, patternDays, training };
     },
     [api, selected],
   );

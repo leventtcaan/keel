@@ -12,7 +12,8 @@ import type { ApiClient } from '@/api/client';
 import type { components } from '@/api/schema';
 import { bothHealthConsents } from '@/health/consent';
 import type { LocalRecord } from '@/sync/store';
-import { load } from '@/today/today';
+import { mid } from '@/food/single';
+import { load, localDay } from '@/today/today';
 
 import { type Move, type TrainData, movesOf } from './trainData';
 
@@ -28,6 +29,8 @@ export type WorkoutEnd =
       programDayId: string | null;
       week: { done: number; planned: number } | null;
       kcal: number | undefined;
+      /** Where today's protein stands (K-1217): the server's budget, eaten as the middle of its range, over the plan's target; none when unread. */
+      protein?: { eaten: number; target: number };
       /** The catalog's moves and the user's own, by id: what the summary's exerciseId names. */
       moves: ReadonlyMap<string, Move>;
     };
@@ -81,13 +84,15 @@ export async function loadWorkoutEnd(deps: EndDeps, clientId: string): Promise<W
   if (found.kind !== 'found') return found;
   const { id, body, ended } = found;
 
-  const [summary, read, own, consistency, kcal] = await Promise.all([
+  const [summary, read, own, consistency, kcal, budget] = await Promise.all([
     load(() => deps.api.GET('/v1/workouts/{id}/summary', { params: { path: { id } } })),
     deps.training.read(deps.api as ApiClient).catch(() => null),
     // The user's own moves are named by them; unread, the end is still shown (a catalog name, else the id as before).
     deps.training.own(deps.api as ApiClient).catch((): Move[] => []),
     load(() => deps.api.GET('/v1/consistency')),
     energy(deps, body.startedAt, ended),
+    // The day goes on (K-1217): today's budget, the server's numbers. No consent, no budget, no line.
+    load(() => deps.api.GET('/v1/days/{day}/budget', { params: { path: { day: localDay(new Date()) } } })),
   ]);
   if (summary.state !== 'ready') return { kind: 'failed', problem: summary.state === 'failed' ? summary.problem : 'ServerError' };
   return {
@@ -99,6 +104,7 @@ export async function loadWorkoutEnd(deps: EndDeps, clientId: string): Promise<W
     // The week's sessions (training), not every action's; without the consistency (no consent: 403), no week.
     week: consistency.state === 'ready' ? { done: consistency.value.training.done, planned: consistency.value.training.planned } : null,
     kcal,
+    ...(budget.state === 'ready' && budget.value.targetProteinG > 0 ? { protein: { eaten: mid(budget.value.eaten.proteinG), target: budget.value.targetProteinG } } : {}),
     moves: movesOf(read, own),
   };
 }

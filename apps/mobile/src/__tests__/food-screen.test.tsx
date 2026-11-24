@@ -35,7 +35,7 @@ let mockAnswers: Record<string, Answer> = {};
 const mockRecord = jest.fn(async (_record: unknown) => true);
 const mockGET = jest.fn(async (path: string, _init?: unknown) => mockAnswers[path] ?? refused(404, 'NOT_FOUND'));
 jest.mock('expo-router', () => ({
-  router: { push: jest.fn(), back: jest.fn() },
+  router: { push: jest.fn(), back: jest.fn(), dismissTo: jest.fn() },
   useRouter: () => ({ push: jest.fn() }),
   useFocusEffect: (effect: () => void) => {
     const React = jest.requireActual<typeof import('react')>('react');
@@ -235,5 +235,33 @@ describe('what the day can still hold (K-507)', () => {
     mockAnswers['/v1/days/{day}/suggestions'] = ok([]);
     await show();
     expect(screen.queryByText(t('food.suggestions.title'))).toBeNull();
+  });
+});
+
+// K-1217 (#725): the food page knows the day is a training day: one line under the title, the way to the workout; none on a rest day.
+describe('the training day, said on the food page (K-1217)', () => {
+  const DAY: Schemas['ProgramDay'] = { id: 'a', nameKey: 'programDays.full_body_a.name', weekday: 'TUESDAY', exercises: [] };
+  const program = (week: Schemas['WeekSession'][]): Answer =>
+    ok({ id: 'p', source: 'GENERATED', days: [DAY], today: '2026-09-29', weekOf: '2026-09-28', week } satisfies Schemas['Program']);
+  const TODAYS: Schemas['WeekSession'] = { programDayId: 'a', date: '2026-09-29', exerciseIds: [] };
+
+  test('a training day: "Training day: Full body A", one tap to the workout, said as what it opens', async () => {
+    mockAnswers['/v1/program'] = program([TODAYS]);
+    await show();
+    expect(screen.getByText('Training day: Full body A')).toBeOnTheScreen();
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('food.trainingLabel', { name: 'Full body A' }) })));
+    expect(jest.mocked(router.dismissTo)).toHaveBeenCalledWith('/train');
+  });
+
+  test('a rest day: nothing at all', async () => {
+    mockAnswers['/v1/program'] = program([{ ...TODAYS, date: '2026-09-30' }]);
+    await show();
+    expect(screen.queryByText(/Training day/)).toBeNull();
+  });
+
+  test('no program read: nothing, and the page is as it was', async () => {
+    await show();
+    expect(screen.queryByText(/Training day/)).toBeNull();
+    expect(screen.getByText(t('food.totals.left', { value: '865', unit: t('food.budget.kcalUnit') }))).toBeOnTheScreen();
   });
 });

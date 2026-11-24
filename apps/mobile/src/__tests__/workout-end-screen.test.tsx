@@ -62,11 +62,26 @@ const mockDismiss = jest.fn();
 jest.mock('expo-router', () => ({
   router: { push: (...a: unknown[]) => mockPush(...a), dismissTo: (...a: unknown[]) => mockDismiss(...a) },
   useLocalSearchParams: () => ({ workout: 'w1' }),
-  useFocusEffect: (effect: () => () => void) => {
+  useFocusEffect: (effect: () => void | (() => void)) => {
     const React = jest.requireActual<typeof import('react')>('react');
-    React.useEffect(() => effect(), [effect]);
+    React.useEffect(() => {
+      const cleanup = effect();
+      mockFocusEffects.set(effect, typeof cleanup === 'function' ? cleanup : undefined);
+      return () => {
+        mockFocusEffects.get(effect)?.();
+        mockFocusEffects.delete(effect);
+      };
+    }, [effect]);
   },
 }));
+// The screen comes to the front again (back from the meal log): every focus effect that is up runs once more.
+const mockFocusEffects = new Map<() => void | (() => void), (() => void) | undefined>();
+const mockFocusBack = () =>
+  [...mockFocusEffects.keys()].forEach((effect) => {
+    mockFocusEffects.get(effect)?.();
+    const cleanup = effect();
+    mockFocusEffects.set(effect, typeof cleanup === 'function' ? cleanup : undefined);
+  });
 const mockBar = jest.fn();
 jest.mock('expo-status-bar', () => ({ StatusBar: () => null, setStatusBarStyle: (style: string) => mockBar(style) }));
 
@@ -364,5 +379,49 @@ describe('one primary (ADR-070 Ek 2 #1)', () => {
     expect(await screen.findByText(t('workoutEnd.retry'))).toBeOnTheScreen();
     expect(fill(t('workoutEnd.retry'))).toBe(focusPalette.surface);
     expect(primaries().map((b) => b.props.accessibilityLabel)).toEqual([t('workoutEnd.done')]);
+  });
+});
+
+// K-1217 (#725): the end of a workout looks at the rest of the day: one line of protein (the server's numbers) and the way to log a meal.
+describe('the day goes on (K-1217)', () => {
+  const WITH_PROTEIN: WorkoutEnd = { ...READY, protein: { eaten: 74, target: 175 } };
+
+  test('"Protein: 74 / 175 g" from the server\'s numbers, and "Log a meal" opens the meal log', async () => {
+    mockEnd = WITH_PROTEIN;
+    await show();
+    expect(await screen.findByText(t('workoutEnd.protein', { eaten: 74, target: 175 }))).toBeOnTheScreen();
+    expect(screen.getByText('Protein: 74 / 175 g')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: t('workoutEnd.logMeal') }));
+    expect(mockPush).toHaveBeenCalledWith('/meal');
+  });
+
+  test('the protein line is read as words (not a slash) to VoiceOver, and the button is a button', async () => {
+    mockEnd = WITH_PROTEIN;
+    await show();
+    expect(await screen.findByLabelText('Protein so far today: 74 of 175 grams')).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Log a meal' })).toBeOnTheScreen();
+  });
+
+  test('Done still goes back to the tabs', async () => {
+    mockEnd = WITH_PROTEIN;
+    await show();
+    await fireEvent.press(await screen.findByRole('button', { name: t('workoutEnd.done') }));
+    expect(mockDismiss).toHaveBeenCalledWith('/train');
+  });
+
+  test('no protein read (no consent, no target, offline): neither the line nor the button; nothing made up', async () => {
+    await show();
+    expect(await screen.findByText(t('workoutEnd.title'))).toBeOnTheScreen();
+    expect(screen.queryByText(/Protein:/)).toBeNull();
+    expect(screen.queryByRole('button', { name: t('workoutEnd.logMeal') })).toBeNull();
+  });
+
+  test('coming back from the meal log reads the day again: the line shows the meal just logged', async () => {
+    mockEnd = WITH_PROTEIN;
+    await show();
+    expect(await screen.findByText('Protein: 74 / 175 g')).toBeOnTheScreen();
+    mockEnd = { ...READY, protein: { eaten: 110, target: 175 } };
+    await act(async () => mockFocusBack());
+    expect(await screen.findByText('Protein: 110 / 175 g')).toBeOnTheScreen();
   });
 });

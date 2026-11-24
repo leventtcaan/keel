@@ -363,6 +363,15 @@
     "level": { "LOW": "Low", "MEDIUM": "Medium", "HIGH": "High" },
     "nextCall": "Next call {date}",
     "gotIt": "Got it",
+    "practice": {
+      "title": "In practice",
+      "food": "Food",
+      "train": "Training",
+      "walk": "Walk",
+      "foodLabel": "Open the food page",
+      "trainLabel": "Open Train",
+      "walkLabel": "Open the walk on Home"
+    },
     "weighIn": "Weigh in",
     "weighInsLeft": { "one": "1 more weigh-in needed", "other": "{count} more weigh-ins needed" },
     "keep": "Keep last week's plan",
@@ -1079,6 +1088,11 @@
     "offline": "Saving a move needs a connection. Try again when you're online.",
     "refused": "This move could not be saved. Try again."
   },
+  "dayPlan": {
+    "today": "Today: {plan}",
+    "kcalLeft": "{kcal} kcal left",
+    "join": " · "
+  },
   "workoutEnd": {
     "title": "Workout complete",
     "minutes": { "one": "minute", "other": "minutes" },
@@ -1109,6 +1123,9 @@
     "baselineBody": "Next time every set has a target to beat.",
     "worked": "Worked today",
     "week": "{done} of {planned} sessions this week",
+    "protein": "Protein: {eaten} / {target} g",
+    "proteinLabel": "Protein so far today: {eaten} of {target} grams",
+    "logMeal": "Log a meal",
     "weekLabel": "This week: {done} of {planned} sessions",
     "share": "Share your workout",
     "done": "Done",
@@ -1218,6 +1235,8 @@
       "log": "Log {name}"
     },
     "log": "Log a meal",
+    "training": "Training day: {name}",
+    "trainingLabel": "Training day: {name}. Opens your workout.",
     "photo": "Log from a photo",
     "recipes": "Your recipes",
     "budget": {

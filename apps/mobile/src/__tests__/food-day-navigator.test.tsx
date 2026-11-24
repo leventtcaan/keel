@@ -49,6 +49,7 @@ const OLD_LUNCH = meal('l1', 25, 12, 'LUNCH', [item('Rice', [200, 240], { quanti
 
 let mockMeals: Record<string, Schemas['Meal'][]> = {};
 let mockDays: Schemas['DaySummary'][] = [];
+let mockProgram: Answer | null = null;
 let mockPatch: () => Promise<Answer> = async () => ok(BREAKFAST);
 let mockDelete: () => Promise<Answer> = async () => ({ response: new Response(null, { status: 204 }) });
 const calls: string[] = [];
@@ -60,6 +61,7 @@ const mockGET = jest.fn(async (path: string, init?: { params?: { query?: { day?:
     return ok(Object.values(mockMeals).flat());
   }
   if (path === '/v1/days') return ok(mockDays);
+  if (path === '/v1/program' && mockProgram !== null) return mockProgram;
   if (path === '/v1/days/{day}/budget') {
     return ok({
       day: init?.params?.path?.day,
@@ -133,6 +135,7 @@ afterAll(() => jest.useRealTimers());
 beforeEach(() => {
   jest.clearAllMocks();
   calls.length = 0;
+  mockProgram = null;
   mockMeals = { '2026-09-29': [BREAKFAST], '2026-09-25': [OLD_LUNCH] };
   mockDays = [
     { day: '2026-09-25', meals: 1, eaten: NUTRIENTS([200, 240], [4, 5], [40, 50], [0, 1]) },
@@ -180,6 +183,17 @@ describe('the day navigator', () => {
     expect(mockGET).toHaveBeenCalledWith('/v1/meals', { params: { query: { day: '2026-09-28' } } });
     expect(mockGET).toHaveBeenCalledWith('/v1/meals', { params: { query: { day: '2026-09-27' } } });
     expect(screen.getByTestId('day-after')).toBeEnabled();
+  });
+
+  test("the training day is today's alone (K-1217): another day shows no line, and today's program is not read for it", async () => {
+    const day: Schemas['ProgramDay'] = { id: 'a', nameKey: 'programDays.full_body_a.name', weekday: 'TUESDAY', exercises: [] };
+    mockProgram = ok({ id: 'p', source: 'GENERATED', days: [day], today: '2026-09-29', weekOf: '2026-09-28', week: [{ programDayId: 'a', date: '2026-09-29', exerciseIds: [] }] });
+    await show();
+    expect(screen.getByText('Training day: Full body A')).toBeOnTheScreen();
+    calls.length = 0;
+    await press(screen.getByTestId('day-before'));
+    expect(screen.queryByText(/Training day/)).toBeNull();
+    expect(calls).not.toContain('/v1/program');
   });
 
   test('a day of the strip shows its meals, with each item\'s amount and one kcal number, and its totals', async () => {
