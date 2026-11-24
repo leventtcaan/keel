@@ -40,8 +40,8 @@ public final class DataSufficiency {
 
     /**
      * Whether each of the last two weeks has the full count of weigh-ins (min_weighins_per_week): what the weekly loss cap
-     * needs to see a loss (SafetyNet). A calorie step down is never made without it (K-1204, ADR-091 Ek 4; K-1226 may relax
-     * this): a cut taken on data the cap cannot watch is the one thing sparse reading must not allow.
+     * reads without a noise margin (SafetyNet). A calorie step down is never made without it (K-1204, ADR-091 Ek 4): the sparse loss
+     * cap (K-1226) catches a clearly too fast loss, but a step down on data it only half watches is still not allowed.
      */
     static boolean denseForACut(Snapshot snapshot, Parameters parameters) {
         int[] counts = DecisionWindow.weekCounts(snapshot.weights(), snapshot.today(), 2);

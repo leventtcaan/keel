@@ -13,8 +13,8 @@ import java.util.Optional;
  * The first step of every decision (U13, ADR-003 §4): nothing lowers calories before this has looked.
  *
  * <ul>
- *   <li><b>Weekly loss cap</b> (cut only, dense data only): trend weight falling faster than min(weekly_loss_cap_kg, bodyweight ×
- *       weekly_loss_cap_pct_bodyweight) raises calories. The coaching cap of 1 kg (G2 K-17: "don't try to go above it, you lose
+ *   <li><b>Weekly loss cap</b> (cut only): trend weight falling faster than min(weekly_loss_cap_kg, bodyweight ×
+ *       weekly_loss_cap_pct_bodyweight) raises calories; on sparse weigh-ins only when clearly faster, beyond the noise margin (K-1226). The coaching cap of 1 kg (G2 K-17: "don't try to go above it, you lose
  *       muscle") and the literature's 1 % (H3 Ç1) together: the 1 % only ever makes the coaching cap stricter.</li>
  *   <li><b>BMR floor</b>: a proposed calorie target is never below BMR; the answer is more movement instead
  *       (G2 K-11, G2 decision table). BMR is an input: coaching practice uses the value an online calculator gives.</li>
@@ -114,9 +114,16 @@ public final class SafetyNet {
     }
 
     private static boolean overTheWeeklyCap(Snapshot snapshot, Parameters parameters) {
-        if (!enoughToMeasureALossRate(snapshot, parameters)) {
+        if (!pastTheFirstDays(snapshot, parameters)) {
             return false;
         }
+        int[] counts = DecisionWindow.weekCounts(snapshot.weights(), snapshot.today(), 2);
+        int full = parameters.wholeNumber(ParameterKey.MIN_WEIGHINS_PER_WEEK);
+        return counts[0] >= full && counts[1] >= full ? overTheCapOnDenseData(snapshot, parameters) : overTheCapOnSparseData(snapshot, parameters);
+    }
+
+    /** Dense data (the full count in each of the last two weeks): this week's trend against last week's, no margin. */
+    private static boolean overTheCapOnDenseData(Snapshot snapshot, Parameters parameters) {
         LocalDate today = snapshot.today();
         int trendDays = parameters.wholeNumber(ParameterKey.TREND_DISPLAY_DAYS);
         Optional<BigDecimal> now = WeightTrend.at(snapshot.weights(), today, trendDays);
@@ -126,6 +133,45 @@ public final class SafetyNet {
         }
         BigDecimal weeklyLoss = weekAgo.get().subtract(now.get());
         return weeklyLoss.compareTo(weeklyLossCapKg(now.get(), parameters)) > 0;
+    }
+
+    /**
+     * Sparse data (K-1226, ADR-091 Ek 4 devamı): the loss over k weeks, the trend now against the trend k weeks back, for k = 1 up
+     * to loss_cap_sparse_max_span_weeks. It counts only when it is more than k caps <em>plus</em> the noise margin of the two
+     * edge weeks (NoiseMargin, ADR-020 L-10 generalised to the edge weeks' weigh-ins): the true loss is then over the cap even
+     * at the margin's 95 % error, so noise alone does not raise a safety call. A longer span carries more loss against the
+     * same margin (the margin per week is margin / k), which is how a steady 1.2 kg a week on two weigh-ins a week is seen
+     * before the 8-week rule: one week's difference is too noisy to show it (0.2 kg over the cap against a 0.82 kg margin),
+     * five weeks' is not (1.0 kg over against the same 0.82). The dense rule has no margin; sparse data is the stricter reading.
+     */
+    private static boolean overTheCapOnSparseData(Snapshot snapshot, Parameters parameters) {
+        LocalDate today = snapshot.today();
+        int trendDays = parameters.wholeNumber(ParameterKey.TREND_DISPLAY_DAYS);
+        int floor = parameters.wholeNumber(ParameterKey.MIN_WEIGHINS_FLOOR_PER_WEEK);
+        int maxSpan = parameters.wholeNumber(ParameterKey.LOSS_CAP_SPARSE_MAX_SPAN_WEEKS);
+        Optional<BigDecimal> now = WeightTrend.at(snapshot.weights(), today, trendDays);
+        int[] counts = DecisionWindow.weekCounts(snapshot.weights(), today, maxSpan + 1);
+        if (now.isEmpty() || counts[0] < floor) {
+            return false;
+        }
+        // Only while the loss goes on, as for the 8-week loss: once the deficit has been narrowed and the weight holds, a longer
+        // span still carries the old drop, and answering it every week would stack calorie increases.
+        Optional<BigDecimal> weekAgo = WeightTrend.at(snapshot.weights(), today.minusWeeks(1), trendDays);
+        if (weekAgo.isPresent() && now.get().compareTo(weekAgo.get()) >= 0) {
+            return false;
+        }
+        BigDecimal cap = weeklyLossCapKg(now.get(), parameters);
+        for (int span = 1; span <= maxSpan; span++) {
+            Optional<BigDecimal> then = WeightTrend.at(snapshot.weights(), today.minusWeeks(span), trendDays);
+            if (then.isEmpty() || counts[span] < floor) {
+                continue;
+            }
+            BigDecimal allowed = cap.multiply(BigDecimal.valueOf(span)).add(NoiseMargin.of(counts[0], counts[span], parameters));
+            if (then.get().subtract(now.get()).compareTo(allowed) > 0) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -161,21 +207,14 @@ public final class SafetyNet {
     }
 
     /**
-     * A loss rate is only read from two dense, consecutive weeks after the first no_interpretation_days: with one
-     * weigh-in a week the noise on the difference (~1.2 kg at 95 %) is larger than the cap itself, and the first
-     * week's drop is water and glycogen (G2 K-19, H1 §3.4).
+     * Nothing is read from the first no_interpretation_days of data: the first week's drop is water and glycogen (G2 K-19, H1 §3.4).
+     * Dense or sparse, the loss cap waits until then; how much it needs after that depends on the weigh-ins (overTheWeeklyCap).
      */
-    private static boolean enoughToMeasureALossRate(Snapshot snapshot, Parameters parameters) {
-        LocalDate today = snapshot.today();
-        WeightSeries weights = snapshot.weights();
+    private static boolean pastTheFirstDays(Snapshot snapshot, Parameters parameters) {
         int noInterpretationDays = parameters.wholeNumber(ParameterKey.NO_INTERPRETATION_DAYS);
-        boolean pastFirstDays = weights.firstDay()
-                .map(first -> !today.isBefore(first.plusDays(noInterpretationDays - 1L)))
+        return snapshot.weights().firstDay()
+                .map(first -> !snapshot.today().isBefore(first.plusDays(noInterpretationDays - 1L)))
                 .orElse(false);
-        int minPerWeek = parameters.wholeNumber(ParameterKey.MIN_WEIGHINS_PER_WEEK);
-        boolean thisWeekDense = weights.countBetween(today.minusDays(DAYS_PER_WEEK - 1L), today) >= minPerWeek;
-        boolean lastWeekDense = weights.countBetween(today.minusDays(2L * DAYS_PER_WEEK - 1), today.minusDays(DAYS_PER_WEEK)) >= minPerWeek;
-        return pastFirstDays && thisWeekDense && lastWeekDense;
     }
 
     /** The energy-availability band of the current plan; empty without a plan budget, a fat estimate or a trend. */
@@ -245,7 +284,7 @@ public final class SafetyNet {
         return absolute.min(relative);
     }
 
-    // A safety call is made only on dense data (loss cap), a long window (8-week loss), given numbers (BMR floor,
+    // A safety call is made only on data that carries it (loss cap: dense, or sparse beyond the noise margin), a long window (8-week loss), given numbers (BMR floor,
     // energy availability) or the user's own report, and it errs toward caution, so it carries HIGH confidence; it is looked at again at the next weekly check-in (G2 decision table).
     // K-112 derives confidence for the other steps.
     private static Decision safetyDecision(Snapshot snapshot, Action action, List<Reason> reasons) {
