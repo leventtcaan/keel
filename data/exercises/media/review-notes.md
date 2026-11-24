@@ -11,3 +11,9 @@ All three `image_review` records stay `pending`: only the product owner sets `pa
 | romanian_deadlift | Hip hinge correct, knees soft, flat back, bar close to the shins; torso a little above parallel | Vertical, correct | Stance and grip yes | Yes | Hamstrings, glutes, lower back patches, arrow turquoise | Good; ready for the owner's look |
 
 Size: each file is a 1023 x 1350 WebP under 150 KB (`cwebp -size`, after `sips -Z 1350`).
+
+## Systematic finding (coordinator review)
+Squat and romanian_deadlift: body in side view but the barbell drawn horizontally across the body with both plates visible
+(front-view perspective). Lat pulldown: machine seen from behind. Squat arrow overlaps the body; lat pulldown neck not neutral.
+Fix in the template and `poses.json`: bar end-on with one face-on plate, machines from the same side, arrow beside the
+figure, neck neutral. The three pilots were made before this rule and need regenerating once quota allows.

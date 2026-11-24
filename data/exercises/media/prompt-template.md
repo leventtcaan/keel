@@ -28,6 +28,9 @@ STYLE (fixed, identical for every exercise)
 - The person is a faceless, gender-neutral grey mannequin: smooth featureless head (no eyes, nose, mouth, hair), neutral athletic proportions, simple shorts and shoes.
 - Exactly one accent colour, turquoise #007684. Use it only for (a) the target muscles ({muscles}) drawn as a turquoise patch on the body, and (b) one curved or straight arrow showing the path of the bar, handle or limb. Everything else stays grey.
 - Camera: {view}. Both panels use the same camera, same scale and same floor line, so the two positions can be compared at a glance.
+- Perspective (strict): in a side view the barbell is seen end-on: it points toward the viewer, only the near plate is visible, drawn face-on and centred on the hands or bar position; never a bar drawn horizontally across the body with two plates. Machines and cable stations are drawn from the same side as the body, never from behind or in three-quarter view. In a front view, the bar or handles may run across the picture.
+- The path arrow is drawn beside the figure, never over the body or the equipment.
+- Neck neutral: head in line with the spine, no tilting back or craning forward.
 - Anatomically correct joint angles and realistic proportions; limbs the right length, correct number of hands and fingers, nothing floating or merged.
 
 THE MOVE
