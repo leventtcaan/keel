@@ -3,6 +3,7 @@ package app.keel.nutrition;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import org.junit.jupiter.api.Test;
@@ -103,6 +104,24 @@ class FoodScoringTests {
         for (int i = 1; i < order.length; i++) {
             assertThat(order[i - 1]).as("place " + i).isGreaterThan(order[i]);
         }
+    }
+
+    @Test
+    void aPluralNameIsTheWordItselfNotAPrefixOfIt() {
+        // K-1061: the product that is exactly "Eggs" outranks "Eggplant", for "egg" and for "eggs".
+        for (String query : new String[] {"egg", "eggs"}) {
+            assertThat(score(query, "Eggs", "Kirkland", "BRANDED")).as(query).isGreaterThan(score(query, "Eggplant, raw", null, "FOUNDATION"));
+        }
+        assertThat(FoodScoring.tier("eggs", List.of("egg"))).isZero();
+        assertThat(score("eggs", "Eggs", null, "SR_LEGACY")).isGreaterThan(score("eggs", "Eggplant, raw", null, "FOUNDATION"));
+        assertThat(score("eggs", "Eggs", null, "SR_LEGACY")).isGreaterThan(score("eggs", "Egg, whole, raw", null, "FOUNDATION"));
+        // The generic food of the singular still leads the product called Eggs (ADR-085 #8, K-1061).
+        assertThat(score("egg", "Egg, whole, raw", null, "FOUNDATION")).isGreaterThan(score("egg", "Eggs", "Kirkland", "BRANDED"));
+        // "apple": Apples and "Apple, raw" before "Applesauce".
+        assertThat(score("apple", "Apples", "Farm", "BRANDED")).isGreaterThan(score("apple", "Applesauce, canned", null, "FOUNDATION"));
+        assertThat(score("apple", "Apple, raw", null, "FOUNDATION")).isGreaterThan(score("apple", "Applesauce, canned", null, "FOUNDATION"));
+        // ADR-085 #8: first word and a comma ("Rice, white") is a better step than the first word alone ("Rice cakes").
+        assertThat(score("rice", "Rice, white, cooked", null, "SR_LEGACY")).isGreaterThan(score("rice", "Rice cakes", null, "SR_LEGACY"));
     }
 
     @Test

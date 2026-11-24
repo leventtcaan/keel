@@ -260,7 +260,7 @@ class FoodStore {
 
     /** How well the folded name holds the query, 0 to 5 (see {@link #search}); the parameters are the query's whole, first word and first word as LIKE text. */
     private static String rankCase(String whole, String first, String firstLike) {
-        return "(case when folded_name = cast(:" + whole + " as text) then 0"
+        return "(case when folded_name = cast(:" + whole + " as text) or folded_name = cast(:" + whole + " as text) || 's' then 0"
                 + " when folded_name like cast(:" + firstLike + " as text) || ',%' then 1"
                 + " when spaced_name = ' ' || cast(:" + first + " as text) or spaced_name like ' ' || cast(:" + firstLike + " as text) || ' %' then 2"
                 + " when folded_name like cast(:" + firstLike + " as text) || '%' then 3"

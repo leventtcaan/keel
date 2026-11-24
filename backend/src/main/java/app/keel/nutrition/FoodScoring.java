@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -136,20 +137,24 @@ final class FoodScoring {
     /**
      * How the name holds the query's first word, 0 to 5 (ADR-085 #8; the SQL's rank, read the same way): 0 the name is the query; 1 its
      * first word is that word and a comma follows ("Egg, whole"); 2 its first word is that word; 3 it starts with it; 4 some word starts
-     * with it; 5 somewhere inside or not at all. The plural of the word counts as the word: the better of the two.
+     * with it; 5 somewhere inside or not at all. The plural of the word counts as the word, and so does the plural in the name: the best of the readings.
      */
     static int tier(String folded, List<String> words) {
-        String spaced = " " + folded.replaceAll("[\\s,;:()/\"-]+", " ");
+        // The name is read as it is and with each of its words made singular: "Eggs" is the word "egg" (a whole word, not a word that merely starts with it).
+        String stemmed = Pattern.compile("[\\p{L}\\p{N}']+").matcher(folded).replaceAll(word -> FoodSearchTerms.singular(word.group()));
         int best = 5;
-        for (boolean singular : new boolean[] {false, true}) {
-            List<String> read = singular ? words.stream().map(FoodSearchTerms::singular).toList() : words;
-            String first = read.getFirst();
-            int rank = folded.equals(String.join(" ", read)) ? 0
-                    : folded.startsWith(first + ",") ? 1
-                    : spaced.equals(" " + first) || spaced.startsWith(" " + first + " ") ? 2
-                    : folded.startsWith(first) ? 3
-                    : spaced.contains(" " + first) ? 4 : 5;
-            best = Math.min(best, rank);
+        for (String name : new String[] {folded, stemmed}) {
+            String spaced = " " + name.replaceAll("[\\s,;:()/\"-]+", " ");
+            for (boolean singular : new boolean[] {false, true}) {
+                List<String> read = singular ? words.stream().map(FoodSearchTerms::singular).toList() : words;
+                String first = read.getFirst();
+                int rank = name.equals(String.join(" ", read)) ? 0
+                        : name.startsWith(first + ",") ? 1
+                        : spaced.equals(" " + first) || spaced.startsWith(" " + first + " ") ? 2
+                        : name.startsWith(first) ? 3
+                        : spaced.contains(" " + first) ? 4 : 5;
+                best = Math.min(best, rank);
+            }
         }
         return best;
     }
