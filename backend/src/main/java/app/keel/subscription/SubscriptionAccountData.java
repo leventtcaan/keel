@@ -22,16 +22,18 @@ class SubscriptionAccountData implements AccountDataExport {
     private final JdbcClient jdbc;
     private final FreeCallUse uses;
     private final LockedCallsClients clients;
+    private final CoachTrialUse trial;
 
-    SubscriptionAccountData(JdbcClient jdbc, FreeCallUse uses, LockedCallsClients clients) {
+    SubscriptionAccountData(JdbcClient jdbc, FreeCallUse uses, LockedCallsClients clients, CoachTrialUse trial) {
         this.clients = clients;
+        this.trial = trial;
         this.jdbc = jdbc;
         this.uses = uses;
     }
 
     @ApplicationModuleListener
     void on(AccountDeletionRequested deletion) {
-        for (String table : new String[] {"subscription.daily_use", "subscription.free_call_use", "subscription.locked_calls_client", "subscription.subscription", "subscription.webhook_event"}) {
+        for (String table : new String[] {"subscription.daily_use", "subscription.free_call_use", "subscription.coach_trial_use", "subscription.locked_calls_client", "subscription.subscription", "subscription.webhook_event"}) {
             jdbc.sql("delete from " + table + " where account_id = :account").param("account", deletion.account().value()).update();
         }
     }
@@ -55,6 +57,10 @@ class SubscriptionAccountData implements AccountDataExport {
         long freeCalls = uses.used(account);
         if (freeCalls > 0) {
             section.put("freeCallsUsed", freeCalls);
+        }
+        int freeCoachQuestions = trial.used(account);
+        if (freeCoachQuestions > 0) {
+            section.put("freeCoachQuestionsUsed", freeCoachQuestions);
         }
         if (clients.marked(account)) {
             section.put("lockedCallsClient", true);

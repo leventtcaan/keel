@@ -41,3 +41,9 @@ parameters:
     tag: urun
     source: "plan/kararlar/ADR-092-konusan-koc.md#Karar"
     note: "Bir hafıza maddesinin en çok uzunluğu; kullanıcının kendi cümlesi, kısa bir tercih."
+  - key: coach_free_trial_questions
+    value: 3
+    unit: count
+    tag: urun
+    source: "plan/kararlar/ADR-092-konusan-koc.md#Karar"
+    note: "Abonelik olmadan, hesabın ömür boyu ilk bu kadar koç sorusu (yalnız kilitsiz ilk tam karar hakkında, ADR-091 Ek 1; AI rızası şart); sonrası 403 ENTITLEMENT_REQUIRED ve paywall (ADR-091 yükseltme anı b). Öneri 3; Levent onaylar."

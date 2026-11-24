@@ -4,7 +4,8 @@
  * comes first). A chip from the day is answered on the phone, without the model (no quota, nothing sent).
  */
 import type { components } from '@/api/schema';
-import { MEAL_CHIP, chipAnswer, coachChips, linesOf } from '@/coach/conversation';
+import { MEAL_CHIP, STARTERS, ask, chipAnswer, coachChips, linesOf, loadHistory, remember } from '@/coach/conversation';
+import type { ApiClient } from '@/api/client';
 import type { TodayData } from '@/today/today';
 import { has } from '@/copy';
 
@@ -148,5 +149,71 @@ describe('coachChips', () => {
 
   test('one of its own: that, a meal, how it works', () => {
     expect(coachChips(day({}), '2026-09-29')).toEqual(['today.chips.weighIn', MEAL_CHIP, 'today.chips.start']);
+  });
+});
+
+describe("the model's checked words (ADR-092)", () => {
+  test('the words come first in the answer, the app adds only that the call stands; no topic or rule sentence said twice', () => {
+    const answer: Schemas['CoachAnswer'] = { mode: 'MODEL', topic: 'WHY', rule: 'cut_step', reply: 'Because the trend is flat.', call: CALL };
+    expect(linesOf(answer, date)).toEqual([{ key: 'coach.answer.stands', values: { date: 'on 2026-10-19' } }]);
+  });
+
+  test('words about a topic that is not about the call are never shown, whatever came (U6)', () => {
+    expect(linesOf({ mode: 'MODEL', topic: 'HEALTH', reply: 'Ask a pharmacist.', call: CALL }, date)).toEqual([{ key: 'coach.topic.health' }]);
+  });
+
+  test('ask() hands the words on and sends the call it is about', async () => {
+    const post = jest.fn().mockResolvedValue({ data: { mode: 'MODEL', topic: 'WHY', reply: 'Because.', call: CALL }, response: new Response(null, { status: 200 }) });
+    const asked = await ask({ POST: post } as unknown as ApiClient, 'Why?', date, 'd1');
+    expect(post).toHaveBeenCalledWith('/v1/coach/messages', { body: { text: 'Why?', decisionId: 'd1' } });
+    expect(asked).toMatchObject({ state: 'ready', standard: false, said: { text: 'Because.' } });
+    await ask({ POST: post } as unknown as ApiClient, 'Why?', date);
+    expect(post).toHaveBeenLastCalledWith('/v1/coach/messages', { body: { text: 'Why?' } });
+  });
+
+  test('the engine\'s own words carry no model words', async () => {
+    const post = jest.fn().mockResolvedValue({ data: { mode: 'DETERMINISTIC', copyKey: 'coach.answer.call', reply: 'smuggled', call: CALL }, response: new Response(null, { status: 200 }) });
+    const asked = await ask({ POST: post } as unknown as ApiClient, 'Why?', date);
+    expect(asked).toMatchObject({ state: 'ready', standard: true });
+    expect(asked.state === 'ready' && asked.said.text).toBeUndefined();
+  });
+});
+
+describe('the conversation read back and what the coach is asked to remember', () => {
+  const get = (messages: unknown, status = 200) => ({ GET: jest.fn().mockResolvedValue(status === 200 ? { data: { messages }, response: new Response(null, { status }) } : { error: { code: 'X' }, response: new Response(null, { status }) }) }) as unknown as ApiClient;
+
+  test("the user's words, the coach's checked words and the engine's sentence by its key; a key the copy lacks is left out", async () => {
+    const past = await loadHistory(get([
+      { id: 'a', role: 'USER', text: 'Hi', createdAt: 'x' },
+      { id: 'b', role: 'COACH', text: 'Hello.', createdAt: 'x' },
+      { id: 'c', role: 'COACH', copyKey: 'coach.answer.call', createdAt: 'x' },
+      { id: 'd', role: 'COACH', copyKey: 'coach.topic.health', createdAt: 'x' },
+      { id: 'e', role: 'COACH', copyKey: 'coach.no.such.key', createdAt: 'x' },
+      { id: 'f', role: 'USER', createdAt: 'x' },
+    ]));
+    expect(past).toEqual([
+      { from: 'user', text: 'Hi', id: 'a' },
+      { from: 'coach', said: { lines: [], text: 'Hello.' }, standard: false, id: 'b' },
+      { from: 'coach', said: { lines: [{ key: 'coach.answer.call' }] }, standard: true, id: 'c' },
+      { from: 'coach', said: { lines: [{ key: 'coach.topic.health' }] }, standard: false, id: 'd' },
+    ]);
+  });
+
+  test('a history that cannot be read is none', async () => {
+    expect(await loadHistory(get([], 500))).toEqual([]);
+    expect(await loadHistory({ GET: jest.fn().mockRejectedValue(new TypeError('offline')) } as unknown as ApiClient)).toEqual([]);
+  });
+
+  test('remember: kept, full, refused, failed — and offline is failed', async () => {
+    const post = (response: object) => ({ POST: jest.fn().mockResolvedValue(response) }) as unknown as ApiClient;
+    expect(await remember(post({ data: { id: 'm' }, response: new Response(null, { status: 201 }) }), 'x')).toBe('saved');
+    expect(await remember(post({ error: {}, response: new Response(null, { status: 409 }) }), 'x')).toBe('full');
+    expect(await remember(post({ error: {}, response: new Response(null, { status: 400 }) }), 'x')).toBe('refused');
+    expect(await remember(post({ error: {}, response: new Response(null, { status: 500 }) }), 'x')).toBe('failed');
+    expect(await remember({ POST: jest.fn().mockRejectedValue(new TypeError('offline')) } as unknown as ApiClient, 'x')).toBe('failed');
+  });
+
+  test('three starters', () => {
+    expect(STARTERS).toEqual(['why', 'week', 'whatif']);
   });
 });

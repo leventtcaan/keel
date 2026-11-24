@@ -154,13 +154,13 @@ describe('the hero right after onboarding: the user\'s own plan, tagged Yours (K
     expect(t('subscription.values.call', { day: 'Thursday' })).toBe('A call every Thursday, with the reason');
   });
 
-  test('three concrete benefits, in this order: the call, that every call after the first is this, cardio and food that adjust', async () => {
+  test('three concrete benefits, in this order: the call, that every call after the first is this, the coach to ask about the week (ADR-092: the coach is on the surface)', async () => {
     mockPreview = PREVIEW;
     await show();
     expect(t('subscription.values.after')).toBe('Every call after your first one');
-    expect(t('subscription.values.adjust')).toBe('Cardio and food that adjust to your week');
+    expect(t('subscription.values.coach')).toBe('The coach, to ask about your week');
     const texts = screen.getAllByText(/.*/).map((node) => String(node.props.children));
-    const at = [t('subscription.values.call', { day: 'Monday' }), t('subscription.values.after'), t('subscription.values.adjust')].map((line) => texts.indexOf(line));
+    const at = [t('subscription.values.call', { day: 'Monday' }), t('subscription.values.after'), t('subscription.values.coach')].map((line) => texts.indexOf(line));
     expect(at.every((i) => i >= 0)).toBe(true);
     expect([...at].sort((a, b) => a - b)).toEqual(at);
   });

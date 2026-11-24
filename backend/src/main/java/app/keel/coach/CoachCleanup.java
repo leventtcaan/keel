@@ -21,6 +21,11 @@ class CoachCleanup {
     @Scheduled(cron = "${keel.coach.history-cleanup}", zone = "${keel.coach.history-cleanup-zone}")
     @Async
     void nightly() {
-        conversation.purge(clock.instant());
+        cleanUp(clock.instant());
+    }
+
+    /** Deletes the messages older than coach_history_days before {@code now}. */
+    void cleanUp(java.time.Instant now) {
+        conversation.purge(now);
     }
 }

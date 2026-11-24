@@ -25,7 +25,8 @@ import org.springframework.stereotype.Service;
  * answer is the engine's own sentence (the deterministic mode: the call as it stands, its copyKey). The call itself goes with
  * every answer as it stands; the coach never changes it.
  *
- * <p>The model is asked only with an active subscription (K-703): without one, ENTITLEMENT_REQUIRED. And only while the month's
+ * <p>The model is asked only with an active subscription (K-703): without one, ENTITLEMENT_REQUIRED — after the few introductory
+ * questions about the first full call ({@link TrialQuestions}, ADR-092 #7). And only while the month's
  * budget lasts (ADR-092 #4, {@link CoachSpend}): past it, the engine's words, for everyone.
  *
  * <p>Not asked of the model: when there is no call yet, and for a call only the engine may tell ({@link CallFacts#tellable}:
@@ -67,11 +68,12 @@ class Explanation {
     private final CoachSpend spend;
     private final CoachConversation conversation;
     private final CoachMemory memory;
+    private final TrialQuestions trial;
     private final ReplyValidator validator;
     private final String instructions;
 
     Explanation(CallReader calls, Quota quota, Entitlements entitlements, Clock clock, CoachModel model, CoachSpend spend, CoachConversation conversation,
-            CoachMemory memory, CoachProperties properties) {
+            CoachMemory memory, TrialQuestions trial, CoachProperties properties) {
         this.calls = calls;
         this.quota = quota;
         this.entitlements = entitlements;
@@ -80,6 +82,7 @@ class Explanation {
         this.spend = spend;
         this.conversation = conversation;
         this.memory = memory;
+        this.trial = trial;
         this.validator = new ReplyValidator(properties.maxReplyChars(), ForbiddenWords.fromClasspath(), ReplyRules.fromClasspath());
         this.instructions = CoachInstructions.read("explain.md");
     }
@@ -112,8 +115,10 @@ class Explanation {
             return Optional.of(new Answer(Mode.DETERMINISTIC, null, null, null, CALL_WORDS, told));
         }
         // The model is what the subscription pays for (K-703, ADR-056 #10): without one, refused before the consents are
-        // looked at and anything is counted. The engine's own words above need none.
-        if (!entitlements.active(account, clock.instant())) {
+        // looked at and anything is counted — except the few introductory questions about the first full call (ADR-092 #7).
+        // The engine's own words above need none.
+        boolean subscribed = entitlements.active(account, clock.instant());
+        if (!subscribed && trial.left(account) == 0) {
             throw new ApiException(ErrorCode.ENTITLEMENT_REQUIRED);
         }
         // Without the consent the model would not be asked: refused before anything is counted.
@@ -129,6 +134,12 @@ class Explanation {
         if (taken.isEmpty()) {
             return Optional.of(new Answer(Mode.DETERMINISTIC, null, null, null, DAILY_LIMIT_WORDS, told));
         }
+        // An introductory question is taken once the day's use is: past either limit, none is spent (the engine's words are shown).
+        boolean onTrial = !subscribed;
+        if (onTrial && !trial.take(account)) {
+            quota.giveBack(account, Quota.Use.COACH_MESSAGE, taken.get());
+            throw new ApiException(ErrorCode.ENTITLEMENT_REQUIRED);
+        }
         CoachFacts facts = CoachFacts.of(call, memory.list(account).stream().map(CoachMemory.Item::text).toList());
         List<Turn> turns = new java.util.ArrayList<>(conversation.turns(account));
         turns.add(Turn.user(question));
@@ -137,11 +148,11 @@ class Explanation {
             said = model.ask(account, Purpose.EXPLAIN, instructions + "\n\n" + facts.json(), turns, REPLY_SCHEMA);
         } catch (ModelUnavailable down) {
             // The provider is down, over its limit or refuses our key: the call in the engine's words, and the use given back.
-            giveBack(account, taken.get(), down);
+            giveBack(account, taken.get(), onTrial, down);
             SafeLog.failure(UUID.randomUUID(), ErrorCode.SERVICE_UNAVAILABLE, down);
             return Optional.of(new Answer(Mode.DETERMINISTIC, null, null, null, CALL_WORDS, told));
         } catch (RuntimeException notAsked) {
-            giveBack(account, taken.get(), notAsked);
+            giveBack(account, taken.get(), onTrial, notAsked);
             throw notAsked;
         }
         return Optional.of(validator.read(said.text(), call, facts)
@@ -149,9 +160,12 @@ class Explanation {
                 .orElseGet(() -> new Answer(Mode.DETERMINISTIC, null, null, null, CALL_WORDS, told)));
     }
 
-    private void giveBack(AccountId account, LocalDate day, RuntimeException failure) {
+    private void giveBack(AccountId account, LocalDate day, boolean onTrial, RuntimeException failure) {
         try {
             quota.giveBack(account, Quota.Use.COACH_MESSAGE, day);
+            if (onTrial) {
+                trial.giveBack(account);
+            }
         } catch (RuntimeException alsoFailed) {
             failure.addSuppressed(alsoFailed);
         }

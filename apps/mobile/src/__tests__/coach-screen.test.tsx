@@ -45,13 +45,14 @@ const mockGET = jest.fn(async (path: string, _init?: unknown) => {
   return answer;
 });
 let mockParsed: Answer | 'offline' = ok({ mode: 'DETERMINISTIC', items: [] });
+let mockRemembered: Answer | 'offline' = ok({ id: 'm1', text: 'x', createdAt: '2026-09-29T09:00:00Z' });
 const mockPOST = jest.fn(async (path: string, _init?: unknown) => {
-  const answer = path === '/v1/meals/parse' ? mockParsed : mockSent;
+  const answer = path === '/v1/meals/parse' ? mockParsed : path === '/v1/coach/memory' ? mockRemembered : mockSent;
   if (answer === 'offline') throw new TypeError('Network request failed');
   return answer;
 });
 const mockPush = jest.fn();
-let mockParams: { chip?: string } = {};
+let mockParams: { chip?: string; decisionId?: string } = {};
 jest.mock('expo-router', () => ({
   router: { push: (...args: unknown[]) => mockPush(...args), back: () => {} },
   useLocalSearchParams: () => mockParams,
@@ -75,6 +76,7 @@ beforeEach(() => {
   mockAnswers = { '/v1/decisions/current': ok(DECISION), '/v1/program': ok(PROGRAM), '/v1/weigh-ins': ok([]) };
   mockSent = ok({ mode: 'DETERMINISTIC', copyKey: 'coach.answer.call', call: CALL });
   mockParsed = ok({ mode: 'DETERMINISTIC', items: [] });
+  mockRemembered = ok({ id: 'm1', text: 'x', createdAt: '2026-09-29T09:00:00Z' });
   takeMeal();
 });
 
@@ -444,4 +446,124 @@ test("VoiceOver hears a chip's answer, and the engine's mark on it (K-815)", asy
   expect(announced.mock.calls[0][0]).toContain(t('decision.rule.cut_step'));
   await send('Why?');
   expect(announced.mock.calls.at(-1)?.[0]).toContain(t('coach.standard'));
+});
+
+// ── ADR-092: the model's checked words, the conversation, "Remember this", the starters, dictation ─────────────────────────
+
+const WORDS = 'The call stands: the weight is not moving toward your goal, so the cut is 250 kcal a day.';
+
+test("the model's checked words are shown as they came, then that the call stands, and the call's card", async () => {
+  mockSent = ok({ mode: 'MODEL', topic: 'WHY', rule: 'not_toward_goal', reply: WORDS, call: CALL });
+  await show();
+  const cards = count(t('decision.adjust_calories.not_toward_goal.title'));
+  await send('Why less food?');
+  expect(screen.getByText(WORDS)).toBeOnTheScreen();
+  // The words say the topic and the rule themselves: the app's sentences for them are not said twice.
+  expect(screen.queryByText(t('coach.topic.why'))).toBeNull();
+  expect(screen.getByText(t('coach.answer.stands', { date: 'Mon, Oct 12' }))).toBeOnTheScreen();
+  expect(count(t('decision.adjust_calories.not_toward_goal.title'))).toBe(cards + 1);
+  expect(screen.queryByText(t('coach.standard'))).toBeNull();
+});
+
+test('a topic that is not about the call shows its own sentence and no model words, and nothing of the call standing (U6)', async () => {
+  mockSent = ok({ mode: 'MODEL', topic: 'HEALTH', call: CALL });
+  await show();
+  await send('My doctor changed my medication');
+  expect(screen.getByText(t('coach.topic.health'))).toBeOnTheScreen();
+  expect(screen.queryByText(t('coach.answer.stands', { date: 'Mon, Oct 12' }))).toBeNull();
+});
+
+test('the conversation so far is read back after the note: the user\'s words, the coach\'s checked words, the engine\'s own sentence marked', async () => {
+  mockAnswers['/v1/coach/history'] = ok({
+    messages: [
+      { id: 'h1', role: 'USER', text: 'Why less food?', createdAt: '2026-09-28T09:00:00Z' },
+      { id: 'h2', role: 'COACH', text: WORDS, topic: 'WHY', createdAt: '2026-09-28T09:00:01Z' },
+      { id: 'h3', role: 'USER', text: 'And now?', createdAt: '2026-09-28T09:01:00Z' },
+      { id: 'h4', role: 'COACH', copyKey: 'coach.answer.call', createdAt: '2026-09-28T09:01:01Z' },
+    ],
+  });
+  await show();
+  expect(mockGET).toHaveBeenCalledWith('/v1/coach/history');
+  for (const words of ['Why less food?', WORDS, 'And now?', t('coach.answer.call'), t('coach.standard')]) expect(screen.getByText(words)).toBeOnTheScreen();
+  expect(screen.getByText(t('coach.note.title'))).toBeOnTheScreen();
+});
+
+test('a history that cannot be read is no reason to stop the coach', async () => {
+  mockAnswers['/v1/coach/history'] = 'offline';
+  await show();
+  await send('Why?');
+  expect(mockPOST).toHaveBeenCalledWith('/v1/coach/messages', { body: { text: 'Why?' } });
+});
+
+test('"Remember this" keeps the user\'s own sentence, only when they press it, and says so', async () => {
+  await show();
+  await send('I train early in the morning');
+  expect(mockPOST).not.toHaveBeenCalledWith('/v1/coach/memory', expect.anything());
+  await press(t('coach.remember'));
+  expect(mockPOST).toHaveBeenCalledWith('/v1/coach/memory', { body: { text: 'I train early in the morning' } });
+  expect(screen.getByText(t('coach.remembered'))).toBeOnTheScreen();
+  expect(screen.queryByRole('button', { name: t('coach.remember') })).toBeNull();
+});
+
+test.each([
+  [409, 'coach.rememberFull'],
+  [400, 'coach.rememberRefused'],
+  [500, 'coach.rememberFailed'],
+])('"Remember this" refused with %i says why (%s) and can be pressed again', async (status, words) => {
+  mockRemembered = refused(status, status === 400 ? 'VALIDATION_FAILED' : 'X');
+  await show();
+  await send('I train early in the morning');
+  await press(t('coach.remember'));
+  expect(screen.getByText(t(words))).toBeOnTheScreen();
+  expect(screen.getByRole('button', { name: t('coach.remember') })).toBeOnTheScreen();
+});
+
+test('a chip\'s words are the app\'s, not the user\'s: nothing to remember', async () => {
+  await show();
+  await press(t('today.chips.why'));
+  expect(screen.queryByRole('button', { name: t('coach.remember') })).toBeNull();
+});
+
+test('the three starter questions are the first suggestions', async () => {
+  await show();
+  const names = screen.getAllByRole('button').map((b) => b.props.accessibilityLabel as string);
+  expect(names.slice(0, 3)).toEqual([t('coach.starter.why'), t('coach.starter.week'), t('coach.starter.whatif')]);
+});
+
+test.each([
+  ['coach.starter.why'],
+  ['coach.starter.week'],
+])('the starter %s sends its question about the call the coach was opened on', async (key) => {
+  mockParams = { decisionId: 'd1' };
+  mockSent = ok({ mode: 'MODEL', topic: 'WHY', rule: 'not_toward_goal', reply: WORDS, call: CALL });
+  await show();
+  expect(mockPOST).not.toHaveBeenCalled();
+  await press(t(key));
+  expect(mockPOST).toHaveBeenCalledTimes(1);
+  expect(mockPOST).toHaveBeenCalledWith('/v1/coach/messages', { body: { text: t(key), decisionId: 'd1' } });
+  expect(screen.getByText(WORDS)).toBeOnTheScreen();
+});
+
+test('"What if…" puts the start of the user\'s own question in the box and sends nothing', async () => {
+  await show();
+  await press(t('coach.starter.whatif'));
+  expect(screen.getByLabelText(t('coach.input')).props.value).toBe(t('coach.starter.whatifStart'));
+  expect(mockPOST).not.toHaveBeenCalled();
+});
+
+test('without a subscription the free questions end at the paywall: a note and the way to the plans (ADR-091 b)', async () => {
+  mockSent = refused(403, 'ENTITLEMENT_REQUIRED');
+  await show();
+  await send('Why?');
+  expect(screen.getByText(t('coach.subscription'))).toBeOnTheScreen();
+  await press(t('subscription.seePlans'));
+  expect(mockPush).toHaveBeenCalledWith('/paywall');
+});
+
+test('dictation is the keyboard\'s own microphone: the box says so, takes several lines and nothing hides what is said', async () => {
+  await show();
+  const box = screen.getByLabelText(t('coach.input'));
+  expect(screen.getByText(t('coach.dictate'))).toBeOnTheScreen();
+  expect(box.props.multiline).toBe(true);
+  expect(box.props.secureTextEntry).toBeFalsy();
 });

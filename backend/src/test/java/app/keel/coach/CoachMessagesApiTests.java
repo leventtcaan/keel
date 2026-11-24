@@ -517,8 +517,7 @@ class CoachMessagesApiTests {
         jdbc.sql("insert into coach.message (id, account_id, role, spoken, created_at) values (gen_random_uuid(), :a, 'USER', 'recent', now() - interval '29 days')")
                 .param("a", account.value()).update();
 
-        context.getBean(CoachCleanup.class).nightly();
-        Thread.sleep(300); // @Async in a test context runs on its own thread, or at once when async is off
+        context.getBean(CoachCleanup.class).cleanUp(java.time.Instant.now());
 
         assertThat(jdbc.sql("select spoken from coach.message where account_id = :a").param("a", account.value()).query(String.class).list()).containsExactly("recent");
     }

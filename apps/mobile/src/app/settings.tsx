@@ -9,6 +9,7 @@ import { LanguageSection } from '@/settings/LanguageSection';
 import { GuideGroup } from '@/guide/GuideGroup';
 import { DataSourcesGroup } from '@/settings/DataSources';
 import { FoodGroup } from '@/settings/FoodGroup';
+import { CoachGroup } from '@/settings/CoachGroup';
 import { HealthGroup } from '@/settings/HealthGroup';
 import { LegalGroup } from '@/settings/LegalGroup';
 import { ProfileGroup } from '@/settings/ProfileGroup';
@@ -25,7 +26,7 @@ import { tokens } from '@/theme/tokens';
  * Eleven groups in one order, each a titled card of rows with the value on the right and a chevron only where a row opens a
  * page: Appearance and Units (segmented), Training (days, cardio, the workout import), Food (what the user avoids: chips),
  * About you (goal, check-in day, height, activity, birth year: buttons and wheels), Reminders (ADR-036: a switch, the routine,
- * the trial's), Health and data (the consents, Apple Health, the import), Subscription (K-702), Data sources (ADR-088 #3),
+ * the trial's), Health and data (the consents, Apple Health, the import), Coach (the AI consent, what it remembers; ADR-092), Subscription (K-702), Data sources (ADR-088 #3),
  * Legal (the privacy policy and the terms) and Account (export, sign out, delete). Under a row there is one line at most;
  * whatever is longer is on the page the row opens (`settings-detail`). The way back is the system's, in the header. Food and
  * Health and data follow the health data consent.
@@ -45,6 +46,7 @@ export default function SettingsScreen() {
         <ProfileGroup />
         <RemindersSection />
         <HealthGroup granted={granted} />
+        <CoachGroup />
         <SubscriptionSection />
         <DataSourcesGroup />
         <LegalGroup />

@@ -2937,6 +2937,19 @@
     "rangeSpoken": "{low} ile {high} arasında"
   },
   "coach": {
+    "askAbout": "Bu kararı sor",
+    "starter": {
+      "why": "Bu kararı açıkla",
+      "week": "Bu hafta ne yapmalıyım?",
+      "whatif": "Ya şunu yaparsam…",
+      "whatifStart": "Ya şunu yaparsam "
+    },
+    "remember": "Bunu hatırla",
+    "remembered": "Hatırlayacağım. Ayarlar'dan görebilir ve silebilirsin.",
+    "rememberFull": "Koçun hafızası dolu. Önce Ayarlar'dan birini sil.",
+    "rememberRefused": "Bu böyle saklanamaz. Kısa ve sade bir tercih olarak söyle.",
+    "rememberFailed": "Kaydedilmedi. Tekrar dene.",
+    "dictate": "Yazmak yerine konuşmak için klavyedeki mikrofona dokun.",
     "subscription": "Koça soru sormak abonelikle gelir. Kaydın ve ilk tam kararın abonelik olmadan çalışır.",
     "mealSubscription": "Öğünü yazdığın kelimelerden okumak abonelikle gelir. Yine de adıyla kaydedebilirsin.",
     "entry": "Koça sor",
@@ -3521,6 +3534,23 @@
     "restoreFailed": "Satın alımlar geri yüklenemedi. Birazdan tekrar dene."
   },
   "settings": {
+    "coach": {
+      "title": "Koç",
+      "row": "Koç ve yapay zekâ",
+      "consent": "Yapay zekâ izni",
+      "allow": "Yapay zekâ koçuna izin ver",
+      "withdraw": "İzni geri çek",
+      "unavailable": "Yapay zekâ koçu henüz açık değil.",
+      "memory": "Koçun hatırladıkları",
+      "memoryNone": "Henüz hiçbir şey yok. Yazdığın bir mesajın altında Bunu hatırla'ya dokun.",
+      "forget": "Unut",
+      "forgot": "Unutuldu.",
+      "conversation": "Konuşma",
+      "conversationLine": "En fazla 30 gün tutulur, sonra silinir.",
+      "clear": "Konuşmayı temizle",
+      "cleared": "Konuşma silindi.",
+      "failed": "Olmadı. Bağlantını kontrol edip tekrar dene."
+    },
     "guide": {
       "row": "Nasıl çalışır"
     },

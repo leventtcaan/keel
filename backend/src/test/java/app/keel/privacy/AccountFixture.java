@@ -125,6 +125,8 @@ final class AccountFixture {
                 .param("account", account.value()).update();
         jdbc.sql("insert into coach.memory_item (id, account_id, sentence, created_at) values (gen_random_uuid(), :account, 'I train early in the morning', now())")
                 .param("account", account.value()).update();
+        // An introductory question asked without a subscription (ADR-092 #7): a count, kept outside the conversation.
+        jdbc.sql("insert into subscription.coach_trial_use (account_id, used) values (:account, 1)").param("account", account.value()).update();
         // A day's use of the coach (K-508): a count, the account's.
         assertThat(context.getBean(app.keel.subscription.Quota.class).take(account, app.keel.subscription.Quota.Use.COACH_MESSAGE)).isPresent();
         // The free full calls spent (ADR-091 Ek 1, K-1201): a count outside the health data.

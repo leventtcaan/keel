@@ -10,7 +10,7 @@ export function aiLoggingAvailable(retired: readonly string[] = RETIRED): boolea
   return !retired.includes('meal-photo');
 }
 
-/** The coach is as available as its screen is on the surface (retired today, K-909): the paywall names it only then, never as a promise. */
+/** The coach is as available as its screen is on the surface (back since ADR-092; retired before, K-909): the paywall names it only then, never as a promise. */
 export function coachAvailable(retired: readonly string[] = RETIRED): boolean {
   return !retired.includes('coach');
 }
