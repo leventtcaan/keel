@@ -80,12 +80,6 @@ export function FoodLine({ budget, footer = null }: { budget: Loaded<Schemas['Da
       <ProgressBar value={eatenKcal / targetKcal} label={t('food.totals.barLabel', { eaten: eatenKcal.toLocaleString('en-US'), target: targetKcal.toLocaleString('en-US'), unit })} />
     ) : null;
   const amountText = amount === null ? null : <Text style={[styles.amount, { color: color.text }]}>{amount}</Text>;
-  const foot =
-    footer === null ? null : (
-      <View testID="food-line-footer" style={styles.footer}>
-        {footer}
-      </View>
-    );
   return (
     <View testID="food-line" style={[styles.card, styles.clear, { backgroundColor: color.surface }]}>
       <View style={styles.line}>
@@ -107,7 +101,7 @@ export function FoodLine({ budget, footer = null }: { budget: Loaded<Schemas['Da
         <Button label={t('thisWeek.food.log')} accessibilityLabel={t('thisWeek.food.logLabel')} variant="secondary" size="touch" onSurface onPress={() => router.push('/meal')} />
       </View>
       {detail && detailLine !== null && <Text style={[styles.small, { color: color.textSecondary }]}>{detailLine}</Text>}
-      {foot}
+      {footer}
     </View>
   );
 }
@@ -116,8 +110,6 @@ const styles = StyleSheet.create({
   card: { borderRadius: tokens.radius.card, padding: tokens.space.md, gap: tokens.space.xs },
   // The "+" floats over the end of the row when the card is at the fold: Log and the range sit left of it.
   clear: { paddingRight: PLUS_GUTTER },
-  // The numbers under the row use the card's full width: only the row with Log keeps the "+" gutter free (K-1225).
-  footer: { marginRight: -PLUS_GUTTER },
   line: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, minHeight: tokens.size.touch },
   info: { minHeight: tokens.size.touch, minWidth: tokens.size.touch / 2, alignItems: 'center', justifyContent: 'center' },
   small: { fontSize: tokens.type.bodySmall },

@@ -7,7 +7,6 @@ import { t } from '@/copy';
 import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
-import { shortDate } from '@/train/program';
 import { type UnitSystem, formatWeight } from '@/units/units';
 import { openDetail } from '@/settings/detail';
 
@@ -102,10 +101,10 @@ export function TodayNumbers({ protein, steps, weight, units }: Props) {
         ? t('thisWeek.numbers.weightLabel', { weight: shown })
         : t('thisWeek.numbers.weightLabelChange', {
             weight: shown,
-            change: change.direction === 'steady' ? t('progress.weight.steady', { date: shortDate(change.since) }) : t(change.direction === 'down' ? 'progress.weight.down' : 'progress.weight.up', { delta: change.size, date: shortDate(change.since) }),
+            change: t(`thisWeek.numbers.spoken${change.direction === 'down' ? 'Down' : change.direction === 'up' ? 'Up' : 'Steady'}`, { size: change.size, span: change.span }),
           });
     tiles.push(
-      <Tile key="weight" id="weight" icon="scalemass" value={shown} note={change === null ? null : t(`thisWeek.numbers.${change.direction}`, { size: change.size, span: change.span })} label={label}
+      <Tile key="weight" id="weight" icon="scalemass" value={shown} note={change === null ? null : t(`thisWeek.numbers.${change.direction}`, { size: change.size })} label={label}
         hint={t('thisWeek.numbers.weightHint')} onPress={() => router.navigate('/progress')} />,
     );
   }

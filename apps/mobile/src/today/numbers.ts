@@ -33,10 +33,12 @@ export type WeightNumber =
   | { kind: 'trend'; kg: number; change: { direction: 'down' | 'up' | 'steady'; size: string; span: string; since: string } | null }
   | { kind: 'waiting'; count: number; min: number };
 
-/** The period the change covers, as the days between the first day drawn and the latest: whole weeks ("12 wk"), under a week in days ("5 d"). */
+/** The period the change covers, as it is spoken (the accessibility label, not the first view's words): whole weeks ("12 weeks"), under a week in days ("5 days"). */
 function spanText(from: string, to: string): string {
   const days = Math.round((Date.parse(`${to}T12:00:00Z`) - Date.parse(`${from}T12:00:00Z`)) / DAY_MS);
-  return days < 7 ? t('thisWeek.numbers.spanDays', { days }) : t('thisWeek.numbers.spanWeeks', { weeks: Math.round(days / 7) });
+  const weeks = Math.round(days / 7);
+  if (days < 7) return t(days === 1 ? 'thisWeek.numbers.spanDay' : 'thisWeek.numbers.spanDays', { days });
+  return t(weeks === 1 ? 'thisWeek.numbers.spanWeek' : 'thisWeek.numbers.spanWeeks', { weeks });
 }
 
 /**

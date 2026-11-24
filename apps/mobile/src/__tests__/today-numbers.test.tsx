@@ -69,31 +69,34 @@ describe('the four numbers', () => {
 
   test('the weight change over the window is the two trend numbers apart, a plain sign, no judgement', async () => {
     await show();
-    expect(screen.getByText('-0.7 kg · 3 wk')).toBeOnTheScreen();
+    expect(screen.getByText('-0.7 kg')).toBeOnTheScreen();
   });
 
   test('the change names its unit and its period, as the Progress weight card does (the first day drawn to the latest)', async () => {
     await show({ weight: { ...READY_WEIGHT, trend: ready([{ day: '2026-10-02', kg: 85.2 }, { day: '2026-12-25', kg: 80.5 }]) } });
-    expect(screen.getByText('-4.7 kg · 12 wk')).toBeOnTheScreen();
+    expect(screen.getByText('-4.7 kg')).toBeOnTheScreen();
+    expect(screen.queryByText(/ wk| d$/)).toBeNull();
+    expect(screen.getByLabelText(/Down 4\.7 kg over 12 weeks/)).toBeOnTheScreen();
     await screen.unmount();
     await show({ weight: { ...READY_WEIGHT, trend: ready([{ day: '2026-12-20', kg: 80 }, { day: '2026-12-25', kg: 80.5 }]) } });
-    expect(screen.getByText('+0.5 kg · 5 d')).toBeOnTheScreen();
+    expect(screen.getByText('+0.5 kg')).toBeOnTheScreen();
+    expect(screen.getByLabelText(/Up 0\.5 kg over 5 days/)).toBeOnTheScreen();
   });
 
   test('up and steady read the same way', async () => {
     await show({ weight: { ...READY_WEIGHT, trend: ready([{ day: '2026-12-04', kg: 80 }, { day: '2026-12-25', kg: 80.5 }]) } });
-    expect(screen.getByText('+0.5 kg · 3 wk')).toBeOnTheScreen();
+    expect(screen.getByText('+0.5 kg')).toBeOnTheScreen();
     await screen.unmount();
     await show({ weight: { ...READY_WEIGHT, trend: ready([{ day: '2026-12-04', kg: 80.3 }, { day: '2026-12-25', kg: 80.3 }]) } });
-    expect(screen.getByText('0.0 kg · 3 wk')).toBeOnTheScreen();
+    expect(screen.getByText('0.0 kg')).toBeOnTheScreen();
   });
 
   test('pounds for a user on pounds, the change as the two shown numbers differ', async () => {
     await show({ units: 'IMPERIAL' });
     expect(screen.getByText(formatWeight(80.3, 'IMPERIAL'))).toBeOnTheScreen();
-    expect(screen.getByText('-1.6 lb · 3 wk')).toBeOnTheScreen();
+    expect(screen.getByText('-1.6 lb')).toBeOnTheScreen();
     expect(screen.queryByText(formatWeight(80.3, 'METRIC'))).toBeNull();
-    expect(screen.getByLabelText(new RegExp(t('progress.weight.down', { delta: '1.6 lb', date: 'Dec 4' }).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))).toBeOnTheScreen();
+    expect(screen.getByLabelText(/Down 1\.6 lb over 3 weeks/)).toBeOnTheScreen();
   });
 
   test('one day of trend is the value alone: no change to say', async () => {
@@ -216,14 +219,15 @@ describe('each number opens its place', () => {
 });
 
 describe('the tiles share the row', () => {
-  test('every tile is an equal share of the row, and the row is not narrowed by the Log gutter', async () => {
+  test('every tile is an equal share of the row, inside the plus gutter', async () => {
     await show();
     const tiles = ['protein', 'steps', 'weight'].map((id) => StyleSheet.flatten(screen.getByTestId(`number-${id}`).props.style));
     for (const style of tiles) expect(style).toMatchObject({ flexGrow: 1, flexBasis: 0, minWidth: 0 });
     const row = StyleSheet.flatten(screen.getByTestId('number-protein').parent?.props.style);
     expect(row.paddingRight ?? 0).toBe(0);
-    const footer = screen.getByTestId('food-line-footer');
-    expect(StyleSheet.flatten(footer.props.style).marginRight).toBeLessThan(0);
+    // The card keeps the floating "+" gutter on its right end, tiles included (K-1066): nothing is under the "+".
+    const card = StyleSheet.flatten(screen.getByTestId('food-line').props.style);
+    expect(card.paddingRight).toBeGreaterThan(card.paddingLeft ?? card.padding ?? 0);
   });
 });
 
