@@ -142,7 +142,7 @@ public final class WeeklySpine {
         }
         // Consistently slow and still moving: each of the last cut_pace_slow_weeks weekly changes is under the floor and at least the
         // spine's own per-week share of the margin (the "moving this week" line): one paused week after good ones is not a slow cut,
-        // and a window that has stopped moving is a flat one, which goes through the K-64 path (K-1205, Levent). A window too short
+        // and a window that has stopped moving is a flat one, which goes through the K-64 path (K-1205). A window too short
         // to show that many weeks has no step.
         int slowWeeks = parameters.wholeNumber(ParameterKey.CUT_PACE_SLOW_WEEKS);
         int weeks = window.weeks().size();
