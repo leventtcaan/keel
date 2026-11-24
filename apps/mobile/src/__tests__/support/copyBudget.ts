@@ -30,6 +30,14 @@ export type ScreenBudget = {
   faces?: { face: string; keys: BudgetKey[]; dynamic?: { what: string; words: number }[] }[];
 };
 
+/**
+ * A screen's budget in a language other than English: the English budget times the language's factor from
+ * data/copy/word-budgets.json (localeBudgetFactor), rounded. English is the prototype's own target and is never scaled.
+ */
+export function localeBudget(budget: number, factor: number): number {
+  return Math.round(budget * factor);
+}
+
 export function wordsOf(text: string): number {
   return text
     .replace(/\{[^}]*\}/g, ' ')

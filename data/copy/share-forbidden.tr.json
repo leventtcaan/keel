@@ -1,0 +1,78 @@
+{
+  "note": "Turkish counterpart of share-forbidden.json (K-1212): phrases no Turkish share card may carry (K-612; U12: no body image; U7: no blame). Unicode patterns, flags \"iu\", bounded with \\p{L} lookarounds as in forbidden-phrases.tr.json. Each pattern proves itself on its examples (copy-tr.test.ts).",
+  "rules": [
+    {
+      "id": "before-after",
+      "source": "arastirma/ham/L3-ozellik-boslugu.md",
+      "pattern": "(?<![\\p{L}\\d])(?:önce\\s*(?:ve|&|/|-|ile)?\\s*sonra|öncesi\\s*(?:ve|&|/|-)?\\s*sonrası)(?![\\p{L}])",
+      "examples": [
+        "Önce ve sonra",
+        "önce/sonra",
+        "Önce & Sonra",
+        "önce-sonra",
+        "Öncesi ve sonrası"
+      ],
+      "nonExamples": [
+        "İlk kararından önce",
+        "İlk haftadan sonra",
+        "Kahvaltıdan önce tartıl",
+        "Sonra tekrar dene"
+      ]
+    },
+    {
+      "id": "transformation",
+      "source": "arastirma/ham/L3-ozellik-boslugu.md",
+      "pattern": "(?<![\\p{L}\\d])(?:dönüşüm\\p{L}*|dönüş(?:tü|türdü)\\p{L}*|glow[\\s-]*up|yeni\\s+(?:ben|vücut)\\p{L}*)",
+      "examples": [
+        "Benim dönüşümüm",
+        "12 haftalık dönüşüm",
+        "glow up",
+        "yeni vücut",
+        "yeni ben"
+      ],
+      "nonExamples": [
+        "Yeni bir hafta",
+        "Trendin",
+        "Antrenmana dönüş",
+        "Aradan sonra dönüş"
+      ]
+    },
+    {
+      "id": "body-display",
+      "source": "docs/anayasa.md#U12",
+      "pattern": "(?<![\\p{L}\\d])(?:shredded|shred|ripped|kaslı\\s+görün\\p{L}*|plaj\\s+vücud\\p{L}*|sahil\\s+vücud\\p{L}*|bikini\\s+vücud\\p{L}*|six[\\s-]*pack|sixpack|karın\\s+kası\\s+(?:fotoğraf\\p{L}*|pozu)|(?:vücut|boy)\\s*(?:fotoğraf\\p{L}*|çekimi|kontrolü))",
+      "examples": [
+        "Shredded oluyorum",
+        "Ripped 12 haftada",
+        "plaj vücudu",
+        "six-pack",
+        "karın kası fotoğrafı",
+        "vücut kontrolü",
+        "kaslı görünmek"
+      ],
+      "nonExamples": [
+        "Vücut ağırlığı hareketi",
+        "Planda geçen haftalar",
+        "Karın antrenmanı",
+        "Gelişim fotoğrafları"
+      ]
+    },
+    {
+      "id": "blame",
+      "source": "docs/anayasa.md#U7",
+      "pattern": "(?<![\\p{L}\\d])(?:başarısız\\p{L}*|hile\\p{L}*|tembel\\p{L}*|bahane\\s+yok|seri\\p{L}*\\s+(?:bozul|kaybet)\\p{L}*|streak)",
+      "examples": [
+        "1 hafta başarısız oldum",
+        "hile günü",
+        "tembel",
+        "bahane yok",
+        "serim bozuldu",
+        "streak"
+      ],
+      "nonExamples": [
+        "1 sayılmayan hafta kullanıldı",
+        "12 haftanın 11'i hedefte"
+      ]
+    }
+  ]
+}

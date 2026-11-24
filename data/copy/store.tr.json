@@ -1,0 +1,39 @@
+{
+  "_about": "App Store listing text for the Turkish storefront (K-1212, ADR-091), the counterpart of store.en.json: the same honesty rules, scanned like tr.json (U4, U6, U7, person names, dashes, Apple's limits, nothing advertised that is switched off at launch, App Review 3.1.2 subscription terms) by apps/mobile/src/__tests__/copy-tr.test.ts. The addresses, categories, product ids and copyright are the English file's settings (the legal pages stay in English). Keywords are checked in bytes: Turkish letters take two. Entered by hand in App Store Connect: docs/magaza/asc-kurulum.md.",
+  "limits": {
+    "_source": "developer.apple.com/help/app-store-connect/reference/app-information/app-information (name 2 to 30, subtitle 30) and .../platform-version-information (promotional text 170, description 4000, keywords 100 bytes, each over two characters), checked 2026-10-16. subscriptionName 30 and subscriptionDescription 45 are the App Store Connect field counters, not found in Apple's help pages [unverified: the App Store Connect field shows its counter]",
+    "name": 30,
+    "subtitle": 30,
+    "promotionalText": 170,
+    "description": 4000,
+    "keywordsBytes": 100,
+    "subscriptionName": 30,
+    "subscriptionDescription": 45
+  },
+  "name": "Next Call: Spor ve Diyet Koçu",
+  "subtitle": "Haftalık Antrenman ve Kalori",
+  "promotionalText": "Antrenmanı, yemeği ve kilonu kaydet. Haftada bir tek karar alırsın: planı koru ya da değiştir. Her karar gerekçesini gösterir, veri yetmiyorsa bunu söyler.",
+  "description": "Next Call, ağırlık çalışan ve ne yediğini takip eden, bir yığın grafik yerine her hafta tek net karar isteyen insanlar için haftalık bir koç.\n\nDiğer her şey sana veriyi gösterir. Bu uygulama kararı verir.\n\nAntrenmanlarını, öğünlerini ve tartılarını kaydet. Haftada bir Next Call kaydettiklerine bakar ve tek bir karar verir: planı koru ya da kalorini, adımlarını veya antrenman yüklerini değiştir. Her karar neye baktığını, hangi kuralı izlediğini, ne kadar emin olduğunu ve ne zaman yeniden bakacağını gösterir. Veri henüz yetmiyorsa tahmin yürütmek yerine bunu söyler.\n\nNASIL KULLANILIR\n• Haftada üç dört gün kaldırıyorsun ve ağırlığı ne zaman artıracağını merak ediyorsun. Setlerini yedek tekrarla kaydet; bir sonraki antrenmanın hedefleri son antrenmanından çıkar.\n• Definasyondasın ve tartı inip çıkıyor. Tartıl; uygulama bir sabahtan ötekine oynamayı değil, haftalara yayılan trendi okur.\n• Bir haftayı kaçırdın ve nereden devam edeceğini bilmiyorsun. Kaydedebildiğini kaydet. Kaybedilecek bir seri yok, kaçırılan gün için suçlanmak yok.\n• İki farklı salonda, farklı ekipmanla antrenman yapıyorsun. Her salonu kaydet; her hedef gerçekten yükleyebileceğin bir ağırlık olsun.\n• Başka bir uygulamadan geçiyorsun. Geçmiş antrenmanlarını onun dışa aktarım dosyasından getir.\n\nANTRENMAN\n• Set, tekrar ve yedek tekrar saniyeler içinde kaydedilir, çevrimdışı da.\n• Tekrarlar bir aralık içinde artar, sonra ağırlık bir adım yükselir.\n• Rakamlar gerektiğini söylediğinde daha hafif bir hafta.\n• Bir hareketi değiştir ya da kendi programını kur.\n\nBESLENME\n• Yiyecek ara, barkod tara ya da kendi tariflerini kaydet.\n• Tahminler aralık olarak gelir, uydurma tek bir sayı olarak değil.\n\nGELİŞİM\n• Vücut kilosu, haftalara yayılan bir trend olarak.\n• Güç zaman içinde, hareket hareket.\n• Gelişim fotoğrafları telefonunda kalır. Uygulama onları asla yüklemez.\n\nSORULAR\nKararı kim verir? Sabit kurallar verir. Her kural koçluk pratiğinden ya da yayımlanmış spor bilimi çalışmalarından çıkarılmıştır ve her karar kullandığı kuralı söyler.\nKatılmazsam? Karar, sen ısrar edince değil verin değişince değişir. Uygulayıp uygulamamak sana kalır ve çoğu kararı geri alabilirsin.\nTıbbi tavsiye mi? Hayır. Yetişkinler için genel bir sağlıklı yaşam koçudur. Antrenman ya da beslenme şeklini değiştirmeden önce doktoruna danış, bir yerin ağrırsa dur.\nVerilerim nereye gider? Apple Health verisi yalnızca izin verirsen okunur. Hakkında tuttuğumuz her şeyi dışa aktarabilir ya da hesabını ve tüm verini Ayarlar'dan silebilirsin.\n\nABONELİK\nKayıt tutma, programın, yiyecek arama, barkod tarama ve kilo trendi ücretsizdir, ilk haftalık karar da. Ondan sonraki her haftalık karar, aylık ya da yıllık bir abonelikle gelir. Para biriminde fiyat ve yeni aboneler için 2 haftalık ücretsiz deneme, abone olmadan önce uygulamada gösterilir. Ödeme, satın alma onaylandığında ya da ücretsiz deneme bittiğinde Apple Hesabına yansıtılır. Mevcut dönemin bitiminden en az 24 saat önce iptal etmezsen abonelik otomatik olarak yenilenir ve yenileme ücreti dönem bitmeden önceki 24 saat içinde hesabından alınır. İstediğin zaman yönet ya da iptal et: iPhone'unda Ayarlar'ı aç, adına dokun, sonra Abonelikler'e git.\n\nKullanım Koşulları (İngilizce): https://leventtcaan.github.io/keel/terms/\nGizlilik Politikası (İngilizce): https://leventtcaan.github.io/keel/privacy/",
+  "keywords": "fitness,salon,kuvvet,makro,protein,kilo,takip,öğün,tarif,barkod,ilerleme,deload,rpe,tekrar",
+  "supportUrl": "https://leventtcaan.github.io/keel/",
+  "privacyUrl": "https://leventtcaan.github.io/keel/privacy/",
+  "termsUrl": "https://leventtcaan.github.io/keel/terms/",
+  "primaryCategory": "Health & Fitness",
+  "secondaryCategory": "Food & Drink",
+  "copyright": "2026 {controller_name}",
+  "subscriptionGroup": {
+    "name": "Next Call"
+  },
+  "subscriptions": {
+    "monthly": {
+      "productId": "nextcall.premium.monthly",
+      "name": "Next Call Aylık",
+      "description": "Haftalık kararlar ve tam takip, aylık"
+    },
+    "yearly": {
+      "productId": "nextcall.premium.yearly",
+      "name": "Next Call Yıllık",
+      "description": "Haftalık kararlar ve tam takip, yıllık"
+    }
+  }
+}

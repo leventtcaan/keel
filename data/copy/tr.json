@@ -1,1 +1,4232 @@
-{}
+{
+  "app": {
+    "name": "Next Call"
+  },
+  "welcome": {
+    "headline": "Salonda tahmin yürütmeyi bırak.",
+    "lead": "Planın her hafta ayarlanır ve nedenini söyler.",
+    "examplesLabel": "Örnek kararlar",
+    "examples": {
+      "hold": "Ağırlığı koru",
+      "rep": "Bir tekrar ekle",
+      "lighter": "Hafif hafta",
+      "eat": "Biraz daha ye"
+    },
+    "legal": {
+      "age": "18+",
+      "dot": "·",
+      "terms": "Terms",
+      "privacy": "Privacy"
+    }
+  },
+  "keyboard": {
+    "done": "Bitti",
+    "hide": "Klavyeyi gizle"
+  },
+  "modal": {
+    "close": "Kapat",
+    "dismiss": "Kapat"
+  },
+  "guide": {
+    "skip": "Atla",
+    "skipLabel": "Tanıtımı atla",
+    "next": "İleri",
+    "done": "Anladım",
+    "step": "Adım {step} / {total}",
+    "call": {
+      "title": "Haftalık kararın",
+      "body": "Haftada bir karar: sıradaki beslenme ve antrenman."
+    },
+    "workout": {
+      "title": "Bugünün antrenmanı",
+      "body": "Başlat'a dokun. Setlerin ve yüklerin hazır.",
+      "first": "Başlat'a dokun. İlk antrenman ağırlıklarını bulur.",
+      "done": "Bugünlük bitti. Sıradaki: {session}, {weekday}.",
+      "doneLast": "Bugünlük bitti. Güzel iş.",
+      "other": "Bugünün antrenmanı burada görünür."
+    },
+    "plus": {
+      "title": "Her şeyi kaydet",
+      "body": "Tartıl, öğün ekle, kardiyo kaydet."
+    },
+    "tabs": {
+      "title": "Antrenman ve gelişim",
+      "body": "Antrenman senin haftan. Gelişim neyin değiştiğini gösterir."
+    }
+  },
+  "signIn": {
+    "note": "Apple ID ile tek dokunuş. Ad ve e-posta saklamıyoruz.",
+    "failed": "Giriş yapılamadı. Tekrar dene.",
+    "offline": "Bağlantı yok. Giriş için gerekli, yalnız bu seferlik.",
+    "unavailable": "Apple ile giriş bu cihazda kullanılamıyor."
+  },
+  "plus": {
+    "entry": "Bir şey kaydet",
+    "title": "Kayıt",
+    "weighIn": "Tartı",
+    "meal": "Öğün",
+    "diary": "Beslenme günlüğü",
+    "workout": "Antrenman",
+    "cardio": "Kardiyo",
+    "life": "Haftayı duraklat"
+  },
+  "cardioLog": {
+    "title": "Kardiyo",
+    "log": "Kardiyo kaydet",
+    "savedDetail": "Kardiyo {minutes} min",
+    "fromHealth": "Apple Health'ten",
+    "watch": "Apple Watch {kcal} kcal ölçtü.",
+    "undo": "Geri al",
+    "undoFailed": "Geri alınamadı. Bağlantını kontrol edip tekrar dene.",
+    "done": "Bitti"
+  },
+  "undoBanner": {
+    "saved": "Kaydedildi",
+    "undo": "Geri al",
+    "announce": "Kaydedildi, {detail}. Geri alabilirsin.",
+    "announceBare": "Kaydedildi. Geri alabilirsin.",
+    "announceLead": "{lead}, {detail}. Geri alabilirsin.",
+    "join": ", ",
+    "failed": "Geri alınamadı. Tekrar dene."
+  },
+  "stepper": {
+    "increase": "{label} artır",
+    "decrease": "{label} azalt"
+  },
+  "tabs": {
+    "today": "Bu hafta",
+    "train": "Antrenman",
+    "food": "Beslenme",
+    "progress": "Gelişim"
+  },
+  "screens": {
+    "today": {
+      "title": "Bu hafta"
+    },
+    "train": {
+      "title": "Antrenman"
+    },
+    "food": {
+      "title": "Bugünün beslenmesi"
+    },
+    "progress": {
+      "title": "Gelişim"
+    },
+    "coach": {
+      "title": "Koç"
+    }
+  },
+  "state": {
+    "kind": {
+      "traveling": {
+        "title": "Seyahatte",
+        "name": "seyahatte",
+        "body": "Alıştığın yemekten, tartıdan ve salondan uzaksın."
+      },
+      "sick": {
+        "title": "Hasta",
+        "name": "hasta",
+        "body": "Keyfin yok. Önce dinlenme; tartı şimdi suyu gösteriyor."
+      },
+      "pain": {
+        "title": "Ağrı var",
+        "name": "ağrı var",
+        "body": "Bir yerin ağrıyor. Ağrıyan yeri atlayarak antrenman yap; ağrı keskinse ya da geçmiyorsa bir uzmana danış."
+      },
+      "busy": {
+        "title": "Yoğun bir hafta",
+        "name": "yoğun bir hafta",
+        "body": "Sınav, teslim tarihi, taşınma. Elinden geleni yap; bu hafta aleyhine sayılmaz."
+      },
+      "new_gym": {
+        "title": "Yeni bir salon",
+        "name": "yeni salonda",
+        "body": "Yeni makineler ve ağırlıklar: yükler bir süre eski salonunla karşılaştırılamaz."
+      }
+    },
+    "tile": {
+      "traveling": "Seyahatte",
+      "sick": "Hasta",
+      "pain": "Ağrı var",
+      "busy": "Yoğun hafta",
+      "new_gym": "Yeni salon"
+    },
+    "screen": {
+      "title": "Haftayı duraklat",
+      "intro": "Hiçbir şey aleyhine sayılmaz. Güvenlik kontrolleri yine çalışır.",
+      "until": "Ne kadar süre?",
+      "untilBack": "Dönene kadar",
+      "forDays": "{days} gün",
+      "pause": "Haftamı duraklat",
+      "noConnection": "Gönderilemedi. Bağlantını kontrol edip tekrar dene.",
+      "refused": "Bizim tarafta bir sorun oldu. Biraz sonra tekrar dene."
+    },
+    "consent": {
+      "why": "Hasta ve Ağrı var sağlık verisi sayılır, o yüzden önce onayın gerekir.",
+      "allow": "Devam",
+      "notNow": "Şimdi değil",
+      "failed": "Seçimin kaydedilemedi. Bağlantını kontrol edip tekrar dene."
+    }
+  },
+  "return": {
+    "title": "Tekrar hoş geldin",
+    "away": {
+      "one": "{days} gün ara. Plan, kayıtlar ve hedefler duruyor.",
+      "other": "{days} gün ara. Plan, kayıtlar ve hedefler duruyor."
+    },
+    "suggested": "Önerilen",
+    "ease": {
+      "title": "Yavaş yavaş dön",
+      "body": "Bir adım daha hafif: {moves}.",
+      "plain": "Bir adım daha hafif."
+    },
+    "pickUp": {
+      "title": "Kaldığım yerden devam",
+      "body": "Hedefler aynı."
+    },
+    "rebuild": {
+      "title": "Planımı yeniden kur",
+      "body": "Yeni günler ya da yeni bir program."
+    },
+    "move": "{name} {load}",
+    "moveJoin": ", ",
+    "nextCall": "Sonraki karar: {date}",
+    "continue": "Devam",
+    "retry": "Tekrar dene",
+    "later": "Şimdi değil",
+    "loading": "Yükleniyor",
+    "noConnection": "Sunucuya ulaşılamadı. Bağlantını kontrol edip tekrar dene.",
+    "refused": "Bizim tarafta bir sorun oldu. Biraz sonra tekrar dene."
+  },
+  "first_weeks": {
+    "risk": "Bu sıralar haftalar genelde yoğunlaşır. Bu hafta tek bir antrenman bile, hangi biçimde olursa olsun, ipi elinden bırakmamanı sağlar.",
+    "week2": {
+      "title": "2. hafta: ilk karşılaştırman",
+      "body": "Geçen haftayla aynı hareket, yan yana. Başlangıçta dürüst kanıt bu: kaldırdığın ağırlık."
+    },
+    "week3": {
+      "title": "3. hafta: ne kadar düzenlisin",
+      "body": "Kaç gün kayıt tuttuğun ve bunu neden gösterdiğimiz: düzenli kayıt, sayıların anlam taşımasını sağlar."
+    },
+    "week4": {
+      "title": "4. hafta: neler değişiyor",
+      "body": "Şimdiye kadarki güç artışının çoğu henüz kas değil, sinir sisteminin hareketleri öğrenmesi. Bu normal ve temel bu."
+    },
+    "week5": {
+      "title": "5. hafta: sayılan dönem",
+      "body": "Salon verilerinde altı haftada yaklaşık dokuz antrenmana ulaşanlar devam etme eğiliminde. Bu haftaki her antrenman buna sayılır."
+    },
+    "week6": {
+      "title": "6. hafta: altı hafta geride",
+      "body": "Bundan sonra kas ölçülerde görünmeye başlayabilir. İstersen ilk fotoğraf ya da mezura ölçümünün zamanı."
+    },
+    "week7": {
+      "title": "7. hafta: sen, önce ve şimdi",
+      "body": "1. hafta ile 7. hafta yan yana: kaldırdıkların, düzenin, trendin."
+    },
+    "week8": {
+      "title": "8. hafta: sekiz haftan",
+      "body": "Neyin değiştiği, neyin değişmediği ve nedeni. Sekiz hafta bir alışkanlığı başlatır; sonraki blok onu senin yapar."
+    },
+    "no_training": {
+      "risk": "Bu sıralar haftalar genelde yoğunlaşır. Bugün bir öğün ya da tartı kaydetmek, hafta nasıl geçerse geçsin ipi elinden bırakmamanı sağlar.",
+      "week2": {
+        "title": "2. hafta: ilk karşılaştırman",
+        "body": "Bu hafta geçen haftanın yanında: ne kaydettin ve trendin nereden başladı. Başlangıçta alışkanlık sayıdan önemli."
+      },
+      "week3": {
+        "title": "3. hafta: ne kadar düzenlisin",
+        "body": "Kaç gün kayıt tuttuğun ve bunu neden gösterdiğimiz: düzenli kayıt, sayıların anlam taşımasını sağlar."
+      },
+      "week4": {
+        "title": "4. hafta: neler değişiyor",
+        "body": "Kilon günden güne inip çıkar; önemli olan haftalar içindeki trend. Bu yüzden tek sayı değil, aralık görürsün."
+      },
+      "week5": {
+        "title": "5. hafta: sayılan dönem",
+        "body": "Beşinci ile sekizinci hafta arası, çoğu alışkanlığın oturduğu ya da bozulduğu dönem. Planı sürdürebileceğin kadar küçük tut."
+      },
+      "week6": {
+        "title": "6. hafta: altı hafta geride",
+        "body": "İstersen ilk bel ölçümünün zamanı. Kilo trendinin yanında tablonun daha fazlasını gösterir."
+      },
+      "week7": {
+        "title": "7. hafta: sen, önce ve şimdi",
+        "body": "1. hafta ile 7. hafta yan yana: ne kaydettin, ne kadar düzenli oldun, trendin."
+      },
+      "week8": {
+        "title": "8. hafta: sekiz haftan",
+        "body": "Neyin değiştiği, neyin değişmediği ve nedeni. Sekiz hafta bir alışkanlığı başlatır; sonraki blok onu senin yapar."
+      }
+    }
+  },
+  "prompt": {
+    "steps_dropped": {
+      "title": "Geçen hafta adımların düştü.",
+      "body": "Adım, yaktığının sessiz yarısı: düşüş, metabolizmandaki herhangi bir yavaşlamadan daha pahalıya gelebilir. Yoğun bir hafta mıydı?",
+      "choice": {
+        "busy": "Evet, hayat araya girdi",
+        "less": "Sadece az hareket ettim"
+      },
+      "reply": {
+        "less": "Adım hedefine yeniden bak: antrenman sonrası bir yürüyüş çoğunu karşılar ve sandığından fazla etki eder."
+      }
+    },
+    "sessions_missed": {
+      "title": "Birkaç antrenman kaçtı.",
+      "body": "Olur. En çok işe yarayan, pazarlık etmediğin sabit bir saat.",
+      "choice": {
+        "fixed_time": "Sabit saat belirle",
+        "life": "Hayat araya girdi",
+        "not_now": "Şimdi değil"
+      },
+      "reply": {
+        "not_now": "Tamam. Sıradaki antrenmanın planda her zamanki gibi; yetişmen gereken bir şey yok."
+      }
+    },
+    "loads_dropped": {
+      "title": "Yüklerin biraz düştü.",
+      "body": "Kalori açığında bu normal ve kas kaybı demek değil. Setlerini koru, proteini hedefte tut.",
+      "choice": {
+        "ok": "Anladım"
+      },
+      "reply": {
+        "ok": "Yiyecek artınca güç hızla geri gelir. Gelmeye devam et."
+      }
+    },
+    "hunger_first_days": {
+      "title": "Şu ana kadar açlığın nasıl?",
+      "body": "Definasyonun ilk günleri kolay gelebilir. Sırada ne olduğunu bilmekte fayda var.",
+      "choice": {
+        "hungry": "Açım",
+        "not_hungry": "Hiç aç değilim"
+      },
+      "reply": {
+        "hungry": "Beklenen bir şey. Öğünlerin ritmini bulunca genelde yatışır.",
+        "not_hungry": "Tadını çıkar ama bunu bir işaret sayma: açlık genelde 3. ya da 4. günde, ilk ağır bacak gününden sonra gelir."
+      }
+    }
+  },
+  "thisWeek": {
+    "settings": "Ayarlar",
+    "week": "{week}. hafta",
+    "onTrack": "{onTrack}/{counted} hafta hedefte",
+    "onTrackOne": "{onTrack}/{counted} hafta hedefte",
+    "countedByWeek": "Hafta hafta sayılır",
+    "day": {
+      "title": "{weekday} · {session}",
+      "trained": "Antrenman yapıldı",
+      "planned": "Planlandı",
+      "logged": "Tartı kaydedildi",
+      "rest": "Dinlenme günü"
+    },
+    "strip": {
+      "label": "Bu hafta",
+      "mark": "{text}, {mark}",
+      "trained": "antrenman yapıldı",
+      "logged": "kaydedildi",
+      "planned": "planlandı",
+      "today": "bugün",
+      "letter": {
+        "MONDAY": "P",
+        "TUESDAY": "S",
+        "WEDNESDAY": "Ç",
+        "THURSDAY": "P",
+        "FRIDAY": "C",
+        "SATURDAY": "C",
+        "SUNDAY": "P"
+      }
+    },
+    "hero": {
+      "openCall": "Kararı aç",
+      "start": "Başlangıcın",
+      "firstWeek": "İlk hafta",
+      "weighIn": "Çoğu sabah tartıl.",
+      "firstCall": "İlk karar {day}",
+      "nextCall": "Sonraki karar {day}",
+      "inDays": "{count} gün",
+      "tomorrow": "Yarın",
+      "today": "Bugün",
+      "notApplied": "Geçen haftanın planı sürüyor.",
+      "notAppliedShort": "Uygulanmadı",
+      "pending": "Henüz uygulanmadı",
+      "useCall": "Bu kararı uygula",
+      "yourWeek": "Haftan",
+      "train": "Antrenman yap, nasıl hissettiğine bak.",
+      "callsOff": "Haftalık kararlar kapalı",
+      "settings": "Ayarlar",
+      "settingsLabel": "Haftalık kararları Ayarlar'dan aç",
+      "monday": {
+        "open": "Aç",
+        "yourCall": "kararın",
+        "openLabel": "Kararını aç",
+        "ready": "{week}. hafta kararın hazır.",
+        "readyNoWeek": "Kararın hazır.",
+        "one": "Önce bir soru.",
+        "other": "Önce {count} soru."
+      }
+    },
+    "counter": {
+      "title": "Bu haftaki tartılar",
+      "of": "{count} / {needed}",
+      "label": "Bu haftaki tartılar: {count} / {needed}",
+      "labelReached": "Bu haftaki tartılar: {count} / {needed}, yeterli",
+      "enough": "{day} kararı için yeterli. Daha fazla sabah kararı daha sağlam yapar.",
+      "behind": "{day} kararına kadar {count} tartı daha gerekli; böylece karar haftanı okuyabilir.",
+      "last": {
+        "today": "Bugün tartıl; {day} kararı haftanı okuyabilsin.",
+        "todayTomorrow": "Bugün ve yarın tartıl; {day} kararı haftanı okuyabilsin.",
+        "tomorrow": "Yarın tartıl; {day} kararı haftanı okuyabilsin.",
+        "every": "{day} kararına kadar her sabah tartıl; {day} kararı haftanı okuyabilsin."
+      },
+      "short": "Kısa hafta olur. {day} kararı bu haftayı okuyamaz. Çoğu sabah tartıl; kararlar en erken {date} tarihinde başlar.",
+      "shortFoot": "Antrenman plana göre sürüyor",
+      "weighIn": "Tartıl"
+    },
+    "today": {
+      "label": "Bugünün antrenmanı",
+      "today": "Bugün",
+      "more": "ve {count} tane daha",
+      "full": "Tam antrenman",
+      "undo": "Geri al",
+      "start": "Başlat",
+      "startLabel": "Başlat: {session}",
+      "changeLabel": "Bugünkü antrenmanı değiştir",
+      "rest": "Dinlenme günü",
+      "next": "Sıradaki antrenman: {session}, {weekday}",
+      "restWeek": "Antrenmandan izinli hafta",
+      "movedTo": "Taşındı: {day}.",
+      "skipped": "Atlandı. Yetişme yok, {day} kararı haftayı okur.",
+      "skippedNoDay": "Atlandı. Yetişmen gereken bir şey yok.",
+      "done": "Bugün · bitti",
+      "doneLabel": "Bitti",
+      "doneStats": {
+        "one": "1 set · {lifted} kaldırıldı",
+        "other": "{count} set · {lifted} kaldırıldı"
+      },
+      "open": "Antrenmanı aç",
+      "openSets": {
+        "none": "Başladıktan sonra {hours} saat içinde bitir.",
+        "one": "1 set kaydedildi. Başladıktan sonra {hours} saat içinde bitir.",
+        "other": "{count} set kaydedildi. Başladıktan sonra {hours} saat içinde bitir."
+      },
+      "continue": "Devam",
+      "openElsewhere": "Başlatıldı, bu telefonda değil. Yine de sayılır.",
+      "target": "{load} × {reps}",
+      "added": "+{load} × {reps}",
+      "cardio": "Kardiyo, {minutes} min",
+      "cardioDone": "Kardiyo bitti",
+      "cardioOptional": "Kardiyo isteğe bağlı"
+    },
+    "numbers": {
+      "protein": "{eaten} / {target} g",
+      "steps": "{steps} / {target}",
+      "stepsNone": "{target}",
+      "down": "-{size}",
+      "up": "+{size}",
+      "steady": "{size}",
+      "spanWeek": "{weeks} hafta",
+      "spanWeeks": "{weeks} hafta",
+      "spanDay": "{days} gün",
+      "spanDays": "{days} gün",
+      "spokenDown": "{span} içinde {size} düştü",
+      "spokenUp": "{span} içinde {size} yükseldi",
+      "spokenSteady": "{span} boyunca {size} sabit",
+      "weightLabel": "Kilo, 7 günlük ortalama {weight}",
+      "weightLabelChange": "Kilo, 7 günlük ortalama {weight}. {change}",
+      "weightWaitingHint": "Tartıyı açar",
+      "weightHint": "Gelişim ekranını açar"
+    },
+    "food": {
+      "left": "Kalan yiyecek",
+      "over": "Fazla",
+      "around": "Hedef civarı",
+      "log": "Kaydet",
+      "lineLabel": "Bugünün beslenmesi. {lead} {amount}",
+      "lineLabelAround": "Bugünün beslenmesi. {lead}",
+      "showRange": "Aralığı göster",
+      "hideRange": "Aralığı gizle",
+      "range": "Aralık {range}",
+      "logLabel": "Öğün kaydet",
+      "locked": "Sağlık verisi için onayın gerekli",
+      "allow": "Ayarlar",
+      "allowLabel": "Ayarlar'da sağlık verisi onayı"
+    }
+  },
+  "lockedCall": {
+    "title": "Kararın hazır",
+    "line": "{date} haftası. Abonelikle birlikte gelir.",
+    "ledger": "Hazır. Abonelikle birlikte gelir."
+  },
+  "callScreen": {
+    "inPlan": "Bu haftanın planında",
+    "applied": "Uygulandı",
+    "subscription": "Haftalık kararın abonelikle birlikte gelir.",
+    "none": "Henüz karar yok. İlk kararın ilk haftalık kontrolden sonra gelir.",
+    "notApplied": "Uygulanmadı. Kayıtta tutuldu.",
+    "notAppliedYet": "Henüz uygulanmadı.",
+    "undone": "Geri alındı. Planın eskisi gibi.",
+    "confidence": "Güven {level}",
+    "level": {
+      "LOW": "Düşük",
+      "MEDIUM": "Orta",
+      "HIGH": "Yüksek"
+    },
+    "nextCall": "Sonraki karar {date}",
+    "gotIt": "Anladım",
+    "weighIn": "Tartıl",
+    "weighInsLeft": {
+      "one": "1 tartı daha gerekli",
+      "other": "{count} tartı daha gerekli"
+    },
+    "keep": "Geçen haftanın planını koru",
+    "use": "Bu kararı uygula",
+    "keepFailed": "Değişmedi: bağlantı yok. Biraz sonra tekrar dene.",
+    "keepRefused": "Bu karar artık değiştirilemez.",
+    "keepError": "Değişmedi: bizim tarafta bir sorun oldu. Biraz sonra tekrar dene.",
+    "failed": "Karar yüklenemedi. Bağlantını kontrol et.",
+    "retry": "Tekrar dene",
+    "observation": "Beslenme ve kilo {days}. güne kadar bekler.",
+    "week1": {
+      "soundsRight": "Uygun görünüyor",
+      "done": "Bitti",
+      "changeIt": "Değiştir",
+      "session": "{day} antrenmanı",
+      "noDay": "Gün seç",
+      "daysLabel": "Antrenman günleri",
+      "newDay": "Yeni gün",
+      "changeTitle": "Değiştir",
+      "changeHint": "Önerimiz: {suggestion}. Haftanı sen bilirsin.",
+      "suggestion": "{from} yerine {to}",
+      "suggestionAdd": "{day} eklemek",
+      "keepSuggestion": "Öneriyi koru",
+      "moveHead": "Taşı: {day}",
+      "addHead": "Gün ekle",
+      "addStale": "Eklenmedi: o gün şu an eklenemiyor. Başka bir gün seçip tekrar dene.",
+      "join": ", ",
+      "saved": "Günler kaydedildi.",
+      "stale": "Kaydedilmedi: günlerin şu an taşınamıyor. Antrenman ekranından kontrol et.",
+      "refused": "Kaydedilmedi: bu günler kullanılamıyor. Başkalarını seçip tekrar dene.",
+      "offline": "Kaydedilmedi: bağlantı yok. Biraz sonra tekrar dene.",
+      "failed": "Kaydedilmedi: bizim tarafta bir sorun oldu. Biraz sonra tekrar dene."
+    },
+    "changes": {
+      "label": {
+        "CALORIES": "Kalori",
+        "STEPS": "Adım",
+        "PHASE": "Faz"
+      },
+      "new": "{what}, yeni",
+      "inForce": "{what}, geçerli",
+      "noneInForce": "Henüz hedef yok",
+      "kcal": "{kcal} kcal",
+      "steps": "{steps} adım",
+      "phase": {
+        "CUT": "Definasyon",
+        "BULK": "Bulk"
+      },
+      "held": "{move}, yük korundu",
+      "moveTarget": "{load} × {reps}",
+      "spoken": "{what}: {from} idi, şimdi {to}",
+      "spokenValue": "{what}: {to}"
+    }
+  },
+  "today": {
+    "prompt": {
+      "failed": "Gönderilemedi. Bağlantını kontrol edip tekrar dene.",
+      "refused": "Bizim tarafta bir sorun oldu. Biraz sonra tekrar dene."
+    },
+    "checkIn": {
+      "title": "Bu haftanın kontrolü",
+      "questions": "{count} kısa soru, sonra kararın.",
+      "one": "Bir kısa soru, sonra kararın.",
+      "none": "Bu hafta sorulacak bir şey yok: kararın verilmeye hazır.",
+      "open": "Kontrol"
+    },
+    "consistency": {
+      "title": "Bu haftanın düzeni",
+      "percent": "{percent} %",
+      "of": "Planlanan {planned} eylemden {done} tamamlandı",
+      "training": "Antrenman",
+      "protein": "Protein",
+      "steps": "Adım",
+      "weighIns": "Tartılar",
+      "part": "{done}/{planned}",
+      "partSpoken": "{part}: {planned} üzerinden {done}",
+      "record": "{counted} haftadan {onTrack} hafta hedefte",
+      "forgiven": {
+        "one": "1 sayılmayan hafta kullanıldı",
+        "other": "{count} sayılmayan hafta kullanıldı"
+      },
+      "recordWithForgiven": "{record} · {forgiven}",
+      "firstWeek": "Sayın ilk haftalık kontrolünle başlar.",
+      "paused": "Bu hafta duraklatıldı: iki yönde de sayılmaz."
+    },
+    "state": {
+      "paused": "Duraklatıldı: {state}, {since} tarihinden beri.",
+      "pausedUntil": "Duraklatıldı: {state}, {until} tarihine kadar.",
+      "back": "Döndüm",
+      "declare": "Hayat araya mı girdi?",
+      "welcomeBack": "Tekrar hoş geldin. Kaldığın yerden devam et: yetişmen gereken bir şey yok.",
+      "failed": "Değiştirilemedi. Bağlantını kontrol edip tekrar dene."
+    },
+    "call": {
+      "eyebrow": "Bu haftanın kararı",
+      "confidence": {
+        "LOW": "Düşük güven",
+        "MEDIUM": "Orta güven",
+        "HIGH": "Yüksek güven"
+      },
+      "why": "Bu karar neden",
+      "hide": "Nedenleri gizle",
+      "source": {
+        "EXPERIENCE": "Koçluk deneyiminden",
+        "LITERATURE": "Araştırmadan",
+        "PRODUCT": "Uygulamanın bir kuralı"
+      },
+      "nextCall": "Sonraki karar {date}",
+      "data": "Arkasındaki veriyi gör",
+      "hold": "Farklı yapılacak bir şey yok.",
+      "waitNote": "Aynı şekilde kayıt tutmaya devam et. Sonraki kararı net yapan bu.",
+      "oneThing": "Aynı anda tek değişiklik, neyin işe yaradığını bilelim diye. Geri kalan her şey olduğu gibi kalır.",
+      "apply": "Bugünden itibaren uygula",
+      "undone": "Geri alındı: planın eskisi gibi.",
+      "appliedLead": "Karar uygulandı",
+      "appliedJoin": " · ",
+      "undoRefused": "Bu karar artık geri alınamaz.",
+      "undoOffline": "Geri alınmadı: bağlantı yok. Biraz sonra tekrar dene.",
+      "applyFailed": "Uygulanmadı: bağlantı yok. Biraz sonra tekrar dene.",
+      "applyRefused": "Bu karar artık uygulanamaz. Sonraki kontrolün yenisini oluşturur.",
+      "applyError": "Uygulanmadı: bizim tarafta bir sorun oldu. Biraz sonra tekrar dene.",
+      "none": "İlk kararın ilk haftalık kontrolden sonra gelir."
+    },
+    "chips": {
+      "why": "Bu karar neden?",
+      "swap": "Egzersiz değiştir",
+      "weighIn": "Neden her sabah tartılmalı?",
+      "start": "Bu nasıl işliyor?"
+    },
+    "consent": {
+      "body": "Sayın ve bu haftanın kararı için sağlık verisi onayı gerekli.",
+      "open": "Ayarlar'ı aç"
+    },
+    "failed": "Bugün yüklenemedi. Bağlantını kontrol et.",
+    "retry": "Tekrar dene"
+  },
+  "train": {
+    "minutes": "yaklaşık {minutes} min",
+    "metaMinutes": "{minutes} · {moves}",
+    "lastToday": "Son {last} → {today}",
+    "lastOnly": "Son {last}",
+    "addDay": "Gün ekle",
+    "addDayLabel": "Antrenman günü ekle",
+    "restNote": "Dinlenme günü daha hızlı gelişmene yardım eder.",
+    "kept": "Çevrimdışısın. Bu, en son yüklenen programın.",
+    "loading": "Programın yükleniyor…",
+    "failed": "Programın yüklenemedi.",
+    "retry": "Tekrar dene",
+    "none": "Henüz program yok.",
+    "status": {
+      "restWeek": "{date} tarihine kadar antrenmandan izinli hafta.",
+      "restWeekNote": "Bu hafta plan dinlenmek. Programın bundan sonra devam eder.",
+      "deload": "{date} tarihine kadar hafif hafta: daha az set, aynı ağırlıklar.",
+      "held": "Ağırlıklar {date} tarihinden beri sabit: ağırlık eklemeden önce aralığın üst ucuna ulaş.",
+      "backAfterBreak": "Birkaç haftalık aradan sonra dönüş: bugünkü ağırlıklar bir adım hafif, aralığın alt ucundan başlar."
+    },
+    "busy": {
+      "withLoad": "Yoğun hafta: alıştığın ağırlıklarla {sessions}, egzersiz başına {sets}, kazandıklarını korur. Fazlası bonus.",
+      "dose": "Yoğun hafta: {sessions}, egzersiz başına {sets}, kazandıklarını korur. Fazlası bonus.",
+      "sessions": {
+        "one": "bir antrenman",
+        "other": "{count} antrenman"
+      },
+      "sets": {
+        "one": "bir set",
+        "other": "{count} set"
+      }
+    },
+    "today": "Bugün",
+    "sets": {
+      "one": "1 set",
+      "other": "{count} set",
+      "lighter": "{sets} / {base} set"
+    },
+    "reps": {
+      "one": "1 tekrar",
+      "other": "{reps} tekrar"
+    },
+    "next": "Sıradaki {load} × {reps}",
+    "nextAdded": "Sıradaki +{load} × {reps}",
+    "start": "Antrenmanı başlat",
+    "startThis": "Başlat",
+    "inProgress": "Antrenman sürüyor",
+    "continue": "Devam",
+    "nextBodyweight": "Sıradaki {reps} tekrar",
+    "rackEnds": "Salonunda bu hareket için daha ağır ağırlık henüz yok.",
+    "startDay": "Başlat: {day}",
+    "split": {
+      "own": "Kendi programın",
+      "join": " + "
+    },
+    "call": {
+      "notApplied": "Uygulanmadı: geçen haftanın planı korundu",
+      "use": "Bu kararı uygula"
+    },
+    "head": "{split} · {days}",
+    "days": {
+      "one": "1 gün",
+      "other": "{count} gün"
+    },
+    "todayOn": "Bugün · {weekday}",
+    "moveCount": {
+      "one": "1 hareket",
+      "other": "{count} hareket"
+    },
+    "shortTag": "Kısa versiyon",
+    "rest": "Dinlenme",
+    "restDay": "Bugün antrenman yok.",
+    "restDayPick": "Bugün antrenman yok. Aşağıdan haftanın herhangi bir gününü başlat.",
+    "movedTo": "Taşındı: {weekday}. Bugün dinlenme.",
+    "doneToday": "Bugünlük bitti.",
+    "openElsewhere": "Başlatıldı, bu telefonda değil. Yine de sayılır.",
+    "dayChanged": "Gün o zamandan beri değişti. Bu, haftanın şu anki hali.",
+    "undo": "Geri al",
+    "undoLabel": "Bugünkü değişikliği geri al",
+    "undone": "Geri alındı. Bugün eskisi gibi.",
+    "notUndone": "Geri alınacak bir şey yok: gün o zamandan beri değişti. Bu, haftanın şu anki hali.",
+    "full": "Tam antrenman",
+    "fullBack": "Her hareket bugün için geri geldi.",
+    "skipped": "Atlandı. Yetişme yok, {day} kararı haftayı okur.",
+    "skippedNoDay": "Atlandı. Yetişmen gereken bir şey yok.",
+    "setsReps": "{sets} × {reps}",
+    "held": "korundu",
+    "addedLoad": "+{load}",
+    "cardio": "Kardiyo, hafif",
+    "cardioAfter": "Ağırlıklardan sonra",
+    "cardioOptional": "Bugün isteğe bağlı",
+    "cardioMinutes": "{minutes} min",
+    "change": "Değiştir",
+    "changeLabel": "Bugünkü antrenmanı değiştir",
+    "continueWorkout": "Antrenmana devam et",
+    "thisWeek": "Bu hafta",
+    "weekRow": "{weekday} · {day}",
+    "weekRowCardio": "{moves} · Kardiyo",
+    "moved": "taşındı",
+    "skippedTag": "atlandı",
+    "doneTag": "Bitti"
+  },
+  "buildProgram": {
+    "title": "Programımı kur",
+    "action": "Programımı kur",
+    "line": "Antrenman günlerini seç, programı biz kuralım.",
+    "note": "Günleri biz yerleştiririz. İstediğin zaman taşı. İlk antrenman ağırlıklarını bulur.",
+    "building": "Programın kuruluyor…",
+    "offline": "Bağlantı yok. Çevrimiçi olunca tekrar dene.",
+    "failed": "Programın kurulamadı. Tekrar dene.",
+    "retry": "Tekrar dene"
+  },
+  "editProgram": {
+    "title": "Programı düzenle",
+    "edit": "Düzenle",
+    "editLabel": "Programını düzenle",
+    "days": "Antrenman günleri",
+    "moves": "Hareketler",
+    "program": "Programın",
+    "programLine": "{split} · {days}",
+    "reviewChanges": "İncele",
+    "savedLead": "Kaydedildi",
+    "appliedLead": "Uygulandı",
+    "savedDetail": "Program",
+    "rebuilt": "Program yeniden kuruldu",
+    "rebuiltDetail": "{days} · {moves}",
+    "goesOwnMoves": {
+      "one": "1 kendi hareketin kalkar",
+      "other": "{count} kendi hareketin kalkar"
+    },
+    "goesChanges": {
+      "one": "İncelemeden 1 değişiklik kalkar",
+      "other": "İncelemeden {count} değişiklik kalkar"
+    },
+    "rebuild": "Benim için yeniden kur",
+    "rebuildRow": "Antrenman günlerinden yeni bir program",
+    "anyDay": "Herhangi bir gün",
+    "dayList": " · ",
+    "moveCount": {
+      "one": "1 hareket",
+      "other": "{count} hareket"
+    },
+    "flags": {
+      "one": "{moves} · 1 öneri",
+      "other": "{moves} · {count} öneri"
+    },
+    "applied": {
+      "one": "1 değişiklik uygulandı",
+      "other": "{count} değişiklik uygulandı"
+    },
+    "save": "Değişiklikleri kaydet",
+    "notReady": "Her günün bir adı ve en az bir hareketi olmalı.",
+    "applyAfterSave": "Öneriyi uygulamadan önce düzenlemelerini kaydet.",
+    "targetsLost": "Bu, şu hareketlerin sonraki ağırlık hedefini siler: {moves}. Sonraki antrenmanın yeni bir hedef belirler.",
+    "saveAnyway": "Yine de kaydet",
+    "keepEditing": "Düzenlemeye devam",
+    "saveFirst": "Önce değişikliklerini kaydet, sonra günü ekle.",
+    "editConflictKept": "Bugünkü antrenman taşıdığın ya da kaldırdığın bir günde, bu yüzden şimdilik kaydedilemiyor. Düzenlemelerin duruyor.",
+    "editConflictCleared": "Programın sen açtıktan sonra değişti. Düzenlemelerin silindi. İşte program yeniden.",
+    "editConflictUnknown": "Kaydedilemedi. Düzenlemelerin duruyor, tekrar dene.",
+    "leaveWarn": "Düzenlemelerin henüz kaydedilmedi. Çıkarsan gider.",
+    "unsavedNote": "Düzenlemeler henüz kaydedilmedi.",
+    "leave": "Kaydetmeden çık",
+    "editRefused": "Program bu haliyle kaydedilemiyor. Günleri ve hareketleri kontrol edip tekrar dene.",
+    "listJoin": ", ",
+    "reviewTitle": "İnceleme",
+    "reviewNone": "Olduğu gibi iyi.",
+    "notReviewed": "Kendi hareketlerin incelenmez: {count}",
+    "apply": "Uygula",
+    "stale": "Programın bu arada değişti. İşte, yeniden incelendi.",
+    "changesTitle": "İncelemeden gelen değişiklikler",
+    "changesNone": "Yürürlükte inceleme değişikliği yok.",
+    "undo": "Geri al",
+    "undone": "Geri alındı.",
+    "undoneWith": {
+      "one": "Geri alındı, buna bağlı 1 sonraki değişiklikle birlikte.",
+      "other": "Geri alındı, buna bağlı {count} sonraki değişiklikle birlikte."
+    },
+    "undoConflict": "Programın bu arada başka şekilde değişti, bu yüzden geri alınamıyor.",
+    "rebuildBody": "Günlerini ve hareketlerini değiştirir. Kayıtlı antrenmanlar kalır.",
+    "cardio": {
+      "title": "Kardiyo",
+      "row": "{sessions} × {minutes} min",
+      "off": "Kapalı",
+      "plan": "Plan",
+      "yours": "Senin",
+      "reset": "Sıfırla",
+      "long": "Uzun kardiyo",
+      "minutesLabel": "Kardiyo dakikası",
+      "dayLabel": "{weekday}, {place}",
+      "place": {
+        "AFTER_LIFT": "Ağırlıktan sonra",
+        "OFF_DAY_LOW_INTENSITY": "Hafif gün"
+      },
+      "save": "Kardiyoyu kaydet",
+      "savedOn": "Kardiyo",
+      "savedOff": "Kardiyo kapalı",
+      "coachBack": "Kardiyo sıfırlandı"
+    },
+    "rebuildUnderWay": "Önce bugünkü antrenmanı bitir ya da sonlandır: yeniden kurma, içinde olduğu günü değiştirirdi.",
+    "rebuildRefused": "Yeniden kurma {count} antrenman günü için program yapamıyor. En fazla 7 gün seç, sonra tekrar dene.",
+    "rebuildConfirm": "Programımı yeniden kur",
+    "rebuildAsk": "Programın yeniden kurulsun mu?",
+    "rebuildGo": "Yeniden kur",
+    "rebuildKeep": "Programımı koru",
+    "noDays": "Antrenman günlerin yüklenemedi. Tekrar dene.",
+    "offline": "Bağlantı yok. Çevrimiçi olunca tekrar dene.",
+    "failed": "Bizim tarafta bir sorun oldu. Biraz sonra tekrar dene."
+  },
+  "taken": {
+    "open": "Dolu",
+    "openLabel": "{move} dolu",
+    "next": "Dolu mu?",
+    "nextLabel": "Sıradaki dolu: {move}",
+    "title": "{move} dolu",
+    "later": "Sonra yap",
+    "laterNote": "Bugünün sonuna geçer.",
+    "laterLabel": "Sonra yap: {move}",
+    "laterSaid": "{name} bugünün sonunda.",
+    "instead": "Ya da bunu yap",
+    "done": "Bunu yaptın",
+    "none": "Bu kaslar için başka ekipmanda başka hareket yok.",
+    "more": "Daha fazla seçenek",
+    "why": "Aynı kaslar, başka ekipman. Yalnız bugün.",
+    "whySingle": "Aynı kaslar, {move} dışındaki ekipmanla."
+  },
+  "swap": {
+    "swapped": "Değişti",
+    "swappedDetail": "{to}, {from} yerine",
+    "undoFailed": "Geri konulamadı. Tekrar dene.",
+    "title": "Değiştir: {move}",
+    "titleGeneric": "Hareketi değiştir",
+    "notFound": "Bu hareket şu an programında yok.",
+    "noneOwn": "Bunun için başka hareket yok.",
+    "skipInstead": "Bugünü atla",
+    "backToList": "Listeye dön",
+    "why": "Aynı kaslar, salonundaki ekipmanla.",
+    "back": "Planlanan harekete dön",
+    "none": "Salonunda bu kaslar için başka hareket yok.",
+    "which": "Hangisi dolu?",
+    "whichWhy": "Dolu olan hareketi seç. Yalnız bugün.",
+    "scopeTitle": "{current} yerine {move}",
+    "today": "Yalnız bugün",
+    "todayBody": "Bir dahaki sefere yine {current}.",
+    "fromNow": "Bundan sonra",
+    "fromNowBody": "Programında bundan sonra {move} var, kendi geçmişiyle.",
+    "conflict": "Bugün için şimdi değiştirilemez: bugünkü antrenman başladı. Antrenmanın içinden değiştir.",
+    "offline": "Değiştirilemedi. Bağlantını kontrol edip tekrar dene.",
+    "failed": "Bizim tarafta bir sorun oldu. Biraz sonra tekrar dene.",
+    "close": "Kapat",
+    "label": "Değiştir: {move}"
+  },
+  "addDay": {
+    "title": "Gün ekle",
+    "hint": "Günü seç. Hareketler otomatik eklenir.",
+    "addOn": "Ekle: {day}",
+    "addOnLabel": "Antrenman günü ekle: {day}",
+    "suggested": "Antrenmanların arasında uygun bir yer.",
+    "other": "Ya da başka bir gün",
+    "added": "Eklendi: {day}.",
+    "full": "Haftanın her günü antrenman günü.",
+    "conflict": "Bu gün şimdi eklenemez. Başka bir gün seç ya da Düzenle'ye bak.",
+    "offline": "Bağlantı yok. Biraz sonra tekrar dene.",
+    "failed": "Gün eklenemedi. Tekrar dene.",
+    "readFailed": "Programın yüklenemedi. Tekrar dene.",
+    "retry": "Tekrar dene",
+    "retryLabel": "Tekrar dene: antrenman günü ekle, {day}",
+    "close": "Kapat"
+  },
+  "todayChange": {
+    "title": "Bugünü değiştir",
+    "busy": {
+      "title": "Salon kalabalık",
+      "body": "Dolu olanı seç. Başka ekipmanda hareketler gelir."
+    },
+    "short": {
+      "title": "Vaktin kısıtlı",
+      "body": "Yalnız ana hareketler. Kardiyo isteğe bağlı."
+    },
+    "shortNow": "Bu kısa versiyon.",
+    "full": {
+      "title": "Tam antrenman",
+      "body": "Bugün için tüm hareketler geri gelir."
+    },
+    "undo": {
+      "title": "Geri al",
+      "body": "Bugünkü antrenman eski haline döner, onunla kayan günler de."
+    },
+    "move": {
+      "title": "Kaydır",
+      "body": "Yarına. Bu haftaki sonraki antrenmanlar gerekirse bir gün kayar."
+    },
+    "moveTo": "Hedef: {weekday}",
+    "moveShifts": "Kayanlar: {days}",
+    "moveConflict": {
+      "PAST_SUNDAY": "Bu hafta boş gün kalmadı: bir antrenman pazarı aşardı.",
+      "STARTED": "Bugünkü antrenman başladı, bugün kalır."
+    },
+    "skip": {
+      "title": "Bugünü atla",
+      "body": "Sonradan yapmak yok, {day} kararı haftayı okur.",
+      "bodyNoDay": "Sonradan yapmak yok."
+    },
+    "started": "Bugünkü antrenman başladı. Antrenmanın içinden değiştir.",
+    "none": "Bugün değiştirilecek antrenman yok.",
+    "offline": "Bugün değiştirilemedi. Bağlantını kontrol edip tekrar dene.",
+    "conflict": "Şimdi yapılamaz: bu hafta boş gün kalmadı ya da bugünkü antrenman başladı.",
+    "failed": "Bizim tarafta bir sorun oldu. Biraz sonra tekrar dene.",
+    "close": "Kapat"
+  },
+  "openElsewhere": {
+    "continue": "Burada devam et",
+    "continueLabel": "Antrenmana bu telefonda devam et",
+    "later": "Sonra doldur",
+    "laterLabel": "Antrenmanı sonra doldur",
+    "laterSaid": "Açık bırakıldı. Sayılır, {hours} saat içinde devam edebilirsin.",
+    "discard": "At",
+    "discardLabel": "Başka telefonda başlayan antrenmanı at",
+    "discarded": "Antrenman atıldı.",
+    "offline": "Sunucuya ulaşılamadı. Bağlantını kontrol edip tekrar dene.",
+    "discardOffline": "Atmak için bağlantı gerekir. Bağlantını kontrol edip tekrar dene.",
+    "failed": "Antrenman açılamadı. Biraz sonra tekrar dene.",
+    "closed": "O antrenman zaten bitti.",
+    "gone": "O antrenman atıldı."
+  },
+  "workout": {
+    "title": "Antrenman",
+    "progress": "{done} / {count} egzersiz",
+    "targetRir": "Hedef: 0-{max}",
+    "end": "Bitir",
+    "endLabel": "Antrenmanı bitir",
+    "ending": {
+      "title": "Antrenman bitsin mi?",
+      "finish": "Bitir ve kaydet",
+      "finishNote": "Kaydedilmeyen setler kayıtsız kalır.",
+      "later": "Kalanını sonra doldur",
+      "laterNote": "Bu hafta için yine sayılır.",
+      "laterSaid": "Kaydedildi. {hours} saat içinde devam et, sayılır.",
+      "discard": "Bu antrenmanı at",
+      "discardNote": "Hiçbir şey kaydedilmez.",
+      "discardNoteCardio": "Antrenman kaydedilmez. Kaydettiğin kardiyo kalır.",
+      "discardAsk": "Bu antrenman atılsın mı?",
+      "confirm": "At",
+      "keep": "Kalsın",
+      "back": "Antrenmana dön",
+      "discarded": "Antrenman atıldı. Hiçbir şey kaydedilmedi.",
+      "discardedCardio": "Antrenman atıldı. Kaydettiğin kardiyo kalır.",
+      "close": "Kapat",
+      "offline": "Bu antrenman sunucuda olabilir. Atmak için bağlantı gerekir.",
+      "failed": "Antrenman atılamadı. Tekrar dene."
+    },
+    "pause": "Duraklat",
+    "pauseLabel": "Antrenmanı duraklat",
+    "resume": "Devam",
+    "resumeLabel": "Antrenmana devam et",
+    "paused": "Duraklatıldı. Acele yok.",
+    "resumed": "Devam ediliyor.",
+    "skipSet": "Seti atla",
+    "skipSetLabel": "Bu seti atla",
+    "skipMove": "Hareketi atla",
+    "more": "Daha fazla",
+    "skipMoveLabel": "Bugünlük atla: {name}",
+    "skipped": "Atlandı",
+    "skippedSet": "Set {number}, atlandı",
+    "statusSkipped": "Atlandı",
+    "setSkipped": "Set atlandı. Sonradan yapman gerekmez.",
+    "moveSkipped": "Hareket atlandı. Sonradan yapman gerekmez.",
+    "swap": "Değiştir",
+    "swapToday": "Yalnız bu antrenman. Programın aynen kalır.",
+    "swapped": "Bugün için değişti: {name}.",
+    "swappedBack": "Geri döndü: {name}.",
+    "undo": "Geri al",
+    "undoLabel": "Geri al",
+    "setDeleted": "Set silindi.",
+    "editHint": "Düzeltmek ya da silmek için açar.",
+    "undoFailed": "Geri alınamadı. Tekrar dene.",
+    "edit": {
+      "title": "Set {number}",
+      "delete": "Seti sil",
+      "done": "Bitti",
+      "offline": "Bu set zaten gönderildi. Değiştirmek için bağlantı gerekir.",
+      "failed": "Set değiştirilemedi. Tekrar dene."
+    },
+    "moveIsSkipped": "Bugünlük atlandı. Sonradan yapman gerekmez.",
+    "bringBack": "Geri getir",
+    "clock": {
+      "minutes": "{minutes}:{seconds}",
+      "hours": "{hours}:{minutes}:{seconds}",
+      "label": "Antrenman süresi {time}",
+      "pausedLabel": "Antrenman süresi {time}, duraklatıldı"
+    },
+    "dot": "{name}, {status}",
+    "goal": {
+      "beat": "Geçen seferi geç",
+      "last": "Son: {set}",
+      "start": "Buradan başla",
+      "first": "İlk kez",
+      "reps": "{reps} tekrar",
+      "again": "Geçen seferi tut",
+      "lastTime": "Geçen sefer",
+      "pick": "Son tekrarda zorlanacağın, formun düzgün kaldığı bir ağırlık seç."
+    },
+    "pick": {
+      "placeholder": "Seç",
+      "caption": "bir ağırlık",
+      "why": "Bu seti kaydetmek için bir ağırlık seç."
+    },
+    "tooHeavy": {
+      "link": "Çok ağır mı?",
+      "label": "Çok ağır mı? Hafifle",
+      "ask": "İlk tekrardan yanlış hissediyorsan dur ve hafiflet.",
+      "use": "{load} kullan",
+      "keep": "{load} kalsın",
+      "used": "Bu set için {load}."
+    },
+    "calibrate": {
+      "light": "Bu ağırlık hafif. Sonraki sette {load} olsun mu?",
+      "found": "Başlangıç ağırlığı bulundu: {load}."
+    },
+    "cardio": {
+      "next": "Sıradaki: kardiyo",
+      "title": "Kardiyo, hafif",
+      "length": "{minutes} min, hafif",
+      "optional": "Bugün isteğe bağlı",
+      "pace": "Tempo",
+      "talk": "Konuşma testi",
+      "talkNote": "Kısa cümlelerle konuşabilirsin",
+      "after": "Ağırlıktan sonra, önce değil.",
+      "forms": "Bisiklet, eğimli yürüyüş ya da cross-trainer. Sprint yok.",
+      "done": "Bitti, {minutes} min",
+      "later": "Bugün sonra",
+      "skip": "Bugünü atla",
+      "loggedSaid": "Kardiyo kaydedildi: {minutes} min.",
+      "laterSaid": "O zaman bugün sonra. Kaydettiğinde sayılır.",
+      "skipSaid": "Bugünlük atlandı. Sonradan yapman gerekmez.",
+      "failed": "Kardiyo telefona kaydedilemedi. Tekrar dene.",
+      "undoLabel": "Kaydedilen kardiyoyu geri al",
+      "undoneSaid": "Kardiyo geri alındı.",
+      "undoLate": "Bu kardiyo zaten kaydedildi, buradan geri alınamaz."
+    },
+    "insight": {
+      "up": {
+        "one": "Geçen sefere göre +1 tekrar.",
+        "other": "Geçen sefere göre +{count} tekrar."
+      },
+      "upAtTop": {
+        "one": "Geçen sefere göre +1 tekrar. Aralığın üstü: bir dahaki sefere {load}.",
+        "other": "Geçen sefere göre +{count} tekrar. Aralığın üstü: bir dahaki sefere {load}."
+      },
+      "same": "Geçen seferle aynı. Bir tekrar daha sonraki adım.",
+      "sameFixed": "Geçen seferle aynı.",
+      "heavier": "Geçen seferden ağır.",
+      "held": "Yine {reps}, karardaki gibi. Haftalık karar bunu okur.",
+      "logged": "Kaydedildi. Bir dahaki sefer buradan başlar.",
+      "below": "Aralığın altında."
+    },
+    "doneNumber": "set {number}",
+    "doneShort": "{load}×{reps}",
+    "doneShortAdded": "+{load}×{reps}",
+    "doneSeparator": " · ",
+    "doneSummaryLabel": "Biten setler: {sets}",
+    "doneSummaryHint": "Her seti gösterir, düzeltmek ya da silmek için.",
+    "doneSummaryClose": "Setleri gizler.",
+    "doneLeft": "{left} kaldı",
+    "doneSet": "Set {number}, bitti: {set}, {left} kaldı",
+    "next": "Sıradaki: {name}",
+    "upNext": "Sıradaki",
+    "head": {
+      "set": "#",
+      "today": "Bugün",
+      "last": "Geçen sefer"
+    },
+    "side": {
+      "LEFT": "Sol",
+      "RIGHT": "Sağ"
+    },
+    "set": "{load} × {reps}",
+    "bodyweight": "Vücut ağırlığı × {reps}",
+    "added": "+{load} × {reps}",
+    "loadLabel": "Ağırlık ({unit})",
+    "addedLabel": "Eklenen ağırlık ({unit})",
+    "repsLabel": "Tekrar",
+    "log": "Set {number} kaydet",
+    "logSide": "Set {number} kaydet · {side}",
+    "sideName": {
+      "LEFT": "sol",
+      "RIGHT": "sağ"
+    },
+    "invalid": "Ağırlığı ve tekrarı kontrol et.",
+    "saveFailed": "Set telefona kaydedilemedi. Tekrar dene.",
+    "rir": {
+      "label": "Set {number} · yedek tekrar",
+      "short": "Yedek tekrar",
+      "more": "2+"
+    },
+    "rest": {
+      "label": "Dinlenme",
+      "over": "Hazır olunca başla",
+      "past": "{high} geçti. Hazır olduğunda devam et",
+      "band": "{low}-{high} dk",
+      "bandExact": "{low}-{high}",
+      "time": "{minutes}:{seconds}",
+      "less": "-{seconds}",
+      "more": "+{seconds}",
+      "lessLabel": "Dinlenmeyi {seconds} saniye kısalt",
+      "moreLabel": "Dinlenmeyi {seconds} saniye uzat",
+      "end": "Hazır",
+      "endLabel": "Dinlenmeyi bitir",
+      "readyLabel": "Set {number} için hazır",
+      "nextLabel": "Sıradaki: set {number}, {set}",
+      "nextSideLabel": "Sıradaki: set {number}, {side}, {set}",
+      "adjustHint": "Dinlenmeyi değiştirmek için basılı tut",
+      "adjustTitle": "Dinlenme",
+      "alert": {
+        "title": "Dinlenme bitti",
+        "body": "{min} dinlenme. Hazır olunca sıradaki set."
+      }
+    },
+    "sets": "{count} set",
+    "setsOne": "1 set",
+    "setOf": "Set {number} / {count}",
+    "setNumber": "Set {number}",
+    "setDone": "Set {number}, bitti",
+    "setToDo": "Set {number}, yapılacak",
+    "doneMark": "✓",
+    "allDone": "Tüm setler bitti",
+    "finish": "Antrenmanı bitir",
+    "form": {
+      "title": "Formun nasıldı?",
+      "note": "Formu temiz olmayan hareket, temiz olana kadar bir sonraki sefere aynı ağırlık ve tekrarla kalır.",
+      "clean": "Temiz",
+      "unclean": "Temiz değil"
+    },
+    "previous": "Önceki",
+    "previousLabel": "Önceki set, {set}",
+    "finishEarly": {
+      "one": "1 hareket kaldı",
+      "other": "{count} hareket kaldı",
+      "body": "Şimdi bitirilsin mi? Kaydettiklerin saklanır.",
+      "finish": "Bitir"
+    },
+    "finishNow": "Bitir",
+    "saving": "Kaydediliyor…",
+    "nothingSaved": "Kayıt yok, saklanan yok.",
+    "keepGoing": "Devam et",
+    "kept": "Çevrimdışısın. Kaydettiklerin telefonda saklanır, sonra gönderilir.",
+    "unknownMove": "Bu egzersizi uygulamanın bu sürümü tanımıyor.",
+    "finishFailed": "Antrenman telefonda bitirilemedi. Tekrar dene.",
+    "dayGone": "Bu antrenmanın günü artık programında yok. Yenisini başlatmak için bunu bitir.",
+    "loadFailed": "Antrenman açılamadı. Antrenman sekmesinden tekrar dene.",
+    "progressOne": "{done} / 1 egzersiz",
+    "warmup": {
+      "title": "Isınma",
+      "note": "Hafif setler, tükenmeye çok uzak.",
+      "log": "Isınma {number} kaydet",
+      "fold": "Isınma, {count}",
+      "done": "Bitti"
+    },
+    "plates": "Her yanda {plates} {unit}",
+    "barOnly": "Yalnız bar",
+    "platesJoin": " + ",
+    "note": {
+      "add": "Not ekle",
+      "label": "Bu sete not",
+      "session": "Bu antrenmana not (isteğe bağlı)"
+    },
+    "add": {
+      "open": "Hareket ekle",
+      "oneMore": "Bir set daha",
+      "search": "Hareket bul",
+      "pick": "Ekle: {name}",
+      "close": "Kapat",
+      "create": "“{name}” oluştur",
+      "none": "Katalogda bu adda hareket yok. Başka kelimeler dene."
+    }
+  },
+  "demo": {
+    "open": "Nasıl yapılır",
+    "openLabel": "{exercise}: nasıl yapılır",
+    "formImage": "{exercise}: başlangıç ve bitiş pozisyonları",
+    "setup": "Kurulumun",
+    "setupNote": "Bu telefonda saklanır. Her seferinde aynı şekilde kur.",
+    "save": "Kurulumu kaydet",
+    "saved": "Kaydedildi.",
+    "kind": {
+      "COMPOUND": "Bileşik",
+      "ISOLATION": "İzolasyon"
+    },
+    "tips": "Ana ipuçları",
+    "tip": {
+      "fullRange": "Her tekrarda tam hareket aralığı.",
+      "backRange": "Tam aralık, sonunda kısmi tekrarlar.",
+      "tempo": "Kontrollü indir, niyetle kaldır.",
+      "lastRep": "Set, son tekrarın yavaşladığında biter."
+    },
+    "muscles": "Çalışan kaslar",
+    "separator": ", ",
+    "mapLabel": "Kas haritası: {muscles}",
+    "muscle": {
+      "biceps": "Biseps",
+      "calves": "Baldır",
+      "chest": "Göğüs",
+      "erectors": "Bel",
+      "forearms": "Ön kol",
+      "front_delts": "Ön omuz",
+      "glutes": "Kalça",
+      "hamstrings": "Arka bacak",
+      "lats": "Kanat",
+      "quads": "Quadriceps",
+      "rear_delts": "Arka omuz",
+      "side_delts": "Yan omuz",
+      "triceps": "Triseps",
+      "upper_back": "Üst sırt"
+    },
+    "unknown": "Bu hareket henüz telefondaki katalogda yok. Çevrimiçi olunca tekrar aç."
+  },
+  "superset": {
+    "link": "Süperset yap…",
+    "pick": "Süperset: {name}",
+    "with": "Süperset: {names}",
+    "separator": ", ",
+    "unlink": "Süperset değil",
+    "choose": "Hangi hareketle arka arkaya?",
+    "close": "Vazgeç"
+  },
+  "ownMove": {
+    "title": "Kendi hareketin",
+    "similar": "Bunlardan biri mi?",
+    "name": "Ad",
+    "kind": "Ne tür hareket?",
+    "kinds": {
+      "COMPOUND": "Birkaç eklem (squat gibi)",
+      "ISOLATION": "Tek eklem (curl gibi)"
+    },
+    "equipment": "Neyi kaldırıyorsun?",
+    "equipments": {
+      "BARBELL": "Barbell",
+      "DUMBBELL": "Dumbbell",
+      "MACHINE": "Makine",
+      "CABLE": "Kablo",
+      "PLATE_LOADED": "Plakalı",
+      "BODYWEIGHT": "Vücudun"
+    },
+    "added": "Ağırlık ekliyor musun?",
+    "addedYes": "Evet, plaka ya da dumbbell",
+    "unilateral": "Tek taraflı mı?",
+    "yes": "Evet",
+    "no": "Hayır",
+    "save": "Kaydet ve ekle",
+    "back": "Geri",
+    "offline": "Hareketi kaydetmek için bağlantı gerekir. Çevrimiçi olunca tekrar dene.",
+    "refused": "Bu hareket kaydedilemedi. Tekrar dene."
+  },
+  "workoutEnd": {
+    "title": "Antrenman tamam",
+    "minutes": {
+      "one": "dakika",
+      "other": "dakika"
+    },
+    "liftedKg": "kg kaldırıldı",
+    "liftedLb": "lb kaldırıldı",
+    "change": "Geçen sefere göre {percent}%",
+    "sets": {
+      "one": "set",
+      "other": "set"
+    },
+    "kcal": "kcal",
+    "watch": "Apple Watch",
+    "record": "{move} {set}",
+    "recordKicker": "Yeni rekor",
+    "recordNext": "Sıradaki: {set}",
+    "moved": "Neler değişti",
+    "move": {
+      "repsUp": {
+        "one": "+{count} tekrar",
+        "other": "+{count} tekrar"
+      },
+      "repsDown": {
+        "one": "{count} tekrar az",
+        "other": "{count} tekrar az"
+      },
+      "loadUp": "+{amount}",
+      "same": "aynı",
+      "held": "korundu",
+      "first": "ilk kez",
+      "more": "{count} tane daha",
+      "label": "{move}, {set}, {change}",
+      "labelPlain": "{move}, {set}",
+      "moreLabel": "ve {count} hareket daha"
+    },
+    "set": "{load} × {reps}",
+    "baseline": "Başlangıç seti",
+    "baselineBody": "Bir dahaki sefer her sette geçilecek bir hedef olur.",
+    "worked": "Bugün çalışan",
+    "week": "Bu hafta: {done} / {planned} antrenman",
+    "weekLabel": "Bu hafta: {done} / {planned} antrenman",
+    "share": "Antrenmanını paylaş",
+    "done": "Bitti",
+    "pending": "Sayıların, bu antrenman sunucuya ulaşınca görünür. Telefonda kayıtlı.",
+    "failed": "Sayıların yüklenemedi.",
+    "retry": "Tekrar dene",
+    "ready": "Sayıların hazır."
+  },
+  "muscleMap": {
+    "label": "Kas haritası, bu haftaki setler: {muscles}",
+    "item": "{muscle} {done} / {target}"
+  },
+  "summary": {
+    "title": "Antrenman bitti",
+    "reached": "Hedef eforuna ulaşan egzersiz: {reached} / {judged}",
+    "noneJudged": "Eforunu burada görmek için yedek tekrarı kaydet.",
+    "moreReps": {
+      "one": "Aynı ağırlık, RIR {rir} ile 1 tekrar fazla",
+      "other": "Aynı ağırlık, RIR {rir} ile {count} tekrar fazla"
+    },
+    "moreRepsBody": {
+      "one": "RIR {rir} ile 1 tekrar fazla",
+      "other": "RIR {rir} ile {count} tekrar fazla"
+    },
+    "moreInTank": "Aynı ağırlık ve tekrar, {count} yedek tekrar daha",
+    "loadUp": "Geçen seferden {load} fazla, RIR {rir}",
+    "loadUpNoRir": "Geçen seferden {load} fazla",
+    "e1rmUp": "Tahmini maksimum {load} arttı",
+    "first": "İlk kez kaydedildi",
+    "note": "RIR {rir}. Bir dahaki sefere hedef 0-{target}.",
+    "done": "Bitti",
+    "setLeft": {
+      "zero": "{set} · kalmadı",
+      "one": "{set} · 1 tekrar kaldı",
+      "other": "{set} · {count} tekrar kaldı"
+    },
+    "reachedOne": "Hedef eforuna ulaşan egzersiz: {reached} / 1"
+  },
+  "food": {
+    "photoSuggestion": {
+      "line": "Sonraki sefer daha hızlı: öğünü fotoğraftan ya da bir cümleyle kaydet.",
+      "open": "Dene"
+    },
+    "macro": {
+      "protein": "P {value}",
+      "carbs": "K {value}",
+      "fat": "Y {value}",
+      "spoken": "{protein} gram protein, {carbs} gram karbonhidrat, {fat} gram yağ",
+      "spokenProtein": "{protein} gram protein"
+    },
+    "single": {
+      "kcal": "{value} kcal",
+      "gramsOf": "{value} g",
+      "macros": "P {protein} · K {carbs} · Y {fat}",
+      "line": "{kcal} · {macros}",
+      "lineKcalProtein": "{kcal} kcal · P {protein}",
+      "spoken": "{kcal} kilokalori, {protein} gram protein, {carbs} gram karbonhidrat, {fat} gram yağ"
+    },
+    "day": {
+      "today": "Bugün",
+      "yesterday": "Dün",
+      "titleYesterday": "Dünün yiyecekleri",
+      "titleOther": "Beslenme",
+      "before": "Önceki gün",
+      "after": "Sonraki gün",
+      "hasMeals": "öğün var"
+    },
+    "logDay": "Bu güne yiyecek ekle",
+    "totals": {
+      "eaten": "{value} {unit} alındı",
+      "left": "{value} {unit} kaldı",
+      "barLabel": "{eaten} / {target} {unit} alındı",
+      "gramsShort": "g",
+      "protein": "Protein",
+      "carbs": "Karbonhidrat",
+      "fat": "Yağ",
+      "of": "{eaten} {unit}",
+      "ofTarget": "{eaten} / {target} {unit}",
+      "hint": "Günde {count} öğün, öğün başına yaklaşık {kcal} kcal",
+      "nothing": "Kayıt yok.",
+      "rangeEaten": "Alınan: {kcal}; protein {protein}; karbonhidrat {carbs}; yağ {fat}",
+      "rangeLeft": "Kalan: {kcal}"
+    },
+    "copy": {
+      "open": "Önceki bir günü kopyala",
+      "close": "Bitti",
+      "title": "Kopyala: {day}",
+      "none": "Öğünü olan başka gün yok.",
+      "one": "{count} öğün · {kcal}",
+      "other": "{count} öğün · {kcal}",
+      "spoken": "Öğünleri kopyala: {day}",
+      "failed": "O gün okunamadı. Tekrar dene.",
+      "lead": "Kopyalandı",
+      "saved": "{count} öğün"
+    },
+    "deleted": {
+      "lead": "Silindi",
+      "detail": "{slot}",
+      "itemLead": "Kaldırıldı",
+      "said": "Geri konuldu.",
+      "undoFailed": "Geri konulamadı. Tekrar dene.",
+      "failed": "Silinemedi. Tekrar dene."
+    },
+    "suggestions": {
+      "times": "{quantity} × {unit}",
+      "amount": "{quantity} {unit}",
+      "title": "Bugün kalana uyar",
+      "item": "{name} · {quantity} {unit}",
+      "itemServing": "{name} · {unit}",
+      "itemServings": "{name} · {quantity} × {unit}",
+      "log": "Ekle: {name}"
+    },
+    "log": "Öğün ekle",
+    "photo": "Fotoğraftan ekle",
+    "recipes": "Tariflerin",
+    "budget": {
+      "title": "Bugün kalan",
+      "kcalUnit": "kcal",
+      "proteinUnit": "g protein",
+      "single": "{value} {unit}",
+      "over": "Bugünkü hedefin üstünde:",
+      "around": "Bugünkü hedefe yakın",
+      "proteinDone": "Protein hedefine ulaşıldı",
+      "none": "Beslenme bütçen, ilk kalori hedefinle birlikte gelir."
+    },
+    "consent": "Beslenme bütçen ve hedeflerin için sağlık verisi onayı gerekir.",
+    "meals": {
+      "noneDay": "Bu gün için kayıt yok.",
+      "menu": "{slot} için menü",
+      "logToday": "Bugün tekrar ekle",
+      "deleteMeal": "Öğünü sil",
+      "cancel": "Vazgeç",
+      "delete": "Sil",
+      "addTo": "Ekle: {slot}",
+      "emptySlot": "Henüz yok",
+      "title": "Bugünün öğünleri",
+      "none": "Bugün kayıt yok.",
+      "waiting": "Henüz gönderilmedi",
+      "correct": "{slot} düzelt: {items}, {kcal}"
+    },
+    "slot": {
+      "BREAKFAST": "Kahvaltı",
+      "LUNCH": "Öğle yemeği",
+      "DINNER": "Akşam yemeği",
+      "SNACK": "Atıştırmalık"
+    },
+    "repeat": {
+      "titleDay": "Önceki günle aynı",
+      "title": "Dünle aynı",
+      "spoken": "Tekrar ekle, {slot}: {items}",
+      "failed": "Eklenemedi. Tekrar dene.",
+      "noConsent": "Yiyecek eklemek için sağlık verisi onayı gerekir. Bağlantını kontrol et ya da Ayarlar'dan izin ver."
+    }
+  },
+  "recipes": {
+    "back": "Geri",
+    "title": "Tarifler",
+    "new": "Yeni tarif",
+    "none": "Henüz tarif yok. Bir kez gir, sonra porsiyon olarak kaydet.",
+    "makes": {
+      "one": "1 porsiyon çıkar",
+      "other": "{portions} porsiyon çıkar"
+    },
+    "perPortion": "Porsiyon başına {low}-{high} kcal",
+    "unavailable": "Bir malzeme artık yiyecek veritabanında yok. Bu tarifi sil ve yeniden gir.",
+    "delete": "Sil",
+    "deleteSpoken": "{name} tarifini sil",
+    "confirmTitle": "{name} silinsin mi?",
+    "confirmBody": "Bu tarifi kaydeden öğünler kayıtlı haliyle kalır.",
+    "confirm": "Sil",
+    "keep": "Kalsın",
+    "failed": "Tarifler yüklenemedi. Bağlantını kontrol et.",
+    "deleteFailed": "Silinemedi. Bağlantını kontrol edip tekrar dene.",
+    "retry": "Tekrar dene",
+    "consent": "Tarifler sağlık verisidir: sağlık verisi onayı gerekir.",
+    "openSettings": "Ayarlar'ı aç"
+  },
+  "recipe": {
+    "title": "Yeni tarif",
+    "name": "Ad",
+    "portions": "Kaç porsiyon çıkıyor",
+    "ingredients": "Malzemeler",
+    "estimate": "Tarifin tamamı",
+    "missing": {
+      "name": "Bir ad ver.",
+      "portions": "Porsiyon: 1 ile {max} arasında tam sayı.",
+      "items": "En az bir malzeme ekle, her birinin miktarıyla."
+    },
+    "save": "Tarifi kaydet",
+    "needsConnection": "Tarifi kaydetmek için bağlantı gerekir. Çevrimiçi olunca tekrar dene.",
+    "refused": "Tarif kaydedilemedi. Malzeme miktarlarını kontrol et. Çok tarifin varsa kullanmadığın birini sil.",
+    "savedEarlier": "Bu tarifin önceki kaydı tamamlanmıştı, bu yüzden sonraki değişikliklerin tutulmadı. Tarifi tariflerinden silip yeniden gir."
+  },
+  "meal": {
+    "logNow": "Şimdi kaydet",
+    "picker": {
+      "spoken": "{slot}, şimdilik {kcal}",
+      "spokenEmpty": "{slot}, henüz boş"
+    },
+    "tray": {
+      "title": "{slot} · {day}",
+      "empty": "Henüz yok",
+      "viewDay": "Günü gör",
+      "viewDaySpoken": "Günün tüm yiyeceklerini gör",
+      "more": "+{count}",
+      "moreSpoken": "{count} tane daha, günü aç",
+      "chip": "{name} · {kcal}",
+      "edit": "{name} değiştir"
+    },
+    "home": {
+      "favorites": "Favoriler",
+      "favoritesEmpty": "Burada tutmak için bir yiyeceğin kalbine dokun.",
+      "empty": "Bir yiyecek ara ya da barkod tara.",
+      "usual": "Genelde {slot} öğününde",
+      "recent": "Son kullanılanlar",
+      "showAll": "{count} tanesini göster",
+      "showMore": "Daha fazla göster"
+    },
+    "again": {
+      "yesterday": "Dünkü {slot} ile aynı",
+      "other": "Son {slot} öğünün, {day}",
+      "line": "{items}",
+      "spoken": "{slot} öğününü yeniden kaydet: {items}"
+    },
+    "row": {
+      "added": "Eklendi",
+      "own": "Senin",
+      "plusSpoken": "{name} ekle, {amount}",
+      "open": "{name} için miktarı seç",
+      "heartOn": "{name} favori",
+      "heartOff": "{name} favori yap"
+    },
+    "sheet": {
+      "add": "{slot} öğününe ekle",
+      "addKcal": "{slot} öğününe ekle · {kcal}",
+      "close": "Kapat",
+      "closeSpoken": "Porsiyon adımını kapat",
+      "detail": "Ayrıntı",
+      "weighed": "Tartıldı",
+      "of": "{name}, porsiyon"
+    },
+    "done": "Bitti",
+    "doneKcal": "Bitti · {kcal}",
+    "toast": {
+      "added": "Eklendi",
+      "undoing": "Geri alınıyor"
+    },
+    "intoDay": "{day} gününe kaydediliyor",
+    "quickAdd": {
+      "open": "Hızlı ekle",
+      "name": "Hızlı ekle",
+      "folded": "Hızlı ekle",
+      "kcal": "Kalori",
+      "protein": "Protein",
+      "carbs": "Karbonhidrat",
+      "fat": "Yağ"
+    },
+    "own": {
+      "open": "Kendi yiyeceğimi oluştur",
+      "short": "Yiyecek oluştur",
+      "title": "Yiyeceğin",
+      "name": "Ad",
+      "serving": "Porsiyon boyutu",
+      "kcal": "Kalori",
+      "protein": "Protein",
+      "carbs": "Karbonhidrat",
+      "fat": "Yağ",
+      "save": "Kaydet ve ekle",
+      "cancel": "Vazgeç",
+      "invalid": "Adı ve sayıları kontrol et.",
+      "needName": "Bir ad ekle.",
+      "check": "Şunu kontrol et: {field}.",
+      "failed": "Kaydedilemedi. Tekrar dene.",
+      "barcode": "Barkod {gtin}"
+    },
+    "browse": {
+      "recent": "Son",
+      "frequent": "Sık",
+      "favorites": "Favoriler",
+      "again": "Yeniden kaydet",
+      "empty": {
+        "recent": "Son zamanlarda yenen yok.",
+        "frequent": "Henüz sık kaydedilen yok.",
+        "favorites": "Burada tutmak için bir yiyeceği yıldızla.",
+        "again": "Henüz geçmiş öğün yok."
+      },
+      "againLine": "{slot} · {day} · {kcal}",
+      "againSpoken": "{slot} öğününü yeniden kaydet: {items}"
+    },
+    "favorite": {
+      "add": "{name} favorilere ekle",
+      "remove": "{name} favorilerden çıkar"
+    },
+    "slots": {
+      "more": "Diğer",
+      "moreSpoken": "Diğer öğünleri göster"
+    },
+    "title": "Öğün kaydet",
+    "closeLabel": "Öğün kaydını kapat",
+    "quick": {
+      "recent": "Son",
+      "undoneSaid": "Öğün geri alındı.",
+      "undoFailed": "Geri alınamadı. Tekrar dene.",
+      "undoOffline": "Çevrimdışısın. Çevrimiçi olunca geri al."
+    },
+    "saved": {
+      "one": "{slot}, 1 kalem",
+      "other": "{slot}, {count} kalem",
+      "toToday": "{detail}, Bugün'e eklendi"
+    },
+    "editTitle": "Öğünü düzelt",
+    "consent": {
+      "why": "Öğün kaydetmek için onayın gerekir.",
+      "allow": "Devam",
+      "notNow": "Şimdi değil",
+      "failed": "Seçimin kaydedilemedi. Bağlantını kontrol edip tekrar dene."
+    },
+    "search": {
+      "logNow": "{name} şimdi kaydet",
+      "placeholder": "Yiyecek ara",
+      "clear": "Aramayı temizle",
+      "createNamed": "\"{name}\" oluştur",
+      "createNamedSpoken": "\"{name}\" yiyeceğini kendi yiyeceğin olarak oluştur",
+      "avoided": "Bunu yemiyorsun",
+      "per100gSingle": "100 g başına {kcal} kcal",
+      "per100gShort": "100 g başına",
+      "portionLine": "{portion} · {numbers}",
+      "withBrand": "{brand} · {rest}",
+      "label": "Yiyecek bul",
+      "add": "{name} ekle",
+      "tooShort": "En az {min} harf yaz.",
+      "none": "Bir şey bulunamadı. Başka kelimeler dene.",
+      "failed": "Arama için bağlantı gerekir. Tekrar dene.",
+      "serverError": "Şu an arama yapılamadı. Biraz sonra tekrar dene.",
+      "searching": "Aranıyor...",
+      "empty": "Pirinç dene.",
+      "per100g": "100 g başına {kcal}",
+      "per100gSpoken": "100 gram başına {kcal}"
+    },
+    "recipes": {
+      "heading": "Tariflerin",
+      "add": "{name} tarifini ekle",
+      "makes": {
+        "one": "1 porsiyon çıkar",
+        "other": "{portions} porsiyon çıkar"
+      },
+      "unavailable": "{name}: bir malzeme artık yiyecek veritabanında yok. Kullanmak için tarifi yeniden gir."
+    },
+    "item": {
+      "open": "{name} aç",
+      "quantitySpoken": "{quantity} kadar",
+      "half": "½",
+      "detail": "Ayrıntı",
+      "detailHide": "Ayrıntıyı gizle",
+      "detailRange": "{kcal}; {protein}",
+      "detailWaiting": "Hesaplanıyor...",
+      "amount": "{name} miktarı",
+      "amountTitle": "Miktar",
+      "unitTitle": "Birim",
+      "servingOf": "× {unit}",
+      "grams": "g",
+      "unitSpoken": "{name}, birim: {unit}",
+      "weighed": "Tartıldı",
+      "weighedSpoken": "{name} tartıldı",
+      "remove": "Çıkar",
+      "removeSpoken": "{name} çıkar",
+      "invalid": "Bu bir miktara benzemiyor. Sayıyı kontrol et.",
+      "tooMuch": "Bir kalem bu kadar olamaz. Miktarı kontrol et.",
+      "tooManyPortions": {
+        "one": "En fazla tarifin tamamı: 1 porsiyon.",
+        "other": "En fazla tarifin tamamı: {portions} porsiyon."
+      },
+      "recipeGone": "Bu tarif silinmiş ya da artık tahmin edilemiyor. Öğünü kaydetmek için çıkar.",
+      "portions": "porsiyon"
+    },
+    "estimate": {
+      "range": "Aralık: {kcal}; {protein}",
+      "itemRange": "{name}: {kcal}",
+      "title": "Tahmin",
+      "question": "{name}: {question}"
+    },
+    "save": "Kaydet",
+    "saveFailed": "Bu telefona kaydedilemedi. Tekrar dene.",
+    "full": "Bir öğünde en fazla {max} kalem olur. Kalanı başka öğün olarak kaydet.",
+    "photo": {
+      "why": "Fotoğraf tabakta ne olduğunu gösterir, ne kadar tarttığını değil."
+    },
+    "fromCoach": {
+      "notChecked": "Bu miktarlar kontrol edilemedi. Bir ölçü yiyeceğe uymuyorsa gram yap. Çevrimdışıysan çevrimiçi olunca tekrar dene."
+    },
+    "edit": {
+      "save": "Kaydet",
+      "delete": "Bu öğünü sil",
+      "confirmTitle": "Bu öğün silinsin mi?",
+      "confirmBody": "Günün toplamından çıkar. Geri alınamaz.",
+      "confirm": "Sil",
+      "keep": "Kalsın",
+      "needsConnection": "Öğünü değiştirmek için bağlantı gerekir. Çevrimiçi olunca tekrar dene.",
+      "gone": "Bu öğün artık yok.",
+      "notChecked": "Sunucu bu miktarları henüz kontrol etmedi. Kendin kontrol et ya da çevrimiçi olunca tekrar dene."
+    },
+    "barcode": {
+      "missTitle": "Bu ürün henüz veritabanında yok.",
+      "addIt": "Ekle",
+      "searchInstead": "Bunun yerine ara",
+      "scan": "Barkod tara",
+      "scanShort": "Tara",
+      "title": "Barkod tara",
+      "denied": "Kamera erişimi kapalı. Ayarlar'dan aç ya da numarayı yaz.",
+      "type": "Ya da numarayı yaz",
+      "lookUp": "Ara",
+      "invalid": "Barkod {min} ile {max} basamaklıdır.",
+      "close": "Kapat",
+      "notFound": "Bu ürün yiyecek veritabanında henüz yok. Adıyla bul.",
+      "failed": "Barkod aranamadı. Bağlantını kontrol et ya da adıyla bul.",
+      "badNumber": "Bu numara barkod gibi okunmuyor. Rakamları kontrol et.",
+      "askAgain": "Kamerayı tekrar dene",
+      "noCamera": "Kamera yok. Numarayı aşağıya yaz."
+    }
+  },
+  "widget": {
+    "call": {
+      "none": "Bu hafta için henüz karar yok.",
+      "ready": "Bu haftanın kararı hazır."
+    }
+  },
+  "mealPhoto": {
+    "subscription": "Fotoğraftan öğün okuma abonelikle gelir. Yine de adıyla kaydedebilirsin.",
+    "title": "Fotoğraftan öğün",
+    "intro": "Öğününün fotoğrafını çek ya da seç. Küçültülür ve konumu olmadan gönderilir, yalnızca yiyecekleri bulmak için. Sayılar yiyecek veritabanından gelir, her yiyeceği sen onaylarsın.",
+    "camera": "Fotoğraf çek",
+    "library": "Fotoğraf seç",
+    "reading": "Fotoğraf okunuyor…",
+    "item": "{food} · yaklaşık {quantity} g",
+    "unread": "Bu fotoğrafta öğün bulamadım. Bunun yerine adıyla kaydedebilirsin.",
+    "consent": "Öğün fotoğrafı okumak için yapay zeka onayı gerekir. Ayarlar'dan verebilirsin.",
+    "denied": "Bu uygulama için kameraya izin verilmemiş. iPhone Ayarlar'dan izin verebilir ya da fotoğraf seçebilirsin.",
+    "failed": "Fotoğraf okunamadı. Tekrar dene ya da öğünü adıyla kaydet."
+  },
+  "share": {
+    "open": "Gelişimini paylaş",
+    "openNote": "Haftalarının ve kaldırdıklarının çıkartmaları. Bu telefonda yapılır, nereye gideceğini sen seçersin.",
+    "title": "Paylaş",
+    "kind": {
+      "workout": "Antrenman",
+      "pr": "PR",
+      "streak": "Hedefte geçen haftalar",
+      "progress": "Gelişim"
+    },
+    "background": {
+      "gallery": "Galeri",
+      "camera": "Kamera",
+      "dark": "Koyu",
+      "instagram": "Instagram'da"
+    },
+    "instagramNote": "Yalnızca çıkartma gider, arkasında fotoğraf olmaz. Arka planı Instagram'da ekle.",
+    "story": "Story'de paylaş",
+    "storyFallback": "Instagram burada kullanılamıyor, o yüzden paylaşım sayfası açıldı.",
+    "videoNote": "Videon Story'de çıkartmanın arkasında oynar. Başka yerde çıkartma tek başına gider.",
+    "videoTooLong": "Bu video {seconds} saniyeden uzun. Daha kısa birini seç.",
+    "denied": "Bu uygulama için kameraya izin verilmemiş. iPhone Ayarlar'dan izin verebilir ya da galeriden fotoğraf seçebilirsin.",
+    "photoFailed": "Fotoğraf açılamadı. Başka birini dene.",
+    "share": "Paylaş",
+    "preparing": "Çıkartman hazırlanıyor",
+    "note": "Bu telefonda yapılır. Vücut ağırlığı yok. Fotoğrafın senin kalır. Kaydet, TikTok ve diğerleri paylaşım sayfasında.",
+    "nothing": "Henüz paylaşacak bir şey yok. Bir antrenman, hedefte geçen bir hafta ya da daha güçlü bir kaldırış sana çıkartma verir.",
+    "failed": "Çıkartma yapılamadı. Tekrar dene.",
+    "partial": "Bir kısmı okunamadı (bağlantı mı yok?). Çıkartmalar okunabilenleri gösterir.",
+    "spoken": "Paylaşım çıkartman",
+    "sticker": {
+      "workout": {
+        "plain": "Antrenman",
+        "recordLabel": "{move} PR",
+        "baselineValue": "Başlangıç",
+        "baselineLabel": "set"
+      },
+      "pr": {
+        "kicker": "Yeni PR",
+        "best": "şimdiye kadarki en iyi set",
+        "change": "+{load}",
+        "since": "{date} tarihinden beri"
+      },
+      "streak": {
+        "kicker": "Hedefte geçen haftalar",
+        "title": "{onTrack} / {counted}",
+        "spare": {
+          "one": "1 yedek hafta",
+          "other": "{count} yedek hafta"
+        }
+      },
+      "progress": {
+        "kicker": "Gelişim",
+        "inWeeks": {
+          "one": "1. hafta",
+          "other": "{count}. hafta"
+        },
+        "soFar": "Şimdiye kadar",
+        "lift": "{move} +{load}"
+      }
+    }
+  },
+  "import": {
+    "title": "Antrenmanları içe aktar",
+    "intro": "Strong ya da Hevy'den dışa aktar, sonra dosyayı seç.",
+    "privacy": "Bu telefonda kalır. Yalnızca eşleştirdiğin setler gönderilir ve kararı hiç değiştirmez.",
+    "needsConsent": "Antrenmanları içe aktarmak için sağlık verisi onayın gerekir.",
+    "choose": "Dosya seç",
+    "chooseAnother": "Başka dosya seç",
+    "unknown": "Bu dosyayı okuyamıyoruz. Strong ya da Hevy'den İngilizce olarak yeniden dışa aktar ve dosyayı düzenleme.",
+    "empty": "Bu dosyada set yok.",
+    "summary": "Kaynak: {app} · antrenman: {sessions} · set: {sets}",
+    "rowsLeftOut": "Atlanan satır (tekrar yok ya da tarih okunamıyor): {count}",
+    "apps": {
+      "STRONG": "Strong",
+      "HEVY": "Hevy"
+    },
+    "unit": {
+      "title": "Ağırlıklar hangi birimde?",
+      "note": "Dosya bunu söylemiyor. Strong'da ayarlı olan birimi seç.",
+      "kg": "kg",
+      "lb": "lb"
+    },
+    "dumbbells": {
+      "title": "Bu dosya dambılları nasıl sayıyor?",
+      "note": "Burada dambıl hareketi tek dambılın ağırlığıyla kaydedilir.",
+      "one": "Tek dambıl",
+      "both": "İkisi birlikte"
+    },
+    "moves": "Hareketlerin",
+    "sets": "Set: {count}",
+    "matched": "{move} olarak",
+    "notMatched": "İçe aktarılmadı",
+    "unsure": "Bu hangi hareket, emin değilim. Birini seç ya da dışarıda bırak:",
+    "pickLabel": "{file} dosyasını {move} olarak aktar",
+    "other": "Diğer",
+    "otherLabel": "{file} için başka hareket seç",
+    "skip": "Dışarıda bırak",
+    "skipLabel": "{file} aktarılmasın",
+    "search": "Hareket ara",
+    "own": "Kendi hareketim",
+    "ownLabel": "{file} kendi hareketlerimden biri olsun",
+    "back": "Geri",
+    "send": "{count} antrenmanı içe aktar",
+    "sendOne": "1 antrenmanı içe aktar",
+    "nothing": "Henüz aktarılacak bir şey yok: en az bir hareketi eşleştir.",
+    "unitFirst": "Önce ağırlıkların birimini seç.",
+    "loadingMoves": "Hareket listesi okunuyor…",
+    "noMoves": "Hareket listesi okunamadı. Çevrimiçi olunca bunu yeniden aç.",
+    "sending": "{of} içinden {done} gönderiliyor…",
+    "done": "{count} antrenman içe aktarıldı.",
+    "doneOne": "1 antrenman içe aktarıldı.",
+    "already": "Daha önce gelmiş olanlar: {count}",
+    "skipped": "Dışarıda bıraktığın set: {count}. Dosyada kalırlar.",
+    "leftOut": "İçeri alınamayan set: {count}",
+    "close": "Bitti",
+    "failed": {
+      "NoConnection": "Bağlantı yok. Tekrar dene: gönderilenler kalır ve iki kez gelmez.",
+      "ConsentRequired": "Sağlık verisi onayı artık verilmiş değil. Başka bir şey gönderilmedi.",
+      "ImportRefused": "Sunucu bunu kabul etmedi. Daha sonra tekrar dene.",
+      "other": "Bir şeyler ters gitti. Tekrar dene."
+    }
+  },
+  "health": {
+    "jit": {
+      "title": "Apple Health kullanılsın mı?",
+      "reads": "Adım, uyku, kilo, aktif enerji ve antrenmanları okur",
+      "writes": "İzin verirsen tartıları geri yazar",
+      "continue": "Devam",
+      "notNow": "Şimdi değil",
+      "read": "Ne okuyoruz",
+      "sheetFailed": "Apple Health açılmadı. Tekrar dene ya da şimdilik boş bırak.",
+      "failed": "Seçimin kaydedilemedi. Bağlantını kontrol edip tekrar dene."
+    }
+  },
+  "weighIn": {
+    "title": "Tartı",
+    "closeLabel": "Tartıyı kapat",
+    "label": "Kilo ({unit})",
+    "last": "Son: {value}",
+    "lastOn": "Son: {value}, {date}",
+    "trendCount": "Trendin için {min} tartıdan {count} tanesi",
+    "save": "Kaydet",
+    "undoneSaid": "Tartı geri alındı.",
+    "undoFailed": "Geri alınamadı. Tekrar dene.",
+    "undoOffline": "Çevrimdışısın. Çevrimiçi olunca geri al.",
+    "undoneHealth": "Geri alındı. Apple Health'teki kopyan kalır.",
+    "invalid": "Bu bir kiloya benzemiyor. Sayıyı kontrol et.",
+    "saveFailed": "Bu telefona kaydedilemedi. Tekrar dene.",
+    "consent": {
+      "why": "Kilonu kaydetmek için onayın gerekir.",
+      "allow": "Devam",
+      "notNow": "Şimdi değil",
+      "failed": "Seçimin kaydedilemedi. Bağlantını kontrol edip tekrar dene."
+    },
+    "chart": {
+      "title": "Son dört hafta",
+      "yearTitle": "Son yıl",
+      "weeks": "4 hafta",
+      "year": "Yıl",
+      "spoken": "Tartılar soluk, 7 günlük trend kalın"
+    },
+    "earlyNote": "Çizgi oturuyor."
+  },
+  "ledger": {
+    "title": "Kararların",
+    "intro": "Şimdiye kadarki her haftalık karar, en yeni başta, ardından trendinin ne yaptığıyla.",
+    "after": "Bu karardan sonra: trend {from} → {to}, {date} itibarıyla.",
+    "state": {
+      "applied": "Uygulandı",
+      "undone": "Geri alındı",
+      "pending": "Henüz uygulanmadı"
+    },
+    "open": "Tüm kararların",
+    "none": "Henüz karar yok: ilk kararın ilk haftalık kontrolünle gelir.",
+    "failed": "Kararların yüklenemedi.",
+    "more": "Eski kararları göster"
+  },
+  "whatIf": {
+    "title": "Kararı ne değiştirir",
+    "intro": "Gelecek hafta bunlardan biri gibi geçerse kurallar şu kararı verir.",
+    "example": "Bu, aynı kuralları senin değil örnek verilerle çalıştırır. Yapay zeka yok.",
+    "open": "Ne değiştirir",
+    "failed": "Örnekler yüklenemedi.",
+    "latestOnly": "Örnekler son kararın için: bir sonrakini ne değiştirir.",
+    "trend": {
+      "TOWARD_GOAL": "Trend hedefe doğru",
+      "FLAT": "Trend yatay"
+    },
+    "adherence": {
+      "ON_TRACK": "plan çoğunlukla uygulandı",
+      "UNDER": "plan uygulanmadı"
+    },
+    "training": {
+      "HOLDING": "antrenman sürüyor",
+      "DROPPING": "antrenman düşüyor"
+    }
+  },
+  "why": {
+    "subscription": "Gerekçeler abonelikle gelir.",
+    "title": "Bu karar neden",
+    "back": "Geri",
+    "made": "{date} · {phase}",
+    "phase": {
+      "CUT": "Definasyon dönemi",
+      "BULK": "Bulk dönemi"
+    },
+    "data": "Veriler",
+    "rules": "Uygulanan kurallar",
+    "signals": "Verilerinde ayrıca",
+    "noData": "Bu karar haftalarını okumadan durdu: gösterilecek trend henüz yok.",
+    "boundary": "Karar yukarıdaki kurallardan gelir. Koç açıklayabilir, vermez.",
+    "failed": "Bu kararın gerekçeleri yüklenemedi.",
+    "retry": "Tekrar dene",
+    "row": {
+      "trend": "Trend kilo",
+      "rate": "Hız",
+      "adherence": "Uygulanan plan",
+      "look": "Görünüm",
+      "training": "Antrenman",
+      "recovery": "Toparlanma",
+      "waist": "Bel",
+      "appetite": "İştah",
+      "stalled": "İlerlemesiz antrenman",
+      "loadHeld": "Aynı yükte geçen hafta",
+      "monthsStalled": "İlerlemesiz ay",
+      "planMissed": "Planın aksadığı hafta",
+      "rested": "Geçen hafta dinlenildi",
+      "loadsBelow": "Geçen haftanın altındaki yükler",
+      "paused": "Hafta durduruldu"
+    },
+    "value": {
+      "trend": "{from} → {to}",
+      "rateDown": "Haftada {weight} düşüş",
+      "rateUp": "Haftada {weight} artış",
+      "rateFlat": "Sabit",
+      "adherence": "Planlanan işlerin %{percent}'i",
+      "adherenceCount": "{planned} planlı işten {done} tanesi",
+      "yes": "Evet"
+    },
+    "answer": {
+      "look": {
+        "better": "Daha iyi",
+        "same": "Aynı",
+        "worse": "Daha kötü"
+      },
+      "waist": {
+        "down": "Azalıyor",
+        "flat": "Sabit",
+        "up": "Artıyor"
+      }
+    }
+  },
+  "decision": {
+    "rule": {
+      "first_week_on_track": "Haftalık antrenmanların çoğu yapıldıysa plan işliyordur: ilk hafta hiçbir şey değişmez.",
+      "first_week_add_day": "En baştan sonra haftada dört ya da beş antrenman günü en iyisi; yeniysen üç yeter.",
+      "first_week_move_missed": "Antrenmanlar yapılamadığında, büyük bir plandan önce haftana uyan günler gelir.",
+      "no_training_this_week": "Antrenmansız bir haftada okunacak ağırlık kalmaz, beslenme değişiklikleri de ağırlıkları izler.",
+      "weight_steady_waist_down": "Kilon sabit kaldı, belin ise küçüldü: tartı değişen her şeyi göstermiyor.",
+      "adherence_low": "Planın çoğu yapılmadıysa plan henüz değerlendirilemez: önce uygulamak, sonra değiştirmek.",
+      "adherence_partial": "Planın büyük kısmı yapıldı, ama planın işleyip işlemediğini söylemeye yetmedi.",
+      "appetite_gone": "Uzun süre fazla yemek iştahı köreltebilir; kısa bir definasyon iştahı geri getirir.",
+      "bmr_floor": "Kalori hiçbir zaman vücudunun dinlenirken ihtiyacının altına inmez, bu yüzden sıradaki adım hareketten gelir.",
+      "bulk_ceiling": "Belli bir noktadan sonra bulk'ta fazla yemek çoğunlukla yağ ekler, bu yüzden bulk orada biter.",
+      "bulk_stall": "Bulk'ta kilo tüm pencere boyunca hedefine doğru ilerlemediyse yemek artar.",
+      "bulk_step": "Bulk'ta kalori küçük adımlarla artar, böylece kazandığın şey çoğunlukla kas kalır.",
+      "busy_minimum_dose": "Yoğun bir haftada az antrenman, yaptıklarını korur: daha az antrenman ve set, aynı ağırlıklar.",
+      "calorie_change_too_soon": "Yeni kalori hedefi, tartı onu değerlendirebilsin diye birkaç hafta ister.",
+      "carb_squeeze": "Daha düşük hedef, antrenmanının dayandığı protein ve karbonhidratı sıkıştırır, o yüzden hareket artar.",
+      "cardio_after_lift": "Kardiyo ağırlıklardan sonra gelir, asla önce değil; böylece kaldırışların tam gücünü alır.",
+      "cardio_after_lift_over_line": "Ağırlıklardan sonra kardiyo kısa tutulunca en iyi çalışır; daha uzun seans senin kararın.",
+      "cardio_build_dose": "Kas yaparken kardiyo hafif kalır: kaldırıştan sonra kısa, rahat seanslar; yemek antrenmanına gider.",
+      "cardio_cut_dose": "Yağ yakarken antrenman günlerinin ardına kısa bir kardiyo gelir; hafta biraz daha fazla yakar, kaldırışından almaz.",
+      "cardio_off_day_low_intensity": "Antrenman günü azsa ek kardiyo dinlenme gününe, rahat tempoda konur; gün yine toparlanmana izin verir.",
+      "check_in_needed_adherence": "Yeni plandan önce, bunun ne kadarının yapıldığını bilmek gerekir.",
+      "check_in_needed_recovery": "Daha ileri gitmeden önce uykun ve toparlanman kontrol edilir.",
+      "check_in_needed_training": "Beslenmeyi değiştirmeden önce kaldırışlarının sürdüğü kontrol edilir.",
+      "closer_to_failure": "Çalışma setleri tükenmeye yakın bitince en çok sayılır; ondan uzak kalan setler biraz daha yakına itilir.",
+      "cut_step": "Kalori tek net adımla değişir: tartıda görünecek kadar büyük, sürdürülecek kadar küçük.",
+      "below_target_pace": "Plana uyulduğu halde vücut ağırlığına göre sabit tempodan yavaş kilo vermek, bir kalori adımı gerektirir.",
+      "cycle_check_needed": "Düşük enerji molasından sonra, ihtiyacının altında yemeden önce bir soru gelir.",
+      "data_insufficient": "Birkaç düzenli tartı trendi gösterir; tek bir sabah çoğunlukla sudur.",
+      "declared_context": "Aksadığını söylediğin hafta değerlendirilmez: tartıdaki oynamalar çoğunlukla su ve tuzdur.",
+      "double_progression": "Tekrarlar aralık içinde artar; her set üst sınıra ulaşınca ağırlık bir adım artar.",
+      "energy_floor": "Kalori, vücudunu yine de yakıtlı tutan en düşük düzeyde kalır.",
+      "fat_estimate_needed": "Kalori düşmeden önce vücut şekline dair kaba bir okuma, daha düşük hedefi güvenli tutar.",
+      "fat_first": "Verilecek yağ varsa önce onu vermek, sonraki kas kazanımlarını görünür kılar.",
+      "fat_trimmed_for_carbs": "Yağ, antrenmanının dayandığı karbonhidrata yer açmak için alt sınırına doğru kısıldı.",
+      "female_fat_offset": "Kadın bedeni doğal olarak daha fazla yağ taşır, bu yüzden yön değiştirme eşikleri daha yüksektir.",
+      "forgiven_week_used": "Tek bir aksak hafta gidişatını bozmaz; bu hafta o haftaydı.",
+      "full_rest_week": "Üst üste kaçan antrenmanlardan sonra bir hafta tam ara, tazelenip dönmeni sağlar.",
+      "genetic_limit": "Doğal sınırına yaklaştıkça kazanımlar yavaşlar, tempo da buna göre yumuşar.",
+      "hunger_first_days": "Az yemenin ilk günlerinde açlık yaygındır ve genelde yatışır.",
+      "isolation_not_tracked": "Küçük tek eklemli hareketler ilerlemeni belirlemez; büyük hareketler belirler.",
+      "load_held_still_stalled": "Ağırlığı sabit tutmak durgunluğu çözmedi, bu yüzden sıradaki hafta hafif hafta.",
+      "loads_dropped": "Ağırlıkların geçen haftanın altında kaldı, bu yüzden nasıl olduğun sorulur.",
+      "loads_regressed": "Kaldırışlar gerilediğinde antrenmanı değiştirmeden önce beslenme ve uyku kontrol edilir.",
+      "logging_dropped": "Her zamankinden az gün kaydı, çoğu zaman düzenin aksamaya başladığının ilk işaretidir.",
+      "long_stagnation": "Aylardır süren ilerlemesizlik, sıfırlamak için hafif hafta ister.",
+      "loss_rate_cap": "Sabit tempodan hızlı kilo vermek kas götürür, bu yüzden kalori bir adım artar.",
+      "loss_rate_cap_bodyweight": "Sabit tempo vücut ağırlığına bağlıdır: daha hafif bir bedenin sınırı daha düşüktür.",
+      "low_energy_availability": "Antrenmanın yaktığından sonra plan, vücudunun iyi çalışması için çok az bıraktı.",
+      "low_energy_safety": "Vücudunun daha fazla yakıta ihtiyacı olduğunu gösteren bir işaret, ihtiyacının altında yemeyi sona erdirir.",
+      "low_fat_floor": "Belli bir zayıflıktan sonra daha fazla kesmek verdiğinden çok alır.",
+      "mini_cut_over": "Kısa definasyon haftalarını tamamladı; bulk yeniden başlıyor.",
+      "mini_cut_running": "Kısa definasyon, bir şey değişmeden önce planlanan haftalarını doldurur.",
+      "no_session_last_week": "İlk haftalarda antrenmansız geçen bir hafta üzerinde durulmaya değer.",
+      "not_toward_goal": "Kilo trendin hedefine doğru gitmiyor, bu yüzden plan değişir.",
+      "observing": "Başlangıç kalorisi bir tahmindir; ilk haftalar gerçek koruma kalorini bulur.",
+      "performance_red_flag": "Kaldırışların düştüğünde, antrenman yeniden tutana kadar yemek daha da düşmez.",
+      "program_arm_weekly_sets_min": "Biseps ve triseps için ayrı bir haftalık çalışma seti alt sınırı vardır; iki antrenmana bölmek en iyisi.",
+      "program_days_max": "Haftada bir avuç antrenman gününden sonra ekstra günler büyüme katmadan toparlanmayı yer.",
+      "program_frequency": "Her kas haftada iki kez çalışılır: bir antrenmanın büyüme sinyali yaklaşık iki günde söner.",
+      "program_rep_range": "Bileşik hareketler orta tekrar aralığında, izolasyon hareketleri biraz daha yüksekte kalır: çok düşük tekrar eklemleri zorlar, çok yüksek bir şey katmaz.",
+      "program_weekly_sets_max": "Haftanın ilk setleri büyümenin çoğunu yapar; bir noktadan sonra fazla set çoğunlukla yorgunluk ekler.",
+      "program_weekly_sets_min": "Bir kasın büyümek için bir sebebi olması adına haftada asgari çalışma seti gerekir.",
+      "plan_missed": "Planlanan antrenmanlar art arda birkaç hafta plandan geride kaldı.",
+      "plan_target_needed": "Bir değişikliğin ne kadar olacağını söylemek için mevcut günlük hedefin gerekir.",
+      "plateau": "Bir hareket durağanlaşınca ağırlık sabit kalır, tekrarlar yetişir.",
+      "profile_needed": "Yaşın ve boyun, vücudunun dinlenirken neye ihtiyaç duyduğunu gösterir; daha düşük hedef bunun üstünde kalır.",
+      "rapid_loss": "Kısa sürede çok kilo verildiyse kalori bir adım artar.",
+      "return_after_break": "Birkaç haftalık aradan sonra dönüşteki ilk antrenman bir adım hafif başlar, böylece koruduğun güç bir haftada harcanmaz.",
+      "recovery_poor": "Antrenman sürüyor ama uyku ve enerji sürmüyorsa düzeltilecek şey toparlanmadır.",
+      "sessions_missed": "Planlanan antrenmanlar yapılmadı, bu yüzden neyin engel olduğu sorulur.",
+      "stall_window": "Definasyonda kilo tüm pencere boyunca hedefine doğru ilerlemediyse plan değişir.",
+      "steps_dropped": "Günlük adımların düştü, bu yüzden neyin değiştiği sorulur.",
+      "surplus_zone": "Daha fazla kesmenin verdiğinden çok aldığı kadar zayıfsın: sıradaki adım kas yapmak.",
+      "technique_gate": "Form temiz olmadıysa, temiz olana kadar ağırlık ve tekrar sabit kalır.",
+      "toward_goal": "Kilon hedefine doğru gidiyor, bu yüzden hiçbir şey değişmez.",
+      "training_first": "Beslenme kararlarından önce antrenman düzene sokulur.",
+      "wait_one_more_week": "Tek bir durağan hafta çoğunlukla sudur; gerçek değişim genelde sonraki hafta görünür.",
+      "window_not_full": "Planın tam penceresi boyunca değerlendirilir, öncesinde değil."
+    },
+    "ruleShort": {
+      "first_week_on_track": "{planned} antrenmanın {done} tanesi yapıldı. Plan sürer.",
+      "first_week_add_day": "{planned} antrenmanın {done} tanesi tamam: bir gün daha eklenebilir.",
+      "first_week_move_missed": "{planned} antrenmanın {done} tanesi yapıldı. Uygun bir gün işe yarar.",
+      "no_training_this_week": "Bu hafta antrenman yok, okunacak ağırlık da yok.",
+      "weight_steady_waist_down": "Kilo sabit kaldı, belin küçüldü.",
+      "adherence_low": "{planned} eylemin {done} tanesi yapıldı: önce uygulamak.",
+      "adherence_partial": "{planned} planlı eylemin {done} tanesi yapıldı, değerlendirmeye az.",
+      "appetite_gone": "Uzun süre fazla yemek iştahı köreltebilir.",
+      "bmr_floor": "Kalori, vücudunun dinlenirken ihtiyacının üstünde kalır.",
+      "bulk_ceiling": "Bu noktadan sonra fazla yemek çoğunlukla yağ ekler.",
+      "bulk_stall": "{weeks} hafta boyunca haftada {kgPerWeek}: yemek artar.",
+      "bulk_step": "Küçük adım: günde {kcal} kcal daha fazla.",
+      "busy_minimum_dose": "Yoğun haftada daha az antrenman, yaptıklarını korur.",
+      "calorie_change_too_soon": "Yeni hedef, değerlendirmeden önce birkaç hafta ister.",
+      "carb_squeeze": "Daha düşük hedef antrenman yakıtını sıkıştırır.",
+      "cardio_after_lift": "Kardiyo ağırlıklardan sonra gelir, asla önce değil.",
+      "cardio_after_lift_over_line": "Ağırlıklardan sonra kardiyo kısa olunca en iyi çalışır.",
+      "cardio_build_dose": "Kas yaparken kardiyo hafif kalır, kaldırıştan sonra.",
+      "cardio_cut_dose": "Yağ yakarken antrenman günlerinin ardına kısa kardiyo gelir.",
+      "cardio_off_day_low_intensity": "Ek kardiyo dinlenme gününe, rahat tempoda konur.",
+      "check_in_needed_adherence": "Önce, planın ne kadarının yapıldığı.",
+      "check_in_needed_recovery": "Önce, nasıl uyuduğun ve toparlandığın.",
+      "check_in_needed_training": "Önce, kaldırışlarının sürüp sürmediği.",
+      "closer_to_failure": "Çalışma setleri tükenmeye yakınken en çok sayılır.",
+      "cut_step": "Tek adım: günde {kcal} kcal daha az.",
+      "cycle_check_needed": "İhtiyacının altında yemeden önce bir soru gelir.",
+      "data_insufficient": "Birkaç düzenli tartı trendi gösterir.",
+      "declared_context": "Aksadığını söylediğin hafta değerlendirilmez.",
+      "double_progression": "Önce tekrarlar artar, sonra ağırlık bir adım çıkar.",
+      "energy_floor": "Kalori, seni yakıtlı tutan en düşük düzeyde kalır.",
+      "fat_estimate_needed": "Kaba bir vücut şekli okuması, düşük hedefi güvenli tutar.",
+      "fat_first": "Verilecek yağ varsa önce vermek, sonraki kazanımları gösterir.",
+      "fat_trimmed_for_carbs": "Karbonhidrata yer açmak için yağ kısıldı.",
+      "female_fat_offset": "Kadın bedeni daha fazla yağ taşır, eşikler daha yüksektir.",
+      "forgiven_week_used": "Tek bir aksak hafta gidişatı bozmaz.",
+      "full_rest_week": "Kaçan antrenmanlardan sonra bir hafta tam ara dönüşe yardım eder.",
+      "genetic_limit": "Doğal sınıra yakınken kazanımlar yavaşlar, tempo yumuşar.",
+      "hunger_first_days": "İlk günlerdeki açlık yaygındır ve yatışır.",
+      "isolation_not_tracked": "Küçük tek eklemli hareketler ilerlemeyi belirlemez; büyükler belirler.",
+      "load_held_still_stalled": "Aynı ağırlıkta geçen hafta: {weeks}. Hâlâ durgun.",
+      "loads_dropped": "Ağırlıkların geçen haftanın altında kaldı.",
+      "loads_regressed": "Kaldırışlar gerilediğinde önce beslenme ve uyku gelir.",
+      "logging_dropped": "Her zamankinden az gün kaydı.",
+      "long_stagnation": "Aylardır süren ilerlemesizlik hafif hafta ister.",
+      "loss_rate_cap": "Kayıp sabit kalsın diye kalori günde {kcal} kcal artar.",
+      "loss_rate_cap_bodyweight": "Sabit tempo vücut ağırlığına bağlıdır.",
+      "low_energy_availability": "Antrenmanın yaktığından sonra çok az kaldı.",
+      "low_energy_safety": "Vücudun daha fazla yakıt ister, bu yüzden ihtiyacın altında yemek biter.",
+      "low_fat_floor": "Bu zayıflıktan sonra daha fazla kesmek verdiğinden çok alır.",
+      "mini_cut_over": "Kısa definasyon haftalarını tamamladı.",
+      "mini_cut_running": "Kısa definasyon önce planlanan haftalarını doldurur.",
+      "no_session_last_week": "Erken dönemde geçen hafta antrenmansız kalmak, üzerinde durulmaya değer.",
+      "below_target_pace": "{weeks} hafta boyunca haftada {kgPerWeek}, temponun altında.",
+      "not_toward_goal": "{weeks} hafta boyunca haftada {kgPerWeek}, hedefine doğru değil.",
+      "observing": "Başlangıç kalorisi, gerçek koruma görünene kadar tahmindir.",
+      "performance_red_flag": "Durgun antrenman: {sessions}. Kaldırışlar tutana kadar yemek düşmez.",
+      "program_arm_weekly_sets_min": "Kollar kendi haftalık setlerini ister, iki antrenmana bölünür.",
+      "program_days_max": "Bir avuç günden sonra ekstra antrenman toparlanmayı yer.",
+      "program_frequency": "Her kas haftada iki kez çalışılır.",
+      "program_rep_range": "Bileşik hareketler orta tekrarda, izolasyon biraz yüksekte kalır.",
+      "program_weekly_sets_max": "Bir noktadan sonra fazla haftalık set çoğunlukla yorgunluk ekler.",
+      "program_weekly_sets_min": "Bir kas büyümek için asgari haftalık set ister.",
+      "plan_missed": "Planın geride kaldığı haftalar: {weeks}.",
+      "plan_target_needed": "Bir değişiklik için mevcut günlük hedefin gerekir.",
+      "plateau": "Durgun antrenman: {sessions}. Ağırlık sabit, tekrarlar yetişir.",
+      "profile_needed": "Yaş ve boy, vücudunun dinlenirken ihtiyacını gösterir.",
+      "rapid_loss": "Hızlı düşüşten sonra kalori günde {kcal} kcal artar.",
+      "return_after_break": "Aradan sonra ilk antrenman bir adım hafif başlar.",
+      "recovery_poor": "Antrenman sürüyor, uyku ve enerji sürmüyor: toparlanmayı düzelt.",
+      "sessions_missed": "Planlanan antrenmanlar yapılmadı, bu yüzden nedeni sorulur.",
+      "stall_window": "{weeks} hafta boyunca haftada {kgPerWeek}: definasyon için fazla yavaş.",
+      "steps_dropped": "Günlük adımların düştü.",
+      "surplus_zone": "Daha fazla kesmenin verdiğinden çok aldığı kadar zayıfsın.",
+      "technique_gate": "Form temiz olana kadar ağırlık ve tekrar sabit kalır.",
+      "toward_goal": "{weeks} hafta boyunca haftada {kgPerWeek}, hedefine doğru.",
+      "training_first": "Antrenman, beslenme kararlarından önce gelir.",
+      "wait_one_more_week": "Tek bir durağan hafta çoğunlukla sudur.",
+      "window_not_full": "Planın tam penceresi boyunca değerlendirilir."
+    },
+    "no_decision_yet": {
+      "label": "Bekle",
+      "data_insufficient": {
+        "title": "Henüz değil. Önce daha çok tartı.",
+        "body": "Tek bir sabah çoğunlukla sudur. Birkaç düzenli sabah trendi gösterir, karar da trende göre verilir."
+      },
+      "declared_context": {
+        "title": "Bu hafta duraklatıldı.",
+        "body": "Hayatın araya girdiğini söyledin. Böyle bir hafta tartıyı su ve tuzla oynatır, bu yüzden ondan bir sonuç çıkarılmaz ve sana karşı kullanılmaz. Düzenli bir hafta gelince karar da gelir."
+      },
+      "window_not_full": {
+        "title": "Henüz değil. Planın tam penceresi gerekiyor.",
+        "body": "Planladığın gibi devam et. Erken değerlendirmek, su ve günlük oynamaları ilerleme ya da durgunluk diye okumak olurdu."
+      },
+      "wait_one_more_week": {
+        "title": "Bir hafta daha sabit kal.",
+        "body": "Kilon yeni duraklamaya başladı. Tek bir durağan hafta çoğunlukla sudur, değişim de çoğu zaman bir anda görünür. Şimdilik hiçbir şey değişmiyor."
+      },
+      "check_in_needed_training": {
+        "title": "Antrenman nasıl gidiyor?",
+        "body": "Beslenmede herhangi bir değişiklikten önce, kaldırışlarının sürüp sürmediğini bilmek gerekir. Bu haftanın antrenmanlarını kaydet ya da antrenman sorusunu yanıtla, karar gelsin."
+      },
+      "check_in_needed_recovery": {
+        "title": "Nasıl toparlanıyorsun?",
+        "body": "Kilon doğru yönde gidiyor ve antrenman sürüyor. Uyku ve enerjiyle ilgili tek bir soru, bir şeyin değişip değişmeyeceğini belirler."
+      },
+      "check_in_needed_adherence": {
+        "title": "Planın ne kadarı yapıldı?",
+        "body": "Kilon henüz hareket etmiyor. Bunun yeni bir plan gerektirip gerektirmediği, bu planın ne kadarının yapıldığına bağlı. Haftayı kaydet, karar gelsin."
+      },
+      "no_training_this_week": {
+        "title": "Bu hafta karar yok.",
+        "body": "Antrenmansız bir haftada değerlendirilecek ağırlık kalmaz, beslenme değişiklikleri de ağırlıkları izler. Planın olduğu gibi kalır; bir sonraki haftalık kontrol yeniden bakar."
+      },
+      "calorie_change_too_soon": {
+        "title": "Yeni hedefe çalışması için zaman ver.",
+        "body": "Kalorin yakın zamanda değişti. Yeni bir hedef, tartı onun hakkında bir şey söyleyebilsin diye birkaç hafta ister."
+      },
+      "observing": {
+        "title": "Önce gerçek koruma kalorin bulunuyor.",
+        "body": "Başlangıç kalorin bir tahmin, tahminler iki yöne de birkaç yüz kcal şaşar. İlk haftalarda plan yerinde kalır, tartıların da vücudunun gerçekte neye ihtiyacı olduğunu gösterir."
+      },
+      "plan_target_needed": {
+        "title": "Planın için önce bir kalori hedefi gerek.",
+        "body": "Bir değişikliğin zamanı geldiği görülüyor, ama ne kadar olacağını söylemek için mevcut günlük hedefin gerekiyor. Planını kur, karar gelsin."
+      },
+      "profile_needed": {
+        "title": "Yaşın ve boyun, lütfen.",
+        "body": "Kaloriyi düşürmeden önce, vücudunun dinlenirken ihtiyacının altına inmediğinden emin olunur. Bunun için yaşın ve boyun gerekir."
+      },
+      "fat_estimate_needed": {
+        "title": "Daha düşük hedef için önce bir kontrol daha gerek.",
+        "body": "Kalori düşmeden önce vücut şekline dair kaba bir okuma gerekir. Bu okuma, daha düşük bir hedefin vücudunu enerjisiz bırakmasını engeller. Ekle, karar gelsin; başka hiçbir şey beklemiyor."
+      },
+      "cycle_check_needed": {
+        "title": "Her definasyondan önce bir soru.",
+        "body": "Planın düşük enerji yüzünden duraklatıldı. Yeniden ihtiyacının altında yemeden önce bir kez daha kontrol ediyoruz. Cevabın kaydedilmez."
+      }
+    },
+    "increase_calories": {
+      "label": "Biraz daha ye",
+      "applied": "Uygulandı. Kalori hedefin bugünden itibaren değişti.",
+      "loss_rate_cap": {
+        "title": "Vücudunun yetişebileceğinden hızlı kilo veriyorsun.",
+        "body": "Bu tempodan sonra kas kaybetmeye başlarsın, tartıdaki fazlalık da çoğunlukla sudur. Kalori bu hafta bir adım artar, böylece verdiğin yağ olarak kalır."
+      },
+      "rapid_loss": {
+        "title": "Kilo hızlı gitti. Gaz kesme zamanı.",
+        "body": "Tartı bir süredir sabit tempodan hızlı düşüyor. Kalori bir adım artar, böylece vücudun yetişir ve verdiğin yağ olarak kalır."
+      },
+      "low_energy_availability": {
+        "title": "Planın antrenman için çok az yakıt bırakıyor.",
+        "body": "Antrenmanlarının yaktığından sonra kalan, vücudunun iyi çalışması için gerekenden az. Kalori artar, böylece antrenman, uyku ve toparlanma için yeterince olur."
+      }
+    },
+    "change_movement": {
+      "label": "Daha çok hareket",
+      "applied": "Uygulandı. Adım hedefin bugünden itibaren değişti.",
+      "bmr_floor": {
+        "title": "Yemek yerinde kalır. Hareket artar.",
+        "body": "Bir kalori kesintisi daha seni vücudunun dinlenirken ihtiyacının altına indirir. Daha çok günlük adım, daha az yemeden işi sürdürür. Bir kesintiden daha yumuşak bir itiş."
+      },
+      "carb_squeeze": {
+        "title": "Yemek yerinde kalır. Hareket artar.",
+        "body": "Daha düşük bir hedef, protein ve antrenmanının dayandığı karbonhidrata çok az yer bırakır. Daha çok günlük adım, daha az yemeden işi sürdürür. Bir kesintiden daha yumuşak bir itiş."
+      }
+    },
+    "hard_stop": {
+      "label": "Planı duraklat",
+      "low_energy_safety": {
+        "title": "Planın burada duraklıyor.",
+        "body": "Söylediklerin, vücudunun daha fazla yakıta ihtiyacı olduğunun işareti. İhtiyacının altında yemek artık yok: kalori en az koruma düzeyinde kalır ve bunu doktoruna danışmaya değer."
+      }
+    },
+    "change_phase": {
+      "label": "Yön değiştir",
+      "applied": "Uygulandı. Planın bugünden itibaren yön değiştiriyor.",
+      "bulk_ceiling": {
+        "title": "Definasyona geçme zamanı.",
+        "body": "Bu noktadan sonra fazla yemek kastan çok yağ ekler. Şimdi bir definasyon, sonraki bulk'u değerli kılar."
+      },
+      "fat_first": {
+        "title": "Önce yağ ver.",
+        "body": "Şimdi yapacağın kas gizli kalırdı. Çoğu kişi buradan başlar, önce definasyon sonraki her kazanımı görünür yapar."
+      },
+      "surplus_zone": {
+        "title": "Bulk'a geçme zamanı.",
+        "body": "Daha fazla kesmenin verdiğinden çok aldığı kadar zayıfsın. Buradan kas yapmak sıradaki adım."
+      },
+      "low_fat_floor": {
+        "title": "Definasyonu bırakma zamanı.",
+        "body": "Daha fazla kesmenin verdiğinden çok aldığı kadar zayıfsın, korumanın altında yemek şimdi verdiğinden çok alıyor. Kalori artar, sonraki dönem kas yapar."
+      },
+      "low_energy_safety": {
+        "title": "Planın burada duraklıyor.",
+        "body": "Söylediklerin, vücudunun daha fazla yakıta ihtiyacı olduğunun işareti. İhtiyacının altında yemek artık yok: kalori en az koruma düzeyinde kalır ve bunu doktoruna danışmaya değer."
+      },
+      "mini_cut_over": {
+        "title": "Kısa definasyon bitti: kas yapmaya dönüş.",
+        "body": "Az yeme haftaları bitti. Kalori, kas yapmanın başladığı düzeye geri çıkar ve bulk kaldığı yerden devam eder."
+      }
+    },
+    "stop_load_increase": {
+      "label": "Ağırlığı koru",
+      "applied": "Uygulandı. Programın yükleri bugünden itibaren sabit kalıyor.",
+      "plateau": {
+        "title": "Bu hafta aynı ağırlıkta kal.",
+        "body": "Durağanlaşan hareketler, başka bir şey değişmeden önce bir hafta aynı ağırlıkta kalır."
+      }
+    },
+    "deload": {
+      "label": "Hafif hafta",
+      "applied": "Uygulandı. Programın bu hafta hafif.",
+      "load_held_still_stalled": {
+        "title": "Hafif bir hafta.",
+        "body": "Ağırlığı sabit tutmak durumu değiştirmedi, bu yüzden bu haftada daha az set var. Hafif bir hafta çoğu zaman vücuduna toparlanmak için yer açar."
+      },
+      "long_stagnation": {
+        "title": "Hafif bir hafta.",
+        "body": "Aylarca aynı ağırlıklar çoğu zaman yorgunluğun biriktiği anlamına gelir. Bu haftada daha az set var; sonrasında kademeli olarak yeniden yüklen."
+      }
+    },
+    "full_rest_week": {
+      "label": "Bir hafta ara",
+      "applied": "Uygulandı. Programın bu hafta ara veriyor.",
+      "plan_missed": {
+        "title": "Bu hafta spordan ara ver.",
+        "body": "Bir süredir plan yazıldığı gibi gitmedi. Hafif bir hafta bunu nadiren düzeltir; tam bir hafta ara düzeltir. Sonrasında kademeli olarak dön."
+      }
+    },
+    "fix_recovery": {
+      "label": "Daha iyi toparlan",
+      "loads_regressed": {
+        "title": "Önce beslenmene ve uykuna bak.",
+        "body": "Bu hafta geçen hafta kaldırdığını kaldıramadın. Geriye gitmek nadiren antrenmanın kendisiyle ilgilidir: nasıl yediğine ve uyuduğuna, tek tek bak."
+      },
+      "recovery_poor": {
+        "title": "Antrenmanın iyi. Toparlanman değil.",
+        "body": "İş yapılıyor ama kendine gelemiyorsun. Bu hafta önce protein ve uyku; yemek miktarları aynı kalır."
+      }
+    },
+    "continue": {
+      "label": "Devam et",
+      "first_week_on_track": {
+        "title": "2. hafta için aynı plan.",
+        "body": "Antrenmanlarının çoğu yapıldı, ilk hafta bunun için var. Kilo ve beslenme sonra gelir, tartı bir şey söylemeye yetecek sabaha ulaşınca."
+      },
+      "first_week_too_much": {
+        "title": "2. hafta için aynı plan.",
+        "body": "1. haftanın çok geldiğini söyledin, yine de her antrenman yapıldı. Plan olduğu gibi kalır: aynı günler, hiçbir ekleme yok."
+      },
+      "toward_goal": {
+        "title": "Tam olarak böyle devam et.",
+        "body": "Kilon doğru yönde gidiyor ve bir şeyin yardıma ihtiyacı olduğunu gösteren bir işaret yok. İşleyen bir planı değiştirmek yalnızca gürültü ekler."
+      },
+      "energy_floor": {
+        "title": "Kalori yerinde kalır.",
+        "body": "Daha aşağı inmek, antrenmanından sonra çok az yakıt bırakırdı. Buradan sonra ilerleme yavaşlayabilir, bu da güvenli taraf."
+      },
+      "mini_cut_running": {
+        "title": "Sabit kal: kısa definasyon haftalarını doldurur.",
+        "body": "Kalori, tartı bu hafta ne yaparsa yapsın, kısa definasyon bitene kadar belirlendiği yerde kalır. Sonra bulk yeniden başlar."
+      }
+    },
+    "fix_adherence": {
+      "label": "Plana dön",
+      "adherence_low": {
+        "title": "Önce plan gelir, yeni plan değil.",
+        "body": "Son birkaç haftada planın yarısından azı yapıldı. Kaloriyi şimdi değiştirmek, denenmemiş bir planı değiştirmek olur. En çok aksayan alışkanlığı seç ve oradan başla."
+      },
+      "adherence_partial": {
+        "title": "Yakın. Planı değerlendirmeye henüz yetmiyor.",
+        "body": "Planın iyi bir kısmı yapıldı, işleyip işlemediğini söylemeye yetecek kadar değil. Plan adil bir şans bulurken kalori yerinde kalır."
+      }
+    },
+    "fix_training": {
+      "label": "Önce antrenmanı düzelt",
+      "performance_red_flag": {
+        "title": "Önce kaldırışlar. Bu hafta kalori kesintisi yok.",
+        "body": "Kilon hedefine doğru gitmezken antrenmanın geriliyor. Şimdi daha fazla kesmek kasa mal olur. Kalori kalır, odak antrenmanlarını yoluna sokmak."
+      },
+      "training_first": {
+        "title": "Önce antrenman, beslenme kararları sonra.",
+        "body": "Antrenmanın geriye gidiyor. Beslenmeyle ilgili bir şey değişmeden önce nasıl antrenman yaptığına bak: antrenmanlar arası dinlenme, uyku ve fazla yüklenmemek."
+      }
+    },
+    "adjust_calories": {
+      "label": "Yeni kalori hedefi",
+      "applied": "Uygulandı. Kalori hedefin bugünden itibaren değişti.",
+      "not_toward_goal": {
+        "title": "Yeni bir kalori hedefi zamanı.",
+        "body": "Plana uydun ve kilon son birkaç haftada olması gerektiği gibi gitmedi. Şimdi tek net bir adım, sonra işlediğini görmek için birkaç hafta."
+      },
+      "below_target_pace": {
+        "title": "Tempoyu yükseltmek için bir adım.",
+        "body": "Plana uydun ve kilon gidiyor, ama vücut ağırlığına göre sabit tempodan yavaş. Şimdi tek net bir adım, sonra işlediğini görmek için birkaç hafta."
+      },
+      "genetic_limit": {
+        "title": "Tempoyu biraz yumuşat.",
+        "body": "Kilon gidiyor, antrenman ve toparlanma iyi, ama ayna yetişemiyor. Vücudunun şu anda kullanabileceği tempo bu, bu yüzden kalori koruma düzeyine doğru bir adım geri döner."
+      }
+    },
+    "mini_cut": {
+      "label": "Kısa definasyon",
+      "applied": "Uygulandı. Kısa definasyon bugün başlıyor.",
+      "appetite_gone": {
+        "title": "İştahını geri getirecek kısa bir definasyon.",
+        "body": "Uzun bir bulk'tan sonra yemeği zorla yemek, bulk'un artık karşılığını vermediği anlamına gelir. Bulk'tan daha az yemeyle geçen birkaç hafta iştahını sıfırlar ve bulk'un eklediği yağın bir kısmını eritir; sonra bulk yeniden başlar."
+      }
+    },
+    "add_training_day": {
+      "label": "Bir gün daha",
+      "first_week_add_day": {
+        "title": "Bir antrenman günü ekle.",
+        "body": "Her antrenman yapıldı ve daha fazlasını yapabileceğini söyledin. Sana uyan günü seç.",
+        "toward": "Haftada bir gün daha, seni antrenmanın en iyi çalıştığı {idealDays} güne yaklaştırır."
+      }
+    },
+    "move_missed_sessions": {
+      "label": "Uyan günler",
+      "first_week_move_missed": {
+        "title": "Aynı gün sayısı, daha iyi günler.",
+        "body": "1. haftanın planının bir kısmı yapılmadı. Gün sayısı kalır; günlerin kendisi sana uyanlara kayabilir. Kapatılacak bir şey yok.",
+        "missed": "{days} yapılmadı. Uygun bir gün seç."
+      }
+    }
+  },
+  "calibration": {
+    "logs_run_low": {
+      "title": "Kayıtların ve kilon, yan yana.",
+      "body": "Son haftalarda kilon, kayıtlarının topladığından daha fazla yemeye ya da tahminimizden daha fazla yakmana işaret ediyor. İkisini birbirinden ayıramayız, ayırmamıza da gerek yok: kararlar kilonun üzerinden verilir, yani burada düzeltilecek bir şey yok."
+    },
+    "logs_run_high": {
+      "title": "Kayıtların ve kilon, yan yana.",
+      "body": "Son haftalarda kilon, kayıtlarının topladığından daha az yemeye ya da tahminimizden daha az yakmana işaret ediyor. İkisini birbirinden ayıramayız, ayırmamıza da gerek yok: kararlar kilonun üzerinden verilir, yani burada düzeltilecek bir şey yok."
+    }
+  },
+  "consent": {
+    "step": {
+      "fullText": "Tam metni oku"
+    },
+    "health_data": {
+      "version": "5",
+      "title": "Sağlık verin, koçluğun için",
+      "headings": {
+        "collected": "Ne tutuyoruz",
+        "purpose": "Ne için",
+        "withdraw": "Geri alma",
+        "scope": "Neleri kapsar"
+      },
+      "points": {
+        "collected": "Kilon, belin, adımların, uykun ve aktif enerjin; gelişim fotoğraflarından ve seçtiğin görünümden çıkardığın sonuç; öğünlerin ve tariflerin; planın ve haftalık kontrol cevapların; uygulamaya hasta ya da ağrılı olduğunu söylemen; kaçındığın yiyecekler sağlık verisidir.",
+        "purpose": "Sağlık verini haftalık kararlarını vermek ve gelişimini göstermek için kullanırız. Ayrıca koçluğun işe yarayıp yaramadığını yalnızca tüm kullanıcılar üzerinden toplamlar halinde sayarız; kişi ya da değer bazında asla. Verini satmayız, reklam için kullanmayız. İstediğin zaman dışa aktarabilir ya da silebilirsin.",
+        "withdraw": "Bu onayı Ayarlar'dan geri çekebilirsin: sağlık verin geçmiş kararlarınla birlikte kalıcı olarak silinir. Sağlık verisi olmayan antrenman kaydın kalır. Yeniden izin verene kadar kararlar durur.",
+        "scope": "Başka bir uygulamadan geçmiş antrenmanları aktarmak da bu onayı gerektirir, çünkü bunlar kilonu içerebilir. Uygulamaya seyahatte, yoğun bir haftada ya da yeni bir salonda olduğunu söylemek sağlık verisi değildir ve onay gerektirmez: onayı geri çekersen kalır, yalnızca hesabınla birlikte silinir."
+      }
+    },
+    "apple_health": {
+      "version": "1-draft",
+      "title": "Apple Health'i bağla",
+      "body": "Adımları, uyku saatlerini, tartından kiloyu, aktif enerjiyi ve başka uygulamalarda yaptığın antrenmanları okuruz; böylece daha az yazarsın ve definasyon asla fazla ileri gitmez. Kalp verini, döngü verini, ilaçlarını, sağlık kayıtlarını ya da konumunu okumayız. Kaydettiğin antrenmanları Apple Health'e eklemek Ayarlar'da ayrı bir seçimdir. Bunu istediğin zaman geri çekebilirsin."
+    },
+    "third_party_ai": {
+      "version": "1-draft",
+      "title": "Bir öğünü analiz etmeden önce",
+      "body": "Analiz etmeyi seçtiğin öğün fotoğrafları ve eklediğin metin, porsiyonları tahmin etmek için {provider} sağlayıcısına gönderilir. Başka hiçbir şey gönderilmez: gelişim fotoğrafların, kilon, Health verin, adın ya da e-postan asla. Yapay zeka anlatır, karar vermez. Haftalık kararlar, her \"Bu karar neden\" ekranında okuyabileceğin sabit kurallardan gelir. Bunu Ayarlar'dan istediğin zaman geri çekebilirsin."
+    }
+  },
+  "exercises": {
+    "bench_press": {
+      "name": "Bench press",
+      "aliases": "Barbell bench press, Flat bench",
+      "cue1": "Kürek kemiklerini geri ve aşağı çek.",
+      "cue2": "Göğsün ortasına in, dirsekler gövdeye yakın.",
+      "cue3": "Ayaklar yerde, yukarı it."
+    },
+    "dumbbell_bench_press": {
+      "name": "Dumbbell bench press",
+      "aliases": "DB bench press, Flat dumbbell press",
+      "cue1": "Kürek kemikleri geride, ayaklar yerde.",
+      "cue2": "Dirsekler bench seviyesini geçene kadar in.",
+      "cue3": "Yukarı ve hafifçe içe doğru it."
+    },
+    "incline_dumbbell_press": {
+      "name": "Incline dumbbell press",
+      "aliases": "Incline DB press",
+      "cue1": "Bench'i hafif eğime ayarla.",
+      "cue2": "Üst göğse in, dirsekler açılı.",
+      "cue3": "Omuzlarını kaldırmadan yukarı it."
+    },
+    "machine_chest_press": {
+      "name": "Machine chest press",
+      "aliases": "Chest press, Seated chest press",
+      "cue1": "Tutaklar göğsün ortasına gelecek şekilde otur.",
+      "cue2": "Sırtın pede tam yaslı olsun.",
+      "cue3": "Öne it, dirsekleri sert kilitleme."
+    },
+    "cable_fly": {
+      "name": "Cable fly",
+      "aliases": "Cable crossover, Cable chest fly",
+      "cue1": "Dirsekler hafif bükülü.",
+      "cue2": "Geniş bir yayla öne doğru kucakla.",
+      "cue3": "Geri dönerken gerilmeyi kontrol et."
+    },
+    "pec_deck": {
+      "name": "Pec deck",
+      "aliases": "Machine fly, Butterfly",
+      "cue1": "Kollar göğüs hizasında olacak şekilde otur.",
+      "cue2": "Göğüs yukarıda, omuzlar aşağıda.",
+      "cue3": "Önde sık, yavaşça geri dön."
+    },
+    "dip": {
+      "name": "Dip",
+      "aliases": "Chest dip, Parallel bar dip",
+      "cue1": "Hafifçe öne eğil, göğüs yukarıda.",
+      "cue2": "Omuzlar dirsek hizasına gelene kadar in.",
+      "cue3": "Omuzlarını kaldırmadan yukarı it."
+    },
+    "push_up": {
+      "name": "Push-up",
+      "aliases": "Press-up",
+      "cue1": "Eller omuzların altında, vücut tek çizgide.",
+      "cue2": "Göğsü yerin hemen üstüne indir.",
+      "cue3": "Dirsekler gövdenden yaklaşık 45 derece açık."
+    },
+    "overhead_press": {
+      "name": "Overhead press",
+      "aliases": "Military press, Standing barbell press, OHP",
+      "cue1": "Kalçayı sık, kaburgalar aşağıda.",
+      "cue2": "Dümdüz yukarı it, kafa çubuğun önünden geçsin.",
+      "cue3": "Sert kilitlemeden önce dur."
+    },
+    "dumbbell_shoulder_press": {
+      "name": "Dumbbell shoulder press",
+      "aliases": "Seated DB press",
+      "cue1": "Sırtın pede yaslı, kaburgalar aşağıda.",
+      "cue2": "Dirsekler omuzların hemen altında başla.",
+      "cue3": "Yukarı it, kilitlemeden önce dur."
+    },
+    "lateral_raise": {
+      "name": "Lateral raise",
+      "aliases": "Dumbbell lateral raise, Side raise",
+      "cue1": "Dirsekler hafif bükülü.",
+      "cue2": "Omuz hizasına kadar yana kaldır.",
+      "cue3": "Yavaşça indir, sallanma."
+    },
+    "cable_lateral_raise": {
+      "name": "Cable lateral raise",
+      "aliases": "Single-arm cable raise",
+      "cue1": "Dik dur, dirsekler hafif bükülü.",
+      "cue2": "Omuz hizasına kadar yana kaldır.",
+      "cue3": "Yavaşça indir, gerilimi koru."
+    },
+    "rear_delt_fly": {
+      "name": "Rear delt fly",
+      "aliases": "Reverse fly, Bent-over reverse fly",
+      "cue1": "Öne eğil, sırt düz.",
+      "cue2": "Kolları geniş şekilde yana aç, dirsekler yumuşak.",
+      "cue3": "Kürek kemiklerini sık, yavaşça indir."
+    },
+    "face_pull": {
+      "name": "Face pull",
+      "aliases": "Cable face pull, Rope face pull",
+      "cue1": "Halatı yüz hizasına ayarla.",
+      "cue2": "Gözlerine doğru çek, dirsekler yüksekte.",
+      "cue3": "Sık, sonra yavaşça geri dön."
+    },
+    "lat_pulldown": {
+      "name": "Lat pulldown",
+      "aliases": "Pulldown, Cable pulldown",
+      "cue1": "Göğüs yukarıda, hafifçe geriye yaslan.",
+      "cue2": "Barı üst göğse çek.",
+      "cue3": "Barın kontrolle yükselmesine izin ver."
+    },
+    "pull_up": {
+      "name": "Pull-up",
+      "aliases": "Chin-up bar pull-up, Weighted pull-up",
+      "cue1": "Tam sarkıkla başla.",
+      "cue2": "Çenen barı geçene kadar çek.",
+      "cue3": "Yavaşça tamamen aşağı in."
+    },
+    "seated_row": {
+      "name": "Seated row",
+      "aliases": "Seated cable row, Cable row",
+      "cue1": "Dik otur, göğüs yukarıda.",
+      "cue2": "Dirsekleri kalçalarına doğru geri çek.",
+      "cue3": "Yavaşça dön, sallanma."
+    },
+    "barbell_row": {
+      "name": "Barbell row",
+      "aliases": "Bent-over row, BB row",
+      "cue1": "Kalçadan öne eğil, sırt düz.",
+      "cue2": "Barı alt kaburgalarına çek.",
+      "cue3": "Kontrolle indir, gövde sabit."
+    },
+    "t_bar_row": {
+      "name": "T-bar row",
+      "aliases": "Landmine row",
+      "cue1": "Kalçadan öne eğil, sırt düz.",
+      "cue2": "Tutacağı göğsüne doğru çek.",
+      "cue3": "Sırtını sık, kontrolle indir."
+    },
+    "chest_supported_row": {
+      "name": "Chest-supported row",
+      "aliases": "Machine row, Chest-supported machine row",
+      "cue1": "Göğsün pede sıkıca dayalı olsun.",
+      "cue2": "Dirsekleri gövdenin ötesine geri çek.",
+      "cue3": "Tam gerilmeye kadar yavaşça indir."
+    },
+    "one_arm_dumbbell_row": {
+      "name": "One-arm dumbbell row",
+      "aliases": "Single-arm DB row, Dumbbell row",
+      "cue1": "Elin bench'te, sırt düz.",
+      "cue2": "Dumbbell'ı kalçana doğru çek.",
+      "cue3": "Yavaşça indir, kalçalar düz kalsın."
+    },
+    "barbell_curl": {
+      "name": "Barbell curl",
+      "aliases": "BB curl, Straight bar curl",
+      "cue1": "Dirsekler gövdene sabit.",
+      "cue2": "Sallanmadan yukarı kaldır.",
+      "cue3": "Tam gerilmeye kadar yavaşça indir."
+    },
+    "dumbbell_curl": {
+      "name": "Dumbbell curl",
+      "aliases": "DB curl, Alternating curl",
+      "cue1": "Dirsekler gövdene sabit.",
+      "cue2": "Yukarı kaldır, avuçları tavana çevir.",
+      "cue3": "Yavaşça indir, sallanma."
+    },
+    "hammer_curl": {
+      "name": "Hammer curl",
+      "aliases": "Neutral-grip curl",
+      "cue1": "Avuçlar baştan sona birbirine baksın.",
+      "cue2": "Dirsekler gövdene sabit.",
+      "cue3": "Yavaşça indir, sallanma."
+    },
+    "reverse_curl": {
+      "name": "Reverse curl",
+      "aliases": "Reverse barbell curl, Overhand curl",
+      "cue1": "Üstten tutuş, bilekler düz.",
+      "cue2": "Dirsekler gövdene sabit.",
+      "cue3": "Daha hafif ağırlık kullan, yavaş hareket et."
+    },
+    "triceps_pushdown": {
+      "name": "Triceps pushdown",
+      "aliases": "Cable pushdown, Rope pushdown",
+      "cue1": "Dirsekler gövdene sabit.",
+      "cue2": "Kollar düzleşene kadar aşağı it.",
+      "cue3": "Tutacağın yavaşça yükselmesine izin ver."
+    },
+    "overhead_triceps_extension": {
+      "name": "Overhead triceps extension",
+      "aliases": "Cable overhead extension, French press",
+      "cue1": "Dirsekler önde, başına yakın.",
+      "cue2": "Başının arkasına kontrolle indir.",
+      "cue3": "Belini kamburlaştırmadan tamamen aç."
+    },
+    "squat": {
+      "name": "Squat",
+      "aliases": "Back squat, Barbell squat",
+      "cue1": "Ayaklar omuz genişliğinde, parmaklar hafif dışa.",
+      "cue2": "Karnı sık, göğüs yukarıda.",
+      "cue3": "Dizler ayak uçlarının üzerinde ilerlesin."
+    },
+    "hack_squat": {
+      "name": "Hack squat",
+      "aliases": "Machine hack squat",
+      "cue1": "Sırtın pede yaslı.",
+      "cue2": "Ayaklar omuz genişliğinde, platformun ortasında.",
+      "cue3": "Dizler ayak uçlarının üzerinde ilerlesin."
+    },
+    "leg_press": {
+      "name": "Leg press",
+      "aliases": "45-degree leg press, Sled press",
+      "cue1": "Ayaklar omuz genişliğinde, platformun ortasında.",
+      "cue2": "Dizler ayak uçlarının üzerinde ilerlesin.",
+      "cue3": "Kilitlemeden önce dur."
+    },
+    "bulgarian_split_squat": {
+      "name": "Bulgarian split squat",
+      "aliases": "Rear-foot elevated split squat, BSS",
+      "cue1": "Arka ayak arkandaki bench'te.",
+      "cue2": "Dümdüz aşağı in, gövde dik.",
+      "cue3": "Ön diz ayak uçlarının üzerinde ilerlesin."
+    },
+    "romanian_deadlift": {
+      "name": "Romanian deadlift",
+      "aliases": "RDL, Stiff-leg deadlift",
+      "cue1": "Dizler yumuşak, kalça geriye gitsin.",
+      "cue2": "Bar bacaklarına yakın kaysın.",
+      "cue3": "Arka bacakta gerilme hissedince dur."
+    },
+    "lying_leg_curl": {
+      "name": "Lying leg curl",
+      "aliases": "Leg curl, Prone leg curl",
+      "cue1": "Kalçalar pede bastırılı kalsın.",
+      "cue2": "Topukları kalçana doğru kıvır.",
+      "cue3": "Tam gerilmeye kadar yavaşça indir."
+    },
+    "leg_extension": {
+      "name": "Leg extension",
+      "aliases": "Quad extension",
+      "cue1": "Ped bileklerinin hemen üstünde dursun.",
+      "cue2": "Bacaklar düzleşene kadar aç.",
+      "cue3": "Yavaşça indir, sallanma."
+    },
+    "hip_thrust": {
+      "name": "Hip thrust",
+      "aliases": "Barbell hip thrust",
+      "cue1": "Üst sırt bench'te.",
+      "cue2": "Topuklarından it.",
+      "cue3": "Üstte kalçayı sık, kaburgalar aşağıda."
+    },
+    "standing_calf_raise": {
+      "name": "Standing calf raise",
+      "aliases": "Calf raise, Machine calf raise",
+      "cue1": "Olabildiğince yüksel.",
+      "cue2": "Üstte kısa bir an bekle.",
+      "cue3": "Tam gerilmeye kadar indir."
+    },
+    "seated_calf_raise": {
+      "name": "Seated calf raise",
+      "aliases": "Seated calf machine",
+      "cue1": "Ped dizlerinin hemen üstünde dursun.",
+      "cue2": "Olabildiğince yüksel.",
+      "cue3": "Tam gerilmeye kadar indir."
+    },
+    "close_grip_lat_pulldown": {
+      "name": "Close-grip lat pulldown",
+      "aliases": "Narrow-grip pulldown, V-bar pulldown",
+      "cue1": "Göğüs yukarıda, hafifçe geriye yaslan.",
+      "cue2": "Tutacağı üst göğse çek.",
+      "cue3": "Tutacağın kontrolle yükselmesine izin ver."
+    },
+    "reverse_pec_deck": {
+      "name": "Reverse pec deck",
+      "aliases": "Rear delt machine, Reverse machine fly",
+      "cue1": "Göğsün pede dayalı olsun.",
+      "cue2": "Kolları geriye aç, dirsekler yumuşak.",
+      "cue3": "Kürek kemiklerini sık, yavaşça dön."
+    },
+    "seated_leg_curl": {
+      "name": "Seated leg curl",
+      "aliases": "Seated hamstring curl",
+      "cue1": "Ped topuklarının hemen üstünde dursun.",
+      "cue2": "Topukları koltuğun altına kıvır.",
+      "cue3": "Yavaşça dön, kalçalar aşağıda kalsın."
+    }
+  },
+  "exerciseSetup": {
+    "seat_height": {
+      "label": "Koltuk yüksekliği"
+    },
+    "back_pad": {
+      "label": "Sırt pedi"
+    },
+    "chest_pad": {
+      "label": "Göğüs pedi"
+    },
+    "thigh_pad": {
+      "label": "Uyluk pedi"
+    },
+    "ankle_pad": {
+      "label": "Bilek pedi"
+    },
+    "bench_angle": {
+      "label": "Bench açısı"
+    },
+    "grip": {
+      "label": "Tutuş"
+    },
+    "grip_width": {
+      "label": "Tutuş genişliği"
+    },
+    "stance_width": {
+      "label": "Duruş genişliği"
+    },
+    "foot_position": {
+      "label": "Ayak konumu"
+    },
+    "cable_height": {
+      "label": "Kablo yüksekliği"
+    },
+    "handle": {
+      "label": "Tutacak"
+    }
+  },
+  "programDays": {
+    "full_body": {
+      "name": "Tüm vücut",
+      "split": "Tüm vücut"
+    },
+    "full_body_a": {
+      "name": "Tüm vücut A",
+      "split": "Tüm vücut"
+    },
+    "full_body_b": {
+      "name": "Tüm vücut B",
+      "split": "Tüm vücut"
+    },
+    "upper": {
+      "name": "Üst vücut",
+      "split": "Üst / Alt vücut"
+    },
+    "lower": {
+      "name": "Alt vücut",
+      "split": "Üst / Alt vücut"
+    },
+    "upper_a": {
+      "name": "Üst vücut A",
+      "split": "Üst / Alt vücut"
+    },
+    "upper_b": {
+      "name": "Üst vücut B",
+      "split": "Üst / Alt vücut"
+    },
+    "lower_a": {
+      "name": "Alt vücut A",
+      "split": "Üst / Alt vücut"
+    },
+    "lower_b": {
+      "name": "Alt vücut B",
+      "split": "Üst / Alt vücut"
+    },
+    "push": {
+      "name": "Push",
+      "split": "Push / Pull / Bacak"
+    },
+    "pull": {
+      "name": "Pull",
+      "split": "Push / Pull / Bacak"
+    },
+    "legs": {
+      "name": "Bacak",
+      "split": "Push / Pull / Bacak"
+    },
+    "push_a": {
+      "name": "Push A",
+      "split": "Push / Pull / Bacak"
+    },
+    "pull_a": {
+      "name": "Pull A",
+      "split": "Push / Pull / Bacak"
+    },
+    "legs_a": {
+      "name": "Bacak A",
+      "split": "Push / Pull / Bacak"
+    },
+    "push_b": {
+      "name": "Push B",
+      "split": "Push / Pull / Bacak"
+    },
+    "pull_b": {
+      "name": "Pull B",
+      "split": "Push / Pull / Bacak"
+    },
+    "legs_b": {
+      "name": "Bacak B",
+      "split": "Push / Pull / Bacak"
+    },
+    "arms_shoulders": {
+      "name": "Kol ve omuz",
+      "split": "Push / Pull / Bacak"
+    }
+  },
+  "foodEstimate": {
+    "question": {
+      "grams": "Kaç gramdı? Tartmak bunu en çok daraltır."
+    }
+  },
+  "checkIn": {
+    "screen": {
+      "title": "Bu haftanın kontrolü",
+      "none": "Bu hafta sorulacak bir şey yok: kayıtların yeterince şey söylüyor.",
+      "answered": "Bu haftanın kararı hazır. Bugün sayfasında.",
+      "send": "Bu haftanın kararını al",
+      "sendFailed": "Cevapların gönderilemedi. Bağlantını kontrol edip tekrar dene.",
+      "serverError": "Bizim tarafta bir sorun oldu. Biraz sonra tekrar dene.",
+      "moved": "Kontrol haftan değişti. İşte yeniden.",
+      "failed": "Bu haftanın kontrolü yüklenemedi. Bağlantını kontrol et.",
+      "retry": "Tekrar dene",
+      "scaleSpoken": "10 üzerinden {n}",
+      "centimetres": "Santimetre",
+      "inches": "İnç"
+    },
+    "question": {
+      "training": "Bu hafta antrenman nasıl geçti?",
+      "recovery": "Antrenmanlar arasında nasıl toparlanıyorsun?",
+      "cycle_stopped": "Son aylarda adetin durdu mu?",
+      "appetite": "İştahın son zamanlarda nasıl?",
+      "state_still": "Bize söylediğin durum hâlâ sürüyor mu?",
+      "week1_feel": "1. hafta nasıl geçti?"
+    },
+    "reason": {
+      "training": "Neyin değişeceğini belirler: beslenme mi, antrenman mı.",
+      "recovery": "Sıradaki değişikliğin beslenme mi, dinlenme mi olacağını belirler.",
+      "cycle_stopped": "Adetin kesilmesi planının fazla düşük olduğunun en net işaretidir. Cevabın kaydedilmez; planındaki değişiklik kaydedilir.",
+      "appetite": "Uzun bir bulk'tan sonra yemeği zorla yemek, bulk'ın artık işe yaramadığının işaretidir.",
+      "state_still": "Haftaların bir süredir durdurulmuş durumda. Bittiyse haftalık kararların yeniden başlar; bitmediyse durmaya devam eder. İkisi de olur.",
+      "week1_feel": "Bütün antrenmanlar yapıldı. Cevabın gelecek haftayı şekillendirir."
+    },
+    "choice": {
+      "training": {
+        "improving": "Güçleniyorum",
+        "stable": "Aşağı yukarı aynı",
+        "declining": "Zayıflıyorum",
+        "not_trained": "Antrenman yapmadım"
+      },
+      "recovery": {
+        "good": "İyi toparlanıyorum",
+        "poor": "Hâlâ yorgunum, ağrılarım var ya da kötü uyuyorum"
+      },
+      "cycle_stopped": {
+        "yes": "Evet",
+        "no": "Hayır"
+      },
+      "appetite": {
+        "normal": "Normal, planladığımı yiyorum",
+        "gone": "Yok, yemeği zorla yiyorum"
+      },
+      "state_still": {
+        "yes": "Evet, hâlâ sürüyor",
+        "no": "Hayır, normale döndüm"
+      },
+      "week1_feel": {
+        "too_much": "Çok fazlaydı",
+        "about_right": "Tam yerinde",
+        "could_do_more": "Daha fazlasını yapabilirim"
+      }
+    }
+  },
+  "format": {
+    "range": "{low}-{high}",
+    "rangeSpoken": "{low} ile {high} arasında"
+  },
+  "coach": {
+    "subscription": "Koça soru sormak abonelikle gelir. Kaydın ve ilk tam kararın abonelik olmadan çalışır.",
+    "mealSubscription": "Öğünü yazdığın kelimelerden okumak abonelikle gelir. Yine de adıyla kaydedebilirsin.",
+    "entry": "Koça sor",
+    "answer": {
+      "call": "Bu haftanın kararı olduğu gibi duruyor. Onu değiştiren yeni veridir, farklı bir cevap değil.",
+      "no_call": "Henüz karar yok. İlki ilk haftalık kontrolünle gelir.",
+      "daily_limit": "Bugünkü koç cevapları bitti. İşte bu haftanın kararı, olduğu gibi; yarın koç mesajlarını yeniden yanıtlar.",
+      "stands": "Karar, {date} tarihindeki bir sonraki bakışına kadar duruyor: onu yeni veri değiştirir, farklı bir cevap değil.",
+      "standsNoDate": "Karar duruyor: onu yeni veri değiştirir, farklı bir cevap değil."
+    },
+    "topic": {
+      "less": "Daha hafif olmasını istemen makul.",
+      "more": "Daha hızlı sonuç istemek anlaşılır.",
+      "later": "Zamanlama önemli, hayat da her zaman plana uymaz.",
+      "hunger": "Açlık gerçektir ve vücudun alıştıkça genelde azalır.",
+      "doubts_data": "Bir ölçüm yanlış görünüyorsa olduğu gibi kaydet: trend tuhaf günleri yumuşatır.",
+      "feels_fine": "İyi hissetmek iyi bir işaret.",
+      "worry": "Bu endişe anlaşılır.",
+      "frustrated": "Haklısın. Karar suçlamayla ilgili değil; verinin gösterdiğini okur.",
+      "health": "Doktorunun söylediği önce gelir. Koç antrenman ve beslenmeden konuşur, tıbbi bakımdan değil; o yüzden planını doktorunla paylaş.",
+      "why": "İşte sebebi.",
+      "off_topic": "Yalnızca kararın ve planın hakkında konuşabilirim."
+    },
+    "call": {
+      "nextReview": "{date} tarihinde, haftanın tartıları ve kayıtlarıyla yeniden bakılır."
+    },
+    "input": "Koça mesaj yaz",
+    "send": "Gönder",
+    "thinking": "Mesajın okunuyor…",
+    "standard": "Planın kendi sözleriyle",
+    "consent": "Koç mesajlarını yalnızca yapay zeka onayıyla okur. Onayı Ayarlar'dan verebilirsin.",
+    "failed": "Mesajın gitmedi.",
+    "retry": "Tekrar dene",
+    "chip": {
+      "weighIn": "Tartıdaki tek bir sabah çoğunlukla su ve tuzdur. Her sabah tartılmak altındaki trendi gösterir, haftalık karar da trendi okur.",
+      "start": "Plan her hafta tartılarını, beslenmeni ve antrenmanını okur ve tek bir karar verir: devam et ya da tek bir şeyi değiştir. Karar hakkında istediğin zaman sorabilirsin; onu değiştiren yeni veridir.",
+      "swap": "Bugün farklı bir hareket antrenmanın içinde yapılır: antrenmanı aç ve yapmayı tercih ettiğin hareketi ekle.",
+      "openWorkout": "Bugünkü antrenmanı aç",
+      "unread": "Bu haftanın kararı şu an okunamadı. Biraz sonra tekrar dene."
+    },
+    "note": {
+      "title": "Bu haftanın notu",
+      "focus": {
+        "no_decision_yet": "Bu haftanın tek odağı: kayda devam et. Veri yeterli olunca karar gelir.",
+        "continue": "Bu haftanın tek odağı: aynı plan, aynı şekilde.",
+        "adjust_calories": {
+          "less": "Bu haftanın tek odağı: günlük hedefin {kcal} kcal düşüyor.",
+          "more": "Bu haftanın tek odağı: günlük hedefin {kcal} kcal artıyor."
+        },
+        "increase_calories": "Bu haftanın tek odağı: günlük hedefin {kcal} kcal artıyor.",
+        "undone": "Bu haftaki değişiklik geri alındı: plan, bir sonraki kontrole kadar eskisi gibi kalıyor.",
+        "change_movement": "Bu haftanın tek odağı: yeni günlük adım hedefin.",
+        "fix_training": "Bu haftanın tek odağı: antrenmanların, planlandığı gibi.",
+        "fix_recovery": "Bu haftanın tek odağı: uyku ve toparlanma.",
+        "fix_adherence": "Bu haftanın tek odağı: plan olduğu gibi, gün gün.",
+        "hard_stop": "Bu haftanın tek odağı: ihtiyacın kadar yemek.",
+        "stop_load_increase": "Bu haftanın tek odağı: takılan hareketlerde aynı ağırlıklar.",
+        "deload": "Bu haftanın tek odağı: her zamanki setler, %{percent} düzeyinde.",
+        "full_rest_week": "Bu haftanın tek odağı: dinlenme. Bu hafta salon yok.",
+        "mini_cut": "Bu haftanın tek odağı: kısa definasyon, {min} ile {max} hafta.",
+        "change_phase": {
+          "cut": "Bu haftanın tek odağı: definasyona geçiş.",
+          "bulk": "Bu haftanın tek odağı: bulk'a geçiş."
+        },
+        "add_training_day": "Bu haftanın tek odağı: bir antrenman günü daha.",
+        "move_missed_sessions": "Bu haftanın tek odağı: antrenmanların, sana uyan günlerde."
+      }
+    },
+    "meal": {
+      "chip": "Öğünü yazıyla kaydet",
+      "prompt": "Ne yediğini kendi sözlerinle anlat. Yiyecek veritabanıyla eşleştireceğim.",
+      "input": "Ne yedin?",
+      "item": "{food} · {quantity} {unit}",
+      "pick": "Hangisi?",
+      "noMatch": "Yiyecek veritabanında “{food}” ile eşleşen bir şey yok. Öğün ekranından adıyla ekle.",
+      "log": "Bunları kaydet",
+      "unread": "Bunu öğün olarak okuyamadım. Onun yerine adıyla kaydedebilirsin.",
+      "byName": "Adıyla kaydet"
+    }
+  },
+  "walks": {
+    "km": "{value} km",
+    "mi": "{value} mi",
+    "line": {
+      "route": "{steps} adım kaldı: {name} gidiş dönüş",
+      "minutes": "{steps} adım kaldı, yaklaşık {minutes} dk"
+    },
+    "label": {
+      "route": "Bugün {steps} adım kaldı. {name} gidiş dönüş yaklaşık {minutes} dakikalık yürüyüş.",
+      "minutes": "Bugün {steps} adım kaldı. Bu yaklaşık {minutes} dakikalık yürüyüş."
+    }
+  },
+  "units": {
+    "kg": "{value} kg",
+    "lb": "{value} lb",
+    "cm": "{value} cm",
+    "in": "{value} in",
+    "feetInches": "{feet} ft {inches} in",
+    "cmUnit": "cm",
+    "ftUnit": "ft",
+    "inUnit": "in",
+    "kgUnit": "kg",
+    "lbUnit": "lb",
+    "kmUnit": "km",
+    "miUnit": "mi",
+    "minUnit": "min",
+    "kgSpoken": "kilogram",
+    "lbSpoken": "pound"
+  },
+  "onboarding": {
+    "progress": "Adım {step} / {total}",
+    "back": "Geri",
+    "backMark": "‹",
+    "continue": "Devam",
+    "recommended": "Önerilen",
+    "saveFailed": "Cevapların kaydedilemedi. Bağlantını kontrol edip tekrar dene.",
+    "checking": {
+      "title": "Bir saniye",
+      "body": "Hesabın kontrol ediliyor.",
+      "offline": "Bağlantı yok. Hesabın için bu seferlik gerekli.",
+      "retry": "Tekrar dene",
+      "serverError": "Sunucumuz şu an yanıt veremedi. Birazdan tekrar dene."
+    },
+    "goal": {
+      "title": "Hedefin ne?",
+      "decide_for_me": {
+        "title": "Benim yerime karar ver",
+        "body": "Verilerine bakıp biz seçeriz."
+      },
+      "lose_fat": {
+        "title": "Yağ yak"
+      },
+      "build_muscle": {
+        "title": "Kas kazan"
+      },
+      "note": "Sonra değiştirebilirsin."
+    },
+    "experience": {
+      "title": "Ne zamandır ağırlık kaldırıyorsun?",
+      "why": "Başlangıç ağırlıklarını ve ne kadar anlatacağımızı belirler.",
+      "NEW": "Yeni başlıyorum",
+      "UNDER_1Y": "1 yıldan az",
+      "Y1_3": "1-3 yıl",
+      "Y3_PLUS": "3+ yıl"
+    },
+    "program": {
+      "title": "Programını biz kuralım mı?",
+      "build_one_for_me": {
+        "title": "Benim için kur",
+        "body": "Günlerine uyar. Her hafta ayarlanır."
+      },
+      "bring_my_own": {
+        "title": "Kendiminki var",
+        "body": "Biz inceleriz."
+      }
+    },
+    "own": {
+      "title": "Programını getir",
+      "why": "Işe yarayanlarla karşılaştırırız. Karar senin.",
+      "import": {
+        "title": "Strong veya Hevy'den içe aktar",
+        "tag": "En hızlı",
+        "body": "Bu telefonda okunur"
+      },
+      "type": {
+        "title": "Elle gir",
+        "body": "Günler, hareketler, set ve tekrar"
+      }
+    },
+    "typeProgram": {
+      "title": "Programını yaz",
+      "why": "Antrenman yaptığın her gün ve hareketleri.",
+      "confirm": "Bu programı kullan"
+    },
+    "programImport": {
+      "title": "Dosyadan programın",
+      "intro": "Antrenmanlarını Strong veya Hevy'den dışa aktar, sonra dosyayı seç. Devam ettiğin her rutin bir gün olur.",
+      "privacy": "Dosya bu telefonda kalır. Yalnız onayladığın program gönderilir.",
+      "choose": "Dosya seç",
+      "chooseAnother": "Başka dosya seç",
+      "noRoutine": "Bu dosyadaki hiçbir rutin, program çıkaracak kadar tekrar etmiyor.",
+      "allLeftOut": "Bütün hareketler dışarıda kaldı. Baştan başlamak için dosyayı tekrar seç.",
+      "ownWaiting": "Kendi hareketin. Programla birlikte kaydedilir.",
+      "change": "Değiştir",
+      "changeLabel": "{name} nedir, değiştir",
+      "summary": "Kaynak: {app} · günler: {days} · hareketler: {moves}",
+      "anyDay": "Belirli gün yok",
+      "move": "{sets} × {reps}",
+      "unmatched": "Hareketlerimiz arasında yok. Birini seç, kendi hareketin yap ya da dışarıda bırak.",
+      "leaveOut": "Dışarıda bırak",
+      "leaveOutLabel": "{name} programın dışında kalsın",
+      "waiting": "Yukarıdaki her ad için bir hareket seç ya da dışarıda bırak.",
+      "confirm": "Bu programı kullan",
+      "saving": "Programın kaydediliyor…",
+      "failed": {
+        "NoConnection": "Bağlantı yok. Çevrimiçi olunca tekrar dene.",
+        "other": "Program kaydedilemedi. Tekrar dene."
+      }
+    },
+    "review": {
+      "title": "Programın, incelendi",
+      "loading": "Programın inceleniyor…",
+      "loadFailed": "İnceleme yüklenemedi. Tekrar dene.",
+      "size": "Günler: {days} · hareketler: {moves}",
+      "headline": {
+        "none": "Olduğu gibi iyi.",
+        "one": "İyi bir temel. 1 ince ayar.",
+        "other": "İyi bir temel. {count} ince ayar."
+      },
+      "apply": "Uygula",
+      "rule": "Koçluk kuralı",
+      "notReviewed": "Kendi hareketlerin incelenmez: {count}",
+      "note": "Karar senin. Pazartesi kararları iki durumda da işler.",
+      "useOne": "Benimkini 1 değişiklikle kullan",
+      "use": "Benimkini {count} değişiklikle kullan",
+      "keep": "Benimkini olduğu gibi tut",
+      "applying": "Değişiklikler yapılıyor…",
+      "changed": "Programın o zamandan beri değişti. İşte tekrar incelenmiş hali.",
+      "failed": {
+        "NoConnection": "Bağlantı yok. Çevrimiçi olunca tekrar dene.",
+        "other": "Değişiklikler yapılamadı. Tekrar dene."
+      }
+    },
+    "days": {
+      "title": "Haftada kaç gün?",
+      "why": "Sürdürebileceğin sayıyı seç.",
+      "unit": "gün",
+      "label": "{count} gün",
+      "note": "Günleri biz yerleştiririz. İstediğin zaman kaydır."
+    },
+    "schedule": {
+      "dayName": {
+        "MONDAY": "Pazartesi",
+        "TUESDAY": "Salı",
+        "WEDNESDAY": "Çarşamba",
+        "THURSDAY": "Perşembe",
+        "FRIDAY": "Cuma",
+        "SATURDAY": "Cumartesi",
+        "SUNDAY": "Pazar"
+      },
+      "dayShort": {
+        "MONDAY": "Pzt",
+        "TUESDAY": "Sal",
+        "WEDNESDAY": "Çar",
+        "THURSDAY": "Per",
+        "FRIDAY": "Cum",
+        "SATURDAY": "Cmt",
+        "SUNDAY": "Paz"
+      }
+    },
+    "consent": {
+      "title": "Sağlık verin",
+      "why": "Kilo, öğünler ve haftalık kontroller sağlık verisi sayılır.",
+      "kept": "Yalnız izninle saklanır",
+      "sold": "Asla satılmaz",
+      "deleted": "İstediğinde silinir",
+      "fullText": "Tam metni oku",
+      "continueWithout": "Onsuz devam et"
+    },
+    "healthData": {
+      "allow": "Devam",
+      "notNow": "Şimdi değil",
+      "allowed": "İzin verildi. Bunu Ayarlar'dan istediğin zaman geri çekebilirsin.",
+      "declinedNote": "Bu izin olmadan haftalık karar yok. Sonra Ayarlar'dan izin verebilirsin.",
+      "failed": "Tercihin kaydedilemedi. Bağlantını kontrol edip tekrar dene.",
+      "withdraw": "Geri çek"
+    },
+    "about": {
+      "title": "Senin hakkında",
+      "why": "Başlangıç sayıların bunlardan çıkar.",
+      "metric": "Metrik",
+      "imperial": "İngiliz birimleri",
+      "height": "Boy",
+      "weight": "Kilo",
+      "born": "Doğum",
+      "year": "yıl",
+      "sex": "Cinsiyet, enerji hesabı için",
+      "male": "Erkek",
+      "female": "Kadın",
+      "pickSex": "Devam etmek için cinsiyet seç"
+    },
+    "wheel": {
+      "unset": "{value}, ayarlanmadı",
+      "unsetHint": "Ayarlamak için yukarı ya da aşağı kaydır."
+    },
+    "activity": {
+      "title": "Günün ne kadar hareketli?",
+      "why": "Antrenman dahil, bütün günün.",
+      "INACTIVE": "Çoğunlukla oturuyorum",
+      "LOW_ACTIVE": "Biraz yürüyorum",
+      "ACTIVE": "Çok ayaktayım",
+      "VERY_ACTIVE": "Fiziksel iş"
+    },
+    "foods": {
+      "title": "Yemediğin bir şey var mı?",
+      "label": "Yemediğin ya da yiyemediğin yiyecekler",
+      "hint": "İsteğe bağlı. Virgülle ayır.",
+      "note": "Sağlık verinle birlikte saklanır, çünkü yiyemediğin bir yiyecek sağlığın hakkında bir şey söyleyebilir."
+    },
+    "photos": {
+      "title": "Fotoğrafların telefonunda kalır",
+      "local": {
+        "title": "Bu cihazda işlenir.",
+        "body": "Gelişim fotoğrafları asla yüklenmez. Bize de, kimseye de."
+      },
+      "cadence": {
+        "title": "{weeks} haftada bir fotoğraf.",
+        "body": "Haftalık değişim görülemeyecek kadar küçük. {weeks} hafta, bir şeyin görünmeye başladığı en kısa aralık."
+      },
+      "purpose": {
+        "title": "Tek iş için kullanılır.",
+        "body": "Seni yalnız kendinle karşılaştırır. Buradan silersen tamamen gider."
+      },
+      "note": "İlk fotoğrafın vakti gelince, {weeks}. haftada kamera izni isteyeceğiz."
+    },
+    "expectations": {
+      "title": "Neler olacak",
+      "weigh": {
+        "title": "Çoğu sabah tartıl.",
+        "body": "İlk {days} gün trendini görürsün ama ona anlam yüklemeyiz: tek bir sabah çoğunlukla sudur."
+      },
+      "monday": {
+        "title": "Kararın her {day} gelir.",
+        "body": "Her hafta bir karar ve gerekçeleriyle kapanır. Başlarda karar, daha fazla veri beklemek olabilir."
+      },
+      "change": {
+        "title": "Görünür değişim 4-8 hafta sürer.",
+        "body": "O zamana kadar düzenin ve kaldırdıkların işe yaradığını gösterir."
+      },
+      "action": "Olur"
+    },
+    "reminders": {
+      "title": "Hatırlatıcılar, istersen",
+      "on": "Hatırlatıcılar açık. Ayarlar'dan istediğin zaman değiştirebilirsin.",
+      "refused": "Next Call için iOS'ta bildirimler kapalı. Şimdi yalnız iOS Ayarlar açabilir.",
+      "cueKeptOnlyOn": "Yalnız hatırlatıcıları açarsan saklanır."
+    },
+    "weights": {
+      "title": "Çalışma ağırlıkların",
+      "why": "Yaklaşık {reps} tekrar kaldırdığın bir ağırlık. İstediğini atla.",
+      "unset": "Ayarlanmadı",
+      "clear": "Temizle",
+      "clearLabel": "{name} değerini temizle, Ayarlanmadı'ya dön",
+      "tap": "Bir harekete dokun, kaydırıp sayını seç. İlk antrenmanın bunu doğrular.",
+      "rowHint": "Ağırlık çarkını açar.",
+      "skip": "Şimdilik atla"
+    },
+    "preparing": {
+      "title": "Planın hazırlanıyor",
+      "program": {
+        "one": "Programın, {count} gün",
+        "other": "Programın, {count} gün"
+      },
+      "cardio": "Kardiyon",
+      "noCardio": "Kardiyo, yalnız istersen",
+      "foodAndCardio": "Beslenmen ve kardiyon",
+      "food": "Başlangıç beslenmen",
+      "firstCall": "İlk kararın: {day}",
+      "firstWorkout": "İlk antrenmanın",
+      "done": "{line}, tamam",
+      "see": "Planımı gör",
+      "programMissing": "Programın artık sunucumuzda yok. Devam etmek için tekrar getir.",
+      "bringAgain": "Tekrar getir"
+    },
+    "plan": {
+      "title": "Planın",
+      "reflectLabel": "Cevaplarından oluşturuldu",
+      "callTitle": "Başlangıç kararın",
+      "goal": "Hedef: {goal}",
+      "goalName": {
+        "LOSE_FAT": "Yağ yak",
+        "BUILD_MUSCLE": "Kas kazan",
+        "DECIDE_FOR_ME": "Biz seçeriz"
+      },
+      "days": {
+        "one": "{count} gün",
+        "other": "{count} gün"
+      },
+      "workoutLabel": "İlk antrenman",
+      "firstWorkout": "{day} · ilk antrenman",
+      "today": "Bugün",
+      "findsWeights": "1. antrenman ağırlıklarını bulur",
+      "setsReps": "{sets} × {reps}",
+      "cardio": "Kardiyo",
+      "cardioDose": "{sessions} × {minutes} min",
+      "cardioAfter": "Kolay tempo, ağırlıklardan sonra.",
+      "cardioMixed": "Kolay tempo, bir kısmı dinlenme günlerinde.",
+      "food": "Başlangıç beslenmesi",
+      "foodKcal": "Günde {kcal} kcal",
+      "foodNote": "{days} gün sonra tartı bunu düzeltir.",
+      "protein": "Protein",
+      "proteinG": "Günde {grams} g",
+      "firstCall": "İlk karar",
+      "inDays": "{count} gün sonra",
+      "callNote": "{when}, sonra her {day}",
+      "more": "ve {count} tane daha",
+      "tomorrow": "yarın",
+      "remind": "{day} sabahı haber ver",
+      "finishFailed": "Bu telefonda tamamlanamadı. Tekrar dene."
+    },
+    "appleHealth": {
+      "connect": "Devam",
+      "notNow": "Şimdi değil, kendim gireceğim",
+      "unavailable": "Apple Health, uygulamanın cihaz sürümünde bağlanır. Sonra Ayarlar'dan bağlayabilirsin.",
+      "finish": "Başla",
+      "failed": "Bağlanılamadı. Bağlantını kontrol edip tekrar dene.",
+      "needsConsent": "Apple Health sağlık verisi getirir, bu yüzden önce sağlık verisi izni gerekir. İkisine de sonra Ayarlar'dan izin verebilirsin.",
+      "sheetFailed": "Apple Health açılmadı. Tekrar dene ya da onsuz devam et."
+    },
+    "signOut": "Çıkış yap",
+    "tryAgain": "Tekrar dene",
+    "saving": "Cevapların kaydediliyor.",
+    "serverError": "Bizim tarafta bir şey ters gitti. Birazdan tekrar dene."
+  },
+  "reminders": {
+    "walk": {
+      "title": "Gün bitmeden bir yürüyüş"
+    },
+    "training": {
+      "title": "{minutes} dakika sonra antrenman",
+      "body": "Antrenmanın yaklaşıyor.",
+      "weighIns": {
+        "one": "{day} kararından önce {count} tartı daha.",
+        "other": "{day} kararından önce {count} tartı daha."
+      }
+    },
+    "checkIn": {
+      "title": "Yeni bir hafta",
+      "body": "Geçen hafta kapandı. Nerede olduğunu görmek ve bu haftayı kurmak için Next Call'u aç."
+    },
+    "quiet": {
+      "title": "Bir hafta oldu",
+      "body": "Sessiz geçen bir hafta, kurduklarını silmez. Hazır olunca kısa bir antrenman seni geri getirir."
+    },
+    "meal": {
+      "title": "{slot} zamanı mı?",
+      "body": "Birkaç dokunuşla kaydet."
+    }
+  },
+  "subscription": {
+    "seePlans": "Planları gör",
+    "title": "Abone ol",
+    "titleTrial": "{trial} boyunca ücretsiz dene",
+    "titleLead": "Ücretsiz dene",
+    "titleFor": "{trial} boyunca",
+    "account": "Hesap",
+    "accountDone": "Bitti",
+    "plan": {
+      "annual": "Yıllık",
+      "monthly": "Aylık",
+      "annualPrice": "Yılda {price}",
+      "annualBilled": "Yılda bir faturalanır",
+      "perMonth": "Ayda {perMonth}",
+      "save": "%{percent} tasarruf",
+      "savesSpoken": "aylık plana göre yüzde {percent} tasarruf",
+      "monthlyPrice": "Ayda {price}",
+      "monthlyBilled": "Her ay faturalanır",
+      "selectLabel": "{plan}, {price}"
+    },
+    "trial": {
+      "day": "{count} günlük ücretsiz deneme",
+      "week": "{count} haftalık ücretsiz deneme",
+      "month": "{count} aylık ücretsiz deneme",
+      "year": "{count} yıllık ücretsiz deneme"
+    },
+    "trialSpan": {
+      "day": "{count} gün",
+      "week": "{count} hafta",
+      "month": "{count} ay",
+      "year": "{count} yıl"
+    },
+    "trialSpanOne": {
+      "day": "1 gün",
+      "week": "1 hafta",
+      "month": "1 ay",
+      "year": "1 yıl"
+    },
+    "timeline": {
+      "label": "Ne zaman ne olur",
+      "heading": "Ne olur, ne zaman",
+      "today": "Bugün",
+      "free": "Ücret yok.",
+      "firstCall": "İlk kararın.",
+      "reminder": "İstersen bir hatırlatma.",
+      "charge": {
+        "annual": "İptal etmezsen yılda {price} başlar.",
+        "monthly": "İptal etmezsen ayda {price} başlar."
+      },
+      "chargedToday": {
+        "annual": "Yılda {price}, bugün tahsil edilir.",
+        "monthly": "Ayda {price}, bugün tahsil edilir."
+      }
+    },
+    "values": {
+      "built": "Günlerine göre kurulan program",
+      "own": "Programın, ince ayarlı",
+      "call": "Her {day} bir karar, gerekçesiyle",
+      "weeklyCall": "Her hafta bir karar, gerekçesiyle",
+      "after": "İlk kararından sonraki her karar",
+      "coach": "Haftanı sormak için koç",
+      "adjust": "Haftana göre ayarlanan kardiyo ve beslenme",
+      "cardio": "Ağırlık antrenmanına göre planlanan kardiyo",
+      "swap": "Her hareketi istediğin zaman değiştir"
+    },
+    "yours": {
+      "tag": "Senin",
+      "title": "Planın",
+      "label": "Kendi planın",
+      "workout": "{name}, {count} hareket",
+      "workoutOne": "{name}, 1 hareket",
+      "workoutDay": "İlk antrenman",
+      "callNote": "sonra her {day}, gerekçesiyle"
+    },
+    "example": {
+      "tag": "Örnek",
+      "arrow": "→",
+      "call": {
+        "label": "Haftalık karar örneği",
+        "eyebrow": "Bu haftanın kararı",
+        "title": "Yeni kalori hedefi",
+        "row": "Kalori",
+        "from": "2.050",
+        "to": "1.800",
+        "unit": "kcal",
+        "spoken": "Kalori: 2.050 kcal'den 1.800 kcal'e.",
+        "why": "3 hafta boyunca haftada -0,3 kg, hedefine doğru değil.",
+        "step": "Tek adım: günde 250 kcal daha az."
+      },
+      "set": {
+        "label": "Set hedefi örneği",
+        "eyebrow": "Leg press",
+        "title": "Geçen seferi geç",
+        "row": "Set 2 / 3",
+        "from": "180 × 7",
+        "to": "180 × 8",
+        "unit": "kg",
+        "spoken": "Set 2 / 3, 180 × 7'den 180 × 8 kg'a.",
+        "why": "Son antrenmanın: 180 kg × 7.",
+        "step": "Bir tekrar fazlasını hedefle."
+      }
+    },
+    "dock": {
+      "noCharge": "Bugün ücret yok.",
+      "then": "Sonra",
+      "tail": {
+        "annual": ", sen iptal edene kadar her yıl yenilenir.",
+        "monthly": ", sen iptal edene kadar her ay yenilenir."
+      }
+    },
+    "cancelNote": "Apple ID'ne yansıtılır. Yenilenmeden en az 24 saat önce Ayarlar'dan, sonra Abonelik'ten istediğin zaman iptal edebilirsin; bir daha ücret alınmaz. Ödediğin dönem sonuna kadar senin kalır.",
+    "startTrial": "{trial} başlat",
+    "subscribe": "Abone ol",
+    "restore": "Satın alımları geri yükle",
+    "terms": "Terms of Use",
+    "privacy": "Privacy Policy",
+    "close": "Kapat",
+    "loading": "Planlar yükleniyor…",
+    "unavailable": "Satın alma, uygulamanın App Store sürümünde çalışır, bu sürümde değil.",
+    "offline": "Şu an bağlantı yok, bu yüzden bir şey satın alınamaz. Birazdan tekrar dene.",
+    "incomplete": "Satın alma bu sürümde henüz kurulmadı.",
+    "checking": "Aboneliğin kontrol ediliyor…",
+    "checkFailed": "Aboneliğin kontrol edilemedi. Birazdan tekrar dene.",
+    "continue": "Devam",
+    "reminder": {
+      "title": "Ücretsiz denemen {date} tarihinde bitiyor",
+      "body": "İptal etmezsen o gün yenilenir. İptal için: Ayarlar, sonra Abonelik.",
+      "ask": "Bitmeden önce hatırlat",
+      "set": "Seni {date} tarihinde hatırlatacağız.",
+      "refused": "Next Call için bildirimler iOS Ayarlar'da kapalı, bu yüzden hatırlatma yok.",
+      "failed": "Hatırlatma kurulamadı. Birazdan tekrar dene."
+    },
+    "failed": "App Store planları gösteremedi. Birazdan tekrar dene.",
+    "tryAgain": "Tekrar dene",
+    "buying": "App Store bekleniyor…",
+    "confirming": "Aboneliğin onaylanıyor…",
+    "active": "Abonesin. Koç ve öğün okuma açık.",
+    "waiting": "App Store onayladı. Bize ulaşması bir dakika sürebilir.",
+    "lookAgain": "Tekrar bak",
+    "pending": "Onay bekleniyor. Erişim, satın alma onaylanınca başlar.",
+    "purchaseFailed": "Satın alma tamamlanmadı. App Store yine de ücret aldıysa Satın alımları geri yükle onu buraya getirir.",
+    "restoreWaiting": "Bu Apple ID için henüz geri yüklenen bir şey yok. Onunla abone olduysan bize ulaşması bir dakika sürebilir.",
+    "restoreFailed": "Satın alımlar geri yüklenemedi. Birazdan tekrar dene."
+  },
+  "settings": {
+    "guide": {
+      "row": "Nasıl çalışır"
+    },
+    "subscription": {
+      "title": "Abonelik",
+      "none": "Abone değilsin. Kaydın ve ilk tam kararın aboneliksiz çalışır. Sonraki her karar abonelikle gelir.",
+      "status": {
+        "TRIAL": "{date} tarihine kadar ücretsiz deneme",
+        "ACTIVE": "{date} tarihinde yenilenir",
+        "CANCELLED": "İptal edildi. {date} tarihine kadar senin; yenilenmeyecek.",
+        "BILLING_ISSUE": "App Store ödeme yönteminden ücret alamadı. Tekrar denerken erişim {date} tarihine kadar sürer.",
+        "PAUSED": "Duraklatıldı",
+        "EXPIRED": "{date} tarihinde bitti",
+        "REFUNDED": "İade edildi"
+      },
+      "manage": "İptal et ya da planı değiştir",
+      "manageNote": "App Store aboneliğini açar; oradan iptal edebilir ya da plan değiştirebilirsin.",
+      "unavailable": "Aboneliği yönetmek, uygulamanın App Store sürümünde çalışır.",
+      "failed": "Aboneliğin okunamadı. Birazdan tekrar dene.",
+      "manageFailed": "App Store aboneliğin açılamadı. Birazdan tekrar dene."
+    },
+    "title": "Ayarlar",
+    "entry": "Ayarlar",
+    "serverError": "Bizim tarafta bir şey ters gitti. Birazdan tekrar dene.",
+    "language": {
+      "title": "Dil",
+      "system": "Cihaz dili",
+      "en": "English",
+      "tr": "Türkçe",
+      "failed": "Kaydedilemedi. Tekrar dene."
+    },
+    "appearance": {
+      "title": "Görünüm",
+      "light": "Açık",
+      "dark": "Koyu",
+      "system": "Sistem",
+      "failed": "Kaydedilemedi. Tekrar dene."
+    },
+    "walks": {
+      "title": "Yürüyüşlerim",
+      "hint": "Gerçekten yaptığın yürüyüşler, tek yön. Bugün adım kaldığında Next Call uygun olanı söyleyebilir. Bu bilgi yalnızca bu telefonda kalır.",
+      "none": "Henüz yok",
+      "count": "{count} kayıtlı",
+      "name": "Ad",
+      "distance": "Mesafe, tek yön",
+      "add": "Ekle",
+      "addLabel": "Bu yürüyüşü ekle",
+      "remove": "Sil",
+      "removeLabel": "{name} yürüyüşünü sil",
+      "rowLabel": "{name}, tek yön {distance}",
+      "full": "En fazla üç yürüyüş eklenir. Yenisi için birini sil.",
+      "invalid": "Bir ad ve 1,8 gibi bir mesafe gir.",
+      "failed": "Kaydedilemedi. Tekrar dene."
+    },
+    "units": {
+      "title": "Birimler",
+      "metric": "Metrik (kg, cm)",
+      "imperial": "İngiliz birimleri (lb, ft, in)",
+      "note": "Geçmişin kaydedildiği gibi kalır.",
+      "failed": "Birimler değiştirilemedi. Bağlantını kontrol edip tekrar dene."
+    },
+    "reminders": {
+      "title": "Hatırlatıcılar",
+      "kinds": "Antrenman günü, haftalık kontrol sabahı, öğünlerin, sessiz bir haftadan sonra bir not.",
+      "routine": "Rutinin",
+      "what": "Dört hatırlatıcı: antrenman ({minutes} dakika önce), haftalık kontrol sabahı, alışılmış öğün saatlerin ve sessiz bir haftadan sonra bir not. Hepsi bu telefonda kalır.",
+      "meals": "Öğün hatırlatıcıları",
+      "walk": "Akşam yürüyüşü önerisi",
+      "turnOn": "Hatırlatıcıları aç",
+      "onlyCheckIn": "Yalnız haftalık kontrol sabahı hatırlatıcısı açık.",
+      "noCalls": "Sağlık verisi iznin olmadan haftalık karar yok, bu yüzden haftalık kontrol sabahı hatırlatıcısı bekler.",
+      "turnOnAll": "Dördünü de aç",
+      "blocked": "Next Call için bildirimler iOS Ayarlar'da kapalı.",
+      "openSettings": "iOS Ayarlar'ı aç",
+      "failed": "Hatırlatıcılar değiştirilemedi. Tekrar dene.",
+      "trial": "Deneme hatırlatıcısı",
+      "cue": {
+        "label": "Rutinin, kendi sözlerinle",
+        "hint": "Antrenman hatırlatıcısı bunu söyler.",
+        "options": {
+          "afterWork": "İşten sonra doğru spora.",
+          "beforeWork": "İşten önce, ortalık sessizken.",
+          "lunch": "Öğle arasında.",
+          "morning": "Sabah ilk iş."
+        },
+        "save": "Kaydet",
+        "saveLabel": "Rutinini kaydet"
+      }
+    },
+    "healthWrite": {
+      "title": "Apple Health'e ekle",
+      "note": "Sen açana kadar kapalı. Eklenenler Apple Health'te senin kalır.",
+      "workouts": "Biten antrenmanlar",
+      "workoutsHint": "Halkaların saysın diye.",
+      "weighIns": "Yazdığın tartılar",
+      "switchLabel": "{what} Apple Health'e ekle",
+      "refused": "Apple Health izin vermedi. Sağlık uygulamasından izin ver.",
+      "unavailable": "Apple Health'e ekleme, uygulamanın cihaz sürümünde çalışır.",
+      "failed": "Bu değiştirilemedi. Tekrar dene."
+    },
+    "import": {
+      "title": "Tartıları içe aktar",
+      "note": "Apple Health'teki eski tartılar. Hiçbir kararı değiştirmezler.",
+      "weighIns": "Apple Health'ten tartılar",
+      "weighInsHint": "Yalnız dokunduğunda okunur.",
+      "import": "İçe aktar",
+      "importLabel": "{what} içe aktar",
+      "found": "{count} bulundu. Tartı, Yıl altında gör.",
+      "foundOne": "1 bulundu. Tartı, Yıl altında gör.",
+      "noneNew": "Yeni bir şey yok.",
+      "needsConsent": "Apple Health için iznin gerekli.",
+      "failed": "Apple Health okunamadı. Tekrar dene.",
+      "unavailable": "Apple Health'ten içe aktarma, uygulamanın cihaz sürümünde çalışır."
+    },
+    "consents": {
+      "title": "Verilerin ve izinlerin",
+      "HEALTH_DATA": "Sağlık verisi",
+      "APPLE_HEALTH": "Apple Health",
+      "allowed": "Açık",
+      "notAllowed": "Kapalı",
+      "why": {
+        "APPLE_HEALTH": "Adımları, uyku saatlerini, tartından kiloyu, aktif enerjiyi ve başka uygulamalarda yaptığın antrenmanları okuruz; böylece daha az yazarsın ve kalori kısıtı hiç fazla ileri gitmez."
+      },
+      "outdatedShort": "Tekrar izin ver",
+      "outdated": "Metin sen izin verdiğinden beri değişti. Devam etmek için tekrar izin ver.",
+      "view": "Göster",
+      "hide": "Gizle",
+      "allow": "Aç",
+      "withdraw": "Geri çek",
+      "loadFailed": "İzinlerin yüklenemedi. Bağlantını kontrol et.",
+      "retry": "Tekrar dene",
+      "failed": "Bu izin değiştirilemedi. Bağlantını kontrol edip tekrar dene.",
+      "sheetFailed": "Apple Health açılmadı. Tekrar dene.",
+      "needsHealthConsent": "Önce sağlık verisi izni gerekir.",
+      "unavailable": "Apple Health, uygulamanın cihaz sürümünde bağlanır."
+    },
+    "withdrawConfirm": {
+      "HEALTH_DATA": {
+        "title": "Sağlık verisi izni geri çekilsin mi?",
+        "body": "Kalıcı olarak silinir: tartılar, bel, fotoğraf kontrolleri, adımlar, uyku, öğünler, kararlar, plan ve yiyecekler. Antrenmanların kalır. Bu geri alınamaz."
+      },
+      "APPLE_HEALTH": {
+        "title": "Apple Health okunmasın mı?",
+        "body": "Sen tekrar izin verene kadar Apple Health'ten başka bir şey okunmaz."
+      },
+      "confirm": "Geri çek",
+      "keep": "Kalsın",
+      "exportFirst": "Önce verilerimi dışa aktar"
+    },
+    "export": {
+      "title": "Verilerimi dışa aktar",
+      "note": "Hakkında tuttuğumuz her şey, tek bir JSON dosyası olarak.",
+      "failed": "Dışa aktarılamadı. Bağlantını kontrol edip tekrar dene."
+    },
+    "delete": {
+      "title": "Hesabı sil",
+      "note": "Her şeyi, tüm cihazlarda kaldırır.",
+      "confirmTitle": "Hesabın ve tüm verilerin silinsin mi?",
+      "confirmBody": "Kayıtların, kararların, izinlerin ve profilin tüm cihazlarda silinir. Bu geri alınamaz. Kopya istiyorsan önce dışa aktar.",
+      "subscription": "Abonelik, sen Ayarlar › Abonelik'ten iptal edene kadar Apple üzerinden faturalanmaya devam eder.",
+      "confirm": "Her şeyi sil",
+      "keep": "Hesabımı koru",
+      "failed": "Hesabın silinemedi. Bağlantını kontrol edip tekrar dene."
+    },
+    "signOut": {
+      "title": "Çıkış yap",
+      "confirmTitle": "Çıkış yapılsın mı?",
+      "confirmBody": "Apple ile tekrar giriş yapabilirsin.",
+      "cancel": "Vazgeç",
+      "pending": "{count} kayıt henüz sunucumuza ulaşmadı ve şimdi çıkış yaparsan kaybolur.",
+      "photos": "Gelişim fotoğrafların yalnız bu telefonda. Çıkış yapmak onları telefondan kaldırır.",
+      "confirm": "Yine de çıkış yap",
+      "keep": "Girişi açık tut"
+    },
+    "backMark": "‹",
+    "account": {
+      "title": "Hesap",
+      "footer": "Hesabı sil, her şeyi tüm cihazlarda kaldırır."
+    },
+    "training": {
+      "title": "Antrenman",
+      "days": "Antrenman günleri",
+      "import": "Antrenmanları içe aktar",
+      "importFrom": "Strong, Hevy",
+      "none": "Henüz yok",
+      "unread": "Yüklenemedi"
+    },
+    "rest": {
+      "title": "Setler arası dinlenme",
+      "recommended": "Önerilen",
+      "custom": "Kendi sürem",
+      "recommendedNote": "{band}. Sayaç kısa uca kadar geriye sayar, uzun uç geçilince söyler.",
+      "customNote": "Sayaç senin sürene kadar geriye sayar. Aralık gösterilmez.",
+      "compound": "Bileşik hareketler",
+      "isolation": "İzolasyon hareketler",
+      "lessLabel": "{what}: {seconds} saniye kısa",
+      "moreLabel": "{what}: {seconds} saniye uzun"
+    },
+    "food": {
+      "title": "Beslenme",
+      "avoid": "Uzak durduğun yiyecekler",
+      "none": "Yok",
+      "count": "{count} yiyecek",
+      "locked": "Sağlık verisi için iznin gerekli",
+      "unread": "Yüklenemedi",
+      "label": "Uzak durduğun bir yiyecek",
+      "add": "Ekle",
+      "addOwn": "Kendin ekle",
+      "save": "Kaydet",
+      "failed": "Kaydedilemedi. Tekrar dene.",
+      "common": {
+        "pork": "Domuz eti",
+        "beef": "Sığır eti",
+        "shellfish": "Kabuklu deniz ürünleri",
+        "fish": "Balık",
+        "dairy": "Süt ürünleri",
+        "eggs": "Yumurta",
+        "gluten": "Gluten",
+        "nuts": "Kuruyemiş",
+        "peanuts": "Yer fıstığı",
+        "soy": "Soya",
+        "alcohol": "Alkol"
+      }
+    },
+    "profile": {
+      "title": "Senin hakkında",
+      "goal": "Hedef",
+      "checkIn": "Kontrol günü",
+      "checkInNote": "Bu gün haftanı kapatır ve sonrakini planlar.",
+      "height": "Boy",
+      "activity": "Aktivite",
+      "born": "Doğum",
+      "notSet": "Ayarlanmadı",
+      "save": "Kaydet",
+      "failed": "Kaydedilemedi. Bağlantını kontrol edip tekrar dene.",
+      "unread": "Yüklenemedi"
+    },
+    "legal": {
+      "title": "Yasal"
+    },
+    "health": {
+      "title": "Sağlık ve veri",
+      "consent": "Sağlık verisi izni",
+      "needsConsent": "Sağlık verisi için iznin gerekli",
+      "locked": "Sağlık verisi için iznin gerekli."
+    },
+    "sources": {
+      "title": "Veri kaynakları",
+      "food": "Beslenme verisi",
+      "foodValue": "USDA, Open Food Facts",
+      "failed": "Bağlantı açılamadı. Tekrar dene.",
+      "website": "Web sitesi",
+      "license": "Lisans",
+      "usda": {
+        "name": "USDA FoodData Central",
+        "note": "Kamu malı (CC0).",
+        "url": "https://fdc.nal.usda.gov/",
+        "site": "fdc.nal.usda.gov"
+      },
+      "off": {
+        "name": "Open Food Facts",
+        "note": "Open Food Facts'ten alınan bilgileri içerir; Open Database License (ODbL) kapsamında sunulmuştur.",
+        "url": "https://world.openfoodfacts.org/",
+        "site": "world.openfoodfacts.org",
+        "licenseName": "ODbL 1.0",
+        "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/"
+      }
+    }
+  },
+  "permissions": {
+    "healthRead": "Next Call, haftalık kararlarını vermek için adımlarını, uykunu, kilonu, aktif enerjini ve antrenmanlarını okur. Kalp verisini, döngü verisini, kullandığın ilaç bilgisini, sağlık kayıtlarını ve konumu asla okumaz.",
+    "healthWrite": "Next Call, Apple Health'e yalnızca Ayarlar'da açtığın verileri ekler: bitirdiğin antrenmanlar ve yazdığın tartılar. Başka hiçbir şey yazmaz.",
+    "camera": "Yiyecek paketindeki barkodu okumak, kaydetmek istediğin öğünün fotoğrafını çekmek, gelişim fotoğraflarını çekmek ya da paylaşım çıkartmasının arkasına koyacağın fotoğrafı çekmek için. Gelişim fotoğrafları ve paylaşım çıkartması fotoğrafları bu telefonda kalır. Video ya da ses kaydedilmez.",
+    "photos": "Kaydetmek istediğin öğünün fotoğrafını, bir gelişim fotoğrafını ya da paylaşım çıkartmasının arkasına koyacağın fotoğraf veya videoyu seçmek için. Yalnızca seçtiğin fotoğraf ya da video kullanılır."
+  },
+  "history": {
+    "records": "Rekorlar",
+    "heaviest": "En ağır · {set}",
+    "estimatedMax": "Tahmini maksimum · {load}",
+    "repsAt": "{load} ile en çok tekrar · {reps}",
+    "mostReps": "En çok tekrar · {reps}",
+    "sessions": "Geçmiş",
+    "warmUp": "{set} · ısınma",
+    "empty": "Bu egzersiz için henüz kayıt yok.",
+    "phoneOnly": "Bu telefondakiler gösteriliyor. Gerisi çevrimiçi olunca görünür.",
+    "done": "Bitti",
+    "open": "Geçmiş",
+    "openLabel": "{exercise}: geçmiş",
+    "loadFailed": "Bu egzersizin geçmişi yüklenemedi. Çevrimiçi olunca tekrar dene."
+  },
+  "photos": {
+    "title": "Fotoğraflar",
+    "first": "İlk fotoğrafın {week}. haftada. Her seferinde aynı yer, aynı ışık.",
+    "firstDue": "İlk fotoğrafının zamanı geldi. 1. gün olacak.",
+    "anytime": "Hazır olunca ilk fotoğrafını çek. 1. gün olacak.",
+    "next": "Sonraki fotoğraf {date} tarihinden itibaren. Haftalık değişim görülemeyecek kadar küçük.",
+    "open": "Fotoğraf penceresi {date} tarihinden beri açık. Aynı yer, aynı ışık, sabah.",
+    "count": {
+      "one": "Bu telefonda {count} fotoğraf günü var. Hiç yüklenmedi, yedeklere bile.",
+      "other": "Bu telefonda {count} fotoğraf günü var. Hiç yüklenmedi, yedeklere bile."
+    },
+    "take": "Fotoğraf çek",
+    "compare": "Karşılaştır",
+    "delete": "Tüm fotoğrafları sil",
+    "deleteTitle": "Tüm gelişim fotoğrafları silinsin mi?",
+    "deleteBody": "Next Call'ın bu telefonda tuttuğu bütün gelişim fotoğrafları silinir. Next Call'da başka kopya yok.",
+    "deleteConfirm": "Fotoğrafları sil",
+    "deleteKeep": "Kalsınlar",
+    "deleteFailed": "Fotoğraflar silinemedi. Tekrar dene."
+  },
+  "capture": {
+    "intro": {
+      "title": "Gelişim fotoğrafları",
+      "light": "Her seferinde aynı yer ve ışık, mümkünse sabah.",
+      "clothes": "Vücuda oturan kıyafet, kollar gövdeden biraz açık.",
+      "phone": "Telefon dik, kalça hizasında bir sehpada olsun ya da birine ver.",
+      "stand": "Sehpada · {seconds} sn",
+      "hand": "Biri tutuyor",
+      "note": "İki fotoğraf: önce ön, sonra yan. Bu telefonda kalırlar.",
+      "start": "Başla"
+    },
+    "pose": {
+      "front": "Ön · {step}/{total}",
+      "side": "Yan · {step}/{total}"
+    },
+    "switch": "Kamerayı çevir",
+    "level": {
+      "straight": "Düz",
+      "upright": "Telefonu dik tut"
+    },
+    "hint": {
+      "front": "Çerçevenin içinde dur.",
+      "frontGhost": "Çerçevenin içinde dur. Son ön fotoğrafın arkada soluk görünür.",
+      "side": "Sağına dön, kollar rahat.",
+      "sideGhost": "Sağına dön, kollar rahat. Son yan fotoğrafın arkada soluk görünür.",
+      "tilted": "Yine de çekebilirsin. Telefon düzse haftaları kıyaslamak kolaylaşır."
+    },
+    "timer": {
+      "label": "Zamanlayıcı {seconds} sn",
+      "labelOff": "Zamanlayıcı kapalı",
+      "off": "Kapalı",
+      "seconds": "{seconds} sn"
+    },
+    "counting": "Fotoğraf çekiliyor: {seconds}",
+    "cancel": "Vazgeç",
+    "shutter": "Fotoğraf çek",
+    "library": "Kitaplıktan seç",
+    "close": "Kapat",
+    "ask": {
+      "title": "Kameraya izin ver",
+      "body": "Next Call kamerayı yalnızca gelişim fotoğrafların için kullanır. Fotoğraflar bu telefonda kalır."
+    },
+    "allow": "Devam",
+    "off": {
+      "title": "Kamera kapalı",
+      "body": "Next Call'ın gelişim fotoğrafları için kameraya ihtiyacı var. Ayarlar'dan aç ya da önceden çektiğin fotoğrafları seç.",
+      "settings": "Ayarlar'ı aç"
+    },
+    "preview": {
+      "photo": "{pose} fotoğrafın",
+      "retake": "Yeniden çek",
+      "use": "Fotoğrafı kullan"
+    },
+    "failed": "Fotoğraf bu telefonda saklanamadı. Tekrar dene.",
+    "done": {
+      "title": "{week}. hafta fotoğrafları kaydedildi",
+      "front": "Ön",
+      "side": "Yan",
+      "photo": "{pose} fotoğrafın",
+      "next": "Sonraki set",
+      "nextOn": "{week}. hafta · {date}",
+      "compareLater": "Karşılaştırma ikinci setinle açılır, bu setle yan yana görürsün.",
+      "compare": "Karşılaştır",
+      "onPhone": "Yalnızca bu telefonda. Hiç yüklenmedi.",
+      "done": "Bitti"
+    }
+  },
+  "compare": {
+    "title": "Karşılaştır",
+    "with": "Şununla karşılaştır",
+    "day1": "1. gün",
+    "earlier": {
+      "one": "{count} hafta önce",
+      "other": "{count} hafta önce",
+      "days": {
+        "one": "{count} gün önce",
+        "other": "{count} gün önce"
+      }
+    },
+    "latest": "En son",
+    "caption": "{label} · {date}",
+    "between": {
+      "one": "Aralarında {count} hafta var",
+      "other": "Aralarında {count} hafta var",
+      "days": {
+        "one": "Aralarında {count} gün var",
+        "other": "Aralarında {count} gün var"
+      }
+    },
+    "front": "Ön",
+    "side": "Yan",
+    "sideBySide": "Yan yana",
+    "slide": "Kaydır",
+    "slider": "İki fotoğraf arasında kaydır",
+    "empty": "Karşılaştırma için aynı pozda iki fotoğraf günü gerekir.",
+    "onPhone": "İki fotoğraf da yalnızca bu telefonda.",
+    "close": "Kapat"
+  },
+  "sessionEdit": {
+    "title": "Antrenmanı düzenle",
+    "deleteSpoken": "{set} sil",
+    "delete": "Sil",
+    "confirmDelete": "Evet, sil",
+    "add": "Set ekle",
+    "needsConnection": "Geçmiş bir antrenmanı düzenlemek için bağlantı gerekir. Çevrimiçi olunca tekrar dene.",
+    "gone": "Bu antrenman artık yok.",
+    "open": "Bu antrenmanı düzenle",
+    "openSpoken": "{day} antrenmanını düzenle",
+    "underWay": "Bu antrenman hâlâ sürüyor: değişikliği antrenmanın içinden yap.",
+    "keep": "Kalsın",
+    "targetsNote": "Buradaki değişiklikler sonraki antrenmanının hedeflerini oynatmaz: onları daha sonraki bir antrenman belirledi.",
+    "targetsMove": "Buradaki değişiklikler sonraki antrenmanının hedeflerini, bu antrenmanın şimdiki haline göre günceller."
+  },
+  "projection": {
+    "scoff": {
+      "title": "Vücut projeksiyonundan önce",
+      "intro": "Yeme alışkanlığıyla ilgili, evet ya da hayır cevaplı beş soru. Cevapların kaydedilmez, hiçbir yere gönderilmez.",
+      "q1": "Rahatsız edecek kadar dolu hissettiğin için kendini kusturuyor musun?",
+      "q2": "Ne kadar yediğin üzerindeki kontrolü kaybettiğinden endişe ediyor musun?",
+      "q3": "Son zamanlarda 3 aylık sürede 6 kg'dan fazla kilo verdin mi?",
+      "q4": "Başkaları çok zayıf olduğunu söylerken kendini şişman olarak görüyor musun?",
+      "q5": "Yemeğin hayatına hükmettiğini söyler misin?",
+      "yes": "Evet",
+      "no": "Hayır",
+      "continue": "Devam",
+      "failed": "Bu telefona kaydedilemedi. Tekrar dene.",
+      "source": "Sorular SCOFF anketinden alındı (BMJ, 1999)."
+    },
+    "unavailable": {
+      "title": "Vücut projeksiyonu gösterilmiyor",
+      "body": "Cevaplarına göre vücut projeksiyonu bu telefonda kapalı kalır. Diğer her şey eskisi gibi çalışır.",
+      "support": "Yeme ya da bedenin sık sık aklındaysa, bir doktorla ya da yeme konusunda çalışan biriyle konuşmak yardımcı olabilir.",
+      "open": "{name} sayfasını aç",
+      "done": "Bitti"
+    },
+    "support": {
+      "US": "ANAD yardım hattı",
+      "GB": "Beat"
+    },
+    "view": {
+      "title": "Vücut projeksiyonu",
+      "switch": "Vücut projeksiyonu",
+      "switchNote": "Sen açmadıkça kapalı.",
+      "unavailable": "Bu telefonda gösterilmiyor.",
+      "offNote": "Kendi tartılarından yapılan bir hesap: planı günlerin çoğunda korursan kilon altı ay sonra nereye gider. Sen açarsın, istediğin zaman kapatabilirsin.",
+      "entry": "Planı korursan kilon nereye gider.",
+      "scenario": "Planlı günlerin %{pct}",
+      "by": "{date} tarihine kadar",
+      "now": "Şimdi",
+      "at": "Kesikli çizgi: planlı günlerin %{pct}",
+      "disclaimer": "Bu bir hesap, fotoğraf değil: NIH Body Weight Planner aracının arkasındaki yayımlanmış enerji dengesi modeli, senin ölçülerin ve planınla çalıştırıldı. Bedenin nerede değişeceği kişiye özeldir. Model bunu bilemez, sonucun farklı olacaktır.",
+      "updated": "Son haftalarınla güncellendi: {from} → {to}.",
+      "options": "Buradan iki yol var: planı olduğu gibi koru ya da projeksiyonu kapat.",
+      "keep": "Planı koru",
+      "off": "Projeksiyonu kapat",
+      "failed": "Projeksiyon yüklenemedi.",
+      "saveFailed": "Bu telefonda değiştirilemedi. Tekrar dene.",
+      "reason": {
+        "UNDER_AGE": "Vücut projeksiyonu yetişkinler içindir.",
+        "SAFETY_HOLD": "Plan beklemedeyken gösterilmez.",
+        "TOO_EARLY": "Dört haftalık tartıdan sonra görünür.",
+        "NO_RECENT_WEIGHT": "Görmek için bu hafta tartıl.",
+        "NO_DIRECTION": "Planın artık korumaya yakın, projeksiyon yapılacak bir yön yok.",
+        "LOW_BMI_LOSS": "Bu kilondayken projeksiyon kilo vermeyi göstermez.",
+        "OUTSIDE_MODEL": "Projeksiyonun arkasındaki model ölçülerini kapsamıyor, bu yüzden gösterilmez.",
+        "NO_SAFE_SCENARIO": "Senaryoların hiçbiri planın hızı ve aralığı içinde kalmıyor, bu yüzden hiçbiri gösterilmez."
+      }
+    }
+  },
+  "progress": {
+    "failed": "Bir kısmı yüklenmedi.",
+    "retry": "Tekrar dene",
+    "hero": {
+      "targets": "Bugünün hedefleri.",
+      "firstWorkout": "İlk antrenman tamam. Bugünün hedefleri.",
+      "tap": "Kaydetmek için birine dokun.",
+      "tapLocked": "Kaydetmek için Kardiyo'ya dokun.",
+      "early": "Sayıların hafta hafta oluşur."
+    },
+    "result": {
+      "stronger": "{tracked} hareketin {stronger} tanesinde daha güçlüsün.",
+      "strongerOne": "Hareketinde daha güçlüsün.",
+      "down": "{amount} düştü.",
+      "up": "{amount} çıktı.",
+      "steady": "Kilo sabit."
+    },
+    "targets": {
+      "calories": "Kalori",
+      "protein": "Protein",
+      "steps": "Adım",
+      "cardio": "Kardiyo",
+      "ofKcal": "/ {target} kcal",
+      "ofGrams": "/ {target} g",
+      "noSteps": "Henüz adım yok",
+      "ofSteps": "/ {target}",
+      "ofCardio": "/ bu hafta {count}",
+      "fromMeals": "Öğünlerinden",
+      "appleHealth": "Apple Health",
+      "connect": "Apple Health'i bağla",
+      "each": "her biri {minutes} dk",
+      "label": {
+        "calories": "Kalori, {eaten}, hedef {target} kilokalori",
+        "protein": "Protein, {eaten}, hedef {target} gram",
+        "steps": "Adım, {steps}, hedef {target}",
+        "stepsOff": "Adım, Apple Health bağlı değil, hedef {target}",
+        "cardio": "Kardiyo, bu hafta {count} antrenmandan {done}, her biri {minutes} dakika"
+      },
+      "hint": {
+        "meal": "Öğün kaydını açar",
+        "health": "Apple Health'i açar",
+        "connect": "Apple Health'i bağlamak için Ayarlar'ı açar",
+        "cardio": "Kaydı açar"
+      }
+    },
+    "muscles": {
+      "title": "Bu haftanın kasları",
+      "planned": "planlanan",
+      "thisWeek": "bu hafta",
+      "legendPlanned": "Planlanan",
+      "legendDone": "Yapılan",
+      "setsTitle": "Kas başına set",
+      "legendTarget": "Hedef",
+      "barLabel": "{muscle}, {done} / {target} set"
+    },
+    "strength": {
+      "title": "Güç",
+      "baseline": "başlangıcın",
+      "bestSet": "en iyi set",
+      "next": "Bir dahaki sefere her setin aşılacak bir hedefi olur.",
+      "locked": "İlk antrenmanından sonra",
+      "set": "{load} × {reps}",
+      "rowLabel": "{move}, {load} ile {reps} tekrar",
+      "rowLabelBodyweight": "{move}, vücut ağırlığıyla {reps} tekrar",
+      "started": "Başlangıç: {set}",
+      "legendHeld": "Halka: karar yükü korudu",
+      "spoken": "{move}, haftalara göre en iyi set: {firstDate} haftasında {first}, {lastDate} haftasında {last}. En düşük {low}, en yüksek {high}.",
+      "spokenHeld": "Karar yükü şu haftalarda korudu: {weeks}.",
+      "effort": {
+        "stuck": "{load} ile {sessions} antrenmandır aynı yerdesin.",
+        "stuckHeld": "{load} ile {sessions} antrenmandır aynı yerdesin. Bu hafta korundu.",
+        "easierOne": "Aynı {load}, şimdi 1 tekrar yedekle.",
+        "easierMany": "Aynı {load}, şimdi {repsLeft} tekrar yedekle.",
+        "rising": "{date} tarihinden beri {load} ile {gained} arttı.",
+        "repOne": "1 tekrar",
+        "repMany": "{count} tekrar"
+      }
+    },
+    "weight": {
+      "title": "Kilo trendi",
+      "count": "{count} / {min}",
+      "after": "{min} tartıdan sonra görünür.",
+      "stale": "Tekrar tartıl, ortalama burada görünür.",
+      "spoken": "Şimdiye kadar {min} tartıdan {count} tanesi",
+      "chartTitle": "Kilo",
+      "average": "7 günlük ortalama",
+      "down": "-{delta}, {date} tarihinden beri",
+      "up": "+{delta}, {date} tarihinden beri",
+      "steady": "{date} tarihinden beri sabit",
+      "chartSpoken": "Kilo, 7 günlük ortalama: {firstDate} tarihinde {first}, {lastDate} tarihinde {last}. En düşük {low}, en yüksek {high}."
+    },
+    "calls": {
+      "title": "Kararlar",
+      "notApplied": "Uygulanmadı",
+      "change": "{label} {from} → {to}",
+      "noChange": "Değişiklik yok",
+      "moved": "{label}: {to}",
+      "rowLabel": "{title}, {date}",
+      "rowLabelNotApplied": "{title}, {date}, uygulanmadı",
+      "rowLabelLocked": "{date} kararı, hazır"
+    },
+    "consistency": {
+      "title": "Düzen",
+      "onTrack": "Yolunda",
+      "spare": "Sayılmayan hafta",
+      "paused": "Duraklatıldı",
+      "other": "Diğer haftalar",
+      "range": "En eskiden başlayarak",
+      "note": "Kaçırılan bir hafta kaydını asla sıfırlamaz.",
+      "spoken": "Son {count} hafta, en eskiden başlayarak: {onTrack} yolunda, {spare} sayılmayan, {paused} duraklatılmış, {other} diğer hafta."
+    }
+  },
+  "strength": {
+    "title": "Güç",
+    "subtitle": "Tahmini 1RM, hafta hafta",
+    "since": "{date} haftasında {load}",
+    "empty": "Bir bileşik hareketi yedek tekrar (RIR) bilgisiyle kaydet, tahmini 1RM değeri burada hafta hafta görünür.",
+    "legendLine": "Haftanın en iyi tahmini 1RM değeri",
+    "legendEasier": "Aynı ağırlık ve tekrar, daha çok yedek tekrar",
+    "band": "Karar",
+    "spokenEasier": "{weeks} haftasında aynı ağırlık ve tekrar, daha çok yedek tekrarla.",
+    "loadFailed": "Güç yüklenemedi. Çevrimiçi olunca tekrar dene.",
+    "spoken": "{move}, haftalara göre tahmini 1RM: {firstDate} haftasında {first}, {lastDate} haftasında {last}. En düşük {low}, en yüksek {high}.",
+    "callEyebrow": "Kararlar",
+    "callTitle": "Son {weeks} hafta",
+    "callNote": "Gölgeli bant. Haftalık kararlar böyle kısa pencerelere bakar.",
+    "judgeEyebrow": "Gelişim",
+    "judgeTitle": "{days} gün üzerinden değerlendirilir",
+    "judgeNote": "Çizginin tamamı. İçindeki düz haftalar normaldir."
+  },
+  "movePicker": {
+    "subtitle": "{muscle} · {equipment}",
+    "group": {
+      "chest": "Göğüs",
+      "back": "Sırt",
+      "shoulders": "Omuz",
+      "arms": "Kol",
+      "legs": "Bacak"
+    },
+    "popular": "Popüler",
+    "popularFor": "{group} için popüler",
+    "moreFor": "{group} için daha fazlası",
+    "all": "Tüm hareketler",
+    "add": "Ekle: {day}",
+    "addLabel": "{name} ekle: {day}",
+    "rowLabel": "{name}, {about}. Ayrıntılar",
+    "empty": "Eşleşen hareket yok.",
+    "clear": "Filtreleri temizle"
+  },
+  "programEditor": {
+    "dayName": "Gün adı",
+    "defaultName": "Gün {number}",
+    "weekdayShort": {
+      "MONDAY": "Pzt",
+      "TUESDAY": "Sal",
+      "WEDNESDAY": "Çar",
+      "THURSDAY": "Per",
+      "FRIDAY": "Cum",
+      "SATURDAY": "Cmt",
+      "SUNDAY": "Paz"
+    },
+    "weekdayName": {
+      "MONDAY": "Pazartesi",
+      "TUESDAY": "Salı",
+      "WEDNESDAY": "Çarşamba",
+      "THURSDAY": "Perşembe",
+      "FRIDAY": "Cuma",
+      "SATURDAY": "Cumartesi",
+      "SUNDAY": "Pazar"
+    },
+    "addDay": "Gün ekle",
+    "removeDay": "Bu günü kaldır",
+    "removeDayLabel": "Kaldır: {day}",
+    "moveOptionsLabel": "{move} seçenekleri",
+    "moveUp": "Yukarı taşı",
+    "moveDown": "Aşağı taşı",
+    "removeFrom": "Kaldır: {day}",
+    "cancel": "Vazgeç",
+    "keep": "Kalsın",
+    "removeDayAsk": "{day} kaldırılsın mı?",
+    "removeDayBody": "Gün ve hareketleri gider ({moves}). Hemen ardından geri alabilirsin.",
+    "removeDayConfirm": "Günü kaldır",
+    "noMoves": "En az bir hareket ekle.",
+    "noMovesMeta": "Henüz hareket yok",
+    "addMove": "Hareket ekle",
+    "sheetTo": "Hedef: {day}. Başlangıç için {sets} set, sonra değiştirebilirsin.",
+    "search": "Hareket ara",
+    "pickLabel": "{name} ekle, {range}",
+    "none": "Bu adda hareket yok. Kendi hareketin olarak ekle.",
+    "addOwn": "Kendi hareketimi ekle",
+    "close": "Kapat",
+    "removed": "{name} kaldırıldı.",
+    "undo": "Geri al",
+    "undoLabel": "Geri al: {name} geri gelsin",
+    "anyDay": "Herhangi bir gün",
+    "anyDayNote": "Herhangi bir gün. Planında {days} var.",
+    "days": {
+      "one": "1 gün",
+      "other": "{count} gün"
+    },
+    "moves": {
+      "one": "1 hareket",
+      "other": "{count} hareket"
+    },
+    "summary": "{days} · {moves}",
+    "dayMeta": "{weekday} · {moves}",
+    "dayHeader": "{day}, {weekday}, {moves}",
+    "sets": "Set",
+    "repsMin": "En az tekrar",
+    "repsMax": "En çok tekrar",
+    "setsLabel": "{move}, set",
+    "minLabel": "{move}, en az tekrar",
+    "maxLabel": "{move}, en çok tekrar",
+    "less": "−",
+    "more": "+",
+    "lessLabel": "{what}, bir eksik",
+    "moreLabel": "{what}, bir fazla"
+  },
+  "review": {
+    "too_many_days": {
+      "title": "Haftada {from} değil, {to} gün antrenman yap",
+      "body": "Haftada {to} günden sonrası fayda sağlamaz. En hafif günün diğerlerine katılır."
+    },
+    "too_many_sets": {
+      "title": "{muscle}: haftada {from} değil, {to} set",
+      "body": "Büyümenin çoğunu ilk setler sağlar. Fazladan setler çoğunlukla yorgunluk ekler."
+    },
+    "too_few_sets": {
+      "title": "{muscle}: haftada {from} değil, {to} set",
+      "body": "Bir kasın büyümesi için haftada en az {min} set gerekir."
+    },
+    "too_few_arm_sets": {
+      "title": "{muscle}: haftada {from} değil, {to} set",
+      "body": "Biseps ve triseps için, iki antrenmana yayarak, haftada en az {min} set gerekir."
+    },
+    "once_a_week": {
+      "title": "{muscle}: haftada {to} gün",
+      "body": "Her kası haftada {to} gün çalıştır: bir antrenmanın büyüme sinyali yaklaşık iki gün sonra söner."
+    },
+    "rep_range_compound": {
+      "title": "{exercise}: {toMin}-{toMax} tekrar",
+      "body": "Büyük hareketler {toMin}-{toMax} tekrarda en iyi çalışır. Daha az tekrar, büyüme eklemeden eklemleri zorlar."
+    },
+    "rep_range_isolation": {
+      "title": "{exercise}: {toMin}-{toMax} tekrar",
+      "body": "Tek eklemli hareketler {toMin}-{toMax} tekrarda en iyi çalışır. Bunun çok ötesi büyüme değil, süre ekler."
+    }
+  }
+}

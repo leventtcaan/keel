@@ -4,7 +4,9 @@
  * "610-720"; clauses join with a full stop or a comma. The store listing is held to it too.
  */
 import en from '../../../../data/copy/en.json';
+import tr from '../../../../data/copy/tr.json';
 import store from '../../../../data/copy/store.en.json';
+import storeTr from '../../../../data/copy/store.tr.json';
 
 type Tree = { [key: string]: unknown };
 
@@ -28,7 +30,9 @@ test('the check sees both dashes', () => {
 
 test.each([
   ['en.json', en],
+  ['tr.json', tr],
   ['store.en.json', store],
+  ['store.tr.json', storeTr],
 ])('%s has no long or middle dash', (_, copy) => {
   expect(texts(copy).filter(([, text]) => DASH.test(text)).map(([key]) => key)).toEqual([]);
 });

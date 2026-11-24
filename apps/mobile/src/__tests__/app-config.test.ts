@@ -5,6 +5,7 @@
 import appConfig from '../../app.config';
 import base from '../../app.json';
 import { t } from '@/copy';
+import tr from '../../../../data/copy/tr.json';
 
 type Plugin = string | [string, Record<string, unknown>];
 const config = appConfig({ config: base.expo } as never);
@@ -47,6 +48,18 @@ test('the level reads the accelerometer, which needs no permission (K-601): no m
   const sensors = (config.plugins as Plugin[]).filter((p) => (Array.isArray(p) ? p[0] : p) === 'expo-sensors');
   // Left out, expo-sensors' plugin runs on its own and writes its own English text — none from the copy file (K2).
   expect(sensors).toEqual([['expo-sensors', { motionPermission: false }]]);
+});
+
+test('the permission prompts speak Turkish on a Turkish phone (K-1212): the Turkish texts go into tr.lproj/InfoPlist.strings, mixed localizations allowed', () => {
+  expect(config.ios?.infoPlist?.CFBundleAllowMixedLocalizations).toBe(true);
+  expect(config.locales).toEqual({
+    tr: {
+      NSCameraUsageDescription: tr.permissions.camera,
+      NSPhotoLibraryUsageDescription: tr.permissions.photos,
+      NSHealthShareUsageDescription: tr.permissions.healthRead,
+      NSHealthUpdateUsageDescription: tr.permissions.healthWrite,
+    },
+  });
 });
 
 test('Instagram Stories (K-976): the app may ask whether Instagram is there, by its Stories scheme; Apple Sign In is kept', () => {
