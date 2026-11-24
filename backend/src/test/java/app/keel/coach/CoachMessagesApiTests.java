@@ -393,7 +393,9 @@ class CoachMessagesApiTests {
             assertThat(refused).as((String) scenario.get("id")).containsEntry("mode", "DETERMINISTIC").containsKey("call");
             assertThat(kept(account)).as((String) scenario.get("id")).isEqualTo(keptBefore);
 
-            fake.answer(told((String) scenario.get("expectedTopic")));
+            // No number: the set's calls carry their own (250, 300...), and the reply may say only the call's.
+            fake.answer(JSON.writeValueAsString(Map.of("reply", "The call stands this week, for the reason the rules give.", "topic", scenario.get("expectedTopic"),
+                    "numbersUsed", List.of())));
             assertThat(ok(ask(account, Map.of("text", scenario.get("objection"))))).as((String) scenario.get("id")).containsEntry("mode", "MODEL")
                     .containsEntry("topic", scenario.get("expectedTopic")).containsKey("call");
             assertThat(kept(account)).as((String) scenario.get("id")).isEqualTo(keptBefore);
