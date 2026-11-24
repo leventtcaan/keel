@@ -111,6 +111,9 @@ keel:
     max-day-name: 60
     # A note on a set or a session (K-422): a few sentences ("left shoulder pinched on the last rep"), not a diary.
     max-note: 500
+    # The rest before a set (K-1214), in seconds: two hours (a break mid-session that was not paused); the contract's maximum and
+    # the phone's rest_record_max_seconds (data/parameters/workout.json).
+    max-rest-seconds: 7200
     # Sessions from another app's export (K-615, ADR-053): the contract's maxItems and the phone's import_workouts_per_request
     # (data/parameters/import.json) — kept equal by ImportLimitsMirrorTests. A real session has well under 200 sets.
     import:

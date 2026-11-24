@@ -344,7 +344,7 @@
    "table": "training.workout_set",
    "module": "training",
    "class": "training",
-   "purpose": "Your sets: move, set type, load, reps, reps in reserve, side, superset, note.",
+   "purpose": "Your sets: move, set type, load, reps, reps in reserve, side, superset, note, the rest you took before the set.",
    "columns": [
     "id",
     "workout_id",
@@ -358,7 +358,8 @@
     "rir",
     "side",
     "note",
-    "superset_id"
+    "superset_id",
+    "rest_seconds"
    ],
    "basis": "contract (Art. 6(1)(b))",
    "gated_by": null,

@@ -92,6 +92,14 @@
       "note": "NewSet.loadKg maximum: a heavier set would be refused by the server and lost from the queue."
     },
     {
+      "key": "rest_record_max_seconds",
+      "value": 7200,
+      "unit": "seconds",
+      "tag": "urun",
+      "source": "contracts/openapi.yaml#NewSet",
+      "note": "K-1214: NewSet.restSeconds maximum (keel.training.max-rest-seconds). A rest longer than this is not sent: a break the user forgot to pause is no rest, and the server would refuse it."
+    },
+    {
       "key": "set_max_reps",
       "value": 100,
       "unit": "reps",

@@ -42,7 +42,7 @@ class WorkoutController {
     /** What a set and a program can be (K-210, K-211, K-218, keel.training); load to 2 decimals, the column's. */
     @ConfigurationProperties("keel.training")
     record TrainingLimits(BigDecimal maxLoadKg, int maxReps, int maxRir, int maxPlannedSets, int maxDayExercises, int maxDayName,
-            int maxNote) {
+            int maxNote, int maxRestSeconds) {
 
         /** A note as kept: the user's words without their outer spaces; none when there are no words (K-422). */
         static String note(String text) {
@@ -60,6 +60,11 @@ class WorkoutController {
 
         boolean reps(Integer reps) {
             return reps != null && reps >= 0 && reps <= maxReps;
+        }
+
+        /** The rest before a set (K-1214): none, or whole seconds from 0 up to the contract's ceiling; never negative. */
+        boolean restSeconds(Integer seconds) {
+            return seconds == null || seconds >= 0 && seconds <= maxRestSeconds;
         }
 
         boolean rir(Integer rir) {
@@ -94,9 +99,12 @@ class WorkoutController {
     record Finish(Instant endedAt, List<String> uncleanExerciseIds, String note, Integer pausedSeconds, List<String> takenExerciseIds) {
     }
 
-    /** {@code supersetId}: the superset the set belongs to, made by the phone (K-424, ADR-035). */
+    /**
+     * {@code supersetId}: the superset the set belongs to, made by the phone (K-424, ADR-035). {@code restSeconds}: the rest the user
+     * took before the set, measured by the phone; none for a move's first set, after a pause, or from an older phone (K-1214).
+     */
     record NewSet(UUID clientId, String exerciseId, SetType setType, BigDecimal loadKg, Integer reps, Integer rir,
-            Side side, String note, UUID supersetId) {
+            Side side, String note, UUID supersetId, Integer restSeconds) {
     }
 
     /**
@@ -111,11 +119,11 @@ class WorkoutController {
     /** Contract LoggedSet. */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record LoggedSet(UUID id, UUID clientId, String exerciseId, SetType setType, BigDecimal loadKg, int reps,
-            Integer rir, Side side, String note, UUID supersetId) {
+            Integer rir, Side side, String note, UUID supersetId, Integer restSeconds) {
 
         static LoggedSet of(WorkoutStore.LoggedSet set) {
             return new LoggedSet(set.id(), set.clientId(), set.exerciseId(), set.setType(), set.loadKg(), set.reps(), set.rir(), set.side(),
-                    set.note(), set.supersetId());
+                    set.note(), set.supersetId(), set.restSeconds());
         }
     }
 
@@ -218,11 +226,12 @@ class WorkoutController {
         Optional<ExerciseCatalog.Exercise> move = set.exerciseId() == null ? Optional.empty()
                 : catalog.find(set.exerciseId()).or(() -> customs.find(account, set.exerciseId()).map(CustomExerciseStore.CustomExercise::asExercise));
         require(set.clientId() != null && move.isPresent() && set.setType() != null
-                && limits.load(set.loadKg()) && limits.reps(set.reps()) && limits.rir(set.rir()) && limits.fits(set.note()));
+                && limits.load(set.loadKg()) && limits.reps(set.reps()) && limits.rir(set.rir()) && limits.fits(set.note())
+                && limits.restSeconds(set.restSeconds()));
         require(SetRules.accepts(move.orElseThrow(), set.setType(), set.loadKg(), set.rir(), set.side()));
         WorkoutStore.Stored<WorkoutStore.LoggedSet> stored = store.log(account, id, new WorkoutStore.LoggedSet(null, set.clientId(),
                 set.exerciseId(), set.setType(), set.loadKg(), set.reps(), set.rir(), set.side(), TrainingLimits.note(set.note()), id,
-                set.supersetId()));
+                set.supersetId(), set.restSeconds()));
         if (!stored.record().workoutId().equals(id)) {
             // The clientId is already a set of another workout: not a replay of this one (ADR-024 §11).
             throw new ApiException(ErrorCode.CONFLICT);
