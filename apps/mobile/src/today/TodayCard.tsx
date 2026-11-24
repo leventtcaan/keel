@@ -1,3 +1,4 @@
+import { formatNumber } from '@/copy/format';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { type ReactNode, useRef, useState } from 'react';
@@ -45,7 +46,7 @@ function targetOf(planned: Schemas['PlannedExercise'], move: Schemas['Exercise']
 
 /** "8,420 kg": the load lifted, the server's sum, whole, in the user's unit. */
 function lifted(kg: number, units: UnitSystem): string {
-  const value = volumeValue(kg, units).toLocaleString('en-US');
+  const value = formatNumber(volumeValue(kg, units));
   return t(units === 'METRIC' ? 'units.kg' : 'units.lb', { value });
 }
 

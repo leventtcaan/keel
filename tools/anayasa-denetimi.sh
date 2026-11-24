@@ -26,6 +26,7 @@ MOBILE_SUITES=(
   routes-protected.test.ts
   retired-entries.test.ts
   kv-keys.test.ts
+  no-fixed-locale.test.ts
 )
 (cd apps/mobile && npx --no-install jest --ci "${MOBILE_SUITES[@]/#/src/__tests__/}")
 

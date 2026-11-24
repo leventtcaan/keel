@@ -5,6 +5,7 @@
  * kept as the plan showed it, never worked out here (U1). Only with calls: without the health data consent there are none,
  * and the paywall keeps the example card.
  */
+import { formatNumber } from '@/copy/format';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { DecisionBlock } from '@/components/DecisionBlock';
@@ -16,13 +17,13 @@ import { tokens } from '@/theme/tokens';
 import { weekdayDate } from '@/today/today';
 
 // "2,440": a whole number of kcal as the app writes it, in English like every word of the app.
-const KCAL = new Intl.NumberFormat('en-US');
+const KCAL = (n: number) => formatNumber(n);
 
 /** The rows of the card: the food (when the plan had a starting target), the first workout, the first call (a day). */
 export function yourPlanRows(preview: PlanPreview & { firstCall: string }): StartingCallRow[] {
   const rows: StartingCallRow[] = [];
   if (preview.startingKcal !== null) {
-    rows.push({ label: t('onboarding.plan.food'), value: t('onboarding.plan.foodKcal', { kcal: KCAL.format(preview.startingKcal) }) });
+    rows.push({ label: t('onboarding.plan.food'), value: t('onboarding.plan.foodKcal', { kcal: KCAL(preview.startingKcal) }) });
   }
   const label = preview.workoutToday
     ? t('onboarding.plan.today')

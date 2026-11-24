@@ -1,3 +1,4 @@
+import { formatNumber } from '@/copy/format';
 import { Redirect } from 'expo-router';
 import { Stack } from 'expo-router/stack';
 import { useEffect, useRef, useState } from 'react';
@@ -26,7 +27,7 @@ import { formatLoad } from '@/units/units';
 type Schemas = components['schemas'];
 
 // "2,450": a whole number of kcal as the app writes it, in English like every word of the app.
-const KCAL = new Intl.NumberFormat('en-US');
+const KCAL = (n: number) => formatNumber(n);
 
 /** The first workout shows this many moves; the rest are counted ("and 6 more"), not listed (K-1058). */
 const FIRST_MOVES = 3;
@@ -158,7 +159,7 @@ export default function PlanScreen() {
   if (starting !== null) {
     callRows.push({
       label: t('onboarding.plan.food'),
-      value: t('onboarding.plan.foodKcal', { kcal: KCAL.format(starting.targetKcal) }),
+      value: t('onboarding.plan.foodKcal', { kcal: KCAL(starting.targetKcal) }),
       // The days the scale watches it before a calorie call: the engine's, by sex (never written here, ADR-072 Ek 1).
       note: t('onboarding.plan.foodNote', { days: starting.observationDays }),
     });

@@ -5,6 +5,7 @@
  * before they were) falls back to the longer sentence (`decision.rule.<rule>`); a call resting on the safety net says no
  * reason at all, only its kind of source (ADR-028 #24).
  */
+import { formatNumber } from '@/copy/format';
 import type { components } from '@/api/schema';
 import { has, t } from '@/copy';
 import { formatWeight, type UnitSystem } from '@/units/units';
@@ -13,7 +14,7 @@ type Schemas = components['schemas'];
 
 export type CallReason = { text: string | null; tag: Schemas['SourceTag'] };
 
-const NUMBER = new Intl.NumberFormat('en-US');
+const NUMBER = (n: number) => formatNumber(n);
 
 /**
  * The pace as a weight in the user's units with its sign as read (ADR-029): the server's kilograms are shown once, rounded
@@ -32,7 +33,7 @@ function figures(facts: Schemas['ReasonFacts'] | undefined, units: UnitSystem): 
   if (facts === undefined) return {};
   const found: Record<string, string | number> = {};
   if (facts.kgPerWeek !== undefined) found.kgPerWeek = pace(facts.kgPerWeek, units);
-  if (facts.kcal !== undefined) found.kcal = NUMBER.format(facts.kcal);
+  if (facts.kcal !== undefined) found.kcal = NUMBER(facts.kcal);
   for (const name of ['weeks', 'done', 'planned', 'sessions'] as const) {
     const value = facts[name];
     if (value !== undefined) found[name] = value;

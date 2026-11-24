@@ -8,6 +8,7 @@ import * as path from 'path';
 import { type AccessTokenSource, createApiClient } from '@/api/client';
 import { clientFeatures } from '@/api/features';
 import { parseBaseUrl } from '@/api/config';
+import { setActiveLocale } from '@/copy/locales';
 
 const ROOT = path.resolve(__dirname, '../../../..');
 
@@ -129,4 +130,18 @@ describe('the features the phone shows (ADR-091 Ek 1, K-1202)', () => {
     expect(clientFeatures.header).toBe(valueOf('client_features_header'));
     expect(clientFeatures.lockedCalls).toBe(valueOf('locked_calls_feature_token'));
   });
+});
+
+test('every request says the language showing in Accept-Language (K-1211)', async () => {
+  const fetch = fakeServer();
+  const api = createApiClient({ baseUrl: 'https://api.example.test', accessToken: noSession, fetch });
+  try {
+    await api.GET('/health');
+    expect(fetch.mock.calls[0][0].headers.get('Accept-Language')).toBe('en');
+    setActiveLocale('tr');
+    await api.GET('/health');
+    expect(fetch.mock.calls[1][0].headers.get('Accept-Language')).toBe('tr');
+  } finally {
+    setActiveLocale('en');
+  }
 });

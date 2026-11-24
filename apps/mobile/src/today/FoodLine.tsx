@@ -1,3 +1,4 @@
+import { formatNumber } from '@/copy/format';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { type ReactNode, useState } from 'react';
@@ -41,7 +42,7 @@ export function FoodLine({ budget, footer = null }: { budget: Loaded<Schemas['Da
     );
   }
   const unit = t('food.budget.kcalUnit');
-  const single = (value: number) => t('food.budget.single', { value: value.toLocaleString('en-US'), unit });
+  const single = (value: number) => t('food.budget.single', { value: formatNumber(value), unit });
   let lead: string;
   let amount: string | null;
   let detailLine: string | null = null;
@@ -77,7 +78,7 @@ export function FoodLine({ budget, footer = null }: { budget: Loaded<Schemas['Da
   const targetKcal = budget.state === 'ready' ? budget.value.targetKcal : 0;
   const bar =
     targetKcal > 0 ? (
-      <ProgressBar value={eatenKcal / targetKcal} label={t('food.totals.barLabel', { eaten: eatenKcal.toLocaleString('en-US'), target: targetKcal.toLocaleString('en-US'), unit })} />
+      <ProgressBar value={eatenKcal / targetKcal} label={t('food.totals.barLabel', { eaten: formatNumber(eatenKcal), target: formatNumber(targetKcal), unit })} />
     ) : null;
   const amountText = amount === null ? null : <Text style={[styles.amount, { color: color.text }]}>{amount}</Text>;
   return (

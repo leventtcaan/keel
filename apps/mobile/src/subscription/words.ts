@@ -3,6 +3,7 @@
  * only when the store says this user can have it, what is charged when it ends, that it renews until cancelled, and how to
  * cancel. Every word from the copy; every price the store's own string (K2).
  */
+import { formatDate } from '@/copy/format';
 import { t } from '@/copy';
 import { weekdayDate } from '@/today/today';
 
@@ -10,11 +11,11 @@ import { subscriptionParams } from './params';
 import type { Plan } from './store';
 
 // "Oct 11, 2026": the phone's own calendar day of a moment, in English like every word of the app.
-const DAY = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+const DAY = (d: Date) => formatDate(d, { month: 'short', day: 'numeric', year: 'numeric' });
 
 /** A moment (ISO, or a Date) as the day it falls on, on this phone. */
 export function dayWords(moment: string | Date): string {
-  return DAY.format(typeof moment === 'string' ? new Date(moment) : moment);
+  return DAY(typeof moment === 'string' ? new Date(moment) : moment);
 }
 
 /** "7 days", "1 week": the trial in the store's own unit. */

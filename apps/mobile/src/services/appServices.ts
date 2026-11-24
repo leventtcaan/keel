@@ -43,6 +43,7 @@ import { HEALTH_KINDS, type SyncProblem, type SyncQueue, createSyncQueue } from 
 import { newClientId, sendWithApi } from '@/sync/send';
 import { type TakeBack, createTakeBack } from '@/sync/takeBack';
 import { type LocalRecord, type SqlDatabase, openRecordStore } from '@/sync/store';
+import { type LanguagePreference, createLanguage } from '@/copy/language';
 import { type AppearancePreference, createAppearance } from '@/theme/appearance';
 import { type KeyValue, type UnitsPreference, createUnitsPreference } from '@/units/preference';
 
@@ -90,6 +91,8 @@ export type AppServices = {
   units: UnitsPreference;
   /** Light, Dark or System (ADR-070 #3). */
   appearance: AppearancePreference;
+  /** System, English or Türkçe (K-1211): the copy and the number and date formats follow it. */
+  language: LanguagePreference;
   /**
    * The SCOFF gate's result for the shape projection (K-607, ADR-050), on this phone only. At sign-out "unavailable" stays
    * (signing out must not re-open the gate) and "clear" goes (the next person is asked).
@@ -198,6 +201,7 @@ export async function createAppServices({
   const queue = createSyncQueue({ store, send: sendWithApi(api), report });
   const units = await createUnitsPreference({ kv, api, locale });
   const appearance = await createAppearance({ kv });
+  const language = await createLanguage({ kv, deviceLocale: locale });
   const projection = await createProjectionAccess({ kv, locale });
   const projectionSwitch = await createProjectionSwitch({ kv, access: projection });
   const reportName = (error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' });
@@ -293,7 +297,8 @@ export async function createAppServices({
     }
     store.clear().catch(reportError);
     units.forget().catch(reportError); // the preference belongs to the account too
-    appearance.forget().catch(reportError); // and the appearance chosen: the next person starts on Light
+    appearance.forget().catch(reportError);
+    language.forget().catch(reportError); // and the language chosen: the next person starts on System // and the appearance chosen: the next person starts on Light
     profile.forget().catch(reportError); // and so does "onboarding done"
     consents.forget().catch(reportError); // and what the phone knew of its consents
     forgetSentActivityDays(kv).catch(reportError); // and which Health days it sent (K-404)
@@ -326,6 +331,7 @@ export async function createAppServices({
     queue,
     units,
     appearance,
+    language,
     projection,
     projectionSwitch,
     profile,

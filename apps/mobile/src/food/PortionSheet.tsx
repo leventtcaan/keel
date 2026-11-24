@@ -1,3 +1,4 @@
+import { formatNumber } from '@/copy/format';
 import { useContext, useEffect, useState } from 'react';
 import { Animated, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
@@ -135,7 +136,7 @@ export function PortionSheet({ item, index, known, recipes, estimate, logged, sl
       <View style={styles.part}>
         <View style={styles.bigLine}>
           <Text testID={`numbers-${index}`} style={[styles.big, { color: color.text }]}>
-            {numbers.kcal.toLocaleString('en-US')}
+            {formatNumber(numbers.kcal)}
           </Text>
           <Text style={[styles.bigUnit, { color: color.muted }]}>{t('food.budget.kcalUnit')}</Text>
         </View>

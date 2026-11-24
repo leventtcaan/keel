@@ -4,6 +4,7 @@
  * server states; no body weight, calorie, body fat or estimated max is ever read here (U4, V3, B10), no blame (U7), and
  * the weekly call is not a sticker (ADR-076 #1). Drawing them is Sticker.tsx; handing them on is shareImage.ts.
  */
+import { formatNumber } from '@/copy/format';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { dayName, exerciseName, shortDate } from '@/train/program';
@@ -29,7 +30,7 @@ export type StickerFacts = {
   moves: ReadonlyMap<string, Move>;
 };
 
-const NUMBER = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+const NUMBER = (n: number) => formatNumber(n, { maximumFractionDigits: 0 });
 const plural = (key: string, n: number) => t(`${key}.${n === 1 ? 'one' : 'other'}`);
 
 /** The stickers there is something true to say for, in the order the screen offers them. */
@@ -45,7 +46,7 @@ function workout({ workout: end, moves }: StickerFacts, units: UnitSystem): Stic
   const day = end.program?.days.find((d) => d.id === end.programDayId);
   const stats: Stat[] = [];
   if (summary.minutes !== undefined) stats.push({ value: String(summary.minutes), label: plural('workoutEnd.minutes', summary.minutes) });
-  stats.push({ value: NUMBER.format(loadValue(summary.liftedKg, units)), label: t(units === 'METRIC' ? 'workoutEnd.liftedKg' : 'workoutEnd.liftedLb'), accent: true });
+  stats.push({ value: NUMBER(loadValue(summary.liftedKg, units)), label: t(units === 'METRIC' ? 'workoutEnd.liftedKg' : 'workoutEnd.liftedLb'), accent: true });
   stats.push({ value: String(summary.workingSets), label: plural('workoutEnd.sets', summary.workingSets) });
   const record = summary.marks.find((m) => m.kind === 'RECORD');
   if (record !== undefined) {

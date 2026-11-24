@@ -3273,6 +3273,13 @@
     "title": "Settings",
     "entry": "Settings",
     "serverError": "Something went wrong on our side. Try again in a moment.",
+    "language": {
+      "title": "Language",
+      "system": "Device language",
+      "en": "English",
+      "tr": "Türkçe",
+      "failed": "Couldn't save that. Try again."
+    },
     "appearance": {
       "title": "Appearance",
       "light": "Light",

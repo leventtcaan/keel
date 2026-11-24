@@ -1,3 +1,4 @@
+import { formatNumber } from '@/copy/format';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -12,7 +13,7 @@ import { tokens } from '@/theme/tokens';
 import type { Target } from './sections';
 import { openDetail } from '@/settings/detail';
 
-const num = (n: number) => n.toLocaleString('en-US');
+const num = (n: number) => formatNumber(n);
 /** An estimate stays a range (U5); a day with nothing logged is a plain 0. */
 function eatenText(low: number, high: number, spoken = false): string {
   if (high === 0) return '0';

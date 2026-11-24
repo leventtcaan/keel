@@ -1,3 +1,4 @@
+import { formatNumber } from '@/copy/format';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
@@ -72,7 +73,7 @@ export function MealTray({ title, items, onEdit, onViewDay }: Props) {
               <Text style={[styles.chipName, { color: color.text }]}>
                 {item.name}
               </Text>
-              {item.kcal === null ? null : <Text style={[styles.chipKcal, { color: color.muted }]}>{item.kcal.toLocaleString('en-US')}</Text>}
+              {item.kcal === null ? null : <Text style={[styles.chipKcal, { color: color.muted }]}>{formatNumber(item.kcal)}</Text>}
             </Pressable>
           ))}
           {moreChip}

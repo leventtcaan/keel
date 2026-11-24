@@ -2,9 +2,10 @@ import { useFonts } from 'expo-font';
 import { router } from 'expo-router';
 import { Stack } from 'expo-router/stack';
 import * as SplashScreen from 'expo-splash-screen';
-import { type ComponentProps, type ReactNode, useEffect } from 'react';
+import { type ComponentProps, Fragment, type ReactNode, useEffect, useSyncExternalStore } from 'react';
 import { Appearance, StyleSheet, View } from 'react-native';
 
+import { activeLocale, subscribeLocale } from '@/copy/locales';
 import { GuideProvider } from '@/guide/GuideProvider';
 import { previousScreenName, pushedScreen } from '@/navigation/pushed';
 import { SavedBanner, SavedProvider } from '@/saved/saved';
@@ -130,7 +131,13 @@ function ChosenTheme({ children }: { children: ReactNode }) {
   useEffect(() => {
     Appearance.setColorScheme(appearance === 'system' ? 'unspecified' : appearance);
   }, [appearance]);
-  return <ThemeProvider appearance={appearance}>{children}</ThemeProvider>;
+  // A new language draws every screen again: the stack under Settings holds text already drawn in the old one (K-1211).
+  const locale = useSyncExternalStore(subscribeLocale, activeLocale);
+  return (
+    <ThemeProvider appearance={appearance}>
+      <Fragment key={locale}>{children}</Fragment>
+    </ThemeProvider>
+  );
 }
 
 /** The first-use guide (K-1065) is held above the stack, so Settings can ask for it and This week, under it, draws it. */

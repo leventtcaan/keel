@@ -34,6 +34,7 @@ import { deviceShareStory } from '@/share/deviceStory';
 import { facebookAppId } from '@/share/storyConfig';
 import type { StoryInput, StoryResult } from '@/share/story';
 import { deviceTriggers, startAutoSync } from '@/sync/autoSync';
+import type { Language } from '@/copy/locales';
 import type { Appearance } from '@/theme/appearance';
 import type { UnitSystem } from '@/units/units';
 
@@ -195,6 +196,12 @@ export function useUnits(): UnitSystem {
 export function useAppearance(): Appearance {
   const { appearance } = useAppServices();
   return useSyncExternalStore(appearance.subscribe, appearance.current);
+}
+
+/** System, English or Türkçe as chosen in Settings (K-1211). */
+export function useLanguage(): Language {
+  const { language } = useAppServices();
+  return useSyncExternalStore(language.subscribe, language.current);
 }
 
 /** Whether the signed-in account has finished onboarding (K-306); the root layout routes on it. */
