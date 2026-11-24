@@ -5874,7 +5874,7 @@ tasks:
     module: engine
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-1204]
     why: "K-1204 sonrası haftada 2 tartan ve haftada 1,2 kg kaybeden biri karar alıyor ama kayıp tavanı yoğun veri istediği için 9. haftaya kadar yakalanmıyor (GS-27). Levent 24 Kas: seyrekte de çalışsın"
     acceptance:
@@ -5891,7 +5891,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: []
     why: "Denetim 1.6: t() tek dil, expo-localization yok, 33 yerde 'en-US' sabit"
     acceptance:
@@ -5939,7 +5939,7 @@ tasks:
     module: training
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: []
     why: "Denetim 1.3: dinlenme her harekette 120 sn, rest_seconds_max kullanılmıyor, gerçek dinlenme kaydedilmiyor; Levent: aralıkta tutmak ve geri bildirimden öğrenmek"
     acceptance:
@@ -6030,6 +6030,24 @@ tasks:
       - "expo-video ile oynatma, boyut bütçesi testi (tools/clip.py)"
     tests: ["katalog testi", "npm run check"]
     refs: ["plan/evre-8-butun-urun.md", "plan/kararlar/ADR-091-evre-8-kararlari.md"]
+
+  - id: K-1227
+    title: "Yerler arası yürüme rotası haritada (noktalı), adım karşılığı"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: L
+    status: todo
+    depends_on: [K-1216]
+    why: "Levent 25 Kas: 'gym ile evim arasındaki adım sayımı haritada nokta nokta görsem, planlarımı buna göre güncellerim'"
+    acceptance:
+      - "L: başlamadan bölünür (yer seçimi + rota · harita görünümü)"
+      - "Kullanıcı ev/salon/başka yeri adres aramasıyla ya da haritadan seçer; yerler cihazda kalır, sunucuya gitmez; GPS takibi yok"
+      - "Yürüme rotası mesafesi platformun yönlendirme servisiyle bir kez hesaplanır, adım karşılığı K-1216'nın adım/km değeriyle"
+      - "Harita görünümü noktalı rota + uçlarda yer adı; K-1216 önerisi bu rotaları kullanır"
+      - "Yeni yerel modül ise ADR + yeni geliştirme derlemesi; rıza/izin metni copy dosyasında, Apple Health rızası 'konum okumayız' ile çelişmez"
+    tests: ["jest", "cihaz/simülatör"]
+    refs: ["plan/kararlar/ADR-091-evre-8-kararlari.md"]
 
 # 8c · 1.2
   - id: K-1221
