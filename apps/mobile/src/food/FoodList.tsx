@@ -39,13 +39,14 @@ export type FoodRowData = {
  * A list of foods to pick from (Evre 7 A, ADR-090 Ek 6): one card, rows split by a hairline. Each row is the food (name, brand and portion,
  * its macros as three coloured marks), its calories as one number, a heart and a plus. The row opens the portion step; the plus logs the
  * portion shown right away (a long press on it opens the step too); the heart keeps the food in Favorites. One row, one look, for
- * search results, favorites, the foods usually had at the meal and the recent ones.
+ * search results, favorites, the foods usually had at the meal and the recent ones. {@code dimmed}: an opacity, for a list that is about
+ * to be replaced (the old words' results while the new words are searched, K-1208).
  */
-export function FoodList({ title, rows, testID }: { title?: string; rows: FoodRowData[]; testID?: string }) {
+export function FoodList({ title, rows, testID, dimmed }: { title?: string; rows: FoodRowData[]; testID?: string; dimmed?: number }) {
   const { color } = useTheme();
   if (rows.length === 0) return null;
   return (
-    <View testID={testID} style={styles.group}>
+    <View testID={testID} style={[styles.group, dimmed === undefined ? null : { opacity: dimmed }]}>
       {title !== undefined && <SectionHeader title={title} />}
       <View style={[styles.card, { backgroundColor: color.surface }]}>
         {rows.map((row, index) => (

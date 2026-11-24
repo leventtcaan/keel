@@ -26,8 +26,8 @@ type Schemas = components['schemas'];
 type Found =
   | { state: 'idle' }
   | { state: 'tooShort' }
-  // Asked, not answered yet: the old list is gone (ADR-085 #2).
-  | { state: 'searching' }
+  // Asked, not answered yet: the list of the old words stays, dimmed, until the answer replaces it (K-1208; ADR-085 #2 cleared it per key).
+  | { state: 'searching'; previous?: Schemas['Food'][] }
   // No answer at all (the request threw) vs an answer that was an error (ADR-085 #3): the connection is blamed only for the first.
   | { state: 'failed' }
   | { state: 'serverError' }
@@ -66,7 +66,7 @@ type Props = {
 /**
  * Finding a food (K-407, K-1063; Evre 7 A): by name in the database (ADR-008), or by a barcode read by the camera or typed — and, where
  * it can be one, the user's own recipe by name (K-423). It searches as the user types (ADR-085): a short wait after the
- * last key, the old list gone at once, the keyboard's Search key without the wait. Each answer belongs to the search that
+ * last key, the old list dimmed until the answer replaces it (K-1208), the keyboard's Search key without the wait. Each answer belongs to the search that
  * asked: a late one (slow network) never replaces a newer list, and none comes back once something was picked. A result is a
  * FoodList row: name, brand and portion, the macros as three marks, its calories as one number (ADR-090 #5), a heart and a plus that
  * logs it as it stands. A barcode that is found goes straight to the portion step; one that is not offers "Add it" (the product from its
@@ -125,17 +125,27 @@ export function FoodPicker({ full, onFood, onLogNow, onQuickAdd, idle, belowSear
     );
   };
 
-  /** What was shown belongs to the old words: gone at once. Too few letters is a hint; enough is a wait, then a search. */
+  /** The foods of the list on the screen, kept while newer words are searched (none: nothing to keep). */
+  const shown = (): Schemas['Food'][] | undefined => (found.state === 'found' ? found.foods : found.state === 'searching' ? found.previous : undefined);
+  const searching = (): Found => {
+    const previous = shown();
+    return previous === undefined ? { state: 'searching' } : { state: 'searching', previous };
+  };
+
+  /**
+   * What was shown belongs to the old words, but it stays, dimmed, until the answer replaces it: no flicker on every key (K-1208). Empty
+   * or too few letters take it away. Too few letters is a hint; enough is a wait, then a search.
+   */
   const type = (text: string) => {
     setQuery(text);
     stopWaiting();
     searchSeq.current++;
-    setRecipeHits([]);
     const q = text.trim();
+    if (q.length < foodParams.searchMinChars) setRecipeHits([]);
     if (q === '') setFound({ state: 'idle' });
     else if (q.length < foodParams.searchMinChars) setFound({ state: 'tooShort' });
     else {
-      setFound({ state: 'searching' });
+      setFound(searching());
       waiting.current = setTimeout(() => void ask(q), foodParams.searchDelayMs);
     }
   };
@@ -145,8 +155,7 @@ export function FoodPicker({ full, onFood, onLogNow, onQuickAdd, idle, belowSear
     const q = query.trim();
     if (q.length < foodParams.searchMinChars) return type(query);
     stopWaiting();
-    setRecipeHits([]);
-    setFound({ state: 'searching' });
+    setFound(searching());
     void ask(q);
   };
 
@@ -181,7 +190,7 @@ export function FoodPicker({ full, onFood, onLogNow, onQuickAdd, idle, belowSear
     else setFound(answer);
   };
 
-  const results = found.state === 'found' && !full ? found.foods : [];
+  const results = full ? [] : (shown() ?? []);
   const note = full
     ? t('meal.full', { max: foodParams.itemsMax })
     : found.state === 'tooShort'
@@ -223,7 +232,7 @@ export function FoodPicker({ full, onFood, onLogNow, onQuickAdd, idle, belowSear
       ...(added?.has(food.id) === true ? { added: true } : {}),
     };
   });
-  const resultList = <FoodList testID="results" rows={rows} />;
+  const resultList = <FoodList testID="results" rows={rows} {...(found.state === 'searching' ? { dimmed: foodParams.searchStaleOpacity } : {})} />;
   // A barcode that was not found: the two ways on, in place of a dead end (K-1063).
   const missed =
     found.state === 'notInDatabase' && !full ? (

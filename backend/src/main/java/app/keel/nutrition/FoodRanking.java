@@ -17,8 +17,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  */
 final class FoodRanking {
 
-    /** How a food is logged: how many times by this user, by how many other accounts (distinct, each counted once). */
-    record Popularity(int mine, int otherAccounts) {
+    /**
+     * How a food is logged: by this user (each log weighs 1 today and less the older it is, K-1208: a staple eaten this week outweighs
+     * one eaten once last year), by how many other accounts (distinct, each counted once).
+     */
+    record Popularity(double mine, int otherAccounts) {
         static final Popularity NONE = new Popularity(0, 0);
     }
 
@@ -59,7 +62,7 @@ final class FoodRanking {
     static int bonus(Popularity popularity, Weights weights) {
         int others = popularity.otherAccounts() >= weights.popularityMinAccounts()
                 ? Math.min(weights.rankStep() - 1, (int) Math.round(weights.globalBonus() * Math.log1p(popularity.otherAccounts()))) : 0;
-        return Math.min(popularity.mine(), weights.personalCap()) * weights.personalBonus() + others;
+        return (int) Math.round(Math.min(popularity.mine(), weights.personalCap()) * weights.personalBonus()) + others;
     }
 
     /** The hits by text score plus popularity, best first, at most {@code limit}; a tie keeps the order the hits came in. */

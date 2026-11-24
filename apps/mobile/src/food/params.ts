@@ -14,6 +14,7 @@ export const foodParams = {
   slotStarts: param<{ slot: components['schemas']['MealSlot']; fromHour: number }[]>('meal_slot_starts'),
   searchMinChars: param<number>('food_search_min_chars'),
   searchDelayMs: param<number>('food_search_delay_ms'),
+  searchStaleOpacity: param<number>('food_search_stale_opacity'),
   servingVolumeWords: param<string[]>('food_serving_volume_words'),
   defaultGrams: param<number>('meal_default_grams'),
   searchMaxChars: param<number>('food_search_max_chars'),

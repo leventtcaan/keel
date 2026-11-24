@@ -58,6 +58,14 @@
       "note": "The amount a food opens on when it is counted in grams (ADR-085 #5): 100 g, the basis the database's values are given in, so the estimate shows at once and the user changes it. A serving opens on 1."
     },
     {
+      "key": "food_search_stale_opacity",
+      "value": 0.45,
+      "unit": "ratio",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-085-yemek-aramasi.md#ADR-085",
+      "note": "The list of the old words stays while the new words are searched (no clearing per key, K-1208) at this opacity: clearly 'about to change', still readable. A product choice; no source gives a number."
+    },
+    {
       "key": "food_search_max_chars",
       "value": 100,
       "unit": "characters",

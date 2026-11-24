@@ -33,7 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
  * asked; logging a meal (K-209) is health data and is.
  */
 @RestController
-@EnableConfigurationProperties({FoodController.NutritionLimits.class, FoodRanking.Weights.class, FoodPortions.Settings.class})
+@EnableConfigurationProperties({FoodController.NutritionLimits.class, FoodRanking.Weights.class, FoodScoring.Settings.class, FoodPortions.Settings.class})
 class FoodController {
 
     /** What a request can ask for (keel.nutrition). */
@@ -122,10 +122,10 @@ class FoodController {
         require(query.length() >= MIN_QUERY && query.length() <= limits.maxQueryLength() && limit >= 1 && limit <= limits.maxSearchResults());
         Parameters p = estimator.parametersFor(account);
         List<String> avoid = profiles.foodsAvoided(account);
-        // The user's own foods first (they made them for this), then the database's, best first; the list is never longer than asked.
-        List<FoodStore.Food> found = new java.util.ArrayList<>(ownFoods.search(account, FoodSearchTerms.of(query), limit));
-        found.addAll(foods.search(query, limit, new FoodStore.Searcher(Optional.of(account.value()), regionOf(account, acceptLanguage))));
-        return found.stream().limit(limit).map(food -> view(food, p, portions, avoid)).toList();
+        // The user's own foods are scored with the database's (K-1208): a bonus for being theirs, not a place before a better match.
+        List<FoodStore.Food> made = ownFoods.search(account, FoodSearchTerms.of(query), limits.maxOwnFoods());
+        List<FoodStore.Food> found = foods.search(query, limit, new FoodStore.Searcher(Optional.of(account.value()), regionOf(account, acceptLanguage)), made);
+        return found.stream().map(food -> view(food, p, portions, avoid)).toList();
     }
 
     @PostMapping("/v1/foods/barcode-lookup")

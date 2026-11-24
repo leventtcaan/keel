@@ -275,6 +275,7 @@ export function LogMeal({ day, slotParam }: Props) {
           <MealPicker value={slot} onChange={setPicked} kcal={kcalBySlot} />
           <FoodPicker
             full={false}
+            autoFocus
             onFood={(food) => open(food)}
             onLogNow={(food) => void logFood(food)}
             onQuickAdd={() => setItems(addQuick([], { kcal: '', protein: '', carbs: '', fat: '' }))}
