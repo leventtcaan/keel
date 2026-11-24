@@ -6,6 +6,8 @@
  */
 import createClient, { type Client, type Middleware } from 'openapi-fetch';
 
+import { activeLocale } from '@/copy/locales';
+
 import { clientFeatures } from './features';
 import type { paths } from './schema';
 
@@ -67,6 +69,8 @@ export function createApiClient({ baseUrl, accessToken, refresh, fetch }: Option
   // retried after a refresh says it again, and it takes no turn of its own in the middleware chain.
   const send: Fetch = (request) => {
     request.headers.set(clientFeatures.header, clientFeatures.lockedCalls);
+    // The language showing, for any text the server writes (K-1211).
+    request.headers.set('Accept-Language', activeLocale());
     return base(request);
   };
   const signed = refresh === undefined ? send : retryOnceAfterRefresh(send, refresh, `${baseUrl}/v1/auth/`);

@@ -1,3 +1,4 @@
+import { formatDate } from '@/copy/format';
 import { useEffect, useRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -18,8 +19,8 @@ type Props = {
 };
 
 const CELL = 48;
-const WEEKDAY_LETTER = new Intl.DateTimeFormat('en-US', { weekday: 'narrow', timeZone: 'UTC' });
-const letterOf = (day: string) => WEEKDAY_LETTER.format(new Date(`${day}T00:00:00Z`));
+const WEEKDAY_LETTER = (d: Date) => formatDate(d, { weekday: 'narrow', timeZone: 'UTC' });
+const letterOf = (day: string) => WEEKDAY_LETTER(new Date(`${day}T00:00:00Z`));
 const dateOf = (day: string) => String(Number(day.slice(8, 10)));
 
 /**

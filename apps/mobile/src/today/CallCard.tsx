@@ -1,3 +1,4 @@
+import { formatDate } from '@/copy/format';
 import { useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -18,7 +19,7 @@ import { labelKey, reasonLines } from './today';
 type Decision = components['schemas']['Decision'];
 
 // "Mon, Oct 5": the review day as a date only, in English like every word of the app.
-const REVIEW_DAY = new Intl.DateTimeFormat('en-US', {
+const REVIEW_DAY = (d: Date) => formatDate(d, {
   weekday: 'short',
   month: 'short',
   day: 'numeric',
@@ -115,7 +116,7 @@ export function CallCard({ decision, onChanged }: { decision: Decision | null; o
       {waits ? <Text style={[styles.text, { color: color.decisionTextSecondary }]}>{t('today.call.waitNote')}</Text> : null}
       {change}
       <Text style={[styles.small, { color: color.decisionMuted }]}>
-        {t('today.call.nextCall', { date: REVIEW_DAY.format(new Date(`${decision.nextCallOn}T00:00:00Z`)) })}
+        {t('today.call.nextCall', { date: REVIEW_DAY(new Date(`${decision.nextCallOn}T00:00:00Z`)) })}
       </Text>
       <Button label={open ? t('today.call.hide') : t('today.call.why')} variant="ghost" size="sm" onPress={() => setOpen(!open)} />
       {reasons}

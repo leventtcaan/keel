@@ -1,3 +1,4 @@
+import { formatNumber } from '@/copy/format';
 import type { SFSymbol } from 'expo-symbols';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -44,7 +45,7 @@ export function MealPicker({ value, onChange, kcal }: Props) {
             key={slot}
             testID={`slot-${slot}`}
             accessibilityRole="button"
-            accessibilityLabel={amount === undefined ? t('meal.picker.spokenEmpty', { slot: name }) : t('meal.picker.spoken', { slot: name, kcal: t('food.single.kcal', { value: amount.toLocaleString('en-US') }) })}
+            accessibilityLabel={amount === undefined ? t('meal.picker.spokenEmpty', { slot: name }) : t('meal.picker.spoken', { slot: name, kcal: t('food.single.kcal', { value: formatNumber(amount) }) })}
             accessibilityState={{ selected }}
             onPress={() => onChange(slot)}
             style={[styles.pill, selected && { backgroundColor: color.text }]}>
@@ -55,7 +56,7 @@ export function MealPicker({ value, onChange, kcal }: Props) {
             {amount === undefined ? (
               <View style={styles.kcalSlot} />
             ) : (
-              <Text style={[styles.kcal, { color: selected ? color.background : color.muted }]}>{amount.toLocaleString('en-US')}</Text>
+              <Text style={[styles.kcal, { color: selected ? color.background : color.muted }]}>{formatNumber(amount)}</Text>
             )}
           </Pressable>
         );

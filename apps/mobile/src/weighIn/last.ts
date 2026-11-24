@@ -2,16 +2,17 @@
  * "Last: 80.4 kg" and when (K-980 review): the phone only formats what the server sent. A date is written on the phone's
  * calendar and left out when it is today's; the year only when it is not this year's. No threshold lives here.
  */
+import { formatDate } from '@/copy/format';
 import type { components } from '@/api/schema';
 import { localDay } from '@/today/today';
 
-const SHORT = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' });
-const WITH_YEAR = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+const SHORT = (d: Date) => formatDate(d, { month: 'short', day: 'numeric' });
+const WITH_YEAR = (d: Date) => formatDate(d, { month: 'short', day: 'numeric', year: 'numeric' });
 
 export function lastWeighInDate(measuredAt: string, now: Date): string | null {
   const at = new Date(measuredAt);
   if (Number.isNaN(at.getTime()) || localDay(at) === localDay(now)) return null;
-  return (at.getFullYear() === now.getFullYear() ? SHORT : WITH_YEAR).format(at);
+  return (at.getFullYear() === now.getFullYear() ? SHORT : WITH_YEAR)(at);
 }
 
 /**

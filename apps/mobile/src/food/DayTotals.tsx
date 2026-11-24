@@ -1,3 +1,4 @@
+import { formatNumber } from '@/copy/format';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -43,13 +44,13 @@ export function DayTotals({ budget, targets, summary, hint }: Props) {
   if (targetKnown) {
     // The same three states as before (budget.ts): a range that reaches zero or crosses it is neither "left" nor "past" (U7).
     const { kcal } = budgetLine(budget.value.left);
-    if (kcal.kind === 'left') headline = t('food.totals.left', { value: mid(kcal).toLocaleString('en-US'), unit });
+    if (kcal.kind === 'left') headline = t('food.totals.left', { value: formatNumber(mid(kcal)), unit });
     else if (kcal.kind === 'over') {
       caption = t('food.budget.over');
-      headline = t('food.budget.single', { value: mid(kcal).toLocaleString('en-US'), unit });
+      headline = t('food.budget.single', { value: formatNumber(mid(kcal)), unit });
     } else headline = t('food.budget.around');
   } else {
-    headline = t('food.totals.eaten', { value: (eaten === undefined ? 0 : mid(eaten.kcal)).toLocaleString('en-US'), unit });
+    headline = t('food.totals.eaten', { value: formatNumber(eaten === undefined ? 0 : mid(eaten.kcal)), unit });
   }
 
   // Each macro in its own colour (the same three everywhere), its name beside the dot, "eaten / target g", and a bar where a target exists.
@@ -79,7 +80,7 @@ export function DayTotals({ budget, targets, summary, hint }: Props) {
   const target = targetKnown ? budget.value.targetKcal : undefined;
   const eatenKcal = eaten === undefined ? 0 : mid(eaten.kcal);
   const kcalBar =
-    target === undefined || target <= 0 ? null : <ProgressBar value={eatenKcal / target} label={t('food.totals.barLabel', { eaten: eatenKcal.toLocaleString('en-US'), target: target.toLocaleString('en-US'), unit })} />;
+    target === undefined || target <= 0 ? null : <ProgressBar value={eatenKcal / target} label={t('food.totals.barLabel', { eaten: formatNumber(eatenKcal), target: formatNumber(target), unit })} />;
   const rangeLines =
     eaten === undefined
       ? t('food.totals.nothing')

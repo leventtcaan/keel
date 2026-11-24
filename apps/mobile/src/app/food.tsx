@@ -1,3 +1,4 @@
+import { formatNumber } from '@/copy/format';
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -180,7 +181,7 @@ export default function FoodScreen() {
   const slots = data?.slots ?? [];
   // Only from the user's own pattern: the first days' slots are a guess from one or two meals, not a habit (K-1066).
   const perMeal = data !== null && data.budget.state === 'ready' && data.patternDays >= foodParams.mealHintMinDays ? perMealKcal(data.budget.value.targetKcal, slots.length) : null;
-  const hint = perMeal === null ? null : t('food.totals.hint', { count: slots.length, kcal: perMeal.toLocaleString('en-US') });
+  const hint = perMeal === null ? null : t('food.totals.hint', { count: slots.length, kcal: formatNumber(perMeal) });
   const noTarget = data !== null && data.budget.state === 'none' && data.summary === undefined && isToday;
 
   const retry = failed ? (

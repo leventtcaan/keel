@@ -4,6 +4,7 @@
  * server does (the consistency, K-420; the call, K-212): this only reads, picks today's day out of the program, and
  * finds the words for what the server said.
  */
+import { formatDate } from '@/copy/format';
 import type { ApiClient } from '@/api/client';
 import type { components } from '@/api/schema';
 import { has } from '@/copy';
@@ -115,10 +116,10 @@ export async function loadToday(api: ApiClient, day: string): Promise<TodayData>
 }
 
 // "Mon, Sep 28": a calendar day with its weekday, in English like every word of the app, read as a date only.
-const WEEKDAY_DATE = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
+const WEEKDAY_DATE = (d: Date) => formatDate(d, { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
 
 export function weekdayDate(day: string): string {
-  return WEEKDAY_DATE.format(new Date(`${day}T00:00:00Z`));
+  return WEEKDAY_DATE(new Date(`${day}T00:00:00Z`));
 }
 
 /** Today on the phone's calendar, as the API writes a day. */

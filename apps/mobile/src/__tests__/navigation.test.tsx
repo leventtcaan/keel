@@ -91,6 +91,7 @@ jest.mock('@/services/ServicesProvider', () => ({
   useAppServices: () => mockServices,
   useUnits: () => 'METRIC',
   useAppearance: () => 'light',
+  useLanguage: () => 'system',
 }));
 
 beforeEach(() => {

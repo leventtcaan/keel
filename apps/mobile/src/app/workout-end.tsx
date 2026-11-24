@@ -1,3 +1,4 @@
+import { formatNumber } from '@/copy/format';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { setStatusBarStyle } from 'expo-status-bar';
 import { SymbolView } from 'expo-symbols';
@@ -24,7 +25,7 @@ import { type UnitSystem, formatLoad, volumeValue } from '@/units/units';
 
 type Schemas = components['schemas'];
 
-const NUMBER = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+const NUMBER = (n: number) => formatNumber(n, { maximumFractionDigits: 0 });
 
 /**
  * The workout's end (K-974, ADR-075 #7; prototype `#summary`), always dark (focus mode, ADR-070 #4). "Workout complete"
@@ -168,12 +169,12 @@ function Facts({ end, day, units }: { end: Ready; day: Schemas['ProgramDay'] | n
   if (summary.minutes !== undefined) stats.push({ key: 'min', value: String(summary.minutes), label: plural('workoutEnd.minutes', summary.minutes) });
   stats.push({
     key: 'kg',
-    value: NUMBER.format(volumeValue(summary.liftedKg, units)),
+    value: NUMBER(volumeValue(summary.liftedKg, units)),
     label: t(units === 'METRIC' ? 'workoutEnd.liftedKg' : 'workoutEnd.liftedLb'),
     note: change,
   });
   stats.push({ key: 'sets', value: String(summary.workingSets), label: plural('workoutEnd.sets', summary.workingSets) });
-  if (end.kcal !== undefined) stats.push({ key: 'kcal', value: NUMBER.format(end.kcal), label: t('workoutEnd.kcal'), note: t('workoutEnd.watch') });
+  if (end.kcal !== undefined) stats.push({ key: 'kcal', value: NUMBER(end.kcal), label: t('workoutEnd.kcal'), note: t('workoutEnd.watch') });
 
   return (
     <View style={styles.rows}>

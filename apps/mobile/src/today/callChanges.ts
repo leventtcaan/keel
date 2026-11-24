@@ -4,6 +4,7 @@
  * the numbers, it works none out (U1): no value is taken from the plan, none is made up where the server said there was
  * none. Calls not applied (declined, undone) carry the value in force, not the one the call set.
  */
+import { formatNumber } from '@/copy/format';
 import type { components } from '@/api/schema';
 import { has, t } from '@/copy';
 import { formatLoad, type UnitSystem } from '@/units/units';
@@ -25,7 +26,7 @@ export type ChangeRow = {
   spoken: string;
 };
 
-const NUMBER = new Intl.NumberFormat('en-US');
+const NUMBER = (n: number) => formatNumber(n);
 
 /**
  * A target's value in the words of its kind; null when the server sent none (an empty value). `bare`: the number alone
@@ -36,10 +37,10 @@ function valueText(what: Schemas['DecisionChange']['what'], value: Schemas['Chan
   switch (what) {
     case 'CALORIES':
       if (value.targetKcal === undefined) return null;
-      return bare ? NUMBER.format(value.targetKcal) : t('callScreen.changes.kcal', { kcal: NUMBER.format(value.targetKcal) });
+      return bare ? NUMBER(value.targetKcal) : t('callScreen.changes.kcal', { kcal: NUMBER(value.targetKcal) });
     case 'STEPS':
       if (value.stepsPerDay === undefined) return null;
-      return bare ? NUMBER.format(value.stepsPerDay) : t('callScreen.changes.steps', { steps: NUMBER.format(value.stepsPerDay) });
+      return bare ? NUMBER(value.stepsPerDay) : t('callScreen.changes.steps', { steps: NUMBER(value.stepsPerDay) });
     case 'PHASE':
       return value.phase === undefined ? null : t(`callScreen.changes.phase.${value.phase}`);
     case 'MOVE':

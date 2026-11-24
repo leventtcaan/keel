@@ -1,3 +1,4 @@
+import { formatNumber } from '@/copy/format';
 import { router } from 'expo-router';
 import type { SFSymbol } from 'expo-symbols';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -12,7 +13,7 @@ import { openDetail } from '@/settings/detail';
 
 import type { WeightNumber } from './numbers';
 
-const num = (n: number) => n.toLocaleString('en-US');
+const num = (n: number) => formatNumber(n);
 
 type TileProps = { id: string; icon: SFSymbol; value: string; note?: string | null; badge?: SFSymbol; label: string; hint: string; onPress: () => void };
 

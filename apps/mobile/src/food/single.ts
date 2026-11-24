@@ -4,6 +4,7 @@
  * the estimate and in the detail a tap opens. Only the words are arranged here: nothing is estimated (U1) — the middle of two numbers
  * the server gave is not a new estimate, it is how a range is shown at a glance.
  */
+import { formatNumber } from '@/copy/format';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 
@@ -37,7 +38,7 @@ export function macrosOfPortion(portion: Schemas['Portion'], quantity: number): 
 }
 
 /** "72 kcal", thousands grouped. */
-export const kcalText = (kcal: number): string => t('food.single.kcal', { value: kcal.toLocaleString('en-US') });
+export const kcalText = (kcal: number): string => t('food.single.kcal', { value: formatNumber(kcal) });
 
 /** "P 6 · C 0 · F 5". */
 export const macroText = (m: Macros): string => t('food.single.macros', { protein: m.protein, carbs: m.carbs, fat: m.fat });
@@ -51,5 +52,5 @@ export const numbersSpoken = (m: Macros): string => t('food.single.spoken', { kc
 /** A range as the detail shows it: "66-80 kcal"; a range whose ends are the same number is that one number ("2,050 kcal", never "2,050-2,050"). */
 export const rangeText = (range: Range, unit: string): string =>
   range.low === range.high
-    ? `${range.low.toLocaleString('en-US')} ${unit}`
-    : `${t('format.range', { low: range.low.toLocaleString('en-US'), high: range.high.toLocaleString('en-US') })} ${unit}`;
+    ? `${formatNumber(range.low)} ${unit}`
+    : `${t('format.range', { low: formatNumber(range.low), high: formatNumber(range.high) })} ${unit}`;

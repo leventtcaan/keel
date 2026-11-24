@@ -1,3 +1,4 @@
+import { formatNumber } from '@/copy/format';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
@@ -118,7 +119,7 @@ function FoodRow({ row, first }: { row: FoodRowData; first: boolean }) {
         </View>
         {row.kcal === undefined ? null : (
           <Text style={[styles.kcal, { color: color.text }]} testID={id('kcal')}>
-            {t('food.single.kcal', { value: row.kcal.toLocaleString('en-US') })}
+            {t('food.single.kcal', { value: formatNumber(row.kcal) })}
           </Text>
         )}
       </Pressable>

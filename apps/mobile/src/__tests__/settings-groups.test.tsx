@@ -114,6 +114,7 @@ const mockServices = {
       mockAppearanceListeners.forEach((listener) => listener());
     }),
   },
+  language: { set: jest.fn(async (_next: string) => {}) },
   health: { available: true, requestRead: jest.fn(async () => {}) },
   importHealthWeights: jest.fn(async () => 0),
   pendingCount: jest.fn(async () => 0),
@@ -144,6 +145,7 @@ jest.mock('@/services/ServicesProvider', () => ({
   useAppServices: () => mockServices,
   useUnits: () => mockUnits,
   useAppearance: () => mockUseSyncExternalStore(mockServices.appearance.subscribe, mockServices.appearance.current),
+  useLanguage: () => 'system',
 }));
 
 // Delete account asks in a system alert (ADR-087 #1).

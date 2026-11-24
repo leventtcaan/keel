@@ -5,6 +5,7 @@ import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
 import { AccountSection } from '@/settings/AccountSection';
 import { AppearanceSection } from '@/settings/AppearanceSection';
+import { LanguageSection } from '@/settings/LanguageSection';
 import { GuideGroup } from '@/guide/GuideGroup';
 import { DataSourcesGroup } from '@/settings/DataSources';
 import { FoodGroup } from '@/settings/FoodGroup';
@@ -37,6 +38,7 @@ export default function SettingsScreen() {
       <ScrollView contentContainerStyle={styles.body}>
         <ScreenTitle>{t('settings.title')}</ScreenTitle>
         <AppearanceSection />
+        <LanguageSection />
         <UnitsSection />
         <TrainingGroup />
         <FoodGroup granted={granted} />

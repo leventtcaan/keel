@@ -3,6 +3,7 @@
  * in force today, this week's sets (fewer in a lighter week), the next session's load and reps. Loads in the user's unit
  * (ADR-029: the server keeps kg).
  */
+import { formatDate } from '@/copy/format';
 import type { components } from '@/api/schema';
 import { has, t } from '@/copy';
 import { workoutParams } from '@/train/params';
@@ -13,11 +14,11 @@ import type { Move } from './trainData';
 
 type Schemas = components['schemas'];
 
-const DAY = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+const DAY = (d: Date) => formatDate(d, { month: 'short', day: 'numeric', timeZone: 'UTC' });
 
 /** A calendar day (YYYY-MM-DD) as "Oct 4"; read as a date only, so no time zone moves it. */
 export function shortDate(day: string): string {
-  return DAY.format(new Date(`${day}T00:00:00Z`));
+  return DAY(new Date(`${day}T00:00:00Z`));
 }
 
 /** The calls in force, most binding first: a week off, then a lighter week, then the weights held. */
