@@ -220,6 +220,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/consents/ai-offer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The provider and the data an AI consent would name now
+         * @description What a grant of THIRD_PARTY_AI must name (V2, Apple 5.1.2(i)): exactly the provider and the data the server sends. 404 while
+         *     the server has no AI provider (the AI consent cannot be given then).
+         */
+        get: operations["aiConsentOffer"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/consents/{kind}": {
         parameters: {
             query?: never;
@@ -1946,27 +1967,6 @@ export interface paths {
         head?: never;
         /** The user corrects their own sentence */
         patch: operations["correctCoachMemory"];
-        trace?: never;
-    };
-    "/v1/consents/ai-offer": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * The provider and the data an AI consent would name now
-         * @description What a grant of THIRD_PARTY_AI must name (V2, Apple 5.1.2(i)): exactly the provider and the data the server sends. 404 while
-         *     the server has no AI provider (the AI consent cannot be given then).
-         */
-        get: operations["aiConsentOffer"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
         trace?: never;
     };
     "/v1/meals/parse": {
@@ -4718,6 +4718,27 @@ export interface operations {
             default: components["responses"]["Error"];
         };
     };
+    aiConsentOffer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The offer */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiConsentOffer"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
     grantConsent: {
         parameters: {
             query?: never;
@@ -6854,6 +6875,27 @@ export interface operations {
             default: components["responses"]["Error"];
         };
     };
+    forgetCoachMemory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Forgotten */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Error"];
+        };
+    };
     correctCoachMemory: {
         parameters: {
             query?: never;
@@ -6876,48 +6918,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CoachMemoryItem"];
-                };
-            };
-            default: components["responses"]["Error"];
-        };
-    };
-    forgetCoachMemory: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Forgotten */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            default: components["responses"]["Error"];
-        };
-    };
-    aiConsentOffer: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The offer */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AiConsentOffer"];
                 };
             };
             default: components["responses"]["Error"];
