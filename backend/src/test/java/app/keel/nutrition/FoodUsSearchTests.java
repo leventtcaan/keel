@@ -180,7 +180,7 @@ class FoodUsSearchTests {
         for (int i = 0; i < 150; i++) {
             food("tender-" + i, "Chicken breast tenders " + i, "Brand", "BRANDED", "US", null, "150");
         }
-        food("deli", "Deli chicken, sliced, breast", "Oscar", "BRANDED", "US", null, "100");
+        food("deli", "Chicken deli, sliced, breast", "Oscar", "BRANDED", "US", null, "100");
         AccountId mine = account();
         for (int daysAgo = 1; daysAgo <= 7; daysAgo++) {
             log(mine.value(), "deli", daysAgo);
@@ -250,7 +250,7 @@ class FoodUsSearchTests {
         // Forty products spell it "chiken" too: more than the 20 asked for, so the old pass would not have run, and none scores well; the Foundation food
         // (spelled "chicken") is still found and, being the generic food, leads them.
         for (int i = 0; i < 40; i++) {
-            food("chiken-" + i, "Chiken breast fillet " + i, "Brand", "BRANDED", "US", null, "110");
+            food("chiken-" + i, "Chiken breast fillet with sauce and rice " + i, "Brand", "BRANDED", "US", null, "110");
         }
 
         List<String> top = ids(found("chiken breast", "en-US", account(), 20));

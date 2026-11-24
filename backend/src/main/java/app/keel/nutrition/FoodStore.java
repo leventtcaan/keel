@@ -77,7 +77,7 @@ class FoodStore {
         }
         int pool = Math.max(limit, weights.pool());
         String region = searcher.region().orElse(NO_REGION);
-        java.util.function.ToIntFunction<Row> text = row -> FoodScoring.score(row.food().name(), row.food().brand(), row.source(),
+        java.util.function.ToDoubleFunction<Row> text = row -> FoodScoring.score(row.food().name(), row.food().brand(), row.source(),
                 !region.isEmpty() && row.region().equals(region), terms, scoring, weights);
         // One food once: the same folded name and brand is one row, and the id the user logged comes first (their logs, then the pool).
         Map<String, Row> rows = new LinkedHashMap<>();
@@ -93,13 +93,13 @@ class FoodStore {
         made.forEach(food -> rows.put(food.id(), new Row(food, "BRANDED", NO_REGION, true)));
         boolean typoWorthLookingFor = java.util.stream.IntStream.range(0, terms.words().size()).anyMatch(terms::fuzzy);
         // Typos are looked for (a costly read) when the exact search found few foods, or none that answers the query well.
-        boolean exactIsPoor = exact.size() < scoring.typoBelowExactHits() || exact.stream().mapToInt(text).max().orElse(0) < scoring.typoWeakScore();
+        boolean exactIsPoor = exact.size() < scoring.typoBelowExactHits() || exact.stream().mapToDouble(text).max().orElse(0) < scoring.typoWeakScore();
         if (typoWorthLookingFor && exactIsPoor) {
             typos(terms, searcher, pool).forEach(add);
         }
         List<String> ids = List.copyOf(rows.keySet());
         Set<String> starred = favorites(ids, searcher.account());
-        List<FoodRanking.Hit> hits = rows.values().stream().map(row -> new FoodRanking.Hit(row.food(), text.applyAsInt(row)
+        List<FoodRanking.Hit> hits = rows.values().stream().map(row -> new FoodRanking.Hit(row.food(), text.applyAsDouble(row)
                 + (row.made() ? scoring.ownFoodBonus() : 0) + (starred.contains(row.food().id()) ? scoring.favoriteBonus() : 0))).toList();
         return withServings(FoodRanking.rank(hits, popularity(ids, searcher.account()), weights, limit));
     }

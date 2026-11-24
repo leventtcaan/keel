@@ -171,13 +171,14 @@ keel:
     max-own-food-name: 80
     # The search's order (K-1061, ADR-090 #1, K-1208; FoodStore, FoodScoring, FoodRanking). The database cuts a pool of 100 by a coarse score:
     # 20 points a step of how well the name holds the first word (6 steps: the name itself 100 ... somewhere inside 0), half a step for each
-    # query word that starts a word of the name, a generic food 40 and a brand a word names 50 (also used by FoodScoring), the user's region
-    # 15. FoodScoring then scores every candidate on all the words (the block "score" below). The logs on top: their own 8 a log (weighted
+    # query word that starts a word of the name, a generic food that starts with the word 25 and a brand it starts 30 (ADR-085 and K-1061, also the
+    # whole steps of FoodScoring, which no other point overturns), the user's region 15. FoodScoring adds, under one step, every word of the query
+    # (the block "score" below) to break the ties. The logs on top: their own 8 a log (weighted
     # by age, FoodScoring.Settings) up to 5 logs, other accounts' 4 a natural-log unit, at most 19 (one step less than a name-match step).
     search:
       rank-step: 20
-      generic-bonus: 40
-      brand-bonus: 50
+      generic-bonus: 25
+      brand-bonus: 30
       region-bonus: 15
       personal-bonus: 8
       personal-cap: 5
@@ -195,12 +196,12 @@ keel:
       # FoodUsSearchTests, no source gives a number, tag "urun"). Per query word: the same word 20, a word it starts 8, somewhere inside a
       # word 2, a look-alike (at most min(2, letters / 4) edits) 6 and 30 off. Name: first word is the query's first 24, USDA's headline
       # comma after it 8, words in the query's order 10, next to each other 14 more, the name nothing but the query 30, 3 off for each
-      # unasked word of the name (at most 8: shorter first). Generic food whose words are all held: generic-bonus above; source quality
-      # Foundation 12 > SR Legacy 8 > Survey 4 > Branded 0. The generic bonus (40) is two steps over a branded name equal to the query
-      # (30), so "Chicken, breast, raw" leads a flood of "Chicken Breast" products. A favorite 24; a food the user made 30.
+      # unasked word of the name (at most 8: shorter first). These points only order foods of equal whole steps (they are
+      # divided by 1000 in the score); source quality Foundation 12 > SR Legacy 8 > Survey 4 > Branded 0. The generic bonus (25) is over the step
+      # of a branded name equal to the query, so "Chicken, breast, raw" leads a flood of "Chicken Breast" products. A favorite 24; a food the user made 30.
       # Their logs: a log weighs 1 today and a half 14 days ago, looking back 120 days; the 40 they eat most that hold the words always
-      # enter the pool. The typo pass (costly on 2M rows) runs only when the exact search found fewer than 20 foods (a page) or none scoring 90
-      # (a good generic food scores about 100 and more; a sloppy name match, 80).
+      # enter the pool. The typo pass (costly on 2M rows) runs only when the exact search found fewer than 20 foods (a page) or none scoring 80
+      # (a generic food that starts with the words does, 85 and more; a branded name only holding them, 60).
       score:
         word-exact: 20
         word-prefix: 8
@@ -227,7 +228,7 @@ keel:
         own-lookback-days: 120
         own-pool: 40
         typo-below-exact-hits: 20
-        typo-weak-score: 90
+        typo-weak-score: 80
     # Logging a food (K-1061, FoodPortions): the words that name the size of a piece, smallest to largest. Of the sizes a food has
     # the middle one is where the app starts ("1 large" egg, "1 medium" banana).
     portions:

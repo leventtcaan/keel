@@ -26,7 +26,7 @@ final class FoodRanking {
     }
 
     /** What the database made of one candidate. */
-    record Hit(FoodStore.Food food, int score) {
+    record Hit(FoodStore.Food food, double score) {
     }
 
     /**
@@ -68,7 +68,7 @@ final class FoodRanking {
     /** The hits by text score plus popularity, best first, at most {@code limit}; a tie keeps the order the hits came in. */
     static List<FoodStore.Food> rank(List<Hit> hits, Map<String, Popularity> popularity, Weights weights, int limit) {
         return hits.stream()
-                .sorted(Comparator.comparingInt((Hit hit) -> hit.score() + bonus(popularity.getOrDefault(hit.food().id(), Popularity.NONE), weights))
+                .sorted(Comparator.comparingDouble((Hit hit) -> hit.score() + bonus(popularity.getOrDefault(hit.food().id(), Popularity.NONE), weights))
                         .reversed())
                 .limit(limit).map(Hit::food).toList();
     }

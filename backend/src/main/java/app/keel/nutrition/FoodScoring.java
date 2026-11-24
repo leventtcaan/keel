@@ -30,7 +30,7 @@ final class FoodScoring {
      * {@code ownFoodBonus} for a food the user made (their label's numbers are the one they mean, but a weak name match is not first);
      * the user's logs weigh {@code 1} today and half as much {@code ownHalfLifeDays} ago, looking back {@code ownLookbackDays}, and
      * {@code ownPool} of the foods they eat most that hold the words always enter the pool; the typo pass (a costly read) runs only when the exact
-     * search found fewer than {@code typoBelowExactHits} foods or none scoring {@code typoWeakScore}.
+     * search found fewer than {@code typoBelowExactHits} foods or none scoring {@code typoWeakScore} (as {@link #score} counts: 80 is a generic food that starts with the words).
      */
     @ConfigurationProperties("keel.nutrition.search.score")
     record Settings(int wordExact, int wordPrefix, int wordInside, int wordFuzzy, int leadBonus, int headlineBonus, int orderBonus,
@@ -54,18 +54,22 @@ final class FoodScoring {
     private FoodScoring() {
     }
 
-    /** The text points of one food (see the class); {@code sameRegion}: it is of the searcher's region. */
-    static int score(String name, String brand, String source, boolean sameRegion, FoodSearchTerms terms, Settings s, FoodRanking.Weights w) {
+    /**
+     * The text points of one food (see the class); {@code sameRegion}: it is of the searcher's region. Two parts. The first is ADR-085's rule,
+     * whole points: how the name holds the query's first word (the {@link #tier}, a step of {@code rank-step} each), a generic food that
+     * starts with it, a brand it starts, the region. It is the order accepted in ADR-085 and K-1061 and nothing below can overturn it.
+     * The second is this card's (K-1208): every word of the query, their order, the source quality, the length; it only breaks the ties of
+     * the first (it is added as a thousandth, always under the smallest step), so the log bonuses of {@link FoodRanking} still weigh against whole steps.
+     */
+    static double score(String name, String brand, String source, boolean sameRegion, FoodSearchTerms terms, Settings s, FoodRanking.Weights w) {
         String folded = FoodSearchTerms.fold(name);
         List<String> nameWords = words(folded);
-        List<String> brandWords = words(FoodSearchTerms.fold(brand == null ? "" : brand));
         int n = terms.words().size();
         int[] at = new int[n];
         Kind[] kind = new Kind[n];
+        List<String> spelled = new ArrayList<>();
         int points = 0;
         int fuzzy = 0;
-        boolean brandNamed = false;
-        boolean strong = true;
         for (int i = 0; i < n; i++) {
             at[i] = -1;
             kind[i] = Kind.NONE;
@@ -84,16 +88,13 @@ final class FoodScoring {
                 case NONE -> 0;
             };
             fuzzy += kind[i] == Kind.FUZZY ? 1 : 0;
-            strong &= holds(kind[i]);
-            if (kind[i].compareTo(Kind.PREFIX) < 0) {
-                int word = i;
-                brandNamed |= brandWords.stream().anyMatch(brandWord -> kind(brandWord, terms, word, s).compareTo(Kind.PREFIX) >= 0);
-            }
+            // A word spelled alike is read as the name spells it, so "chiken breast" holds "Chicken, breast, raw" as that name holds the query.
+            spelled.add(kind[i] == Kind.FUZZY ? nameWords.get(at[i]) : terms.words().get(i));
         }
         // The name's first word is the query's first word; USDA's headline form puts a comma after it ("Egg, whole").
         if (!nameWords.isEmpty() && holds(kind(nameWords.getFirst(), terms, 0, s))) {
             points += s.leadBonus();
-            if (folded.startsWith(nameWords.getFirst() + ",")) {
+            if (kind(nameWords.getFirst(), terms, 0, s) == Kind.EXACT && folded.startsWith(nameWords.getFirst() + ",")) {
                 points += s.headlineBonus();
             }
         }
@@ -116,12 +117,41 @@ final class FoodScoring {
         boolean allExact = Arrays.stream(kind).allMatch(k -> k == Kind.EXACT);
         points += allExact && nameWords.size() == n && (n == 1 || ordered) ? s.wholeNameBonus() : 0;
         points -= Math.min((int) Math.max(0, nameWords.size() - distinct), s.extraWordCap()) * s.extraWordPenalty();
-        boolean branded = "BRANDED".equals(source);
-        points += !branded && strong ? w.genericBonus() : 0;
-        points += branded && brandNamed ? w.brandBonus() : 0;
         points += s.sourceBonus().getOrDefault(source, 0);
-        points += sameRegion ? w.regionBonus() : 0;
-        return points - fuzzy * s.typoPenalty();
+        points -= fuzzy * s.typoPenalty();
+
+        int tier = tier(folded, spelled);
+        boolean branded = "BRANDED".equals(source);
+        String foldedBrand = FoodSearchTerms.fold(brand == null ? "" : brand);
+        int whole = (5 - tier) * w.rankStep()
+                + (!branded && tier <= 2 ? w.genericBonus() : 0)
+                + (!foldedBrand.isEmpty() && (" " + foldedBrand).contains(" " + spelled.getFirst()) ? w.brandBonus() : 0)
+                + (sameRegion ? w.regionBonus() : 0);
+        return whole + points / TIE_BREAK_DIVISOR;
+    }
+
+    /** The finer points are divided by this: a few hundred at most become less than one, under the smallest whole step. */
+    private static final double TIE_BREAK_DIVISOR = 1000.0;
+
+    /**
+     * How the name holds the query's first word, 0 to 5 (ADR-085 #8; the SQL's rank, read the same way): 0 the name is the query; 1 its
+     * first word is that word and a comma follows ("Egg, whole"); 2 its first word is that word; 3 it starts with it; 4 some word starts
+     * with it; 5 somewhere inside or not at all. The plural of the word counts as the word: the better of the two.
+     */
+    static int tier(String folded, List<String> words) {
+        String spaced = " " + folded.replaceAll("[\\s,;:()/\"-]+", " ");
+        int best = 5;
+        for (boolean singular : new boolean[] {false, true}) {
+            List<String> read = singular ? words.stream().map(FoodSearchTerms::singular).toList() : words;
+            String first = read.getFirst();
+            int rank = folded.equals(String.join(" ", read)) ? 0
+                    : folded.startsWith(first + ",") ? 1
+                    : spaced.equals(" " + first) || spaced.startsWith(" " + first + " ") ? 2
+                    : folded.startsWith(first) ? 3
+                    : spaced.contains(" " + first) ? 4 : 5;
+            best = Math.min(best, rank);
+        }
+        return best;
     }
 
     /** Whether a way of holding a word counts as the word being there (not just somewhere inside another word, not missing). */

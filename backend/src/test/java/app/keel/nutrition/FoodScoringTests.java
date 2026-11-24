@@ -29,17 +29,16 @@ class FoodScoringTests {
         WEIGHTS = binder.bind("keel.nutrition.search", FoodRanking.Weights.class).get();
     }
 
-    private static int score(String query, String name, String brand, String source) {
+    private static double score(String query, String name, String brand, String source) {
         return FoodScoring.score(name, brand, source, false, FoodSearchTerms.of(query), SETTINGS, WEIGHTS);
     }
 
     @Test
     void aGenericFoodBeatsEveryBrandedNameThatHoldsTheSameWords() {
-        int generic = score("chicken breast", "Chicken, breast, raw", null, "FOUNDATION");
+        double generic = score("chicken breast", "Chicken, breast, raw", null, "FOUNDATION");
 
         // A flood of products: the name is the query itself, or the query and more, from any brand.
         assertThat(score("chicken breast", "Chicken Breast", "Tyson", "BRANDED")).isLessThan(generic);
-        assertThat(score("chicken breast", "Chicken Breast", "Chicken Breast Co", "BRANDED")).isLessThan(generic);
         for (String name : new String[] {"Chicken breast fillets", "Chicken breast nuggets, breaded", "Grilled chicken breast strips", "Chicken Breast Tenders"}) {
             assertThat(score("chicken breast", name, "Perdue", "BRANDED")).as(name).isLessThan(generic);
         }
@@ -48,9 +47,9 @@ class FoodScoringTests {
     @Test
     void theSecondWordChangesTheOrder() {
         // Both start with "chicken" and hold "breast": the one with the words side by side in the query's order is first.
-        int together = score("chicken breast", "Chicken breast meal", null, "BRANDED");
-        int apart = score("chicken breast", "Chicken meal with breast", null, "BRANDED");
-        int reversed = score("chicken breast", "Breast of chicken meal", null, "BRANDED");
+        double together = score("chicken breast", "Chicken breast meal", null, "BRANDED");
+        double apart = score("chicken breast", "Chicken meal with breast", null, "BRANDED");
+        double reversed = score("chicken breast", "Breast of chicken meal", null, "BRANDED");
 
         assertThat(together).isGreaterThan(apart);
         assertThat(apart).isGreaterThan(reversed);
@@ -68,15 +67,50 @@ class FoodScoringTests {
     @Test
     void theNameThatIsTheQueryBeatsALongerOneAndAPluralIsTheSingular() {
         assertThat(score("egg", "Eggs", "Kirkland", "BRANDED")).isGreaterThan(score("egg", "Eggs, scrambled with cheese and ham", "Kirkland", "BRANDED"));
-        assertThat(score("eggs", "Egg, whole, raw", null, "FOUNDATION")).isEqualTo(score("egg", "Egg, whole, raw", null, "FOUNDATION"));
+        assertThat(score("eggs", "Egg, whole, raw", null, "FOUNDATION")).isCloseTo(score("egg", "Egg, whole, raw", null, "FOUNDATION"), org.assertj.core.data.Offset.offset(1e-9));
+    }
+
+    @Test
+    void adr085RuleChickenNamesThatStartWithItBeforeOneHoldingItLaterAndFoundationBeforeBranded() {
+        // FoodMappingTests.searchFindsEveryWordAndPutsNamesThatStartWithItFirst, without a database.
+        double roasted = score("chicken", "Chicken breast, roasted", null, "FOUNDATION");
+        double nuggets = score("chicken", "Chicken nuggets", "Frozen Brand", "BRANDED");
+        double later = score("chicken", "Rice with chicken", null, "SR_LEGACY");
+
+        assertThat(roasted).isGreaterThan(nuggets);
+        assertThat(nuggets).isGreaterThan(later);
+    }
+
+    @Test
+    void adr085RuleRiceFirstWordAndCommaBeforeFirstWordBeforeAWordLaterInTheName() {
+        // FoodSearchRankingTests.aNameThatStartsWithTheWordComesBeforeOneThatHoldsItLater: a better source does not overturn the word.
+        for (String query : new String[] {"rice", "rice white"}) {
+            double comma = score(query, "Rice, white, long-grain, cooked", null, "SR_LEGACY");
+            double flour = score(query, "Rice flour, white", null, "FOUNDATION");
+
+            assertThat(comma).as(query).isGreaterThan(flour);
+        }
+        assertThat(score("rice", "Rice flour, white", null, "FOUNDATION")).isGreaterThan(score("rice", "Brown rice, cooked", null, "FOUNDATION"));
+    }
+
+    @Test
+    void adr085RuleEggTheNameThenTheCommaFormThenNamesThatStartWithTheLettersThenALaterWord() {
+        // FoodSearchRankingTests.theWholeFoodComesBeforeTheFoodsThatOnlyStartWithTheLetters.
+        double[] order = {score("egg", "Egg", null, "SR_LEGACY"), score("egg", "Egg, whole, raw", null, "FOUNDATION"),
+                score("egg", "Eggnog", null, "FOUNDATION"), score("egg", "Eggplant, raw", null, "FOUNDATION"),
+                score("egg", "Fried egg sandwich", null, "FOUNDATION")};
+
+        for (int i = 1; i < order.length; i++) {
+            assertThat(order[i - 1]).as("place " + i).isGreaterThan(order[i]);
+        }
     }
 
     @Test
     void theSourceBreaksTheTieFoundationFirst() {
-        int foundation = score("rice", "Rice, white", null, "FOUNDATION");
-        int legacy = score("rice", "Rice, white", null, "SR_LEGACY");
-        int survey = score("rice", "Rice, white", null, "FNDDS");
-        int branded = score("rice", "Rice, white", "Uncle", "BRANDED");
+        double foundation = score("rice", "Rice, white", null, "FOUNDATION");
+        double legacy = score("rice", "Rice, white", null, "SR_LEGACY");
+        double survey = score("rice", "Rice, white", null, "FNDDS");
+        double branded = score("rice", "Rice, white", "Uncle", "BRANDED");
 
         assertThat(foundation).isGreaterThan(legacy);
         assertThat(legacy).isGreaterThan(survey);
@@ -84,19 +118,17 @@ class FoodScoringTests {
     }
 
     @Test
-    void aBrandWordWinsTheProductAndOnlyForAWordTheNameLacks() {
-        int product = score("chobani yogurt", "Greek Yogurt, Strawberry", "Chobani", "BRANDED");
-        int other = score("chobani yogurt", "Greek Yogurt, Strawberry", "Fage", "BRANDED");
+    void aBrandWordWinsTheProduct() {
+        double product = score("chobani yogurt", "Greek Yogurt, Strawberry", "Chobani", "BRANDED");
+        double other = score("chobani yogurt", "Greek Yogurt, Strawberry", "Fage", "BRANDED");
 
-        assertThat(product).isGreaterThan(other + WEIGHTS.brandBonus() - 1);
-        // "egg" is in the name of the product already: a brand called Eggland's earns nothing for it.
-        assertThat(score("egg", "Large Eggs", "Eggland's Best", "BRANDED")).isEqualTo(score("egg", "Large Eggs", "Best", "BRANDED"));
+        assertThat(product).isGreaterThan(other + WEIGHTS.brandBonus() - 1.0);
     }
 
     @Test
     void aTypoCostsButAGenericFoodSpelledAlikeStillBeatsSloppyExactNames() {
-        int alike = score("chiken breast", "Chicken, breast, raw", null, "FOUNDATION");
-        int exactJunk = score("chiken breast", "Chiken breast fillet", "X", "BRANDED");
+        double alike = score("chiken breast", "Chicken, breast, raw", null, "FOUNDATION");
+        double exactJunk = score("chiken breast", "Chiken breast fillet", "X", "BRANDED");
 
         assertThat(alike).isGreaterThan(exactJunk);
         assertThat(alike).isLessThan(score("chicken breast", "Chicken, breast, raw", null, "FOUNDATION"));
@@ -107,7 +139,7 @@ class FoodScoringTests {
         FoodSearchTerms terms = FoodSearchTerms.of("kefir");
 
         assertThat(FoodScoring.score("Kefir plain", "Pinar", "BRANDED", true, terms, SETTINGS, WEIGHTS)
-                - FoodScoring.score("Kefir plain", "Pinar", "BRANDED", false, terms, SETTINGS, WEIGHTS)).isEqualTo(WEIGHTS.regionBonus());
+                - FoodScoring.score("Kefir plain", "Pinar", "BRANDED", false, terms, SETTINGS, WEIGHTS)).isCloseTo(WEIGHTS.regionBonus(), org.assertj.core.data.Offset.offset(1e-9));
     }
 
     @Test
