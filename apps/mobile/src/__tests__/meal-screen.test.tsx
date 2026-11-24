@@ -259,6 +259,11 @@ describe('without the health data consent', () => {
     expect(screen.getByLabelText(t('meal.search.label'))).toBeOnTheScreen();
   });
 
+  test('the search box takes the keyboard when the meal screen opens (K-1208)', async () => {
+    await show();
+    expect(screen.getByLabelText(t('meal.search.label')).props.autoFocus).toBe(true);
+  });
+
   test('not now goes back, with nothing kept', async () => {
     mockGranted = false;
     await show();
@@ -545,8 +550,10 @@ describe('review: answers in their order, guards, failures', () => {
     await search('chicken');
     mockSearch = () => late.promise;
     await search('rice');
-    expect(screen.queryByRole('button', { name: t('meal.search.add', { name: CHICKEN.name }) })).toBeNull();
+    // K-1208: the old list stays (dimmed) while the new words are searched; it was cleared per key before.
+    expect(screen.getByRole('button', { name: t('meal.search.add', { name: CHICKEN.name }) })).toBeOnTheScreen();
     await act(async () => fireEvent.changeText(screen.getByLabelText(t('meal.search.label')), ''));
+    expect(screen.queryByRole('button', { name: t('meal.search.add', { name: CHICKEN.name }) })).toBeNull();
     await act(async () => late.release(ok([RICE])));
     expect(screen.queryByRole('button', { name: t('meal.search.add', { name: RICE.name }) })).toBeNull();
   });

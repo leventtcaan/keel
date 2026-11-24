@@ -68,7 +68,9 @@ class FoodUsSearchTests {
 
     @AfterEach
     void noFoodLeftForOtherTests() {
-        jdbc.sql("delete from nutrition.meal where day = '1999-12-30'").update();
+        jdbc.sql("delete from nutrition.meal where id in (select meal_id from nutrition.meal_item where food_id like 'k1061:%')").update();
+        jdbc.sql("delete from nutrition.food_favorite where food_id like 'k1061:%'").update();
+        jdbc.sql("delete from nutrition.own_food where name like 'k1208 %'").update();
         jdbc.sql("delete from nutrition.food where id like 'k1061:%'").update();
     }
 
@@ -152,6 +154,124 @@ class FoodUsSearchTests {
         }
 
         assertThat(ids(found("kefir plain", null, account()))).containsExactly("kefir-us", "kefir-tr");
+    }
+
+    @Test
+    void aFloodOfBrandedChickenBreastsDoesNotPushTheGenericFoodDown() throws Exception {
+        for (int i = 0; i < 120; i++) {
+            food("flood-" + i, "Chicken Breast", "Brand " + i, "BRANDED", "US", null, "110");
+        }
+
+        // K-1208: the name that is exactly the query is a product's; the generic food leads (Foundation, "Chicken, breast, raw").
+        assertThat(ids(found("chicken breast", "en-US", account())).getFirst()).isEqualTo("chicken");
+    }
+
+    @Test
+    void theSecondWordChangesTheOrder() throws Exception {
+        food("meal-apart", "Chicken meal with breast", null, "BRANDED", "US", null, "200");
+        food("meal-together", "Chicken breast meal", null, "BRANDED", "US", null, "200");
+        food("meal-reversed", "Breast of chicken meal", null, "BRANDED", "US", null, "200");
+
+        assertThat(ids(found("chicken breast", "en-US", account()))).containsSubsequence("meal-together", "meal-apart", "meal-reversed");
+    }
+
+    @Test
+    void aStapleTheUserLoggedYesterdayRanksHighEvenWhenAHundredAndFiftyBetterTextsExist() throws Exception {
+        for (int i = 0; i < 150; i++) {
+            food("tender-" + i, "Chicken breast tenders " + i, "Brand", "BRANDED", "US", null, "150");
+        }
+        food("deli", "Chicken deli, sliced, breast", "Oscar", "BRANDED", "US", null, "100");
+        AccountId mine = account();
+        for (int daysAgo = 1; daysAgo <= 7; daysAgo++) {
+            log(mine.value(), "deli", daysAgo);
+        }
+
+        assertThat(ids(found("chicken breast", "en-US", mine)).indexOf("deli")).as("with the pool cut at 100 it would be missing").isBetween(0, 19);
+        assertThat(ids(found("chicken breast", "en-US", account()))).as("another user: the text decides, the pool cuts it").doesNotContain("deli");
+    }
+
+    @Test
+    void aLogCountsForLessTheOlderItIsAndNotAtAllPastTheLookBack() throws Exception {
+        AccountId recent = account();
+        AccountId old = account();
+        AccountId ancient = account();
+        // Three logs: yesterday they lift the bar over "Granola"; a hundred days ago (inside the 120-day look-back, a weight of
+        // 0.007 each) they are worth nothing yet.
+        for (int i = 0; i < 3; i++) {
+            log(recent.value(), "granola-bar", 1);
+            log(old.value(), "granola-bar", 100);
+        }
+        assertThat(ids(found("granola", "en-US", recent))).containsExactly("granola-bar", "granola");
+        assertThat(ids(found("granola", "en-US", old))).containsExactly("granola", "granola-bar");
+
+        // A great many logs make even that weight count (800 x 0.007 is over the cap of 5) ...
+        logMany(old.value(), "granola-bar", 100, 800);
+        assertThat(ids(found("granola", "en-US", old))).as("100 days ago, inside the look-back").containsExactly("granola-bar", "granola");
+        // ... but not past the look-back, however many: the weight there is 0.
+        logMany(ancient.value(), "granola-bar", 130, 800);
+        assertThat(ids(found("granola", "en-US", ancient))).as("130 days ago, past it").containsExactly("granola", "granola-bar");
+    }
+
+    @Test
+    void aMealDatedInTheFutureWeighsNoMoreThanOneEatenNow() throws Exception {
+        food("granola-long", "Granola bar, chewy, with extra things in it", null, "SR_LEGACY", "US", null, "420");
+        AccountId mine = account();
+        // Ten years ahead: unclamped, 2^260 of a log; clamped, one log (8 points), which does not lift a worse name over "Granola".
+        log(mine.value(), "granola-long", -3650);
+
+        assertThat(ids(found("granola", "en-US", mine)).getFirst()).isEqualTo("granola");
+    }
+
+    @Test
+    void anOwnFoodIsNotLostToTheSameNameInTheDatabase() throws Exception {
+        food("kefir-dup", "Kefir plain", "Lifeway", "BRANDED", "US", null, "60");
+        AccountId mine = account();
+        log(mine.value(), "kefir-dup");
+
+        // Same name and brand as kefir-us: the one the user logged stays, the other is not listed beside it.
+        List<String> found = ids(found("kefir plain", "en-US", mine));
+        assertThat(found).contains("kefir-dup").doesNotContain("kefir-us");
+    }
+
+    @Test
+    void aFavoriteComesBeforeAnOtherwiseEqualFood() throws Exception {
+        AccountId mine = account();
+        assertThat(ids(found("kefir plain", null, mine))).containsExactly("kefir-tr", "kefir-us");
+
+        jdbc.sql("insert into nutrition.food_favorite (account_id, food_id, created_at) values (:account, :food, now())")
+                .param("account", mine.value()).param("food", MINE + "kefir-us").update();
+
+        assertThat(ids(found("kefir plain", null, mine))).containsExactly("kefir-us", "kefir-tr");
+        assertThat(ids(found("kefir plain", null, account()))).as("another user's stars are theirs").containsExactly("kefir-tr", "kefir-us");
+    }
+
+    @Test
+    void theTypoPassRunsAlthoughManyFoodsHoldTheWordsAsTyped() throws Exception {
+        // Forty products spell it "chiken" too: more than the 20 asked for, so the old pass would not have run, and none scores well; the Foundation food
+        // (spelled "chicken") is still found and, being the generic food, leads them.
+        for (int i = 0; i < 40; i++) {
+            food("chiken-" + i, "Chiken breast fillet with sauce and rice " + i, "Brand", "BRANDED", "US", null, "110");
+        }
+
+        List<String> top = ids(found("chiken breast", "en-US", account(), 20));
+
+        assertThat(top).contains("chicken");
+        assertThat(top.getFirst()).isEqualTo("chicken");
+    }
+
+    @Test
+    void aFoodTheUserMadeIsScoredLikeTheRestAndNotAlwaysFirst() throws Exception {
+        AccountId mine = account();
+        jdbc.sql("""
+                insert into nutrition.own_food (id, account_id, name, brand, gtin, serving_grams, kcal, protein_g, carbs_g, fat_g, created_at)
+                values (:id, :account, 'k1208 Breast salad with chicken', null, null, 100, 100, 5, 10, 2, now())""")
+                .param("id", UUID.randomUUID()).param("account", mine.value()).update();
+
+        List<String> all = found("chicken breast", "en-US", mine).stream().map(food -> (String) food.get("id")).toList();
+        List<String> own = all.stream().filter(id -> id.startsWith("own:")).toList();
+
+        assertThat(own).hasSize(1);
+        assertThat(all.indexOf(MINE + "chicken")).as("the generic match before a weak match of their own").isLessThan(all.indexOf(own.getFirst()));
     }
 
     @Test
@@ -244,10 +364,14 @@ class FoodUsSearchTests {
         return foods.stream().map(food -> (String) food.get("id")).filter(id -> id.startsWith(MINE)).map(id -> id.substring(MINE.length())).toList();
     }
 
-    @SuppressWarnings("unchecked")
     private List<Map<String, Object>> found(String query, String language, AccountId account) throws Exception {
+        return found(query, language, account, 50);
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> found(String query, String language, AccountId account, int limit) throws Exception {
         var request = mvc.post().uri("/v1/foods/search").header("Authorization", TestSessions.bearer(context, account))
-                .contentType(MediaType.APPLICATION_JSON).content(JSON.writeValueAsString(Map.of("q", query, "limit", 50)));
+                .contentType(MediaType.APPLICATION_JSON).content(JSON.writeValueAsString(Map.of("q", query, "limit", limit)));
         if (language != null) {
             request = request.header("Accept-Language", language);
         }
@@ -269,12 +393,32 @@ class FoodUsSearchTests {
                 .param("food", MINE + food).param("seq", seq).param("name", name).param("grams", new java.math.BigDecimal(grams)).update();
     }
 
-    /** One logged item of the food, as a meal of the account on a day of 1999 (cleaned up after). */
+    /** One logged item of the food, as a meal of the account eaten today (cleaned up after by its food). */
     private void log(UUID account, String food) {
+        log(account, food, 0);
+    }
+
+    /** {@code count} items of the food in one meal eaten {@code daysAgo} days ago (each is a log of its own). */
+    private void logMany(UUID account, String food, int daysAgo, int count) {
         UUID meal = UUID.randomUUID();
         jdbc.sql("""
-                insert into nutrition.meal (id, account_id, client_id, eaten_at, day, slot) values (:meal, :account, :client, '1999-12-30T12:00:00Z', '1999-12-30', 'SNACK')""")
-                .param("meal", meal).param("account", account).param("client", UUID.randomUUID()).update();
+                insert into nutrition.meal (id, account_id, client_id, eaten_at, day, slot)
+                values (:meal, :account, :client, now() - cast(:ago as int) * interval '1 day', current_date - cast(:ago as int), 'SNACK')""")
+                .param("meal", meal).param("account", account).param("client", UUID.randomUUID()).param("ago", daysAgo).update();
+        jdbc.sql("""
+                insert into nutrition.meal_item (meal_id, account_id, seq, food_id, name, quantity, unit, kcal_low, kcal_high, protein_low, protein_high,
+                carbs_low, carbs_high, fat_low, fat_high)
+                select :meal, :account, s, :food, 'x', 100, 'g', 100, 110, 0, 0, 25, 27, 0, 0 from generate_series(1, cast(:count as int)) s""")
+                .param("meal", meal).param("account", account).param("food", MINE + food).param("count", count).update();
+    }
+
+    /** The same, eaten {@code daysAgo} days ago (a log weighs less the older it is, K-1208). */
+    private void log(UUID account, String food, int daysAgo) {
+        UUID meal = UUID.randomUUID();
+        jdbc.sql("""
+                insert into nutrition.meal (id, account_id, client_id, eaten_at, day, slot)
+                values (:meal, :account, :client, now() - cast(:ago as int) * interval '1 day', current_date - cast(:ago as int), 'SNACK')""")
+                .param("meal", meal).param("account", account).param("client", UUID.randomUUID()).param("ago", daysAgo).update();
         jdbc.sql("""
                 insert into nutrition.meal_item (meal_id, account_id, seq, food_id, name, quantity, unit, kcal_low, kcal_high, protein_low, protein_high,
                 carbs_low, carbs_high, fat_low, fat_high) values (:meal, :account, 1, :food, 'x', 100, 'g', 100, 110, 0, 0, 25, 27, 0, 0)""")

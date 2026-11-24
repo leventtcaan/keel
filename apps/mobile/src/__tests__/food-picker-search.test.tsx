@@ -6,6 +6,7 @@
  * the barcode is an icon in the box.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
@@ -102,16 +103,35 @@ describe('searching as the user types', () => {
     expect(searches().map(([, init]) => init.body.q)).toEqual(['egg']);
   });
 
-  test('typing again takes the old list away at once and shows that it is searching', async () => {
+  test('typing again keeps the old list, dimmed, and shows that it is searching (K-1208: no flicker per key)', async () => {
     await show();
     await type('egg');
     await wait(DELAY);
     expect(row(EGG)).toBeOnTheScreen();
+    expect(StyleSheet.flatten(screen.getByTestId('results').props.style)?.opacity ?? 1).toBe(1);
     await type('eggs');
-    expect(row(EGG)).toBeNull();
+    expect(row(EGG)).toBeOnTheScreen();
+    expect(StyleSheet.flatten(screen.getByTestId('results').props.style)?.opacity).toBe(foodParams.searchStaleOpacity);
     expect(screen.getByText(t('meal.search.searching'))).toBeOnTheScreen();
+    await type('eggsa');
+    expect(row(EGG)).toBeOnTheScreen();
     await wait(DELAY);
     expect(screen.queryByText(t('meal.search.searching'))).toBeNull();
+    expect(StyleSheet.flatten(screen.getByTestId('results').props.style)?.opacity ?? 1).toBe(1);
+  });
+
+  test('the old list goes when the box is emptied or too short, and the new answer replaces it', async () => {
+    mockSearch = async (q) => ok(q === 'eggn' ? [EGGNOG] : [EGG]);
+    await show();
+    await type('egg');
+    await wait(DELAY);
+    await type('eggn');
+    expect(row(EGG)).toBeOnTheScreen();
+    await wait(DELAY);
+    expect(row(EGG)).toBeNull();
+    expect(row(EGGNOG)).toBeOnTheScreen();
+    await type('e');
+    expect(row(EGGNOG)).toBeNull();
   });
 
   test('a late answer to older words never replaces the newer list', async () => {

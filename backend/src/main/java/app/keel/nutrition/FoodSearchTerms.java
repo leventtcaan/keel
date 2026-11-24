@@ -84,6 +84,11 @@ record FoodSearchTerms(List<String> words) {
         return escape(first());
     }
 
+    /** One word as LIKE text: % _ and the escape character match themselves. */
+    String escapedWord(int index) {
+        return escape(words.get(index));
+    }
+
     /** One LIKE pattern per word, each "anywhere in the text". */
     String[] contains() {
         return words.stream().map(word -> "%" + escape(word) + "%").toArray(String[]::new);

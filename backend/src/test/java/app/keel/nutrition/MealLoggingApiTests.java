@@ -132,8 +132,12 @@ class MealLoggingApiTests {
         assertThat(created).containsEntry("own", true);
         assertThat(created).containsKey("portions");
         assertThat(created.get("defaultAmount")).isEqualTo(Map.of("quantity", 1, "unit", "1 serving (50 g)"));
-        assertThat(list(send(account, "POST", "/v1/foods/search", Map.of("q", "zorkmid"))))
-                .extracting(food -> food.get("id")).as("by name, first").startsWith(id);
+        List<Map<String, Object>> searched = list(send(account, "POST", "/v1/foods/search", Map.of("q", "zorkmid")));
+        assertThat(searched).extracting(food -> food.get("id")).as("by name, first").startsWith(id);
+        // K-1208: the food's own serving survives the search (it lives in memory, not in food_serving): portions and where to start.
+        assertThat(searched.getFirst().get("defaultAmount")).isEqualTo(created.get("defaultAmount"));
+        assertThat(searched.getFirst().get("portions")).isEqualTo(created.get("portions"));
+        assertThat(searched.getFirst().get("servings")).isEqualTo(created.get("servings"));
         assertThat(body(send(account, "POST", "/v1/foods/barcode-lookup", Map.of("gtin", BARCODE)))).containsEntry("id", id);
         assertThat(list(send(other, "POST", "/v1/foods/search", Map.of("q", "zorkmid")))).isEmpty();
         assertThat(send(other, "POST", "/v1/foods/barcode-lookup", Map.of("gtin", BARCODE))).hasStatus(404);
