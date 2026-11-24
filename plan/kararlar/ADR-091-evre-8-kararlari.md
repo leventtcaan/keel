@@ -170,3 +170,8 @@ Hukuk sitesi `terms.md` "Coaching needs a subscription" diyor; ücretsiz katmanl
 - `legacy_clients_unlocked_until: "2027-01-15"`. **KABUL.**
 - Onboarding sonunda kullanıcının kendi plan önizlemesiyle kapatılabilir teklif bir kez (ADR-072 #7 yumuşak hâli); ana ekran sözcük bütçesi 68 → 70. **KABUL.**
 - Agent kararı (bilgi için): dışa aktarma kilitli kararları da içerir (kullanıcının kendi verisine erişim hakkı). Bekleyen: `terms.md` taslağı (`plan/evre-8-terms-taslak.diff`) 1.0.1 gönderiminde (K-1209) Levent'e.
+
+## Ek 4 · Motor kararları (Levent, 2026-11-24; öneri `plan/evre-8-motor-onerisi.md`)
+- **K-1203:** Güray G2 K-8'e sadık kalınır: maintenance gözlemi **en çok 2 hafta** (K-8'in üst sınırı); kilo sabitse açık 15. günde başlar. "1. günden açık" seçilmedi (kaynaksız, K-8'e aykırı).
+- **K-1204:** Veri yeterliliği esner: gürültü payı kenar haftalardaki gerçek tartı sayısıyla hesaplanır (ADR-020 L-10 türetiminin n'e genellemesi, H1 §3.4), veri seyrekse pencere en çok 6 haftaya uzar. Güray sessiz (G2 B-7); parametreler [türetilmiş]/[seçim] etiketli. Kayıp tavanı (SafetyNet) yoğun veri şartını korur.
+- **K-1205:** Kesimde kiloya oranlı hedef hız tabanı %0,5/hafta ([literatür] H3 B3; G2 K-15 konuşmacısı belirsiz olduğu için "Güray kuralı" diye etiketlenmez); tabanın altında ve uyum iyiyse kalori adımı 500 kcal (Güray G7 K-97); adım güvenlik tavanını aşacaksa atılmaz. GS-23'ün "devam" beklentisi "-500"e döner (ADR-027 #0 bu noktada yerini aldı; K1, Levent onaylı).
