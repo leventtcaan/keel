@@ -1589,8 +1589,8 @@ export interface paths {
          * The call in force and the targets it set
          * @description NOT_FOUND before the first check-in has produced a call. A full call past the free allowance of an account with no
          *     active subscription (ADR-091 Ek 1, K-1201) comes as a LockedDecision: its week and the day the next call opens,
-         *     `locked: true`, nothing of what it says. The 200 schema stays Decision until the phone handles the locked view
-         *     (K-1202 makes it a oneOf with LockedDecision) and ships with this server change.
+         *     `locked: true`, nothing of what it says. The 200 schema is CallView, a oneOf of Decision and LockedDecision (K-1202):
+         *     a reader must handle the locked view before it can read a call.
          */
         get: operations["getCurrentDecision"];
         put?: never;
@@ -3741,7 +3741,8 @@ export interface components {
          *     reasons or confidence. A call resting on the safety net is never locked (U6). When the account has a subscription
          *     the call comes as a Decision (the latest, this week's, is applied then; older ones stay history). Sent by
          *     GET /v1/decisions/current, GET /v1/decisions/{id} and the items of GET /v1/decisions in place of a Decision;
-         *     the responses are typed as Decision until K-1202 (phone) makes them a oneOf, so the mobile types do not change here.
+         *     the responses are typed CallView (Decision or LockedDecision, K-1202), so a phone cannot read a call without
+         *     handling the locked one.
          */
         LockedDecision: {
             /** Format: uuid */
@@ -3761,8 +3762,13 @@ export interface components {
             /** @enum {boolean} */
             locked: true;
         };
+        /**
+         * @description A call as the phone reads it (K-1202, ADR-091 Ek 1): the full Decision, or the LockedDecision of a call the account has
+         *     not unlocked. Told apart by `locked: true`, which only the locked view has.
+         */
+        CallView: components["schemas"]["Decision"] | components["schemas"]["LockedDecision"];
         DecisionPage: {
-            items: components["schemas"]["Decision"][];
+            items: components["schemas"]["CallView"][];
             /** @description The cursor for the next (older) page; absent on the last page. */
             next?: string;
         };
@@ -6034,13 +6040,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description This week's call */
+            /** @description This week's call; its locked view (LockedDecision) when it is locked */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Decision"];
+                    "application/json": components["schemas"]["CallView"];
                 };
             };
             default: components["responses"]["Error"];
@@ -6288,7 +6294,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Decision"];
+                    "application/json": components["schemas"]["CallView"];
                 };
             };
             default: components["responses"]["Error"];
@@ -6322,7 +6328,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Decision"];
+                    "application/json": components["schemas"]["CallView"];
                 };
             };
             default: components["responses"]["Error"];
