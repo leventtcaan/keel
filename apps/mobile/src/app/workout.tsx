@@ -32,7 +32,7 @@ import { calibrationRead, lighterOffer } from '@/train/calibration';
 import { cardioAfterLift } from '@/train/cardio';
 import { moveInsight } from '@/train/insight';
 import { MoveDots } from '@/train/MoveDots';
-import { MoveMenu, type MoveAction } from '@/train/MoveMenu';
+import { MoreSheet, type MoreRow } from '@/train/MoreSheet';
 import { MoveThumb } from '@/train/MoveThumb';
 import { OwnMoveForm, type SaveOutcome } from '@/train/OwnMoveForm';
 import { SupersetLink } from '@/train/SupersetLink';
@@ -43,7 +43,7 @@ import { SessionHeader } from '@/train/SessionHeader';
 import { ActiveSet, type Entry } from '@/train/ActiveSet';
 import { UpNext } from '@/train/UpNext';
 import { Warmups } from '@/train/Warmups';
-import { dayName, exerciseName } from '@/train/program';
+import { exerciseName } from '@/train/program';
 import { browseMoves, findMoves } from '@/train/moves';
 import { NOT_PAUSED, type Pause, pausedFor, toggle } from '@/train/pause';
 import type { Skips } from '@/train/skips';
@@ -53,7 +53,7 @@ import { TakenSheet } from '@/train/TakenSheet';
 import { orderBehind, pushBehind, takenChoices } from '@/train/taken';
 import { workoutParams } from '@/train/params';
 import { repsText } from '@/train/reps';
-import { buildSet, exerciseStatus, loadText, parseEntry, parseLoad, platesLine, setText } from '@/train/session';
+import { buildSet, exerciseStatus, loadText, parseEntry, parseLoad, platesLine } from '@/train/session';
 import { type Move, type TrainData, movesOf, ownMove } from '@/train/trainData';
 import { localDay } from '@/today/today';
 import { formatLoad } from '@/units/units';
@@ -70,10 +70,13 @@ import { type ExercisePlan, NONE_SKIPPED, activeWorkout, extraPlan, finishRecord
  * (the server counts each workout as a session done, K-220). Before a move's first work set, its warm-ups (K-417): three
  * before the day's first move, one before the others, each one tap; with the gym in use known, the plates a side.
  *
- * Laid out as a focus mode (K-971, ADR-075 #1, ADR-070 #4): always dark; End and the session's real time at the top, the
- * rest right under them, above the page so it covers nothing; the moves as dots, the move's target, its sets done and the
- * one set under way with its steppers; the button that logs it in a dock that never moves. After a move's last set no rest
- * comes up: Next names the next move, and after the last one, Finish.
+ * Laid out as a focus mode (K-971, ADR-075 #1, ADR-070 #4, K-1207): always dark; the bar (End, the session's real time, Pause) at the top,
+ * the moves as dots, the move's name with ONE "More", the target as one line, the sets done as one line, the one set under way with
+ * its steppers and an optional reps-left row; the button that logs it in a dock that never moves. Everything else (How to, History, Swap,
+ * Taken, Too heavy?, a note, Skip set, Skip move, Superset, Add a move, Finish) is a row of the More sheet. The rest timer is in the dock
+ * above Log set, with Up next on the page while it runs. After a move's last set no rest comes up: Next names the next move, and after
+ * the last one, Finish. The accent is for the one thing to do now (the primary button) and the clock; links, marks and selection are
+ * neutral (src/__tests__/focus-colors.test.ts).
  */
 export default function WorkoutScreen() {
   // Light status bar text only while the session is in front: a screen opened from it (how to, history) is the
@@ -126,6 +129,8 @@ function Session() {
   // while `swapping`.
   const [swaps, setSwaps] = useState<Swaps>({});
   const [swapping, setSwapping] = useState(false);
+  // The "More" sheet (K-1207): everything the set screen leaves off the page during a set. Open while true.
+  const [moreOpen, setMoreOpen] = useState(false);
   // Taken (ADR-090 Ek 2, K-1064): the planned moves put behind ("Do it later"), in the order they were put there; the moves found
   // taken, sent with the finish; and the sheet, open for `move`, with the move to go back to when it was opened on the next one.
   const [behind, setBehind] = useState<string[]>([]);
@@ -196,8 +201,8 @@ function Session() {
   const [unlinked, setUnlinked] = useState<string[]>([]);
   // Creating the user's own move from the search (K-416): the name it started from, null while not creating.
   const [creating, setCreating] = useState<string | null>(null);
-  // The move's "More" menu (ADR-070 Ek 2 #1), and the partner being chosen for a superset (opened from it). Both are about
-  // the move they were opened on: another move starts without them.
+  // The partner being chosen for a superset (opened from the More sheet): about the move it was opened on, another move
+  // starts without it.
   const [menu, setMenu] = useState<{ move: string; choosing: boolean } | null>(null);
 
   const named = useCallback((error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' }), [report]);
@@ -313,7 +318,6 @@ function Session() {
     }
     reveal();
   }, [moveId]); // `reveal` reads refs only: the move is what this follows.
-  const menuOpen = menu !== null && menu.move === moveId && !menu.choosing;
   const choosing = menu !== null && menu.move === moveId && menu.choosing;
   const move = moveId === undefined ? undefined : moves.get(moveId);
   const row = plan === null || plan.current === null ? null : plan.rows[plan.current];
@@ -360,6 +364,7 @@ function Session() {
           reps: row === null || row.suggested.reps === null ? '' : String(row.suggested.reps),
           // A move outside the plan has no target of its own: the work sets' aim (G1 K-5, target_rir_max).
           rir: planned?.targetRir ?? workoutParams.targetRirMax,
+          rirPicked: false,
           note: null,
         };
   const setEntry = (change: Partial<typeof entry>) => setTyped({ ...entry, ...change });
@@ -610,17 +615,12 @@ function Session() {
   const cardioSaid = cardioStatus === 'done' ? t('workout.cardio.loggedSaid', { minutes: cardioMinutes ?? 0 }) : null;
   const cardioUndo = !cardioUndoable ? null : (
     <Pressable accessibilityRole="button" accessibilityLabel={t('workout.cardio.undoLabel')} onPress={() => void undoCardio()} disabled={busy} style={styles.link}>
-      <Text style={[styles.text, { color: color.accent }]}>{t('workout.undo')}</Text>
+      <Text style={[styles.text, styles.linkText, { color: color.text }]}>{t('workout.undo')}</Text>
     </Pressable>
   );
   const cardioProblem = problem !== null && problem.row === CARDIO ? <ProblemText style={[styles.text, { color: color.text }]} occurrence={problem}>{problem.text}</ProblemText> : null;
   const todaySession = program?.week?.find((s) => s.programDayId === dayId && s.date === sessionDay);
 
-  // Progress is the plan's: a move outside it is not one of the day's count. A planned move's place counts once it has a set,
-  // on the move now standing in it or on the one it was swapped from (K-972): a swap does not take a move back out of the count.
-  const movesDone = entries.filter(
-    (e, i) => e.planned !== undefined && plans[i] !== null && (worked.includes(e.exerciseId) || (e.base !== undefined && worked.includes(e.base.exerciseId))),
-  ).length;
   // Nothing kept yet: close and send nothing. A workout kept without a working set: finish it, there is nothing to ask.
   // Moves with sets still to do (a skipped move is done with); finishing early asks once (Evre 7 C2).
   const movesLeft = entries.filter((_, i) => plans[i] != null && plans[i]?.current !== null && plans[i]?.skippedMove !== true).length;
@@ -776,7 +776,7 @@ function Session() {
     ) : null;
   const typedName = adding?.trim() ?? '';
   const createButton =
-    typedName === '' ? null : <Button label={t('workout.add.create', { name: typedName })} variant="text" size="sm" onPress={() => setCreating(typedName)} />;
+    typedName === '' ? null : <Button label={t('workout.add.create', { name: typedName })} variant="secondary" size="sm" onPress={() => setCreating(typedName)} />;
   const addPanel =
     day === null ? null : creating !== null ? (
       <OwnMoveForm
@@ -786,9 +786,7 @@ function Session() {
         onSave={saveOwn}
         onBack={() => setCreating(null)}
       />
-    ) : adding === null ? (
-      <Button label={t('workout.add.open')} variant="ghost" size="sm" onPress={() => setAdding('')} />
-    ) : (
+    ) : adding === null ? null : (
       <View
         testID="add-panel"
         style={styles.list}
@@ -806,7 +804,7 @@ function Session() {
         <View testID="add-actions" style={styles.addActions}>
           {createButton}
           <View style={styles.grow} />
-          <Button label={t('workout.add.close')} variant="text" size="sm" onPress={() => setAdding(null)} />
+          <Button label={t('workout.add.close')} variant="secondary" size="sm" onPress={() => setAdding(null)} />
         </View>
         {found.map((m) => (
           <Pressable
@@ -1085,7 +1083,9 @@ function Session() {
           held: program?.loadHeldSince !== undefined,
           units,
         });
-  const insightLine = weightFound ?? (analysis === null ? null : <InsightLine text={analysis} />);
+  // The weight found is a thing to act on (the first sets of a move with no target are done), so it stays on the page; what the sets said
+  // against last time is the sets done's own, opened with them (K-1207).
+  const analysisLine = weightFound !== null || analysis === null ? null : <InsightLine text={analysis} />;
   const offerNote =
     offer === null || typedKg === null ? null : (
       <LoadNote
@@ -1094,24 +1094,17 @@ function Session() {
         keep={{ label: t('workout.tooHeavy.keep', { load: formatLoad(typedKg, units) }), onPress: () => keepOffer(offer.calibrating) }}
       />
     );
-  // The same set last time (the phone's own record of it, else the server's best set of the move): Hevy's PREVIOUS, beside what is typed.
-  const lastSet = row?.last ?? planned?.lastBestSet;
-  const previousText = lastSet === undefined || lastSet === null || move === undefined ? null : setText(lastSet, move, units);
   // The one set under way (ADR-075 #1): the button that logs it is the dock's, so it never moves.
   const entryBlock =
     move === undefined || row === null ? null : (
       <ActiveSet
         move={move}
-        heading={heading}
-        range={planned === undefined ? null : repsText(planned.reps)}
-        previous={previousText}
+        heading={planned === undefined ? heading : [heading, repsText(planned.reps)].join(', ')}
         // A move outside the plan has no aim for reps left: there is no plan to aim at.
         aim={planned?.targetRir ?? null}
         gym={data?.gym}
-        plates={typedKg === null ? null : platesLine(move, typedKg, data?.gym, units)}
         entry={entry}
         onChange={setEntry}
-        onTooHeavy={lighter === null ? null : askTooHeavy}
         problem={said}
         problemOccurrence={problem}
         onLayout={(event: LayoutChangeEvent) => {
@@ -1157,94 +1150,87 @@ function Session() {
         busy={busy}
       />
     );
-  // The move's head (prototype `.mh`, `.acts`): its equipment's icon opens how it is done, as the How to link does (one for
-  // VoiceOver). One row of text buttons, How to · History · Swap, and More; the rarer actions are the menu's. Skip move
-  // (K-972): far from Skip set in the dock; a move outside the plan has no count. It is undone with Undo and the move's
-  // sets are kept, so it is no discard and looks like the other rows.
+  // The move's head (prototype `.mh`): its name, and ONE "More" (K-1207): How to, History, Swap, Taken, Too heavy?, a note, Skip set,
+  // Skip move, Superset, Add a move and Finish are rows of the sheet it opens, so during a set the page holds the set. Skip move
+  // (K-972) is far from Skip set no more, but both are undone with Undo and the move's sets are kept: no discard.
   const canSkipMove = planned !== undefined && moveId !== undefined && plan !== null && plan.current !== null;
   // Swap (K-972): only a move of the plan with sets left, and where the server's list has another to offer.
   const canSwap = swapOptions.length > 0 && moveId !== undefined;
   const canLink = partners.length > 0 || candidates.length > 0;
-  const moreActions: MoveAction[] = [
-    ...(!canLink ? [] : [partners.length > 0 ? { key: 'unlink', label: t('superset.unlink'), icon: 'link.badge.plus' as const } : { key: 'superset', label: t('superset.link'), icon: 'link' as const }]),
-    ...(!canSkipMove ? [] : [{ key: 'skip', label: t('workout.skipMove'), accessibilityLabel: t('workout.skipMoveLabel', { name: name(moveId) }), icon: 'forward.end' as const }]),
-  ];
+  // Skip set (K-972): a move outside the plan has no count.
+  const canSkipSet = planned !== undefined && row !== null && plan !== null && plan.current !== null;
+  // A note and "Too heavy?" are about the set under way.
+  const canNote = move !== undefined && row !== null && entry.note === null;
+  // Finish is offered whenever something is logged, not only under End: the dock shows the set or Next, and a session that goes on and
+  // on (a move that is never done) would have no way out (Evre 7, issue 684).
+  const dockOffersFinish = !finishing && !cardioShown && ((move !== undefined && row !== null) || nextId !== undefined);
+  const canFinish = active !== null && worked.length > 0 && dockOffersFinish;
+  const moreRows: MoreRow[] =
+    moveId === undefined
+      ? []
+      : [
+          { key: 'howto', label: t('demo.open'), accessibilityLabel: t('demo.openLabel', { exercise: name(moveId) }) },
+          { key: 'history', label: t('history.open'), accessibilityLabel: t('history.openLabel', { exercise: name(moveId) }) },
+          ...(!canSwap ? [] : [{ key: 'swap', label: t('workout.swap'), accessibilityLabel: t('swap.label', { move: name(moveId) }) }]),
+          ...(!canTake ? [] : [{ key: 'taken', label: t('taken.open'), accessibilityLabel: t('taken.openLabel', { move: name(moveId) }) }]),
+          ...(lighter === null || row === null ? [] : [{ key: 'tooHeavy', label: t('workout.tooHeavy.link'), accessibilityLabel: t('workout.tooHeavy.label') }]),
+          ...(!canNote ? [] : [{ key: 'note', label: t('workout.note.add') }]),
+          ...(!canSkipSet ? [] : [{ key: 'skipSet', label: t('workout.skipSet'), accessibilityLabel: t('workout.skipSetLabel') }]),
+          ...(!canSkipMove ? [] : [{ key: 'skipMove', label: t('workout.skipMove'), accessibilityLabel: t('workout.skipMoveLabel', { name: name(moveId) }) }]),
+          ...(!canLink ? [] : [partners.length > 0 ? { key: 'unlink', label: t('superset.unlink') } : { key: 'superset', label: t('superset.link') }]),
+          ...(day === null || adding !== null || creating !== null ? [] : [{ key: 'add', label: t('workout.add.open') }]),
+          ...(!canFinish ? [] : [{ key: 'finish', label: t('workout.finish') }]),
+        ];
   const pickMore = (key: string) => {
-    setMenu(key === 'superset' && moveId !== undefined ? { move: moveId, choosing: true } : null);
-    if (key === 'unlink') unlink();
-    else if (key === 'skip') skipThisMove();
+    setMoreOpen(false);
+    if (moveId === undefined) return;
+    if (key === 'howto') openHowTo();
+    else if (key === 'history') router.push({ pathname: '/exercise-history', params: { exercise: moveId } });
+    else if (key === 'swap') setSwapping(true);
+    else if (key === 'taken') setTaking({ move: moveId, back: null });
+    else if (key === 'tooHeavy') askTooHeavy();
+    else if (key === 'note') setEntry({ note: '' });
+    else if (key === 'skipSet') skipThisSet(plan?.current ?? 0);
+    else if (key === 'skipMove') skipThisMove();
+    else if (key === 'superset') setMenu({ move: moveId, choosing: true });
+    else if (key === 'unlink') unlink();
+    else if (key === 'add') setAdding('');
+    else if (key === 'finish') onFinish();
   };
   // A move skipped, opened again: it says so, and it can be brought back.
   const skippedMove = (
     <View style={[styles.undo, { backgroundColor: color.surface }]}>
-      <Text style={[styles.text, styles.grow, { color: color.textSecondary }]}>{t('workout.moveIsSkipped')}</Text>
+      <Text style={[styles.text, styles.grow, { color: color.muted }]}>{t('workout.moveIsSkipped')}</Text>
       <Button label={t('workout.bringBack')} variant="ghost" size="sm" onPress={bringBack} />
     </View>
   );
   const openHowTo = () => router.push({ pathname: '/exercise', params: { exercise: moveId } });
-  // Only the equipment class, and only when it is known: a move the catalog says nothing of has no icon (ADR-070 Ek 2 #3).
-  const thumb =
-    moveId === undefined || move?.equipment === undefined ? null : (
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={t('demo.openLabel', { exercise: name(moveId) })}
-        accessibilityElementsHidden
-        importantForAccessibility="no-hide-descendants"
-        onPress={openHowTo}>
-        <MoveThumb equipment={move.equipment} />
-      </Pressable>
-    );
-  const swapButton =
-    !canSwap || moveId === undefined ? null : (
-      <Button label={t('workout.swap')} accessibilityLabel={t('swap.label', { move: name(moveId) })} variant="text" size="sm" onPress={() => setSwapping(true)} disabled={busy} />
-    );
-  const takenButton =
-    !canTake || moveId === undefined ? null : (
-      <Button label={t('taken.open')} accessibilityLabel={t('taken.openLabel', { move: name(moveId) })} variant="text" size="sm" onPress={() => setTaking({ move: moveId, back: null })} disabled={busy} />
-    );
-  const moreButton =
-    moreActions.length === 0 || moveId === undefined ? null : (
-      <Button label={t('workout.more')} variant="text" size="sm" onPress={() => setMenu(menuOpen ? null : { move: moveId, choosing: false })} />
-    );
-  const moreMenu = menuOpen && moreActions.length > 0 ? <MoveMenu actions={moreActions} onPick={pickMore} /> : null;
   const head =
     moveId === undefined ? null : (
       <View testID="move-head" style={styles.head}>
         <View style={styles.nameRow}>
-          {thumb}
+          {/* Only the equipment class, and only when it is known (ADR-070 Ek 2 #3): a picture, not a control or a text (K-1207). */}
+          {move?.equipment === undefined ? null : <MoveThumb equipment={move.equipment} />}
           <Text style={[styles.name, styles.grow, { color: color.text }]}>{name(moveId)}</Text>
+          <Button label={t('workout.more')} variant="secondary" size="touch" onPress={() => setMoreOpen(true)} />
         </View>
-        {/* One row, not two (ADR-070 Ek 2 #1): the move's links, then More, with the rarer ones. */}
-        <View testID="move-links" style={styles.links}>
-          <Button label={t('demo.open')} accessibilityLabel={t('demo.openLabel', { exercise: name(moveId) })} variant="text" size="sm" onPress={openHowTo} />
-          <Button
-            label={t('history.open')}
-            accessibilityLabel={t('history.openLabel', { exercise: name(moveId) })}
-            variant="text"
-            size="sm"
-            onPress={() => router.push({ pathname: '/exercise-history', params: { exercise: moveId } })}
-          />
-          {swapButton}
-          {takenButton}
-          <View style={styles.grow} />
-          {moreButton}
-        </View>
-        {moreMenu}
         {supersetBlock}
       </View>
     );
   const card =
     moveId === undefined ? null : move === undefined || plan === null ? (
       <Card>
-        <Text style={[styles.text, { color: color.textSecondary }]}>{t('workout.unknownMove')}</Text>
+        <Text style={[styles.text, { color: color.muted }]}>{t('workout.unknownMove')}</Text>
       </Card>
     ) : (
       <>
-        {/* The prototype's order (K-971): the target, the sets done, then the one under way, its warm-ups folded above it. */}
+        {/* The order (K-971, K-1207): the target as one line, the sets done as one line (what they said opens with them), then the one under way, its warm-ups folded above it. */}
         {planned !== undefined && <GoalLine planned={planned} move={move} />}
-        <DoneSets plan={plan} move={move} onEdit={(set, number) => setEditing({ set, number })} />
+        <DoneSets key={move.id} plan={plan} move={move} onEdit={(set, number) => setEditing({ set, number })}>
+          {analysisLine}
+        </DoneSets>
+        {weightFound}
         {plan.skippedMove === true ? skippedMove : null}
-        {insightLine}
         {offerNote}
         {/* Only on its own move, with its own move's load (a dot tapped meanwhile closes it). */}
         {editing === null || editing.set.exerciseId !== move.id ? null : (
@@ -1294,18 +1280,6 @@ function Session() {
       : row.side === 'BOTH'
         ? t('workout.log', { number: Math.floor((plan?.current ?? 0) / sides) + 1 })
         : t('workout.logSide', { number: Math.floor((plan?.current ?? 0) / sides) + 1, side: t(`workout.sideName.${row.side}`) });
-  // Skip set (K-972): under Log set in the dock, far from Skip move at the top; a move outside the plan has no count.
-  const skipSetLink =
-    planned === undefined || row === null || plan === null || plan.current === null ? null : (
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={t('workout.skipSetLabel')}
-        onPress={() => skipThisSet(plan.current ?? 0)}
-        disabled={busy}
-        style={styles.skipSet}>
-        <Text style={[styles.small, { color: color.muted }]}>{t('workout.skipSet')}</Text>
-      </Pressable>
-    );
   // The last step's dock (K-973): Done, Later today, Skip today; then Finish (the way on once something was chosen).
   // The last step: what was said of a skip belongs to the weights, so it does not follow the person here.
   const openCardio = () => {
@@ -1336,14 +1310,8 @@ function Session() {
     finishing ? null : cardioShown ? (
       cardioDock
     ) : move !== undefined && row !== null ? (
-      // Log set and Skip set side by side (K-1048): the dock is one button tall, and Skip set is still under the thumb's reach of
-      // Log set and far from Skip move at the top.
-      <View testID="dock-row" style={styles.logRow}>
-        <View style={styles.grow}>
-          <Button label={logLabel} onPress={() => void log()} disabled={busy || needsWeight} />
-        </View>
-        {skipSetLink}
-      </View>
+      // The one thing to do now, full width (K-1207): Skip set is a row of the More sheet.
+      <Button label={logLabel} onPress={() => void log()} disabled={busy || needsWeight} />
     ) : nextId !== undefined ? (
       <Button label={t('workout.next', { name: name(nextId) })} onPress={() => setPicked(nextId)} />
     ) : day === null && active === null ? null : cardioDue ? (
@@ -1361,21 +1329,10 @@ function Session() {
         style={[styles.undo, styles.overlay, { backgroundColor: color.surface, borderColor: color.line }]}>
         <Text style={[styles.text, styles.grow, { color: color.text }]}>{undo.said}</Text>
         <Pressable accessibilityRole="button" accessibilityLabel={t('workout.undoLabel')} onPress={undoLast} style={styles.link}>
-          <Text style={[styles.text, { color: color.accent }]}>{t('workout.undo')}</Text>
+          <Text style={[styles.text, styles.linkText, { color: color.text }]}>{t('workout.undo')}</Text>
         </Pressable>
       </View>
     );
-  // The day and how far into it, under the time: off the page, so the set under way has its room (K-971).
-  const dayLine = (
-    <View style={styles.dayLine}>
-      <Text style={[styles.small, { color: color.textSecondary }]}>{day === null ? t('workout.title') : dayName(day)}</Text>
-      {day !== null && (
-        <Text style={[styles.small, { color: color.muted }]}>
-          {today.length === 1 ? t('workout.progressOne', { done: movesDone }) : t('workout.progress', { done: movesDone, count: today.length })}
-        </Text>
-      )}
-    </View>
-  );
   // Paused (K-972, prototype `.pausebar`): said in the rest's place, with the way back.
   // Only what it is: the one Resume is the header's (a full touch target, one label).
   const pausedBar = (
@@ -1405,7 +1362,7 @@ function Session() {
       )}
       <View style={styles.actions}>
         <Pressable accessibilityRole="button" accessibilityLabel={t('workout.undoLabel')} onPress={() => void undoDiscard()} style={styles.link}>
-          <Text style={[styles.text, { color: color.accent }]}>{t('workout.undo')}</Text>
+          <Text style={[styles.text, styles.linkText, { color: color.text }]}>{t('workout.undo')}</Text>
         </Pressable>
         <Button label={t('workout.ending.close')} variant="ghost" onPress={() => router.back()} />
       </View>
@@ -1449,9 +1406,9 @@ function Session() {
   // The program was made again (new days) or cannot be read: the workout under way can still be finished.
   const dayGone =
     active !== null && day === null && data !== null ? (
-      <Text style={[styles.text, { color: color.textSecondary }]}>{t('workout.dayGone')}</Text>
+      <Text style={[styles.text, { color: color.muted }]}>{t('workout.dayGone')}</Text>
     ) : null;
-  const loadFailed = failed ? <Text style={[styles.text, { color: color.textSecondary }]}>{t('workout.loadFailed')}</Text> : null;
+  const loadFailed = failed ? <Text style={[styles.text, { color: color.muted }]}>{t('workout.loadFailed')}</Text> : null;
   const form = (
     <>
       <FinishForm
@@ -1500,37 +1457,27 @@ function Session() {
         }}
       />
     );
-  // Finish is on the page whenever something is logged, not only under End: the dock shows the set or Next, and a session that
-  // goes on and on (a move that is never done) would have no visible way out (Evre 7, issue 684).
-  const dockOffersFinish = !finishing && !cardioShown && ((move !== undefined && row !== null) || nextId !== undefined);
-  // Its place is kept from the start: before the first set it is there unseen and out of reach, so the link arriving moves nothing.
-  const finishShown = active !== null && worked.length > 0 && dockOffersFinish;
-  const finishLink = (
-    <View
-      testID="finish-link"
-      style={[styles.finish, !finishShown && styles.unseen]}
-      pointerEvents={finishShown ? 'auto' : 'none'}
-      accessibilityElementsHidden={!finishShown}
-      importantForAccessibility={finishShown ? 'auto' : 'no-hide-descendants'}>
-      <Button label={t('workout.finish')} variant="text" size="sm" onPress={onFinish} />
-    </View>
-  );
-  const sheetBody = discarded !== null ? null : ending ? endSheet : swapping ? swapSheet : takingNow ? takenSheet : finishing ? form : null;
+  const moreSheet =
+    moveId === undefined || move === undefined ? null : (
+      <MoreSheet move={name(moveId)} info={typedKg === null || row === null ? null : platesLine(move, typedKg, data?.gym, units)} rows={moreRows} onPick={pickMore} />
+    );
+  const sheetBody =
+    discarded !== null ? null : ending ? endSheet : swapping ? swapSheet : takingNow ? takenSheet : finishing ? form : moreOpen ? moreSheet : null;
   const closeSheet = () => {
     if (ending) setEnding(false);
     else if (swapping) setSwapping(false);
     else if (takingNow) closeTaken();
-    else setFinishing(false);
+    else if (finishing) setFinishing(false);
+    else setMoreOpen(false);
   };
   const sheet = sheetBody === null ? null : <BottomSheet onClose={closeSheet}>{sheetBody}</BottomSheet>;
   const session = (
     <>
       {entries.length > 0 && dots}
-      {/* Finish stays in the first view once a set is kept, right under the moves' dots (Evre 7 C2), not at the foot of a long page. */}
-      {finishLink}
       {head}
       {card}
-      {upNext}
+      {/* Up next is for the rest, not for the set (K-1207): while one runs it is under the card. */}
+      {rest !== null ? upNext : null}
       {oneMore}
       {addPanel}
       {dayGone}
@@ -1547,7 +1494,7 @@ function Session() {
       {/* The page and the dock rise above the keyboard (a number pad has no return key): Log set stays in reach. */}
       <KeyboardAvoidingView testID="keyboard-avoiding" style={styles.safe} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.top}>
-          <SessionHeader since={stale ? null : (startedAt ?? openedAt)} onEnd={onEnd} pause={discarded === null ? pause : NOT_PAUSED} onPause={discarded === null ? togglePause : null} subtitle={dayLine} />
+          <SessionHeader since={stale ? null : (startedAt ?? openedAt)} onEnd={onEnd} pause={discarded === null ? pause : NOT_PAUSED} onPause={discarded === null ? togglePause : null} />
           {/* Only when there is no dock to carry it (nothing to log): the rest is in the dock otherwise, so the page does not shift. */}
           {dock === null ? restSlot : null}
         </View>
@@ -1601,22 +1548,17 @@ const styles = StyleSheet.create({
   undo: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, padding: tokens.space.sm, borderRadius: tokens.radius.card },
   page: { flex: 1 },
   overlay: { position: 'absolute', left: tokens.space.lg, right: tokens.space.lg, bottom: tokens.space.sm, borderWidth: tokens.border.hairline },
-  unseen: { opacity: 0 },
   discarded: { gap: tokens.space.sm, padding: tokens.space.md, borderRadius: tokens.radius.card },
   actions: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: tokens.space.lg },
   list: { gap: tokens.space.xs },
-  dayLine: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', columnGap: tokens.space.sm },
   head: { gap: tokens.space.xs },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.md },
-  links: { flexDirection: 'row', alignItems: 'center', columnGap: tokens.space.sm },
   link: { minHeight: tokens.size.touch, justifyContent: 'center' },
-  logRow: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
-  skipSet: { minHeight: tokens.size.touch, justifyContent: 'center', paddingHorizontal: tokens.space.sm },
+  linkText: { textDecorationLine: 'underline' },
   move: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, padding: tokens.space.sm, borderRadius: tokens.radius.card, minHeight: tokens.size.touch },
   addActions: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
   dim: { opacity: tokens.opacity.dim },
   grow: { flex: 1 },
-  finish: { alignSelf: 'flex-end' },
   name: { fontFamily: tokens.font.display, fontSize: tokens.type.heading },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },

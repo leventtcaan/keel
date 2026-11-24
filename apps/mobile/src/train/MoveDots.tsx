@@ -8,8 +8,8 @@ import { tokens } from '@/theme/tokens';
 export type Dot = { id: string; name: string; status: string; done: boolean };
 
 /**
- * The session's moves as dots (ADR-075 #1, prototype `.mdots`): the one under way in the accent, the moves done filled,
- * the rest faint; each a full-height touch target, said by VoiceOver with its name and where it stands. All on one line, whatever
+ * The session's moves as dots (ADR-075 #1, prototype `.mdots`), the screen's whole progress picture (K-1207): the one under way
+ * in the brightest grey, the moves done in the middle one, the rest in the faintest (no accent: that is for what to do now); each a full-height touch target, said by VoiceOver with its name and where it stands. All on one line, whatever
  * their number (ADR-087 #3): each takes an equal share of the width, so ten moves never wrap under the rest card.
  */
 export function MoveDots({ dots, selected, onPick }: { dots: Dot[]; selected: number; onPick: (id: string) => void }) {
@@ -24,7 +24,7 @@ export function MoveDots({ dots, selected, onPick }: { dots: Dot[]; selected: nu
           accessibilityState={{ selected: index === selected }}
           onPress={() => onPick(dot.id)}
           style={styles.touch}>
-          <View style={[styles.dot, { backgroundColor: index === selected ? color.accent : dot.done ? color.text : color.edge }]} />
+          <View style={[styles.dot, { backgroundColor: index === selected ? color.text : dot.done ? color.muted : color.edge }]} />
         </Pressable>
       ))}
     </View>

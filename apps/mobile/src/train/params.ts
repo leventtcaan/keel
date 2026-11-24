@@ -17,6 +17,8 @@ export const workoutParams = {
   headlineMovesShown: param<number>('headline_moves_shown'),
   /** One tap of the rest timer's minus and plus (Evre 7 C2). */
   restAdjustSeconds: param<number>('rest_adjust_seconds'),
+  /** The most discrete things the set screen shows during a set (K-1207): a test counts them. */
+  setScreenMaxElements: param<number>('session_set_max_elements'),
   /** How long the undo banner stays after a save (ADR-070 Ek 2 #6, UndoBanner). */
   undoBannerMs: param<number>('undo_banner_ms'),
   rirChoices: param<number[]>('rir_choices'),

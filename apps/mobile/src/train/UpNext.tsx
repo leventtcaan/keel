@@ -17,7 +17,7 @@ export function UpNext({ name, equipment, onTaken }: { name: string; equipment: 
   const taken =
     onTaken === undefined ? null : (
       <Pressable testID="up-next-taken" accessibilityRole="button" accessibilityLabel={t('taken.nextLabel', { move: name })} onPress={onTaken} style={styles.link}>
-        <Text style={[styles.linkText, { color: color.accent }]}>{t('taken.next')}</Text>
+        <Text style={[styles.linkText, { color: color.text }]}>{t('taken.next')}</Text>
       </Pressable>
     );
   return (
@@ -38,5 +38,5 @@ const styles = StyleSheet.create({
   kicker: { fontSize: tokens.type.label, fontWeight: tokens.weight.bold },
   name: { fontSize: tokens.type.body, fontWeight: tokens.weight.bold },
   link: { minHeight: tokens.size.touch, justifyContent: 'center', paddingHorizontal: tokens.space.sm },
-  linkText: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
+  linkText: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold, textDecorationLine: 'underline' },
 });

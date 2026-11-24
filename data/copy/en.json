@@ -881,6 +881,12 @@
       "below": "Below the range."
     },
     "doneNumber": "set {number}",
+    "doneShort": "{load}×{reps}",
+    "doneShortAdded": "+{load}×{reps}",
+    "doneSeparator": " · ",
+    "doneSummaryLabel": "Sets done: {sets}",
+    "doneSummaryHint": "Shows each set, to correct or delete it.",
+    "doneSummaryClose": "Hides the sets.",
     "doneLeft": "{left} left",
     "doneSet": "Set {number}, done: {set}, {left} left",
     "next": "Next: {name}",

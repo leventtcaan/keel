@@ -16,6 +16,14 @@
       "source": "arastirma/ham/guray/G1-antrenman.md#K-49"
     },
     {
+      "key": "session_set_max_elements",
+      "value": 10,
+      "unit": "elements",
+      "tag": "urun",
+      "source": "plan/evre-8-butun-urun.md#1.3",
+      "note": "K-1207 (the founder: too much on the screen during a set; the audit counted about 53): the most discrete things (a text, a button, a field; the bar, the move dots, a stepper and the reps-left row each one) the set screen shows during a set. A test renders a move half done and counts them (elementCount.ts)."
+    },
+    {
       "key": "undo_banner_ms",
       "value": 5000,
       "unit": "milliseconds",

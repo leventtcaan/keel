@@ -40,7 +40,7 @@ export function Warmups({ move, warmups, done, gym, onLog, problem, problemOccur
   const open = opened ?? done > 0;
   const rows = warmups.map((warmup, index) => {
     const plates = platesLine(move, warmup.loadKg, gym, units);
-    const mark = index < done ? <Text style={[styles.small, { color: color.accent }]}>{t('workout.warmup.done')}</Text> : null;
+    const mark = index < done ? <Text style={[styles.small, { color: color.muted }]}>{t('workout.warmup.done')}</Text> : null;
     const side = plates === null ? null : <Text style={[styles.small, { color: color.muted }]}>{plates}</Text>;
     return (
       <View key={index} style={styles.row}>
