@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 class FoodRankingTests {
 
     // The weights of application.yml.
-    private static final FoodRanking.Weights WEIGHTS = new FoodRanking.Weights(20, 25, 30, 15, 8, 5, 4, 100, 0.45, 20);
+    private static final FoodRanking.Weights WEIGHTS = FoodScoringTests.WEIGHTS;
 
     private static FoodStore.Food food(String id) {
         return new FoodStore.Food(id, id, null, FoodRanges.Source.ANALYSED, new FoodRanges.Per100g(BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE),

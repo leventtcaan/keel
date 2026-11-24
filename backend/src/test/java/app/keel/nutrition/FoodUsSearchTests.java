@@ -191,17 +191,46 @@ class FoodUsSearchTests {
     }
 
     @Test
-    void aLogLongAgoCountsForLessThanARecentOne() throws Exception {
+    void aLogCountsForLessTheOlderItIsAndNotAtAllPastTheLookBack() throws Exception {
+        AccountId recent = account();
+        AccountId old = account();
+        AccountId ancient = account();
+        // Three logs: yesterday they lift the bar over "Granola"; a hundred days ago (inside the 120-day look-back, a weight of
+        // 0.007 each) they are worth nothing yet.
+        for (int i = 0; i < 3; i++) {
+            log(recent.value(), "granola-bar", 1);
+            log(old.value(), "granola-bar", 100);
+        }
+        assertThat(ids(found("granola", "en-US", recent))).containsExactly("granola-bar", "granola");
+        assertThat(ids(found("granola", "en-US", old))).containsExactly("granola", "granola-bar");
+
+        // A great many logs make even that weight count (800 x 0.007 is over the cap of 5) ...
+        logMany(old.value(), "granola-bar", 100, 800);
+        assertThat(ids(found("granola", "en-US", old))).as("100 days ago, inside the look-back").containsExactly("granola-bar", "granola");
+        // ... but not past the look-back, however many: the weight there is 0.
+        logMany(ancient.value(), "granola-bar", 130, 800);
+        assertThat(ids(found("granola", "en-US", ancient))).as("130 days ago, past it").containsExactly("granola", "granola-bar");
+    }
+
+    @Test
+    void aMealDatedInTheFutureWeighsNoMoreThanOneEatenNow() throws Exception {
+        food("granola-long", "Granola bar, chewy, with extra things in it", null, "SR_LEGACY", "US", null, "420");
         AccountId mine = account();
-        // The same food: a log a year ago is outside the look-back (120 days) and lifts nothing; one a day ago does.
-        log(mine.value(), "granola-bar", 400);
-        assertThat(ids(found("granola", "en-US", mine))).containsExactly("granola", "granola-bar");
-        log(mine.value(), "granola-bar", 1);
-        log(mine.value(), "granola-bar", 2);
-        log(mine.value(), "granola-bar", 3);
-        log(mine.value(), "granola-bar", 4);
-        log(mine.value(), "granola-bar", 5);
-        assertThat(ids(found("granola", "en-US", mine))).containsExactly("granola-bar", "granola");
+        // Ten years ahead: unclamped, 2^260 of a log; clamped, one log (8 points), which does not lift a worse name over "Granola".
+        log(mine.value(), "granola-long", -3650);
+
+        assertThat(ids(found("granola", "en-US", mine)).getFirst()).isEqualTo("granola");
+    }
+
+    @Test
+    void anOwnFoodIsNotLostToTheSameNameInTheDatabase() throws Exception {
+        food("kefir-dup", "Kefir plain", "Lifeway", "BRANDED", "US", null, "60");
+        AccountId mine = account();
+        log(mine.value(), "kefir-dup");
+
+        // Same name and brand as kefir-us: the one the user logged stays, the other is not listed beside it.
+        List<String> found = ids(found("kefir plain", "en-US", mine));
+        assertThat(found).contains("kefir-dup").doesNotContain("kefir-us");
     }
 
     @Test
@@ -218,7 +247,7 @@ class FoodUsSearchTests {
 
     @Test
     void theTypoPassRunsAlthoughManyFoodsHoldTheWordsAsTyped() throws Exception {
-        // Forty products spell it "chiken" too: more than the 20 asked for, so the old pass would not have run; the Foundation food
+        // Forty products spell it "chiken" too: more than the 20 asked for, so the old pass would not have run, and none scores well; the Foundation food
         // (spelled "chicken") is still found and, being the generic food, leads them.
         for (int i = 0; i < 40; i++) {
             food("chiken-" + i, "Chiken breast fillet " + i, "Brand", "BRANDED", "US", null, "110");
@@ -367,6 +396,20 @@ class FoodUsSearchTests {
     /** One logged item of the food, as a meal of the account eaten today (cleaned up after by its food). */
     private void log(UUID account, String food) {
         log(account, food, 0);
+    }
+
+    /** {@code count} items of the food in one meal eaten {@code daysAgo} days ago (each is a log of its own). */
+    private void logMany(UUID account, String food, int daysAgo, int count) {
+        UUID meal = UUID.randomUUID();
+        jdbc.sql("""
+                insert into nutrition.meal (id, account_id, client_id, eaten_at, day, slot)
+                values (:meal, :account, :client, now() - cast(:ago as int) * interval '1 day', current_date - cast(:ago as int), 'SNACK')""")
+                .param("meal", meal).param("account", account).param("client", UUID.randomUUID()).param("ago", daysAgo).update();
+        jdbc.sql("""
+                insert into nutrition.meal_item (meal_id, account_id, seq, food_id, name, quantity, unit, kcal_low, kcal_high, protein_low, protein_high,
+                carbs_low, carbs_high, fat_low, fat_high)
+                select :meal, :account, s, :food, 'x', 100, 'g', 100, 110, 0, 0, 25, 27, 0, 0 from generate_series(1, cast(:count as int)) s""")
+                .param("meal", meal).param("account", account).param("food", MINE + food).param("count", count).update();
     }
 
     /** The same, eaten {@code daysAgo} days ago (a log weighs less the older it is, K-1208). */

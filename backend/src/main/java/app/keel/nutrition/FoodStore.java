@@ -66,7 +66,7 @@ class FoodStore {
      * are escaped. A plural is read as its singular too ("eggs" holds "egg"). The database cuts a pool of the best candidates by a
      * coarse score (how the name holds the first word, how many words start a word of it, generic or brand, region); the pool then
      * gets (1) the foods the user logged lately that hold the words, however low the text puts them, so a staple is never cut,
-     * (2) the user's own foods ({@code made}) and (3) with fewer exact finds than {@code typo-skip-exact-hits}, the foods spelled alike
+     * (2) the user's own foods ({@code made}) and (3) with fewer exact finds than {@code typo-below-exact-hits} or none scoring {@code typo-weak-score}, the foods spelled alike
      * (pg_trgm word similarity). {@link FoodScoring} scores every one of them on every word of the query, and {@link FoodRanking} adds
      * the logs (recency-weighted) and the favorites and cuts.
      */
@@ -76,21 +76,31 @@ class FoodStore {
             return List.of();
         }
         int pool = Math.max(limit, weights.pool());
+        String region = searcher.region().orElse(NO_REGION);
+        java.util.function.ToIntFunction<Row> text = row -> FoodScoring.score(row.food().name(), row.food().brand(), row.source(),
+                !region.isEmpty() && row.region().equals(region), terms, scoring, weights);
+        // One food once: the same folded name and brand is one row, and the id the user logged comes first (their logs, then the pool).
         Map<String, Row> rows = new LinkedHashMap<>();
+        java.util.Set<String> names = new java.util.HashSet<>();
+        java.util.function.Consumer<Row> add = row -> {
+            if (names.add(FoodSearchTerms.fold(row.food().name()) + "\0" + FoodSearchTerms.fold(row.food().brand() == null ? "" : row.food().brand()))) {
+                rows.putIfAbsent(row.food().id(), row);
+            }
+        };
+        searcher.account().ifPresent(account -> ownLogged(terms, account).forEach(add));
         List<Row> exact = candidates(terms, searcher, false, pool);
-        exact.forEach(row -> rows.putIfAbsent(row.food().id(), row));
-        searcher.account().ifPresent(account -> ownLogged(terms, account).forEach(row -> rows.putIfAbsent(row.food().id(), row)));
+        exact.forEach(add);
         made.forEach(food -> rows.put(food.id(), new Row(food, "BRANDED", NO_REGION, true)));
         boolean typoWorthLookingFor = java.util.stream.IntStream.range(0, terms.words().size()).anyMatch(terms::fuzzy);
-        if (typoWorthLookingFor && exact.size() < scoring.typoSkipExactHits()) {
-            typos(terms, searcher, pool).forEach(row -> rows.putIfAbsent(row.food().id(), row));
+        // Typos are looked for (a costly read) when the exact search found few foods, or none that answers the query well.
+        boolean exactIsPoor = exact.size() < scoring.typoBelowExactHits() || exact.stream().mapToInt(text).max().orElse(0) < scoring.typoWeakScore();
+        if (typoWorthLookingFor && exactIsPoor) {
+            typos(terms, searcher, pool).forEach(add);
         }
         List<String> ids = List.copyOf(rows.keySet());
         Set<String> starred = favorites(ids, searcher.account());
-        String region = searcher.region().orElse(NO_REGION);
-        List<FoodRanking.Hit> hits = rows.values().stream().map(row -> new FoodRanking.Hit(row.food(),
-                FoodScoring.score(row.food().name(), row.food().brand(), row.source(), !region.isEmpty() && row.region().equals(region), terms, scoring, weights)
-                        + (row.made() ? scoring.ownFoodBonus() : 0) + (starred.contains(row.food().id()) ? scoring.favoriteBonus() : 0))).toList();
+        List<FoodRanking.Hit> hits = rows.values().stream().map(row -> new FoodRanking.Hit(row.food(), text.applyAsInt(row)
+                + (row.made() ? scoring.ownFoodBonus() : 0) + (starred.contains(row.food().id()) ? scoring.favoriteBonus() : 0))).toList();
         return withServings(FoodRanking.rank(hits, popularity(ids, searcher.account()), weights, limit));
     }
 
@@ -117,8 +127,8 @@ class FoodStore {
         return new Row(food(row), row.getString("source"), region == null ? NO_REGION : region, false);
     }
 
-    /** One log's weight: 1 now, a half every half-life (numeric, so a very old log is a very small number, not an error). */
-    private static final String DECAY = "exp(-ln(2.0) * extract(epoch from (now() - m.eaten_at)) / 86400.0 / cast(:half as numeric))";
+    /** One log's weight: 1 now, a half every half-life (numeric, so a very old log is a very small number, not an error; a meal dated in the future weighs 1, not more). */
+    private static final String DECAY = "exp(-ln(2.0) * greatest(0, extract(epoch from (now() - m.eaten_at))) / 86400.0 / cast(:half as numeric))";
 
     /**
      * The foods the user logged within {@code own-lookback-days} that hold every word, the {@code own-pool} they eat most (each log weighs
@@ -323,7 +333,7 @@ class FoodStore {
                 row.getBigDecimal("grams_per_ml"), List.of());
     }
 
-    /** The foods with their servings, in one read for all of them. */
+    /** The foods with their servings, in one read for all of them; a food that carries its own (the user's, in memory) keeps them. */
     private List<Food> withServings(List<Food> foods) {
         if (foods.isEmpty()) {
             return foods;
@@ -336,6 +346,6 @@ class FoodStore {
                 .query((row, n) -> new Row(row.getString("food_id"), new Serving(row.getString("name"), Decimals.plain(row.getBigDecimal("grams")))))
                 .list().stream().collect(Collectors.groupingBy(Row::food, Collectors.mapping(Row::serving, Collectors.toList())));
         return foods.stream().map(food -> new Food(food.id(), food.name(), food.brand(), food.source(), food.per100g(), food.gramsPerMl(),
-                List.copyOf(servings.getOrDefault(food.id(), List.of())))).toList();
+                List.copyOf(servings.getOrDefault(food.id(), food.servings())))).toList();
     }
 }

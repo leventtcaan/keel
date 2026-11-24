@@ -199,7 +199,8 @@ keel:
       # Foundation 12 > SR Legacy 8 > Survey 4 > Branded 0. The generic bonus (40) is two steps over a branded name equal to the query
       # (30), so "Chicken, breast, raw" leads a flood of "Chicken Breast" products. A favorite 24; a food the user made 30.
       # Their logs: a log weighs 1 today and a half 14 days ago, looking back 120 days; the 40 they eat most that hold the words always
-      # enter the pool. The typo pass is skipped once the exact search found 60 foods.
+      # enter the pool. The typo pass (costly on 2M rows) runs only when the exact search found fewer than 20 foods (a page) or none scoring 90
+      # (a good generic food scores about 100 and more; a sloppy name match, 80).
       score:
         word-exact: 20
         word-prefix: 8
@@ -225,7 +226,8 @@ keel:
         own-half-life-days: 14
         own-lookback-days: 120
         own-pool: 40
-        typo-skip-exact-hits: 60
+        typo-below-exact-hits: 20
+        typo-weak-score: 90
     # Logging a food (K-1061, FoodPortions): the words that name the size of a piece, smallest to largest. Of the sizes a food has
     # the middle one is where the app starts ("1 large" egg, "1 medium" banana).
     portions:

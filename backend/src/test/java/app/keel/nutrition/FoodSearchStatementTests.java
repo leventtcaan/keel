@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 /** The search's SQL (K-1061) read without a database: every placeholder has a value, typos are asked for only when asked. */
 class FoodSearchStatementTests {
 
-    private static final FoodRanking.Weights WEIGHTS = new FoodRanking.Weights(20, 25, 30, 15, 8, 5, 4, 100, 0.45, 20);
+    private static final FoodRanking.Weights WEIGHTS = FoodScoringTests.WEIGHTS;
     private static final FoodStore.Searcher US = new FoodStore.Searcher(Optional.empty(), Optional.of("US"));
 
     private static FoodStore.Statement statement(String query, boolean typos) {
@@ -74,8 +74,9 @@ class FoodSearchStatementTests {
     void theRegionAndTheWeightsAreParametersNotText() {
         FoodStore.Statement statement = statement("egg", false);
 
-        assertThat(statement.params()).containsEntry("region", "US").containsEntry("rankStep", 20).containsEntry("genericBonus", 25)
-                .containsEntry("brandBonus", 30).containsEntry("regionBonus", 15).containsEntry("pool", 100);
+        assertThat(statement.params()).containsEntry("region", "US").containsEntry("rankStep", WEIGHTS.rankStep())
+                .containsEntry("genericBonus", WEIGHTS.genericBonus()).containsEntry("brandBonus", WEIGHTS.brandBonus())
+                .containsEntry("regionBonus", WEIGHTS.regionBonus()).containsEntry("pool", 100);
         assertThat(FoodStore.statement(FoodSearchTerms.of("egg"), FoodStore.Searcher.ANYONE, false, 100, WEIGHTS).params()).containsEntry("region", "");
     }
 }

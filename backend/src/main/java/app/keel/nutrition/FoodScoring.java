@@ -29,20 +29,20 @@ final class FoodScoring {
      * a look-alike is at most {@code min(typoMaxEdits, letters / typoCharsPerEdit)} edits away; {@code favoriteBonus} for a starred food;
      * {@code ownFoodBonus} for a food the user made (their label's numbers are the one they mean, but a weak name match is not first);
      * the user's logs weigh {@code 1} today and half as much {@code ownHalfLifeDays} ago, looking back {@code ownLookbackDays}, and
-     * {@code ownPool} of the foods they eat most that hold the words always enter the pool; the typo pass is skipped once the exact
-     * search found {@code typoSkipExactHits} foods.
+     * {@code ownPool} of the foods they eat most that hold the words always enter the pool; the typo pass (a costly read) runs only when the exact
+     * search found fewer than {@code typoBelowExactHits} foods or none scoring {@code typoWeakScore}.
      */
     @ConfigurationProperties("keel.nutrition.search.score")
     record Settings(int wordExact, int wordPrefix, int wordInside, int wordFuzzy, int leadBonus, int headlineBonus, int orderBonus,
             int adjacencyBonus, int wholeNameBonus, int extraWordPenalty, int extraWordCap, Map<String, Integer> sourceBonus, int typoPenalty,
             int typoMaxEdits, int typoCharsPerEdit, int favoriteBonus, int ownFoodBonus, double ownHalfLifeDays, int ownLookbackDays,
-            int ownPool, int typoSkipExactHits) {
+            int ownPool, int typoBelowExactHits, int typoWeakScore) {
 
         public Settings {
             if (sourceBonus == null || ownHalfLifeDays <= 0 || ownLookbackDays < 1 || ownPool < 0 || typoCharsPerEdit < 1 || typoMaxEdits < 0
-                    || typoSkipExactHits < 1 || extraWordCap < 0) {
+                    || typoBelowExactHits < 1 || typoWeakScore < 0 || extraWordCap < 0) {
                 throw new IllegalArgumentException("keel.nutrition.search.score: source-bonus given, own-half-life-days above 0, own-lookback-days"
-                        + " and typo-chars-per-edit and typo-skip-exact-hits at least 1, own-pool, typo-max-edits and extra-word-cap not negative");
+                        + " and typo-chars-per-edit and typo-below-exact-hits at least 1, typo-weak-score own-pool, typo-max-edits and extra-word-cap not negative");
             }
         }
     }

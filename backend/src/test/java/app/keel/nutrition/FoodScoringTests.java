@@ -17,8 +17,8 @@ import org.springframework.core.io.ClassPathResource;
  */
 class FoodScoringTests {
 
-    private static final FoodScoring.Settings SETTINGS;
-    private static final FoodRanking.Weights WEIGHTS;
+    static final FoodScoring.Settings SETTINGS;
+    static final FoodRanking.Weights WEIGHTS;
 
     static {
         YamlPropertiesFactoryBean yaml = new YamlPropertiesFactoryBean();
@@ -123,10 +123,12 @@ class FoodScoringTests {
     void settingsThatCannotScoreAreRefused() {
         Map<String, Integer> bonus = Map.of("FOUNDATION", 1);
 
-        assertThatThrownBy(() -> new FoodScoring.Settings(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, bonus, 1, 1, 1, 1, 1, 0, 1, 1, 1)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new FoodScoring.Settings(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, null, 1, 1, 1, 1, 1, 14, 1, 1, 1)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new FoodScoring.Settings(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, bonus, 1, 1, 0, 1, 1, 14, 1, 1, 1)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new FoodScoring.Settings(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, bonus, 1, 1, 1, 1, 1, 14, 0, 1, 1)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new FoodScoring.Settings(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, bonus, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new FoodScoring.Settings(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, null, 1, 1, 1, 1, 1, 14, 1, 1, 1, 1)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new FoodScoring.Settings(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, bonus, 1, 1, 0, 1, 1, 14, 1, 1, 1, 1)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new FoodScoring.Settings(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, bonus, 1, 1, 1, 1, 1, 14, 1, 1, 0, 1)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new FoodScoring.Settings(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, bonus, 1, 1, 1, 1, 1, 14, 1, 1, 1, -1)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new FoodScoring.Settings(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, bonus, 1, 1, 1, 1, 1, 14, 0, 1, 1, 1)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
