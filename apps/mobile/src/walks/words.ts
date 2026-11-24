@@ -1,9 +1,10 @@
 /** The walk line's words (K-1216): the copy in data/copy/en.json, the numbers from the suggestion. Nothing blames, nothing asks to make up for anything (U7). */
 import { t } from '@/copy';
+import { formatNumber } from '@/copy/format';
 
 import type { Suggestion } from './suggest';
 
-const num = (n: number) => Math.round(n).toLocaleString('en-US');
+const num = (n: number) => formatNumber(Math.round(n));
 
 /** The line on the first screen: the steps left, and the route and back, or the minutes. */
 export function walkLine(remaining: number, suggestion: Suggestion): string {
