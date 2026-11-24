@@ -20,6 +20,7 @@ import { type Move, type TrainData, ownMove } from '@/train/trainData';
 import { formatLoad } from '@/units/units';
 
 import { haptics } from '@/train/haptics';
+import { countElements } from './support/elementCount';
 import { nodeSqlite } from './support/nodeSqlite';
 import { WithSaved } from './support/saved';
 import { answerAlert } from './support/systemChoices';
@@ -250,8 +251,46 @@ const endAndFinish = async () => {
 const pickMove = async (name: string) =>
   fireEvent.press(await screen.findByRole('button', { name: new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}, `) }));
 
-/** The move's More menu (ADR-070 Ek 2 #1, K-1047): the rarer actions of the move (Superset, Skip move) are rows in it. */
+/** The move's More sheet (K-1207; ADR-070 Ek 2 #1, K-1047): everything the set screen leaves off the page during a set is a row in it, and a row closes it. */
 const openMore = async () => fireEvent.press(await screen.findByRole('button', { name: t('workout.more') }));
+/**
+ * A screen reader reaches an element when it is accessible itself (a Text is, unless it says not) and nothing above it hides it: a label or a
+ * hint on a plain View is not read (K-1207 review). Returns the element's own words.
+ */
+const reached = (element: { props: Record<string, unknown>; parent: unknown }) => {
+  let node = element as { props: Record<string, unknown>; parent: unknown } | null;
+  expect(element.props.accessible).not.toBe(false);
+  while (node !== null && node !== undefined) {
+    expect(node.props.accessibilityElementsHidden).not.toBe(true);
+    expect(node.props.importantForAccessibility).not.toBe('no-hide-descendants');
+    node = node.parent as typeof node;
+  }
+  return element;
+};
+/** What is said about the set under way: the move's name (a header) carries "Set 2 of 3, 6-10 reps". */
+const setSaid = () => String(reached(within(screen.getByTestId('move-head')).getByRole('header')).props.accessibilityLabel);
+/** The aim for reps left: the hint of the row's own "Reps left" text. */
+const aimSaid = () => String(reached(within(screen.getByTestId('rir-row')).getByText(t('workout.rir.short'))).props.accessibilityHint);
+/** The sets done, opened (K-1207: they are one line until a tap). */
+const openDone = async () => {
+  const line = screen.queryByTestId('done-summary');
+  if (line !== null && line.props.accessibilityState?.expanded !== true) await fireEvent.press(line);
+};
+/** How many moves have a set done: the dots say it, each with its own status (a move started reads "Set 2 of 3" or "All sets done"). */
+const startedCount = () =>
+  within(screen.getByTestId('move-dots'))
+    .getAllByRole('button')
+    .filter((b) => /, (Set \d+ of \d+|All sets done)$/.test(String(b.props.accessibilityLabel))).length;
+/** How many moves the dots show: the session's whole progress picture (K-1207 took "x of y exercises" off the page). */
+const dotCount = () => within(screen.getByTestId('move-dots')).getAllByRole('button').length;
+/** The sheet closed by its dim, as a tap outside it does. */
+const closeMore = async () => fireEvent.press(await screen.findByRole('button', { name: t('modal.dismiss') }));
+/** What the open More sheet says above its rows, with the weight under way (the plates a side). */
+const sheetInfo = async () => {
+  await openMore();
+  const info = within(screen.getByTestId('more-sheet'));
+  return { info, close: closeMore };
+};
 const more = async (row: string) => {
   await openMore();
   await fireEvent.press(screen.getByRole('button', { name: row }));
@@ -267,11 +306,15 @@ const stepName = (which: 'moreLoad' | 'lessLoad' | 'moreReps' | 'lessReps') =>
 // (workout.test.ts).
 test("the day's moves, and the move under way filled with the server's next target", async () => {
   await show();
-  expect(await screen.findByText('Upper A')).toBeTruthy();
+  // K-1207: the day's name is no longer under the clock; the screen is the move under way.
+  expect(await screen.findByText('Log set 1')).toBeTruthy();
+  expect(screen.queryByText('Upper A')).toBeNull();
   expect(screen.getAllByText('Bench press').length).toBeGreaterThan(0);
   // K-971: the moves are dots, each said with its status.
   expect(screen.getByLabelText(t('workout.dot', { name: 'Bench press', status: '3 sets' }))).toBeTruthy(); // before any set
-  expect(screen.getByText(t('workout.targetRir', { max: 1 }))).toBeTruthy();
+  // K-1207: the aim for reps left is said to a screen reader on the row, not written on the card.
+  expect(aimSaid()).toBe(t('workout.targetRir', { max: 1 }));
+  expect(screen.queryByText(t('workout.targetRir', { max: 1 }))).toBeNull();
   expect(screen.getByLabelText('Weight (kg)').props.value).toBe('62.5');
   expect(screen.getByLabelText('Reps').props.value).toBe('6');
 });
@@ -288,18 +331,20 @@ test('one tap logs the set as suggested, with the target RIR, under the workout;
   ]);
   expect(await screen.findByText('Log set 2')).toBeTruthy();
   expect(within(screen.getByTestId('rest')).getByText('2:00')).toBeTruthy(); // counts down from the band's low end
-  expect(screen.getByText('Set 2 of 3')).toBeTruthy();
+  // K-1207: the set's number is the button's and the card's spoken name; no "Set 2 of 3" line is written on the page.
+  expect(setSaid()).toContain('Set 2 of 3');
+  expect(screen.queryByText('Set 2 of 3')).toBeNull();
 });
 
 test("the move under way opens its screen: setup, tips, muscles (K-418)", async () => {
   await show();
-  await fireEvent.press(await screen.findByLabelText(t('demo.openLabel', { exercise: 'Bench press' })));
+  await more(t('demo.openLabel', { exercise: 'Bench press' }));
   expect(mockPush).toHaveBeenCalledWith({ pathname: '/exercise', params: { exercise: 'bench_press' } });
 });
 
 test('the move under way opens its history and records (K-415)', async () => {
   await show();
-  await fireEvent.press(await screen.findByLabelText('Bench press: history'));
+  await more('Bench press: history');
   expect(mockPush).toHaveBeenCalledWith({ pathname: '/exercise-history', params: { exercise: 'bench_press' } });
 });
 
@@ -315,7 +360,7 @@ test('what is typed and the RIR picked are what is logged; 2+ is logged as 2 (AD
 test('a note goes with the set it was written for, and the next set starts without one (K-422)', async () => {
   await show();
   expect(screen.queryByLabelText('Note on this set')).toBeNull(); // closed: one tap stays one tap
-  await fireEvent.press(await screen.findByText('Add a note'));
+  await more(t('workout.note.add'));
   await fireEvent.changeText(screen.getByLabelText('Note on this set'), 'Left shoulder pinched');
   await fireEvent.press(screen.getByText('Log set 1'));
   expect(sets()[0].body).toMatchObject({ note: 'Left shoulder pinched' });
@@ -374,7 +419,7 @@ test('a workout opened from a day is kept on the phone only once its first set i
   mockRecords = lastWeek();
   mockParams = { day: 'day-a' };
   await show();
-  expect(await screen.findByText('Upper A')).toBeTruthy();
+  expect(await screen.findByText('Log set 1')).toBeTruthy();
   expect(mockRecord).not.toHaveBeenCalled();
   await fireEvent.press(screen.getByText('Log set 1'));
   const [workout, set] = mockRecord.mock.calls.map(([o]) => o);
@@ -675,9 +720,13 @@ describe("warm-ups (K-417, G1 K-17): three before the day's first move, one befo
     expect(screen.getByText('5 kg a side')).toBeTruthy();
     expect(screen.getByText('42.5 kg × 5')).toBeTruthy();
     expect(screen.getByText('10 + 1.25 kg a side')).toBeTruthy();
-    expect(screen.getByText('20 + 1.25 kg a side')).toBeTruthy(); // 62.5 kg, the set under way
+    // K-1207: the plates for the weight under way are said in the More sheet, not written on the set card.
+    const first = await sheetInfo();
+    expect(first.info.getByText('20 + 1.25 kg a side')).toBeTruthy(); // 62.5 kg, the set under way
+    await first.close();
     await fireEvent.changeText(screen.getByLabelText('Weight (kg)'), '20');
-    expect(screen.getByText('Just the bar')).toBeTruthy();
+    const second = await sheetInfo();
+    expect(second.info.getByText('Just the bar')).toBeTruthy();
   });
 
   // K1 (Evre 7 C, the walk of 30 Oct): "209.4 lb" over "25 + 10 + 2.5 kg a side" was two units on one card. A lb user whose gym is still the
@@ -686,8 +735,10 @@ describe("warm-ups (K-417, G1 K-17): three before the day's first move, one befo
     mockUnits = 'IMPERIAL';
     mockData = { ...mockData, exercises: { state: 'ready', value: BARBELL }, gym: GYM };
     await show();
-    expect(await screen.findByText('45 + 2.5 lb a side')).toBeTruthy(); // 140 lb, the 62.5 kg under way
-    expect(screen.queryByText(/kg a side/)).toBeNull();
+    await screen.findByText('Log set 1');
+    const sheet = await sheetInfo();
+    expect(sheet.info.getByText('45 + 2.5 lb a side')).toBeTruthy(); // 140 lb, the 62.5 kg under way
+    expect(sheet.info.queryByText(/kg a side/)).toBeNull();
   });
 
   test('in lb, the plates are said in lb', async () => {
@@ -696,7 +747,7 @@ describe("warm-ups (K-417, G1 K-17): three before the day's first move, one befo
     mockData = { ...mockData, exercises: { state: 'ready', value: BARBELL }, gym: LB_GYM };
     await show();
     await fireEvent.changeText(await screen.findByLabelText('Weight (lb)'), '135');
-    expect(screen.getByText('45 lb a side')).toBeTruthy();
+    expect((await sheetInfo()).info.getByText('45 lb a side')).toBeTruthy();
   });
 });
 
@@ -709,7 +760,7 @@ describe('a move added to the session, outside the plan (K-416)', () => {
 
   test('found by name in the catalog, added with one tap, logged like any move — with no reps made up', async () => {
     await show();
-    await fireEvent.press(await screen.findByRole('button', { name: t('workout.add.open') }));
+    await more(t('workout.add.open'));
     await fireEvent.changeText(screen.getByLabelText(t('workout.add.search')), 'lat');
     await fireEvent.press(screen.getByRole('button', { name: t('workout.add.pick', { name: latName }) }));
     // K-971: its dot and the card's title.
@@ -745,7 +796,7 @@ describe('a move added to the session, outside the plan (K-416)', () => {
 
   test("the plan's own moves are not offered again; a name not in the catalog says so", async () => {
     await show();
-    await fireEvent.press(await screen.findByRole('button', { name: t('workout.add.open') }));
+    await more(t('workout.add.open'));
     await fireEvent.changeText(screen.getByLabelText(t('workout.add.search')), 'bench');
     expect(screen.queryByRole('button', { name: t('workout.add.pick', { name: 'Bench press' }) })).toBeNull();
     await fireEvent.changeText(screen.getByLabelText(t('workout.add.search')), 'zzz');
@@ -754,7 +805,7 @@ describe('a move added to the session, outside the plan (K-416)', () => {
 
   const SPLIT = { id: 'bulgarian_split_squat', nameKey: 'exercises.bulgarian_split_squat.name', load: 'EXTERNAL', unilateral: true } as Schemas['Exercise'];
   const addByName = async (query: string, name: string) => {
-    await fireEvent.press(await screen.findByRole('button', { name: t('workout.add.open') }));
+    await more(t('workout.add.open'));
     await fireEvent.changeText(screen.getByLabelText(t('workout.add.search')), query);
     await fireEvent.press(screen.getByRole('button', { name: t('workout.add.pick', { name }) }));
   };
@@ -781,7 +832,8 @@ describe('a move added to the session, outside the plan (K-416)', () => {
     await show();
     await addByName('lat', latName);
     await logTyped('50', '10', t('workout.log', { number: 1 }));
-    expect(await screen.findByText(t('workout.setOf', { number: 2, count: workoutParams.addedMoveSets }))).toBeOnTheScreen();
+    expect(await screen.findByText(t('workout.log', { number: 2 }))).toBeOnTheScreen();
+    expect(setSaid()).toContain(t('workout.setOf', { number: 2, count: workoutParams.addedMoveSets })); // K-1207: said, not written
     await fireEvent.press(screen.getByText(t('workout.log', { number: 2 })));
     await fireEvent.press(await screen.findByText(t('workout.log', { number: 3 })));
     expect(screen.queryByText(t('workout.log', { number: 4 }))).toBeNull();
@@ -813,14 +865,19 @@ describe('a move added to the session, outside the plan (K-416)', () => {
     // The added move is done (its dot says so); the plan's first move is the set under way, and Finish is on the page.
     expect(await screen.findByRole('button', { name: t('workout.dot', { name: latName, status: t('workout.allDone') }) })).toBeOnTheScreen();
     expect(await screen.findByText(t('workout.log', { number: 1 }))).toBeOnTheScreen();
+    // K-1207: Finish is a row of the More sheet.
+    await openMore();
     expect(screen.getByRole('button', { name: t('workout.finish') })).toBeOnTheScreen();
   });
 
-  test('Finish workout is on the page whenever something is logged, not only under End: visible mid-session, and it asks about form', async () => {
+  test('Finish workout is in the More sheet whenever something is logged, not only under End: mid-session, and it asks about form', async () => {
     await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    await openMore();
     expect(screen.queryByRole('button', { name: t('workout.finish') })).toBeNull(); // nothing logged: End closes it, nothing to finish
+    await closeMore();
     await fireEvent.press(await screen.findByText(t('workout.log', { number: 1 })));
-    await fireEvent.press(await screen.findByRole('button', { name: t('workout.finish') }));
+    await more(t('workout.finish'));
     expect(await screen.findByText('How was your form?')).toBeOnTheScreen();
   });
 
@@ -829,7 +886,7 @@ describe('a move added to the session, outside the plan (K-416)', () => {
     const alert = answerAlert('keep');
     await show();
     await fireEvent.press(await screen.findByText(t('workout.log', { number: 1 })));
-    await fireEvent.press(await screen.findByRole('button', { name: t('workout.finish') }));
+    await more(t('workout.finish'));
     expect(alert).toHaveBeenCalledTimes(1);
     expect(String(alert.mock.calls[0][0])).toMatch(/moves? left/);
     expect(screen.queryByText('How was your form?')).toBeNull();
@@ -841,7 +898,7 @@ describe('a move added to the session, outside the plan (K-416)', () => {
     answerAlert('confirm');
     await show();
     await fireEvent.press(await screen.findByText(t('workout.log', { number: 1 })));
-    await fireEvent.press(await screen.findByRole('button', { name: t('workout.finish') }));
+    await more(t('workout.finish'));
     expect(await screen.findByText('How was your form?')).toBeOnTheScreen();
   });
 
@@ -869,17 +926,22 @@ describe('a move added to the session, outside the plan (K-416)', () => {
     await show();
     await addByName('lat', latName);
     await logTyped('50', '10', t('workout.log', { number: 1 }));
-    expect(await screen.findByText(t('workout.progress', { done: 0, count: 2 }))).toBeOnTheScreen();
-    expect(screen.getByText(t('workout.setOf', { number: 2, count: workoutParams.addedMoveSets }))).toBeOnTheScreen();
+    // K1 (K-1207): "0 of 2 exercises" is no longer written under the clock; the dots are the progress. The plan's two moves are dots
+    // still to do, the added one a third, and the added move says its set and how many it has to a screen reader.
+    expect(screen.queryByText(t('workout.progress', { done: 0, count: 2 }))).toBeNull();
+    expect(setSaid()).toContain(t('workout.setOf', { number: 2, count: workoutParams.addedMoveSets }));
+    expect(screen.getAllByRole('button').filter((b) => String(b.props.accessibilityLabel).includes(`, ${t('workout.sets', { count: 2 })}`) || String(b.props.accessibilityLabel).startsWith('Bench press, ')).length).toBeGreaterThan(0);
   });
 
   test('the panel closes without adding anything', async () => {
     await show();
-    await fireEvent.press(await screen.findByRole('button', { name: t('workout.add.open') }));
+    await more(t('workout.add.open'));
     await fireEvent.changeText(screen.getByLabelText(t('workout.add.search')), 'lat');
     await fireEvent.press(screen.getByRole('button', { name: t('workout.add.close') }));
     expect(screen.queryByLabelText(t('workout.add.search'))).toBeNull();
     expect(screen.queryByText(latName)).toBeNull();
+    // Closed, it is a row of the More sheet again.
+    await openMore();
     expect(screen.getByRole('button', { name: t('workout.add.open') })).toBeOnTheScreen();
   });
 });
@@ -890,7 +952,7 @@ describe("the user's own move (K-416, ADR-035)", () => {
   test('found by the name they gave, added, and logged under its id; its name in the list, on the card and at the finish', async () => {
     mockOwn = [LANDMINE];
     await show();
-    await fireEvent.press(await screen.findByRole('button', { name: t('workout.add.open') }));
+    await more(t('workout.add.open'));
     await fireEvent.changeText(screen.getByLabelText(t('workout.add.search')), 'landmine');
     await fireEvent.press(screen.getByRole('button', { name: t('workout.add.pick', { name: 'Landmine press' }) }));
     expect(screen.getByRole('button', { name: /^Landmine press, / })).toBeOnTheScreen(); // its dot (K-971)
@@ -908,7 +970,7 @@ describe("the user's own move (K-416, ADR-035)", () => {
 describe("creating the user's own move (K-416, ADR-035): the catalog's matches first, the engine's questions asked", () => {
   const answer = (question: string, choice: string) => fireEvent.press(screen.getByLabelText(`${t(question)} ${choice}`));
   const openCreate = async (name: string) => {
-    await fireEvent.press(await screen.findByRole('button', { name: t('workout.add.open') }));
+    await more(t('workout.add.open'));
     await fireEvent.changeText(screen.getByLabelText(t('workout.add.search')), name);
     await fireEvent.press(screen.getByRole('button', { name: t('workout.add.create', { name }) }));
   };
@@ -1011,7 +1073,7 @@ describe("creating the user's own move (K-416, ADR-035): the catalog's matches f
 
   test('nothing typed, nothing to create', async () => {
     await show();
-    await fireEvent.press(await screen.findByRole('button', { name: t('workout.add.open') }));
+    await more(t('workout.add.open'));
     expect(screen.queryByRole('button', { name: /^Create / })).toBeNull();
   });
 
@@ -1101,11 +1163,12 @@ describe('supersets (K-416, ADR-035): an id on the sets, the partner next, the r
     mockData = { ...mockData, exercises: { state: 'ready', value: [...EXERCISES, LAT] } };
     await show();
     await link(); // the bench with the row
-    await fireEvent.press(await screen.findByRole('button', { name: t('workout.add.open') }));
+    await more(t('workout.add.open'));
     await fireEvent.changeText(screen.getByLabelText(t('workout.add.search')), 'lat');
     await fireEvent.press(screen.getByRole('button', { name: t('workout.add.pick', { name: t('exercises.lat_pulldown.name') }) }));
+    await openMore();
     expect(screen.queryByRole('button', { name: t('superset.link') })).toBeNull(); // nothing left to pair it with
-    expect(screen.queryByRole('button', { name: t('workout.more') })).toBeNull(); // and nothing else in the menu: no menu
+    expect(screen.queryByRole('button', { name: t('superset.unlink') })).toBeNull(); // and it is in none
   });
 
   test('picking a partner says what it is for, and can be left without linking', async () => {
@@ -1308,7 +1371,8 @@ describe("today's session as the week has it (K-971, K-964, ADR-073 Ek 3): the s
   test('the short version: only the moves the server lists, and the count is theirs', async () => {
     withWeek({ short: true, exerciseIds: ['bench_press'] });
     await show();
-    expect(await screen.findByText(t('workout.progressOne', { done: 0 }))).toBeOnTheScreen();
+    await screen.findByText('Log set 1');
+    expect(dotCount()).toBe(1); // K1 (K-1207): the count was "0 of 1 exercise"; the dots are the count now
     expect(screen.queryByText(t('exercises.one_arm_dumbbell_row.name'))).toBeNull();
   });
 
@@ -1316,7 +1380,8 @@ describe("today's session as the week has it (K-971, K-964, ADR-073 Ek 3): the s
     // w1 started 2026-09-28; today is later: the list is still that day's.
     withWeek({ short: true, exerciseIds: ['bench_press'] });
     await show();
-    expect(await screen.findByText(t('workout.progressOne', { done: 0 }))).toBeOnTheScreen();
+    await screen.findByText('Log set 1');
+    expect(dotCount()).toBe(1); // K1 (K-1207): the count was "0 of 1 exercise"; the dots are the count now
   });
 
   test('opened on another day than the week has its session on: the day as planned, the short version was for that day only', async () => {
@@ -1324,7 +1389,8 @@ describe("today's session as the week has it (K-971, K-964, ADR-073 Ek 3): the s
     mockParams = { day: 'day-a' };
     withWeek({ short: true, exerciseIds: ['bench_press'] }); // 2026-09-28, long past
     await show();
-    expect(await screen.findByText(t('workout.progress', { done: 0, count: 2 }))).toBeOnTheScreen();
+    await screen.findByText('Log set 1');
+    expect(dotCount()).toBe(2); // K1 (K-1207): the count was "0 of 2 exercises"; the dots are the count now
   });
 
   test("opened on the server's today (the phone's clock on another day, travelling): today's short version, as the Train card shows it", async () => {
@@ -1333,7 +1399,8 @@ describe("today's session as the week has it (K-971, K-964, ADR-073 Ek 3): the s
     withWeek({ short: true, exerciseIds: ['bench_press'] });
     mockData = { ...mockData, program: { state: 'ready', value: { ...(mockData.program as { value: Schemas['Program'] }).value, today: '2026-09-28' } } };
     await show();
-    expect(await screen.findByText(t('workout.progressOne', { done: 0 }))).toBeOnTheScreen();
+    await screen.findByText('Log set 1');
+    expect(dotCount()).toBe(1); // K1 (K-1207): the count was "0 of 1 exercise"; the dots are the count now
   });
 
   test("a move swapped for today stands in its place and starts with no target; the move it replaced is not in the session", async () => {
@@ -1451,7 +1518,7 @@ describe('the focus mode session (K-971, ADR-075 #1-#2, ADR-070 #4)', () => {
     await screen.findByText(t('workout.log', { number: 1 }));
     expect(screen.queryByRole('button', { name: t('superset.link') })).toBeNull(); // closed: one row of links
     await openMore();
-    expect(within(screen.getByTestId('move-head')).getByRole('button', { name: t('superset.link') })).toBeOnTheScreen();
+    expect(within(screen.getByTestId('more-sheet')).getByRole('button', { name: t('superset.link') })).toBeOnTheScreen();
   });
 
   test('in a superset up next is the partner, not the next move of the day', async () => {
@@ -1461,6 +1528,15 @@ describe('the focus mode session (K-971, ADR-075 #1-#2, ADR-070 #4)', () => {
     await show();
     await more(t('superset.link'));
     await fireEvent.press(screen.getByRole('button', { name: t('superset.pick', { name: t('exercises.lateral_raise.name') }) }));
+    // K1 (K-1207): Up next is for the rest, not the set. In the round it is the partner's turn: after the bench and the raise, the rest
+    // comes and says the raise (the bench's partner), not the day's next move (the row).
+    expect(screen.queryByTestId('up-next')).toBeNull();
+    await fireEvent.press(await screen.findByText(t('workout.log', { number: 1 })));
+    await waitFor(() => expect(sets()).toHaveLength(1));
+    await fireEvent.changeText(await screen.findByLabelText('Weight (kg)'), '10');
+    await fireEvent.changeText(screen.getByLabelText('Reps'), '12');
+    await fireEvent.press(await screen.findByText(t('workout.log', { number: 1 })));
+    await screen.findByTestId('rest');
     expect(within(screen.getByTestId('up-next')).getByText(t('exercises.lateral_raise.name'))).toBeOnTheScreen();
   });
 
@@ -1480,24 +1556,28 @@ describe('the focus mode session (K-971, ADR-075 #1-#2, ADR-070 #4)', () => {
     await show();
     expect(await screen.findByText(t('workout.log', { number: 2 }))).toBeOnTheScreen();
     expect(clock()).toMatch(/^12:0\d$/);
+    expect(screen.getByTestId('done-summary')).toHaveTextContent('62.5×7'); // K-1207: the sets done are one line, opened by a tap
+    await openDone();
     expect(screen.getByLabelText(t('workout.doneSet', { number: 1, set: '62.5 kg × 7', left: '1' }))).toBeOnTheScreen();
-    expect(screen.getByText(t('workout.setOf', { number: 2, count: 3 }))).toBeOnTheScreen();
+    expect(setSaid()).toContain(t('workout.setOf', { number: 2, count: 3 }));
   });
 
-  // Evre 7 C2 (Hevy's PREVIOUS): the set under way says what the same set was last time, beside the numbers to type.
-  test('the set under way says its PREVIOUS: the same set last time, in the unit of the person', async () => {
+  // K1 (K-1207; Evre 7 C2 had Hevy's PREVIOUS beside the numbers): the second line saying what the same set was last time is gone from the
+  // set card, as the "Last:" beside the target is: the target line is the one number to make, and the server's best set of last time
+  // is said with it to a screen reader. What the person reads in their own unit stays: a lb person's target reads on the rack.
+  test('there is no PREVIOUS line on the card: the target line is the one number to make', async () => {
     await show();
     await screen.findByText(t('workout.log', { number: 1 }));
-    const previous = within(screen.getByTestId('previous-set'));
-    expect(previous.getByText(t('workout.previous'))).toBeOnTheScreen();
-    expect(previous.getByText('57.5 kg × 8')).toBeOnTheScreen();
+    expect(screen.queryByTestId('previous-set')).toBeNull();
+    expect(screen.queryByText(t('workout.previous'))).toBeNull();
+    expect(screen.queryByText('57.5 kg × 8')).toBeNull();
   });
 
-  test('a lb person reads the previous set to the nearest 5 lb (57.5 kg is 126.8 lb to the decimal, 125 lb on a rack)', async () => {
+  test('a lb person reads the target to the nearest 5 lb (62.5 kg is 137.8 lb to the decimal, 140 lb on a rack)', async () => {
     mockUnits = 'IMPERIAL';
     await show();
     await screen.findByText(t('workout.log', { number: 1 }));
-    expect(within(screen.getByTestId('previous-set')).getByText('125 lb × 8')).toBeOnTheScreen();
+    expect(screen.getByTestId('goal')).toHaveTextContent(/^140 lb × 6/);
   });
 
   test('a set kept is felt once (a light tick)', async () => {
@@ -1583,9 +1663,12 @@ describe('the focus mode session (K-971, ADR-075 #1-#2, ADR-070 #4)', () => {
     expect(screen.queryByTestId('rest')).toBeNull();
   });
 
-  test('up next names the move after this one', async () => {
+  test('up next names the move after this one, while the rest runs and not during the set (K-1207)', async () => {
     await show();
     await screen.findByText(t('workout.log', { number: 1 }));
+    expect(screen.queryByTestId('up-next')).toBeNull();
+    await fireEvent.press(screen.getByText(t('workout.log', { number: 1 })));
+    await screen.findByTestId('rest');
     const upNext = within(screen.getByTestId('up-next'));
     expect(upNext.getByText(rowName)).toBeOnTheScreen();
     expect(upNext.getByText(t('workout.upNext'))).toBeOnTheScreen();
@@ -1605,25 +1688,29 @@ describe('the focus mode session (K-971, ADR-075 #1-#2, ADR-070 #4)', () => {
     const withBest = { ...DAY, exercises: [{ ...DAY.exercises[0], lastBestSet: { loadKg: 60, reps: 8, rir: 1 } }, DAY.exercises[1]] };
     mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, days: [withBest] } } };
     await show();
-    const goal = within(await screen.findByTestId('goal'));
-    expect(goal.getByText(t('workout.goal.beat'))).toBeOnTheScreen();
-    expect(goal.getByText('62.5 kg × 6')).toBeOnTheScreen();
-    expect(goal.getByText(t('workout.goal.last', { set: '60 kg × 8' }))).toBeOnTheScreen();
+    const goal = await screen.findByTestId('goal');
+    // K1 (K-1207): one line, the number to make; what kind of target it is and last time's best are for a screen reader.
+    expect(goal).toHaveTextContent('62.5 kg × 6');
+    expect(goal.props.accessibilityLabel).toBe([t('workout.goal.beat'), '62.5 kg × 6', t('workout.goal.last', { set: '60 kg × 8' })].join('. '));
+    expect(screen.queryByText(t('workout.goal.beat'))).toBeNull();
+    expect(screen.queryByText(t('workout.goal.last', { set: '60 kg × 8' }))).toBeNull();
   });
 
   test('with a load to start from and no session before: start here, over the range', async () => {
     await show();
-    const goal = within(await screen.findByTestId('goal'));
-    expect(goal.getByText(t('workout.goal.start'))).toBeOnTheScreen();
-    expect(goal.getByText('62.5 kg × 6-10')).toBeOnTheScreen();
+    const goalNode = await screen.findByTestId('goal');
+    const said = String(goalNode.props.accessibilityLabel); // K1 (K-1207): the kind of target is the line's spoken label, not a second text
+    expect(said).toContain(t('workout.goal.start'));
+    expect(goalNode).toHaveTextContent('62.5 kg × 6-10');
   });
 
   test('no load known: the range alone', async () => {
     await show();
     await pickMove(rowName);
-    const goal = within(await screen.findByTestId('goal'));
-    expect(goal.getByText(t('workout.goal.first'))).toBeOnTheScreen();
-    expect(goal.getByText(t('workout.goal.reps', { reps: '8-12' }))).toBeOnTheScreen();
+    const goalNode = await screen.findByTestId('goal');
+    const said = String(goalNode.props.accessibilityLabel); // K1 (K-1207): the kind of target is the line's spoken label, not a second text
+    expect(said).toContain(t('workout.goal.first'));
+    expect(goalNode).toHaveTextContent(t('workout.goal.reps', { reps: '8-12' }));
   });
 
   describe('the weight and the reps: steppers, or typed', () => {
@@ -1728,12 +1815,29 @@ describe('the focus mode session (K-971, ADR-075 #1-#2, ADR-070 #4)', () => {
       expect(screen.getByRole('button', { name: stepName('lessReps') })).toBeDisabled();
     });
 
-    test('reps left is picked from 0, 1 and 2+, with the aim beside it', async () => {
+    // K1 (K-1207): the aim is not a second line; it is the hint of the row's own "Reps left" text, which a screen reader reaches.
+    test('reps left is one compact row: 0, 1 and 2+, the plan\'s aim selected, the aim said by its text', async () => {
       await show();
       await screen.findByText(t('workout.log', { number: 1 }));
       expect(screen.getByText(t('workout.rir.short'))).toBeOnTheScreen();
-      expect(screen.getByText(t('workout.targetRir', { max: 1 }))).toBeOnTheScreen();
-      for (const choice of ['0', '1', '2+']) expect(screen.getByRole('button', { name: choice })).toBeOnTheScreen();
+      expect(aimSaid()).toBe(t('workout.targetRir', { max: 1 }));
+      expect(screen.getByRole('button', { name: '1' })).toBeSelected(); // what is logged when it is left alone is what is seen
+      for (const choice of ['0', '2+']) expect(screen.getByRole('button', { name: choice })).not.toBeSelected();
+    });
+
+    test('left alone the row logs the aim it shows; picked, the pick; the next set starts at the aim again', async () => {
+      await show();
+      await fireEvent.press(await screen.findByText(t('workout.log', { number: 1 })));
+      expect(sets()[0].body).toMatchObject({ rir: 1 });
+      await screen.findByText(t('workout.log', { number: 2 }));
+      expect(screen.getByRole('button', { name: '1' })).toBeSelected();
+      await fireEvent.press(screen.getByRole('button', { name: '2+' }));
+      expect(screen.getByRole('button', { name: '2+' })).toBeSelected();
+      expect(screen.getByRole('button', { name: '1' })).not.toBeSelected();
+      await fireEvent.press(screen.getByText(t('workout.log', { number: 2 })));
+      expect(sets()[1].body).toMatchObject({ rir: 2 });
+      await screen.findByText(t('workout.log', { number: 3 }));
+      expect(screen.getByRole('button', { name: '1' })).toBeSelected();
     });
   });
 });
@@ -1945,7 +2049,7 @@ describe('Pause and Resume (K-972, ADR-075 #5): the time stops, and goes on from
 
 describe('Skip set and Skip move (K-972, ADR-075 #5): nothing is sent, no catch-up, and both can be undone', () => {
   const rowName = t('exercises.one_arm_dumbbell_row.name');
-  const skipSet = () => fireEvent.press(within(screen.getByTestId('dock')).getByRole('button', { name: t('workout.skipSetLabel') }));
+  const skipSet = () => more(t('workout.skipSetLabel'));
   const dot = (name: string) => screen.getByRole('button', { name: new RegExp(`^${name}, `) });
   const skipMove = (name: string) => more(t('workout.skipMoveLabel', { name }));
 
@@ -1953,6 +2057,8 @@ describe('Skip set and Skip move (K-972, ADR-075 #5): nothing is sent, no catch-
     await show();
     await screen.findByText(t('workout.log', { number: 1 }));
     await skipSet();
+    expect(screen.getByTestId('done-summary')).toHaveTextContent(t('workout.skipped')); // K-1207: one line; the Skipped row opens with it
+    await openDone();
     expect(screen.getByLabelText(t('workout.skippedSet', { number: '1' }))).toBeOnTheScreen();
     expect(screen.getByText(t('workout.log', { number: 2 }))).toBeOnTheScreen();
     expect(sets()).toEqual([]);
@@ -1966,6 +2072,7 @@ describe('Skip set and Skip move (K-972, ADR-075 #5): nothing is sent, no catch-
     await skipSet();
     await fireEvent.press(screen.getByRole('button', { name: t('workout.undoLabel') }));
     expect(screen.getByText(t('workout.log', { number: 1 }))).toBeOnTheScreen();
+    expect(screen.queryByTestId('done-summary')).toBeNull();
     expect(screen.queryByLabelText(t('workout.skippedSet', { number: '1' }))).toBeNull();
   });
 
@@ -1991,24 +2098,28 @@ describe('Skip set and Skip move (K-972, ADR-075 #5): nothing is sent, no catch-
     expect(screen.getByLabelText(t('workout.dot', { name: 'Bench press', status: t('workout.sets', { count: 3 }) }))).toBeOnTheScreen();
   });
 
-  test('Skip set is in the dock under Log set; Skip move with the move, far from it', async () => {
+  // K1 (K-1207): was "Skip set is in the dock under Log set". The dock is Log set alone; both skips are rows of the More sheet.
+  test('Log set is the dock alone; Skip set and Skip move are rows of the More sheet', async () => {
     await show();
     await screen.findByText(t('workout.log', { number: 1 }));
-    expect(within(screen.getByTestId('dock')).getByRole('button', { name: t('workout.skipSetLabel') })).toBeOnTheScreen();
+    expect(within(screen.getByTestId('dock')).queryByRole('button', { name: t('workout.skipSetLabel') })).toBeNull();
     expect(within(screen.getByTestId('dock')).queryByRole('button', { name: t('workout.skipMoveLabel', { name: 'Bench press' }) })).toBeNull();
-    // Skip move is a row of the move's More menu (ADR-070 Ek 2 #1), with the move and not in the dock.
     await openMore();
-    expect(within(screen.getByTestId('move-head')).getByRole('button', { name: t('workout.skipMoveLabel', { name: 'Bench press' }) })).toBeOnTheScreen();
+    const sheet = within(screen.getByTestId('more-sheet'));
+    expect(sheet.getByRole('button', { name: t('workout.skipSetLabel') })).toBeOnTheScreen();
+    expect(sheet.getByRole('button', { name: t('workout.skipMoveLabel', { name: 'Bench press' }) })).toBeOnTheScreen();
   });
 
   test('a move outside the plan has no set to skip: there is no count', async () => {
     const LAT = { id: 'lat_pulldown', nameKey: 'exercises.lat_pulldown.name', load: 'EXTERNAL', unilateral: false } as Schemas['Exercise'];
     mockData = { ...mockData, exercises: { state: 'ready', value: [...EXERCISES, LAT] } };
     await show();
-    await fireEvent.press(await screen.findByRole('button', { name: t('workout.add.open') }));
+    await more(t('workout.add.open'));
     await fireEvent.changeText(screen.getByLabelText(t('workout.add.search')), 'lat');
     await fireEvent.press(screen.getByRole('button', { name: t('workout.add.pick', { name: t('exercises.lat_pulldown.name') }) }));
-    expect(within(screen.getByTestId('dock')).queryByRole('button', { name: t('workout.skipSetLabel') })).toBeNull();
+    await openMore();
+    expect(screen.queryByRole('button', { name: t('workout.skipSetLabel') })).toBeNull();
+    expect(screen.queryByRole('button', { name: t('workout.skipMoveLabel', { name: 'Lat pulldown' }) })).toBeNull();
   });
 
   test('in a superset a set skipped brings up the partner, as a set logged does', async () => {
@@ -2028,6 +2139,7 @@ describe('Skip set and Skip move (K-972, ADR-075 #5): nothing is sent, no catch-
     await show();
     await pickMove(rowName);
     await skipSet();
+    await openDone();
     expect(screen.getByLabelText(t('workout.skippedSet', { number: `1${t('workout.side.LEFT')}` }))).toBeOnTheScreen();
     expect(screen.getByLabelText(t('workout.skippedSet', { number: `1${t('workout.side.RIGHT')}` }))).toBeOnTheScreen();
     expect(screen.getByText(t('workout.logSide', { number: 2, side: t('workout.sideName.LEFT') }))).toBeOnTheScreen();
@@ -2112,14 +2224,18 @@ describe('Skip set and Skip move (K-972, ADR-075 #5): nothing is sent, no catch-
     expect(mockSkips).toEqual({ workout: 'w1', skips: { bench_press: { sets: [{ side: 'BOTH', set: 0 }], move: false } } });
     await screen.unmount();
     await show();
+    await screen.findByText(t('workout.log', { number: 2 }));
+    await openDone();
     expect(await screen.findByLabelText(t('workout.skippedSet', { number: '1' }))).toBeOnTheScreen();
-    expect(screen.getByText(t('workout.log', { number: 2 }))).toBeOnTheScreen();
   });
 });
 
 describe('a set done, corrected or deleted in the session (K-972, ADR-075 #5)', () => {
-  const editSet = (number: number, set: string, left = '1') =>
-    fireEvent.press(screen.getByRole('button', { name: t('workout.doneSet', { number: String(number), set, left }) }));
+  // K-1207: the sets done are one line until opened; a row is pressed in the open list.
+  const editSet = async (number: number, set: string, left = '1') => {
+    await openDone();
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.doneSet', { number: String(number), set, left }) }));
+  };
   const inEditor = () => within(screen.getByTestId('edit-set'));
   const threeDone = () => {
     mockRecords = [
@@ -2231,6 +2347,7 @@ describe('a set done, corrected or deleted in the session (K-972, ADR-075 #5)', 
     ];
     await show();
     await pickMove(t('exercises.one_arm_dumbbell_row.name'));
+    await openDone();
     await fireEvent.press(screen.getByRole('button', { name: t('workout.doneSet', { number: `1${t('workout.side.LEFT')}`, set: '20 kg × 10', left: '1' }) }));
     await fireEvent.press(inEditor().getByRole('button', { name: stepName('lessReps') }));
     await fireEvent.press(inEditor().getByRole('button', { name: t('workout.edit.done') }));
@@ -2688,7 +2805,7 @@ describe('a move swapped inside the session (K-972, ADR-073 #6, ADR-075 #5): thi
     };
   });
   const head = () => within(screen.getByTestId('move-head'));
-  const openSwap = async (name = 'Bench press') => fireEvent.press(await screen.findByRole('button', { name: t('swap.label', { move: name }) }));
+  const openSwap = async (name = 'Bench press') => more(t('swap.label', { move: name }));
   const option = (name: string) => screen.getByRole('button', { name: new RegExp(`^${name}`) });
   const swapTo = async (name: string, from = 'Bench press') => {
     await openSwap(from);
@@ -2712,36 +2829,38 @@ describe('a move swapped inside the session (K-972, ADR-073 #6, ADR-075 #5): thi
     expect(screen.getByText(t('workout.log', { number: 1 }))).toBeOnTheScreen();
   });
 
-  // K-1047 (ADR-070 Ek 2 #1, prototype 8 › `.acts`): one row of text buttons and More, not a wrapped row of five links.
-  test('the header is one row of text buttons: How to, History, Swap, Taken, and More', async () => {
+  // K1 (K-1207; K-1047 had "one row of text buttons and More"): the move's head is its name and ONE More; How to, History, Swap and Taken
+  // (and the rest) are rows of the sheet it opens. Nothing is gone: each row is a full touch target with its own spoken name.
+  test('the head is the move\'s name and one More; How to, History, Swap and Taken are rows of its sheet', async () => {
     await show();
-    const row = within(await screen.findByTestId('move-links'));
-    const labelled = (name: string) => row.getByRole('button', { name });
-    const how = labelled(t('demo.openLabel', { exercise: 'Bench press' }));
-    const buttons = [how, labelled(t('history.openLabel', { exercise: 'Bench press' })), labelled(t('swap.label', { move: 'Bench press' })),
+    const head = within(await screen.findByTestId('move-head'));
+    expect(head.getByText('Bench press')).toBeOnTheScreen();
+    expect(head.getAllByRole('button')).toHaveLength(1);
+    expect(head.getByRole('button', { name: t('workout.more') })).toBeOnTheScreen();
+    expect(screen.queryByTestId('move-links')).toBeNull();
+    for (const text of [t('demo.open'), t('history.open'), t('workout.swap'), t('taken.open')]) expect(screen.queryByText(text)).toBeNull();
+    await openMore();
+    const sheet = within(screen.getByTestId('more-sheet'));
+    const labelled = (name: string) => sheet.getByRole('button', { name });
+    const buttons = [
+      labelled(t('demo.openLabel', { exercise: 'Bench press' })),
+      labelled(t('history.openLabel', { exercise: 'Bench press' })),
+      labelled(t('swap.label', { move: 'Bench press' })),
       labelled(t('taken.openLabel', { move: 'Bench press' })),
-      labelled(t('workout.more')),
     ];
-    expect(row.getAllByRole('button')).toHaveLength(5);
     for (const button of buttons) {
-      // Text buttons: words in the accent, no fill, no outline (the Button's text role).
-      expect(StyleSheet.flatten(button.props.style).backgroundColor).toBeUndefined();
-      expect(StyleSheet.flatten(button.props.style).borderWidth ?? 0).toBe(0);
-      expect(within(button).getByText(/./)).toHaveStyle({ color: focusPalette.accent });
+      expect(button).toHaveStyle({ minHeight: tokens.size.touch });
+      // Neutral: the accent is for the one thing to do and the timer (K-1207), a link is the text colour.
+      expect(within(button).getByText(/./)).toHaveStyle({ color: focusPalette.text });
     }
-    for (const text of [t('demo.open'), t('history.open'), t('workout.swap'), t('taken.open'), t('workout.more')]) expect(row.getByText(text)).toBeOnTheScreen();
-    // The rarer ones are not in the row.
-    expect(row.queryByText(t('superset.link'))).toBeNull();
-    expect(row.queryByText(t('workout.skipMove'))).toBeNull();
-    expect(screen.queryByTestId('more-menu')).toBeNull();
+    for (const text of [t('demo.open'), t('history.open'), t('workout.swap'), t('taken.open')]) expect(sheet.getByText(text)).toBeOnTheScreen();
   });
 
-  test('the three links keep their targets', async () => {
+  test('the sheet\'s rows keep their targets', async () => {
     await show();
-    await screen.findByTestId('move-links');
-    await fireEvent.press(screen.getByRole('button', { name: t('history.openLabel', { exercise: 'Bench press' }) }));
+    await more(t('history.openLabel', { exercise: 'Bench press' }));
     expect(mockPush).toHaveBeenCalledWith({ pathname: '/exercise-history', params: { exercise: 'bench_press' } });
-    await fireEvent.press(screen.getByRole('button', { name: t('demo.openLabel', { exercise: 'Bench press' }) }));
+    await more(t('demo.openLabel', { exercise: 'Bench press' }));
     expect(mockPush).toHaveBeenCalledWith({ pathname: '/exercise', params: { exercise: 'bench_press' } });
   });
 
@@ -2749,8 +2868,11 @@ describe('a move swapped inside the session (K-972, ADR-073 #6, ADR-075 #5): thi
     mockData = { ...mockData, program: { state: 'ready', value: programWith(['one_arm_dumbbell_row']) } };
     await show();
     await screen.findByText(t('workout.log', { number: 1 }));
+    await openMore();
     expect(screen.queryByRole('button', { name: t('swap.label', { move: 'Bench press' }) })).toBeNull();
+    await closeMore();
     await pickMove(ROW); // the row has none at all
+    await openMore();
     expect(screen.queryByRole('button', { name: t('swap.label', { move: ROW }) })).toBeNull();
   });
 
@@ -2762,6 +2884,7 @@ describe('a move swapped inside the session (K-972, ADR-073 #6, ADR-075 #5): thi
     ];
     await show();
     await pickMove(PUSH_UP);
+    await openMore();
     expect(screen.queryByRole('button', { name: t('swap.label', { move: PUSH_UP }) })).toBeNull();
   });
 
@@ -2769,11 +2892,11 @@ describe('a move swapped inside the session (K-972, ADR-073 #6, ADR-075 #5): thi
     await show();
     await swapTo(DUMBBELL);
     expect(head().getByText(DUMBBELL)).toBeOnTheScreen();
-    expect(screen.getByText(t('workout.setOf', { number: 1, count: 3 }))).toBeOnTheScreen();
-    expect(screen.getByText(t('workout.targetRir', { max: 1 }))).toBeOnTheScreen();
+    expect(setSaid()).toContain(t('workout.setOf', { number: 1, count: 3 }));
+    expect(aimSaid()).toBe(t('workout.targetRir', { max: 1 }));
     // No target: the old move's 62.5 kg and its best set are not the new move's; the range alone is the aim.
     expect(screen.getByLabelText('Weight (kg)').props.value).toBe('');
-    expect(within(screen.getByTestId('goal')).getByText(t('workout.goal.first'))).toBeOnTheScreen();
+    expect(String(screen.getByTestId('goal').props.accessibilityLabel)).toContain(t('workout.goal.first'));
     expect(screen.queryByText(t('workout.goal.beat'))).toBeNull();
     expect(screen.getByLabelText(t('workout.dot', { name: DUMBBELL, status: t('workout.sets', { count: 3 }) }))).toBeOnTheScreen();
     expect(screen.queryByLabelText(t('workout.dot', { name: 'Bench press', status: t('workout.sets', { count: 3 }) }))).toBeNull();
@@ -2987,7 +3110,6 @@ describe('a move swapped inside the session (K-972, ADR-073 #6, ADR-075 #5): thi
       await fireEvent.press(await screen.findByText(button));
     };
     const side = (number: number, which: 'LEFT' | 'RIGHT') => t('workout.logSide', { number, side: t(`workout.sideName.${which}`) });
-    const upNext = () => within(screen.getByTestId('up-next'));
     const partnerLine = (name: string) => t('superset.with', { names: name });
     const ids = () => sets().map((s) => s.body.supersetId);
 
@@ -3002,8 +3124,9 @@ describe('a move swapped inside the session (K-972, ADR-073 #6, ADR-075 #5): thi
       expect(screen.getByText(partnerLine(ROW))).toBeOnTheScreen(); // the superset goes with it
       await typeAndLog(t('workout.log', { number: 1 }), '30'); // the dumbbell press, set 1 of its own
       expect(await screen.findByText(side(2, 'LEFT'))).toBeOnTheScreen();
-      expect(screen.getByText(partnerLine(DUMBBELL))).toBeOnTheScreen(); // not "Bench press"
-      expect(upNext().getByText(DUMBBELL)).toBeOnTheScreen();
+      // K1 (K-1207): Up next is not on the set screen; the partner line says whose turn is next, and it is not "Bench press".
+      expect(screen.getByText(partnerLine(DUMBBELL))).toBeOnTheScreen();
+      expect(screen.queryByTestId('up-next')).toBeNull();
       await typeAndLog(side(2, 'LEFT'));
       await typeAndLog(side(2, 'RIGHT'));
       expect(await screen.findByText(t('workout.log', { number: 2 }))).toBeOnTheScreen();
@@ -3027,8 +3150,8 @@ describe('a move swapped inside the session (K-972, ADR-073 #6, ADR-075 #5): thi
       expect(screen.getByText(partnerLine(ROW))).toBeOnTheScreen();
       await typeAndLog(t('workout.log', { number: 1 }), '30');
       expect(await screen.findByText(side(1, 'LEFT'))).toBeOnTheScreen(); // the partner follows
-      expect(screen.getByText(partnerLine(DUMBBELL))).toBeOnTheScreen();
-      expect(upNext().getByText(DUMBBELL)).toBeOnTheScreen();
+      expect(screen.getByText(partnerLine(DUMBBELL))).toBeOnTheScreen(); // K1 (K-1207): said by the partner line, not an Up next row
+      expect(screen.queryByTestId('up-next')).toBeNull();
       expect(sets()[0].body).toMatchObject({ exerciseId: 'dumbbell_bench_press', supersetId: expect.any(String) });
       await typeAndLog(side(1, 'LEFT'));
       await typeAndLog(side(1, 'RIGHT'));
@@ -3086,19 +3209,25 @@ describe('a move swapped inside the session (K-972, ADR-073 #6, ADR-075 #5): thi
     await show();
     await fireEvent.press(await screen.findByText(t('workout.log', { number: 1 })));
     await screen.findByText(t('workout.log', { number: 2 }));
-    expect(screen.getByText(t('workout.progress', { done: 1, count: 2 }))).toBeOnTheScreen();
+    // K1 (K-1207): "1 of 2 exercises" is no longer written. The move swapped away from stays in the session with its set (a dot of its
+    // own), and the swapped-in one stands in the planned move's place: three dots, the plan's two and the one with a set done.
+    expect(dotCount()).toBe(2);
+    expect(startedCount()).toBe(1);
     await swapTo(DUMBBELL);
-    expect(screen.getByText(t('workout.progress', { done: 1, count: 2 }))).toBeOnTheScreen();
+    expect(dotCount()).toBe(3);
+    expect(startedCount()).toBe(1); // the move swapped away from is still the one done
   });
 
   test('the planned moves count: sets of the swapped-in move make the place one done', async () => {
     await show();
     await swapTo(DUMBBELL);
-    expect(screen.getByText(t('workout.progress', { done: 0, count: 2 }))).toBeOnTheScreen();
+    expect(dotCount()).toBe(2); // K1 (K-1207): the count text is gone; the swapped-in move stands in the planned move's place, one dot
+    expect(startedCount()).toBe(0);
     await fireEvent.changeText(screen.getByLabelText('Weight (kg)'), '30');
     await fireEvent.press(screen.getByText(t('workout.log', { number: 1 })));
     await screen.findByText(t('workout.log', { number: 2 }));
-    expect(screen.getByText(t('workout.progress', { done: 1, count: 2 }))).toBeOnTheScreen();
+    expect(dotCount()).toBe(2);
+    expect(startedCount()).toBe(1);
   });
 
   test('a swap kept that the plan does not offer (or the phone has no move for) is no swap', async () => {
@@ -3439,6 +3568,7 @@ describe('a move with no target: pick a weight, then the weight is found (K-973)
     await screen.findByText(t('workout.log', { number: 1 }));
     await type('40', '8', '1');
     await screen.findByText(t('workout.calibrate.found', { load: '40 kg' }));
+    await openDone();
     await fireEvent.press(screen.getByRole('button', { name: t('workout.doneSet', { number: '1', set: '40 kg × 8', left: '1' }) }));
     await fireEvent.press(within(screen.getByTestId('edit-set')).getByRole('button', { name: t('workout.edit.delete') }));
     await waitFor(() => expect(screen.queryByText(t('workout.calibrate.found', { load: '40 kg' }))).toBeNull());
@@ -3459,27 +3589,37 @@ describe('a move with no target: pick a weight, then the weight is found (K-973)
 describe('"Too heavy?": the server\'s lighter load, to take or keep (K-973, G1 decision #61)', () => {
   const TARGET: Schemas['PlannedExercise'] = { ...DAY.exercises[0], lighterLoadKg: 60, heavierLoadKg: 65 };
   const load = () => screen.getByLabelText(t('workout.loadLabel', { unit: t('units.kgUnit') }));
-  const link = () => screen.getByRole('button', { name: t('workout.tooHeavy.label') });
+  // K-1207: "Too heavy?" is a row of the More sheet; asking closes the sheet and the question comes up on the page.
+  const ask = () => more(t('workout.tooHeavy.label'));
   const withBench = (bench: Schemas['PlannedExercise']) => {
     mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, days: [{ ...DAY, exercises: [bench, DAY.exercises[1]] }] } } };
   };
   beforeEach(() => withBench(TARGET));
 
-  test('a link with the weight, far from both skips; a full touch target', async () => {
+  // K1 (K-1207): was "a link with the weight, far from both skips". The set screen has no links; it is a row of the sheet.
+  test('a row of the More sheet, a full touch target; not on the set screen', async () => {
     await show();
     await screen.findByText(t('workout.log', { number: 1 }));
-    expect(link()).toBeOnTheScreen();
-    expect(link()).toHaveStyle({ minHeight: tokens.size.touch });
-    expect(screen.getByText(t('workout.tooHeavy.link'))).toBeOnTheScreen();
-    expect(within(screen.getByTestId('dock')).queryByText(t('workout.tooHeavy.link'))).toBeNull(); // Skip set is there
-    expect(within(screen.getByTestId('move-head')).queryByText(t('workout.tooHeavy.link'))).toBeNull(); // Skip move is there
+    expect(screen.queryByText(t('workout.tooHeavy.link'))).toBeNull();
+    await openMore();
+    const row = within(screen.getByTestId('more-sheet')).getByRole('button', { name: t('workout.tooHeavy.label') });
+    expect(row).toHaveStyle({ minHeight: tokens.size.touch });
+    expect(within(row).getByText(t('workout.tooHeavy.link'))).toBeOnTheScreen();
+  });
+
+  test('no lighter weight from the server: no row', async () => {
+    withBench(DAY.exercises[0]);
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    await openMore();
+    expect(screen.queryByRole('button', { name: t('workout.tooHeavy.label') })).toBeNull();
   });
 
   test('asked: the advice and the two ways out, the lighter weight and the one shown', async () => {
     await show();
     await screen.findByText(t('workout.log', { number: 1 }));
     expect(screen.queryByText(t('workout.tooHeavy.ask'))).toBeNull();
-    await fireEvent.press(link());
+    await ask();
     expect(screen.getByText(t('workout.tooHeavy.ask'))).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: t('workout.tooHeavy.use', { load: '60 kg' }) })).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: t('workout.tooHeavy.keep', { load: '62.5 kg' }) })).toBeOnTheScreen();
@@ -3488,7 +3628,7 @@ describe('"Too heavy?": the server\'s lighter load, to take or keep (K-973, G1 d
   test('both ways out are full touch targets', async () => {
     await show();
     await screen.findByText(t('workout.log', { number: 1 }));
-    await fireEvent.press(link());
+    await ask();
     expect(screen.getByRole('button', { name: t('workout.tooHeavy.use', { load: '60 kg' }) })).toHaveStyle({ minHeight: tokens.size.touch });
     expect(screen.getByRole('button', { name: t('workout.tooHeavy.keep', { load: '62.5 kg' }) })).toHaveStyle({ minHeight: tokens.size.touch });
   });
@@ -3496,7 +3636,7 @@ describe('"Too heavy?": the server\'s lighter load, to take or keep (K-973, G1 d
   test('Use takes the lighter weight; the set is logged at it and the next one carries it', async () => {
     await show();
     await screen.findByText(t('workout.log', { number: 1 }));
-    await fireEvent.press(link());
+    await ask();
     await fireEvent.press(screen.getByRole('button', { name: t('workout.tooHeavy.use', { load: '60 kg' }) }));
     expect(load().props.value).toBe('60');
     expect(screen.queryByText(t('workout.tooHeavy.ask'))).toBeNull();
@@ -3509,7 +3649,7 @@ describe('"Too heavy?": the server\'s lighter load, to take or keep (K-973, G1 d
   test('Keep leaves the weight as it is and puts the question away', async () => {
     await show();
     await screen.findByText(t('workout.log', { number: 1 }));
-    await fireEvent.press(link());
+    await ask();
     await fireEvent.press(screen.getByRole('button', { name: t('workout.tooHeavy.keep', { load: '62.5 kg' }) }));
     expect(load().props.value).toBe('62.5');
     expect(screen.queryByText(t('workout.tooHeavy.ask'))).toBeNull();
@@ -3534,7 +3674,7 @@ describe('"Too heavy?": the server\'s lighter load, to take or keep (K-973, G1 d
       mockUnits = 'IMPERIAL';
       await show();
       await screen.findByText(t('workout.log', { number: 1 }));
-      await fireEvent.press(link());
+      await ask();
       expect(said).toHaveBeenLastCalledWith(t('workout.tooHeavy.ask'));
       expect(screen.getByRole('button', { name: t('workout.tooHeavy.use', { load: formatLoad(60, 'IMPERIAL') }) })).toBeOnTheScreen();
     } finally {
@@ -3551,29 +3691,32 @@ describe('the target line when the target is last time (K-973)', () => {
   test('the target is the best set of last time: it is not beaten and last time at once', async () => {
     withBench({ ...DAY.exercises[0], lastBestSet: { loadKg: 62.5, reps: 6, rir: 1 } });
     await show();
-    const goal = within(await screen.findByTestId('goal'));
-    expect(goal.getByText(t('workout.goal.again'))).toBeOnTheScreen();
-    expect(goal.getByText('62.5 kg × 6')).toBeOnTheScreen();
-    expect(goal.queryByText(t('workout.goal.beat'))).toBeNull();
-    expect(goal.queryByText(/Last:/)).toBeNull();
+    const goalNode = await screen.findByTestId('goal');
+    const said = String(goalNode.props.accessibilityLabel); // K1 (K-1207): the kind of target is the line's spoken label, not a second text
+    expect(said).toContain(t('workout.goal.again'));
+    expect(goalNode).toHaveTextContent('62.5 kg × 6');
+    expect(said).not.toContain(t('workout.goal.beat'));
+    expect(screen.queryByText(/Last:/)).toBeNull();
   });
 
   test('a target past last time is still beat last time, with last time beside it', async () => {
     withBench({ ...DAY.exercises[0], lastBestSet: { loadKg: 62.5, reps: 5, rir: 1 } });
     await show();
-    const goal = within(await screen.findByTestId('goal'));
-    expect(goal.getByText(t('workout.goal.beat'))).toBeOnTheScreen();
-    expect(goal.getByText(t('workout.goal.last', { set: '62.5 kg × 5' }))).toBeOnTheScreen();
+    const goalNode = await screen.findByTestId('goal');
+    const said = String(goalNode.props.accessibilityLabel); // K1 (K-1207): the kind of target is the line's spoken label, not a second text
+    expect(said).toContain(t('workout.goal.beat'));
+    expect(said).toContain(t('workout.goal.last', { set: '62.5 kg × 5' }));
   });
 
   test('a move with its last time and no target: last time, and the weight to pick', async () => {
     withBench({ exerciseId: 'bench_press', baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 1, lastBestSet: { loadKg: 60, reps: 8, rir: 1 }, calibrationStepKg: 2.5 });
     await show();
-    const goal = within(await screen.findByTestId('goal'));
-    expect(goal.getByText(t('workout.goal.lastTime'))).toBeOnTheScreen();
-    expect(goal.getByText('60 kg × 8')).toBeOnTheScreen();
-    expect(goal.getByText(t('workout.goal.pick'))).toBeOnTheScreen();
-    expect(goal.queryByText(t('workout.goal.beat'))).toBeNull();
+    const goalNode = await screen.findByTestId('goal');
+    const said = String(goalNode.props.accessibilityLabel); // K1 (K-1207): the kind of target is the line's spoken label, not a second text
+    expect(said).toContain(t('workout.goal.lastTime'));
+    expect(goalNode).toHaveTextContent('60 kg × 8');
+    expect(said).toContain(t('workout.goal.pick'));
+    expect(said).not.toContain(t('workout.goal.beat'));
   });
 });
 
@@ -3612,7 +3755,7 @@ describe('a swapped move starts with the server\'s table for it (K-973, ADR-075 
   };
   const load = () => screen.getByLabelText(t('workout.loadLabel', { unit: t('units.kgUnit') }));
   const swapTo = async (name: string, from = 'Bench press') => {
-    await fireEvent.press(await screen.findByRole('button', { name: t('swap.label', { move: from }) }));
+    await more(t('swap.label', { move: from }));
     await fireEvent.press(screen.getByRole('button', { name: new RegExp(`^${name}`) }));
   };
 
@@ -3622,9 +3765,10 @@ describe('a swapped move starts with the server\'s table for it (K-973, ADR-075 
     await swapTo(DUMBBELL);
     expect(load().props.value).toBe('30');
     expect(screen.getByRole('button', { name: t('workout.log', { number: 1 }) })).toBeEnabled();
-    const goal = within(screen.getByTestId('goal'));
-    expect(goal.getByText(t('workout.goal.lastTime'))).toBeOnTheScreen();
-    expect(goal.getByText('30 kg × 10')).toBeOnTheScreen();
+    const goalNode = screen.getByTestId('goal');
+    const said = String(goalNode.props.accessibilityLabel);
+    expect(said).toContain(t('workout.goal.lastTime'));
+    expect(goalNode).toHaveTextContent('30 kg × 10');
     await swapTo(INCLINE, DUMBBELL);
     expect(load().props.value).toBe('');
     expect(screen.getByRole('button', { name: t('workout.log', { number: 1 }) })).toBeDisabled();
@@ -3634,7 +3778,7 @@ describe('a swapped move starts with the server\'s table for it (K-973, ADR-075 
     serve(TABLES);
     await show();
     await swapTo(DUMBBELL);
-    await fireEvent.press(screen.getByRole('button', { name: t('workout.tooHeavy.label') }));
+    await more(t('workout.tooHeavy.label'));
     expect(screen.getByRole('button', { name: t('workout.tooHeavy.use', { load: '27.5 kg' }) })).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: t('workout.tooHeavy.keep', { load: '30 kg' }) })).toBeOnTheScreen();
   });
@@ -3655,7 +3799,7 @@ describe('a swapped move starts with the server\'s table for it (K-973, ADR-075 
     await swapTo(DUMBBELL);
     await fireEvent.press(screen.getByRole('button', { name: t('workout.undoLabel') }));
     expect(load().props.value).toBe('62.5');
-    expect(within(screen.getByTestId('goal')).getByText(t('workout.goal.start'))).toBeOnTheScreen();
+    expect(String(screen.getByTestId('goal').props.accessibilityLabel)).toContain(t('workout.goal.start'));
   });
 
   test('an older server sends no tables: the move starts bare, as before, with no Too heavy? and no offer', async () => {
@@ -3663,7 +3807,7 @@ describe('a swapped move starts with the server\'s table for it (K-973, ADR-075 
     await show();
     await swapTo(DUMBBELL);
     expect(load().props.value).toBe('');
-    expect(within(screen.getByTestId('goal')).getByText(t('workout.goal.first'))).toBeOnTheScreen();
+    expect(String(screen.getByTestId('goal').props.accessibilityLabel)).toContain(t('workout.goal.first'));
     await fireEvent.changeText(load(), '30');
     expect(screen.queryByText(t('workout.tooHeavy.link'))).toBeNull();
     await fireEvent.press(screen.getByRole('button', { name: '2+' }));
@@ -3696,7 +3840,7 @@ describe('the moves swapped away from (K-973, ADR-075 Ek 7, Ek 8)', () => {
     };
   });
   const swapTo = async (name: string, from = 'Bench press') => {
-    await fireEvent.press(await screen.findByRole('button', { name: t('swap.label', { move: from }) }));
+    await more(t('swap.label', { move: from }));
     await fireEvent.press(screen.getByRole('button', { name: new RegExp(`^${name}`) }));
   };
   const typeAndLog = async (button: string, kg = '20') => {
@@ -3752,7 +3896,7 @@ describe('the moves swapped away from (K-973, ADR-075 Ek 7, Ek 8)', () => {
     await show();
     await swapTo(DUMBBELL); // the bench is out of the session, with no sets
     await typeAndLog(t('workout.log', { number: 1 }), '30');
-    await fireEvent.press(await screen.findByRole('button', { name: t('workout.add.open') }));
+    await more(t('workout.add.open'));
     await fireEvent.changeText(screen.getByLabelText(t('workout.add.search')), 'bench');
     await fireEvent.press(screen.getByRole('button', { name: t('workout.add.pick', { name: 'Bench press' }) }));
     expect(mockLeft).toEqual({ workout: 'w1', left: [] }); // no longer a move left
@@ -3788,6 +3932,7 @@ describe('the moves swapped away from (K-973, ADR-075 Ek 7, Ek 8)', () => {
     await screen.findByText(t('workout.log', { number: 2 }));
     await swapTo(DUMBBELL);
     await pickMove('Bench press');
+    await openDone();
     expect(screen.getByLabelText(t('workout.doneSet', { number: '1', set: '62.5 kg × 6', left: '1' }))).toBeOnTheScreen();
     expect(screen.queryByText(t('workout.log', { number: 2 }))).toBeNull(); // no open row to log
   });
@@ -3810,6 +3955,9 @@ describe('the analysis line after the sets (K-973, ADR-075 #4)', () => {
   const logWith = async (n: number, count?: string) => {
     if (count !== undefined) await fireEvent.changeText(reps(), count);
     await fireEvent.press(await screen.findByRole('button', { name: t('workout.log', { number: n }) }));
+    // K-1207: what the sets said opens with the sets done (one line until a tap); the helper opens them as the person would to read it.
+    await screen.findByTestId('done-summary');
+    await openDone();
   };
   beforeEach(() => serve(BENCH));
 
@@ -3819,9 +3967,12 @@ describe('the analysis line after the sets (K-973, ADR-075 #4)', () => {
     expect(await screen.findByText("+1 rep vs last time.")).toBeOnTheScreen();
   });
 
-  test('it sits in the page between the sets done and the set under way, not in the dock', async () => {
+  test('it sits in the sets done, under their rows, closed until they are opened, and not in the dock', async () => {
     await show();
     await logWith(1);
+    await fireEvent.press(screen.getByTestId('done-summary')); // closed again
+    expect(screen.queryByTestId('insight')).toBeNull();
+    await openDone();
     const line = await screen.findByTestId('insight');
     expect(within(screen.getByTestId('dock')).queryByTestId('insight')).toBeNull();
     expect(line.props.accessibilityLabel).toBe("+1 rep vs last time.");
@@ -3853,7 +4004,7 @@ describe('the analysis line after the sets (K-973, ADR-075 #4)', () => {
 
   test('a set skipped is no set: no line', async () => {
     await show();
-    await fireEvent.press(await screen.findByRole('button', { name: t('workout.skipSetLabel') }));
+    await more(t('workout.skipSetLabel'));
     expect(screen.queryByTestId('insight')).toBeNull();
   });
 
@@ -4264,21 +4415,22 @@ describe('walkthrough round 3: the session (K-1013)', () => {
       await fireEvent.press(screen.getByRole('button', { name: t('superset.pick', { name: rowName }) }));
     };
 
-    test('the partner line has a line of its own under the one row of links; Not a superset and Skip move are rows of the More menu', async () => {
+    // K1 (K-1207): the "one row of links" is gone with the links; the partner line is under the move's name and More, and Not a superset
+    // and Skip move are rows of the More sheet.
+    test('the partner line has a line of its own under the name; Not a superset and Skip move are rows of the More sheet', async () => {
       await linked();
       const head = within(screen.getByTestId('move-head'));
       const line = head.getByText(t('superset.with', { names: rowName }));
-      // Across the whole line, under the links (never squeezed beside them, where it broke the other labels into letters).
+      // Across the whole line, under the name (never squeezed beside it).
       expect(line).toHaveStyle({ flexBasis: '100%' });
-      expect(head.queryByRole('button', { name: t('superset.unlink') })).toBeNull();
+      expect(screen.queryByRole('button', { name: t('superset.unlink') })).toBeNull();
       await openMore();
-      const unlink = head.getByRole('button', { name: t('superset.unlink') });
-      const skip = head.getByRole('button', { name: t('workout.skipMoveLabel', { name: 'Bench press' }) });
+      const sheet = within(screen.getByTestId('more-sheet'));
+      const unlink = sheet.getByRole('button', { name: t('superset.unlink') });
+      const skip = sheet.getByRole('button', { name: t('workout.skipMoveLabel', { name: 'Bench press' }) });
       expect(unlink).toHaveStyle({ minHeight: tokens.size.touch });
       expect(skip).toHaveStyle({ minHeight: tokens.size.touch });
-      // Both are rows of the one menu.
       expect(unlink.parent).toBe(skip.parent);
-      expect(within(screen.getByTestId('more-menu')).getByRole('button', { name: t('superset.unlink') })).toBe(unlink);
     });
 
     test('Not a superset still takes the link away, and Skip move is still there', async () => {
@@ -4286,8 +4438,9 @@ describe('walkthrough round 3: the session (K-1013)', () => {
       await more(t('superset.unlink'));
       expect(screen.queryByText(t('superset.with', { names: rowName }))).toBeNull();
       await openMore();
-      expect(screen.getByRole('button', { name: t('superset.link') })).toBeOnTheScreen();
-      expect(within(screen.getByTestId('move-head')).getByRole('button', { name: t('workout.skipMoveLabel', { name: 'Bench press' }) })).toBeOnTheScreen();
+      const sheet = within(screen.getByTestId('more-sheet'));
+      expect(sheet.getByRole('button', { name: t('superset.link') })).toBeOnTheScreen();
+      expect(sheet.getByRole('button', { name: t('workout.skipMoveLabel', { name: 'Bench press' }) })).toBeOnTheScreen();
     });
   });
 
@@ -4309,9 +4462,10 @@ describe('walkthrough round 3: the session (K-1013)', () => {
     test.each(['pull_up', 'push_up'])('%s: the target line does not tell the person to pick a weight', async (id) => {
       serve(id);
       await show();
-      const goal = within(await screen.findByTestId('goal'));
-      expect(goal.getByText(t('workout.goal.first'))).toBeOnTheScreen();
-      expect(goal.queryByText(t('workout.goal.pick'))).toBeNull();
+      const goalNode = await screen.findByTestId('goal');
+    const said = String(goalNode.props.accessibilityLabel); // K1 (K-1207): the kind of target is the line's spoken label, not a second text
+      expect(said).toContain(t('workout.goal.first'));
+      expect(said).not.toContain(t('workout.goal.pick'));
       expect(screen.queryByText(t('workout.pick.why'))).toBeNull();
     });
 
@@ -4349,8 +4503,9 @@ describe('walkthrough round 3: the session (K-1013)', () => {
         program: { state: 'ready', value: { ...PROGRAM, days: [{ ...DAY, exercises: [{ exerciseId: 'bench_press', baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 1, calibrationStepKg: 2.5 }, DAY.exercises[1]] }] } },
       };
       await show();
-      const goal = within(await screen.findByTestId('goal'));
-      expect(goal.getByText(t('workout.goal.pick'))).toBeOnTheScreen();
+      const goalNode = await screen.findByTestId('goal');
+    const said = String(goalNode.props.accessibilityLabel); // K1 (K-1207): the kind of target is the line's spoken label, not a second text
+      expect(said).toContain(t('workout.goal.pick'));
       expect(screen.getByText(t('workout.warmup.title'))).toBeOnTheScreen();
     });
   });
@@ -4417,7 +4572,7 @@ describe('walkthrough round 3: the session (K-1013)', () => {
 
     test('opened, the moves not in the session are there by name; typing narrows them; clearing brings them back', async () => {
       await show();
-      await fireEvent.press(await screen.findByRole('button', { name: t('workout.add.open') }));
+      await more(t('workout.add.open'));
       expect(pick(t('exercises.lat_pulldown.name'))).toBeOnTheScreen();
       expect(pick(t('exercises.dumbbell_curl.name'))).toBeOnTheScreen();
       expect(pick('Bench press')).toBeNull(); // already in the session
@@ -4430,7 +4585,7 @@ describe('walkthrough round 3: the session (K-1013)', () => {
 
     test('Close is above the list, not at the foot of it', async () => {
       await show();
-      await fireEvent.press(await screen.findByRole('button', { name: t('workout.add.open') }));
+      await more(t('workout.add.open'));
       const order = (node: unknown): string[] =>
         typeof node === 'string' ? [node] : Array.isArray(node) ? node.flatMap(order) : order((node as { children?: unknown } | null)?.children ?? []);
       const texts = order(screen.toJSON());
@@ -4440,7 +4595,7 @@ describe('walkthrough round 3: the session (K-1013)', () => {
 
     test('a move picked from the list is added like a found one', async () => {
       await show();
-      await fireEvent.press(await screen.findByRole('button', { name: t('workout.add.open') }));
+      await more(t('workout.add.open'));
       await fireEvent.press(screen.getByRole('button', { name: t('workout.add.pick', { name: t('exercises.lat_pulldown.name') }) }));
       expect(await screen.findByRole('button', { name: new RegExp(`^${t('exercises.lat_pulldown.name')}, `) })).toBeOnTheScreen();
     });
@@ -4499,48 +4654,55 @@ describe('the workout screen on the system (K-1047)', () => {
     });
   });
 
+  // K1 (K-1207): More is no longer a two-row menu under the head but the sheet with everything the set screen leaves off the page.
   describe('More', () => {
-    test('opens a menu with Superset with… and Skip move, and closes with a second tap or a choice', async () => {
+    test('opens the sheet: the rarer rows with the move\'s own, closed by the dim or by a choice', async () => {
       await show();
       await screen.findByText(t('workout.log', { number: 1 }));
-      expect(screen.queryByTestId('more-menu')).toBeNull();
+      expect(screen.queryByTestId('more-sheet')).toBeNull();
       await openMore();
-      const menu = within(screen.getByTestId('more-menu'));
-      expect(menu.getByText(t('superset.link'))).toBeOnTheScreen();
-      expect(menu.getByText(t('workout.skipMove'))).toBeOnTheScreen();
-      expect(menu.getAllByRole('button')).toHaveLength(2);
-      await openMore();
-      expect(screen.queryByTestId('more-menu')).toBeNull();
+      const sheet = within(screen.getByTestId('more-sheet'));
+      expect(sheet.getByText('Bench press')).toBeOnTheScreen();
+      expect(sheet.getByText(t('superset.link'))).toBeOnTheScreen();
+      expect(sheet.getByText(t('workout.skipMove'))).toBeOnTheScreen();
+      expect(sheet.getByText(t('workout.skipSet'))).toBeOnTheScreen();
+      expect(sheet.getByText(t('workout.note.add'))).toBeOnTheScreen();
+      expect(sheet.getByText(t('workout.add.open'))).toBeOnTheScreen();
+      await closeMore();
+      expect(screen.queryByTestId('more-sheet')).toBeNull();
       await more(t('superset.link'));
-      expect(screen.queryByTestId('more-menu')).toBeNull(); // a choice closes it
+      expect(screen.queryByTestId('more-sheet')).toBeNull(); // a choice closes it
       expect(screen.getByText(t('superset.choose'))).toBeOnTheScreen();
     });
 
-    test('Skip move from the menu skips the move, as it did as a link', async () => {
+    test('Skip move from the sheet skips the move, as it did as a link', async () => {
       await show();
       await more(t('workout.skipMoveLabel', { name: 'Bench press' }));
       expect(screen.getByText(t('workout.moveSkipped'))).toBeOnTheScreen();
       expect(sets()).toEqual([]);
     });
 
-    test('another move starts with the menu closed', async () => {
+    test('another move has its own rows', async () => {
       await show();
       await openMore();
+      await closeMore();
       await pickMove(t('exercises.one_arm_dumbbell_row.name'));
-      expect(screen.queryByTestId('more-menu')).toBeNull();
+      expect(screen.queryByTestId('more-sheet')).toBeNull();
+      await openMore();
+      expect(within(screen.getByTestId('more-sheet')).getByText(t('exercises.one_arm_dumbbell_row.name'))).toBeOnTheScreen();
     });
 
-    test('a move outside the plan has only Superset in More: no Skip move, there is no count', async () => {
+    test('a move outside the plan has no Skip set, Skip move, Swap or Taken in the sheet: there is no count, no plan to swap', async () => {
       const LAT = { id: 'lat_pulldown', nameKey: 'exercises.lat_pulldown.name', load: 'EXTERNAL', unilateral: false } as Schemas['Exercise'];
       mockData = { ...mockData, exercises: { state: 'ready', value: [...EXERCISES, LAT] } };
       await show();
-      await fireEvent.press(await screen.findByRole('button', { name: t('workout.add.open') }));
+      await more(t('workout.add.open'));
       await fireEvent.changeText(screen.getByLabelText(t('workout.add.search')), 'lat');
       await fireEvent.press(screen.getByRole('button', { name: t('workout.add.pick', { name: t('exercises.lat_pulldown.name') }) }));
       await openMore();
-      const menu = within(screen.getByTestId('more-menu'));
-      expect(menu.getAllByRole('button')).toHaveLength(1);
-      expect(menu.getByText(t('superset.link'))).toBeOnTheScreen();
+      const sheet = within(screen.getByTestId('more-sheet'));
+      expect(sheet.getByText(t('superset.link'))).toBeOnTheScreen();
+      for (const text of [t('workout.skipMove'), t('workout.skipSet'), t('workout.swap'), t('taken.open')]) expect(sheet.queryByText(text)).toBeNull();
     });
   });
 
@@ -4630,7 +4792,6 @@ describe('the workout screen on the system (K-1047)', () => {
 // under Log set. Layout is not measured in Jest: these hold the structure that makes the room, and the reveal that is the
 // guarantee when the room is still short (a move with warm-ups, a larger text size).
 describe('the first view of a set (K-1048)', () => {
-  const dock = () => within(screen.getByTestId('dock'));
   const card = () => within(screen.getByTestId('active-set'));
   const TARGET: Schemas['PlannedExercise'] = { ...DAY.exercises[0], lighterLoadKg: 60, heavierLoadKg: 65 };
   const layout = (testID: string, frame: { y?: number; height: number }) =>
@@ -4640,15 +4801,15 @@ describe('the first view of a set (K-1048)', () => {
   const scrolls = jest.spyOn(ScrollView.prototype, 'scrollTo');
   beforeEach(() => scrolls.mockClear());
 
-  test('Log set and Skip set share one row of the dock: the dock is one button tall, not two', async () => {
+  // K1 (K-1207): was "Log set and Skip set share one row of the dock". Skip set is a row of the More sheet; the dock is Log set, full width.
+  test('Log set is the dock\'s one button, full width: Skip set is not beside it', async () => {
     await show();
     const log = await screen.findByRole('button', { name: t('workout.log', { number: 1 }) });
-    const skip = dock().getByRole('button', { name: t('workout.skipSetLabel') });
-    const row = within(screen.getByTestId('dock-row'));
-    expect(row.getByRole('button', { name: t('workout.log', { number: 1 }) })).toBe(log);
-    expect(row.getByRole('button', { name: t('workout.skipSetLabel') })).toBe(skip);
-    expect(StyleSheet.flatten(screen.getByTestId('dock-row').props.style)).toMatchObject({ flexDirection: 'row' });
-    expect(skip).toHaveStyle({ minHeight: tokens.size.touch });
+    expect(within(screen.getByTestId('dock')).getByRole('button', { name: t('workout.log', { number: 1 }) })).toBe(log);
+    expect(within(screen.getByTestId('dock')).getAllByRole('button')).toHaveLength(1);
+    expect(screen.queryByTestId('dock-row')).toBeNull();
+    expect(screen.queryByRole('button', { name: t('workout.skipSetLabel') })).toBeNull();
+    expect(log).toHaveStyle({ minHeight: tokens.size.primaryButton });
   });
 
   test('the weight and the reps are compact steppers: the field is named in the box, with no label line above it', async () => {
@@ -4666,22 +4827,26 @@ describe('the first view of a set (K-1048)', () => {
     expect(screen.getByRole('button', { name: stepName('lessReps') })).toHaveStyle({ width: tokens.size.stepperButton, height: tokens.size.stepperButton });
   });
 
-  test('"Reps left" is under the steppers in the card, before the dock', async () => {
+  test('"Reps left" is one optional row under the steppers in the card, before the dock', async () => {
     await show();
     await screen.findByText(t('workout.log', { number: 1 }));
     expect(card().getByText(t('workout.rir.short'))).toBeOnTheScreen();
-    expect(card().getByText(t('workout.targetRir', { max: 1 }))).toBeOnTheScreen();
+    expect(aimSaid()).toBe(t('workout.targetRir', { max: 1 }));
+    expect(card().queryByText(t('workout.targetRir', { max: 1 }))).toBeNull(); // K1 (K-1207): said to a screen reader, not written
   });
 
-  test('"Too heavy?" and "Add note" are links of the card\'s head row; the line under the weight is text only', async () => {
+  // K1 (K-1207): was ""Too heavy?" and "Add note" are links of the card's head row". The card has no head row; both are rows of the sheet.
+  test('the card has no head row of links; "Too heavy?" and "Add a note" are rows of the More sheet', async () => {
     mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, days: [{ ...DAY, exercises: [TARGET, DAY.exercises[1]] }] } } };
     await show();
     await screen.findByText(t('workout.log', { number: 1 }));
-    const head = within(screen.getByTestId('set-head'));
-    expect(head.getByText(t('workout.setOf', { number: 1, count: 3 }))).toBeOnTheScreen();
-    expect(head.getByRole('button', { name: t('workout.tooHeavy.label') })).toHaveStyle({ minHeight: tokens.size.touch });
-    expect(head.getByRole('button', { name: t('workout.note.add') })).toHaveStyle({ minHeight: tokens.size.touch });
-    expect(StyleSheet.flatten(screen.getByTestId('set-head').props.style)).toMatchObject({ flexDirection: 'row', flexWrap: 'wrap' });
+    expect(screen.queryByTestId('set-head')).toBeNull();
+    expect(card().queryByRole('button', { name: t('workout.tooHeavy.label') })).toBeNull();
+    expect(card().queryByRole('button', { name: t('workout.note.add') })).toBeNull();
+    await openMore();
+    const sheet = within(screen.getByTestId('more-sheet'));
+    expect(sheet.getByRole('button', { name: t('workout.tooHeavy.label') })).toHaveStyle({ minHeight: tokens.size.touch });
+    expect(sheet.getByRole('button', { name: t('workout.note.add') })).toHaveStyle({ minHeight: tokens.size.touch });
   });
 
   describe('the set card is brought into view when it would end under the dock', () => {
@@ -4779,7 +4944,7 @@ describe('Taken: a move whose equipment is busy', () => {
       .getAllByRole('button')
       .map((b) => String(b.props.accessibilityLabel).split(',')[0]);
   const takenOptions = () => screen.getAllByTestId('taken-option').map((o) => String(o.props.accessibilityLabel));
-  const openTaken = async () => fireEvent.press(await screen.findByRole('button', { name: t('taken.openLabel', { move: PULLDOWN }) }));
+  const openTaken = async () => more(t('taken.openLabel', { move: PULLDOWN }));
 
   beforeEach(() => {
     mockData = {
@@ -4823,7 +4988,7 @@ describe('Taken: a move whose equipment is busy', () => {
     await fireEvent.press(screen.getByRole('button', { name: new RegExp(`^${CHEST_ROW}`) }));
     // Done before (the server's table): the weight to start from is its last best set.
     expect(screen.getByLabelText('Weight (kg)').props.value).toBe('40');
-    await fireEvent.press(await screen.findByRole('button', { name: t('swap.label', { move: CHEST_ROW }) }));
+    await more(t('swap.label', { move: CHEST_ROW }));
     await fireEvent.press(screen.getByRole('button', { name: new RegExp(`^${DB_ROW}`) }));
     // Never done: no weight guessed; the sheet asks to pick it, as for a first session.
     expect(screen.getByLabelText('Weight (kg)').props.value).toBe('');
@@ -4892,7 +5057,10 @@ describe('Taken: a move whose equipment is busy', () => {
 
   test('Taken? on the Up next row: the next move is taken, said before walking there; the person stays on the move under way', async () => {
     await show();
-    await screen.findByText(t('workout.log', { number: 1 }));
+    // K1 (K-1207): Up next is for the rest, so the next move's Taken? is there while a rest runs.
+    await fireEvent.changeText(await screen.findByLabelText('Weight (kg)'), '50');
+    await fireEvent.press(await screen.findByText(t('workout.log', { number: 1 })));
+    await screen.findByTestId('rest');
     await fireEvent.press(screen.getByTestId('up-next-taken'));
     expect(screen.getByText(t('taken.title', { move: BENCH }))).toBeOnTheScreen();
     await fireEvent.press(screen.getByTestId('taken-later'));
@@ -4903,7 +5071,9 @@ describe('Taken: a move whose equipment is busy', () => {
 
   test('Taken? closed: back on the move under way, nothing kept', async () => {
     await show();
-    await screen.findByText(t('workout.log', { number: 1 }));
+    await fireEvent.changeText(await screen.findByLabelText('Weight (kg)'), '50');
+    await fireEvent.press(await screen.findByText(t('workout.log', { number: 1 })));
+    await screen.findByTestId('rest');
     await fireEvent.press(screen.getByTestId('up-next-taken'));
     await fireEvent.press(screen.getByRole('button', { name: t('swap.close') }));
     expect(head().getByText(PULLDOWN)).toBeOnTheScreen();
@@ -4913,7 +5083,7 @@ describe('Taken: a move whose equipment is busy', () => {
 
 // Final walk of phase 7 (#684): what moved under the finger, and what the last step did not offer.
 describe('the page does not move under the finger (final pass 3)', () => {
-  const skipSet = () => fireEvent.press(within(screen.getByTestId('dock')).getByRole('button', { name: t('workout.skipSetLabel') }));
+  const skipSet = () => more(t('workout.skipSetLabel'));
 
   test('the Undo bar is an overlay above the dock: not in the scrolled content, absolute, and Undo still works', async () => {
     await show();
@@ -4927,17 +5097,20 @@ describe('the page does not move under the finger (final pass 3)', () => {
     expect(screen.getByText(t('workout.log', { number: 1 }))).toBeOnTheScreen();
   });
 
-  test('the Finish link has its place from the start: hidden and out of reach before the first set, then the same node shown', async () => {
+  // K1 (K-1207): was "the Finish link has its place from the start" (a hidden link kept the page from moving when it arrived). Finish is a
+  // row of the More sheet now, so there is no link on the page to arrive: nothing is reserved, nothing appears under the finger.
+  test('Finish is no link on the page: nothing is reserved for it, and the first set adds nothing to the page; the sheet offers it from then', async () => {
     await show();
     await screen.findByText(t('workout.log', { number: 1 }));
-    const before = screen.getByTestId('finish-link', { includeHiddenElements: true });
-    expect(StyleSheet.flatten(before.props.style)).toMatchObject({ opacity: 0 });
-    expect(before.props.pointerEvents).toBe('none');
+    expect(screen.queryByTestId('finish-link', { includeHiddenElements: true })).toBeNull();
+    await openMore();
     expect(screen.queryByRole('button', { name: t('workout.finish') })).toBeNull();
+    await closeMore();
     await fireEvent.press(screen.getByText(t('workout.log', { number: 1 })));
     await screen.findByText(t('workout.log', { number: 2 }));
-    const after = screen.getByTestId('finish-link');
-    expect(StyleSheet.flatten(after.props.style).opacity).not.toBe(0);
+    expect(screen.queryByTestId('finish-link', { includeHiddenElements: true })).toBeNull();
+    expect(screen.queryByRole('button', { name: t('workout.finish') })).toBeNull();
+    await openMore();
     expect(screen.getByRole('button', { name: t('workout.finish') })).toBeOnTheScreen();
   });
 
@@ -5002,7 +5175,7 @@ describe('Add a move opens where it can be used (final pass 3)', () => {
   const open = async () => {
     mockData = { ...mockData, exercises: { state: 'ready', value: [...EXERCISES, LAT] } };
     await show();
-    await fireEvent.press(await screen.findByRole('button', { name: t('workout.add.open') }));
+    await more(t('workout.add.open'));
   };
 
   test('the search field takes the keyboard at once, and the page scrolls to the panel (once per opening)', async () => {
@@ -5028,5 +5201,102 @@ describe('Add a move opens where it can be used (final pass 3)', () => {
     const row = screen.getByRole('button', { name: t('workout.add.pick', { name: t('exercises.lat_pulldown.name') }) });
     expect(within(row).getByTestId('move-thumb-MACHINE', { includeHiddenElements: true })).toBeTruthy(); // decorative: hidden from VoiceOver
     expect(StyleSheet.flatten(row.props.style).minHeight).toBe(tokens.size.touch);
+  });
+});
+
+// K-1207, PR A: one thing on the set screen (the founder: "too much text on screen, especially the set sequence").
+describe('the set screen shows one thing (K-1207)', () => {
+  /** A move half done: the first set of the bench press kept, the second under way. */
+  const midMove = () => {
+    mockRecords = [
+      ...mockRecords,
+      record('set', 's-done', { clientId: 's-done', exerciseId: 'bench_press', setType: 'WORKING', loadKg: 62.5, reps: 6, rir: 1, side: 'BOTH' }, 'w1'),
+    ];
+  };
+  const TARGET: Schemas['PlannedExercise'] = { ...DAY.exercises[0], lighterLoadKg: 60, heavierLoadKg: 65, lastBestSet: { loadKg: 60, reps: 8 } };
+  const withTarget = () => {
+    mockData = { ...mockData, program: { state: 'ready', value: { ...PROGRAM, days: [{ ...DAY, exercises: [TARGET, DAY.exercises[1]] }] } } };
+  };
+
+  test('during a set no more than the budget is on the screen, and Up next is not one of them', async () => {
+    withTarget();
+    midMove();
+    await show();
+    await screen.findByText(t('workout.log', { number: 2 }));
+    const { count, labels } = countElements(screen.toJSON(), true);
+    // The budget is the card's "about ten": the bar, the dots, the name, More, the target, the sets done, two steppers, reps left, Log set.
+    expect(labels).toEqual(['[session-header]', '[move-dots]', 'Bench press', '[button More]', '62.5 kg × 6', expect.stringContaining('[button Sets done:'), '[stepper-box]', '[stepper-box]', '[rir-row]', '[button Log set 2]']);
+    expect(labels.filter((l) => l.includes(t('workout.upNext')))).toEqual([]);
+    expect(count).toBeLessThanOrEqual(workoutParams.setScreenMaxElements);
+    // The looser second guard: with no unit, every dot, stepper button and chip counted on its own.
+    expect(countElements(screen.toJSON(), false).count).toBeLessThanOrEqual(workoutParams.setScreenMaxRawElements);
+  });
+
+  test('a move the app does not know: More is still there, with Finish and Add a move', async () => {
+    midMove();
+    mockData = { ...mockData, exercises: { state: 'ready', value: [EXERCISES[1]] } };
+    mockRecords = mockRecords.filter((r) => r.clientId !== 's-done');
+    await show();
+    await screen.findByTestId('move-dots');
+    await fireEvent.press(within(screen.getByTestId('move-dots')).getAllByRole('button')[0]); // the bench: not in this catalog
+    await screen.findByText(t('workout.unknownMove'));
+    await openMore();
+    const sheet = within(screen.getByTestId('more-sheet'));
+    expect(sheet.getByRole('button', { name: t('workout.add.open') })).toBeOnTheScreen();
+  });
+
+  test('the sheet holds every action that left the page, in the order of the card', async () => {
+    withTarget();
+    // A move the server offers in its place, and the catalog knows.
+    mockData = {
+      ...mockData,
+      exercises: { state: 'ready', value: [...EXERCISES, { id: 'dumbbell_bench_press', load: 'EXTERNAL', unilateral: false }] as Schemas['Exercise'][] },
+      program: { state: 'ready', value: { ...PROGRAM, days: [{ ...DAY, exercises: [{ ...TARGET, swapOptions: ['dumbbell_bench_press'] }, DAY.exercises[1]] }] } },
+    };
+    midMove();
+    await show();
+    await screen.findByText(t('workout.log', { number: 2 }));
+    await openMore();
+    const rows = within(screen.getByTestId('more-sheet')).getAllByRole('button').map((b) => b.props.accessibilityLabel);
+    expect(rows).toEqual([
+      t('demo.openLabel', { exercise: 'Bench press' }),
+      t('history.openLabel', { exercise: 'Bench press' }),
+      t('swap.label', { move: 'Bench press' }),
+      t('taken.openLabel', { move: 'Bench press' }),
+      t('workout.tooHeavy.label'),
+      t('workout.note.add'),
+      t('workout.skipSetLabel'),
+      t('workout.skipMoveLabel', { name: 'Bench press' }),
+      t('superset.link'),
+      t('workout.add.open'),
+      t('workout.finish'),
+    ]);
+  });
+
+  test('the set card has no outline and no near-white frame; the one filled button is Log set', async () => {
+    withTarget();
+    midMove();
+    await show();
+    await screen.findByText(t('workout.log', { number: 2 }));
+    const card = StyleSheet.flatten(screen.getByTestId('active-set').props.style) ?? {};
+    expect(card.borderWidth ?? 0).toBe(0);
+    expect(card.borderColor).toBeUndefined();
+    const filled = screen.getAllByRole('button').filter((b) => StyleSheet.flatten(b.props.style)?.backgroundColor === focusPalette.cta);
+    expect(filled.map((b) => b.props.accessibilityLabel)).toEqual([t('workout.log', { number: 2 })]);
+  });
+
+  test('the counter itself: a unit is one, a hidden thing is none', () => {
+    const tree = {
+      type: 'View',
+      props: {},
+      children: [
+        { type: 'View', props: { testID: 'move-dots' }, children: [{ type: 'View', props: { accessibilityRole: 'button', accessibilityLabel: 'a' }, children: null }] },
+        { type: 'Text', props: {}, children: ['Hello'] },
+        { type: 'View', props: { accessibilityRole: 'button', accessibilityLabel: 'Go' }, children: [{ type: 'Text', props: {}, children: ['Go'] }] },
+        { type: 'View', props: { style: { opacity: 0 } }, children: [{ type: 'Text', props: {}, children: ['unseen'] }] },
+      ],
+    } as never;
+    expect(countElements(tree, true).count).toBe(3);
+    expect(countElements(tree, false).count).toBe(3);
   });
 });

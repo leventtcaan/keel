@@ -12,7 +12,7 @@ export function InsightLine({ text }: { text: string }) {
   const { color } = useTheme();
   return (
     <View testID="insight" accessible accessibilityRole="text" accessibilityLabel={text} style={[styles.line, { backgroundColor: color.surface }]}>
-      <SymbolView name="checkmark" size={tokens.type.bodySmall} tintColor={color.accent} />
+      <SymbolView name="checkmark" size={tokens.type.bodySmall} tintColor={color.muted} />
       <Text style={[styles.text, { color: color.text }]}>{text}</Text>
     </View>
   );

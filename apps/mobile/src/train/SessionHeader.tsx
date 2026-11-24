@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AppState, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { t } from '@/copy';
@@ -19,16 +19,14 @@ type Props = {
   pause: Pause;
   /** Pause, or Resume while paused: on the right, opposite End. Null where there is nothing to pause (a workout just discarded). */
   onPause: (() => void) | null;
-  /** Under the time: the day and how far into it. */
-  subtitle?: ReactNode;
 };
 
 /**
  * The session's top bar (ADR-075 #1, prototype `.wtop`): End on the left, the session's time in the middle, counting
  * every second from its real start, so it begins at 0:00, belongs to this session only and runs on after a restart;
- * Pause on the right (K-972), which stops it until Resume.
+ * Pause on the right (K-972), which stops it until Resume. Nothing under the time (K-1207: the day's name and "x of y exercises" are gone).
  */
-export function SessionHeader({ since, onEnd, pause, onPause, subtitle }: Props) {
+export function SessionHeader({ since, onEnd, pause, onPause }: Props) {
   const { color } = useTheme();
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -68,7 +66,7 @@ export function SessionHeader({ since, onEnd, pause, onPause, subtitle }: Props)
         onPress={onPause}
         hitSlop={tokens.space.sm}
         style={({ pressed }) => [styles.control, pressed && styles.dim]}>
-        <Text style={[styles.end, { color: color.accent }]}>{t(paused ? 'workout.resume' : 'workout.pause')}</Text>
+        <Text style={[styles.end, { color: color.text }]}>{t(paused ? 'workout.resume' : 'workout.pause')}</Text>
       </Pressable>
     );
   return (
@@ -85,7 +83,6 @@ export function SessionHeader({ since, onEnd, pause, onPause, subtitle }: Props)
       </View>
       <View style={styles.middle}>
         {clock}
-        {subtitle}
       </View>
       <View style={[styles.side, styles.right]}>
         {pauseButton}

@@ -302,10 +302,11 @@ describe('a full session, to the end', () => {
 
   test('Taken on the next move, Do it later: the move under way stays, the taken one comes last', async () => {
     await show();
+    // K1 (K-1207): Up next, and so the next move's Taken?, is for the rest: it comes up after the first set.
+    await logNext(1);
     await fireEvent.press(await screen.findByTestId('up-next-taken'));
     await fireEvent.press(await screen.findByText(t('taken.later')));
     expect(within(screen.getByTestId('up-next')).getByText('Barbell row')).toBeTruthy();
-    await logNext(1);
     await logNext(2);
     await fireEvent.press(await screen.findByRole('button', { name: t('workout.next', { name: 'Barbell row' }) }));
     await logNext(1);
@@ -318,7 +319,7 @@ describe('a full session, to the end', () => {
 
   test('the move under way taken: Do it later, then the others, then it, and Finish after it', async () => {
     await show();
-    await fireEvent.press(await screen.findByRole('button', { name: t('taken.openLabel', { move: 'Squat' }) }));
+    await more(t('taken.openLabel', { move: 'Squat' }));
     await fireEvent.press(await screen.findByText(t('taken.later')));
     await logNext(1);
     await logNext(2);

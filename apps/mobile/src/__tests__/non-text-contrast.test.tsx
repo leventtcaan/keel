@@ -31,9 +31,10 @@ describe.each(schemes)('%s theme', (scheme) => {
       </ThemeProvider>,
     );
     const dot = (name: string) => screen.getByRole('button', { name: new RegExp(name) }).children[0];
-    expect(dot('Bench')).toHaveStyle({ backgroundColor: p.accent });
+    // K1 (K-1207): the accent is for the one thing to do and the timer, so the move under way is the brightest grey and a move done the middle one.
+    expect(dot('Bench')).toHaveStyle({ backgroundColor: p.text });
     expect(dot('Row')).toHaveStyle({ backgroundColor: p.edge });
-    expect(dot('Squat')).toHaveStyle({ backgroundColor: p.text });
+    expect(dot('Squat')).toHaveStyle({ backgroundColor: p.muted });
   });
 
   test('a weigh-in not yet made is an outlined dot in the control edge', async () => {

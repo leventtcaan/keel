@@ -1,4 +1,4 @@
-import { type LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
+import { type LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
 
 import { ProblemText } from '@/components/ProblemText';
 import type { components } from '@/api/schema';
@@ -22,25 +22,22 @@ type Schemas = components['schemas'];
  * gym makes), so it is stepped from and logged as that load and not as the rounded number read back (11.34 kg shows as
  * 11.3); null once the user types.
  */
-export type Entry = { load: string; loadKg: number | null; reps: string; rir: number; note: string | null };
+export type Entry = {
+  load: string;
+  loadKg: number | null;
+  reps: string;
+  /** The reps left that is logged with the set: the plan's aim until the person picks one (what was always sent). */
+  rir: number;
+  note: string | null;
+};
 
 type Props = {
   move: Schemas['Exercise'];
-  /** "Set 2 of 3", or "Set 2" for a move outside the plan. */
-  heading: string;
-  /** The reps to aim for ("6-10 reps"); null outside the plan. */
-  range: string | null;
-  /** What this set was last time ("185 lb × 8"), Hevy's PREVIOUS: the reference beside the numbers to type; null for a move never done. */
-  previous?: string | null;
-  /** The work sets' aim for reps left (the plan's target RIR); null outside the plan. */
+  /** The work sets' aim for reps left (the plan's target RIR); null outside the plan. Said to a screen reader, not written on the card. */
   aim: number | null;
   gym: GymWeights | undefined;
-  /** The plates a side for the load under way, in words; null without a gym or a load to make. */
-  plates: string | null;
   entry: Entry;
   onChange: (change: Partial<Entry>) => void;
-  /** "Too heavy?" (ADR-075 #3): asked of the weight, beside it; null where the server has no lighter load to offer. */
-  onTooHeavy: (() => void) | null;
   problem: string | null;
   /** Which showing of the problem this is: the same failure again is said again (K-815). */
   problemOccurrence?: unknown;
@@ -53,7 +50,7 @@ type Props = {
  * be typed too, filled with the suggestion; reps left picked from 0, 1 and 2+. A bodyweight move has no weight; a weighted
  * one steps what is added. The button that logs it is the screen's, in its dock, so it never moves.
  */
-export function ActiveSet({ move, heading, range, previous = null, aim, gym, plates, entry, onChange, onTooHeavy, problem, problemOccurrence, onLayout }: Props) {
+export function ActiveSet({ move, aim, gym, entry, onChange, problem, problemOccurrence, onLayout }: Props) {
   const { color } = useTheme();
   const units = useUnits();
   const unit = t(units === 'METRIC' ? 'units.kgUnit' : 'units.lbUnit');
@@ -96,14 +93,7 @@ export function ActiveSet({ move, heading, range, previous = null, aim, gym, pla
         {problem}
       </ProblemText>
     );
-  // Closed until asked for: one tap stays one tap.
-  // Closed, a small link on the set's own head line (no row of its own: the set stays in the first view on a small phone).
-  const addNote =
-    entry.note === null ? (
-      <Pressable accessibilityRole="button" onPress={() => onChange({ note: '' })} style={styles.link}>
-        <Text style={[styles.small, { color: color.accent }]}>{t('workout.note.add')}</Text>
-      </Pressable>
-    ) : null;
+  // A note is asked for from the "more" sheet, and closed until then: one tap stays one tap.
   const noteField =
     entry.note === null ? null : (
       <TextField
@@ -114,35 +104,11 @@ export function ActiveSet({ move, heading, range, previous = null, aim, gym, pla
         multiline
       />
     );
-  // On the card's head line with the other link, far from both skips (Skip set is the dock's, Skip move the move head's):
-  // "Too heavy?" where the server has a lighter load.
-  const tooHeavy =
-    onTooHeavy === null ? null : (
-      <Pressable accessibilityRole="button" accessibilityLabel={t('workout.tooHeavy.label')} onPress={onTooHeavy} style={styles.link}>
-        <Text style={[styles.small, { color: color.accent }]}>{t('workout.tooHeavy.link')}</Text>
-      </Pressable>
-    );
-  // Under the weight it is about, as text only (a link would make it a row a touch target tall): why the button waits, or the
-  // plates a side.
-  const weightLine =
-    !picking && plates === null ? null : <Text style={[styles.small, { color: color.muted }]}>{picking ? t('workout.pick.why') : plates}</Text>;
-  // Built outside the JSX (the raw-text guard reads what is inside it).
-  const previousRow =
-    previous === null ? null : (
-      <View testID="previous-set" accessible accessibilityLabel={t('workout.previousLabel', { set: previous })} style={styles.previous}>
-        <Text style={[styles.small, { color: color.muted }]}>{t('workout.previous')}</Text>
-        <Text style={[styles.small, styles.bold, { color: color.textSecondary }]}>{previous}</Text>
-      </View>
-    );
+  // Reps left (RIR): one compact row with the plan's aim selected, as it always was, so what is logged when it is left alone is what the
+  // person sees. The aim is said by the row's own text ("Reps left"), which a screen reader reaches, as its hint.
+  const aimHint = aim === null ? undefined : t('workout.targetRir', { max: aim });
   return (
-    <View testID="active-set" onLayout={onLayout} style={[styles.entry, { borderColor: color.text }]}>
-      <View testID="set-head" style={styles.head}>
-        <Text style={[styles.heading, styles.grow, { color: color.text }]}>{heading}</Text>
-        {range !== null && <Text style={[styles.small, { color: color.muted }]}>{range}</Text>}
-        {tooHeavy}
-        {addNote}
-      </View>
-      {previousRow}
+    <View testID="active-set" onLayout={onLayout} style={styles.entry}>
       <View style={styles.steppers}>
         {load}
         <Stepper
@@ -157,15 +123,16 @@ export function ActiveSet({ move, heading, range, previous = null, aim, gym, pla
           steps={repsStep}
         />
       </View>
-      {weightLine}
-      <View style={styles.rir}>
-        <View style={styles.rirLabel}>
-          <Text style={[styles.small, { color: color.textSecondary }]}>{t('workout.rir.short')}</Text>
-          {aim !== null && <Text style={[styles.small, { color: color.muted }]}>{t('workout.targetRir', { max: aim })}</Text>}
-        </View>
-        {workoutParams.rirChoices.map((rir, i) => (
-          <Chip key={rir} label={i === last ? t('workout.rir.more') : String(rir)} selected={rirChoice(entry.rir) === rir} onPress={() => onChange({ rir })} />
-        ))}
+      {picking ? <Text style={[styles.small, { color: color.muted }]}>{t('workout.pick.why')}</Text> : null}
+      <View testID="rir-row" style={styles.rir}>
+        <Text accessibilityHint={aimHint} style={[styles.small, styles.grow, { color: color.muted }]}>
+          {t('workout.rir.short')}
+        </Text>
+        {workoutParams.rirChoices.map((rir, i) => {
+          return (
+            <Chip key={rir} label={i === last ? t('workout.rir.more') : String(rir)} selected={rirChoice(entry.rir) === rir} onPress={() => onChange({ rir })} />
+          );
+        })}
       </View>
       {noteField}
       {said}
@@ -180,19 +147,13 @@ function numberOf(text: string): number | null {
 }
 
 const styles = StyleSheet.create({
-  // Tight enough for the whole set to be in the first view on an iPhone SE (K-971 simulator).
-  entry: { gap: tokens.space.sm, padding: tokens.space.sm, borderWidth: tokens.border.outline, borderRadius: tokens.radius.card },
-  head: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: tokens.space.md },
-  grow: { flexGrow: 1 },
-  link: { minHeight: tokens.size.touch, justifyContent: 'center' },
-  heading: { fontSize: tokens.type.body, fontWeight: tokens.weight.bold },
+  // Filled boxes on the page, no outline (K-1207: the near-white frame said "look here" about a card that is the whole screen).
+  entry: { gap: tokens.space.sm },
   // One under the other (prototype `.setc`): the shared Stepper is wide enough for "102.5 kg" between its buttons, which two
   // side by side on a 375 pt phone are not (about 54 pt left for the number between four 48 pt buttons).
   steppers: { gap: tokens.space.sm },
-  rir: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: tokens.space.sm },
-  rirLabel: { flex: 1, minWidth: tokens.size.primaryButton * 2 },
+  rir: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
+  grow: { flex: 1 },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },
-  bold: { fontWeight: tokens.weight.bold },
-  previous: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
 });
