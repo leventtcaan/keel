@@ -40,6 +40,14 @@
       "note": "K-1207 (the rest screen): the most discrete things (a text, a button, a field; the bar one) the rest shows while it runs: the clock, what the set said, the next set, Up next where the move changes, Ready. The audit counted about 58. A test renders a rest and counts them (elementCount.ts)."
     },
     {
+      "key": "session_rest_max_raw_elements",
+      "value": 12,
+      "unit": "elements",
+      "tag": "urun",
+      "source": "plan/evre-8-butun-urun.md#1.3",
+      "note": "K-1207: the looser second guard of the rest screen, counting the bar's End, time and Pause on their own too (the first guard counts the bar as one)."
+    },
+    {
       "key": "rest_tick_last_seconds",
       "value": 3,
       "unit": "seconds",

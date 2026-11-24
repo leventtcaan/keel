@@ -5396,8 +5396,17 @@ describe('the rest is its own state (K-1207)', () => {
     await show();
     await logFirst();
     const { count, labels } = countElements(screen.toJSON(), true);
-    expect(labels).toEqual(['[session-header]', '2:00', '+1 rep vs last time.', '62.5 kg × 7', '[button Ready for set 2]']);
+    expect(labels).toEqual([
+      '[session-header]',
+      '[button Rest 15 seconds shorter]',
+      '2:00',
+      '[button Rest 15 seconds longer]',
+      '+1 rep vs last time.',
+      '62.5 kg × 7',
+      '[button Ready for set 2]',
+    ]);
     expect(count).toBeLessThanOrEqual(workoutParams.restScreenMaxElements);
+    expect(countElements(screen.toJSON(), false).count).toBeLessThanOrEqual(workoutParams.restScreenMaxRawElements);
   });
 
   test('Ready brings the set card back, and takes the timer and its alert away', async () => {
@@ -5456,19 +5465,23 @@ describe('the rest is its own state (K-1207)', () => {
     }
   });
 
-  test('15 seconds either way is a press and hold on the clock (and a swipe for a screen reader), told to the background timer', async () => {
+  test('15 seconds either way is a tap beside the clock, a press and hold on it, or a swipe for a screen reader, told to the background timer', async () => {
     await show();
     await logFirst();
     const clock = screen.getByTestId('rest-clock');
-    expect(screen.queryByRole('button', { name: t('workout.rest.moreLabel', { seconds: 15 }) })).toBeNull(); // no +/- on the screen
+    // Visible next to the clock: a tap; the press and hold is the other way, and both move the same background timer.
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.rest.moreLabel', { seconds: 15 }) }));
+    expect(within(screen.getByTestId('rest')).getByText('2:15')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.rest.lessLabel', { seconds: 15 }) }));
     expect(clock.props.accessibilityHint).toBe(t('workout.rest.adjustHint'));
     mockServices.restAlert.start.mockClear();
     await fireEvent(clock, 'longPress');
-    await fireEvent.press(screen.getByRole('button', { name: t('workout.rest.moreLabel', { seconds: 15 }) }));
-    expect(within(screen.getByTestId('rest')).getByText('2:15')).toBeOnTheScreen();
+    const sheet = within(screen.getByTestId('rest-adjust'));
+    await fireEvent.press(sheet.getByRole('button', { name: t('workout.rest.moreLabel', { seconds: 15 }) }));
+    expect(within(screen.getByTestId('rest')).getAllByText('2:15').length).toBeGreaterThan(0);
     expect(mockServices.restAlert.start).toHaveBeenLastCalledWith(expect.any(Number));
-    await fireEvent.press(screen.getByRole('button', { name: t('workout.rest.lessLabel', { seconds: 15 }) }));
-    await fireEvent.press(screen.getByRole('button', { name: t('workout.rest.lessLabel', { seconds: 15 }) }));
+    await fireEvent.press(sheet.getByRole('button', { name: t('workout.rest.lessLabel', { seconds: 15 }) }));
+    await fireEvent.press(sheet.getByRole('button', { name: t('workout.rest.lessLabel', { seconds: 15 }) }));
     await fireEvent.press(screen.getByRole('button', { name: t('modal.dismiss') }));
     expect(within(screen.getByTestId('rest')).getByText('1:45')).toBeOnTheScreen();
     await fireEvent(clock, 'accessibilityAction', { nativeEvent: { actionName: 'increment' } });

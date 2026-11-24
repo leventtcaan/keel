@@ -23,6 +23,8 @@ export const workoutParams = {
   setScreenMaxRawElements: param<number>('session_set_max_raw_elements'),
   /** The most discrete things the rest screen shows while it runs (K-1207): a test counts them. */
   restScreenMaxElements: param<number>('session_rest_max_elements'),
+  /** The same with the bar's End, time and Pause counted on their own: the looser second guard. */
+  restScreenMaxRawElements: param<number>('session_rest_max_raw_elements'),
   /** A light tick on each of the rest's last seconds, this many (K-1207); a stronger one at zero. */
   restTickLastSeconds: param<number>('rest_tick_last_seconds'),
   /** How long the undo banner stays after a save (ADR-070 Ek 2 #6, UndoBanner). */

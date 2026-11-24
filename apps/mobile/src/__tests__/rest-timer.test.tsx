@@ -2,7 +2,7 @@
  * The rest timer counts DOWN from the low end of the band (K-405, G1 K-49: 2 minutes; Evre 7 C2), every second; it is the one big thing
  * on the rest screen (K-1207), felt in its last seconds and changed by a press and hold.
  */
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 
 import { FocusMode, ThemeProvider } from '@/theme/theme';
 import { focusPalette } from '@/theme/tokens';
@@ -34,19 +34,27 @@ test('it counts down from the band, second by second', async () => {
   expect(screen.getByText('0:35')).toBeTruthy();
 });
 
-// K1 (K-1207): was "15 seconds a tap either way" with a minus and a plus beside the clock; they are a press and hold on the clock now.
-test('15 seconds either way is a press and hold on the clock, told to the background timer', async () => {
+// K1 (K-1207): the minus and plus beside the clock stay (a tap), and a press and hold on the clock opens the same two rows.
+test('15 seconds either way is a tap beside the clock, told to the background timer', async () => {
   const adjusted: number[] = [];
   await show(Date.now(), (s) => adjusted.push(s));
   expect(screen.getByText('2:00')).toBeTruthy();
-  expect(screen.queryByRole('button', { name: 'Rest 15 seconds longer' })).toBeNull();
-  await fireEvent(screen.getByTestId('rest-clock'), 'longPress');
   await fireEvent.press(screen.getByRole('button', { name: 'Rest 15 seconds longer' }));
   expect(screen.getByText('2:15')).toBeTruthy();
   await fireEvent.press(screen.getByRole('button', { name: 'Rest 15 seconds shorter' }));
   await fireEvent.press(screen.getByRole('button', { name: 'Rest 15 seconds shorter' }));
   expect(screen.getByText('1:45')).toBeTruthy();
   expect(adjusted).toEqual([15, 0, -15]);
+});
+
+test('a press and hold on the clock opens the same two rows', async () => {
+  const adjusted: number[] = [];
+  await show(Date.now(), (s) => adjusted.push(s));
+  await fireEvent(screen.getByTestId('rest-clock'), 'longPress');
+  const sheet = within(screen.getByTestId('rest-adjust'));
+  await fireEvent.press(sheet.getByRole('button', { name: 'Rest 15 seconds longer' }));
+  expect(adjusted).toEqual([15]);
+  expect(screen.getByText('2:15')).toBeTruthy();
 });
 
 test('a screen reader swipes the clock up or down by the same 15 seconds', async () => {

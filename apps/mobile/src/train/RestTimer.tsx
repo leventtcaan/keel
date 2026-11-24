@@ -18,8 +18,8 @@ const ACTIONS = [{ name: 'increment' }, { name: 'decrement' }];
  * while it runs: the clock and nothing else of its own. From the low end of the band to aim for (G1 K-49, 2 minutes). It runs from a
  * timestamp, so it is right again whenever the app comes back to the front. The last seconds are felt, not read: a light tick on each
  * of the last `rest_tick_last_seconds`, a stronger one at zero. Past its end it says so, calmly, in the accent (the clock is what the
- * accent is for), and waits: nothing blames a longer rest. A press and hold on the clock makes this rest 15 seconds shorter or longer
- * (`onAdjust` moves the timer in the background with it); a screen reader swipes it up or down. Ending the rest is the screen's Ready.
+ * accent is for), and waits: nothing blames a longer rest. A tap on the minus or plus beside it, or a press and hold on the clock, makes this rest 15 seconds shorter or longer
+ * (`onAdjust` moves the timer in the background with it); a minus and a plus beside the clock do the same with a tap; a screen reader swipes it up or down. Ending the rest is the screen's Ready.
  */
 export function RestTimer({ since, onAdjust }: { since: number; onAdjust?: (seconds: number) => void }) {
   const { color } = useTheme();
@@ -60,6 +60,16 @@ export function RestTimer({ since, onAdjust }: { since: number; onAdjust?: (seco
       onPress={() => adjust(by)}
     />
   );
+  // Visible next to the clock (review of K-1207): 15 seconds either way is a tap; the press and hold on the clock stays as the other way.
+  const step15 = (by: number, key: 'less' | 'more') => (
+    <Button
+      label={t(`workout.rest.${key}`, { seconds: step })}
+      accessibilityLabel={t(`workout.rest.${key}Label`, { seconds: step })}
+      variant="secondary"
+      size="touch"
+      onPress={() => adjust(by)}
+    />
+  );
   const sheet = !adjusting ? null : (
     <BottomSheet onClose={() => setAdjusting(false)} testID="rest-adjust">
       <Text style={[styles.title, { color: color.text }]}>{t('workout.rest.adjustTitle')}</Text>
@@ -71,6 +81,8 @@ export function RestTimer({ since, onAdjust }: { since: number; onAdjust?: (seco
   );
   return (
     <View testID="rest" accessibilityRole="timer" style={styles.rest}>
+      <View style={styles.line}>
+        {step15(-step, 'less')}
       <Pressable
         testID="rest-clock"
         accessibilityRole="adjustable"
@@ -81,8 +93,12 @@ export function RestTimer({ since, onAdjust }: { since: number; onAdjust?: (seco
         onAccessibilityAction={spoken}
         onLongPress={() => setAdjusting(true)}
         delayLongPress={400}>
-        <Text style={[styles.time, { color: over ? color.accent : color.text }]}>{time}</Text>
+        <Text adjustsFontSizeToFit numberOfLines={1} style={[styles.time, { color: over ? color.accent : color.text }]}>
+          {time}
+        </Text>
       </Pressable>
+        {step15(step, 'more')}
+      </View>
       {over ? <Text style={[styles.label, { color: color.muted }]}>{t('workout.rest.over')}</Text> : null}
       {sheet}
     </View>
@@ -91,7 +107,8 @@ export function RestTimer({ since, onAdjust }: { since: number; onAdjust?: (seco
 
 const styles = StyleSheet.create({
   rest: { alignItems: 'center', gap: tokens.space.sm, paddingVertical: tokens.space.xl },
-  time: { fontFamily: tokens.font.display, fontSize: tokens.type.restClock, fontVariant: ['tabular-nums'], textAlign: 'center' },
+  line: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
+  time: { flexShrink: 1, fontFamily: tokens.font.display, fontSize: tokens.type.restClock, fontVariant: ['tabular-nums'], textAlign: 'center' },
   label: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
   title: { fontSize: tokens.type.heading, fontWeight: tokens.weight.bold },
   pair: { flexDirection: 'row', gap: tokens.space.sm },
