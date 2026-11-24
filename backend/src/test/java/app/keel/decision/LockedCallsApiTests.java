@@ -54,7 +54,7 @@ class LockedCallsApiTests {
     @SuppressWarnings("unchecked")
     void theFirstFullCallIsFreeAndTheSecondIsKeptButLocked() throws Exception {
         AccountId account = onACut();
-        Map<String, Object> first = checkIn(account);
+        Map<String, Object> first = fullCheckIn(account);
         assertThat(first).as("the free call, in full").containsKeys("action", "reasons").doesNotContainKey("locked");
         pushBackAWeek(first);
         String planBefore = send(account, "GET", "/v1/targets").getResponse().getContentAsString();
@@ -88,7 +88,7 @@ class LockedCallsApiTests {
     @Test
     void wipingTheHealthDataDoesNotRenewTheFreeCall() throws Exception {
         AccountId account = onACut();
-        checkIn(account);
+        fullCheckIn(account);
         assertThat(context.getBean(app.keel.subscription.FreeCallUse.class).used(account)).isEqualTo(1);
 
         assertThat(send(account, "DELETE", "/v1/consents/HEALTH_DATA?confirmDataDeletion=true")).hasStatusOk();
@@ -102,7 +102,7 @@ class LockedCallsApiTests {
     @SuppressWarnings("unchecked")
     void subscribingOpensTheLockedCallOfThisWeek() throws Exception {
         AccountId account = onACut();
-        pushBackAWeek(checkIn(account));
+        pushBackAWeek(fullCheckIn(account));
         Map<String, Object> locked = checkIn(account);
         assertThat(locked).containsEntry("locked", true);
 
@@ -121,7 +121,7 @@ class LockedCallsApiTests {
     @Test
     void aLockedCallOfAPastWeekIsShownButNotAppliedWhenTheAccountSubscribes() throws Exception {
         AccountId account = onACut();
-        pushBack(checkIn(account), 2);
+        pushBack(fullCheckIn(account), 2);
         Map<String, Object> older = checkIn(account);
         pushBack(older, 1);
         jdbc.sql("insert into subscription.subscription (account_id, status, access_until, last_event_at) values (:a, 'ACTIVE', now() + interval '30 days', now())")
@@ -138,7 +138,7 @@ class LockedCallsApiTests {
     void thePhoneOfBeforeIsServedAsBeforeAndItsFullCallsStillCount() throws Exception {
         AccountId account = onACut();
         features = null;
-        Map<String, Object> first = checkIn(account);
+        Map<String, Object> first = fullCheckIn(account);
         pushBackAWeek(first);
 
         Map<String, Object> second = checkIn(account);
@@ -157,7 +157,7 @@ class LockedCallsApiTests {
     void leavingTheHeaderOffOnAMarkedAccountStillLocksAndTheOldPhoneGetsTheErrorItHandles() throws Exception {
         // ADR-091 Ek 1, threat model: the header is the client's word. The account said once that its phone shows locked calls.
         AccountId account = onACut();
-        pushBackAWeek(checkIn(account));
+        pushBackAWeek(fullCheckIn(account));
         Map<String, Object> locked = checkIn(account);
         assertThat(locked).containsEntry("locked", true);
 
@@ -178,7 +178,7 @@ class LockedCallsApiTests {
     @Test
     void aCheckInWithoutTheHeaderOnAMarkedAccountIsHeldBackAsWell() throws Exception {
         AccountId account = onACut();
-        pushBackAWeek(checkIn(account)); // marks the account
+        pushBackAWeek(fullCheckIn(account)); // marks the account
         features = null;
 
         assertThat(send(account, "POST", "/v1/check-ins/current/answers", Map.of("clientId", UUID.randomUUID(), "weekOf",
@@ -222,7 +222,7 @@ class LockedCallsApiTests {
     @SuppressWarnings("unchecked")
     void subscribingAppliesTheHeldCallOfThisWeekThroughTheOneApplyPath() throws Exception {
         AccountId account = onACut();
-        pushBackAWeek(checkIn(account));
+        pushBackAWeek(fullCheckIn(account));
         Map<String, Object> locked = checkIn(account);
         // A call that moves the plan, held (the engine's own call this week changes nothing): setup only.
         jdbc.sql("""
@@ -243,7 +243,7 @@ class LockedCallsApiTests {
     @Test
     void theCoachDoesNotSeeAHeldCallUntilTheAccountSubscribes() throws Exception {
         AccountId account = onACut();
-        pushBackAWeek(checkIn(account));
+        pushBackAWeek(fullCheckIn(account));
         checkIn(account);
         CallReader reader = context.getBean(CallReader.class);
 
@@ -256,7 +256,7 @@ class LockedCallsApiTests {
     @Test
     void aLapsedSubscriptionLocksAgainAndARenewedOneReleases() throws Exception {
         AccountId account = onACut();
-        pushBackAWeek(checkIn(account));
+        pushBackAWeek(fullCheckIn(account));
         checkIn(account);
 
         subscribe(account, "now() - interval '1 day'");
@@ -275,12 +275,40 @@ class LockedCallsApiTests {
                 .param("a", account.value()).update();
     }
 
+    /**
+     * This week's check-in, checked to be a call that read the decision window (a full call): the fixture's plan has run for 60 days
+     * with 28 daily weigh-ins, so the weekly spine runs. Anything else (data_insufficient, window_not_full) is a broken fixture, and the
+     * lock cannot be tested on it.
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> fullCheckIn(AccountId account) throws Exception {
+        Map<String, Object> call = checkIn(account);
+        assertThat(call).as("a whole view: the first full call is free").containsKey("reasons");
+        assertThat(((List<Map<String, Object>>) call.get("reasons")).stream().map(reason -> reason.get("rule")))
+                .as("the decision window was read").doesNotContain("window_not_full", "data_insufficient");
+        return call;
+    }
+
+    /**
+     * A call that moves the plan restarts its wait (the plan's start is today): the next week's call would then read no full window.
+     * The plan is put back as the fixture made it, as if last week's call had changed nothing, so every week of a test is a full one.
+     */
+    private void restorePlan(AccountId account) {
+        jdbc.sql("""
+                update decision.plan set phase = 'CUT', phase_start = :began, plan_start = :began, target_kcal = 2600, observing_maintenance = false,
+                steps_per_day = null, mini_cut_until = null where account_id = :a""")
+                .param("a", account.value()).param("began", LocalDate.now(ZoneOffset.UTC).minusDays(60)).update();
+    }
+
     /** Makes the call last week's: the account's next check-in is this week's. */
     private void pushBackAWeek(Map<String, Object> call) {
         pushBack(call, 1);
     }
 
     private void pushBack(Map<String, Object> call, int weeks) {
+        UUID account = jdbc.sql("select account_id from decision.weekly_call where id = :id").param("id", UUID.fromString((String) call.get("id")))
+                .query(UUID.class).single();
+        restorePlan(new AccountId(account));
         jdbc.sql("update decision.weekly_call set week_of = week_of - :days, made_on = made_on - :days, decided_at = decided_at - :days * interval '1 day' where id = :id")
                 .param("id", UUID.fromString((String) call.get("id"))).param("days", weeks * 7).update();
     }
