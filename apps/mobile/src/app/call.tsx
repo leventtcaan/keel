@@ -22,6 +22,7 @@ import { callReasons } from '@/today/callReasons';
 import { SourceMark } from '@/today/SourceMark';
 import { useWeek1 } from '@/today/useWeek1';
 import { LockedCallView } from '@/today/LockedCallView';
+import { PracticeRow } from '@/today/PracticeRow';
 import { type CallRead, type Loaded, labelKey, load, readCall, weekdayDate } from '@/today/today';
 import { openDetail } from '@/settings/detail';
 
@@ -215,6 +216,8 @@ export default function CallScreen() {
           </DecisionBlock>
         </Animated.View>
         <ChangeRows rows={week1?.rows ?? changeRows(decision, units)} />
+        {/* Where the call lands in the day (K-1217): this week's call only, never a past one opened read only. */}
+        {readOnly ? null : <PracticeRow decision={decision} />}
         <View>
           {reasons}
           {observation}

@@ -52,9 +52,10 @@ const mockPOST = jest.fn(async (_path: string, _init?: unknown) => {
 });
 const mockBack = jest.fn();
 const mockPush = jest.fn();
+const mockDismiss = jest.fn();
 let mockParams: { id?: string; from?: string } = {};
 jest.mock('expo-router', () => ({
-  router: { back: () => mockBack(), push: (to: string) => mockPush(to) },
+  router: { back: () => mockBack(), push: (to: string) => mockPush(to), dismissTo: (to: string) => mockDismiss(to) },
   useLocalSearchParams: () => mockParams,
 }));
 const said = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
@@ -597,5 +598,103 @@ describe('Wait for more weigh-ins (K-1045, T-9)', () => {
     await show();
     expect(screen.queryByRole('button', { name: t('callScreen.weighIn') })).toBeNull();
     expect(mockGET).not.toHaveBeenCalledWith('/v1/weigh-ins/summary');
+  });
+});
+
+// K-1217 (#725): under the call, "In practice": up to three ways to the daily places the call changed (calories to the food
+// page, load and volume to Train, steps to the walk on Home). Only the call's own changes and action decide; the phone chooses nothing.
+describe('this week in practice (K-1217)', () => {
+  const calories = { what: 'CALORIES', before: { targetKcal: 2100 }, after: { targetKcal: 1850 } } as Schemas['DecisionChange'];
+  const steps = { what: 'STEPS', before: { stepsPerDay: 7000 }, after: { stepsPerDay: 8000 } } as Schemas['DecisionChange'];
+  const adjust = (extra: Partial<Schemas['Decision']> = {}) =>
+    decision({ action: { type: 'ADJUST_CALORIES', kcalPerDay: 1850 } as Schemas['Decision']['action'], copyKey: 'decision.adjust_calories.not_toward_goal', changes: [calories], ...extra });
+  const link = (label: string) => screen.getByRole('button', { name: label });
+  const none = () => {
+    expect(screen.queryByText(t('callScreen.practice.title'))).toBeNull();
+    for (const key of ['food', 'train', 'walk']) expect(screen.queryByRole('button', { name: t(`callScreen.practice.${key}Label`) })).toBeNull();
+  };
+
+  test('a calorie change: the title and one link, to the food page', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(adjust());
+    await show();
+    expect(screen.getByText('In practice')).toBeOnTheScreen();
+    expect(screen.getByText(t('callScreen.practice.food'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('callScreen.practice.train'))).toBeNull();
+    await fireEvent.press(link(t('callScreen.practice.foodLabel')));
+    expect(mockPush).toHaveBeenCalledWith('/food');
+  });
+
+  test('a hold of the load on a move (the default call): a link to Train', async () => {
+    await show();
+    expect(screen.getByText(t('callScreen.practice.title'))).toBeOnTheScreen();
+    await fireEvent.press(link(t('callScreen.practice.trainLabel')));
+    expect(mockDismiss).toHaveBeenCalledWith('/train');
+  });
+
+  test.each([{ type: 'DELOAD', setsFactor: 0.6 }, { type: 'FULL_REST_WEEK' }])('a deload and a week of rest are about Train too (%j)', async (action) => {
+    mockAnswers['/v1/decisions/current'] = ok(decision({ action: action as Schemas['Decision']['action'], copyKey: 'decision.deload.fatigue', changes: [] }));
+    await show();
+    expect(link(t('callScreen.practice.trainLabel'))).toBeOnTheScreen();
+  });
+
+  test('a step target: a link to the walk on Home', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(decision({ action: { type: 'CONTINUE' } as Schemas['Decision']['action'], copyKey: 'decision.continue.on_track', changes: [steps] }));
+    await show();
+    await fireEvent.press(link(t('callScreen.practice.walkLabel')));
+    expect(mockDismiss).toHaveBeenCalledWith('/');
+  });
+
+  test('calories and steps together: two links, food first, in a fixed order', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(adjust({ changes: [steps, calories] }));
+    await show();
+    const names = screen.getAllByRole('button').map((b) => b.props.accessibilityLabel ?? '').filter((l: string) => l.length > 0);
+    expect(names.indexOf(t('callScreen.practice.foodLabel'))).toBeGreaterThanOrEqual(0);
+    expect(names.indexOf(t('callScreen.practice.foodLabel'))).toBeLessThan(names.indexOf(t('callScreen.practice.walkLabel')));
+  });
+
+  test('never more than three, each place once', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(adjust({ changes: [calories, steps, { what: 'MOVE', exerciseId: 'squat', before: {}, after: {} } as Schemas['DecisionChange']] }));
+    await show();
+    expect(screen.getAllByTestId('practice-link').length).toBeLessThanOrEqual(3);
+    expect(screen.getAllByTestId('practice-link')).toHaveLength(3);
+  });
+
+  test('a call that changes nothing in the daily places (continue, advice, waiting): no row', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(decision({ action: { type: 'CONTINUE' } as Schemas['Decision']['action'], copyKey: 'decision.continue.on_track', changes: [] }));
+    await show();
+    none();
+  });
+
+  test.each(['DECLINED', 'UNDONE', 'PENDING'] as const)('a call that is %s is not in the plan: nothing to point to', async (state) => {
+    mockAnswers['/v1/decisions/current'] = ok(adjust({ application: { state }, declinable: false }));
+    await show();
+    none();
+  });
+
+  test('a past call opened read only: no row (it is not this week)', async () => {
+    mockParams = { id: 'd0' };
+    mockAnswers['/v1/decisions/{id}'] = ok(adjust({ id: 'd0' }));
+    await show();
+    none();
+  });
+
+  test('a call not unlocked (ADR-091): nothing extra', async () => {
+    mockAnswers['/v1/decisions/current'] = ok({ id: 'd9', madeOn: '2026-12-28', weekOf: '2026-12-28', nextCallOn: '2027-01-04', locked: true });
+    await show();
+    none();
+  });
+
+  test('the safety call points nowhere: it says the plan changed, the rest stays with the user', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(
+      decision({
+        action: { type: 'CHANGE_PHASE', to: 'BULK' } as Schemas['Decision']['action'],
+        copyKey: 'decision.change_phase.low_energy_safety',
+        safety: true,
+        declinable: false,
+        changes: [{ what: 'PHASE', before: { phase: 'CUT' }, after: { phase: 'BULK' } } as Schemas['DecisionChange']],
+      }),
+    );
+    await show();
+    none();
   });
 });

@@ -474,6 +474,15 @@
     },
     "nextCall": "Sonraki karar {date}",
     "gotIt": "Anladım",
+    "practice": {
+      "title": "Uygulamada",
+      "food": "Beslenme",
+      "train": "Antrenman",
+      "walk": "Yürüyüş",
+      "foodLabel": "Beslenme sayfasını aç",
+      "trainLabel": "Antrenman sekmesini aç",
+      "walkLabel": "Ana sayfadaki yürüyüşü aç"
+    },
     "weighIn": "Tartıl",
     "weighInsLeft": {
       "one": "1 tartı daha gerekli",
@@ -1266,6 +1275,11 @@
     "offline": "Hareketi kaydetmek için bağlantı gerekir. Çevrimiçi olunca tekrar dene.",
     "refused": "Bu hareket kaydedilemedi. Tekrar dene."
   },
+  "dayPlan": {
+    "today": "Bugün: {plan}",
+    "kcalLeft": "{kcal} kcal kaldı",
+    "join": " · "
+  },
   "workoutEnd": {
     "title": "Antrenman tamam",
     "minutes": {
@@ -1308,6 +1322,9 @@
     "baselineBody": "Bir dahaki sefer her sette geçilecek bir hedef olur.",
     "worked": "Bugün çalışan",
     "week": "Bu hafta: {done} / {planned} antrenman",
+    "protein": "Protein: {eaten} / {target} g",
+    "proteinLabel": "Bugüne kadar protein: {eaten} gram, hedef {target} gram",
+    "logMeal": "Öğün ekle",
     "weekLabel": "Bu hafta: {done} / {planned} antrenman",
     "share": "Antrenmanını paylaş",
     "done": "Bitti",
@@ -1421,6 +1438,8 @@
       "log": "Ekle: {name}"
     },
     "log": "Öğün ekle",
+    "training": "Antrenman günü: {name}",
+    "trainingLabel": "Antrenman günü: {name}. Antrenmanını açar.",
     "photo": "Fotoğraftan ekle",
     "recipes": "Tariflerin",
     "budget": {

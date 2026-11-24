@@ -30,6 +30,7 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { load } from '@/today/today';
 import { openDetail } from '@/settings/detail';
+import { dayName } from '@/train/program';
 
 type Schemas = components['schemas'];
 
@@ -184,6 +185,17 @@ export default function FoodScreen() {
   const hint = perMeal === null ? null : t('food.totals.hint', { count: slots.length, kcal: formatNumber(perMeal) });
   const noTarget = data !== null && data.budget.state === 'none' && data.summary === undefined && isToday;
 
+  // Today is a training day (K-1217): one line, the way to the workout. A rest day, another day or an unread program: nothing.
+  const training =
+    data !== null && isToday && data.training !== null ? (
+      <Button
+        label={t('food.training', { name: dayName(data.training) })}
+        accessibilityLabel={t('food.trainingLabel', { name: dayName(data.training) })}
+        variant="text"
+        size="sm"
+        onPress={() => router.dismissTo('/train')}
+      />
+    ) : null;
   const retry = failed ? (
     <View style={styles.note}>
       <Text style={[styles.text, { color: color.textSecondary }]}>{t('today.failed')}</Text>
@@ -268,6 +280,7 @@ export default function FoodScreen() {
       <ScrollView contentContainerStyle={styles.body}>
         <ScreenTitle>{dayTitle(day, today)}</ScreenTitle>
         <DayStrip day={day} today={today} logged={data?.loggedDays ?? new Set<string>()} onChange={(next) => setSelected(next === today ? null : next)} />
+        {training}
         {retry}
         {consent}
         {totals}

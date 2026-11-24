@@ -236,3 +236,47 @@ describe('the summary alone (the share stickers, K-975)', () => {
     expect(await loadWorkoutSummary(value, 'w1')).toEqual({ kind: 'failed', problem: 'NoConnection' });
   });
 });
+
+// K-1217 (#725): the day's screens point to each other. The workout's end says where the day's protein stands: the server's
+// budget of today (what is eaten, the middle of its range, over the plan's target), nothing counted on the phone (U1).
+describe('the protein so far (K-1217)', () => {
+  const BUDGET = {
+    day: '2026-09-29',
+    targetKcal: 2300,
+    targetProteinG: 175,
+    eaten: { kcal: { low: 1000, high: 1200 }, proteinG: { low: 68, high: 80 } },
+    left: { kcal: { low: 1100, high: 1300 }, proteinG: { low: 95, high: 107 } },
+  };
+  const withBudget = (answer: unknown) => {
+    const made = deps();
+    made.GET.mockImplementation(async (path: string) => {
+      if (path === '/v1/workouts/{id}/summary') return { data: SUMMARY, response: { status: 200 } };
+      if (path === '/v1/days/{day}/budget') return answer as never;
+      return { response: { status: 404 } };
+    });
+    return made;
+  };
+
+  test("today's budget is asked for, on the phone's calendar day; eaten is the middle of the server's range, the target the plan's", async () => {
+    const { value, GET } = withBudget({ data: BUDGET, response: { status: 200 } });
+    const end = await loadWorkoutEnd(value, 'w1');
+    expect(end.kind === 'ready' && end.protein).toEqual({ eaten: 74, target: 175 });
+    expect(GET).toHaveBeenCalledWith('/v1/days/{day}/budget', { params: { path: { day: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) } } });
+  });
+
+  test.each([
+    ['no budget yet (404)', { response: { status: 404 } }],
+    ['the health data consent missing (403)', { error: { code: 'CONSENT_REQUIRED' }, response: { status: 403 } }],
+    ['the server failing (500)', { response: { status: 500 } }],
+  ])('%s: no protein, nothing made up', async (_, answer) => {
+    const { value } = withBudget(answer);
+    const end = await loadWorkoutEnd(value, 'w1');
+    expect(end.kind === 'ready' && end.protein).toBeUndefined();
+  });
+
+  test('a target of zero is no target: no line', async () => {
+    const { value } = withBudget({ data: { ...BUDGET, targetProteinG: 0 }, response: { status: 200 } });
+    const end = await loadWorkoutEnd(value, 'w1');
+    expect(end.kind === 'ready' && end.protein).toBeUndefined();
+  });
+});

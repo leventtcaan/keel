@@ -48,33 +48,46 @@ export default function WorkoutEndScreen() {
   // One read at a time: Try again tapped twice reads once.
   const reading = useRef(false);
 
-  const read = useCallback(() => {
-    if (reading.current) return;
-    reading.current = true;
-    void loadWorkoutEnd(services, workout)
-      .catch((): WorkoutEnd => ({ kind: 'failed', problem: 'ServerError' }))
-      .then((answer) => {
-        reading.current = false;
-        setEnd(answer);
-        // VoiceOver hears what came: the numbers, or why they wait.
-        announce(t(answer.kind === 'ready' ? 'workoutEnd.ready' : answer.kind === 'pending' ? 'workoutEnd.pending' : 'workoutEnd.failed'));
-        // The record is felt once, when it is first shown.
-        if (answer.kind === 'ready' && !felt.current && answer.summary.marks.some((m) => m.kind === 'RECORD')) {
-          felt.current = true;
-          haptics.record();
-        }
-      });
-  }, [services, workout]);
+  // `quiet`: a read on coming back to the front (from the meal log): what shows is kept unless the new read is whole, and nothing is announced.
+  const load = useCallback(
+    (quiet: boolean) => {
+      if (reading.current) return;
+      reading.current = true;
+      void loadWorkoutEnd(services, workout)
+        .catch((): WorkoutEnd => ({ kind: 'failed', problem: 'ServerError' }))
+        .then((answer) => {
+          reading.current = false;
+          if (quiet && answer.kind !== 'ready') return;
+          setEnd(answer);
+          if (quiet) return;
+          // VoiceOver hears what came: the numbers, or why they wait.
+          announce(t(answer.kind === 'ready' ? 'workoutEnd.ready' : answer.kind === 'pending' ? 'workoutEnd.pending' : 'workoutEnd.failed'));
+          // The record is felt once, when it is first shown.
+          if (answer.kind === 'ready' && !felt.current && answer.summary.marks.some((m) => m.kind === 'RECORD')) {
+            felt.current = true;
+            haptics.record();
+          }
+        });
+    },
+    [services, workout],
+  );
+  const read = useCallback(() => load(false), [load]);
   useEffect(read, [read]);
   useEffect(() => {
     void services.bodyFigure().then(setFigure);
   }, [services]);
-  // Light status bar text only while this screen is in front: the share card opened from it is light.
+  // Light status bar text only while this screen is in front: the share card opened from it is light. Back in front after another
+  // screen (the meal log, K-1217), the day is read again: the protein line shows the meal just logged.
+  const away = useRef(false);
   useFocusEffect(
     useCallback(() => {
       setStatusBarStyle('light');
-      return () => setStatusBarStyle('auto');
-    }, []),
+      if (away.current) load(true);
+      return () => {
+        away.current = true;
+        setStatusBarStyle('auto');
+      };
+    }, [load]),
   );
 
   return (
@@ -189,6 +202,7 @@ function Facts({ end, day, units }: { end: Ready; day: Schemas['ProgramDay'] | n
       </View>
       <Mark marks={summary.marks} day={day} units={units} known={end.moves} />
       {end.week !== null && end.week.planned > 0 && <Week done={end.week.done} planned={end.week.planned} />}
+      {end.protein !== undefined && <Protein eaten={end.protein.eaten} target={end.protein.target} />}
       <MovedCard moves={summary.moves} units={units} known={end.moves} />
     </View>
   );
@@ -227,6 +241,22 @@ function Mark({ marks, day, units, known }: { marks: Schemas['SetMark'][]; day: 
     <View style={[styles.card, { backgroundColor: color.surface }]}>
       <Text style={[styles.heading, { color: color.text }]}>{t('workoutEnd.baseline')}</Text>
       <Text style={[styles.small, { color: color.textSecondary }]}>{t('workoutEnd.baselineBody')}</Text>
+    </View>
+  );
+}
+
+/**
+ * The day goes on (K-1217): where the day's protein stands, the server's numbers (U1), and the way to log the next meal. One line,
+ * one button; no "left to eat", no blame for a low number (U7).
+ */
+function Protein({ eaten, target }: { eaten: number; target: number }) {
+  const { color } = useTheme();
+  return (
+    <View testID="protein" style={[styles.card, { backgroundColor: color.surface }]}>
+      <Text accessible accessibilityLabel={t('workoutEnd.proteinLabel', { eaten, target })} style={[styles.text, styles.bold, { color: color.text }]}>
+        {t('workoutEnd.protein', { eaten, target })}
+      </Text>
+      <Button label={t('workoutEnd.logMeal')} variant="secondary" size="sm" onSurface onPress={() => router.push('/meal')} />
     </View>
   );
 }
