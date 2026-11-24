@@ -12,4 +12,10 @@ class DecisionConfiguration {
     StateLengths stateLengths() {
         return StateLengths.fromClasspath();
     }
+
+    /** How many full calls a free account keeps (ADR-091 Ek 1, K-1201), from data/parameters/quota.yaml. */
+    @Bean
+    FreeCalls freeCalls() {
+        return FreeCalls.fromClasspath();
+    }
 }

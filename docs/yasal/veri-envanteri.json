@@ -1084,7 +1084,9 @@
     "declined_at",
     "plan_before",
     "plan_after",
-    "held_move"
+    "held_move",
+    "full_call",
+    "held_back"
    ],
    "basis": "explicit consent (GDPR Art. 9(2)(a)) — HEALTH_DATA",
    "gated_by": "HEALTH_DATA",

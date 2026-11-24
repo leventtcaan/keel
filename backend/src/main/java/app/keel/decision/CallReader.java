@@ -24,7 +24,10 @@ public class CallReader {
 
     /** The call with this id, or the latest when none is given. */
     public Optional<CallFacts> call(AccountId account, Optional<UUID> id) {
-        Optional<CallStore.Call> found = id.map(given -> decisions.find(account, given)).orElseGet(() -> decisions.current(account));
+        decisions.releaseHeld(account);
+        // A call held back for want of the subscription is not the coach's to tell (ADR-091 Ek 1).
+        Optional<CallStore.Call> found = id.map(given -> decisions.find(account, given)).orElseGet(() -> decisions.current(account))
+                .filter(call -> !decisions.locked(account, call));
         // The day the next call opens is the Decision's own (K-1024, K-1032): the coach names it, the phone works out no date.
         return found.map(call -> facts(call, decisions.nextCallDay(account).apply(call)));
     }

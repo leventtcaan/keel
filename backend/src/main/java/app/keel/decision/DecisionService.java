@@ -41,6 +41,7 @@ import app.keel.profile.Profiles;
 import app.keel.shared.AccountId;
 import app.keel.shared.ApiException;
 import app.keel.shared.ErrorCode;
+import app.keel.subscription.Entitlements;
 import app.keel.training.TrainingCalls;
 import app.keel.training.TrainingMoveTargets;
 import app.keel.training.HeldMove;
@@ -96,12 +97,16 @@ class DecisionService {
     private final PlannedSessions planned;
     private final StateStore states;
     private final AccountDates accounts;
+    private final Entitlements entitlements;
+    private final FreeCalls freeCalls;
 
     private static final int DAYS_PER_WEEK = 7;
 
     DecisionService(CallStore calls, Profiles profiles, Measurements measurements, ConsentGate consent, ParameterSet parameters,
             QuestionBudget budget, Clock clock, WeekLogs logs, TrainingCalls training, TrainingStatusReader statuses, StateStore states,
-            AccountDates accounts, PlannedSessions planned, TrainingMoveTargets moves) {
+            AccountDates accounts, PlannedSessions planned, TrainingMoveTargets moves, Entitlements entitlements, FreeCalls freeCalls) {
+        this.entitlements = entitlements;
+        this.freeCalls = freeCalls;
         this.moves = moves;
         this.planned = planned;
         this.accounts = accounts;
@@ -230,13 +235,18 @@ class DecisionService {
                 dataSays.adherence(), answers.checkIn().appetite(), week1Feel(answers.checkIn().week1Feel(), week.firstWeek().isPresent()));
         Snapshot snapshot = snapshot(week, plan, checkIn, answers.menstrualLossReported(), answers.cycleResolved(), training(account, week));
         Decision decision = DecisionPipeline.decide(snapshot, week.parameters());
+        Map<String, Object> kept = DecisionJson.of(decision);
+        // Logging free, the call paid (ADR-091 Ek 1): a full call past the free allowance of an account without the subscription is
+        // kept, so subscribing shows it, but not applied: the plan stays as it was. The safety net is never full, so never held (U6).
+        boolean full = FreeCalls.full(DecisionPipeline.windowRead(snapshot, week.parameters()), kept);
+        boolean held = full && freeCalls.heldBack(true, calls.fullCalls(account), entitlements.active(account, clock.instant()));
         CallStore.Call call = new CallStore.Call(UUID.randomUUID(), clientId, weekOf, week.today(), clock.instant(), parameters.versionHash(),
-                StoredSnapshot.of(snapshot, counted, week.waistSpanDays()), DecisionJson.of(decision), application(decision));
-        if (!calls.keep(account, call)) {
+                StoredSnapshot.of(snapshot, counted, week.waistSpanDays()), kept, application(decision));
+        if (!calls.keep(account, call, full, held)) {
             // The same clientId or this week, stored at the same moment by another request.
             return calls.byClient(account, clientId).orElseThrow(() -> new ApiException(ErrorCode.CONFLICT));
         }
-        return appliedByDefault(account, call);
+        return held ? call : appliedByDefault(account, call);
     }
 
     /**
@@ -918,11 +928,50 @@ class DecisionService {
     /** The call, if it is the latest: an older one is history (CONFLICT), a missing one NOT_FOUND. */
     private CallStore.Call latest(AccountId account, UUID id) {
         CallStore.Call call = calls.lockedById(account, id).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+        requireUnlocked(account, call);
         boolean latest = calls.newestFirst(account, Optional.empty(), 1).stream().findFirst().map(newest -> newest.id().equals(id)).orElse(false);
         if (!latest) {
             throw new ApiException(ErrorCode.CONFLICT);
         }
         return call;
+    }
+
+    /**
+     * The calls held back for want of the subscription, as this account reads them now (ADR-091 Ek 1): none once it has one.
+     * Cheap for the many accounts with no held call: one indexed query, no entitlement read.
+     */
+    Set<UUID> lockedIds(AccountId account) {
+        Set<UUID> held = calls.heldBack(account);
+        return held.isEmpty() || entitlements.active(account, clock.instant()) ? Set.of() : held;
+    }
+
+    boolean locked(AccountId account, CallStore.Call call) {
+        return lockedIds(account).contains(call.id());
+    }
+
+    private void requireUnlocked(AccountId account, CallStore.Call call) {
+        if (locked(account, call)) {
+            throw new ApiException(ErrorCode.ENTITLEMENT_REQUIRED);
+        }
+    }
+
+    /**
+     * Subscribing opens what was held (ADR-091 Ek 1), at the next read of the calls: every hold is lifted, so older calls read
+     * as history; the latest call, if it is this week's, gets what any call made with the subscription gets: applied by default
+     * when it moves the plan. An older call is never applied after the fact. A no-op for an account with no held call or none paid.
+     */
+    @Transactional
+    void releaseHeld(AccountId account) {
+        Set<UUID> held = calls.heldBack(account);
+        if (held.isEmpty() || !entitlements.active(account, clock.instant())) {
+            return;
+        }
+        consent.require(account, ConsentKind.HEALTH_DATA);
+        Optional<CallStore.Call> newest = calls.newestFirst(account, Optional.empty(), 1).stream().findFirst().filter(call -> held.contains(call.id()));
+        calls.releaseHeldBack(account);
+        if (newest.isPresent() && newest.get().weekOf().equals(week(account).weekOf())) {
+            appliedByDefault(account, newest.get());
+        }
     }
 
     Optional<CallStore.Call> current(AccountId account) {
@@ -949,6 +998,7 @@ class DecisionService {
     Optional<Map<String, Object>> whatIf(AccountId account, UUID id) {
         Optional<CallStore.Call> latest = current(account).filter(call -> call.id().equals(id))
                 .filter(call -> !Boolean.TRUE.equals(call.decision().get("safety")));
+        latest.ifPresent(call -> requireUnlocked(account, call));
         Optional<CallStore.Plan> plan = calls.plan(account);
         if (latest.isEmpty() || plan.isEmpty()) {
             return Optional.empty();
@@ -1005,7 +1055,10 @@ class DecisionService {
 
     /** What the call read, from its own stored snapshot (K-519): read with the parameters for the sex it was made for. */
     Optional<DecisionBasis> basis(AccountId account, UUID id) {
-        return find(account, id).map(call -> DecisionBasis.of(call.snapshot(), parameters.forSex(call.snapshot().sex())));
+        return find(account, id).map(call -> {
+            requireUnlocked(account, call);
+            return DecisionBasis.of(call.snapshot(), parameters.forSex(call.snapshot().sex()));
+        });
     }
 
     List<CallStore.Call> page(AccountId account, Optional<UUID> before, int limit) {

@@ -11,6 +11,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -54,6 +55,7 @@ class DecisionController {
 
     @GetMapping("/v1/decisions")
     DecisionPage ledger(AccountId account, @RequestParam(required = false) Integer limit, @RequestParam(required = false) UUID before) {
+        decisions.releaseHeld(account);
         int size = limit == null ? DEFAULT_PAGE : limit;
         require(size >= 1 && size <= MAX_PAGE);
         // One more than asked tells whether an older page exists.
@@ -61,8 +63,12 @@ class DecisionController {
         List<CallStore.Call> shown = page.subList(0, Math.min(size, page.size()));
         Optional<UUID> latest = decisions.latestId(account);
         Function<CallStore.Call, LocalDate> nextCall = decisions.nextCallDay(account);
+        Set<UUID> locked = decisions.lockedIds(account);
         // Each call with the trend weight it read (K-611): the ledger says what came after it, never why.
         return new DecisionPage(shown.stream().map(call -> {
+                    if (locked.contains(call.id())) {
+                        return LockedCall.view(call.id(), call.madeOn(), call.weekOf(), nextCall.apply(call));
+                    }
                     Map<String, Object> view = sent(call, latest, decisions, nextCall);
                     decisions.trendRead(call).ifPresent(kg -> view.put("readTrendKg", kg));
                     return view;
@@ -72,18 +78,21 @@ class DecisionController {
 
     @GetMapping("/v1/decisions/current")
     Map<String, Object> current(AccountId account) {
+        decisions.releaseHeld(account);
         CallStore.Call call = decisions.current(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
-        return sent(call, Optional.of(call.id()), decisions, decisions.nextCallDay(account));
+        return sent(account, call);
     }
 
     @GetMapping("/v1/decisions/{id}")
     Map<String, Object> call(AccountId account, @PathVariable UUID id) {
+        decisions.releaseHeld(account);
         return sent(account, decisions.find(account, id).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND)));
     }
 
     /** Contract DecisionBasis (K-519): the rows "Why this call" shows — health data, behind the consent like the call. */
     @GetMapping("/v1/decisions/{id}/basis")
     DecisionBasis basis(AccountId account, @PathVariable UUID id) {
+        decisions.releaseHeld(account);
         return decisions.basis(account, id).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
     }
 
@@ -93,6 +102,7 @@ class DecisionController {
      */
     @GetMapping("/v1/decisions/{id}/what-if")
     Map<String, Object> whatIf(AccountId account, @PathVariable UUID id) {
+        decisions.releaseHeld(account);
         return decisions.whatIf(account, id).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
     }
 
@@ -108,6 +118,7 @@ class DecisionController {
 
     @PostMapping("/v1/decisions/{id}/apply")
     PlanTargets apply(AccountId account, @PathVariable UUID id) {
+        decisions.releaseHeld(account);
         return decisions.apply(account, id);
     }
 
@@ -170,7 +181,11 @@ class DecisionController {
 
     /** Contract Decision as the app reads it: the kept call, and whether "Keep last week's plan" may be offered (K-963). */
     private Map<String, Object> sent(AccountId account, CallStore.Call call) {
-        return sent(call, decisions.latestId(account), decisions, decisions.nextCallDay(account));
+        Function<CallStore.Call, LocalDate> nextCall = decisions.nextCallDay(account);
+        if (decisions.locked(account, call)) {
+            return LockedCall.view(call.id(), call.madeOn(), call.weekOf(), nextCall.apply(call));
+        }
+        return sent(call, decisions.latestId(account), decisions, nextCall);
     }
 
     private static Map<String, Object> sent(CallStore.Call call, Optional<UUID> latest) {

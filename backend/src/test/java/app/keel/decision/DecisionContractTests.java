@@ -30,6 +30,16 @@ class DecisionContractTests {
     }
 
     @Test
+    void aLockedCallIsAReducedShapeWithoutTheCallsWords() throws Exception {
+        // K-1201 (ADR-091 Ek 1): the week and the next call's day, locked: true — never an action, reasons or changes.
+        Map<String, Object> locked = map(map(map(contract().get("components")).get("schemas")).get("LockedDecision"));
+
+        assertThat((List<String>) locked.get("required")).containsExactlyInAnyOrder("id", "madeOn", "weekOf", "nextCallOn", "locked");
+        assertThat(map(locked.get("properties"))).containsOnlyKeys("id", "madeOn", "weekOf", "nextCallOn", "locked");
+        assertThat(map(map(locked.get("properties")).get("locked")).get("enum")).isEqualTo(List.of(true));
+    }
+
+    @Test
     void declineIsAPostThatAnswersTheTargetsAndTheServerHasIt() throws Exception {
         Map<String, Object> decline = map(map(map(contract().get("paths")).get("/v1/decisions/{id}/decline")).get("post"));
 
