@@ -5,7 +5,7 @@ import { t } from '@/copy';
 /**
  * The pages one level under Settings (ADR-070 Ek 2 #2: a long explanation, an editor or a consent text goes to a page of its
  * own, never under a row): the profile's five answers (K-1062), the walks (K-1216), the foods, the routine, the consents, the Apple Health write
- * switches, the weigh-in import, the rest the timer aims for (K-1214) and the data sources. One route, `settings-detail`, shows the part named in its `part` parameter; the title of each
+ * switches, the weigh-in import, the rest the timer aims for (K-1214), the data sources and the coach (the AI consent, what it remembers, the conversation; ADR-092). One route, `settings-detail`, shows the part named in its `part` parameter; the title of each
  * is the label of the row that opens it.
  */
 export const DETAIL_PARTS = {
@@ -23,6 +23,7 @@ export const DETAIL_PARTS = {
   rest: 'settings.rest.title',
   import: 'settings.import.title',
   sources: 'settings.sources.title',
+  coach: 'settings.coach.row',
 } as const;
 
 export type DetailPart = keyof typeof DETAIL_PARTS;

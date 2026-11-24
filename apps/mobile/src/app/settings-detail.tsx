@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
+import { CoachSettings } from '@/settings/CoachSettings';
 import { ConsentsSection } from '@/settings/ConsentsSection';
 import { DataSourcesPage } from '@/settings/DataSources';
 import { type DetailPart, detailTitle, isDetailPart } from '@/settings/detail';
@@ -64,6 +65,7 @@ export default function SettingsDetailScreen() {
       ) : null,
     rest: <RestSection />,
     sources: <DataSourcesPage />,
+    coach: <CoachSettings />,
   };
   return (
     <SafeAreaView testID="screen" style={[styles.safe, { backgroundColor: color.background }]} edges={['bottom']}>

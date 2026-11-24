@@ -90,10 +90,11 @@ function AppStack() {
         <Stack.Screen name="share" options={pushed} />
         <Stack.Screen name="import" options={pushed} />
         <Stack.Screen name="paywall" options={{ presentation: 'modal' }} />
+        {/* The conversational coach (ADR-092): opened from a call's starter questions. */}
+        <Stack.Screen name="coach" options={{ presentation: 'modal' }} />
       </Stack.Protected>
       {/* Taken off the surface (ADR-069 #3, navigation/tabs RETIRED): the code stays, nothing opens them, a link neither. */}
       <Stack.Protected guard={false}>
-        <Stack.Screen name="coach" options={{ presentation: 'modal' }} />
         <Stack.Screen name="meal-photo" options={{ presentation: 'modal' }} />
         <Stack.Screen name="recipes" />
         <Stack.Screen name="recipe" options={{ presentation: 'modal' }} />

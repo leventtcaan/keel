@@ -55,7 +55,7 @@ const mockPush = jest.fn();
 const mockDismiss = jest.fn();
 let mockParams: { id?: string; from?: string } = {};
 jest.mock('expo-router', () => ({
-  router: { back: () => mockBack(), push: (to: string) => mockPush(to), dismissTo: (to: string) => mockDismiss(to) },
+  router: { back: () => mockBack(), push: (to: unknown) => mockPush(to), dismissTo: (to: string) => mockDismiss(to) },
   useLocalSearchParams: () => mockParams,
 }));
 const said = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
@@ -382,7 +382,7 @@ describe('what the call changes, and why in a line (K-978 part 2)', () => {
     mockAnswers['/v1/decisions/current'] = ok(calories());
     await show();
     expect(screen.getByText('-0.1 kg a week over 3 weeks, not toward your goal.')).toBeOnTheScreen();
-    expect(screen.getByText('One step: 250 kcal a day less.')).toBeOnTheScreen();
+    expect(screen.getByText('250 kcal a day less.')).toBeOnTheScreen();
     expect(screen.queryByText(t('decision.ruleShort.energy_floor'))).toBeNull(); // two, no more
     expect(screen.getByLabelText(t('today.call.source.EXPERIENCE'))).toBeOnTheScreen();
     expect(screen.getByLabelText(t('today.call.source.LITERATURE'))).toBeOnTheScreen();
@@ -598,6 +598,32 @@ describe('Wait for more weigh-ins (K-1045, T-9)', () => {
     await show();
     expect(screen.queryByRole('button', { name: t('callScreen.weighIn') })).toBeNull();
     expect(mockGET).not.toHaveBeenCalledWith('/v1/weigh-ins/summary');
+  });
+});
+
+describe('the way to the coach (ADR-092 #7)', () => {
+  test('one button asks about this call; the starter questions are in the coach', async () => {
+    await show();
+    expect(screen.getByRole('button', { name: t('coach.askAbout') })).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: t('coach.starter.why') })).toBeNull();
+  });
+
+  test('it opens the coach about this call', async () => {
+    await show();
+    await press(t('coach.askAbout'));
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/coach', params: { decisionId: 'd1' } });
+  });
+
+  test('a call that is only waiting for data has none: there is nothing to ask about yet', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(decision({ action: { type: 'NO_DECISION_YET' } as Schemas['Decision']['action'] }));
+    await show();
+    expect(screen.queryByRole('button', { name: t('coach.askAbout') })).toBeNull();
+  });
+
+  test('a call that could not be read has none either', async () => {
+    mockAnswers['/v1/decisions/current'] = 'offline';
+    await show();
+    expect(screen.queryByRole('button', { name: t('coach.askAbout') })).toBeNull();
   });
 });
 

@@ -205,10 +205,10 @@ describe('#paywall after the plan (ADR-072 #7)', () => {
     expect(screen.getAllByText(weekdayDate(FIRST_CALL))).toHaveLength(2);
   });
 
-  test('three values with calls: the call on its day, that each call after the first is this, cardio and food that adjust', async () => {
+  test('three values with calls: the call on its day, that each call after the first is this, the coach to ask about the week (ADR-092)', async () => {
     mockPreview = PREVIEW;
     await show();
-    for (const key of ['subscription.values.after', 'subscription.values.adjust']) expect(screen.getByText(t(key))).toBeOnTheScreen();
+    for (const key of ['subscription.values.after', 'subscription.values.coach']) expect(screen.getByText(t(key))).toBeOnTheScreen();
     expect(screen.getByText(t('subscription.values.call', { day: t('onboarding.schedule.dayName.MONDAY') }))).toBeOnTheScreen();
     expect(screen.queryByText(t('subscription.values.built'))).toBeNull();
   });

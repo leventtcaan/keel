@@ -205,6 +205,8 @@ export default function CallScreen() {
           <TrendCount count={summary.weighInCount} min={summary.trendMinWeighIns} />
         </View>
       );
+    // One way to the coach about this call (ADR-092 #7); its starter questions are in the coach itself. Counted in the screen's words.
+    const askButton = <Button label={t('coach.askAbout')} variant="ghost" size="sm" onPress={() => router.push({ pathname: '/coach', params: { decisionId: decision.id } })} />;
     body = (
       <>
         <Text style={[styles.small, { color: color.muted }]}>{weekdayDate(decision.madeOn)}</Text>
@@ -229,6 +231,7 @@ export default function CallScreen() {
           )}
           <Text style={[styles.small, { color: color.textSecondary }]}>{t('callScreen.nextCall', { date: weekdayDate(decision.nextCallOn) })}</Text>
         </View>
+        {waits ? null : askButton}
         {failed?.read === decision ? <ProblemText style={[styles.small, { color: color.text }]}>{t(failed.key)}</ProblemText> : null}
         {week1?.note}
       </>

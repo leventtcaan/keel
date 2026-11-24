@@ -23,17 +23,23 @@ final class CoachLimits {
     private final int historyPage;
     private final int memoryMaxItems;
     private final int memoryMaxChars;
+    private final int freeTrialQuestions;
 
     CoachLimits(BigDecimal monthlyBudgetUsd, BigDecimal unpricedCallCostUsd) {
-        this(monthlyBudgetUsd, unpricedCallCostUsd, 30, 6, 50, 10, 200);
+        this(monthlyBudgetUsd, unpricedCallCostUsd, 30, 6, 50, 10, 200, 3);
     }
 
     CoachLimits(BigDecimal monthlyBudgetUsd, BigDecimal unpricedCallCostUsd, int historyDays, int historyTurnsInPrompt, int historyPage, int memoryMaxItems,
             int memoryMaxChars) {
+        this(monthlyBudgetUsd, unpricedCallCostUsd, historyDays, historyTurnsInPrompt, historyPage, memoryMaxItems, memoryMaxChars, 3);
+    }
+
+    CoachLimits(BigDecimal monthlyBudgetUsd, BigDecimal unpricedCallCostUsd, int historyDays, int historyTurnsInPrompt, int historyPage, int memoryMaxItems,
+            int memoryMaxChars, int freeTrialQuestions) {
         if (monthlyBudgetUsd.signum() <= 0 || unpricedCallCostUsd.signum() <= 0) {
             throw new IllegalStateException("coach.yaml: the budget and the unpriced call's cost are more than zero");
         }
-        if (historyDays < 1 || historyTurnsInPrompt < 1 || historyPage < 1 || memoryMaxItems < 1 || memoryMaxChars < 1) {
+        if (historyDays < 1 || historyTurnsInPrompt < 1 || historyPage < 1 || memoryMaxItems < 1 || memoryMaxChars < 1 || freeTrialQuestions < 0) {
             throw new IllegalStateException("coach.yaml: the history and memory limits are whole numbers of at least 1");
         }
         this.monthlyBudgetUsd = monthlyBudgetUsd;
@@ -43,6 +49,7 @@ final class CoachLimits {
         this.historyPage = historyPage;
         this.memoryMaxItems = memoryMaxItems;
         this.memoryMaxChars = memoryMaxChars;
+        this.freeTrialQuestions = freeTrialQuestions;
     }
 
     static CoachLimits fromClasspath() {
@@ -60,7 +67,7 @@ final class CoachLimits {
         List<Map<String, Object>> parameters = (List<Map<String, Object>>) ((Map<String, Object>) new Yaml(strict).load(in)).get("parameters");
         return new CoachLimits(number(parameters, "coach_monthly_budget_usd"), number(parameters, "coach_unpriced_call_cost_usd"),
                 whole(parameters, "coach_history_days"), whole(parameters, "coach_history_turns_in_prompt"), whole(parameters, "coach_history_page"),
-                whole(parameters, "coach_memory_max_items"), whole(parameters, "coach_memory_max_chars"));
+                whole(parameters, "coach_memory_max_items"), whole(parameters, "coach_memory_max_chars"), whole(parameters, "coach_free_trial_questions"));
     }
 
     private static int whole(List<Map<String, Object>> parameters, String key) {
@@ -103,6 +110,11 @@ final class CoachLimits {
     /** The longest one of them. */
     int memoryMaxChars() {
         return memoryMaxChars;
+    }
+
+    /** The questions an account may ask the coach without a subscription, once in its life (0: none). */
+    int freeTrialQuestions() {
+        return freeTrialQuestions;
     }
 
     /** What a call counts as while the provider's prices are not known. */

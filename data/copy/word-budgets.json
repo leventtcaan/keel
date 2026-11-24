@@ -1712,7 +1712,8 @@
         ["callScreen.level.LOW", "callScreen.level.MEDIUM", "callScreen.level.HIGH"],
         "callScreen.nextCall",
         "callScreen.gotIt",
-        "callScreen.keep"
+        "callScreen.keep",
+    "coach.askAbout"
       ],
       "dynamic": [{"what": "the day the call was made (Mon, Dec 28)", "words": 2}, {"what": "the next call's date (Mon, Jan 4)", "words": 2}],
       "notFirstView": [

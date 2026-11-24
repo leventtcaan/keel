@@ -104,6 +104,8 @@ the import can carry body weight; imported sessions then stay in the training lo
 - **Subscription state:** status (trial, active, cancelled…), until when you have access, when it last changed, and which
   RevenueCat events were applied (id, type, time), so none is applied twice; an event's record is deleted 30 days after
   the event, by the nightly cleanup (at most about 31 days). No price, country or payment data.
+- **Free coach questions:** how many of the few free introductory questions to the coach you have asked (a count, no content),
+  so the allowance can't be spent twice; kept until you delete your account.
 - **Daily use:** how many coach messages and meal photo analyses you used each day — a count, no content. A day's count
   is kept through the following day, then deleted by a nightly cleanup (at most about three days).
 

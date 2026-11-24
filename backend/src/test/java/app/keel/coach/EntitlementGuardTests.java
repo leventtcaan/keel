@@ -65,6 +65,7 @@ class EntitlementGuardTests {
     @Test
     void withoutASubscriptionTheModelsRoutesSayWhyAndNothingIsCountedOrSent() throws Exception {
         AccountId account = withACall();
+        spentTheFreeQuestions(account); // the introductory questions (ADR-092 #7) are tested below; this is the account past them
         fake.answer(RICE);
 
         for (MvcTestResult refused : List.of(ask(account), parse(account), photo(account))) {
@@ -86,6 +87,7 @@ class EntitlementGuardTests {
         assertThat(List.of(parse(account), photo(account))).allSatisfy(refused -> assertThat(code(refused)).isEqualTo("ENTITLEMENT_REQUIRED"));
         // The coach too: a call to tell, the health consent, but neither the AI consent nor a subscription.
         AccountId withCall = withACall();
+        spentTheFreeQuestions(withCall);
         jdbc.sql("""
                 insert into consent.consent_event (id, account_id, kind, action, text_version, occurred_at)
                 values (gen_random_uuid(), :a, 'THIRD_PARTY_AI', 'WITHDRAWN', :version, now())""").param("a", withCall.value())
@@ -112,6 +114,8 @@ class EntitlementGuardTests {
         AccountId expired = withACall();
         AccountId refunded = withACall();
         AccountId endingSoon = withACall();
+        spentTheFreeQuestions(expired);
+        spentTheFreeQuestions(refunded);
         Instant now = context.getBean(Clock.class).instant();
         // Ended an hour ago; bought a minute ago and refunded a second ago (the refund after the purchase, both past);
         // and one that ends in an hour, which still pays — the time asked about is now, not a day off either way.
@@ -140,6 +144,8 @@ class EntitlementGuardTests {
         // an empty draft) — and no use is taken and given back, so not even a row is written.
         AccountId account = withACall();
         AccountId fresh = withACall();
+        spentTheFreeQuestions(account);
+        spentTheFreeQuestions(fresh);
         for (String use : List.of("COACH_MESSAGE", "PHOTO_ANALYSIS")) {
             jdbc.sql("insert into subscription.daily_use (account_id, day, use, used) values (:a, :day, :use, 1000)").param("a", account.value())
                     .param("day", java.time.LocalDate.now(java.time.ZoneOffset.UTC)).param("use", use).update();
@@ -191,6 +197,59 @@ class EntitlementGuardTests {
         assertThat(send(account, "/v1/workouts", Map.of("clientId", UUID.randomUUID(), "startedAt", Instant.now().minusSeconds(60).toString()))
                 .getResponse().getStatus()).isEqualTo(201);
         assertThat(send(account, "/v1/foods/search", Map.of("q", "rice"))).hasStatusOk();
+    }
+
+    @Test
+    void withoutASubscriptionTheFirstFewQuestionsAboutTheFirstFullCallAreFreeThenItIsThePaywall() throws Exception {
+        // ADR-092 #7, ADR-091 yükseltme anı b: coach_free_trial_questions, once in a life, with the AI consent; then 403 ENTITLEMENT_REQUIRED.
+        AccountId account = withACall();
+        int free = context.getBean(CoachLimits.class).freeTrialQuestions();
+        for (int question = 0; question < free; question++) {
+            fake.answer("{\"reply\":\"The call stands this week.\",\"topic\":\"WHY\",\"numbersUsed\":[]}");
+            assertThat(ask(account)).hasStatusOk();
+        }
+
+        assertThat(fake.requests()).hasSize(free);
+        assertThat(code(ask(account))).isEqualTo("ENTITLEMENT_REQUIRED");
+        assertThat(fake.requests()).hasSize(free);
+        assertThat(jdbc.sql("select used from subscription.coach_trial_use where account_id = :a").param("a", account.value()).query(Integer.class).single()).isEqualTo(free);
+        // A subscription ends the counting: the model is asked as for anyone who pays.
+        TestWebhooks.subscribe(mvc, context, account);
+        fake.answer("{\"reply\":\"The call stands this week.\",\"topic\":\"WHY\",\"numbersUsed\":[]}");
+        assertThat(ask(account)).hasStatusOk();
+    }
+
+    @Test
+    void anIntroductoryQuestionNeedsTheConsentAndIsNotSpentWhereTheModelWasNotAsked() throws Exception {
+        AccountId noConsent = withACall();
+        jdbc.sql("""
+                insert into consent.consent_event (id, account_id, kind, action, text_version, occurred_at)
+                values (gen_random_uuid(), :a, 'THIRD_PARTY_AI', 'WITHDRAWN', :version, now())""").param("a", noConsent.value())
+                .param("version", ConsentTextVersions.THIRD_PARTY_AI).update();
+        AccountId failing = withACall();
+        fake.fail(new ModelUnavailable("down"));
+
+        assertThat(code(ask(noConsent))).isEqualTo("CONSENT_REQUIRED");
+        assertThat(ask(failing)).hasStatusOk(); // the engine's words: the provider was down
+        // Neither question was spent: the first was never asked, the second never answered.
+        assertThat(jdbc.sql("select count(*) from subscription.coach_trial_use where account_id in (:a, :b) and used > 0").param("a", noConsent.value())
+                .param("b", failing.value()).query(Integer.class).single()).isZero();
+    }
+
+    @Test
+    void theIntroductoryQuestionsAreAnAccountsForLifeAndGoOnlyWithIt() throws Exception {
+        AccountId account = withACall();
+        fake.answer("{\"reply\":\"The call stands this week.\",\"topic\":\"WHY\",\"numbersUsed\":[]}");
+        assertThat(ask(account)).hasStatusOk();
+
+        // Clearing the conversation or withdrawing the AI consent does not give a question back.
+        assertThat(send(account, "/v1/coach/history", "DELETE", null)).hasStatus(204);
+        assertThat(jdbc.sql("select used from subscription.coach_trial_use where account_id = :a").param("a", account.value()).query(Integer.class).single()).isEqualTo(1);
+    }
+
+    private void spentTheFreeQuestions(AccountId account) {
+        jdbc.sql("insert into subscription.coach_trial_use (account_id, used) values (:a, :n) on conflict (account_id) do update set used = :n").param("a", account.value())
+                .param("n", context.getBean(CoachLimits.class).freeTrialQuestions()).update();
     }
 
     private static String code(MvcTestResult result) throws Exception {
@@ -248,8 +307,12 @@ class EntitlementGuardTests {
     }
 
     private MvcTestResult send(AccountId account, String uri, String method, Object body) {
-        var request = method.equals("PUT") ? mvc.put() : mvc.post();
-        return request.uri(uri).header("Authorization", TestSessions.bearer(context, account)).contentType(MediaType.APPLICATION_JSON)
-                .content(JSON.writeValueAsString(body)).exchange();
+        var request = switch (method) {
+            case "PUT" -> mvc.put();
+            case "DELETE" -> mvc.delete();
+            default -> mvc.post();
+        };
+        request = request.uri(uri).header("Authorization", TestSessions.bearer(context, account));
+        return (body == null ? request : request.contentType(MediaType.APPLICATION_JSON).content(JSON.writeValueAsString(body))).exchange();
     }
 }

@@ -28,8 +28,9 @@ const relative = (file: string) => path.relative(SRC, file);
 const leads = files(SRC).filter((file) => !retiredScreens.has(file) && routeOf.test(fs.readFileSync(file, 'utf8')));
 
 test('the scan sees a route named in each quote style', () => {
-  for (const sample of [`'/coach'`, `"/why"`, '`/ledger?id=1`', `{ pathname: '/what-if', params }`]) expect(routeOf.test(sample)).toBe(true);
-  expect(routeOf.test(`'/coach-notes'`)).toBe(false);
+  for (const sample of [`'/meal-photo'`, `"/why"`, '`/ledger?id=1`', `{ pathname: '/what-if', params }`]) expect(routeOf.test(sample)).toBe(true);
+  expect(routeOf.test(`'/why-not'`)).toBe(false);
+  expect(routeOf.test(`'/coach'`)).toBe(false); // back on the surface (ADR-092)
   expect(routeOf.test(`'/weigh-in'`)).toBe(false);
 });
 

@@ -198,11 +198,11 @@ describe('the reasons, one line each', () => {
       callReasons(call({ reasons: [{ rule, source: { tag: 'EXPERIENCE' }, facts: { kgPerWeek, weeks: 3 } }] }), units)[0].text;
     // 0.3 kg is 0.66 lb: rounded once, to a tenth, as the Why screen does
     expect(pace('not_toward_goal', 'IMPERIAL', -0.3)).toBe('-0.7 lb a week over 3 weeks, not toward your goal.');
-    expect(pace('toward_goal', 'IMPERIAL', 0.5)).toBe('1.1 lb a week over 3 weeks, toward your goal.');
+    expect(pace('toward_goal', 'IMPERIAL', 0.5)).toBe('1.1 lb a week, 3 weeks, toward your goal.');
     expect(pace('stall_window', 'IMPERIAL', 0.1)).toBe('0.2 lb a week over 3 weeks: too slow for a cut.');
     expect(pace('bulk_stall', 'IMPERIAL', 0.1)).toBe('0.2 lb a week over 3 weeks: food goes up.');
     expect(pace('not_toward_goal', 'METRIC', -0.3)).toBe('-0.3 kg a week over 3 weeks, not toward your goal.');
-    expect(pace('toward_goal', 'METRIC', 0.5)).toBe('0.5 kg a week over 3 weeks, toward your goal.');
+    expect(pace('toward_goal', 'METRIC', 0.5)).toBe('0.5 kg a week, 3 weeks, toward your goal.');
     expect(pace('stall_window', 'IMPERIAL', 0)).toBe('0.0 lb a week over 3 weeks: too slow for a cut.'); // a flat pace has no sign
     expect(JSON.stringify(pace('not_toward_goal', 'IMPERIAL', -0.3))).not.toMatch(/kg/);
   });

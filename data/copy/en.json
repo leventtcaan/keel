@@ -352,7 +352,7 @@
     "ledger": "Ready. It comes with a subscription."
   },
   "callScreen": {
-    "inPlan": "In this week's plan",
+    "inPlan": "This week's plan",
     "applied": "Applied",
     "subscription": "Your weekly call comes with a subscription.",
     "none": "No call yet. Your first one comes after your first check-in.",
@@ -1905,7 +1905,7 @@
       "check_in_needed_recovery": "First, how you're sleeping and recovering.",
       "check_in_needed_training": "First, whether your lifts are holding up.",
       "closer_to_failure": "Work sets count most near failure.",
-      "cut_step": "One step: {kcal} kcal a day less.",
+      "cut_step": "{kcal} kcal a day less.",
       "cycle_check_needed": "One question comes before eating under your needs again.",
       "data_insufficient": "A few regular weigh-ins show the trend.",
       "declared_context": "A week you called disrupted isn't judged.",
@@ -1955,7 +1955,7 @@
       "steps_dropped": "Your daily steps dropped.",
       "surplus_zone": "Lean enough that cutting further costs more than it gives.",
       "technique_gate": "Weight and reps hold until form is clean.",
-      "toward_goal": "{kgPerWeek} a week over {weeks} weeks, toward your goal.",
+      "toward_goal": "{kgPerWeek} a week, {weeks} weeks, toward your goal.",
       "training_first": "Training comes before food decisions.",
       "wait_one_more_week": "One flat week is usually water.",
       "window_not_full": "Your plan is judged over its full window."
@@ -2745,6 +2745,19 @@
     },
     "input": "Message the coach",
     "send": "Send",
+    "askAbout": "Ask about this call",
+    "starter": {
+      "why": "Explain this call",
+      "week": "What should I do this week?",
+      "whatif": "What if…",
+      "whatifStart": "What if "
+    },
+    "remember": "Remember this",
+    "remembered": "Remembered. You can see and delete it in Settings.",
+    "rememberFull": "The coach's memory is full. Delete one in Settings first.",
+    "rememberRefused": "That can't be kept as it is. Say it as a short, plain preference.",
+    "rememberFailed": "That didn't save. Try again.",
+    "dictate": "To dictate, tap the microphone on your keyboard.",
     "thinking": "Reading your message…",
     "standard": "In the plan's own words",
     "consent": "The coach reads your messages only with the AI consent. You can give it in Settings.",
@@ -3288,6 +3301,23 @@
     "restoreFailed": "Couldn't restore purchases. Try again in a moment."
   },
   "settings": {
+    "coach": {
+      "title": "Coach",
+      "row": "Coach and AI",
+      "consent": "AI consent",
+      "allow": "Allow the AI coach",
+      "withdraw": "Withdraw",
+      "unavailable": "The AI coach isn't switched on yet.",
+      "memory": "What the coach remembers",
+      "memoryNone": "Nothing yet. After a message you send, tap Remember this.",
+      "forget": "Forget",
+      "forgot": "Forgotten.",
+      "conversation": "The conversation",
+      "conversationLine": "Kept for 30 days at most, then deleted.",
+      "clear": "Clear the conversation",
+      "cleared": "The conversation is deleted.",
+      "failed": "That didn't go through. Check your connection and try again."
+    },
     "guide": {
       "row": "How it works"
     },

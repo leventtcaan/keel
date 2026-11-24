@@ -9,7 +9,7 @@ import { DecisionBlock } from '@/components/DecisionBlock';
 import { announce } from '@/components/ProblemText';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { TextField } from '@/components/TextField';
-import { MEAL_CHIP, ask, chipAnswer, coachChips, isChip, readMeal, type Said } from '@/coach/conversation';
+import { MEAL_CHIP, ask, chipAnswer, coachChips, isChip, STARTERS, loadHistory, readMeal, remember, type Remembered, type Said } from '@/coach/conversation';
 import { t } from '@/copy';
 import { weeklyNote } from '@/coach/note';
 import { amountLine } from '@/food/amountText';
@@ -28,7 +28,8 @@ type Schemas = components['schemas'];
 type Mode = 'ask' | 'meal';
 
 type Message =
-  | { from: 'user'; text: string }
+  // `typed`: the user's own words (not a chip's), which they may ask the coach to remember (ADR-092 #3).
+  | { from: 'user'; text: string; typed?: boolean }
   | { from: 'coach'; said: Said; standard: boolean }
   | { from: 'coach'; meal: Schemas['MealDraft'] }
   | { from: 'coach'; problem: 'consent' | 'subscription' | 'failed'; text: string; mode: Mode };
@@ -37,13 +38,16 @@ type Message =
 type Kept = Message & { id: number };
 
 /**
- * The coach (K-509, prototype 2.1; ADR-043 #76): chips from the day's data, answered on the phone; a message goes to the
- * server and comes back as what it is about and the call's rule, said in the app's copy, with the call's card. The engine's
- * own words are marked as such. The plan never changes from here: the card leads to why, and applying a call is Today's.
- * Opened as a sheet over any tab; a chip on Today opens it on that chip.
+ * The coach (K-509, prototype 2.1; ADR-043 #76, ADR-092): chips from the day's data, answered on the phone; a message goes to
+ * the server and comes back as the model's words, which the server checked, or as what it is about and the call's rule, said
+ * in the app's copy, with the call's card. The engine's own words are marked as such. The conversation so far is read back from
+ * the server; a message the user typed can be kept in the coach's memory when they say so, and the keyboard's own microphone
+ * dictates. The plan never changes from here: the card leads to why, and applying a call is Today's.
+ * Opened as a sheet over any tab; a chip on Today opens it on that chip, and the call's "Ask about this call" opens it about that
+ * call (`decisionId`). Its first suggestions are the three starter questions.
  */
 export default function CoachScreen() {
-  const { chip } = useLocalSearchParams<{ chip?: string }>();
+  const { chip, decisionId } = useLocalSearchParams<{ chip?: string; decisionId?: string }>();
   const { api } = useAppServices();
   const { color } = useTheme();
   const [day] = useState(() => localDay(new Date()));
@@ -57,6 +61,7 @@ export default function CoachScreen() {
   );
   const [text, setText] = useState('');
   const [waiting, setWaiting] = useState(false);
+  const [remembered, setRemembered] = useState<Record<number, Remembered>>({});
   const opened = useRef(false);
 
   // The day's parts the chips are made of: the call, the program, today's weigh-ins.
@@ -66,17 +71,18 @@ export default function CoachScreen() {
       load(() => api.GET('/v1/decisions/current')).then(readCall),
       load(() => api.GET('/v1/program')),
       load(() => api.GET('/v1/weigh-ins', { params: { query: { from: day, to: day } } })),
-    ]).then(([decision, program, weighIns]) => {
-      // The week's note opens the conversation (K-517): the call, its leading rule, the one focus — no model, no quota.
+      loadHistory(api),
+    ]).then(([decision, program, weighIns, past]) => {
+      // The week's note opens the conversation (K-517): the call, its leading rule, the one focus — no model, no quota. Then where the
+      // conversation was left (ADR-092 #3), and anything said now after it.
+      const start: Message[] = [];
       if (live && decision.state === 'ready') {
-        const { value } = decision;
-        const note: Message = {
-          from: 'coach',
-          // Its first sentence is the call's own words: no card to say them twice.
-          said: { heading: 'coach.note.title', lines: weeklyNote(value) },
-          standard: false,
-        };
-        setMessages((said) => [note, ...said]);
+        // Its first sentence is the call's own words: no card to say them twice.
+        start.push({ from: 'coach', said: { heading: 'coach.note.title', lines: weeklyNote(decision.value) }, standard: false });
+      }
+      if (live) {
+        start.push(...past.map((message): Message => (message.from === 'user' ? { from: 'user', text: message.text, typed: true } : { from: 'coach', said: message.said, standard: message.standard })));
+        if (start.length > 0) setMessages((said) => [...start, ...said]);
       }
       if (live)
         setToday({
@@ -91,7 +97,7 @@ export default function CoachScreen() {
     return () => {
       live = false;
     };
-  }, [api, day]);
+  }, [api, day, setMessages]);
 
   const answerChip = useCallback(
     (key: string) => {
@@ -129,11 +135,11 @@ export default function CoachScreen() {
     setWaiting(true);
     announce(t('coach.thinking'));
     setMode('ask');
-    setMessages((said) => (again ? said.filter((message) => !('problem' in message && message.text === words)) : [...said, { from: 'user', text: words }]));
+    setMessages((said) => (again ? said.filter((message) => !('problem' in message && message.text === words)) : [...said, { from: 'user', text: words, typed: true }]));
     const answer: Message =
       to === 'meal'
         ? await readMeal(api, words).then((read): Message => (read.state === 'ready' ? { from: 'coach', meal: read.draft } : { from: 'coach', problem: read.state, text: words, mode: to }))
-        : await ask(api, words, weekdayDate).then((asked): Message =>
+        : await ask(api, words, weekdayDate, decisionId).then((asked): Message =>
             asked.state === 'ready' ? { from: 'coach', said: asked.said, standard: asked.standard } : { from: 'coach', problem: asked.state, text: words, mode: to },
           );
     busy.current = false;
@@ -142,11 +148,26 @@ export default function CoachScreen() {
     announce(spokenOf(answer));
   };
 
+  // The starter questions (ADR-092 #7), the first suggestions: the first two are sent as they are, about the call the coach was opened on;
+  // "What if…" puts the start of the user's own question in the box.
+  const onStarter = (key: string) => {
+    if (key === 'coach.starter.whatif') setText(t('coach.starter.whatifStart'));
+    else void send(t(key), 'ask');
+  };
+
   const submit = () => {
     if (text.trim() === '') return;
     const words = text;
     setText('');
     void send(words, mode);
+  };
+
+  // "Remember this" (ADR-092 #3): asked of the server once per message; the answer says whether it was kept.
+  const keep = async (id: number, words: string) => {
+    if (remembered[id] === 'saved') return;
+    const result = await remember(api, words);
+    setRemembered((now) => ({ ...now, [id]: result }));
+    announce(t(REMEMBER_WORDS[result]));
   };
 
   // The newest message in sight; the box above the keyboard (iOS lifts the view, Android resizes the window).
@@ -157,16 +178,23 @@ export default function CoachScreen() {
       <KeyboardAvoidingView style={styles.safe} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.head}>
           <ScreenTitle>{t('screens.coach.title')}</ScreenTitle>
+          <CoachChips keys={STARTERS.map((starter) => `coach.starter.${starter}`)} onChip={onStarter} />
           {today !== null && <CoachChips keys={coachChips(today, day)} onChip={onChip} />}
         </View>
         <ScrollView ref={scroll} contentContainerStyle={styles.body} onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: !reduceMotion })}>
           {messages.map((message) => (
-            <Bubble key={message.id} message={message} onRetry={(words, to) => void send(words, to, true)} />
+            <Bubble
+              key={message.id}
+              message={message}
+              kept={remembered[message.id]}
+              onRemember={() => void keep(message.id, 'text' in message && message.from === 'user' ? message.text : '')}
+              onRetry={(words, to) => void send(words, to, true)}
+            />
           ))}
           {waiting && <Text style={[styles.small, { color: color.muted }]}>{t('coach.thinking')}</Text>}
         </ScrollView>
         <View style={styles.input}>
-          <TextField label={t(mode === 'meal' ? 'coach.meal.input' : 'coach.input')} value={text} onChangeText={setText} multiline />
+          <TextField label={t(mode === 'meal' ? 'coach.meal.input' : 'coach.input')} hint={t('coach.dictate')} value={text} onChangeText={setText} multiline />
           <Button label={t('coach.send')} size="sm" disabled={waiting || text.trim() === ''} onPress={submit} />
         </View>
       </KeyboardAvoidingView>
@@ -203,16 +231,41 @@ function spokenOf(message: Message): string {
     return items.map(mealItem).join(' ');
   }
   const { said, standard } = message;
-  const words = [...(said.heading === undefined ? [] : [t(said.heading)]), ...said.lines.map((line) => t(line.key, line.values))];
+  const words = [...(said.heading === undefined ? [] : [t(said.heading)]), ...(said.text === undefined ? [] : [said.text]), ...said.lines.map((line) => t(line.key, line.values))];
   return [...words, ...(standard ? [t('coach.standard')] : [])].join(' ');
 }
 
-function Bubble({ message, onRetry }: { message: Message; onRetry: (text: string, to: Mode) => void }) {
+/** What "Remember this" said back (coach.remember*). */
+const REMEMBER_WORDS: Record<Remembered, string> = {
+  saved: 'coach.remembered',
+  full: 'coach.rememberFull',
+  refused: 'coach.rememberRefused',
+  failed: 'coach.rememberFailed',
+};
+
+function Bubble({
+  message,
+  kept,
+  onRemember,
+  onRetry,
+}: {
+  message: Message;
+  kept: Remembered | undefined;
+  onRemember: () => void;
+  onRetry: (text: string, to: Mode) => void;
+}) {
   const { color } = useTheme();
   if (message.from === 'user') {
+    // The user's own words may be kept by the coach, only when they say so (ADR-092 #3); a chip's words are the app's, not theirs.
+    const said = kept === undefined ? null : <Text style={[styles.small, { color: color.muted }]}>{t(REMEMBER_WORDS[kept])}</Text>;
+    const way = message.typed !== true || kept === 'saved' ? null : <Button label={t('coach.remember')} variant="ghost" size="sm" onPress={onRemember} />;
     return (
-      <View style={[styles.user, { backgroundColor: color.surface }]}>
-        <Text style={[styles.text, { color: color.text }]}>{message.text}</Text>
+      <View style={styles.userSide}>
+        <View style={[styles.user, { backgroundColor: color.surface }]}>
+          <Text style={[styles.text, { color: color.text }]}>{message.text}</Text>
+        </View>
+        {way}
+        {said}
       </View>
     );
   }
@@ -230,9 +283,12 @@ function Bubble({ message, onRetry }: { message: Message; onRetry: (text: string
   }
   if ('meal' in message) return <MealSaid draft={message.meal} />;
   const { said, standard } = message;
+  // The model's words, checked on the server (ADR-092 #2), first; then the app's own lines. Built outside the JSX children (the raw-text guard).
+  const words = said.text === undefined ? null : <Text style={[styles.text, { color: color.text }]}>{said.text}</Text>;
   return (
     <View style={styles.coach}>
       <Heading words={said.heading} />
+      {words}
       {said.lines.map((line) => (
         <Text key={line.key} style={[styles.text, { color: color.text }]}>
           {t(line.key, line.values)}
@@ -318,6 +374,7 @@ const styles = StyleSheet.create({
     paddingBottom: tokens.space.sm,
     gap: tokens.space.sm,
   },
+  userSide: { alignSelf: 'flex-end', alignItems: 'flex-end', maxWidth: '85%', gap: tokens.space.xs },
   user: {
     alignSelf: 'flex-end',
     maxWidth: '85%',

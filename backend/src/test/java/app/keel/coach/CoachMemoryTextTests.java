@@ -56,6 +56,7 @@ class CoachMemoryTextTests {
         assertThat(real.historyTurnsInPrompt()).isPositive();
         assertThat(real.memoryMaxItems()).isPositive();
         assertThat(real.memoryMaxChars()).isPositive();
+        assertThat(real.freeTrialQuestions()).isEqualTo(3);
     }
 
     @Test
