@@ -18,7 +18,7 @@ import { tokens } from '@/theme/tokens';
 import { Hero } from '@/today/Hero';
 import { StateCard } from '@/today/StateCard';
 import type { TodayData } from '@/today/today';
-import { FoodLine } from '@/today/FoodLine';
+import { TodayBlock } from '@/today/TodayBlock';
 import { TodayCard } from '@/today/TodayCard';
 import { todayCardOf } from '@/today/todayWorkout';
 import { useToday } from '@/today/useToday';
@@ -133,6 +133,8 @@ export default function TodayScreen() {
         </View>
       );
     guideLines = { workout: workoutLine(card, read?.program ?? null, today) };
+    // Today's numbers right under the hero (K-1206): the food line with "Log", protein, steps and the weight trend are on the first screen.
+    const numbers = <TodayBlock budget={data.budget} targets={data.targets} starting={data.starting} stepsToday={data.stepsToday} weight={data.weight} units={units} />;
     const opened = openDay === null ? null : stripDays(monday, today, sessions, trainedDays(data.week?.workouts), loggedDays(data.week?.weighIns)).find((d) => d.date === openDay);
     if (opened !== undefined && opened !== null)
       daySheet = (
@@ -153,9 +155,9 @@ export default function TodayScreen() {
             check-in open the Monday block is the one hero: the check-in asks whether the state still holds (word budget). */}
         {stateCard}
         {call}
+        {numbers}
         {noProgram}
         {workout}
-        <FoodLine budget={data.budget} />
       </>
     );
   }

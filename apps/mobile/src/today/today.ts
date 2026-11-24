@@ -9,6 +9,7 @@ import type { components } from '@/api/schema';
 import { has } from '@/copy';
 import type { LocalRecord } from '@/sync/store';
 
+import type { WeightRead } from './numbers';
 import type { TodayParts } from './todayWorkout';
 
 type Schemas = components['schemas'];
@@ -34,6 +35,10 @@ export type TodayData = {
   budget: Loaded<Schemas['DayBudget']>;
   /** Today's steps as Apple Health counts them, read on the phone (K-404); null when Health was not read. */
   stepsToday?: number | null;
+  /** The weight trend's reads for the numbers block (K-1206): the weigh-in count, and the trend once the server says it is ready. */
+  weight?: WeightRead;
+  /** The starting plan's targets (K-1206): read only while /v1/targets has none (before the first call), for the steps target. */
+  starting?: Loaded<Schemas['StartingTarget']>;
   /** This week's check-in (K-501): offered on Today until it is answered. */
   checkIn?: Loaded<Schemas['CheckIn']>;
   /** A state the user declared, in force today (K-518): the week is paused. */

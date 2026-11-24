@@ -311,6 +311,18 @@
       "cardioDone": "Cardio done",
       "cardioOptional": "Cardio optional"
     },
+    "numbers": {
+      "protein": "{eaten} / {target} g",
+      "steps": "{steps} / {target}",
+      "stepsNone": "- / {target}",
+      "down": "-{delta}",
+      "up": "+{delta}",
+      "steady": "{delta}",
+      "weightLabel": "Weight, 7-day average {weight}",
+      "weightLabelChange": "Weight, 7-day average {weight}. {change}",
+      "weightWaitingHint": "Opens the weigh-in",
+      "weightHint": "Opens Progress"
+    },
     "food": {
       "left": "Food left",
       "over": "Over by",
@@ -454,29 +466,6 @@
     "applyRefused": "This call can't be applied any more. Your next check-in makes a new one.",
     "applyError": "Not applied: something went wrong on our side. Try again in a moment.",
       "none": "Your first call comes after your first weekly check-in."
-    },
-    "list": {
-      "title": "Today",
-      "weighIn": {
-        "done": "Weigh-in done",
-        "todo": "Weigh-in",
-        "todoNote": "Morning, before food",
-        "log": "Log weight"
-      },
-      "training": {
-        "exercises": "{count} exercises",
-        "rest": "Rest day",
-        "restWeek": "A week off training",
-        "none": "No program yet"
-      },
-      "steps": {
-        "title": "Steps",
-        "target": "Target {steps}",
-        "count": "{steps} of {target}"
-      },
-      "food": {
-        "title": "Food left today"
-      }
     },
     "chips": {
       "why": "Why this call?",
