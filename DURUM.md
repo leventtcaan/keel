@@ -5,7 +5,21 @@ guncelleme: 2026-11-24
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (24 Kas gece — Part 8a-1 BİTTİ)
+## ▶ DEVAM NOKTASI (24 Kas gece — Part 8a-2 BİTTİ)
+**Part 8a-2 ÇIKIŞ (main `4968800d`):** #737 K-1225 ana ekran kutuları (kilo "-4.7 kg", dönem sesli etikette; adım boşken hedef + bağlan simgesi; "+" boşluğu korunur) ·
+#738 + #741 K-1207 odak ekranı (set ekranı 32 → 10 öğe, dinlenme 38 → 7; bütün eylemler "More" sayfasında; dinlenme ayrı durum: dev geri sayım, altında −15/+15,
+tek Ready, son 3 sn hafif titreşim; vurgu yalnız ana düğme ve sayaç; RIR plan hedefi görünür seçili; ADR-075 Ek 10/11) · #739 + #744 K-1203 gözlem en çok 2 hafta
+(G2 K-8), "güvenle sabit" koruması `observation_flat_fraction: 0.25` simetrik · #740 K-1204 esnek veri yeterliliği (gerçek tartı sayısıyla gürültü payı, pencere ≤6 hafta;
+kesimde kalori düşüşü yalnız son iki hafta yoğun veriyle — kayıp tavanı seyrek veriyi göremez, K-1226) · #742 K-1205 %0,5/hafta taban, süreklilik şartı
+(`cut_pace_slow_weeks: 2`), adım 500 (G7 K-97), yalnız GS-23 değişti.
+**Kanıt:** CI hepsinde yeşil; simülatörde set ve dinlenme ekranı, geri sayım, ana ekran kutuları yürüdü. Bağımsız incelemeler: odak ekranında VoiceOver + RIR anlamı,
+motorda seyrek veride güvenlik körlüğü ve %24 yanlış "sabit" okuma → düzeltildi.
+**Levent'e (K1, toplu, Part 8a-3 başında):** PR gövdelerinde listeli: #740 golden GS-20/26/27/39 + DataSufficiency/WeighInWeek test yeniden yazımları ·
+#742 WeeklySpineTests 2 vaka · #744 GS-33/34 eski haline · #738/#741 ~190 mekanik test değişikliği (önce More/Ready'ye dokun). Bilgi: K-1205 kuralı K-97'nin 500 kcal adımı +
+güvenlik tavanı yüzünden 80 kg'da dar aralıkta, ≤60 kg'da hiç çalışmıyor (ADR-091 Ek 4) · tartı sayacı metni "N of 4" artık fazla söylüyor (izleyen iş).
+**Sıradaki: Part 8a-3** → `plan/oturum-promptlari/evre-8.md` › "Part 8a-3 istemi" (K-1226 seyrek tavan, K-1209 1.0.1 yayını, K-1210 yayın sonrası rutin).
+
+## (önceki) DEVAM NOKTASI (24 Kas gece — Part 8a-1 BİTTİ)
 **Part 8a-1 ÇIKIŞ (main `c8218d9f`):** #732 K-1206 ana ekranda yemek kalanı + protein + adım + kilo trendi (TodayList ölü kodu silindi) · #733 K-1208 yemek
 araması v2 (bütün sözcükler, ADR-085 sırası kesin katman, kişinin son yedikleri havuzda, 14 gün yarı ömür, favori, kendi yemekleri porsiyonuyla, yazım hatası
 geçişi daraltıldı, "egg" → Eggs) · #734 K-1201 kayıt bedava + karar ücretli sunucuda (ADR-091 Ek 1: `free_full_calls: 1`, kilitli karar saklanır ama

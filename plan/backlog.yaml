@@ -5741,7 +5741,7 @@ tasks:
     module: engine
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: []
     why: "Denetim M2: haftada 4 tartı şartı tek kaçan sabahta 3 check-in'i düşürüyor; haftada 1 tartan hiç kilo kararı almıyor (windows.yaml:31, GS-20)"
     acceptance:
@@ -5757,7 +5757,7 @@ tasks:
     module: engine
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-1204]
     why: "Denetim M3: 'hareket ediyor' 0,58 kg / 14 gün sabit; 90 kg'da haftada 0,3 kg sonsuza dek 'devam'; %0,5-1/hafta hiç zorlanmıyor"
     acceptance:
@@ -5790,7 +5790,7 @@ tasks:
     module: mobile
     type: feature
     size: L
-    status: todo
+    status: done
     depends_on: []
     why: "Denetim 1.3: set sırasında ~53, dinlenmede ~58 öğe; tek turkuaz beş rolde; Levent: 'çok yazı var, ADHD'm tutuyor'"
     acceptance:

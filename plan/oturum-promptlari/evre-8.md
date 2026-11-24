@@ -43,3 +43,12 @@ dinlenme ekranı), K-1225 (ana ekran kutuları cilası), K-1203 → K-1204 → K
 Part 8a-1'den Levent'e sorulacak 8 madde DURUM'da: part başında topla ve sor. Bitti = PR'lar birleşti, simülatörde set ekranında ≤10 öğe, motor
 kuralları onaylı ve golden senaryolar güncel, Part 8a-2 ÇIKIŞ yazıldı.
 ```
+
+## Part 8a-3 istemi (yeni oturuma yapıştır)
+```
+keel, Evre 8 Part 8a-3. Önce plan/oturum-promptlari/evre-8.md'yi ve DURUM › Part 8a-2 ÇIKIŞ'ı oku, ortak kurallara uy. Çalışma kopyası
+/Users/leventcanceylan/Projects/keel-main. Önce DURUM'daki K1 listesini Levent'e toplu sor. Kartlar: K-1226 (kayıp tavanı seyrek veriyle; kural-ekle, Levent onayı),
+K-1209 (1.0.1: EAS production build, TestFlight, Levent telefonda 5 dk, `plan/evre-8-terms-taslak.diff` terms metni Levent onayıyla, App Review notu:
+ücretsiz katman + hesap silme yolu; Submit Levent), K-1210 (Antigravity ile yayın sonrası geliştirici alışkanlıkları araştırması + doğrulama turu →
+docs/yayin-sonrasi-rutin.md). Bitti = 1.0.1 App Review'da, rehber hazır, Part 8a-3 ÇIKIŞ yazıldı; ardından 8b (Türkçe, dinlenme takibi, adım, günlük döngü, form gösterimi).
+```

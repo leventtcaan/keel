@@ -269,3 +269,4 @@
 - sıradaki: Part 8a-1 (K-1201, K-1202, K-1208, K-1206) yeni oturumda
 - AI: denetim ve sentez agent (Opus + 4 Sonnet), araştırma Antigravity (Gemini 3.8 Flash), görsel Codex (gpt-6-luna); Levent 4 karar verdi
 - ek (24 Kas gece, Part 8a-1): #732 K-1206, #733 K-1208, #734 K-1201, #735 K-1202 birleşti (ücretsiz çekirdek + kilitli karar + arama v2 + ana ekran sayıları); güvenlik incelemesi iki açığı yakaladı (hak sayacı sıfırlanması, başlıkla kilit atlama) → kapatıldı; canlı 1.0'ı kıracak sözleşme değişikliği yetenek başlığıyla korundu; simülatörde yürüdü. Sıradaki Part 8a-2
+- ek (24 Kas gece, Part 8a-2): #737 K-1225, #738/#741 K-1207 odak ekranı (32→10, 38→7 öğe), #739/#744 K-1203, #740 K-1204, #742 K-1205 birleşti; Levent motor kararlarını verdi (K-8'e sadık 2 hafta, pencere uzar, %0,5 taban) + seyrek tavan (K-1226); incelemeler canlıdaki gevşek "sabit" korumasını ve seyrek veride güvenlik körlüğünü yakaladı → düzeltildi. Sıradaki Part 8a-3 (1.0.1 yayını)
