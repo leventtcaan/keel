@@ -16,6 +16,12 @@ import org.springframework.context.annotation.Configuration;
 @EnableConfigurationProperties({CoachProperties.class, OpenAiProperties.class})
 class LanguageModelConfiguration {
 
+    /** The coach's product limits (data/parameters/coach.yaml): read once, a limit that is not there stops the start. */
+    @Bean
+    static CoachLimits coachLimits() {
+        return CoachLimits.fromClasspath();
+    }
+
     @Bean
     static LanguageModel languageModel(CoachProperties properties, @Value("${keel.production}") boolean production, ObjectProvider<OpenAiProperties> openai) {
         return languageModel(properties, production, openai.getIfAvailable());

@@ -74,6 +74,17 @@ value, whether the coaching works (see Technical records) — nothing else. *How
 your account, whichever comes first. Withdrawing deletes all of the above for good (a second pass a few minutes later
 catches anything that was being saved at that moment); the weekly calls stop until you allow it again.
 
+### Your conversation with the coach {#data-coach}
+
+What you write to the coach and what it answers (the words it said, or which of the app's own sentences it was), and the
+short sentences you asked it to remember about you, in your own words. The coach never remembers anything unless you tell
+it to: nothing is added by the model or by us.
+
+*Why:* so the coach can follow a conversation and know what you told it (explicit consent, GDPR Art. 9(2)(a): the
+conversation is about your calls, so it needs the health data consent). *How long:* the conversation 30 days, then a nightly
+cleanup deletes it, and you can clear it any time; what you asked it to remember until you delete it. Both are deleted at
+once if you withdraw the health data consent or the AI consent, or delete your account, and both are in your data export.
+
 ### Your training log {#data-training}
 
 Your workouts and sets (move, set type, load, reps, reps in reserve, side, supersets, your notes), your program and its
@@ -105,6 +116,8 @@ the import can carry body weight; imported sessions then stay in the training lo
 - Our server passes "account deleted" messages between its parts through an internal event log, so a deletion survives
   a restart. Each entry holds only the random account number, and is removed as soon as every part has handled it
   (usually within seconds; one that failed is retried, then removed).
+- For all users together, one row a month counts what the AI coach cost us (calls, tokens, money), so we can stay within a
+  monthly limit. It holds nothing about a person.
 - Our server's logs record each request's route, status and timing. They never record your account, what you sent, or any
   health data. The web server in front of it keeps no access log; its error messages can include an IP address. Logs are
   deleted after 14 days.
@@ -190,21 +203,22 @@ Nobody else receives your data. We don't use analytics, advertising or crash-rep
 
 ## The AI coach {#ai}
 
-Weekly calls are made by fixed rules, not by AI. An AI model is used only to sort the questions you write to the coach and
-to read meals you describe or photograph. **This is not active yet:** no AI provider receives any data today, and the AI
-consent can't be given.
+Weekly calls are made by fixed rules, not by AI. An AI model is used to answer the questions you write to the coach in
+words, and to read meals you describe or photograph. **This is not active yet:** no AI provider receives any data today, and
+the AI consent can't be given.
 
-When it is turned on, it will need a separate consent that names the provider and the data it receives: what you write to
-the coach, with the kind of this week's call and the rules behind it (no numbers, no dates); meal notes you type; and meal
-photos you choose to analyze (resized, with location and other metadata removed). Never your progress photos, weight, Apple
-Health data, name or email.
+When it is turned on, it will need a separate consent that names the provider, OpenAI, and the data it receives: what you
+write to the coach and the last few messages of the conversation; this week's call with the rules and numbers behind it,
+how this week's plan went (done of planned), your goal, experience and how many days a week you train; anything you asked
+the coach to remember; meal notes you type; and meal photos you choose to analyze (resized, with location and other metadata
+removed). Never your progress photos, weight log, Apple Health data, name or email. Every number the coach says is checked on
+our server against the numbers the rules gave; words that fail the check are not shown, and the app's own sentence is shown
+instead. The AI explains; it never makes or changes a call.
 
-We will use only a provider whose terms say it doesn't train its models on what it receives, and only once it has agreed
-to zero data retention, under which it keeps nothing beyond the narrow exceptions its terms allow; this policy will state
-those exceptions. Today's candidates set this out
-differently: some keep requests for up to 30 days to check for abuse unless zero data retention is agreed, and they grant
-it only on request. This policy will name the provider, its country and how your data is protected when it leaves the
-EU before the AI coach is turned on. You can withdraw the AI consent at any time in Settings.
+OpenAI's standard API terms apply: it doesn't train its models on what it receives through its API, and it may keep requests
+for a limited time (up to 30 days) to check for abuse. We have not asked for zero data retention. This policy will name the
+provider's country and how your data is protected when it leaves the EU before the AI coach is turned on. You can withdraw
+the AI consent at any time in Settings; withdrawing deletes your conversation and what you asked the coach to remember.
 
 ## How the weekly call is made {#automated-calls}
 

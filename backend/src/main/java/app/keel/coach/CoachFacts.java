@@ -30,6 +30,14 @@ final class CoachFacts {
     }
 
     static CoachFacts of(CallFacts call) {
+        return of(call, List.of());
+    }
+
+    /**
+     * With what the user asked the coach to remember about them (ADR-092 #3), in their own words: facts about the person, not
+     * numbers — the reply check lets the coach say none of theirs.
+     */
+    static CoachFacts of(CallFacts call, List<String> memory) {
         Map<String, Object> callPart = new LinkedHashMap<>();
         callPart.put("action", clean(call.action()));
         callPart.put("reasons", call.reasons().stream().map(rule -> {
@@ -47,6 +55,9 @@ final class CoachFacts {
         facts.putAll(clean(call.context()));
         List<BigDecimal> numbers = new ArrayList<>();
         collect(facts, numbers);
+        if (!memory.isEmpty()) {
+            facts.put("memory", List.copyOf(memory));
+        }
         return new CoachFacts("FACTS: " + JSON.writeValueAsString(facts), numbers);
     }
 

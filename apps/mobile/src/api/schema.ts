@@ -220,6 +220,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/consents/ai-offer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The provider and the data an AI consent would name now
+         * @description What a grant of THIRD_PARTY_AI must name (V2, Apple 5.1.2(i)): exactly the provider and the data the server sends. 404 while
+         *     the server has no AI provider (the AI consent cannot be given then).
+         */
+        get: operations["aiConsentOffer"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/consents/{kind}": {
         parameters: {
             query?: never;
@@ -1877,6 +1898,75 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/v1/coach/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The last messages of the conversation with the coach, oldest first
+         * @description What the user said and what the coach answered (the model's checked words, or the key of the engine's own sentence),
+         *     the last coach_history_page messages of the last coach_history_days days (data/parameters/coach.yaml; ADR-092 #3).
+         *     Gone with the account, with the AI consent and with the health data consent; in the data export.
+         */
+        get: operations["coachHistory"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete the whole conversation, for good
+         * @description What the coach was asked to remember is a separate list (/v1/coach/memory) and stays.
+         */
+        delete: operations["clearCoachHistory"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/coach/memory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What the coach was asked to remember about the user */
+        get: operations["coachMemory"];
+        put?: never;
+        /**
+         * The user's own "remember this" — the only way the coach remembers anything
+         * @description One short sentence in the user's words (coach_memory_max_chars), kept until they delete it. Words the coach itself could
+         *     not say — a forbidden phrase, a change of the call, blame — are refused (400); a full list is 409 CONFLICT. As the coach:
+         *     an active subscription (403 ENTITLEMENT_REQUIRED) and the AI consent (403 CONSENT_REQUIRED). The model never writes here.
+         */
+        post: operations["rememberForCoach"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/coach/memory/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Forget it; the next question is asked without it */
+        delete: operations["forgetCoachMemory"];
+        options?: never;
+        head?: never;
+        /** The user corrects their own sentence */
+        patch: operations["correctCoachMemory"];
         trace?: never;
     };
     "/v1/meals/parse": {
@@ -4114,6 +4204,48 @@ export interface components {
             copyKey?: string;
             call?: components["schemas"]["CoachCall"];
         };
+        CoachMessage: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            role: "USER" | "COACH";
+            /** @description The user's words, or the model's checked reply. Absent when the coach's answer was the engine's own sentence. */
+            text?: string;
+            /** @description The engine's own sentence or the topic's, in the app's copy (coach.answer.*, coach.topic.*), when there is no `text`. */
+            copyKey?: string;
+            /** @enum {string} */
+            topic?: "LESS" | "MORE" | "LATER" | "HUNGER" | "DOUBTS_DATA" | "FEELS_FINE" | "WORRY" | "FRUSTRATED" | "HEALTH" | "WHY" | "OFF_TOPIC";
+            /**
+             * Format: uuid
+             * @description The call the exchange was about.
+             */
+            decisionId?: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        CoachHistory: {
+            messages: components["schemas"]["CoachMessage"][];
+        };
+        CoachMemoryWords: {
+            /** @description One short sentence in the user's own words (at most coach_memory_max_chars). */
+            text: string;
+        };
+        CoachMemoryItem: {
+            /** Format: uuid */
+            id: string;
+            text: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        CoachMemory: {
+            items: components["schemas"]["CoachMemoryItem"][];
+            /** @description coach_memory_max_items. */
+            maxItems: number;
+        };
+        AiConsentOffer: {
+            provider: string;
+            dataTypes: string[];
+        };
         MealWords: {
             text: string;
         };
@@ -4581,6 +4713,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Consent"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    aiConsentOffer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The offer */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiConsentOffer"];
                 };
             };
             default: components["responses"]["Error"];
@@ -6632,6 +6785,141 @@ export interface operations {
                 };
             };
             429: components["responses"]["RateLimited"];
+            default: components["responses"]["Error"];
+        };
+    };
+    coachHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The conversation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoachHistory"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    clearCoachHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    coachMemory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The items, oldest first, and how many the coach can hold (coach_memory_max_items) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoachMemory"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    rememberForCoach: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CoachMemoryWords"];
+            };
+        };
+        responses: {
+            /** @description Remembered */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoachMemoryItem"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            default: components["responses"]["Error"];
+        };
+    };
+    forgetCoachMemory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Forgotten */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    correctCoachMemory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CoachMemoryWords"];
+            };
+        };
+        responses: {
+            /** @description Corrected */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoachMemoryItem"];
+                };
+            };
             default: components["responses"]["Error"];
         };
     };

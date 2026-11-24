@@ -11,3 +11,33 @@ parameters:
     tag: urun
     source: "plan/kararlar/ADR-092-konusan-koc.md#Karar"
     note: "Fail-safe: keel.coach fiyatları [doğrulanmadı] iken (openai.com/api/pricing'den kontrol edilene dek boş) her çağrı bu yüksek tahminle sayılır; bütçe asla 0 maliyetle işlemez. Fiyatlar girilince kullanılmaz."
+  - key: coach_history_days
+    value: 30
+    unit: days
+    tag: urun
+    source: "plan/kararlar/ADR-092-konusan-koc.md#Karar"
+    note: "Konuşma geçmişi bu kadar gün tutulur, sonra gece temizliği siler (ADR-092 #3). Hesap silinince ve rıza geri çekilince daha erken silinir. Öneri; Levent onaylar."
+  - key: coach_history_turns_in_prompt
+    value: 6
+    unit: count
+    tag: urun
+    source: "plan/kararlar/ADR-092-konusan-koc.md#Karar"
+    note: "Modele giden son mesaj sayısı (kullanıcı ve koç dahil; yalnız model cümlesi olanlar). Maliyeti sınırlar."
+  - key: coach_history_page
+    value: 50
+    unit: count
+    tag: urun
+    source: "plan/kararlar/ADR-092-konusan-koc.md#Karar"
+    note: "Sohbet ekranına bir seferde dönen en çok mesaj."
+  - key: coach_memory_max_items
+    value: 10
+    unit: count
+    tag: urun
+    source: "plan/kararlar/ADR-092-konusan-koc.md#Karar"
+    note: "Kullanıcının onayladığı hafıza maddesi üst sınırı (ADR-092 #3); dolunca yenisi eklenemez, kullanıcı birini siler."
+  - key: coach_memory_max_chars
+    value: 200
+    unit: chars
+    tag: urun
+    source: "plan/kararlar/ADR-092-konusan-koc.md#Karar"
+    note: "Bir hafıza maddesinin en çok uzunluğu; kullanıcının kendi cümlesi, kısa bir tercih."

@@ -31,8 +31,8 @@ HEALTHKIT = ROOT / "apps/mobile/src/health/healthKit.ts"
 SERVER_PROD_CONFIG = ROOT / "backend/src/main/resources/application-prod.yml"
 SERVER_CONFIG = ROOT / "backend/src/main/resources/application.yml"
 # The schemas whose account rows are health data and go with the HEALTH_DATA consent — the backend's own list
-# (ConsentWithdrawalDeletionTests.HEALTH_SCHEMAS).
-HEALTH_SCHEMAS = {"measurement", "nutrition", "decision"}
+# (ConsentWithdrawalDeletionTests.HEALTH_SCHEMAS). The coach's conversation is about the calls, so it goes with the health data (ADR-092 #3).
+HEALTH_SCHEMAS = {"measurement", "nutrition", "decision", "coach"}
 REQUIRED_SECTIONS = {"controller", "recipients", "ai", "automated-calls", "rights", "age", "security", "changes"}
 
 CLASSES = {"health", "training", "account", "subscription", "technical", "reference"}

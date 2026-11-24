@@ -7,7 +7,6 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.UUID;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -23,11 +22,6 @@ class CoachSpend {
     private final CoachProperties properties;
     private final CoachLimits limits;
     private final Clock clock;
-
-    @Autowired
-    CoachSpend(SpendLedger ledger, CoachProperties properties, Clock clock) {
-        this(ledger, properties, CoachLimits.fromClasspath(), clock);
-    }
 
     CoachSpend(SpendLedger ledger, CoachProperties properties, CoachLimits limits, Clock clock) {
         this.ledger = ledger;

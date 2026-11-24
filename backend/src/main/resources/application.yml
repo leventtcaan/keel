@@ -298,6 +298,9 @@ keel:
       api-key: ${KEEL_OPENAI_API_KEY}
       base-uri: https://api.openai.com/v1/
       timeout: 20s
+    # The conversation older than coach_history_days (data/parameters/coach.yaml) goes each night (CoachCleanup, ADR-092 #3).
+    history-cleanup: "0 15 3 * * *"
+    history-cleanup-zone: UTC
     # What each purpose sends, as the AI consent names the data (V2): a call goes only with data the user agreed to send.
     # The consent text and its list are the product owner's (K-511); these are the names the code asks for.
     data-types:
@@ -326,7 +329,7 @@ keel:
     versions:
       HEALTH_DATA: 5
       APPLE_HEALTH: 1-draft
-      THIRD_PARTY_AI: 1-draft
+      THIRD_PARTY_AI: 2-draft
 # V3 (K-215): failures are logged by SafeLog, by type and code location only. The container's and Spring MVC's own
 # loggers would print an exception's message, which may hold what the request carried; and the fallback error body
 # never repeats the path.
