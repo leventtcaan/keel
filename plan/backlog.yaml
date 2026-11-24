@@ -5725,7 +5725,7 @@ tasks:
     module: engine
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: []
     why: "Denetim M1: ilk açık ~5. hafta, ilk yargı ~7. hafta (DataSufficiency.java:53,58; GS-01/02)"
     acceptance:
@@ -5857,7 +5857,7 @@ tasks:
     module: mobile
     type: fix
     size: S
-    status: todo
+    status: done
     depends_on: [K-1206]
     why: "Simülatör (24 Kas, K-1206 sonrası): kilo kutusunda '-4.7' birimsiz ve dönemsiz; üç kutu satırın sağında boşluk bırakıyor; Health yokken adım '- / 10,000'"
     acceptance:
@@ -5867,6 +5867,22 @@ tasks:
       - "Simülatör kanıtı"
     tests: ["jest today-numbers", "simülatör"]
     refs: ["plan/evre-8-butun-urun.md", "plan/kararlar/ADR-091-evre-8-kararlari.md"]
+
+  - id: K-1226
+    title: "Kayıp tavanı seyrek tartıyla da çalışsın (güvenlik ağı)"
+    milestone: M12
+    module: engine
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-1204]
+    why: "K-1204 sonrası haftada 2 tartan ve haftada 1,2 kg kaybeden biri karar alıyor ama kayıp tavanı yoğun veri istediği için 9. haftaya kadar yakalanmıyor (GS-27). Levent 24 Kas: seyrekte de çalışsın"
+    acceptance:
+      - "kural-ekle: seyrek veride kayıp, tavanı gürültü payının üstünde aşıyorsa güvenlik kararı; kaynak SafetyNet kuralları + H1 §3.4; parametre dosyada"
+      - "GS-27 haftada 2 tartıyla tavanı erken yakalar; yoğun veride davranış değişmez"
+      - "property: seyrek veri yoğun veriden daha geç güvenlik kararı verebilir ama hiç vermemezlik yok"
+    tests: ["./gradlew test (SafetyNet, golden)", "property-based"]
+    refs: ["plan/evre-8-motor-onerisi.md", "plan/kararlar/ADR-091-evre-8-kararlari.md"]
 
 # 8b · 1.1
   - id: K-1211
