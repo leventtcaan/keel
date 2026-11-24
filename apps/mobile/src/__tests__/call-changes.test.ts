@@ -210,7 +210,7 @@ describe('the reasons, one line each', () => {
   test('no pace template writes a unit of its own: the unit comes with the number', () => {
     const short = (en as { decision: { ruleShort: Record<string, string> } }).decision.ruleShort;
     const paced = Object.entries(short).filter(([, line]) => line.includes('{kgPerWeek}'));
-    expect(paced.map(([rule]) => rule).sort()).toEqual(['bulk_stall', 'not_toward_goal', 'stall_window', 'toward_goal']);
+    expect(paced.map(([rule]) => rule).sort()).toEqual(['below_target_pace', 'bulk_stall', 'not_toward_goal', 'stall_window', 'toward_goal']);
     for (const [, line] of paced) expect(line).not.toMatch(/\b(kg|lb)\b/);
   });
 
