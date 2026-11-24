@@ -33,7 +33,7 @@ parameters:
     unit: weighins_per_week
     tag: literatur
     source: "arastirma/ham/H1-olcum.md#3.4"
-    note: "TÜRETİLMİŞ, ADR-020 ile onaylandı — araştırmada doğrudan sayı yok. Girdi: H1 §3.4, ardışık iki günün farkının SD'si %0,53 (80 kg'da 0,42 kg). Temkinli varsayım: tek tartı gürültüsü ≤0,42 kg (bağımsız okumada ≈0,30 olurdu; günler korelasyonlu olduğu için √n kazancı iyimser). Karşılaştırma: pencerenin ilk ve son haftasının ortalaması (erkekte 14 gün arayla). n=4 → farkın %95 hata payı 1,96·0,42·√(2/4) ≈ 0,58 kg ≈ 0,3 kg/hafta; n=2 → 0,82 kg, yavaş kaybı sabitten ayıramaz. Gürültü kiloyla ölçeklenir (120 kg: ≈0,44 kg/hafta). Kod her haftada ister (türetmeden katı): orta haftasız trend yönü kırılgan."
+    note: "TÜRETİLMİŞ, ADR-020 ile onaylandı — araştırmada doğrudan sayı yok. Girdi: H1 §3.4, ardışık iki günün farkının SD'si %0,53 (80 kg'da 0,42 kg). Temkinli varsayım: tek tartı gürültüsü ≤0,42 kg (bağımsız okumada ≈0,30 olurdu; günler korelasyonlu olduğu için √n kazancı iyimser). Karşılaştırma: pencerenin ilk ve son haftasının ortalaması (erkekte 14 gün arayla). n=4 → farkın %95 hata payı 1,96·0,42·√(2/4) ≈ 0,58 kg ≈ 0,3 kg/hafta; n=2 → 0,82 kg, yavaş kaybı sabitten ayıramaz. Gürültü kiloyla ölçeklenir (120 kg: ≈0,44 kg/hafta). Kod her haftada ister (türetmeden katı): orta haftasız trend yönü kırılgan. K-1204: bu sayı artık yalnız TAM PAY için tartı sayısıdır (NoiseMargin, kenar haftada en çok bu kadar sayılır); veri yeterliliği daha az tartıyla da geçer (min_weighins_floor_per_week), SafetyNet kayıp tavanı bu sayıyı aynen ister."
   - key: on_track_min_ratio
     value: 0.7
     unit: ratio
@@ -52,6 +52,24 @@ parameters:
     tag: literatur
     source: "arastirma/ham/H1-olcum.md#3.4"
     note: "TÜRETİLMİŞ (ADR-020 L-10). Karar penceresinin ilk ve son haftasının ortalama farkı bu payı hedef yönde aşmıyorsa kilo 'sabit' sayılır. min_weighins_per_week ile aynı hesap: 1,96 · 0,42 · √(2/4) ≈ 0,58 kg. Erkekte 14 gün arayla ≈ 0,3 kg/hafta ve üstü 'hareket'. Güray'da plato tanımı yok (G2 K-64 notu). 'Kilo sabit' sinyali (K-603) de bu payı kullanır: ilk ve son hafta farkı payı iki yönde de aşmıyorsa."
+  - key: min_weighins_floor_per_week
+    value: 1
+    unit: weighins_per_week
+    tag: urun
+    source: "arastirma/ham/H1-olcum.md#3.4"
+    note: "SEÇİM, ürün (K-1204, ADR-091 Ek 4); Güray tartı sıklığı konusunda sessiz (G2 B-7). Karar penceresinin her haftasında en az bu kadar tartı olmalı: boş hafta ortalama vermez. Bundan fazlası pencerenin gürültü payına yazılır (NoiseMargin), haftada 4'ten azı artık kendiliğinden 'veri yetersiz' değildir; pencere uzar. min_weighins_per_week artık 'tam pay için tartı sayısı'dır ve SafetyNet kayıp tavanı ile uyum/tutarlılık sayımı onu aynen kullanır."
+  - key: detectable_rate_kg_per_week
+    value: 0.34
+    unit: kg_per_week
+    tag: urun
+    source: "arastirma/ham/H1-olcum.md#3.4"
+    note: "SEÇİM, ürün (K-1204); kaynak yok. Pencerenin kenar haftalarının gürültü payı / (hafta sayısı − 1) bunu aşmıyorsa pencere yeterli sayılır, aşıyorsa bir hafta uzar (en çok decision_window_max_weeks). Her kenar haftada 3 tartıyla pay 0,67 ve 3 haftada 0,335 çıkar, yani 3+3 tartı hâlâ 3 haftalık pencereyi taşır; 2+2 tartıda 4, 1+1 tartıda 5 hafta gerekir. 4+4'te 0,58/2 = 0,29 (bugünkü davranış)."
+  - key: decision_window_max_weeks
+    value: 6
+    unit: weeks
+    tag: urun
+    source: "arastirma/ham/H1-olcum.md#3.4"
+    note: "SEÇİM, ürün (K-1204); kaynak yok. Seyrek tartılan pencere en çok bu kadar haftaya uzar; bu kadar haftada da yetmezse gerçek 'henüz karar yok' (U3). H1 §3.4: MacroFactor'un 'trend ~30 günde olgunlaşır' beyanı yalnız ticari, atıf değil."
   - key: observation_flat_fraction
     value: 0.25
     unit: ratio

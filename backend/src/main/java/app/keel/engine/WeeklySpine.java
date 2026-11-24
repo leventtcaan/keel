@@ -219,7 +219,9 @@ public final class WeeklySpine {
         static Window of(Snapshot snapshot, Parameters parameters) {
             List<BigDecimal> means = windowMeans(snapshot, parameters).stream()
                     .map(week -> week.kg().orElseThrow(() -> new IllegalStateException("A week of the window has no weigh-in"))).toList();
-            return new Window(means, line(ParameterKey.FLAT_MARGIN_KG, parameters), snapshot.phase() == Phase.CUT);
+            // The noise margin follows the weigh-ins of the window's edge weeks (K-1204): the full margin on dense data.
+            int[] counts = DecisionWindow.weekCounts(snapshot.weights(), snapshot.today(), means.size());
+            return new Window(means, NoiseMargin.of(counts[counts.length - 1], counts[0], parameters), snapshot.phase() == Phase.CUT);
         }
 
         BigDecimal first() {

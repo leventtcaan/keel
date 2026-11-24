@@ -88,28 +88,34 @@ class WeighInWeekTests {
     }
 
     @Test
-    void oneMorningShortNamesTheDayTheCallCanReadTheData() {
-        // Sunday with one weigh-in (Tuesday), the days before it weighed daily: 1 + 2 mornings left = 3 < 4.
+    void oneMorningShortNoLongerHoldsTheCallBack() {
+        // K1 (ADR-091 Ek 4, K-1204): the same week as before, 1 weighed + 2 mornings left = 3 < 4, used to name 19 Nov. The
+        // window now flexes with the edge weeks' weigh-ins (3 weigh-ins: margin 0.63 kg), so the call on Monday reads the data
+        // and no date is promised.
         WeightSeries weights = dailyUntilTuesday();
 
         WeighInWeek week = WeighInWeek.of(SUNDAY, CHECK_IN, LONG_AGO, weights, MALE);
 
         assertThat(week.weighedDays()).containsExactly(TUESDAY);
-        // By hand, weighing every morning from Monday 2 Nov: the block ending on a day D holds 4 from D = 5 Nov; the block
-        // before it (D-13..D-7) holds 2 Nov to D-7, so it needs D >= 12 Nov; and the oldest block (D-20..D-14) holds the days
-        // up to Tuesday 27 Oct and any from 2 Nov on, and has 3 or fewer on 14 to 18 Nov. The data stays enough from 19 Nov.
-        assertThat(week.callsFrom()).contains(LocalDate.of(2026, 11, 19));
+        assertThat(week.callsFrom()).isEmpty();
     }
 
     @Test
     void callsFromIsTheReviewDateOfTheCallMadeOnTheSameData() {
+        // K1 (ADR-091 Ek 4, K-1204): with the same dense history before the week, the call is made (no "not yet"), and no date
+        // is promised. Where the data cannot carry the call (a new user, below) the date is the call's own review date.
         WeightSeries weights = dailyUntilTuesday();
 
         Optional<LocalDate> callsFrom = WeighInWeek.of(SUNDAY, CHECK_IN, LONG_AGO, weights, MALE).callsFrom();
         Optional<Decision> call = DataSufficiency.check(new Snapshot(SUNDAY, Sex.MALE, Phase.CUT, LONG_AGO, weights), MALE);
 
-        assertThat(call).isPresent();
-        assertThat(callsFrom).contains(call.orElseThrow().nextReview());
+        assertThat(call).isEmpty();
+        assertThat(callsFrom).isEmpty();
+
+        WeightSeries none = series(List.of(weighIn(SUNDAY, "80.0")));
+        Optional<Decision> newUser = DataSufficiency.check(new Snapshot(SUNDAY, Sex.MALE, Phase.CUT, SUNDAY, none), MALE);
+        assertThat(newUser).isPresent();
+        assertThat(WeighInWeek.of(SUNDAY, CHECK_IN, SUNDAY, none, MALE).callsFrom()).contains(newUser.orElseThrow().nextReview());
     }
 
     @Test
