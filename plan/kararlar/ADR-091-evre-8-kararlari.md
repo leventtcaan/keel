@@ -62,3 +62,77 @@ Kod: `subscription/gate.ts`, `subscription/Entitlements`, `decision/` okuma uçl
 - Barkod, arama, kayıt, trend premium olmadan çalışır (sunucu testleri).
 - Her yeni motor kuralı `kural-ekle` testleriyle ve kaynağıyla; golden senaryolar güncellenir (beklenti değişikliği K1 listesinde Levent'e).
 - Her medya dosyasında `review: {by: levent, checklist: pass}` ve üretim notu; katalog testi.
+
+---
+
+## Ek 1 · K-1201: kayıt bedava, karar ücretli, sunucu yetkisi
+- **Durum:** KABUL (agent, teknik karar, ADR-019; ürün kararı #1 Levent'indir ve yukarıda kabul edildi) · **Tarih:** 2026-11-24 · **Kart:** K-1201 (#709)
+
+### Ne kilitlenir, ne kilitlenmez
+Bedava kalan (hiçbirine yetki kontrolü eklenmez): antrenman/set, yemek, barkod, arama, tartı, kardiyo kaydı; kilo trendi; hedefler
+(`/v1/targets`, `/v1/targets/starting`); onboarding'in başlangıç kararı; dışa aktarma ve hesap silme (App Review 5.1.1(v)).
+Kilitlenebilen tek şey: **tam karar** ("full call") — ayrıntısı, gerekçesi, `/basis`, `/what-if`, planı değiştirmesi.
+
+### "Tam karar" ayrımı
+Tam karar = kararın verildiği hafta **karar penceresi okunmuş** olan check-in kararı: `DecisionPipeline.windowRead(snapshot, parameters)`
+true (haftalık omurga çalıştı, K-519 aynı bayrağı "neden"in satırları için kullanır; ikinci bir koşul kopyası yok). Bu yüzden sayılmaz:
+ilk haftayı kapatan antrenman-yalnız karar (`firstWeek`), "bakımda gözlem" ve `window_not_full` / `data_insufficient` "henüz yok"
+kararları, bildirilen durum haftası, mini kesim dönüşü, faz kapısı, antrenman merdiveninin dinlenme/toparlanma çağrıları.
+Bunlar `windowRead = false` döner ve **asla kilitlenmez**. Güvenlik ağı (`SafetyNet`, kalıcı kayıtta `safety` işareti ya da
+`SafetyNet.RULES` içinde bir gerekçe; `SafetyCalls.restsOnTheSafetyNet`) ve döngü sorusu bekleyen karar (`CYCLE_CHECK_NEEDED`, V4) tam
+karar olsa bile **hiçbir hesapta kilitlenmez, her zaman uygulanır** (U6, sağlık) ve ücretsiz hakkı da harcamaz.
+
+### Ücretsiz hak
+`data/parameters/quota.yaml › free_full_calls: 1` (tag `urun`, kaynak ADR-091 #1; K2: kodda sayı yok). Hesabın ömür boyu ilk
+`free_full_calls` tam kararı kilitsizdir (ilk tam haftalık karar, ADR-091 #1). Sonrakiler, **o an** `Entitlements.active` değilse
+kilitlidir (`held_back`). Abonelik bitince yeni tam kararlar yine kilitlenir; hak yenilenmez (abone iken verilen tam kararlar da sayılır).
+Harcanan hak **sağlık verisinin dışında**, `subscription.free_call_use` sayacında tutulur (`FreeCallUse`, `checkIn` her tam karar
+saklandığında artırır): kararlar sağlık verisidir ve onay geri çekilince silinir; sayım onlardan yapılsaydı veriyi silmek hakkı yenilerdi.
+Yük azaltan çağrılar (`DELOAD`, `FULL_REST_WEEK`, `STOP_LOAD_INCREASE`, `FIX_RECOVERY`) tam karar sayılmaz: asla tutulmaz, hakkı harcamaz
+(yorgun kullanıcıya deload esirgenmez; **Levent'in onayı gerekir**; ADR-091 #1 "deload ücretli" demişti, bu istisna onunla çelişir).
+Sayaç yalnız hesapla birlikte silinir (V6), dışa aktarmada `freeCallsUsed`, veri envanterinde sağlık-dışı hesap verisi.
+
+### Kilit istemciye değil hesaba bağlı (sürüm uyumu ve tehdit modeli)
+Mağazadaki 1.0 kilitli görünümü tanımaz (`.action` okur). Ama `X-Keel-Features: locked-calls` başlığı istemcinin kendi sözüdür: kapı
+olamaz, yoksa başlığı göndermeyen herkes duvarı sonsuza dek aşar. Bu yüzden:
+- Başlığı bir kez gönderen hesap sunucuda **işaretlenir** (`subscription.locked_calls_client`, sağlık dışı hesap verisi, hesapla silinir;
+  `LockedCallsClients`). İşaretli hesapta başlık sonradan eksik olsa da kilit açıktır; check-in eskisi gibi tutar.
+- `quota.yaml › legacy_clients_unlocked_until` (tırnaklı tarih, başlangıç **2027-01-15**, **Levent'in onayı gerekir**; 1.0.1 benimsenince
+  Levent ayarlar): o günün sonuna dek hiç işaretlenmemiş hesap (yalnız 1.0 kullanan) bugünkü gibi sunulur: tutulmaz, tam görünüm,
+  403 yok. Tarihten sonra başlık önemsizdir: ücretsiz hakkı geçmiş her abonesiz hesap kilitlidir. Başlık adı ve belirteç de
+  `quota.yaml`'da (`client_features_header`, `locked_calls_feature_token`; K2); sözleşmede `ClientFeatures` isteğe bağlı başlık.
+- Kilitli bir kararı başlıksız (eski) istemci okuyunca indirgenmiş şekil **verilmez** (çökerdi): 1.0'ın zaten işlediği 403
+  `ENTITLEMENT_REQUIRED` (current, `/{id}`, `/basis`, `/what-if`, apply/undo/decline ve o kararı üreten check-in cevabı); defter o çağrıyı
+  atlar. Kilitsiz çağrılar tam görünümde gelir. Başlıklı (yeni) istemci indirgenmiş görünümü alır.
+- apply/undo/decline/basis/what-if tutulan çağrıda başlığa bakmadan 403 verir: abonesiz hesapta tutulan çağrı asla uygulanmaz.
+- Başlıksız ve işaretsiz istemcinin (tarihten önce) tam kararı da **sayılır** (hak cihazlar arasında tutarlı), yalnız tutulmaz.
+
+### Kilit nerede
+Karar yine **hesaplanır ve saklanır** (abone olunca açılsın). Kilit sunucuda, üç yerde:
+1. **Yazma:** `DecisionService.checkIn` kilitli kararı saklar ama `appliedByDefault` çağırmaz: plan hedefleri olduğu gibi kalır
+   (`application` PENDING ya da NOT_NEEDED, değişmez). `apply` / `undo` / `decline` kilitli karar için 403 `ENTITLEMENT_REQUIRED`.
+2. **Okuma:** `GET /v1/decisions/current`, `/v1/decisions/{id}` ve defter (`/v1/decisions`) kilitli çağrıyı indirgenmiş biçimde
+   döner: `id`, `madeOn`, `weekOf`, `nextCallOn`, `locked: true`; `action`, `changes`, `reasons`, `confidence`, `application` yok.
+   `/basis` ve `/what-if` 403 `ENTITLEMENT_REQUIRED` (mevcut hata şekli). Koç (`CallReader`) kilitli çağrıyı hiç görmez.
+3. **Hedefler:** kilitli karar uygulanmadığı için `/v1/targets` değişmez; bedava katman bugünkü planla çalışır.
+
+Kilit **okuma anında** hesaplanır (`held_back` ve abonelik şimdi), kayıtta kalıcı "kilitli" hüküm yok: abonelik webhook'u zaten
+`Entitlements`'ı belirler (ADR-056).
+
+### Abone olunca
+Karar okuma uçlarından biri ya da check-in cevabı çağrıldığında (`releaseHeld`, tek işlemde; hatası `HeldRelease` ile warn olarak, hesapsız
+loglanır ve okumayı düşürmez, çağrılar tutulu kalıp sonraki okumada yeniden denenir; abonelik süresi dolunca kilit geri gelir, yenilenince açılır): abone hesabın bütün `held_back` işaretleri kalkar; **yalnız
+en son çağrı ve yalnız içinde bulunulan hafta ise** normal varsayılan-uygula yoluyla uygulanır. Eski kilitli çağrılar geçmiş olarak
+görünür hâle gelir ama geriye dönük uygulanmaz (`apply` zaten yalnız en son çağrıyı kabul eder). Abonelik sonra düşse bile
+işareti kalkmış çağrılar açık kalır: ödenmiş şeydir.
+
+### Veri ve bağımlılık
+- Göçler: `V55__decision_held_back_calls.sql` (`decision.weekly_call.held_back`, varsayılan false), `V56__subscription_free_call_use.sql`
+  (sayaç). Sayaç eski hesaplar için 0'dan başlar: 1.0 kullanıcıları bir ücretsiz tam karar daha alır (kabul).
+- Modül sınırı: `decision` → `subscription` bağımlılığı `allowedDependencies`'e eklenir (K5; `subscription` `decision`'a bağlı değil, döngü yok).
+- Dışa aktarma: kullanıcının kendi verisi olarak kilitli çağrılar dahil **olduğu gibi** çıkar (veri sahibinin erişim hakkı, 5.1.1(v)).
+  Bu, ücret duvarını dışa aktarmayla aşmanın yolunu açık bırakır; **bilinçli** (erişim hakkı), Levent'in bilgisine.
+
+### Doğrulama
+`FreeCallsTests` (tam karar ayrımı, hak, güvenlik ağı hiç kilitlenmez), `LockedCallViewTests` (indirgenmiş şekil), `ClientFeaturesTests` (başlık, eski istemci), `FreeCallUseTests`, `LockedCallsApiTests` (eski istemci değişmez; sağlık verisi silinince hak yenilenmez;
+ikinci tam karar 403/okuma/uygulanmama, abone olunca açılma; veritabanı, CI), `ContractTests` (`locked` alanı), parametre kaynağı.

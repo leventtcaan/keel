@@ -12,4 +12,16 @@ class DecisionConfiguration {
     StateLengths stateLengths() {
         return StateLengths.fromClasspath();
     }
+
+    /** What a phone says it can show (ADR-091 Ek 1), from data/parameters/quota.yaml. */
+    @Bean
+    ClientFeatures clientFeatures() {
+        return ClientFeatures.fromClasspath();
+    }
+
+    /** How many full calls a free account keeps (ADR-091 Ek 1, K-1201), from data/parameters/quota.yaml. */
+    @Bean
+    FreeCalls freeCalls() {
+        return FreeCalls.fromClasspath();
+    }
 }

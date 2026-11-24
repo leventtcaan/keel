@@ -27,3 +27,27 @@ parameters:
     tag: urun
     source: "arastirma/ham/L3-ozellik-boslugu.md#4.2"
     note: "Durum modu (K-516, ADR-038 #5): bu kadar ardışık duraklayan haftadan sonra check-in tek bir neden-gösteren soru sorar ('hâlâ sürüyor mu?'). Kötüye kullanım sınırı: kararı ertelemek kullanıcının hakkı, değiştirmek değil (U2). Soru bütçesinin içinde."
+  - key: free_full_calls
+    value: 1
+    unit: count
+    tag: urun
+    source: "plan/kararlar/ADR-091-evre-8-kararlari.md#Ek 1"
+    note: "Kayıt bedava, karar ücretli (ADR-091 #1, K-1201): abonelik olmadan hesabın ömür boyu ilk bu kadar TAM kararı (karar penceresi okunmuş haftalık karar; ilk hafta antrenman kararı, gözlem, 'henüz yok' ve güvenlik ağı sayılmaz) kilitsizdir. Sonrakiler saklanır ama abonelik olana dek kilitli kalır."
+  - key: client_features_header
+    value: "X-Keel-Features"
+    unit: header_name
+    tag: urun
+    source: "plan/kararlar/ADR-091-evre-8-kararlari.md#Ek 1"
+    note: "Request header in which a client lists, comma separated, the features it can show (K-1201). Absent or without a token: the client is read as the one before the feature (1.0)."
+  - key: locked_calls_feature_token
+    value: "locked-calls"
+    unit: token
+    tag: urun
+    source: "plan/kararlar/ADR-091-evre-8-kararlari.md#Ek 1"
+    note: "The token of client_features_header that says the phone shows a locked call (LockedDecision). Only for such a client may the server hold a call back or answer 403 ENTITLEMENT_REQUIRED on a call's detail (ADR-091 Ek 1)."
+  - key: legacy_clients_unlocked_until
+    value: "2027-01-15"
+    unit: date
+    tag: urun
+    source: "plan/kararlar/ADR-091-evre-8-kararlari.md#Ek 1"
+    note: "Quoted date. A phone that never said it shows locked calls (the 1.0 in the stores) is served as before up to and including this day, for an account that never used a phone that says it. After it the header is irrelevant: the lock is on for every client (a 1.0 gets 403 ENTITLEMENT_REQUIRED on a held call). Set after 1.0.1 adoption (Levent's decision)."

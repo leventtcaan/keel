@@ -5,12 +5,17 @@ import app.keel.engine.WeekTally;
 import app.keel.shared.AccountId;
 import app.keel.shared.ApiException;
 import app.keel.shared.ErrorCode;
+import app.keel.subscription.LockedCallsClients;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import jakarta.servlet.http.HttpServletRequest;
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,9 +41,15 @@ class DecisionController {
     private static final int MAX_PAGE = 100;
 
     private final DecisionService decisions;
+    private final ClientFeatures features;
+    private final LockedCallsClients clients;
+    private final Clock clock;
 
-    DecisionController(DecisionService decisions) {
+    DecisionController(DecisionService decisions, ClientFeatures features, LockedCallsClients clients, Clock clock) {
         this.decisions = decisions;
+        this.features = features;
+        this.clients = clients;
+        this.clock = clock;
     }
 
     @GetMapping("/v1/check-ins/current")
@@ -47,13 +58,17 @@ class DecisionController {
     }
 
     @PostMapping("/v1/check-ins/current/answers")
-    Map<String, Object> answer(AccountId account, @RequestBody CheckInAnswers answers) {
+    Map<String, Object> answer(AccountId account, @RequestBody CheckInAnswers answers, HttpServletRequest request) {
         require(answers.clientId() != null && answers.weekOf() != null && answers.answers() != null);
-        return sent(account, decisions.checkIn(account, answers.clientId(), answers.weekOf(), answers.answers()));
+        HeldRelease.run(() -> decisions.releaseHeld(account));
+        Client client = client(account, request);
+        return sent(account, decisions.checkIn(account, answers.clientId(), answers.weekOf(), answers.answers(), client.enforced()), client);
     }
 
     @GetMapping("/v1/decisions")
-    DecisionPage ledger(AccountId account, @RequestParam(required = false) Integer limit, @RequestParam(required = false) UUID before) {
+    DecisionPage ledger(AccountId account, @RequestParam(required = false) Integer limit, @RequestParam(required = false) UUID before,
+            HttpServletRequest request) {
+        HeldRelease.run(() -> decisions.releaseHeld(account));
         int size = limit == null ? DEFAULT_PAGE : limit;
         require(size >= 1 && size <= MAX_PAGE);
         // One more than asked tells whether an older page exists.
@@ -61,8 +76,13 @@ class DecisionController {
         List<CallStore.Call> shown = page.subList(0, Math.min(size, page.size()));
         Optional<UUID> latest = decisions.latestId(account);
         Function<CallStore.Call, LocalDate> nextCall = decisions.nextCallDay(account);
+        Client client = client(account, request);
+        Set<UUID> locked = decisions.lockedIds(account);
         // Each call with the trend weight it read (K-611): the ledger says what came after it, never why.
-        return new DecisionPage(shown.stream().map(call -> {
+        return new DecisionPage(shown.stream().filter(call -> client.showsLock() || !locked.contains(call.id())).map(call -> {
+                    if (locked.contains(call.id())) {
+                        return lockedView(call, nextCall, client);
+                    }
                     Map<String, Object> view = sent(call, latest, decisions, nextCall);
                     decisions.trendRead(call).ifPresent(kg -> view.put("readTrendKg", kg));
                     return view;
@@ -71,19 +91,22 @@ class DecisionController {
     }
 
     @GetMapping("/v1/decisions/current")
-    Map<String, Object> current(AccountId account) {
+    Map<String, Object> current(AccountId account, HttpServletRequest request) {
+        HeldRelease.run(() -> decisions.releaseHeld(account));
         CallStore.Call call = decisions.current(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
-        return sent(call, Optional.of(call.id()), decisions, decisions.nextCallDay(account));
+        return sent(account, call, client(account, request));
     }
 
     @GetMapping("/v1/decisions/{id}")
-    Map<String, Object> call(AccountId account, @PathVariable UUID id) {
-        return sent(account, decisions.find(account, id).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND)));
+    Map<String, Object> call(AccountId account, @PathVariable UUID id, HttpServletRequest request) {
+        HeldRelease.run(() -> decisions.releaseHeld(account));
+        return sent(account, decisions.find(account, id).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND)), client(account, request));
     }
 
     /** Contract DecisionBasis (K-519): the rows "Why this call" shows — health data, behind the consent like the call. */
     @GetMapping("/v1/decisions/{id}/basis")
-    DecisionBasis basis(AccountId account, @PathVariable UUID id) {
+    DecisionBasis basis(AccountId account, @PathVariable UUID id, HttpServletRequest request) {
+        HeldRelease.run(() -> decisions.releaseHeld(account));
         return decisions.basis(account, id).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
     }
 
@@ -92,7 +115,8 @@ class DecisionController {
      * week. Not for a safety call: it says nothing of why (ADR-028 #24), and an example would.
      */
     @GetMapping("/v1/decisions/{id}/what-if")
-    Map<String, Object> whatIf(AccountId account, @PathVariable UUID id) {
+    Map<String, Object> whatIf(AccountId account, @PathVariable UUID id, HttpServletRequest request) {
+        HeldRelease.run(() -> decisions.releaseHeld(account));
         return decisions.whatIf(account, id).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
     }
 
@@ -107,18 +131,19 @@ class DecisionController {
     }
 
     @PostMapping("/v1/decisions/{id}/apply")
-    PlanTargets apply(AccountId account, @PathVariable UUID id) {
+    PlanTargets apply(AccountId account, @PathVariable UUID id, HttpServletRequest request) {
+        HeldRelease.run(() -> decisions.releaseHeld(account));
         return decisions.apply(account, id);
     }
 
     @PostMapping("/v1/decisions/{id}/undo")
-    PlanTargets undo(AccountId account, @PathVariable UUID id) {
+    PlanTargets undo(AccountId account, @PathVariable UUID id, HttpServletRequest request) {
         return decisions.undo(account, id);
     }
 
     /** "Keep last week's plan" (K-963, ADR-077 #3); "Use this call" is apply. */
     @PostMapping("/v1/decisions/{id}/decline")
-    PlanTargets decline(AccountId account, @PathVariable UUID id) {
+    PlanTargets decline(AccountId account, @PathVariable UUID id, HttpServletRequest request) {
         return decisions.decline(account, id);
     }
 
@@ -168,9 +193,37 @@ class DecisionController {
         return decisions.startingTarget(account);
     }
 
+    /** What the calling phone is, as the lock sees it (ADR-091 Ek 1). */
+    private record Client(boolean showsLock, boolean enforced) {
+    }
+
+    /**
+     * The phone that says it shows a locked call (and so marks the account for good) gets the locked view; the lock is on for it,
+     * for any account marked so, and for everyone after the cutoff, header or not (the header is the client's word, not a gate).
+     */
+    private Client client(AccountId account, HttpServletRequest request) {
+        boolean shows = features.showsLockedCalls(request);
+        if (shows) {
+            clients.mark(account);
+        }
+        return new Client(shows, features.enforced(shows, clients.marked(account), LocalDate.ofInstant(clock.instant(), ZoneOffset.UTC)));
+    }
+
+    /** A held call: the reduced view for a phone that shows it; for one that does not (the 1.0) the error it already handles. */
+    private static Map<String, Object> lockedView(CallStore.Call call, Function<CallStore.Call, LocalDate> nextCall, Client client) {
+        if (!client.showsLock()) {
+            throw new ApiException(ErrorCode.ENTITLEMENT_REQUIRED);
+        }
+        return LockedCall.view(call.id(), call.madeOn(), call.weekOf(), nextCall.apply(call));
+    }
+
     /** Contract Decision as the app reads it: the kept call, and whether "Keep last week's plan" may be offered (K-963). */
-    private Map<String, Object> sent(AccountId account, CallStore.Call call) {
-        return sent(call, decisions.latestId(account), decisions, decisions.nextCallDay(account));
+    private Map<String, Object> sent(AccountId account, CallStore.Call call, Client client) {
+        Function<CallStore.Call, LocalDate> nextCall = decisions.nextCallDay(account);
+        if (decisions.locked(account, call)) {
+            return lockedView(call, nextCall, client);
+        }
+        return sent(call, decisions.latestId(account), decisions, nextCall);
     }
 
     private static Map<String, Object> sent(CallStore.Call call, Optional<UUID> latest) {

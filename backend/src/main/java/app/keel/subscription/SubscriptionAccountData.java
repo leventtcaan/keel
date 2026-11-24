@@ -20,14 +20,18 @@ import org.springframework.stereotype.Component;
 class SubscriptionAccountData implements AccountDataExport {
 
     private final JdbcClient jdbc;
+    private final FreeCallUse uses;
+    private final LockedCallsClients clients;
 
-    SubscriptionAccountData(JdbcClient jdbc) {
+    SubscriptionAccountData(JdbcClient jdbc, FreeCallUse uses, LockedCallsClients clients) {
+        this.clients = clients;
         this.jdbc = jdbc;
+        this.uses = uses;
     }
 
     @ApplicationModuleListener
     void on(AccountDeletionRequested deletion) {
-        for (String table : new String[] {"subscription.daily_use", "subscription.subscription", "subscription.webhook_event"}) {
+        for (String table : new String[] {"subscription.daily_use", "subscription.free_call_use", "subscription.locked_calls_client", "subscription.subscription", "subscription.webhook_event"}) {
             jdbc.sql("delete from " + table + " where account_id = :account").param("account", deletion.account().value()).update();
         }
     }
@@ -48,6 +52,13 @@ class SubscriptionAccountData implements AccountDataExport {
                     entry.put("used", row.getInt("used"));
                     return entry;
                 }).list());
+        long freeCalls = uses.used(account);
+        if (freeCalls > 0) {
+            section.put("freeCallsUsed", freeCalls);
+        }
+        if (clients.marked(account)) {
+            section.put("lockedCallsClient", true);
+        }
         // What is kept, nothing more: an account without a subscription has no part for it (no empty entries).
         jdbc.sql("select status, access_until, last_event_at, answered_at from subscription.subscription where account_id = :account")
                 .param("account", account.value()).query((row, n) -> {
