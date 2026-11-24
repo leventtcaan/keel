@@ -62,8 +62,11 @@ public record WeighInWeek(LocalDate from, LocalDate to, List<LocalDate> weighedD
         LocalDate firstLeft = today.isAfter(from) ? today : from;
         long left = firstLeft.datesUntil(checkIn.plusDays(1)).filter(day -> !weighed.contains(day)).count();
         int needed = parameters.wholeNumber(ParameterKey.MIN_WEIGHINS_PER_WEEK);
+        // K-1204: a block under the full count no longer holds the call back by itself (the window flexes); a date is promised
+        // only when the data still cannot carry the call on the check-in day, and then it is the call's own review date.
         Optional<LocalDate> callsFrom = weighed.size() + left < needed
                 ? Optional.of(DataSufficiency.earliestEnoughDay(today, planStart, phase, observingMaintenance, weights, parameters))
+                        .filter(day -> day.isAfter(checkIn))
                 : Optional.empty();
         return new WeighInWeek(from, checkIn, weighed, needed, callsFrom);
     }

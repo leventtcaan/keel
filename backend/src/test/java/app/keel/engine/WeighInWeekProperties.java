@@ -42,13 +42,17 @@ class WeighInWeekProperties {
     }
 
     @Property
-    void aDateIsPromisedExactlyWhenTheMinimumCannotBeReached(@ForAll("weeks") Week week) {
+    void aDateIsPromisedOnlyWhenTheMinimumCannotBeReached(@ForAll("weeks") Week week) {
+        // K1 (ADR-091 Ek 4, K-1204): was "exactly when". With dense history before the block the window flexes, so a short block
+        // no longer holds the call back by itself; a date can only be promised for a block that cannot reach the full count.
         WeighInWeek result = WeighInWeek.of(week.today(), CHECK_IN, LONG_AGO, week.history(), P);
 
         long mornings = week.today().datesUntil(CHECK_IN.plusDays(1)).filter(day -> !week.weighed().contains(day)).count();
         boolean cannotReach = week.weighed().size() + mornings < NEEDED;
         Statistics.collect(cannotReach ? "short" : "reachable");
-        assertThat(result.callsFrom().isPresent()).isEqualTo(cannotReach);
+        if (result.callsFrom().isPresent()) {
+            assertThat(cannotReach).isTrue();
+        }
     }
 
     @Property

@@ -165,13 +165,15 @@ scenarios:
     expect: [observing, window_not_full, continue/toward_goal, "adjust_calories:500/genetic_limit"]
 
   - id: GS-20
-    title: "Beginner who weighs in twice a week: the engine keeps asking for data instead of guessing (U3)"
+    title: "Beginner who weighs in twice a week: the engine asks for data until the window is long enough, then decides (U3, K-1204)"
     user: {sex: male, phase: cut}
     # Weigh-ins on days 3 and 6: the first is on day 3, so the first 14 days run to day 16 — week 2 is still inside
-    # them; from week 3 every week has 2 < min_weighins_per_week 4.
+    # them. Week 3: 2+2 weigh-ins at the edges give a margin of 0.82 kg; over a 3-week window's two steps that is 0.41 kg a
+    # week > detectable_rate 0.34 (K-1204), so the window must be 4 weeks: week 3 still asks, week 4 (day 28) decides.
+    # (Before K-1204: data_insufficient every week from week 2, having 2 < 4.) MEDIUM: under dense_weighins_per_week.
     mornings: 2
     weeks: [80.0, 79.5, 79.0, 78.5]
-    expect: [observing, data_insufficient, data_insufficient, {is: data_insufficient, confidence: low}]
+    expect: [observing, data_insufficient, data_insufficient, {is: continue/toward_goal, confidence: medium}]
 
   - id: GS-21
     title: "Small older man flat on a cut: one step, then BMR is the floor and movement goes up (G2 K-11, E #10)"
@@ -220,27 +222,31 @@ scenarios:
   - id: GS-26
     title: "One sparse week: no call until it has left the window, and the promised day holds from week to week (U3)"
     user: {sex: male, phase: cut}
-    # Week 4 has weigh-ins on days 24 and 27 only. Weeks are counted back from the day looked at, so with daily
-    # weigh-ins from day 28 the window is readable on days 29-31 and 36-38 but not for good until day 43 (the oldest
-    # block, day X−20..X−14, holds 4 from X = 43). Week 4 (day 27): next 16; week 5 (day 34): next 9; week 6 (day
-    # 41): next 2 — the same day each time. Week 7 (day 48): the sparse week is out of the window.
+    # Week 4 has weigh-ins on days 24 and 27 only. K-1204: the margin follows the edge weeks' weigh-ins. Week 4: the 3-week
+    # window's edges hold 4 (the oldest block, capped) and 2 → 0.71 kg, over two steps 0.355 > 0.34 → the window extends to 4
+    # weeks (0.71 / 3 = 0.24 ≤ 0.34): a call, continue. Weeks 5-6: the sparse week is no longer an edge of a 3-week window,
+    # margin 0.58 → a call again; each review is 7 days. Week 7: all dense, HIGH.
+    # (Before K-1204: no call from week 4 to week 6, next 16 / 9 / 2.)
     weeks: [80.0, 79.4, 78.8, 78.2, 77.6, 77.0, 76.4]
     overrides: {4: {mornings: 2}}
-    expect: [observing, window_not_full, continue/toward_goal, {is: data_insufficient, next: 16},
-             {is: data_insufficient, next: 9}, {is: data_insufficient, next: 2},
+    expect: [observing, window_not_full, continue/toward_goal, {is: continue/toward_goal, next: 7},
+             {is: continue/toward_goal, next: 7}, {is: continue/toward_goal, next: 7},
              {is: continue/toward_goal, confidence: high}]
 
   - id: GS-27
     title: "Twice-a-week weigher losing 1.2 kg a week: invisible to the weekly cap, caught by the 8-week loss (J1 C6)"
     user: {sex: male, phase: cut, height: 190}
-    # Two weigh-ins a week are too few to read a weekly rate, so every week is data_insufficient. Week 9 (day 62): the
+    # K-1204: two weigh-ins a week no longer stop the weekly read: from week 4 (2+2 edge weigh-ins, a 4-week window) the
+    # spine decides (continue/toward_goal: it reads 1.2 kg a week as moving). The weekly loss cap still needs dense data
+    # (SafetyNet keeps its rule, ADR-091 Ek 4), so a 1.2 kg-a-week loss goes unnoticed by it in weeks 4-8: the open gap this
+    # scenario documents (the proposal's SafetyNet change is a separate approval). Week 9 (day 62): the
     # trend 8 weeks back (days 0-6) is 100.0, now 90.4: 9.6 kg > 8 % of 100 and still falling → +500. Week 10 holds at
     # 90.4: 8 weeks back is now 98.8, 8.4 kg > 7.9 still, but the loss has stopped — raising again would stack; the
     # new plan's window comes before the weigh-in count (DataSufficiency order).
     mornings: 2
     weeks: [100.0, 98.8, 97.6, 96.4, 95.2, 94.0, 92.8, 91.6, 90.4, 90.4]
-    expect: [observing, data_insufficient, data_insufficient, data_insufficient, data_insufficient, data_insufficient,
-             data_insufficient, data_insufficient, {is: "increase_calories:500/rapid_loss", confidence: high},
+    expect: [observing, data_insufficient, data_insufficient, continue/toward_goal, continue/toward_goal, continue/toward_goal,
+             continue/toward_goal, continue/toward_goal, {is: "increase_calories:500/rapid_loss", confidence: high},
              window_not_full]
 
   - id: GS-28
@@ -345,15 +351,14 @@ scenarios:
     expect: [observing, observing, observing, fat_estimate_needed, fat_estimate_needed]
 
   - id: GS-39
-    title: "A real first month: five weigh-ins most weeks, one forgotten week, half the meals logged once: the first call waits for week 5"
+    title: "A real first month: five weigh-ins most weeks, one forgotten week, half the meals logged once: a thin week does not stop the call (K-1204)"
     user: {sex: male, phase: cut, height: 178}
     # Weigh-ins: 5 a week (days 1, 2, 4, 5, 6 of each week); week 2 only 3 (days 9, 11, 13) < min_weighins_per_week 4.
-    # A sparse block stops a call until no block of the 21-day window is short. Week 3 (day 20): counting the days to
-    # come as daily, every block holds 4 on days 22-25, but on days 26-28 the oldest block (6-12, 7-13, 8-14) holds
-    # 3; from day 29 it holds 4 for good → next 9. Week 4 (day 27): again day 29 → next 2. Week 5 (day 34): blocks
-    # 14-20, 21-27, 28-34 hold 5 each (MEDIUM: 4 ≤ 5 < dense 6); means 86.3 → 85.5, 0.8 > 0.58 toward the goal.
+    # K-1204: the thin week is the window's middle week, so the edge weeks hold 5 and 5 (capped at 4): margin 0.58, a 3-week
+    # window carries the call. Week 3 (day 21): means 87.0 → 86.3, 0.7 > 0.58 toward the goal, continue, MEDIUM (the thin week is
+    # under dense 6). Week 4 the same. (Before K-1204: no call in weeks 3 and 4, next 9 / 2; the first call was week 5.)
     mornings: 5
     weeks: [87.0, 86.6, 86.3, 85.9, 85.5, 85.1]
     overrides: {2: {mornings: 3}, 3: {adherence: 0.6}}
-    expect: [observing, data_insufficient, {is: data_insufficient, next: 9}, {is: data_insufficient, next: 2},
+    expect: [observing, data_insufficient, continue/toward_goal, continue/toward_goal,
              {is: continue/toward_goal, confidence: medium}, continue/toward_goal]

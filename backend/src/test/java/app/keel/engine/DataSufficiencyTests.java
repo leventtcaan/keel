@@ -57,8 +57,9 @@ class DataSufficiencyTests {
 
         assertNoDecisionYet(decision, "data_insufficient");
         // Daily from tomorrow (TODAY+1): the 14-day rule passes on TODAY+14, and the window's oldest week
-        // (D-20..D-14) first holds 4 weigh-ins when D-14 - (TODAY+1) + 1 = 4 → D = TODAY+18.
-        assertThat(decision.orElseThrow().nextReview()).isEqualTo(TODAY.plusDays(18));
+        // (D-20..D-14) first holds 3 weigh-ins when D-14 - (TODAY+1) + 1 = 3 → D = TODAY+17. K1 (ADR-091 Ek 4, K-1204): 3 weigh-ins
+        // in an edge week are enough (margin 0.63 kg over 2 steps ≤ 0.34 a week); it used to need 4 → TODAY+18.
+        assertThat(decision.orElseThrow().nextReview()).isEqualTo(TODAY.plusDays(17));
     }
 
     @Test
@@ -79,9 +80,9 @@ class DataSufficiencyTests {
 
         assertNoDecisionYet(decision, "data_insufficient");
         // 13 days of data. Weighing daily from tomorrow, the first day all three checks pass is when the window's
-        // oldest week (D-20..D-14) holds 4 weigh-ins: D-14 - (TODAY-12) + 1 = 4 → D = TODAY+5.
-        // (It used to promise TODAY+1, when only the 14-day rule is met; the week rule then blocked again.)
-        assertThat(decision.orElseThrow().nextReview()).isEqualTo(TODAY.plusDays(5));
+        // oldest week (D-20..D-14) holds 3 weigh-ins: D-14 - (TODAY-12) + 1 = 3 → D = TODAY+4 (K1, ADR-091 Ek 4, K-1204: it needed 4,
+        // TODAY+5; before that it promised TODAY+1, when only the 14-day rule is met).
+        assertThat(decision.orElseThrow().nextReview()).isEqualTo(TODAY.plusDays(4));
     }
 
     @Test
@@ -93,8 +94,8 @@ class DataSufficiencyTests {
                 snapshot(Sex.MALE, LONG_AGO, daily(first, TODAY, "80.0")), MALE);
 
         assertNoDecisionYet(decision, "data_insufficient");
-        // 14 days of data: oldest window week needs 4 → D-14 - (TODAY-13) + 1 = 4 → D = TODAY+4.
-        assertThat(decision.orElseThrow().nextReview()).isEqualTo(TODAY.plusDays(4));
+        // 14 days of data: oldest window week needs 3 (K1, ADR-091 Ek 4, K-1204; it needed 4) → D-14 - (TODAY-13) + 1 = 3 → D = TODAY+3.
+        assertThat(decision.orElseThrow().nextReview()).isEqualTo(TODAY.plusDays(3));
     }
 
     @Test
@@ -168,42 +169,43 @@ class DataSufficiencyTests {
     // ── weigh-ins per week inside the window ────────────────────────────────────────────────────────────────
 
     @Test
-    void aWeekWithTooFewWeighInsLeavesTheWindowUnreadable() {
-        Optional<Decision> decision = DataSufficiency.check(
-                snapshot(Sex.MALE, LONG_AGO, withOneWeekHaving(MIN_PER_WEEK - 1)), MALE);
-
-        assertNoDecisionYet(decision, "data_insufficient");
-        // Oldest week has 3 (TODAY-20..-18), then 4 empty days, then daily from TODAY-13. The oldest block
-        // (D-20..D-14) first holds 4 on D = TODAY+4. (It used to promise TODAY+7 whatever the gap's position.)
-        assertThat(decision.orElseThrow().nextReview()).isEqualTo(TODAY.plusDays(4));
+    void aWeekWithOneFewerThanTheFullCountStillReads() {
+        // K1 (ADR-091 Ek 4, K-1204): 3 weigh-ins in the oldest week used to leave the window unreadable; the margin from the
+        // edge weeks' counts (4 and 3: 0.63 kg, 0.31 kg a week over two steps) is under detectable_rate_kg_per_week 0.34.
+        assertThat(DataSufficiency.check(snapshot(Sex.MALE, LONG_AGO, withOneWeekHaving(MIN_PER_WEEK - 1)), MALE)).isNotPresent();
     }
 
     @Test
-    void aThinWeekInsideTheWindowPromisesTheDayFromWhichTheDataStaysEnough() {
-        // Daily, except the week TODAY-13..-7 has only TODAY-13 and TODAY-10. Weeks are counted back from the day
-        // looked at, so with daily weigh-ins from tomorrow the check passes on TODAY+3..+5 (the thin week is split
-        // across two blocks), fails again on TODAY+6..+9 (the oldest block holds TODAY-14..-8 at most 3) and holds for
-        // good from TODAY+10 (the oldest block starts at TODAY-10). Promising TODAY+3 would break at the next weekly
-        // check-in, TODAY+7.
+    void aWeekWithTwoWeighInsAtTheEdgeLeavesTheWindowUnreadable() {
+        // A plan of exactly the 3 weeks: the window cannot extend to 4 (it would reach before the plan), so 2 + 4 weigh-ins stay short.
+        Optional<Decision> decision = DataSufficiency.check(snapshot(Sex.MALE, TODAY.minusDays(MALE_WINDOW - 1), withOneWeekHaving(2)), MALE);
+
+        assertNoDecisionYet(decision, "data_insufficient");
+        // Oldest week has 2 (TODAY-20, -19), then 5 empty days, then daily from TODAY-13. Its block (D-20..D-14) holds 3 from
+        // D = TODAY+3 (-17..-11 holds -13, -12, -11) and 4 after; margin(4,3) 0.63 over 2 steps ≤ 0.68.
+        assertThat(decision.orElseThrow().nextReview()).isEqualTo(TODAY.plusDays(3));
+    }
+
+    @Test
+    void aThinMiddleWeekDoesNotBlockTheWindow() {
+        // K1 (ADR-091 Ek 4, K-1204): the week TODAY-13..-7 has two weigh-ins; the edge weeks are dense, so the margin is the
+        // full 0.58 kg and every week has the floor of one. It used to promise TODAY+10.
         List<WeighIn> weighIns = new ArrayList<>(daily(LONG_AGO, TODAY.minusDays(14), "80.0"));
         weighIns.add(weighIn(TODAY.minusDays(13), "80.0"));
         weighIns.add(weighIn(TODAY.minusDays(10), "80.0"));
         weighIns.addAll(daily(TODAY.minusDays(6), TODAY, "80.0"));
 
-        Optional<Decision> decision = DataSufficiency.check(snapshot(Sex.MALE, LONG_AGO, weighIns), MALE);
-
-        assertNoDecisionYet(decision, "data_insufficient");
-        assertThat(decision.orElseThrow().nextReview()).isEqualTo(TODAY.plusDays(10));
+        assertThat(DataSufficiency.check(snapshot(Sex.MALE, LONG_AGO, weighIns), MALE)).isNotPresent();
     }
 
     @ParameterizedTest(name = "{0}, week {1} back")
     @MethodSource("everyWeekOfEveryWindow")
-    void aThinWeekAnywhereInTheWindowBlocks(Sex sex, int weeksBack) {
+    void anEmptyWeekAnywhereInTheWindowBlocks(Sex sex, int weeksBack) {
         // weeksBack 0 is the current week: a user who stopped weighing this week is not judged on stale data.
         LocalDate thinEnd = TODAY.minusDays(7L * weeksBack);
         LocalDate thinStart = thinEnd.minusDays(6);
         List<WeighIn> weighIns = new ArrayList<>(daily(LONG_AGO, thinStart.minusDays(1), "70.0"));
-        weighIns.addAll(daily(thinStart, thinStart.plusDays(MIN_PER_WEEK - 2), "70.0"));
+        // K1 (ADR-091 Ek 4, K-1204): the week has no weigh-in at all; one with 3 used to block.
         if (weeksBack > 0) {
             weighIns.addAll(daily(thinEnd.plusDays(1), TODAY, "70.0"));
         }

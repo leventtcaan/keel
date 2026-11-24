@@ -56,20 +56,26 @@ public final class DataSufficiency {
             return Optional.of(new Gap(DATA_INSUFFICIENT, MEASUREMENT));
         }
 
-        int window = DecisionWindow.days(phase, observing, planStart, today, flat, parameters);
+        int window = DecisionWindow.baseDays(phase, observing, planStart, today, flat, parameters);
         if (today.isBefore(planStart.plusDays(window - 1L))) {
             return Optional.of(new Gap(WINDOW_NOT_FULL, CYCLE_WINDOW));
         }
 
-        int minPerWeek = parameters.wholeNumber(ParameterKey.MIN_WEIGHINS_PER_WEEK);
-        // Whole weeks counted back from today; days of the window beyond the last whole week are not checked.
-        for (int week = 0; week < window / DAYS_PER_WEEK; week++) {
-            LocalDate weekEnd = today.minusDays((long) week * DAYS_PER_WEEK);
-            if (weights.countBetween(weekEnd.minusDays(DAYS_PER_WEEK - 1L), weekEnd) < minPerWeek) {
-                return Optional.of(new Gap(DATA_INSUFFICIENT, MEASUREMENT));
+        if (DecisionWindow.observationIsTheWindow(phase, observing, planStart, today, flat, parameters)) {
+            // The first deficit's read of the observation needs the full count in each of its weeks (K-1203).
+            int minPerWeek = parameters.wholeNumber(ParameterKey.MIN_WEIGHINS_PER_WEEK);
+            // Whole weeks counted back from today; days of the window beyond the last whole week are not checked.
+            for (int count : DecisionWindow.weekCounts(weights, today, window / DAYS_PER_WEEK)) {
+                if (count < minPerWeek) {
+                    return Optional.of(new Gap(DATA_INSUFFICIENT, MEASUREMENT));
+                }
             }
+            return Optional.empty();
         }
-        return Optional.empty();
+        // K-1204: every week has a weigh-in, and the edge weeks' noise margin fits in the window's weekly steps; a window
+        // that is too noisy extends, up to decision_window_max_weeks.
+        return DecisionWindow.sufficientWeeks(window / DAYS_PER_WEEK, planStart, today, weights, parameters).isPresent()
+                ? Optional.empty() : Optional.of(new Gap(DATA_INSUFFICIENT, MEASUREMENT));
     }
 
     /**
@@ -94,7 +100,8 @@ public final class DataSufficiency {
             Parameters parameters) {
         int daysToPlanStart = (int) Math.max(0, ChronoUnit.DAYS.between(today, planStart));
         int horizon = daysToPlanStart + Math.max(parameters.wholeNumber(ParameterKey.NO_INTERPRETATION_DAYS),
-                parameters.wholeNumber(ParameterKey.DECISION_WINDOW_DAYS));
+                DAYS_PER_WEEK * Math.max(parameters.wholeNumber(ParameterKey.DECISION_WINDOW_DAYS) / DAYS_PER_WEEK,
+                        parameters.wholeNumber(ParameterKey.DECISION_WINDOW_MAX_WEEKS)));
         // Whether the observation reads as flat is judged on the weigh-ins there are; the days to come only add dates.
         boolean flat = DecisionWindow.confidentlyFlat(weights, today, parameters);
         List<WeighIn> weighIns = new ArrayList<>(weights.weighIns());
