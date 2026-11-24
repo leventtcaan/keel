@@ -93,13 +93,16 @@ class SparseWeighInsTests {
 
     // ── properties ──────────────────────────────────────────────────────────────────────────────────────────
 
-    /** Any pattern of weigh-in days over the last 6 weeks, and the plan's age. */
-    record Pattern(List<Integer> daysAgo, int planAge) {
+    /** Any pattern of weigh-in days over the last 6 weeks, a weight for each (random, 78 to 83 kg), and the plan's age. */
+    record Pattern(List<Integer> daysAgo, List<Integer> wobbleTenths, int planAge) {
 
         WeightSeries weights() {
             List<WeighIn> weighIns = new ArrayList<>(EngineFixtures.daily(LONG_AGO, TODAY.minusDays(43), "80.0"));
-            daysAgo.stream().sorted(java.util.Comparator.reverseOrder())
-                    .forEach(ago -> weighIns.add(new WeighIn(TODAY.minusDays(ago), new BigDecimal("80.0"))));
+            List<Integer> sorted = daysAgo.stream().sorted(java.util.Comparator.reverseOrder()).toList();
+            for (int i = 0; i < sorted.size(); i++) {
+                BigDecimal kg = BigDecimal.valueOf(780 + wobbleTenths.get(i % wobbleTenths.size()), 1);
+                weighIns.add(new WeighIn(TODAY.minusDays(sorted.get(i)), kg));
+            }
             return series(weighIns);
         }
     }
@@ -107,7 +110,8 @@ class SparseWeighInsTests {
     @Provide
     Arbitrary<Pattern> patterns() {
         return Arbitraries.integers().between(0, 42).set().ofMaxSize(43).flatMap(days ->
-                Arbitraries.integers().between(14, 80).map(age -> new Pattern(List.copyOf(days), age)));
+                Arbitraries.integers().between(0, 50).list().ofMinSize(1).ofMaxSize(43).flatMap(wobble ->
+                        Arbitraries.integers().between(14, 80).map(age -> new Pattern(List.copyOf(days), List.copyOf(wobble), age))));
     }
 
     @Property
@@ -139,6 +143,59 @@ class SparseWeighInsTests {
         assertThat(margin).isGreaterThanOrEqualTo(NoiseMargin.of(4, 4, MALE));
         assertThat(NoiseMargin.of(n1 + 1, n2, MALE)).isLessThanOrEqualTo(margin);
         assertThat(NoiseMargin.of(n1, n2 + 1, MALE)).isLessThanOrEqualTo(margin);
+    }
+
+    // ── a step down needs the data the loss cap reads (B1) ───────────────────────────────────────────────
+
+    private static Snapshot flatCut(WeightSeries weights, LocalDate planStart, double adherence) {
+        return new Snapshot(TODAY, Sex.MALE, Phase.CUT, planStart, weights, Optional.empty())
+                .withEnergy(new EnergyBudget(3200, 300)).withProfile(new Profile(30, 180)).withObservingMaintenance(false)
+                .withCheckIn(CheckIn.NONE.withAdherence(BigDecimal.valueOf(adherence)).withTraining(CheckIn.Training.STABLE));
+    }
+
+    @Test
+    void aOnceAWeekWeigherIsNeverCut() {
+        // Flat at 80.0, one weigh-in a week for 8 weeks: the window reads (5 weeks) and says "flat", but the cut waits.
+        LocalDate planStart = TODAY.minusDays(55);
+        WeightSeries weights = oneADay(TODAY.minusDays(56), TODAY, 7);
+
+        Decision decision = DecisionPipeline.decide(flatCut(weights, planStart, 0.9), MALE);
+
+        assertThat(decision.action()).isEqualTo(new Action.NoDecisionYet());
+        assertThat(decision.reasons().getFirst().rule().value()).isEqualTo("data_insufficient");
+    }
+
+    @Test
+    void denseDataStillGetsTheStep() {
+        LocalDate planStart = TODAY.minusDays(27);
+
+        Decision decision = DecisionPipeline.decide(flatCut(series(EngineFixtures.daily(planStart, TODAY, "80.0")), planStart, 0.9), MALE);
+
+        assertThat(decision.action()).isEqualTo(new Action.AdjustCalories(-500));
+    }
+
+    @Property
+    void noStepDownWithoutTwoDenseWeeks(@ForAll("patterns") Pattern pattern) {
+        WeightSeries weights = pattern.weights();
+        Snapshot snapshot = flatCut(weights, TODAY.minusDays(pattern.planAge() - 1L), 0.9);
+        Decision decision = DecisionPipeline.decide(snapshot, MALE);
+        int[] counts = DecisionWindow.weekCounts(weights, TODAY, 2);
+        boolean dense = counts[0] >= MALE.wholeNumber(ParameterKey.MIN_WEIGHINS_PER_WEEK) && counts[1] >= MALE.wholeNumber(ParameterKey.MIN_WEIGHINS_PER_WEEK);
+
+        if (!dense) {
+            assertThat(decision.action() instanceof Action.AdjustCalories(int kcal) && kcal < 0).isFalse();
+        }
+    }
+
+    @Property
+    void aWindowThatReadsIsFlatOrMovingOnItsOwnMargin(@ForAll("patterns") Pattern pattern) {
+        // Positive side with random weights: where the data carries a call, the call is a real one (not "not yet").
+        WeightSeries weights = pattern.weights();
+        LocalDate planStart = TODAY.minusDays(pattern.planAge() - 1L);
+        if (DataSufficiency.check(snapshot(planStart, weights), MALE).isEmpty()) {
+            Decision decision = DecisionPipeline.decide(flatCut(weights, planStart, 0.9), MALE);
+            assertThat(decision.reasons().getFirst().rule().value()).isNotIn("window_not_full");
+        }
     }
 
     private static WeightSeries oneADay(LocalDate from, LocalDate to, int every) {

@@ -126,6 +126,11 @@ public final class DecisionPipeline {
         if (need.direction() == CalorieDirection.UP) {
             return CalorieLadder.step(need, snapshot, 0, parameters); // no floor on the way up
         }
+        // A cut's step down needs the data the weekly loss cap reads (two dense weeks): sparse data may carry a call that
+        // changes nothing, never a deficit the cap cannot watch (K-1204, ADR-091 Ek 4).
+        if (snapshot.phase() == Phase.CUT && !DataSufficiency.denseForACut(snapshot, parameters)) {
+            return DataSufficiency.denseNeeded(snapshot);
+        }
         if (snapshot.profile().isEmpty()) {
             return missing(snapshot, PROFILE_NEEDED, RESTING_FORMULA);
         }

@@ -38,6 +38,23 @@ public final class DataSufficiency {
                 new CopyKey("decision.no_decision_yet." + gap.rule().value())));
     }
 
+    /**
+     * Whether each of the last two weeks has the full count of weigh-ins (min_weighins_per_week): what the weekly loss cap
+     * needs to see a loss (SafetyNet). A calorie step down is never made without it (K-1204, ADR-091 Ek 4; K-1226 may relax
+     * this): a cut taken on data the cap cannot watch is the one thing sparse reading must not allow.
+     */
+    static boolean denseForACut(Snapshot snapshot, Parameters parameters) {
+        int[] counts = DecisionWindow.weekCounts(snapshot.weights(), snapshot.today(), 2);
+        int full = parameters.wholeNumber(ParameterKey.MIN_WEIGHINS_PER_WEEK);
+        return counts[0] >= full && counts[1] >= full;
+    }
+
+    /** "Not yet": the data cannot carry a step down; looked at again at the next check-in. */
+    static Decision denseNeeded(Snapshot snapshot) {
+        return new Decision(new Action.NoDecisionYet(), List.of(new Reason(DATA_INSUFFICIENT, MEASUREMENT)), Confidence.LOW,
+                snapshot.today().plusDays(DAYS_PER_WEEK), new CopyKey("decision.no_decision_yet." + DATA_INSUFFICIENT.value()));
+    }
+
     private record Gap(RuleId rule, Source source) {
     }
 
