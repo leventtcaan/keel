@@ -154,13 +154,13 @@ describe('the hero right after onboarding: the user\'s own plan, tagged Yours (K
     expect(t('subscription.values.call', { day: 'Thursday' })).toBe('A call every Thursday, with the reason');
   });
 
-  test('three concrete benefits, in this order: the call, the weights set by set, cardio and food that adjust', async () => {
+  test('three concrete benefits, in this order: the call, that every call after the first is this, cardio and food that adjust', async () => {
     mockPreview = PREVIEW;
     await show();
-    expect(t('subscription.values.sets')).toBe('Your weights, set by set, from last time');
+    expect(t('subscription.values.after')).toBe('Every call after your first one');
     expect(t('subscription.values.adjust')).toBe('Cardio and food that adjust to your week');
     const texts = screen.getAllByText(/.*/).map((node) => String(node.props.children));
-    const at = [t('subscription.values.call', { day: 'Monday' }), t('subscription.values.sets'), t('subscription.values.adjust')].map((line) => texts.indexOf(line));
+    const at = [t('subscription.values.call', { day: 'Monday' }), t('subscription.values.after'), t('subscription.values.adjust')].map((line) => texts.indexOf(line));
     expect(at.every((i) => i >= 0)).toBe(true);
     expect([...at].sort((a, b) => a - b)).toEqual(at);
   });
@@ -269,7 +269,7 @@ describe('the plans are above the fold, and nothing hides behind the dock (evre 
     };
     [screen.toJSON()].flat().forEach(walk);
     const at = (match: string | RegExp) => words.findIndex((w) => (typeof match === 'string' ? w === match : match.test(w)));
-    const [yearly, monthly, benefit, timeline, terms] = [/^Yearly/, /^Monthly/, t('subscription.values.sets'), t('subscription.timeline.heading'), t('subscription.cancelNote')].map(at);
+    const [yearly, monthly, benefit, timeline, terms] = [/^Yearly/, /^Monthly/, t('subscription.values.after'), t('subscription.timeline.heading'), t('subscription.cancelNote')].map(at);
     expect([yearly, monthly, benefit, timeline, terms].every((i) => i >= 0)).toBe(true);
     expect(yearly).toBeLessThan(monthly);
     expect(monthly).toBeLessThan(benefit);

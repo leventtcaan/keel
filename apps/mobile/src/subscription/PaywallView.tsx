@@ -7,6 +7,7 @@ import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
+import { coachAvailable } from '@/food/aiLogging';
 import { useAppServices } from '@/services/ServicesProvider';
 import { stateWords } from '@/settings/SubscriptionSection';
 import { AccountButton, AccountSheet } from '@/subscription/AccountSheet';
@@ -190,15 +191,18 @@ export function Paywall({ required = false, onActive, preview = null }: Props) {
     // Three concrete lines. With calls: the call on the profile's own day (met later, with no plan just shown, without a day), the
     // weights from last time, and the cardio and food that adjust. Without calls (no health data consent): the program, the weights,
     // and the cardio only when the program sets some.
-    const sets: ValueRow = { icon: 'sets', words: t('subscription.values.sets') };
+    // What the subscription is now (ADR-091 #1): the weekly call, every week after the first. Logging, programs and weights are free,
+    // so they are not sold here; the coach only once it is on (aiLogging.ts), never as a promise.
+    const after: ValueRow = { icon: 'sets', words: t('subscription.values.after') };
     let values: ValueRow[];
     if (preview !== null && preview.firstCall === null) {
       const program: ValueRow = { icon: 'program', words: t(preview.own ? 'subscription.values.own' : 'subscription.values.built') };
       const other: ValueRow = { icon: 'call', words: t(preview.hasCardio ? 'subscription.values.cardio' : 'subscription.values.swap') };
-      values = [program, sets, other];
+      values = [program, after, other];
     } else {
       const call = preview === null ? t('subscription.values.weeklyCall') : t('subscription.values.call', { day: t(`onboarding.schedule.dayName.${preview.checkInDay}`) });
-      values = [{ icon: 'call', words: call }, sets, { icon: 'program', words: t('subscription.values.adjust') }];
+      const third: ValueRow = coachAvailable() ? { icon: 'program', words: t('subscription.values.coach') } : { icon: 'program', words: t('subscription.values.adjust') };
+      values = [{ icon: 'call', words: call }, after, third];
     }
     const choose = (id: string) => setStep((now) => (now.at === 'plans' && now.busy === null ? { ...now, chosen: id, note: null } : now));
     body = (

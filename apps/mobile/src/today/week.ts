@@ -10,7 +10,7 @@ import type { ApiClient } from '@/api/client';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 
-import { type Loaded, type TodayData, load, localDay } from './today';
+import { type Loaded, type LockedCall, type TodayData, load, localDay } from './today';
 
 type Schemas = components['schemas'];
 export type Weekday = Schemas['Weekday'];
@@ -105,6 +105,7 @@ export type Hero =
   | { kind: 'paused' }
   | { kind: 'monday'; week: number | null; questions: number }
   | { kind: 'call'; decision: Schemas['Decision']; declined: boolean; weighInWeek?: Schemas['WeighInWeek'] }
+  | { kind: 'locked'; call: LockedCall }
   | { kind: 'firstWeek'; firstCallOn: string | null; weighInWeek?: Schemas['WeighInWeek'] }
   | { kind: 'callsOff' }
   | { kind: 'none' };
@@ -128,6 +129,8 @@ export function heroOf(data: TodayData): Hero {
   const weighInWeek = data.firstWeeks?.state === 'ready' ? data.firstWeeks.value.weighInWeek : undefined;
   const counter = weighInWeek === undefined ? {} : { weighInWeek };
   if (decision.state === 'ready') return { kind: 'call', decision: decision.value, declined: decision.value.application.state === 'DECLINED', ...counter };
+  // A call the account has not unlocked (ADR-091 Ek 1): ready, nothing of what it says.
+  if (decision.state === 'locked') return { kind: 'locked', call: decision.value };
   if (decision.state === 'consent') return { kind: 'callsOff' };
   if (decision.state === 'none') {
     const firstCallOn = data.firstWeeks?.state === 'ready' ? (data.firstWeeks.value.firstCallOn ?? null) : null;
@@ -140,7 +143,7 @@ export function heroOf(data: TodayData): Hero {
  * Whether the hero is the weekly call itself, the part the first-use guide's "Your weekly call" step points at. "Calls are off", a paused
  * week and a week with nothing to show have a hero (or none) that is not a call: the guide leaves that step out (Evre 7).
  */
-export const guideCallStep = (hero: Hero): boolean => hero.kind === 'monday' || hero.kind === 'call' || hero.kind === 'firstWeek';
+export const guideCallStep = (hero: Hero): boolean => hero.kind === 'monday' || hero.kind === 'call' || hero.kind === 'locked' || hero.kind === 'firstWeek';
 
 export type WeekLogs = { workouts: Loaded<Schemas['Workout'][]>; weighIns: Loaded<Schemas['WeighIn'][]> };
 

@@ -12,6 +12,7 @@ import { CopyDay } from '@/food/CopyDay';
 import { DayStrip } from '@/food/DayStrip';
 import { DayTotals } from '@/food/DayTotals';
 import { copiedAt, changeMeal, deleteMeal, deletedMeal, deletedMeals, logMealAgain, removedItem, requestsOfMeal } from '@/food/mealActions';
+import { aiLoggingAvailable, photoSuggested } from '@/food/aiLogging';
 import { dayTitle, eatenAtFor } from '@/food/dayLabel';
 import { FoodList, type FoodRowData } from '@/food/FoodList';
 import { suggestionRow } from '@/food/foodRows';
@@ -244,6 +245,15 @@ export default function FoodScreen() {
             logLabel: t('food.suggestions.log', { name: one.name }),
           };
         });
+  // The meal log's upgrade moment (ADR-091 #1, K-1202): from the third meal of today, a photo or a sentence, while the AI is on. Off today:
+  // nothing is drawn, so no way leads to a screen that is not there.
+  const suggestPhoto =
+    data !== null && !needsConsent && isToday && data.meals !== null && photoSuggested({ meals: data.meals.length, available: aiLoggingAvailable() }) ? (
+      <View testID="photo-suggestion" style={styles.note}>
+        <Text style={[styles.text, { color: color.textSecondary }]}>{t('food.photoSuggestion.line')}</Text>
+        <Button label={t('food.photoSuggestion.open')} variant="ghost" size="sm" onPress={() => router.push('/meal-photo')} />
+      </View>
+    ) : null;
   const fits = fitRows.length === 0 ? null : <FoodList title={t('food.suggestions.title')} rows={fitRows} testID="fits" />;
   const dock =
     !needsConsent && data !== null ? (
@@ -263,6 +273,7 @@ export default function FoodScreen() {
         {noBudget}
         {fits}
         {meals}
+        {suggestPhoto}
         {offers}
         {copy}
         {problem !== null && <ProblemText style={[styles.text, { color: color.text }]}>{problem}</ProblemText>}

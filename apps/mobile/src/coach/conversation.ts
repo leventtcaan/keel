@@ -7,7 +7,7 @@
 import type { ApiClient } from '@/api/client';
 import type { components } from '@/api/schema';
 import { has } from '@/copy';
-import { chips, load, type Loaded, type TodayData } from '@/today/today';
+import { type CallRead, chips, load, type TodayData } from '@/today/today';
 
 type Schemas = components['schemas'];
 
@@ -65,10 +65,12 @@ export function coachChips(today: TodayData, day: string): string[] {
  * #24) and that the call stands, with the call; no call yet says so; a call that could not be read is not "none" — it
  * says it could not be read (and without the health data consent, that it needs it).
  */
-export function chipAnswer(chip: string, decision: Loaded<Schemas['Decision']>, date: DayWords, session?: string): Said {
+export function chipAnswer(chip: string, decision: CallRead, date: DayWords, session?: string): Said {
   if (chip === 'today.chips.why') {
     if (decision.state === 'none') return { lines: [{ key: 'coach.answer.no_call' }] };
     if (decision.state === 'consent') return { lines: [{ key: 'today.consent.body' }] };
+    // A call the account has not unlocked (ADR-091 Ek 1): that it is ready, nothing of what it says.
+    if (decision.state === 'locked') return { lines: [{ key: 'lockedCall.line', values: { date: date(decision.value.weekOf) } }] };
     // The call needs no subscription (ADR-056 #10): that answer here is one more call not read.
     if (decision.state === 'failed' || decision.state === 'subscription') return { lines: [{ key: 'coach.chip.unread' }] };
     const call = decision.value;

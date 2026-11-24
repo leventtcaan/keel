@@ -35,13 +35,14 @@ const mockGET = jest.fn(async (_path: string) => {
   return answer;
 });
 const mockBack = jest.fn();
-jest.mock('expo-router', () => ({ router: { back: () => mockBack(), push: () => {} } }));
+jest.mock('expo-router', () => ({ router: { back: () => mockBack(), push: () => {} }, useLocalSearchParams: () => ({}) }));
 let mockStore: SubscriptionStore;
 // One api for the screen's life, as the app's services are built once (a new one each render would open the paywall again).
 const mockApi = { GET: mockGET };
 const mockReport = jest.fn();
 const mockServices = {
   api: mockApi,
+  planPreviews: { current: () => null },
   get purchases() {
     return mockStore;
   },

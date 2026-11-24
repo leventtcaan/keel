@@ -41,7 +41,12 @@ class MobileParameterMirrorTests {
                 "rep_range_compound_min", "rep_range_compound_max", "rep_range_isolation_min", "rep_range_isolation_max");
         phone.forEach((key, value) -> {
             if (engine.containsKey(key)) {
-                assertThat(new BigDecimal(value.toString())).as(key).isEqualByComparingTo(new BigDecimal(engine.get(key).toString()));
+                // A number is compared as a number; a name or a token (the client features header, K-1202) as text.
+                if (value instanceof Number) {
+                    assertThat(new BigDecimal(value.toString())).as(key).isEqualByComparingTo(new BigDecimal(engine.get(key).toString()));
+                } else {
+                    assertThat(value).as(key).isEqualTo(engine.get(key));
+                }
             }
         });
     }

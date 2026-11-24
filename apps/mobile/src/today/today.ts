@@ -25,9 +25,26 @@ export type Loaded<T> =
   | { state: 'subscription' }
   | { state: 'failed'; problem: 'NoConnection' | 'ServerError' };
 
+/**
+ * A call as the server answered (CallView, ADR-091 Ek 1): the full Decision, or the locked one of an account that has not
+ * unlocked it. The two never share a type, so a reader cannot touch `action` or `reasons` without meeting `locked` first.
+ */
+export type LockedCall = Schemas['LockedDecision'];
+export type CallRead = Loaded<Schemas['Decision']> | { state: 'locked'; value: LockedCall };
+
+export function isLocked(call: Schemas['CallView']): call is LockedCall {
+  return 'locked' in call && call.locked === true;
+}
+
+/** Splits the locked call from the full ones, where the server's answer comes in. */
+export function readCall(loaded: Loaded<Schemas['CallView']>): CallRead {
+  if (loaded.state !== 'ready') return loaded;
+  return isLocked(loaded.value) ? { state: 'locked', value: loaded.value } : { state: 'ready', value: loaded.value };
+}
+
 export type TodayData = {
   consistency: Loaded<Schemas['Consistency']>;
-  decision: Loaded<Schemas['Decision']>;
+  decision: CallRead;
   program: Loaded<Schemas['Program']>;
   weighIns: Loaded<Schemas['WeighIn'][]>;
   targets: Loaded<Schemas['Targets']>;
@@ -82,7 +99,7 @@ export async function load<T>(request: () => Promise<Answer<T>>): Promise<Loaded
 
 /** Every part at once; `day` is today on the phone's calendar (YYYY-MM-DD). */
 export async function loadToday(api: ApiClient, day: string): Promise<TodayData> {
-  const [consistency, decision, program, weighIns, targets, budget, checkIn, state, prompts, firstWeeks] = await Promise.all([
+  const [consistency, call, program, weighIns, targets, budget, checkIn, state, prompts, firstWeeks] = await Promise.all([
     load(() => api.GET('/v1/consistency')),
     load(() => api.GET('/v1/decisions/current')),
     load(() => api.GET('/v1/program')),
@@ -94,7 +111,7 @@ export async function loadToday(api: ApiClient, day: string): Promise<TodayData>
     load(() => api.GET('/v1/prompts')),
     load(() => api.GET('/v1/first-weeks')),
   ]);
-  return { consistency, decision, program, weighIns, targets, budget, checkIn, state, prompts, firstWeeks };
+  return { consistency, decision: readCall(call), program, weighIns, targets, budget, checkIn, state, prompts, firstWeeks };
 }
 
 // "Mon, Sep 28": a calendar day with its weekday, in English like every word of the app, read as a date only.

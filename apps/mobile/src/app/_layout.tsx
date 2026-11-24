@@ -1,4 +1,5 @@
 import { useFonts } from 'expo-font';
+import { router } from 'expo-router';
 import { Stack } from 'expo-router/stack';
 import * as SplashScreen from 'expo-splash-screen';
 import { type ComponentProps, type ReactNode, useEffect } from 'react';
@@ -8,7 +9,7 @@ import { GuideProvider } from '@/guide/GuideProvider';
 import { previousScreenName, pushedScreen } from '@/navigation/pushed';
 import { SavedBanner, SavedProvider } from '@/saved/saved';
 import { ProgramChangesListener } from '@/train/ProgramChangesListener';
-import { ServicesProvider, useAppServices, useAppearance, useOnboarding, useSignedIn, useSubscriptionGate } from '@/services/ServicesProvider';
+import { ServicesProvider, useAppServices, useAppearance, useOnboarding, useSignedIn } from '@/services/ServicesProvider';
 import { fontAssets } from '@/theme/fonts';
 import { ThemeProvider, useTheme } from '@/theme/theme';
 
@@ -27,15 +28,27 @@ export const unstable_settings = { anchor: '(tabs)' };
 // (tabs)/_layout.tsx; the app opens on the first one, This week. Signed out, the only screen is sign-in (K-305): when the
 // session ends (sign-out, a refused refresh) the guarded screens leave the history and sign-in takes their place.
 // Signed in without a profile, the only screens are onboarding's (K-306); not known yet, the one that asks the server.
-// Onboarded but never subscribed, the only screen is the gate (K-706, ADR-058 › 107); not known yet, the gate asks.
+// Onboarded, the tabs: the paywall is a screen like any other, opened by a tap and closed again (ADR-091 #1, K-1202; it was the
+// only screen of an account that never subscribed, K-706, ADR-058 › 107).
 type ScreenOptions = ComponentProps<typeof Stack.Screen>['options'];
 type PushedOptions = Extract<ScreenOptions, (...args: never[]) => unknown>;
+
+/**
+ * Right after onboarding, the plans once, closable, with the plan the user just saw (ADR-072 #7 as a soft offer, ADR-091 #1): over the
+ * tabs, and never again by itself. The plan is kept in memory only, so a new launch has none and goes straight to the tabs.
+ */
+function FirstOffer({ active }: { active: boolean }) {
+  const { planPreviews } = useAppServices();
+  useEffect(() => {
+    if (active && planPreviews.takeOffer() !== null) router.push({ pathname: '/paywall', params: { offer: '1' } });
+  }, [active, planPreviews]);
+  return null;
+}
 
 function AppStack() {
   const { color } = useTheme();
   const signedIn = useSignedIn();
   const onboarding = useOnboarding();
-  const gate = useSubscriptionGate();
   // A pushed screen has the system header with its back button, named for the screen before it (ADR-070 Ek 2 #4).
   const pushed: PushedOptions = ({ route, navigation }) => pushedScreen(color, previousScreenName(navigation.getState(), route.key));
   // Mounted only once the services are ready (ServicesProvider renders nothing before).
@@ -43,8 +56,10 @@ function AppStack() {
     void SplashScreen.hideAsync();
   }, []);
   return (
+    <>
+    <FirstOffer active={signedIn && onboarding === 'done'} />
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.background } }}>
-      <Stack.Protected guard={signedIn && onboarding === 'done' && gate === 'open'}>
+      <Stack.Protected guard={signedIn && onboarding === 'done'}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="plus" options={{ presentation: 'formSheet', sheetAllowedDetents: 'fitToContents', sheetGrabberVisible: true }} />
         <Stack.Screen name="today-change" options={{ presentation: 'formSheet', sheetAllowedDetents: 'fitToContents', sheetGrabberVisible: true }} />
@@ -88,8 +103,7 @@ function AppStack() {
         <Stack.Screen name="what-if" />
         {/* The effort summary (K-406) gave way to the workout's end (K-974, ADR-075 #7). */}
         <Stack.Screen name="workout-summary" />
-      </Stack.Protected>
-      <Stack.Protected guard={signedIn && onboarding === 'done' && gate !== 'open'}>
+        {/* The gate screen (K-706) gave way to the optional paywall (ADR-091 #1, K-1202). */}
         <Stack.Screen name="subscribe" />
       </Stack.Protected>
       {/* Not finished, or finished up to the plan before the app was closed (K-967: resumed on the plan). */}
@@ -103,6 +117,7 @@ function AppStack() {
         <Stack.Screen name="sign-in" />
       </Stack.Protected>
     </Stack>
+    </>
   );
 }
 

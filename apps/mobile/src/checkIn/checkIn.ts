@@ -66,7 +66,7 @@ export function loadCheckIn(api: ApiClient): Promise<Loaded<CheckIn>> {
 export type SendProblem = 'NoConnection' | 'Moved' | 'Consent' | 'ServerError';
 
 /** Sends the answers; the week's call, or why not. A 409 is the week having moved, or its call already made. */
-export async function sendAnswers(api: ApiClient, body: Schemas['CheckInAnswers']): Promise<{ call: Schemas['Decision'] } | { problem: SendProblem }> {
+export async function sendAnswers(api: ApiClient, body: Schemas['CheckInAnswers']): Promise<{ call: Schemas['CallView'] } | { problem: SendProblem }> {
   let answer;
   try {
     answer = await api.POST('/v1/check-ins/current/answers', { body });

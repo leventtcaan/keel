@@ -1,6 +1,7 @@
 /**
- * The subscription gate after onboarding (K-706, ADR-058 › 107): an account that never subscribed reaches the tabs only through
- * the paywall; an account with any subscription kept — an ended one too — does not meet it (the deterministic mode, K-703).
+ * The subscription gate after onboarding (K-706; ADR-091 #1 took ADR-058 › 107's place, K-1202): the paywall is no longer a wall. An
+ * account that never subscribed reaches the tabs like any other; the gate still asks the server what it has (the trial reminder
+ * reads it, K-707).
  * The server decides; its last answer is kept on the phone, so airplane mode does not open the gate and a subscriber is not
  * locked out offline. Without the store in the build, or without both legal links, the gate is never closed.
  */
@@ -43,13 +44,18 @@ async function gate(api: ReturnType<typeof server>['api'], kv: KeyValue = memory
   return createSubscriptionGate({ kv, api, purchases, links, report });
 }
 
-test('never subscribed: the gate is closed — and the answer is kept on the phone', async () => {
+test('never subscribed: the gate is open (ADR-091 #1: the paywall is optional) — and the answer is kept on the phone', async () => {
   const kv = memoryKv();
   const g = await gate(server(NEVER).api, kv);
-  expect(g.current()).toBe('unknown');
   await g.refresh();
-  expect(g.current()).toBe('required');
-  expect((await gate(server('offline').api, kv)).current()).toBe('required'); // the next start, before any answer
+  expect(g.current()).toBe('open');
+  expect((await gate(server('offline').api, kv)).current()).toBe('open'); // the next start, before any answer
+});
+
+test('an answer kept by 1.0 as "required" no longer closes anything', async () => {
+  const kv = memoryKv();
+  await kv.setItemAsync('subscription.gate', 'required');
+  expect((await gate(server('offline').api, kv)).current()).not.toBe('required');
 });
 
 test.each([
@@ -70,14 +76,14 @@ test('bought: the gate opens on the next answer, and the open answer is kept', a
   expect((await gate(server('offline').api, kv)).current()).toBe('open');
 });
 
-test('airplane mode does not open a closed gate; nor a server error', async () => {
+test('airplane mode or a server error leaves a never-subscribed account open too', async () => {
   const kv = memoryKv();
   await (await gate(server(NEVER).api, kv)).refresh();
   const offline = await gate(server('offline', 500).api, kv);
   await offline.refresh();
-  expect(offline.current()).toBe('required');
+  expect(offline.current()).toBe('open');
   await offline.refresh();
-  expect(offline.current()).toBe('required');
+  expect(offline.current()).toBe('open');
 });
 
 test('a subscriber offline is not locked out: the kept open answer stays', async () => {
@@ -102,7 +108,7 @@ test('after a sign-in (not a cold start), no answer keeps it unknown — the gat
   expect(await g.refresh()).toBe(false);
   expect(g.current()).toBe('unknown');
   expect(await g.refresh()).toBe(true);
-  expect(g.current()).toBe('required');
+  expect(g.current()).toBe('open');
 });
 
 test.each([
@@ -117,13 +123,13 @@ test.each([
   expect(fetch).not.toHaveBeenCalled();
 });
 
-test('a change is told to whoever listens (the root layout)', async () => {
+test('a change is told to whoever listens', async () => {
   const g = await gate(server(NEVER, TRIAL).api);
   const heard: string[] = [];
   g.subscribe(() => heard.push(g.current()));
   await g.refresh();
   await g.refresh();
-  expect(heard).toEqual(['required', 'open']);
+  expect(heard).toEqual(['open']);
 });
 
 test('sign-out forgets the answer: the next account is asked afresh', async () => {

@@ -9,6 +9,7 @@ import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { changeRows } from '@/today/callChanges';
+import { isLocked } from '@/today/today';
 import { shortDate } from '@/train/program';
 import type { UnitSystem } from '@/units/units';
 
@@ -17,9 +18,28 @@ import type { UnitSystem } from '@/units/units';
  * the call screen, read only (`?id=`, back to Progress); one that was not applied says so, in plain words (U7: no blame). The
  * ledger screen is off the surface (ADR-069 #3), so no way leads to it from here: the card lists the latest calls_shown.
  */
-export function CallsCard({ items, units }: { items: components['schemas']['Decision'][]; units: UnitSystem }) {
+export function CallsCard({ items, units }: { items: components['schemas']['CallView'][]; units: UnitSystem }) {
   const { color } = useTheme();
   const rows = items.map((call, index) => {
+    // A call not unlocked (ADR-091 Ek 1) is its day and that it is ready; it opens the call screen's locked view.
+    if (isLocked(call)) {
+      const date = shortDate(call.madeOn);
+      return (
+        <Pressable
+          key={call.id}
+          testID={`call-${call.id}`}
+          accessibilityRole="button"
+          accessibilityLabel={t('progress.calls.rowLabelLocked', { date })}
+          onPress={() => router.push({ pathname: '/call', params: { id: call.id, from: 'progress' } })}
+          style={({ pressed }) => [styles.row, pressed && styles.dim]}>
+          <View style={styles.grow}>
+            <Text style={[styles.title, { color: color.text }]}>{date}</Text>
+            <Text style={[styles.fine, { color: color.textSecondary }]}>{t('lockedCall.ledger')}</Text>
+          </View>
+          <SymbolView name="chevron.right" size={tokens.type.bodySmall} tintColor={color.muted} />
+        </Pressable>
+      );
+    }
     const title = t(`${call.copyKey}.title`);
     const date = shortDate(call.madeOn);
     const declined = call.application.state === 'DECLINED';
@@ -28,7 +48,8 @@ export function CallsCard({ items, units }: { items: components['schemas']['Deci
     const moved = changeRows(call, units).slice(0, MOVED_SHOWN).map((row) =>
       row.from === null ? t('progress.calls.moved', { label: row.label, to: row.to }) : t('progress.calls.change', { label: row.label, from: row.from, to: row.to }),
     );
-    const repeats = index > 0 && t(`${items[index - 1].copyKey}.title`) === title;
+    const before = index > 0 ? items[index - 1] : undefined;
+    const repeats = before !== undefined && !isLocked(before) && t(`${before.copyKey}.title`) === title;
     const words = repeats ? (moved.length === 0 ? t('progress.calls.noChange') : null) : title;
     return (
       <Pressable

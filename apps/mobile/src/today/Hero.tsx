@@ -14,6 +14,7 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
 import { appliedSave, applyCall } from './call';
+import { LockedCallView } from './LockedCallView';
 import { labelKey } from './today';
 import { WeighInCounter } from './WeighInCounter';
 import { type Hero as HeroFace, daysBetween, weekdayOf } from './week';
@@ -154,6 +155,8 @@ export function Hero({ hero, today, onChanged }: Props) {
         </DecisionBlock>
       );
     }
+    case 'locked':
+      return <LockedCallView call={hero.call} testID="hero" />;
     case 'firstWeek': {
       const call = hero.firstCallOn === null ? null : when('thisWeek.hero.firstCall', hero.firstCallOn, today);
       // With the counter (ADR-089) the line "Weigh in most mornings." is the counter's job. A short week gives no day for a

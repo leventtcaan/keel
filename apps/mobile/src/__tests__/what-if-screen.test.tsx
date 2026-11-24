@@ -2,7 +2,7 @@
  * "What would change the call" (K-610, prototype 5.6): the example weeks the server ran through the rules, each "if" with
  * its "then", under a line that says it is example data — never the user's own (U1, U2).
  */
-import { act, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
 import WhatIfScreen from '@/app/what-if';
 import type { components } from '@/api/schema';
@@ -30,7 +30,8 @@ const mockGET = jest.fn(async () => {
   if (mockAnswer === 'offline') throw new TypeError('Network request failed');
   return mockAnswer;
 });
-jest.mock('expo-router', () => ({ router: { back: jest.fn(), push: jest.fn() }, useLocalSearchParams: () => ({ id: 'd1' }) }));
+const mockPush = jest.fn();
+jest.mock('expo-router', () => ({ router: { back: jest.fn(), push: (...args: unknown[]) => mockPush(...args) }, useLocalSearchParams: () => ({ id: 'd1' }) }));
 const mockServices = { api: { GET: mockGET }, report: () => {} };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => 'METRIC' }));
 
@@ -64,4 +65,12 @@ test('an older call has none: it says the examples are the latest call’s', asy
   mockAnswer = refused(404, 'NOT_FOUND');
   await show();
   expect(screen.getByText(t('whatIf.latestOnly'))).toBeOnTheScreen();
+});
+
+test('a call behind the subscription (403 ENTITLEMENT_REQUIRED, ADR-091 Ek 1, K-1202): the way to the plans', async () => {
+  mockAnswer = refused(403, 'ENTITLEMENT_REQUIRED');
+  await show();
+  expect(screen.getByText(t('why.subscription'))).toBeOnTheScreen();
+  await fireEvent.press(screen.getByRole('button', { name: t('subscription.seePlans') }));
+  expect(mockPush).toHaveBeenCalledWith('/paywall');
 });

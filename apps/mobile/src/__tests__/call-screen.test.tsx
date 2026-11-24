@@ -270,6 +270,31 @@ describe("this week's call", () => {
     expect(mockPush).toHaveBeenCalledWith('/paywall');
   });
 
+  describe('a call not unlocked (ADR-091 Ek 1, K-1202)', () => {
+    const LOCKED: Schemas['LockedDecision'] = { id: 'd9', madeOn: '2026-12-28', weekOf: '2026-12-28', nextCallOn: '2027-01-04', locked: true };
+
+    test('the call is ready, for which week; one button, to the plans; nothing of what it says', async () => {
+      mockAnswers['/v1/decisions/current'] = ok(LOCKED);
+      await show();
+      expect(screen.getByText(t('lockedCall.title'))).toBeOnTheScreen();
+      expect(screen.getByText(t('lockedCall.line', { date: 'Mon, Dec 28' }))).toBeOnTheScreen();
+      expect(screen.getAllByRole('button')).toHaveLength(1);
+      expect(screen.queryByText(t('callScreen.gotIt'))).toBeNull();
+      expect(screen.queryByText(t('callScreen.keep'))).toBeNull();
+      expect(screen.queryByText(/Confidence/)).toBeNull();
+      await press(t('subscription.seePlans'));
+      expect(mockPush).toHaveBeenCalledWith('/paywall');
+    });
+
+    test('a past locked call opened from Progress says the same', async () => {
+      mockParams = { id: 'd9', from: 'progress' };
+      mockAnswers['/v1/decisions/{id}'] = ok(LOCKED);
+      await show();
+      expect(screen.getByText(t('lockedCall.title'))).toBeOnTheScreen();
+      expect(mockGET).toHaveBeenCalledWith('/v1/decisions/{id}', { params: { path: { id: 'd9' } } });
+    });
+  });
+
   test('no call yet (404): its own line, not a fault', async () => {
     mockAnswers['/v1/decisions/current'] = refused(404, 'NOT_FOUND');
     await show();

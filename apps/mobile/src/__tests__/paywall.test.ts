@@ -198,7 +198,7 @@ describe('restoring', () => {
 });
 
 test('the wait is the parameter file\'s, read as written', () => {
-  const file = jest.requireActual('../../../../data/parameters/subscription.json') as { parameters: { key: string; value: number }[] };
+  const file = jest.requireActual('../../../../data/parameters/subscription.json') as { parameters: { key: string; value: number | string }[] };
   const value = (key: string) => file.parameters.find((p) => p.key === key)?.value;
   expect(subscriptionParams).toEqual({
     confirmAttempts: value('subscription_confirm_attempts'),
@@ -206,6 +206,9 @@ test('the wait is the parameter file\'s, read as written', () => {
     trialReminderDaysBefore: value('trial_reminder_days_before'),
     trialReminderHour: value('trial_reminder_hour'),
     savingBadgeMinPercent: value('saving_badge_min_percent'),
+    clientFeaturesHeader: value('client_features_header'),
+    lockedCallsToken: value('locked_calls_feature_token'),
+    photoSuggestionAfterManualMeals: value('photo_suggestion_after_manual_meals'),
   });
 });
 

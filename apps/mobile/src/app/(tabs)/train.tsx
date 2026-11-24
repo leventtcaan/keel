@@ -15,7 +15,7 @@ import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import type { LocalRecord } from '@/sync/store';
-import { load } from '@/today/today';
+import { load, readCall } from '@/today/today';
 import { useReadOnFocus } from '@/today/useReadOnFocus';
 import { AnyDayRows } from '@/train/AnyDayRows';
 import { BuildProgramPrompt } from '@/train/BuildProgramPrompt';
@@ -51,7 +51,7 @@ export default function TrainScreen() {
         training.own(api),
         workoutRecords(),
         state.current().catch(() => null),
-        load(() => api.GET('/v1/decisions/current')),
+        load(() => api.GET('/v1/decisions/current')).then(readCall),
       ]);
       // The user's check-in day, for a skipped session's line ("Sunday reads what happened"); read only when a session of
       // the week is skipped.

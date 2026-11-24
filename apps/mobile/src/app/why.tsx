@@ -14,12 +14,11 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { basisRows } from '@/today/basis';
 import { variantOf } from '@/today/call';
-import { labelKey, load, reasonLines, weekdayDate, type Loaded } from '@/today/today';
+import { type CallRead, labelKey, load, readCall, reasonLines, weekdayDate, type Loaded } from '@/today/today';
 import { openDetail } from '@/settings/detail';
 
-type Decision = components['schemas']['Decision'];
 type Basis = components['schemas']['DecisionBasis'];
-type Read = { decision: Loaded<Decision>; basis: Loaded<Basis> };
+type Read = { decision: CallRead; basis: Loaded<Basis> };
 
 /**
  * "Why this call" (K-502, prototype 3.5; Ö-25 transparency, Ö-26 the kind of source): the call, the data it read
@@ -37,7 +36,7 @@ export default function WhyScreen() {
   useEffect(() => {
     let live = true;
     const path = { params: { path: { id } } };
-    void Promise.all([load(() => api.GET('/v1/decisions/{id}', path)), load(() => api.GET('/v1/decisions/{id}/basis', path))]).then(
+    void Promise.all([load(() => api.GET('/v1/decisions/{id}', path)).then(readCall), load(() => api.GET('/v1/decisions/{id}/basis', path))]).then(
       ([decision, basis]) => {
         if (live) setRead({ decision, basis });
       },
@@ -72,6 +71,15 @@ function Body({ read, onRetry }: { read: Read | null; onRetry: () => void }) {
       <View style={styles.note}>
         {line('today.consent.body')}
         <Button label={t('today.consent.open')} variant="ghost" size="sm" onPress={() => openDetail('consent')} />
+      </View>
+    );
+  }
+  // A locked call, or a basis that needs the subscription (403 ENTITLEMENT_REQUIRED, ADR-091 Ek 1): the way to the plans.
+  if (read.decision.state === 'locked' || read.decision.state === 'subscription' || read.basis.state === 'subscription') {
+    return (
+      <View style={styles.note}>
+        {line('why.subscription')}
+        <Button label={t('subscription.seePlans')} variant="ghost" size="sm" onPress={() => router.push('/paywall')} />
       </View>
     );
   }

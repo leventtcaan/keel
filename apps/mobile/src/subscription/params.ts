@@ -15,4 +15,9 @@ export const subscriptionParams = {
   trialReminderHour: param<number>('trial_reminder_hour'),
   /** "Save X%" shows only from this saving up (saving.ts, ADR-072 Ek 3). */
   savingBadgeMinPercent: param<number>('saving_badge_min_percent'),
+  /** The header the phone lists its features in, and the token for a locked call (K-1202); the server reads the same from quota.yaml. */
+  clientFeaturesHeader: param<string>('client_features_header'),
+  lockedCallsToken: param<string>('locked_calls_feature_token'),
+  /** From this many meals typed by hand in a day, a photo or text is suggested, while the AI is on (ADR-091 #1). */
+  photoSuggestionAfterManualMeals: param<number>('photo_suggestion_after_manual_meals'),
 };
