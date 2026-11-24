@@ -20,7 +20,7 @@ import { useTheme } from '@/theme/theme';
 import { useReduceMotion } from '@/theme/useReduceMotion';
 import { tokens } from '@/theme/tokens';
 import { CoachChips } from '@/today/CoachChips';
-import { labelKey, load, localDay, programToday, weekdayDate, type TodayData } from '@/today/today';
+import { labelKey, load, localDay, programToday, readCall, weekdayDate, type TodayData } from '@/today/today';
 
 type Schemas = components['schemas'];
 
@@ -63,7 +63,7 @@ export default function CoachScreen() {
   useEffect(() => {
     let live = true;
     void Promise.all([
-      load(() => api.GET('/v1/decisions/current')),
+      load(() => api.GET('/v1/decisions/current')).then(readCall),
       load(() => api.GET('/v1/program')),
       load(() => api.GET('/v1/weigh-ins', { params: { query: { from: day, to: day } } })),
     ]).then(([decision, program, weighIns]) => {

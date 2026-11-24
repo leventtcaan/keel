@@ -198,6 +198,26 @@ test('every call so far is one step away (K-611)', async () => {
   expect(mockPush).toHaveBeenCalledWith('/ledger');
 });
 
+describe('a call behind the subscription (ADR-091 Ek 1, K-1202)', () => {
+  test('the basis answers 403 ENTITLEMENT_REQUIRED: the way to the plans, and none of the call is shown', async () => {
+    mockAnswers['/v1/decisions/{id}/basis'] = refused(403, 'ENTITLEMENT_REQUIRED');
+    await show();
+    expect(screen.getByText(t('why.subscription'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('decision.continue.toward_goal.title'))).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: t('subscription.seePlans') }));
+    expect(mockPush).toHaveBeenCalledWith('/paywall');
+  });
+
+  test('a locked call (read as its locked view) opens the same way to the plans', async () => {
+    mockAnswers['/v1/decisions/{id}'] = ok({ id: 'd1', madeOn: '2026-09-28', weekOf: '2026-09-28', nextCallOn: '2026-10-05', locked: true });
+    mockAnswers['/v1/decisions/{id}/basis'] = refused(403, 'ENTITLEMENT_REQUIRED');
+    await show();
+    expect(screen.getByText(t('why.subscription'))).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: t('subscription.seePlans') }));
+    expect(mockPush).toHaveBeenCalledWith('/paywall');
+  });
+});
+
 test('what would change the call is one step away; not from a safety call (K-610, ADR-028 #24)', async () => {
   await show();
   fireEvent.press(screen.getByText(t('whatIf.open')));

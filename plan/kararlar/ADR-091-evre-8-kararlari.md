@@ -136,3 +136,28 @@ işareti kalkmış çağrılar açık kalır: ödenmiş şeydir.
 ### Doğrulama
 `FreeCallsTests` (tam karar ayrımı, hak, güvenlik ağı hiç kilitlenmez), `LockedCallViewTests` (indirgenmiş şekil), `ClientFeaturesTests` (başlık, eski istemci), `FreeCallUseTests`, `LockedCallsApiTests` (eski istemci değişmez; sağlık verisi silinince hak yenilenmez;
 ikinci tam karar 403/okuma/uygulanmama, abone olunca açılma; veritabanı, CI), `ContractTests` (`locked` alanı), parametre kaynağı.
+
+---
+
+## Ek 2 · K-1202: telefon tarafı, paywall isteğe bağlı
+- **Durum:** KABUL (agent, teknik karar, ADR-019) · **Tarih:** 2026-11-24 · **Kart:** K-1202 (#710)
+
+### Karar
+1. **Kapı kalkar.** `subscription/gate.ts` hiç abone olmamış hesabı artık kapatmaz (`required` üretilmez); onboarding sonrası sekmeler açılır.
+   Gate yalnız "hesabın aboneliği ne" sorusunu sorar (deneme hatırlatması okur, K-707). Kök yerleşimde `subscribe` ekranı emekli grupta;
+   `/paywall` sıradan, kapatılabilir ekran, deneme teklifi aynı.
+2. **Başlık tek yerde:** `api/client.ts` her isteğe `X-Keel-Features: locked-calls` koyar (fetch sarmalayıcısında; 401 sonrası yeniden denemede de).
+   Ad ve belirteç `data/parameters/subscription.json`'da (telefon YAML okuyamaz); sunucunun `quota.yaml` değerleriyle aynı olduğunu
+   `api-client.test.ts` tutar (kayma olursa kırılır).
+3. **Sözleşme `oneOf`:** karar okuyan 200 cevapları `CallView` = `Decision | LockedDecision`. Telefon cevabı alınan yerde
+   `readCall` ile böler (`ready` tam karar, `locked` kilitli); `action`/`reasons`'a `locked` dalı olmadan dokunan kod derlenmez.
+4. **Kilitli karar arayüzü:** This week kahramanı ve karar ekranı aynı bileşeni (`LockedCallView`) gösterir: "Your call is ready", hafta tarihi, tek satır, tek
+   düğme (See plans). Eylem, sayı, gerekçe yok; "kredi" sözcüğü yok.
+5. **Yükseltme anları:** (a) kilitli karar kendisi, (b) "neden"/what-if'te 403 `ENTITLEMENT_REQUIRED` → paywall'a giden not + düğme, (c) günün elle üçüncü
+   öğününde fotoğraf/cümle önerisi: `photo_suggestion_after_manual_meals: 3`, yalnız AI açıksa. AI açıklığı: telefonda tek anahtar, `meal-photo` ekranının
+   emekli listesinden (`RETIRED`) çıkması (`food/aiLogging.ts`); bugün kapalı, hiçbir şey çizilmez.
+6. **Paywall metni:** satılan şey haftalık karar ("Every call after your first one"); kayıt, program, ağırlıklar ücretsiz olduğu için satılmaz; koç yalnız ekranı açıksa
+   anılır. Mağaza açıklaması aynı çizgiye çekildi.
+
+### Açık nokta
+Hukuk sitesi `terms.md` "Coaching needs a subscription" diyor; ücretsiz katmanla uyum için Levent'in gözünden geçmeli (metin ürün/hukuk).

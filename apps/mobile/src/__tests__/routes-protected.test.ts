@@ -14,10 +14,9 @@ import app from '../../app.json';
 import { RETIRED } from '@/navigation/tabs';
 
 const APP = path.resolve(__dirname, '../app');
-const MAIN_GUARD = "signedIn && onboarding === 'done' && gate === 'open'";
-/** The screens of the other guards: what a signed-out, not-yet-onboarded or unsubscribed user may open. */
+const MAIN_GUARD = "signedIn && onboarding === 'done'";
+/** The screens of the other guards: what a signed-out or not-yet-onboarded user may open (an unsubscribed one has the tabs, ADR-091 #1). */
 const OTHER_STATES: Record<string, string[]> = {
-  "signedIn && onboarding === 'done' && gate !== 'open'": ['subscribe'],
   // Not onboarded, or resumed on the plan after the app was closed (K-967).
   "signedIn && (onboarding === 'needed' || onboarding === 'resume')": ['onboarding'],
   "signedIn && onboarding === 'unknown'": ['checking'],

@@ -100,23 +100,32 @@ beforeEach(() => {
 });
 
 test.each(['required', 'unknown'] as const)(
-  'the gate after onboarding (K-706) %s: the only screen is the gate — no tabs, no way around it',
+  'the subscription answer does not stand between the account and the tabs (ADR-091 #1, K-1202): gate %s, onboarded: the tabs',
   async (gate) => {
     mockGate = gate;
     const router = renderRouter(APP, { initialUrl: '/' });
     await router;
-    expect(router.getPathname()).toBe('/subscribe');
-    expect(screen.queryByRole('header', { name: t('screens.today.title') })).toBeNull();
+    expect(router.getPathname()).toBe('/');
+    expect(router.getSegments()).toEqual(['(tabs)']);
     await act(async () => appRouter.push('/settings'));
-    expect(router.getPathname()).toBe('/subscribe');
+    expect(router.getPathname()).toBe('/settings');
   },
 );
 
-test.each(['/ledger', '/what-if'])('a link straight to %s does not get around the gate (K-706 review)', async (url) => {
+test('the paywall is a screen like any other: a link opens it over the tabs, and it closes', async () => {
   mockGate = 'required';
-  const router = renderRouter(APP, { initialUrl: url });
+  const router = renderRouter(APP, { initialUrl: '/' });
   await router;
-  expect(router.getPathname()).toBe('/subscribe');
+  await act(async () => appRouter.push('/paywall'));
+  expect(router.getPathname()).toBe('/paywall');
+  await act(async () => appRouter.back());
+  expect(router.getPathname()).toBe('/');
+});
+
+test('the gate screen is retired: a link to it does not open it', async () => {
+  const router = renderRouter(APP, { initialUrl: '/subscribe' });
+  await router;
+  expect(router.getPathname()).not.toBe('/subscribe');
 });
 
 const APP = path.resolve(__dirname, '../app');

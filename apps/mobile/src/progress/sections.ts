@@ -131,7 +131,7 @@ export function weightOf(read: ProgressRead): WeightPart | null {
 }
 
 /** The latest calls the server listed, newest first; none, no consent or not read: no card. */
-export function callsOf(read: ProgressRead): { items: Schemas['Decision'][] } | null {
+export function callsOf(read: ProgressRead): { items: Schemas['CallView'][] } | null {
   if (read.calls.state !== 'ready' || read.calls.value.items.length === 0) return null;
   return { items: read.calls.value.items };
 }

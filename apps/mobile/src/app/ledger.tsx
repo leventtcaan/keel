@@ -11,15 +11,15 @@ import { t } from '@/copy';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
-import { ledgerEntries } from '@/today/ledger';
+import { ledgerRows } from '@/today/ledger';
 import { load } from '@/today/today';
 import type { UnitSystem } from '@/units/units';
 import { openDetail } from '@/settings/detail';
 
-type Decision = components['schemas']['Decision'];
+type Call = components['schemas']['CallView'];
 type Read =
   | { state: 'loading' }
-  | { state: 'ready'; calls: Decision[]; next: string | null; older?: 'consent' | 'failed' }
+  | { state: 'ready'; calls: Call[]; next: string | null; older?: 'consent' | 'failed' }
   | { state: 'none' }
   | { state: 'consent' }
   | { state: 'failed' };
@@ -35,7 +35,7 @@ export default function LedgerScreen() {
   const [read, setRead] = useState<Read>({ state: 'loading' });
 
   const page = useCallback(
-    async (before: string | null, kept: Decision[]) => {
+    async (before: string | null, kept: Call[]) => {
       const loaded = await load(() => api.GET('/v1/decisions', before === null ? undefined : { params: { query: { before } } }));
       // The ledger needs no subscription (ADR-056 #10): that answer here would be the server's mistake.
       if (loaded.state !== 'ready')
@@ -95,16 +95,24 @@ function Body({ read, units, onOlder }: { read: Read; units: UnitSystem; onOlder
   return (
     <>
       {line('ledger.intro')}
-      {ledgerEntries(read.calls, units).map((entry) => (
-        <Card key={entry.id}>
-          <Text style={[styles.small, { color: color.muted }]}>{entry.date}</Text>
-          <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/why', params: { id: entry.id } })}>
-            <Text style={[styles.title, { color: color.text }]}>{entry.title}</Text>
+      {ledgerRows(read.calls, units).map((row) =>
+        row.locked ? (
+          <Card key={row.id} testID={`locked-${row.id}`}>
+            <Text style={[styles.small, { color: color.muted }]}>{row.date}</Text>
+            <Text style={[styles.text, { color: color.textSecondary }]}>{t('lockedCall.ledger')}</Text>
+            <Button label={t('subscription.seePlans')} variant="ghost" size="sm" onPress={() => router.push('/paywall')} />
+          </Card>
+        ) : (
+        <Card key={row.entry.id}>
+          <Text style={[styles.small, { color: color.muted }]}>{row.entry.date}</Text>
+          <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/why', params: { id: row.entry.id } })}>
+            <Text style={[styles.title, { color: color.text }]}>{row.entry.title}</Text>
           </Pressable>
-          {entry.state !== null && <Text style={[styles.small, { color: color.textSecondary }]}>{entry.state}</Text>}
-          {entry.after !== null && <Text style={[styles.text, { color: color.textSecondary }]}>{entry.after}</Text>}
+          {row.entry.state !== null && <Text style={[styles.small, { color: color.textSecondary }]}>{row.entry.state}</Text>}
+          {row.entry.after !== null && <Text style={[styles.text, { color: color.textSecondary }]}>{row.entry.after}</Text>}
         </Card>
-      ))}
+        ),
+      )}
       {read.older !== undefined && <OlderNotRead reason={read.older} />}
       {read.next !== null && <OlderButton onPress={onOlder} />}
     </>

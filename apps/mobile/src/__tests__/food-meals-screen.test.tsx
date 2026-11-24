@@ -38,6 +38,11 @@ const answer = async (path: string, init?: { params?: { query?: { day?: string }
 const mockGET = jest.fn(answer);
 const mockPush = jest.fn();
 let mockRecords: LocalRecord[] = [];
+let mockAiOn = false;
+jest.mock('@/food/aiLogging', () => ({
+  ...jest.requireActual<typeof import('@/food/aiLogging')>('@/food/aiLogging'),
+  aiLoggingAvailable: () => mockAiOn,
+}));
 let mockGranted = true;
 const mockRecord = jest.fn(async (_record: unknown) => true);
 const mockDrain = jest.fn(async () => {
@@ -97,6 +102,7 @@ beforeEach(() => {
   };
   mockRecords = [];
   mockGranted = true;
+  mockAiOn = false;
 });
 
 async function show() {
@@ -305,4 +311,30 @@ test("a logged item is one tap from its correction, in place; one not sent yet i
   await act(async () => fireEvent.press(screen.getByRole('button', { name: spoken })));
   expect(mockPush).toHaveBeenCalledWith({ pathname: '/meal', params: { edit: 'm1', day: '2026-09-29', item: '1' } });
   expect(screen.queryByRole('button', { name: /^Correct Snack/ })).toBeNull();
+});
+
+describe('the third meal of the day suggests a photo or a sentence (ADR-091 #1, K-1202)', () => {
+  const three = () => ok([meal('a', at(8), 'BREAKFAST', ['Oats'], 380, 450), meal('b', at(12), 'LUNCH', ['Rice'], 500, 600), meal('c', at(19), 'DINNER', ['Fish'], 450, 520)]);
+
+  test('the AI on and three meals: one line and one way in', async () => {
+    mockAiOn = true;
+    mockMealsByDay['2026-09-29'] = three();
+    await show();
+    expect(screen.getByText(t('food.photoSuggestion.line'))).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: t('food.photoSuggestion.open') }));
+    expect(mockPush).toHaveBeenCalledWith('/meal-photo');
+  });
+
+  test('the AI on, two meals: nothing yet', async () => {
+    mockAiOn = true;
+    await show();
+    expect(screen.queryByText(t('food.photoSuggestion.line'))).toBeNull();
+  });
+
+  test('the AI off (production today), three meals: nothing, and no dead end', async () => {
+    mockMealsByDay['2026-09-29'] = three();
+    await show();
+    expect(screen.queryByText(t('food.photoSuggestion.line'))).toBeNull();
+    expect(screen.queryByRole('button', { name: t('food.photoSuggestion.open') })).toBeNull();
+  });
 });

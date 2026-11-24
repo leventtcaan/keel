@@ -1,12 +1,11 @@
 /**
- * The subscription gate after onboarding (K-706, ADR-058 › 107). An account that never subscribed reaches the tabs only through
- * the paywall (ADR-012: no free tier); an account with any subscription kept on the server — an ended one too — does not
- * meet it: the deterministic mode (K-703, ADR-056 #10) keeps its log, its calls, export and deletion open to it.
+ * The subscription gate after onboarding (K-706). ADR-091 #1 took ADR-058 › 107's place (K-1202): the paywall is no longer a wall.
+ * An account that never subscribed reaches the tabs like any other, and its weekly call comes locked until it subscribes
+ * (the server holds it back, ADR-091 Ek 1). What is left of the gate is the question to the server: what the account has
+ * (GET /v1/subscription), for what follows it on the phone (the trial reminder, K-707). Its answer is kept, so a restart
+ * starts from it; an answer 1.0 kept as "required" closes nothing and is read again.
  *
- * The server decides (GET /v1/subscription: no `status` = never subscribed). Its last answer is kept on the phone, so airplane
- * mode does not open a closed gate and a subscriber is not locked out offline. With nothing kept and no answer, the gate is
- * open: never a lock with no answer to lift it. Without the store in the build (Expo Go, no SDK key) or without both legal
- * links (Apple 3.1.2, ADR-057 D3) nothing can be sold, so the gate is never closed — a development build is not locked.
+ * `GateState` still has a 'required' member for the retired gate screen (src/app/subscribe.tsx); nothing produces it.
  */
 import type { ApiClient } from '@/api/client';
 import type { components } from '@/api/schema';
@@ -34,7 +33,7 @@ export type SubscriptionGate = Awaited<ReturnType<typeof createSubscriptionGate>
 export async function createSubscriptionGate({ kv, api, purchases, links, report, onRead }: Options) {
   const sells = purchases.available && legalComplete(links);
   const kept = sells ? await kv.getItemAsync(KEY) : null;
-  let state: GateState = !sells ? 'open' : kept === 'required' || kept === 'open' ? kept : 'unknown';
+  let state: GateState = !sells ? 'open' : kept === 'open' ? 'open' : 'unknown';
   const listeners = new Set<() => void>();
   // Bumped by a sign-out: an answer that started for the previous account must not land on the next one.
   let generation = 0;
@@ -70,7 +69,7 @@ export async function createSubscriptionGate({ kv, api, purchases, links, report
         return false;
       }
       onRead?.(read.value);
-      const next: GateState = read.value.status === undefined && !read.value.active ? 'required' : 'open';
+      const next: GateState = 'open';
       await kv.setItemAsync(KEY, next);
       if (startedIn !== generation) {
         await kv.removeItemAsync(KEY); // signed out while it was written: the write landed after the sign-out's removal

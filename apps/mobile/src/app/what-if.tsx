@@ -65,6 +65,14 @@ function Body({ read }: { read: Loaded<WhatIf> | null }) {
       </View>
     );
   }
+  if (read.state === 'subscription') {
+    return (
+      <View style={styles.note}>
+        {line('why.subscription')}
+        <Button label={t('subscription.seePlans')} variant="ghost" size="sm" onPress={() => router.push('/paywall')} />
+      </View>
+    );
+  }
   if (read.state === 'none') return line('whatIf.latestOnly');
   if (read.state !== 'ready') return line('whatIf.failed');
   return (

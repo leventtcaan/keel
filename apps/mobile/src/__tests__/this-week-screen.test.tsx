@@ -497,6 +497,40 @@ describe("a call declined: last week's plan kept (K-963, user test 8 Oct)", () =
   });
 });
 
+const LOCKED: Schemas['LockedDecision'] = { id: 'd9', madeOn: '2026-12-21', weekOf: '2026-12-21', nextCallOn: '2026-12-28', locked: true };
+
+describe('a call not unlocked (ADR-091 Ek 1, K-1202): ready, and nothing of what it says', () => {
+  beforeEach(() => {
+    mockAnswers['/v1/decisions/current'] = ok(LOCKED);
+  });
+
+  test('the hero says the call is ready, for which week, and has one button, to the plans', async () => {
+    await show();
+    const block = within(screen.getByTestId('hero'));
+    expect(block.getByText(t('lockedCall.title'))).toBeOnTheScreen();
+    expect(block.getByText(t('lockedCall.line', { date: 'Mon, Dec 21' }))).toBeOnTheScreen();
+    expect(block.getAllByRole('button')).toHaveLength(1);
+    await fireEvent.press(block.getByRole('button', { name: t('subscription.seePlans') }));
+    expect(mockPush).toHaveBeenCalledWith('/paywall');
+  });
+
+  test('no action, no number, no reason, no way to use it, no next call day', async () => {
+    await show();
+    const block = within(screen.getByTestId('hero'));
+    expect(block.queryByText(t('thisWeek.hero.useCall'))).toBeNull();
+    expect(block.queryByText(t('decision.stop_load_increase.plateau.title'))).toBeNull();
+    expect(block.queryByText(/kcal|kg|\d+ days|Next call/)).toBeNull();
+    expect(JSON.stringify(screen.toJSON())).not.toMatch(/credit/i);
+  });
+
+  test('a hero that is not a call is not mistaken for one: Monday with the check-in open still comes first', async () => {
+    mockAnswers['/v1/check-ins/current'] = ok({ weekOf: '2026-12-21', answered: false, questions: [{ kind: 'WEEK_FEEL' }] });
+    await show();
+    expect(screen.queryByText(t('lockedCall.title'))).toBeNull();
+    expect(screen.getByText(t('thisWeek.hero.monday.open'))).toBeOnTheScreen();
+  });
+});
+
 describe('an account with no program (K-1037, ADR-084)', () => {
   beforeEach(() => {
     mockAnswers['/v1/program'] = refused(404, 'NOT_FOUND');

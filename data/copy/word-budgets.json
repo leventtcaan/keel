@@ -348,8 +348,8 @@
         "subscription.titleLead",
         "subscription.titleFor",
         "subscription.trialSpan.week",
-        ["subscription.values.built", "subscription.values.own", "subscription.values.adjust"],
-        "subscription.values.sets",
+        ["subscription.values.built", "subscription.values.own", "subscription.values.adjust", "subscription.values.coach"],
+        "subscription.values.after",
         [
           "subscription.values.call",
           "subscription.values.weeklyCall",
@@ -395,8 +395,8 @@
             "subscription.titleLead",
             "subscription.titleFor",
             "subscription.trialSpan.week",
-            ["subscription.values.built", "subscription.values.own", "subscription.values.adjust"],
-            "subscription.values.sets",
+            ["subscription.values.built", "subscription.values.own", "subscription.values.adjust", "subscription.values.coach"],
+            "subscription.values.after",
             ["subscription.values.call", "subscription.values.weeklyCall", "subscription.values.cardio", "subscription.values.swap"],
                 "onboarding.schedule.dayName.MONDAY",
             "subscription.plan.annual",
@@ -646,8 +646,11 @@
       ],
       "uncounted": ["thisWeek.strip.letter.MONDAY", "thisWeek.strip.letter.TUESDAY", "thisWeek.strip.letter.WEDNESDAY", "thisWeek.strip.letter.THURSDAY", "thisWeek.strip.letter.FRIDAY", "thisWeek.strip.letter.SATURDAY", "thisWeek.strip.letter.SUNDAY"],
       "notFirstView": [
+        "lockedCall.title",
+        "lockedCall.line",
+        "subscription.seePlans",
       "food.totals.barLabel","today.failed", "today.retry", "thisWeek.counter.label", "thisWeek.counter.labelReached", "thisWeek.settings", "thisWeek.strip.label", "thisWeek.strip.mark", "thisWeek.hero.settingsLabel", "thisWeek.hero.openCall", "thisWeek.hero.monday.openLabel", "thisWeek.today.label", "thisWeek.today.changeLabel", "thisWeek.today.restWeek", "thisWeek.today.startLabel", "thisWeek.today.doneLabel", "thisWeek.food.allowLabel", "thisWeek.food.lineLabel", "thisWeek.food.lineLabelAround", "thisWeek.food.logLabel", "thisWeek.food.range", "thisWeek.food.showRange", "thisWeek.food.hideRange", "food.budget.single", "format.range", "today.state.declare", "thisWeek.hero.monday.readyNoWeek", "thisWeek.hero.monday.ready", "thisWeek.hero.monday.one", "thisWeek.hero.monday.other", "thisWeek.hero.monday.open", "thisWeek.hero.monday.yourCall", "openElsewhere.continue", "openElsewhere.continueLabel", "openElsewhere.later", "openElsewhere.laterLabel", "openElsewhere.laterSaid", "openElsewhere.discard", "openElsewhere.discardLabel", "openElsewhere.discarded", "openElsewhere.discardOffline", "openElsewhere.offline", "openElsewhere.failed", "openElsewhere.closed", "openElsewhere.gone", "workout.ending.discardAsk", "workout.ending.discardNote", "workout.ending.confirm", "workout.ending.keep", "workout.ending.failed", "progress.targets.label.protein", "progress.targets.label.steps", "progress.targets.label.stepsOff", "progress.targets.hint.meal", "progress.targets.hint.health", "progress.targets.hint.connect", "thisWeek.numbers.weightLabel", "thisWeek.numbers.weightLabelChange", "thisWeek.numbers.weightWaitingHint", "thisWeek.numbers.weightHint", "progress.weight.spoken", "progress.weight.down", "progress.weight.up", "progress.weight.steady"],
-      "parts": ["src/today/Hero.tsx", "src/today/WeighInCounter.tsx", "src/today/WeekStrip.tsx", "src/today/TodayCard.tsx", "src/today/FoodLine.tsx", "src/today/TodayNumbers.tsx", "src/today/StateCard.tsx", "src/train/OpenElsewhere.tsx"],
+      "parts": ["src/today/LockedCallView.tsx", "src/today/Hero.tsx", "src/today/WeighInCounter.tsx", "src/today/WeekStrip.tsx", "src/today/TodayCard.tsx", "src/today/FoodLine.tsx", "src/today/TodayNumbers.tsx", "src/today/StateCard.tsx", "src/train/OpenElsewhere.tsx"],
       "faces": [
         {
           "face": "the short version",
@@ -981,8 +984,11 @@
       ],
       "uncounted": ["thisWeek.strip.letter.MONDAY", "thisWeek.strip.letter.TUESDAY", "thisWeek.strip.letter.WEDNESDAY", "thisWeek.strip.letter.THURSDAY", "thisWeek.strip.letter.FRIDAY", "thisWeek.strip.letter.SATURDAY", "thisWeek.strip.letter.SUNDAY"],
       "notFirstView": [
+        "lockedCall.title",
+        "lockedCall.line",
+        "subscription.seePlans",
       "food.totals.barLabel","today.failed", "today.retry", "thisWeek.counter.title", "thisWeek.counter.of", "thisWeek.counter.weighIn", "thisWeek.counter.shortFoot", "thisWeek.counter.label", "thisWeek.counter.labelReached", "thisWeek.settings", "thisWeek.strip.label", "thisWeek.strip.mark", "thisWeek.hero.settingsLabel", "thisWeek.hero.openCall", "thisWeek.hero.monday.openLabel", "thisWeek.today.label", "thisWeek.today.changeLabel", "thisWeek.today.startLabel", "thisWeek.today.doneLabel", "thisWeek.food.allowLabel", "thisWeek.food.lineLabel", "thisWeek.food.lineLabelAround", "thisWeek.food.logLabel", "thisWeek.food.range", "thisWeek.food.showRange", "thisWeek.food.hideRange", "food.budget.single", "format.range", "today.state.declare", "thisWeek.food.allow", "thisWeek.food.locked", "thisWeek.hero.callsOff", "thisWeek.hero.firstCall", "thisWeek.hero.firstWeek", "thisWeek.hero.inDays", "thisWeek.hero.nextCall", "thisWeek.hero.notApplied", "thisWeek.hero.notAppliedShort", "thisWeek.hero.pending", "thisWeek.hero.settings", "thisWeek.hero.start", "thisWeek.hero.today", "thisWeek.hero.tomorrow", "thisWeek.hero.train", "thisWeek.hero.useCall", "thisWeek.hero.weighIn", "thisWeek.hero.yourWeek", "thisWeek.today.continue", "thisWeek.today.done", "thisWeek.today.doneStats.one", "thisWeek.today.doneStats.other", "thisWeek.today.full", "thisWeek.today.movedTo", "thisWeek.today.open", "thisWeek.today.openElsewhere", "thisWeek.today.openSets.none", "thisWeek.today.openSets.one", "thisWeek.today.openSets.other", "thisWeek.today.rest", "thisWeek.today.restWeek", "thisWeek.today.next", "thisWeek.today.skipped", "thisWeek.today.skippedNoDay", "thisWeek.today.undo", "today.state.back", "today.state.paused", "today.state.pausedUntil", "progress.targets.label.protein", "progress.targets.label.steps", "progress.targets.label.stepsOff", "progress.targets.hint.meal", "progress.targets.hint.health", "progress.targets.hint.connect", "thisWeek.numbers.weightLabel", "thisWeek.numbers.weightLabelChange", "thisWeek.numbers.weightWaitingHint", "thisWeek.numbers.weightHint", "progress.weight.spoken", "progress.weight.down", "progress.weight.up", "progress.weight.steady"],
-      "parts": ["src/today/Hero.tsx", "src/today/WeighInCounter.tsx", "src/today/WeekStrip.tsx", "src/today/TodayCard.tsx", "src/today/FoodLine.tsx", "src/today/TodayNumbers.tsx", "src/today/StateCard.tsx"],
+      "parts": ["src/today/LockedCallView.tsx", "src/today/Hero.tsx", "src/today/WeighInCounter.tsx", "src/today/WeekStrip.tsx", "src/today/TodayCard.tsx", "src/today/FoodLine.tsx", "src/today/TodayNumbers.tsx", "src/today/StateCard.tsx"],
       "faces": []
     },
     {
@@ -1170,6 +1176,8 @@
         "progress.weight.after"
       ],
       "notFirstView": [
+        "progress.calls.rowLabelLocked",
+        "lockedCall.ledger",
         "progress.failed",
         "progress.retry",
         "share.open",
@@ -1678,6 +1686,9 @@
       ],
       "dynamic": [{"what": "the day the call was made (Mon, Dec 28)", "words": 2}, {"what": "the next call's date (Mon, Jan 4)", "words": 2}],
       "notFirstView": [
+        "lockedCall.title",
+        "lockedCall.line",
+        "subscription.seePlans",
         "callScreen.applied",
         "callScreen.undone",
         "callScreen.notAppliedYet",
@@ -1702,7 +1713,7 @@
         "subscription.seePlans",
         "settings.backMark"
       ],
-      "parts": ["src/today/callChanges.ts", "src/today/callReasons.ts", "src/today/ChangeRows.tsx", "src/today/SourceMark.tsx"],
+      "parts": ["src/today/LockedCallView.tsx", "src/today/callChanges.ts", "src/today/callReasons.ts", "src/today/ChangeRows.tsx", "src/today/SourceMark.tsx"],
       "faces": [
         {
           "face": "kept off the plan",

@@ -21,7 +21,8 @@ import { changeRows } from '@/today/callChanges';
 import { callReasons } from '@/today/callReasons';
 import { SourceMark } from '@/today/SourceMark';
 import { useWeek1 } from '@/today/useWeek1';
-import { type Loaded, labelKey, load, weekdayDate } from '@/today/today';
+import { LockedCallView } from '@/today/LockedCallView';
+import { type CallRead, type Loaded, labelKey, load, readCall, weekdayDate } from '@/today/today';
 import { openDetail } from '@/settings/detail';
 
 type Decision = components['schemas']['Decision'];
@@ -61,18 +62,18 @@ export default function CallScreen() {
   const saved = useSaved();
   const { color } = useTheme();
   const reduce = useReduceMotion();
-  const [call, setCall] = useState<Loaded<Decision> | null>(null);
+  const [call, setCall] = useState<CallRead | null>(null);
   const [busy, setBusy] = useState(false);
   // Not changed, said for one read of the call: the one it happened on (no connection: nothing new to read), or, for the
   // server's "not now" (409), the read that follows (`next`), so the note speaks of the call as it now is.
-  const [failed, setFailed] = useState<{ read: Decision | 'next'; from: Loaded<Decision> | null; key: string } | null>(null);
+  const [failed, setFailed] = useState<{ read: Decision | 'next'; from: CallRead | null; key: string } | null>(null);
   if (failed?.read === 'next' && call !== failed.from && call?.state === 'ready') setFailed({ ...failed, read: call.value });
   // A ref, not state: two taps in the same moment both see state from before either ran, a ref they share.
   const sending = useRef(false);
   // The call that closes the first week picks days (K-978, ADR-077 #4); every other call, none.
   const week1 = useWeek1(call?.state === 'ready' && !readOnly ? call.value : null);
   // Changed: the read that follows says the call's new standing aloud (VoiceOver, K-815).
-  const toSay = useRef<Loaded<Decision> | null | undefined>(undefined);
+  const toSay = useRef<CallRead | null | undefined>(undefined);
 
   // The count of weigh-ins the trend still needs, the one Progress shows (GET /v1/weigh-ins/summary): read only while the call
   // waits for weigh-ins and is the current one, never for a past call opened read only.
@@ -85,7 +86,7 @@ export default function CallScreen() {
   useEffect(() => {
     let live = true;
     void load(() => (id === undefined ? api.GET('/v1/decisions/current') : api.GET('/v1/decisions/{id}', { params: { path: { id } } }))).then((found) => {
-      if (live) setCall(found);
+      if (live) setCall(readCall(found));
     });
     return () => {
       live = false;
@@ -159,6 +160,7 @@ export default function CallScreen() {
   let dock = null;
   if (call?.state === 'consent') body = note('today.consent.body', { label: t('today.consent.open'), onPress: () => openDetail('consent') });
   else if (call?.state === 'subscription') body = note('callScreen.subscription', { label: t('subscription.seePlans'), onPress: () => router.push('/paywall') });
+  else if (call?.state === 'locked') body = <LockedCallView call={call.value} />;
   else if (call?.state === 'none') body = note('callScreen.none');
   else if (call?.state === 'failed') body = note('callScreen.failed', { label: t('callScreen.retry'), onPress: read });
   else if (call?.state === 'ready') {

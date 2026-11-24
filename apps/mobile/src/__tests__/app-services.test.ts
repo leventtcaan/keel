@@ -269,7 +269,7 @@ test('the subscription gate (K-706): asked at sign-in, forgotten at sign-out', a
   await services.session.signIn(SESSION);
   await settle();
   expect(fake.seen.some((seen) => seen.path === '/v1/subscription')).toBe(true);
-  expect(services.gate.current()).toBe('required');
+  expect(services.gate.current()).toBe('open');
   await services.signOut();
   await settle();
   expect(services.gate.current()).toBe('unknown');
@@ -287,7 +287,7 @@ test('signed in already when the app starts: the gate is asked at once — and w
   const services = await createAppServices({ baseUrl: BASE, storage, db: nodeSqlite(), fetch: fake.fetch, report: () => {}, kv: memoryKv(), locale: 'en-US', purchases: store, links });
   await settle();
   expect(fake.seen.some((seen) => seen.path === '/v1/subscription')).toBe(true);
-  expect(services.gate.current()).toBe('required');
+  expect(services.gate.current()).toBe('open');
 
   const offline = server(200);
   offline.goOffline();

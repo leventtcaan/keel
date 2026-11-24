@@ -339,6 +339,11 @@
       "allowLabel": "Health data consent in Settings"
     }
   },
+  "lockedCall": {
+    "title": "Your call is ready",
+    "line": "Week of {date}. It comes with a subscription.",
+    "ledger": "Ready. It comes with a subscription."
+  },
   "callScreen": {
     "inPlan": "In this week's plan",
     "applied": "Applied",
@@ -1117,6 +1122,10 @@
     "reachedOne": "{reached} of 1 exercise reached your target effort"
   },
   "food": {
+    "photoSuggestion": {
+      "line": "Faster next time: log a meal from a photo or a sentence.",
+      "open": "Try it"
+    },
     "macro": {
       "protein": "P {value}",
       "carbs": "C {value}",
@@ -1706,6 +1715,7 @@
     }
   },
   "why": {
+    "subscription": "The reasons come with a subscription.",
     "title": "Why this call",
     "back": "Back",
     "made": "{date} · {phase}",
@@ -3126,9 +3136,10 @@
     "values": {
       "built": "Program built for your days",
       "own": "Your program, tuned",
-      "sets": "Your weights, set by set, from last time",
       "call": "A call every {day}, with the reason",
       "weeklyCall": "A call every week, with the reason",
+    "after": "Every call after your first one",
+    "coach": "The coach, to ask about your week",
       "adjust": "Cardio and food that adjust to your week",
       "cardio": "Cardio planned around your lifting",
       "swap": "Swap any move, any time"
@@ -3752,7 +3763,8 @@
       "noChange": "No change",
       "moved": "{label}: {to}",
       "rowLabel": "{title}, {date}",
-      "rowLabelNotApplied": "{title}, {date}, not applied"
+      "rowLabelNotApplied": "{title}, {date}, not applied",
+      "rowLabelLocked": "Call of {date}, ready"
     },
     "consistency": {
       "title": "Consistency",
