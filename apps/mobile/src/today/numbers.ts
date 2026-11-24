@@ -40,7 +40,10 @@ export function weightNumber(read: WeightRead | undefined, units: UnitSystem): W
   if (read === undefined || read.summary.state !== 'ready') return null;
   const { weighInCount, trendMinWeighIns } = read.summary.value;
   const waiting: WeightNumber = { kind: 'waiting', count: Math.min(weighInCount, trendMinWeighIns), min: trendMinWeighIns };
-  if (read.trend?.state !== 'ready' || read.trend.value.length === 0) return waiting;
+  // Ready by the server's word: the trend or nothing. A trend that failed or has no day in the window is no tile (never "7 of 7").
+  if (read.summary.value.trendReady) {
+    if (read.trend?.state !== 'ready' || read.trend.value.length === 0) return null;
+  } else return waiting;
   const points = read.trend.value;
   const [from, to] = [points[0], points[points.length - 1]];
   if (from.day === to.day) return { kind: 'trend', kg: to.kg, change: null };
@@ -50,10 +53,23 @@ export function weightNumber(read: WeightRead | undefined, units: UnitSystem): W
 
 /** Protein eaten (the middle of the server's range, as the food line shows its number, ADR-090 #5) against the day's target. */
 export function proteinNumber(budget: Loaded<Schemas['DayBudget']>): { eaten: number; target: number } | null {
-  return budget.state === 'ready' ? { eaten: mid(budget.value.eaten.proteinG), target: budget.value.targetProteinG } : null;
+  return budget.state === 'ready' && budget.value.targetProteinG > 0 ? { eaten: mid(budget.value.eaten.proteinG), target: budget.value.targetProteinG } : null;
+}
+
+/**
+ * The step target before the first call: /v1/targets answers NOT_FOUND until the first estimate, so the starting plan's stands in,
+ * as Progress reads it (`progress/read.ts`); asked only while /v1/targets has no answer, and the server refuses it once the first call is made.
+ */
+export async function loadStarting(api: ApiClient, targets: Loaded<Schemas['Targets']>): Promise<Loaded<Schemas['StartingTarget']> | undefined> {
+  return targets.state === 'ready' ? undefined : load(() => api.GET('/v1/targets/starting'));
 }
 
 /** Steps today against the target: the target alone without Apple Health's count (not connected, or not read); nothing without a target. */
-export function stepsNumber(targets: Loaded<Schemas['Targets']>, stepsToday: number | null | undefined): { steps: number | null; target: number } | null {
-  return targets.state === 'ready' ? { steps: stepsToday ?? null, target: targets.value.stepsPerDay } : null;
+export function stepsNumber(
+  targets: Loaded<Schemas['Targets']>,
+  starting: Loaded<Schemas['StartingTarget']> | undefined,
+  stepsToday: number | null | undefined,
+): { steps: number | null; target: number } | null {
+  const target = targets.state === 'ready' ? targets.value.stepsPerDay : starting?.state === 'ready' ? starting.value.stepsPerDay : null;
+  return target === null ? null : { steps: stepsToday ?? null, target };
 }

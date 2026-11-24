@@ -101,9 +101,10 @@ describe('the trend is hidden until the server says it is ready (U8)', () => {
     expect(screen.queryByText(formatWeight(80.3, 'METRIC'))).toBeNull();
   });
 
-  test('ready but no day in the window: the weigh-ins toward it, not a stale number', async () => {
+  test('ready but no day in the window: no tile, not "7 of 7"', async () => {
     await show({ weight: { summary: ready(SUMMARY(9, true)), trend: ready([]) } });
-    expect(screen.getByText(t('progress.weight.count', { count: 7, min: 7 }))).toBeOnTheScreen();
+    expect(screen.queryByTestId('number-weight')).toBeNull();
+    expect(screen.queryByText(t('progress.weight.count', { count: 7, min: 7 }))).toBeNull();
   });
 
   test('the summary not read (offline, no consent, none): no weight tile, and no complaint', async () => {
@@ -116,9 +117,9 @@ describe('the trend is hidden until the server says it is ready (U8)', () => {
     expect(screen.queryByTestId('number-weight')).toBeNull();
   });
 
-  test('a trend that could not be read says nothing of the user: the weigh-ins toward it', async () => {
+  test('a trend that could not be read says nothing of the user: no tile, not "7 of 7"', async () => {
     await show({ weight: { summary: ready(SUMMARY(9, true)), trend: { state: 'failed', problem: 'ServerError' } } });
-    expect(screen.getByText(t('progress.weight.count', { count: 7, min: 7 }))).toBeOnTheScreen();
+    expect(screen.queryByTestId('number-weight')).toBeNull();
   });
 });
 
@@ -129,6 +130,16 @@ describe('what is not there is said, not zero', () => {
     expect(screen.queryByText(/^0 \//)).toBeNull();
     await press(t('progress.targets.label.stepsOff', { target: '10,000' }));
     expect(mockPush).toHaveBeenCalledWith({ pathname: '/settings-detail', params: { part: 'apple' } });
+  });
+
+  test('a protein target of 0 (a plan without one): no protein tile', async () => {
+    await show({ budget: ready({ ...BUDGET, targetProteinG: 0 }) });
+    expect(screen.queryByTestId('number-protein')).toBeNull();
+  });
+
+  test('before the first call the starting step target stands in', async () => {
+    await show({ targets: { state: 'none' }, starting: ready({ stepsPerDay: 7000 } as Schemas['StartingTarget']) });
+    expect(screen.getByText(t('thisWeek.numbers.steps', { steps: '6,200', target: '7,000' }))).toBeOnTheScreen();
   });
 
   test('no step target (not read): no steps tile', async () => {
@@ -197,10 +208,20 @@ describe('the numbers as functions', () => {
     expect(proteinNumber(ready(BUDGET))).toEqual({ eaten: 70, target: 140 });
     expect(proteinNumber({ state: 'none' })).toBeNull();
   });
+  test('a protein target of 0 is no target: no tile', () => {
+    expect(proteinNumber(ready({ ...BUDGET, targetProteinG: 0 }))).toBeNull();
+  });
+  test('steps before the first call: the starting target stands in when /v1/targets has none', () => {
+    const starting = ready({ stepsPerDay: 7000 } as Schemas['StartingTarget']);
+    expect(stepsNumber({ state: 'none' }, starting, 3000)).toEqual({ steps: 3000, target: 7000 });
+    expect(stepsNumber(ready(TARGETS), starting, 3000)).toEqual({ steps: 3000, target: 10000 });
+    expect(stepsNumber({ state: 'none' }, { state: 'none' }, 3000)).toBeNull();
+    expect(stepsNumber({ state: 'none' }, undefined, 3000)).toBeNull();
+  });
   test('steps keep the target without a count', () => {
-    expect(stepsNumber(ready(TARGETS), null)).toEqual({ steps: null, target: 10000 });
-    expect(stepsNumber(ready(TARGETS), 0)).toEqual({ steps: 0, target: 10000 });
-    expect(stepsNumber({ state: 'consent' }, 5)).toBeNull();
+    expect(stepsNumber(ready(TARGETS), undefined, null)).toEqual({ steps: null, target: 10000 });
+    expect(stepsNumber(ready(TARGETS), undefined, 0)).toEqual({ steps: 0, target: 10000 });
+    expect(stepsNumber({ state: 'consent' }, undefined, 5)).toBeNull();
   });
   test('weight: waiting counts cap at the minimum', () => {
     expect(weightNumber({ summary: ready(SUMMARY(12, false)), trend: null }, 'METRIC')).toEqual({ kind: 'waiting', count: 7, min: 7 });

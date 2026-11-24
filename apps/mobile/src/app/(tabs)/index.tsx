@@ -134,7 +134,7 @@ export default function TodayScreen() {
       );
     guideLines = { workout: workoutLine(card, read?.program ?? null, today) };
     // Today's numbers right under the hero (K-1206): the food line with "Log", protein, steps and the weight trend are on the first screen.
-    const numbers = <TodayBlock budget={data.budget} targets={data.targets} stepsToday={data.stepsToday} weight={data.weight} units={units} />;
+    const numbers = <TodayBlock budget={data.budget} targets={data.targets} starting={data.starting} stepsToday={data.stepsToday} weight={data.weight} units={units} />;
     const opened = openDay === null ? null : stripDays(monday, today, sessions, trainedDays(data.week?.workouts), loggedDays(data.week?.weighIns)).find((d) => d.date === openDay);
     if (opened !== undefined && opened !== null)
       daySheet = (

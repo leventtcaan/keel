@@ -14,6 +14,8 @@ type Props = {
   targets: Loaded<Schemas['Targets']>;
   /** Today's steps as Apple Health counts them; null when Health was not read. */
   stepsToday?: number | null;
+  /** The starting plan's targets, read only before the first call (the steps target then). */
+  starting?: Loaded<Schemas['StartingTarget']>;
   weight?: WeightRead;
   units: UnitSystem;
 };
@@ -23,9 +25,9 @@ type Props = {
  * weight trend. At most four numbers. Where the food line has no budget to show (no consent, none, not read), the other numbers
  * stand in a card of their own; none to show, none drawn.
  */
-export function TodayBlock({ budget, targets, stepsToday, weight, units }: Props) {
-  const numbers = <TodayNumbers protein={proteinNumber(budget)} steps={stepsNumber(targets, stepsToday)} weight={weightNumber(weight, units)} units={units} />;
-  const empty = proteinNumber(budget) === null && stepsNumber(targets, stepsToday) === null && weightNumber(weight, units) === null;
+export function TodayBlock({ budget, targets, starting, stepsToday, weight, units }: Props) {
+  const numbers = <TodayNumbers protein={proteinNumber(budget)} steps={stepsNumber(targets, starting, stepsToday)} weight={weightNumber(weight, units)} units={units} />;
+  const empty = proteinNumber(budget) === null && stepsNumber(targets, starting, stepsToday) === null && weightNumber(weight, units) === null;
   if (budget.state === 'ready') return <FoodLine budget={budget} footer={numbers} />;
   return (
     <>

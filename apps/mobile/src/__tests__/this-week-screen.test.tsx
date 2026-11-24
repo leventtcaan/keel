@@ -15,6 +15,7 @@ import { ThemeProvider } from '@/theme/theme';
 import { palettes } from '@/theme/tokens';
 import { weekRecordText } from '@/today/week';
 import { lastTodayLine } from '@/train/beforeWorkout';
+import { progressParams } from '@/progress/params';
 import { workoutParams } from '@/train/params';
 import { formatLoad } from '@/units/units';
 
@@ -1156,10 +1157,12 @@ describe('the food line', () => {
       expect(screen.getByText(single('1,550'))).toBeOnTheScreen();
     });
 
-    test('the temporary starting route is not read for this line any more', async () => {
+    test('the food line is read from the budget route, not the starting route (which now gives only the steps target, K-1206)', async () => {
       mockAnswers['/v1/days/{day}/budget'] = ok(FIRST_WEEK_BUDGET({ low: 2100, high: 2100 }));
+      mockAnswers['/v1/targets/starting'] = ok({ targetKcal: 1900, proteinG: 114, stepsPerDay: 7000 });
       await show();
-      expect(mockGET.mock.calls.map((c) => c[0])).not.toContain('/v1/targets/starting');
+      expect(screen.getByText(t('food.budget.single', { value: '2,100', unit: t('food.budget.kcalUnit') }))).toBeOnTheScreen();
+      expect(screen.queryByText(t('food.budget.single', { value: '1,900', unit: t('food.budget.kcalUnit') }))).toBeNull();
     });
 
     test('no starting target (404: no profile, or no weigh-in): no line, and no complaint', async () => {
@@ -1220,7 +1223,10 @@ describe("today's numbers (K-1206): on the first screen, under the hero", () => 
   test('the trend is read over the chart window, and only once the server says it is ready', async () => {
     trendAnswers();
     await show();
-    expect(mockGET.mock.calls.map((c) => c[0])).toContain('/v1/weight-trend');
+    // The chart's window (weight_chart_days) ending today (Fri 25 Dec 2026), as Progress reads it.
+    const days = progressParams.weightChartDays;
+    const from = new Date(Date.UTC(2026, 11, 25) - (days - 1) * 86_400_000).toISOString().slice(0, 10);
+    expect(mockGET).toHaveBeenCalledWith('/v1/weight-trend', { params: { query: { from, to: '2026-12-25' } } });
     mockGET.mockClear();
     mockAnswers['/v1/weigh-ins/summary'] = ok({ weighInCount: 3, trendMinWeighIns: 7, trendReady: false });
     await screen.unmount();
@@ -1243,6 +1249,38 @@ describe("today's numbers (K-1206): on the first screen, under the hero", () => 
     const order = (testID: string, text: string) => JSON.stringify(screen.toJSON()).indexOf(testID) < JSON.stringify(screen.toJSON()).indexOf(text);
     expect(order('"food-line"', t('thisWeek.today.start'))).toBe(true);
     expect(JSON.stringify(screen.toJSON()).indexOf('"hero"')).toBeLessThan(JSON.stringify(screen.toJSON()).indexOf('"food-line"'));
+  });
+
+  test('before the first call (no /v1/targets) the starting target gives the steps target', async () => {
+    trendAnswers();
+    delete mockAnswers['/v1/targets'];
+    mockAnswers['/v1/targets/starting'] = ok({ targetKcal: 2100, proteinG: 114, stepsPerDay: 7000 });
+    await show();
+    expect(screen.getByText(t('thisWeek.numbers.stepsNone', { target: '7,000' }))).toBeOnTheScreen();
+  });
+
+  test('the starting target is not read once /v1/targets answers', async () => {
+    trendAnswers();
+    await show();
+    expect(mockGET.mock.calls.map((c) => c[0])).not.toContain('/v1/targets/starting');
+  });
+
+  test('read again after a save: the new protein is on the block', async () => {
+    trendAnswers();
+    await render(
+      <ThemeProvider scheme="light">
+        <WithSaved>
+          <Saver />
+          <TodayScreen />
+        </WithSaved>
+      </ThemeProvider>,
+    );
+    await act(async () => {});
+    expect(screen.getByText(t('thisWeek.numbers.protein', { eaten: '70', target: '140' }))).toBeOnTheScreen();
+    mockAnswers['/v1/days/{day}/budget'] = ok({ ...BUDGET(1000, 1200), eaten: { ...BUDGET(0, 0).eaten, proteinG: { low: 90, high: 110 } } });
+    await publishSave({ detail: 'Chicken', undo: async () => ({ done: true as const }) });
+    await act(async () => {});
+    expect(screen.getByText(t('thisWeek.numbers.protein', { eaten: '100', target: '140' }))).toBeOnTheScreen();
   });
 
   test('steps without Apple Health: the target alone, never a zero', async () => {
