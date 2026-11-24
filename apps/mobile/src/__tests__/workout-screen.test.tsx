@@ -5398,8 +5398,8 @@ describe('the rest is its own state (K-1207)', () => {
     const { count, labels } = countElements(screen.toJSON(), true);
     expect(labels).toEqual([
       '[session-header]',
-      '[button Rest 15 seconds shorter]',
       '2:00',
+      '[button Rest 15 seconds shorter]',
       '[button Rest 15 seconds longer]',
       '+1 rep vs last time.',
       '62.5 kg × 7',
@@ -5407,6 +5407,12 @@ describe('the rest is its own state (K-1207)', () => {
     ]);
     expect(count).toBeLessThanOrEqual(workoutParams.restScreenMaxElements);
     expect(countElements(screen.toJSON(), false).count).toBeLessThanOrEqual(workoutParams.restScreenMaxRawElements);
+    // The 15 s buttons are one centred row under the clock, not beside or over its digits, each a full touch target.
+    const steps = screen.getByTestId('rest-steps');
+    expect(StyleSheet.flatten(steps.props.style)).toMatchObject({ flexDirection: 'row', justifyContent: 'center' });
+    expect(within(steps).getAllByRole('button')).toHaveLength(2);
+    for (const b of within(steps).getAllByRole('button')) expect(b).toHaveStyle({ minHeight: tokens.size.touch });
+    expect(within(screen.getByTestId('rest-clock')).queryByRole('button')).toBeNull();
   });
 
   test('Ready brings the set card back, and takes the timer and its alert away', async () => {

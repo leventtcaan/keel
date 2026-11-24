@@ -81,8 +81,6 @@ export function RestTimer({ since, onAdjust }: { since: number; onAdjust?: (seco
   );
   return (
     <View testID="rest" accessibilityRole="timer" style={styles.rest}>
-      <View style={styles.line}>
-        {step15(-step, 'less')}
       <Pressable
         testID="rest-clock"
         accessibilityRole="adjustable"
@@ -97,9 +95,12 @@ export function RestTimer({ since, onAdjust }: { since: number; onAdjust?: (seco
           {time}
         </Text>
       </Pressable>
+      {over ? <Text style={[styles.label, { color: color.muted }]}>{t('workout.rest.over')}</Text> : null}
+      {/* One centred row under the clock, never over its digits (simulator check of K-1207). */}
+      <View testID="rest-steps" style={styles.line}>
+        {step15(-step, 'less')}
         {step15(step, 'more')}
       </View>
-      {over ? <Text style={[styles.label, { color: color.muted }]}>{t('workout.rest.over')}</Text> : null}
       {sheet}
     </View>
   );
@@ -107,7 +108,7 @@ export function RestTimer({ since, onAdjust }: { since: number; onAdjust?: (seco
 
 const styles = StyleSheet.create({
   rest: { alignItems: 'center', gap: tokens.space.sm, paddingVertical: tokens.space.xl },
-  line: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
+  line: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: tokens.space.md },
   time: { flexShrink: 1, fontFamily: tokens.font.display, fontSize: tokens.type.restClock, fontVariant: ['tabular-nums'], textAlign: 'center' },
   label: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
   title: { fontSize: tokens.type.heading, fontWeight: tokens.weight.bold },
