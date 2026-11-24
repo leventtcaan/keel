@@ -2463,6 +2463,12 @@ export interface components {
             setupFields: string[];
             /** @description Absent until the clips passed the filming checklist; the app then shows no demonstration. */
             clips?: components["schemas"]["ExerciseClips"];
+            /**
+             * @description The drawn form image (ADR-091 #4), a path in the app's assets (exercises/<id>/form.webp or .png): two panels,
+             *     start and end. Absent until the image passed the checklist (its own review, apart from the clips'); the app
+             *     then shows no image.
+             */
+            image?: string;
         };
         /**
          * @description The two demonstration clips (ADR-017) — the first rep and the last rep near the target RIR. Paths in the app's

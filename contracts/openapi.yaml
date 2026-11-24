@@ -3326,6 +3326,12 @@ components:
         clips:
           $ref: "#/components/schemas/ExerciseClips"
           description: Absent until the clips passed the filming checklist; the app then shows no demonstration.
+        image:
+          type: string
+          description: |
+            The drawn form image (ADR-091 #4), a path in the app's assets (exercises/<id>/form.webp or .png): two panels,
+            start and end. Absent until the image passed the checklist (its own review, apart from the clips'); the app
+            then shows no image.
     ExerciseClips:
       type: object
       description: |
