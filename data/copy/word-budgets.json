@@ -644,7 +644,7 @@
         { "what": "the counter's call day and, in a short week, the date (Monday, Wed, Nov 18)", "words": 3 },
         { "what": "the next call's weekday (Monday)", "words": 1 }
       ],
-      "uncounted": ["thisWeek.strip.letter.MONDAY", "thisWeek.strip.letter.TUESDAY", "thisWeek.strip.letter.WEDNESDAY", "thisWeek.strip.letter.THURSDAY", "thisWeek.strip.letter.FRIDAY", "thisWeek.strip.letter.SATURDAY", "thisWeek.strip.letter.SUNDAY"],
+      "uncounted": ["thisWeek.numbers.spanWeeks", "thisWeek.numbers.spanDays", "thisWeek.strip.letter.MONDAY", "thisWeek.strip.letter.TUESDAY", "thisWeek.strip.letter.WEDNESDAY", "thisWeek.strip.letter.THURSDAY", "thisWeek.strip.letter.FRIDAY", "thisWeek.strip.letter.SATURDAY", "thisWeek.strip.letter.SUNDAY"],
       "notFirstView": [
         "lockedCall.title",
         "lockedCall.line",
