@@ -7,6 +7,7 @@ import { useAppServices } from '@/services/ServicesProvider';
 import { type TodayData, loadToday } from './today';
 import { loadTodayParts, todayCardOf } from './todayWorkout';
 import { useReadOnFocus } from './useReadOnFocus';
+import { loadWeight } from './numbers';
 import { loadWeekLogs, weekMonday } from './week';
 
 /**
@@ -37,7 +38,7 @@ export function useToday(): { day: string; data: TodayData | null; reload: () =>
         // phone's day only without the server's word: offline, or an older server).
         const served = today.program.state === 'ready' ? today.program.value : null;
         const monday = weekMonday(today.consistency, today.program, day);
-        const week = await loadWeekLogs(api, monday, served?.today ?? day);
+        const [week, weight] = await Promise.all([loadWeekLogs(api, monday, served?.today ?? day), loadWeight(api, day)]);
         // Today's workout (K-969): one under way on this phone first (its own records), else one finished today. A store
         // that cannot be read (or is not there) never keeps the week from showing: reported, and none under way.
         const records = await Promise.resolve()
@@ -88,7 +89,7 @@ export function useToday(): { day: string; data: TodayData | null; reload: () =>
           named(error);
           return null;
         });
-        return { ...today, stepsToday: health?.stepsToday ?? null, previousOpen, monday, week, cardProgram, records, readAt, todayParts };
+        return { ...today, stepsToday: health?.stepsToday ?? null, previousOpen, monday, week, weight, cardProgram, records, readAt, todayParts };
       },
       [api],
     ),

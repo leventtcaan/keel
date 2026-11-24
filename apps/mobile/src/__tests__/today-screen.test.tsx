@@ -22,12 +22,10 @@ import { ConsistencyCard } from '@/today/ConsistencyCard';
 import { FirstWeeksCard } from '@/today/FirstWeeksCard';
 import { PromptCard } from '@/today/PromptCard';
 import { StateCard } from '@/today/StateCard';
-import { TodayList } from '@/today/TodayList';
 import type { TodayData } from '@/today/today';
 import { useToday } from '@/today/useToday';
 import { ThemeProvider } from '@/theme/theme';
 import { palettes } from '@/theme/tokens';
-import { formatWeight } from '@/units/units';
 
 type Schemas = components['schemas'];
 type Answer = {
@@ -235,9 +233,6 @@ const callPart: Part = ({ decision }, _day, reload) =>
 const checkInPart: Part = ({ checkIn }) => (checkIn?.state === 'ready' ? <CheckInCard checkIn={checkIn.value} /> : null);
 const statePart: Part = ({ state }, _day, reload) => <StateCard state={state} onChanged={reload} />;
 const promptPart: Part = ({ prompts }) => (prompts?.state === 'ready' ? <PromptCard read={prompts} /> : null);
-const listPart: Part = (data, day) => (
-  <TodayList day={day} weighIns={data.weighIns} program={data.program} targets={data.targets} budget={data.budget} stepsToday={data.stepsToday} />
-);
 const firstWeeksPart: Part = (data, day) => <FirstWeeksCard read={data.firstWeeks} previousOpen={data.previousOpen ?? null} day={day} />;
 /** What the old screen showed before anything was there: the number, the call, today's list. */
 const nothingYetPart: Part = (data, day, reload) => (
@@ -352,33 +347,6 @@ test.each([
   expect(screen.getByText(t(`${copyKey}.body`))).toBeOnTheScreen();
 });
 
-test("today's list: the weigh-in done, the program's session for today, the step target", async () => {
-  await showPart(listPart);
-  expect(screen.getByText(t('today.list.weighIn.done'))).toBeOnTheScreen();
-  expect(screen.getByText(formatWeight(81.4, 'METRIC'))).toBeOnTheScreen();
-  expect(screen.getByText(t('programDays.upper_a.name'))).toBeOnTheScreen();
-  expect(screen.getByText(t('today.list.steps.target', { steps: '8,000' }))).toBeOnTheScreen();
-});
-
-test("today's list: what is left of the day's food, as ranges (K-409)", async () => {
-  mockAnswers['/v1/days/{day}/budget'] = ok({
-    day: '2026-09-29',
-    targetKcal: 2300,
-    eaten: { kcal: { low: 1350, high: 1520 }, proteinG: { low: 80, high: 96 }, carbsG: { low: 1, high: 2 }, fatG: { low: 1, high: 2 } },
-    left: { kcal: { low: 780, high: 950 }, proteinG: { low: 64, high: 80 } },
-  });
-  await showPart(listPart);
-  expect(screen.getByText(t('today.list.food.title'))).toBeOnTheScreen();
-  expect(screen.getByText(`${t('format.range', { low: 780, high: 950 })} ${t('food.budget.kcalUnit')}`)).toBeOnTheScreen();
-});
-
-test('no weigh-in yet today: the row opens the weigh-in (K-402)', async () => {
-  mockAnswers['/v1/weigh-ins'] = ok([]);
-  await showPart(listPart);
-  await press(t('today.list.weighIn.log'));
-  expect(mockPush).toHaveBeenCalledWith('/weigh-in');
-});
-
 test('before anything is there: each part says what comes, and the others still show', async () => {
   mockAnswers = {
     '/v1/weigh-ins': ok([]),
@@ -388,10 +356,6 @@ test('before anything is there: each part says what comes, and the others still 
   expect(screen.getByText(t('today.consistency.firstWeek'))).toBeOnTheScreen();
   expect(screen.getByText(t('today.call.none'))).toBeOnTheScreen();
   expect(screen.queryByText(t('today.consistency.percent', { percent: 84 }))).toBeNull();
-  await screen.unmount();
-  await showPart(listPart);
-  expect(screen.getByText(t('today.list.weighIn.todo'))).toBeOnTheScreen();
-  expect(screen.getByText(t('today.list.training.rest'))).toBeOnTheScreen();
 });
 
 test('without the health data consent: no number and no call, a way to Settings instead', async () => {
@@ -467,22 +431,6 @@ test('what waits on the phone is sent before Today reads: a weigh-in just saved 
   expect(mockGET).not.toHaveBeenCalled();
   await act(async () => sent());
   expect(mockGET).toHaveBeenCalled();
-});
-
-test.each([
-  ['offline', 'offline'],
-  ['without the consent', 'consent'],
-] as const)('%s, the weigh-in can still be opened (it asks for the consent itself; K-402 review)', async (_label, state) => {
-  mockAnswers['/v1/weigh-ins'] = state === 'offline' ? 'offline' : refused(403, 'CONSENT_REQUIRED');
-  await showPart(listPart);
-  await press(t('today.list.weighIn.log'));
-  expect(mockPush).toHaveBeenCalledWith('/weigh-in');
-});
-
-test("today's steps from Apple Health, against the target (K-404)", async () => {
-  mockSyncHealth.mockResolvedValueOnce({ weighIns: 0, stepsToday: 6240 } as never);
-  await showPart(listPart);
-  expect(screen.getByText(t('today.list.steps.count', { steps: '6,240', target: '8,000' }))).toBeOnTheScreen();
 });
 
 test('Settings is still one tap from Today', async () => {

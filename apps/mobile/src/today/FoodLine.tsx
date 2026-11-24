@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { components } from '@/api/schema';
@@ -23,12 +23,12 @@ type Schemas = components['schemas'];
  * The food line on This week (ADR-077 #1, prototype `#home`): what is left of today's food as ONE number, the middle of the
  * server's range (K-409; ADR-090 #5, as the food day screen shows it), the range itself under "Details"; and "Log"; the line opens the day's food (the meals, to correct or delete, ADR-086), "Log" the meal. Without the health data consent, the lock line in its place:
  * "Needs your OK for health data · Allow" (ADR-072 Ek 1, user test 8 Oct), Allow leading to the consent in Settings,
- * where its text is read before it is given. The first week (no call yet): the server works the budget out from the target
+ * where its text is read before it is given. `footer`: the other numbers of today (K-1206), in the same card under the food row. The first week (no call yet): the server works the budget out from the target
  * the plan will start with (K-997, ADR-072 Ek 2), so the same range comes back. One name for the number whether or not a
  * meal is logged, "Food left" (K-1013: it flipped from "Food today" to "Food left" at the first meal, as if the number
  * were two things; the Food page says "Food left today" too). No budget (404): no line.
  */
-export function FoodLine({ budget }: { budget: Loaded<Schemas['DayBudget']> }) {
+export function FoodLine({ budget, footer = null }: { budget: Loaded<Schemas['DayBudget']>; footer?: ReactNode }) {
   const { color } = useTheme();
   const [detail, setDetail] = useState(false);
   if (budget.state === 'consent') {
@@ -101,6 +101,7 @@ export function FoodLine({ budget }: { budget: Loaded<Schemas['DayBudget']> }) {
         <Button label={t('thisWeek.food.log')} accessibilityLabel={t('thisWeek.food.logLabel')} variant="secondary" size="touch" onSurface onPress={() => router.push('/meal')} />
       </View>
       {detail && detailLine !== null && <Text style={[styles.small, { color: color.textSecondary }]}>{detailLine}</Text>}
+      {footer}
     </View>
   );
 }
