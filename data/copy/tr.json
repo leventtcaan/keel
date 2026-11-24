@@ -1111,6 +1111,9 @@
     "rest": {
       "label": "Dinlenme",
       "over": "Hazır olunca başla",
+      "past": "{high} geçti. Hazır olduğunda devam et",
+      "band": "{low}-{high} dk",
+      "bandExact": "{low}-{high}",
       "time": "{minutes}:{seconds}",
       "less": "-{seconds}",
       "more": "+{seconds}",
@@ -2995,6 +2998,18 @@
       "byName": "Adıyla kaydet"
     }
   },
+  "walks": {
+    "km": "{value} km",
+    "mi": "{value} mi",
+    "line": {
+      "route": "{steps} adım kaldı: {name} gidiş dönüş",
+      "minutes": "{steps} adım kaldı, yaklaşık {minutes} dk"
+    },
+    "label": {
+      "route": "Bugün {steps} adım kaldı. {name} gidiş dönüş yaklaşık {minutes} dakikalık yürüyüş.",
+      "minutes": "Bugün {steps} adım kaldı. Bu yaklaşık {minutes} dakikalık yürüyüş."
+    }
+  },
   "units": {
     "kg": "{value} kg",
     "lb": "{value} lb",
@@ -3006,6 +3021,8 @@
     "inUnit": "in",
     "kgUnit": "kg",
     "lbUnit": "lb",
+    "kmUnit": "km",
+    "miUnit": "mi",
     "minUnit": "min",
     "kgSpoken": "kilogram",
     "lbSpoken": "pound"
@@ -3316,6 +3333,9 @@
     "serverError": "Bizim tarafta bir şey ters gitti. Birazdan tekrar dene."
   },
   "reminders": {
+    "walk": {
+      "title": "Gün bitmeden bir yürüyüş"
+    },
     "training": {
       "title": "{minutes} dakika sonra antrenman",
       "body": "Antrenmanın yaklaşıyor.",
@@ -3520,6 +3540,22 @@
       "system": "Sistem",
       "failed": "Kaydedilemedi. Tekrar dene."
     },
+    "walks": {
+      "title": "Yürüyüşlerim",
+      "hint": "Gerçekten yaptığın yürüyüşler, tek yön. Bugün adım kaldığında Next Call uygun olanı söyleyebilir. Bu bilgi yalnızca bu telefonda kalır.",
+      "none": "Henüz yok",
+      "count": "{count} kayıtlı",
+      "name": "Ad",
+      "distance": "Mesafe, tek yön",
+      "add": "Ekle",
+      "addLabel": "Bu yürüyüşü ekle",
+      "remove": "Sil",
+      "removeLabel": "{name} yürüyüşünü sil",
+      "rowLabel": "{name}, tek yön {distance}",
+      "full": "En fazla üç yürüyüş eklenir. Yenisi için birini sil.",
+      "invalid": "Bir ad ve 1,8 gibi bir mesafe gir.",
+      "failed": "Kaydedilemedi. Tekrar dene."
+    },
     "units": {
       "title": "Birimler",
       "metric": "Metrik (kg, cm)",
@@ -3533,6 +3569,7 @@
       "routine": "Rutinin",
       "what": "Dört hatırlatıcı: antrenman ({minutes} dakika önce), haftalık kontrol sabahı, alışılmış öğün saatlerin ve sessiz bir haftadan sonra bir not. Hepsi bu telefonda kalır.",
       "meals": "Öğün hatırlatıcıları",
+      "walk": "Akşam yürüyüşü önerisi",
       "turnOn": "Hatırlatıcıları aç",
       "onlyCheckIn": "Yalnız haftalık kontrol sabahı hatırlatıcısı açık.",
       "noCalls": "Sağlık verisi iznin olmadan haftalık karar yok, bu yüzden haftalık kontrol sabahı hatırlatıcısı bekler.",
@@ -3651,6 +3688,17 @@
       "importFrom": "Strong, Hevy",
       "none": "Henüz yok",
       "unread": "Yüklenemedi"
+    },
+    "rest": {
+      "title": "Setler arası dinlenme",
+      "recommended": "Önerilen",
+      "custom": "Kendi sürem",
+      "recommendedNote": "{band}. Sayaç kısa uca kadar geriye sayar, uzun uç geçilince söyler.",
+      "customNote": "Sayaç senin sürene kadar geriye sayar. Aralık gösterilmez.",
+      "compound": "Bileşik hareketler",
+      "isolation": "İzolasyon hareketler",
+      "lessLabel": "{what}: {seconds} saniye kısa",
+      "moreLabel": "{what}: {seconds} saniye uzun"
     },
     "food": {
       "title": "Beslenme",
