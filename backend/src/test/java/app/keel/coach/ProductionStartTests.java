@@ -26,6 +26,17 @@ class ProductionStartTests {
     }
 
     @Test
+    void openAiSwitchedOnFromTheEnvironmentStartsWithItsKeyAndNotWithout() {
+        // ADR-092: the VPS turns the conversational coach on by environment alone; the key never sits in a file (V5).
+        server("prod").withInitializer(context -> context.getEnvironment().getPropertySources().addFirst(new SystemEnvironmentPropertySource("environment",
+                        Map.of("KEEL_COACH_PROVIDER", "openai", "KEEL_OPENAI_API_KEY", "sk-test-key"))))
+                .run(context -> assertThat(context).hasNotFailed().getBean(LanguageModel.class).isInstanceOf(OpenAiLanguageModel.class));
+        server("prod").withInitializer(context -> context.getEnvironment().getPropertySources()
+                        .addFirst(new SystemEnvironmentPropertySource("environment", Map.of("KEEL_COACH_PROVIDER", "openai"))))
+                .run(context -> assertThat(context).hasFailed().getFailure().rootCause().hasMessageContaining("KEEL_OPENAI_API_KEY"));
+    }
+
+    @Test
     void theFakeSetFromTheEnvironmentDoesNotStartInProduction() {
         server("prod").withInitializer(context -> context.getEnvironment().getPropertySources()
                         .addFirst(new SystemEnvironmentPropertySource("environment", Map.of("KEEL_COACH_PROVIDER", "fake"))))

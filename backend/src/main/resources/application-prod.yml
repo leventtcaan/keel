@@ -10,3 +10,11 @@ keel:
     provider: "off"
     provider-name: none
     model: none
+  # Switching the conversational coach on (ADR-092, ADR-091 Ek 5) is a deploy decision, not a code change: only after the consent text
+  # is approved (ADR-020; keel.consent.versions THIRD_PARTY_AI loses "-draft") and the OpenAI project's own budget cap is set. Then,
+  # in the environment (relaxed binding; V5 for the key): KEEL_OPENAI_API_KEY, KEEL_COACH_PROVIDER=openai,
+  # KEEL_COACH_PROVIDERNAME=OpenAI, KEEL_COACH_MODEL=gpt-5-nano-2025-08-07, KEEL_COACH_MAXOUTPUT=600,
+  # KEEL_COACH_OPENAI_REASONINGEFFORT=minimal (a model without reasoning: KEEL_COACH_OPENAI_TEMPERATURE=0.2 instead),
+  # KEEL_COACH_INPUTPRICEPERMILLION and KEEL_COACH_OUTPUTPRICEPERMILLION once checked on openai.com/api/pricing — until then
+  # they stay unset [doğrulanmadı] and every call counts at coach_unpriced_call_cost_usd (data/parameters/coach.yaml), and the
+  # consent's provider and data (keel.consent.third-party-ai.provider / .data-types).

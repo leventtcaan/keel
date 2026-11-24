@@ -2147,9 +2147,11 @@ paths:
       description: |
         About the call `decisionId` names, or the latest. The question and the call's facts go to a third-party language
         model, so they need the THIRD_PARTY_AI consent to that provider and that data (V2); without it the answer is 403
-        CONSENT_REQUIRED. The call is health data: HEALTH_DATA consent. The model's words are shown only when they are the
-        call told — its numbers only, no concession, no contradiction, no forbidden phrase (K-505); otherwise the answer is
-        the engine's own words (DETERMINISTIC). When there is no call yet, or for a call only the engine tells (the safety
+        CONSENT_REQUIRED. The call is health data: HEALTH_DATA consent. The model is told the call's facts (action, the rules with
+        the numbers they read, this week's counts, a few words about the person) and answers in words (ADR-092); they are shown
+        (`reply`) only when the server's check passes them — every number one of the facts, no concession, no change of the call,
+        no forbidden phrase; otherwise, and when the provider is down, past the month's budget (coach_monthly_budget_usd) or
+        not asked, the answer is the engine's own words (DETERMINISTIC). When there is no call yet, or for a call only the engine tells (the safety
         label, a call waiting for the cycle question, the safety net's), nothing is sent anywhere. Every answer
         about a call carries the call as it stands: the coach explains, it never changes it (U1, U2). Unknown decisionId:
         404. Daily limit: coach_messages_per_day (data/parameters/quota.yaml, the user's day; K-508) — past it the answer
@@ -5768,11 +5770,17 @@ components:
           type: string
           enum: [MODEL, DETERMINISTIC]
           description: |
-            MODEL — the model classified the message (topic, and rule when the topic is about the call); the app says it in
-            its own copy (ADR-043 #76): coach.topic.<topic>, and only when a rule is present decision.rule.<rule> then
-            coach.answer.stands — a topic not about the call (HEALTH, OFF_TOPIC) says its own sentence and nothing of the
-            call standing (U6: a doctor comes first). The model writes nothing the user reads. DETERMINISTIC — the engine's
-            own words (copyKey).
+            MODEL — the model's checked words (`reply`) when the topic is about the call, with the topic and the call's leading
+            rule; a topic not about the call (HEALTH, OFF_TOPIC) carries no `reply` and the app says its own sentence
+            (coach.topic.<topic>, ADR-043 #76) and nothing of the call standing (U6: a doctor comes first). An app that
+            does not know `reply` shows coach.topic.<topic>, then decision.rule.<rule>, then coach.answer.stands as before.
+            DETERMINISTIC — the engine's own words (copyKey).
+        reply:
+          type: string
+          maxLength: 600
+          description: |
+            The model's words, in MODEL mode when the topic is about the call; the server checked them (ADR-092 #2): every
+            number in them is one the engine gave, nothing in them changes or concedes the call.
         topic:
           type: string
           enum: [LESS, MORE, LATER, HUNGER, DOUBTS_DATA, FEELS_FINE, WORRY, FRUSTRATED, HEALTH, WHY, OFF_TOPIC]

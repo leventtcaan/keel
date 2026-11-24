@@ -1,0 +1,77 @@
+{
+  "_about": "What a reply of the conversational coach may never say (ADR-092 #2, U1 U2 U6 U7 U10), beside data/copy/forbidden-phrases.json (U4, U6, names): a reply that carries any of these is not shown — the engine's own sentence is (ReplyValidator). English and Turkish. Each rule has the examples it must catch and the near-misses it must let through; ReplyRulesTests checks them. The rules fail closed: a good reply the rules also catch is lost, a bad one is not shown.",
+  "rules": [
+    {
+      "id": "changes-the-call-en",
+      "rule": "U1/U2",
+      "pattern": "\\b(i('|\\s)?ll|i\\s+will|i\\s+have|i've|we('|\\s)?ll|let's|we\\s+can|we\\s+could|i\\s+can|i\\s+could)\\s+(change|adjust|lower|raise|reduce|increase|cut|drop|soften|postpone|delay|skip|move|switch|swap|ease|lighten|make\\s+(it|that|the\\s+(call|cut|step)))\\b|\\b(you('|\\s)?re|you\\s+are)\\s+(absolutely\\s+|totally\\s+|completely\\s+)?(right|correct)\\b|\\b(good|fair)\\s+(point|enough)\\b|\\b(cut|reduce|lower|drop|slash|increase|raise|skip|stop)\\s+(your\\s+|the\\s+|some\\s+)?(daily\\s+|weekly\\s+)?(calories|kcal|carbs|protein|fat|food|meals?|sets|reps|training|workouts?|steps|cardio)\\b|\\b(eat|consume|train|lift|walk)\\s+(a\\s+bit\\s+|a\\s+little\\s+)?(less|more|fewer)\\b|\\binstead\\s+of\\s+the\\s+(call|plan|cut|step)\\b|\\b(new|updated|revised|changed)\\s+(call|target|step|plan)\\b|\\b(maintenance|deload)\\s+(this|next)\\s+week\\b",
+      "examples": [
+        "You're right, I'll lower the cut this week.",
+        "Let's make it smaller for now.",
+        "We can postpone the step until after the trip.",
+        "Good point, that is a lot.",
+        "Try to cut your calories a little more.",
+        "You could eat more on training days.",
+        "Here is the new call for this week.",
+        "Take maintenance this week."
+      ],
+      "nonExamples": [
+        "The call stands this week: the weight is not moving toward your goal.",
+        "The cut is 500 kcal a day because three weeks of data show a stall.",
+        "I hear you. The call stays because the trend is flat.",
+        "Three of four sessions are done, which counts toward the week."
+      ]
+    },
+    {
+      "id": "changes-the-call-tr",
+      "rule": "U1/U2",
+      "pattern": "haklısın|haklısınız|haklı\\s+olabilirsin|\\b(kalori|kcal|karbonhidrat|protein)\\w*\\s+(düşür|azalt|kıs|artır|arttır|kes)\\w*|\\b(düşür|azalt|kıs|artır|arttır|kes|atla)\\w*\\s+(kalori|kcal)|\\w*(değiştir|ertele|yumuşat|düşür|azalt)(elim|ebiliriz|ebilirim|eceğim|irim|iyorum)\\b|\\byeni\\s+(karar|hedef|adım|plan)\\b|\\b(daha\\s+az|daha\\s+fazla)\\s+(ye|ye\\w*|antren\\w*)\\b",
+      "examples": [
+        "Haklısın, bu hafta kaloriyi düşürelim.",
+        "Kaloriyi azalt, daha rahat olur.",
+        "Adımı değiştirebiliriz.",
+        "Bu haftaki yeni karar şu."
+      ],
+      "nonExamples": [
+        "Karar bu hafta aynı kalıyor: kilo hedefe doğru gitmiyor.",
+        "Üç haftalık veri düz bir seyir gösteriyor."
+      ]
+    },
+    {
+      "id": "medical-tr",
+      "rule": "U6",
+      "pattern": "\\b(teşhis|tanı\\s+koy\\w*|tedavi\\w*|ilaç\\w*|reçete\\w*|hastalık\\w*|diyabet\\w*|insülin\\w*|tiroid\\w*|obezite\\w*|yeme\\s+bozukluğ\\w*|belirti\\w*|hormon\\w*|sağlık\\s+sorun\\w*)",
+      "examples": ["Eğer ilaç kullanıyorsan doktoruna sor.", "Bu bir belirti olabilir.", "Tiroid sorunu olabilir."],
+      "nonExamples": ["Karar bu hafta aynı kalıyor.", "Antrenman günlerini koruyalım."]
+    },
+    {
+      "id": "blame-and-make-up",
+      "rule": "U7",
+      "pattern": "\\byou\\s+(failed|missed|skipped|slacked|cheated|should\\s+have|didn't\\s+follow|did\\s+not\\s+follow|fell\\s+off)\\b|\\b(your\\s+fault|lazy|undisciplined|no\\s+excuses?|cheat\\s+(day|meal)|make\\s+up\\s+for|catch\\s+up\\s+on|compensate\\s+for|streaks?|don't\\s+break\\s+the\\s+chain)\\b|\\b(suçlu|tembel|disiplinsiz|telafi\\w*|başaramadın|kaçırdın)\\b",
+      "examples": [
+        "You skipped two sessions, so you should have trained more.",
+        "Make up for it with an extra session.",
+        "Keep the streak going.",
+        "Telafi etmek için fazladan antrenman yap."
+      ],
+      "nonExamples": [
+        "Two of four sessions are done; the week still counts.",
+        "Missing a day does not change the call."
+      ]
+    },
+    {
+      "id": "self-reference",
+      "rule": "U10",
+      "pattern": "\\bas\\s+an?\\s+(ai|a\\.i\\.|language\\s+model|assistant|chatbot)\\b|\\bchat\\s?gpt\\b|\\bopen\\s?ai\\b|\\bgpt-?\\d|\\bmy\\s+name\\s+is\\b|\\bi\\s+am\\s+(an?\\s+)?(ai|chatbot|bot)\\b|\\bbir\\s+yapay\\s+zek\\w*",
+      "examples": ["As an AI, I cannot say.", "I'm ChatGPT and I think so.", "My name is Coach.", "Bir yapay zeka olarak söyleyemem."],
+      "nonExamples": ["The call stands because the data says so."]
+    },
+    {
+      "id": "links-and-markup",
+      "rule": "form",
+      "pattern": "https?://|\\bwww\\.|\\]\\([^)]*\\)|<\\s*/?\\s*[a-z][^>]*>|'''|^\\s*[-*•]\\s",
+      "examples": ["See https://example.com for more.", "Read [this](http://x.y).", "```code```", "- one\n- two"],
+      "nonExamples": ["The call stands this week.", "3 of 4 sessions are done."]
+    }
+  ]
+}

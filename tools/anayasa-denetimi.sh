@@ -38,6 +38,8 @@ SERVER_SUITES=(
   app.keel.coach.MealReplyCheckTests
   app.keel.coach.NoCaloriesFromModelTests
   app.keel.coach.PhotoAnalysisSchemaTests
+  app.keel.coach.ReplyValidatorTests
+  app.keel.coach.SycophancyEvalTests
 )
 SERVER_ARGS=()
 for suite in "${SERVER_SUITES[@]}"; do SERVER_ARGS+=(--tests "$suite"); done
