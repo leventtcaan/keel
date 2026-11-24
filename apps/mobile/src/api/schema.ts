@@ -4254,6 +4254,14 @@ export interface components {
         };
     };
     parameters: {
+        /**
+         * @description The features the phone can show, comma separated, case-insensitive (ADR-091 Ek 1, K-1201; name and token are in
+         *     data/parameters/quota.yaml). `locked-calls`: the phone shows a LockedDecision. Only with it may the server hold a
+         *     full call back (not applied, locked view) and answer 403 ENTITLEMENT_REQUIRED on a call's basis, what-if, apply,
+         *     undo and decline. Without it (the 1.0 phone) every route answers as before the locked call existed: the call is
+         *     never held back and is read in full, also one a newer phone had held back.
+         */
+        ClientFeatures: string;
         Id: string;
         ConsentKind: components["schemas"]["ConsentKind"];
         /** @description First day, inclusive (local day). A range is at most 400 days. */
@@ -6003,7 +6011,16 @@ export interface operations {
     answerCheckIn: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /**
+                 * @description The features the phone can show, comma separated, case-insensitive (ADR-091 Ek 1, K-1201; name and token are in
+                 *     data/parameters/quota.yaml). `locked-calls`: the phone shows a LockedDecision. Only with it may the server hold a
+                 *     full call back (not applied, locked view) and answer 403 ENTITLEMENT_REQUIRED on a call's basis, what-if, apply,
+                 *     undo and decline. Without it (the 1.0 phone) every route answers as before the locked call existed: the call is
+                 *     never held back and is read in full, also one a newer phone had held back.
+                 */
+                "X-Keel-Features"?: components["parameters"]["ClientFeatures"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -6212,7 +6229,16 @@ export interface operations {
                 /** @description The cursor of the last item already seen; omitted for the newest page */
                 before?: components["parameters"]["Before"];
             };
-            header?: never;
+            header?: {
+                /**
+                 * @description The features the phone can show, comma separated, case-insensitive (ADR-091 Ek 1, K-1201; name and token are in
+                 *     data/parameters/quota.yaml). `locked-calls`: the phone shows a LockedDecision. Only with it may the server hold a
+                 *     full call back (not applied, locked view) and answer 403 ENTITLEMENT_REQUIRED on a call's basis, what-if, apply,
+                 *     undo and decline. Without it (the 1.0 phone) every route answers as before the locked call existed: the call is
+                 *     never held back and is read in full, also one a newer phone had held back.
+                 */
+                "X-Keel-Features"?: components["parameters"]["ClientFeatures"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -6233,7 +6259,16 @@ export interface operations {
     getCurrentDecision: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /**
+                 * @description The features the phone can show, comma separated, case-insensitive (ADR-091 Ek 1, K-1201; name and token are in
+                 *     data/parameters/quota.yaml). `locked-calls`: the phone shows a LockedDecision. Only with it may the server hold a
+                 *     full call back (not applied, locked view) and answer 403 ENTITLEMENT_REQUIRED on a call's basis, what-if, apply,
+                 *     undo and decline. Without it (the 1.0 phone) every route answers as before the locked call existed: the call is
+                 *     never held back and is read in full, also one a newer phone had held back.
+                 */
+                "X-Keel-Features"?: components["parameters"]["ClientFeatures"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -6254,7 +6289,16 @@ export interface operations {
     getDecision: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /**
+                 * @description The features the phone can show, comma separated, case-insensitive (ADR-091 Ek 1, K-1201; name and token are in
+                 *     data/parameters/quota.yaml). `locked-calls`: the phone shows a LockedDecision. Only with it may the server hold a
+                 *     full call back (not applied, locked view) and answer 403 ENTITLEMENT_REQUIRED on a call's basis, what-if, apply,
+                 *     undo and decline. Without it (the 1.0 phone) every route answers as before the locked call existed: the call is
+                 *     never held back and is read in full, also one a newer phone had held back.
+                 */
+                "X-Keel-Features"?: components["parameters"]["ClientFeatures"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -6277,7 +6321,16 @@ export interface operations {
     getDecisionBasis: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /**
+                 * @description The features the phone can show, comma separated, case-insensitive (ADR-091 Ek 1, K-1201; name and token are in
+                 *     data/parameters/quota.yaml). `locked-calls`: the phone shows a LockedDecision. Only with it may the server hold a
+                 *     full call back (not applied, locked view) and answer 403 ENTITLEMENT_REQUIRED on a call's basis, what-if, apply,
+                 *     undo and decline. Without it (the 1.0 phone) every route answers as before the locked call existed: the call is
+                 *     never held back and is read in full, also one a newer phone had held back.
+                 */
+                "X-Keel-Features"?: components["parameters"]["ClientFeatures"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -6300,7 +6353,16 @@ export interface operations {
     getDecisionWhatIf: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /**
+                 * @description The features the phone can show, comma separated, case-insensitive (ADR-091 Ek 1, K-1201; name and token are in
+                 *     data/parameters/quota.yaml). `locked-calls`: the phone shows a LockedDecision. Only with it may the server hold a
+                 *     full call back (not applied, locked view) and answer 403 ENTITLEMENT_REQUIRED on a call's basis, what-if, apply,
+                 *     undo and decline. Without it (the 1.0 phone) every route answers as before the locked call existed: the call is
+                 *     never held back and is read in full, also one a newer phone had held back.
+                 */
+                "X-Keel-Features"?: components["parameters"]["ClientFeatures"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -6344,7 +6406,16 @@ export interface operations {
     applyDecision: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /**
+                 * @description The features the phone can show, comma separated, case-insensitive (ADR-091 Ek 1, K-1201; name and token are in
+                 *     data/parameters/quota.yaml). `locked-calls`: the phone shows a LockedDecision. Only with it may the server hold a
+                 *     full call back (not applied, locked view) and answer 403 ENTITLEMENT_REQUIRED on a call's basis, what-if, apply,
+                 *     undo and decline. Without it (the 1.0 phone) every route answers as before the locked call existed: the call is
+                 *     never held back and is read in full, also one a newer phone had held back.
+                 */
+                "X-Keel-Features"?: components["parameters"]["ClientFeatures"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -6367,7 +6438,16 @@ export interface operations {
     undoDecision: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /**
+                 * @description The features the phone can show, comma separated, case-insensitive (ADR-091 Ek 1, K-1201; name and token are in
+                 *     data/parameters/quota.yaml). `locked-calls`: the phone shows a LockedDecision. Only with it may the server hold a
+                 *     full call back (not applied, locked view) and answer 403 ENTITLEMENT_REQUIRED on a call's basis, what-if, apply,
+                 *     undo and decline. Without it (the 1.0 phone) every route answers as before the locked call existed: the call is
+                 *     never held back and is read in full, also one a newer phone had held back.
+                 */
+                "X-Keel-Features"?: components["parameters"]["ClientFeatures"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -6390,7 +6470,16 @@ export interface operations {
     declineDecision: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /**
+                 * @description The features the phone can show, comma separated, case-insensitive (ADR-091 Ek 1, K-1201; name and token are in
+                 *     data/parameters/quota.yaml). `locked-calls`: the phone shows a LockedDecision. Only with it may the server hold a
+                 *     full call back (not applied, locked view) and answer 403 ENTITLEMENT_REQUIRED on a call's basis, what-if, apply,
+                 *     undo and decline. Without it (the 1.0 phone) every route answers as before the locked call existed: the call is
+                 *     never held back and is read in full, also one a newer phone had held back.
+                 */
+                "X-Keel-Features"?: components["parameters"]["ClientFeatures"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };

@@ -40,6 +40,21 @@ class DecisionContractTests {
     }
 
     @Test
+    void theDecisionRoutesTakeTheClientFeaturesHeaderTheServerReads() throws Exception {
+        // K-1201 (ADR-091 Ek 1): the locked call is only for a phone that says it can show it; the name is the parameter file's.
+        Map<String, Object> parameter = map(map(map(contract().get("components")).get("parameters")).get("ClientFeatures"));
+        assertThat(parameter).containsEntry("in", "header").containsEntry("name", ClientFeatures.fromClasspath().header())
+                .containsEntry("required", false);
+        Map<String, Object> paths = map(contract().get("paths"));
+        for (String[] route : new String[][] {{"/v1/check-ins/current/answers", "post"}, {"/v1/decisions", "get"}, {"/v1/decisions/current", "get"},
+                {"/v1/decisions/{id}", "get"}, {"/v1/decisions/{id}/basis", "get"}, {"/v1/decisions/{id}/what-if", "get"},
+                {"/v1/decisions/{id}/apply", "post"}, {"/v1/decisions/{id}/undo", "post"}, {"/v1/decisions/{id}/decline", "post"}}) {
+            assertThat((List<Map<String, Object>>) map(map(paths.get(route[0])).get(route[1])).get("parameters")).as(route[0])
+                    .anyMatch(ref -> "#/components/parameters/ClientFeatures".equals(ref.get("$ref")));
+        }
+    }
+
+    @Test
     void declineIsAPostThatAnswersTheTargetsAndTheServerHasIt() throws Exception {
         Map<String, Object> decline = map(map(map(contract().get("paths")).get("/v1/decisions/{id}/decline")).get("post"));
 

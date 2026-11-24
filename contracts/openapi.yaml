@@ -1673,6 +1673,8 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/CheckInAnswers"
+      parameters:
+        - $ref: "#/components/parameters/ClientFeatures"
       responses:
         "200":
           description: This week's call
@@ -1884,6 +1886,7 @@ paths:
       operationId: listDecisions
       summary: Every call so far, newest first (the call ledger)
       parameters:
+        - $ref: "#/components/parameters/ClientFeatures"
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Before"
       responses:
@@ -1905,6 +1908,8 @@ paths:
         active subscription (ADR-091 Ek 1, K-1201) comes as a LockedDecision: its week and the day the next call opens,
         `locked: true`, nothing of what it says. The 200 schema stays Decision until the phone handles the locked view
         (K-1202 makes it a oneOf with LockedDecision) and ships with this server change.
+      parameters:
+        - $ref: "#/components/parameters/ClientFeatures"
       responses:
         "200":
           description: The current call; its locked view (LockedDecision) when it is locked
@@ -1921,6 +1926,8 @@ paths:
       tags: [decision]
       operationId: getDecision
       description: "As the current call: a locked call comes as a LockedDecision (ADR-091 Ek 1, K-1201). So in the ledger's items."
+      parameters:
+        - $ref: "#/components/parameters/ClientFeatures"
       responses:
         "200":
           description: The call; its locked view (LockedDecision) when it is locked
@@ -1941,6 +1948,8 @@ paths:
         else. Never a fat estimate (U4), never the cycle answer (never kept). Health data: CONSENT_REQUIRED without the
         HEALTH_DATA consent, as every /v1/decisions route; NOT_FOUND for a call that is not the user's. ENTITLEMENT_REQUIRED
         (403) for a locked call (ADR-091 Ek 1, K-1201).
+      parameters:
+        - $ref: "#/components/parameters/ClientFeatures"
       responses:
         "200":
           description: The call's basis
@@ -1961,6 +1970,8 @@ paths:
         combination of next week's trend, plan kept and training. Example data, never the user's own, and labelled so.
         NOT_FOUND for a safety call (it says nothing of why, ADR-028 #24) and for a call that is not the user's;
         CONSENT_REQUIRED without the HEALTH_DATA consent; ENTITLEMENT_REQUIRED (403) for a locked call (ADR-091 Ek 1, K-1201).
+      parameters:
+        - $ref: "#/components/parameters/ClientFeatures"
       responses:
         "200":
           description: The example weeks and what the rules would call
@@ -2009,6 +2020,8 @@ paths:
         program (K-217): hold the load from today; a lighter week or a week off from today to the day before the call's
         nextReview. NOT_FOUND for an unknown id. Health data: CONSENT_REQUIRED without the HEALTH_DATA consent.
         ENTITLEMENT_REQUIRED (403) for a locked call: it is not applied until the account has a subscription (ADR-091 Ek 1).
+      parameters:
+        - $ref: "#/components/parameters/ClientFeatures"
       responses:
         "200":
           description: The targets after the call
@@ -2029,6 +2042,8 @@ paths:
         Only the latest call, and only once APPLIED; undone twice, nothing more changes. An undone call is not applied
         again (CONFLICT). The call keeps appliedAt and undoneAt. A call resting on the safety net, and the hard stop, are
         never taken back (CONFLICT, U13): as with decline, applied by default and kept.
+      parameters:
+        - $ref: "#/components/parameters/ClientFeatures"
       responses:
         "200":
           description: The targets after the undo
@@ -2053,6 +2068,8 @@ paths:
         changes. CONFLICT (409): a call resting on the safety net (marked `safety`, or a reason among its rules; U13) is
         never declined; nor an older call, one that changes nothing (NOT_NEEDED), or one undone. NOT_FOUND for an unknown
         id. Health data: CONSENT_REQUIRED without the HEALTH_DATA consent.
+      parameters:
+        - $ref: "#/components/parameters/ClientFeatures"
       responses:
         "200":
           description: The targets after the decline (last week's)
@@ -2232,6 +2249,19 @@ components:
       description: The access token of a Session (K-203).
 
   parameters:
+    ClientFeatures:
+      name: X-Keel-Features
+      in: header
+      required: false
+      description: |
+        The features the phone can show, comma separated, case-insensitive (ADR-091 Ek 1, K-1201; name and token are in
+        data/parameters/quota.yaml). `locked-calls`: the phone shows a LockedDecision. Only with it may the server hold a
+        full call back (not applied, locked view) and answer 403 ENTITLEMENT_REQUIRED on a call's basis, what-if, apply,
+        undo and decline. Without it (the 1.0 phone) every route answers as before the locked call existed: the call is
+        never held back and is read in full, also one a newer phone had held back.
+      schema:
+        type: string
+        example: locked-calls
     Id:
       name: id
       in: path

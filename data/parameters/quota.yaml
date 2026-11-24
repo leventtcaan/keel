@@ -33,3 +33,15 @@ parameters:
     tag: urun
     source: "plan/kararlar/ADR-091-evre-8-kararlari.md#Ek 1"
     note: "Kayıt bedava, karar ücretli (ADR-091 #1, K-1201): abonelik olmadan hesabın ömür boyu ilk bu kadar TAM kararı (karar penceresi okunmuş haftalık karar; ilk hafta antrenman kararı, gözlem, 'henüz yok' ve güvenlik ağı sayılmaz) kilitsizdir. Sonrakiler saklanır ama abonelik olana dek kilitli kalır."
+  - key: client_features_header
+    value: "X-Keel-Features"
+    unit: header_name
+    tag: urun
+    source: "plan/kararlar/ADR-091-evre-8-kararlari.md#Ek 1"
+    note: "Request header in which a client lists, comma separated, the features it can show (K-1201). Absent or without a token: the client is read as the one before the feature (1.0)."
+  - key: locked_calls_feature_token
+    value: "locked-calls"
+    unit: token
+    tag: urun
+    source: "plan/kararlar/ADR-091-evre-8-kararlari.md#Ek 1"
+    note: "The token of client_features_header that says the phone shows a locked call (LockedDecision). Only for such a client may the server hold a call back or answer 403 ENTITLEMENT_REQUIRED on a call's detail (ADR-091 Ek 1)."

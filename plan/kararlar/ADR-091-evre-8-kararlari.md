@@ -86,6 +86,19 @@ karar olsa bile **hiçbir hesapta kilitlenmez, her zaman uygulanır** (U6, sağl
 `data/parameters/quota.yaml › free_full_calls: 1` (tag `urun`, kaynak ADR-091 #1; K2: kodda sayı yok). Hesabın ömür boyu ilk
 `free_full_calls` tam kararı kilitsizdir (ilk tam haftalık karar, ADR-091 #1). Sonrakiler, **o an** `Entitlements.active` değilse
 kilitlidir (`held_back`). Abonelik bitince yeni tam kararlar yine kilitlenir; hak yenilenmez (abone iken verilen tam kararlar da sayılır).
+Harcanan hak **sağlık verisinin dışında**, `subscription.free_call_use` sayacında tutulur (`FreeCallUse`, `checkIn` her tam karar
+saklandığında artırır): kararlar sağlık verisidir ve onay geri çekilince silinir; sayım onlardan yapılsaydı veriyi silmek hakkı yenilerdi.
+Sayaç yalnız hesapla birlikte silinir (V6), dışa aktarmada `freeCallsUsed`, veri envanterinde sağlık-dışı hesap verisi.
+
+### Kilit yalnız bunu bildiren istemci için (sürüm uyumu)
+Mağazadaki 1.0 kilitli görünümü tanımaz (`.action` okur). Bu yüzden kilit **yalnız `X-Keel-Features` istek başlığında `locked-calls`
+belirteci olan** istemciye uygulanır (virgülle ayrılmış liste, büyük/küçük harf duyarsız; başlık adı ve belirteç `quota.yaml`'da
+`client_features_header` / `locked_calls_feature_token`, K2; sözleşmede `ClientFeatures` isteğe bağlı başlık parametresi). Başlıksız istemci
+(1.0) için sunucu bugünkü gibi davranır:
+- Check-in: karar **tam karar sayılır** (hak cihazlar arasında tutarlı kalır) ama **hiç tutulmaz**: varsayılan-uygula, tam görünüm.
+- Okuma, `/basis`, `/what-if`, apply/undo/decline: eskisi gibi; 403 yok.
+- Kenar durum (kabul): yeni istemciyle tutulmuş bir kararı eski istemci tam görünümde okur; eski istemcinin kilit göstermesi mümkün değil.
+Aynı hesabın eski telefonda verdiği ikinci tam karar hakkı harcar ama kilitlenmez; kilit yalnız yeni istemciyle verilen karara gelir.
 
 ### Kilit nerede
 Karar yine **hesaplanır ve saklanır** (abone olunca açılsın). Kilit sunucuda, üç yerde:
@@ -106,12 +119,12 @@ görünür hâle gelir ama geriye dönük uygulanmaz (`apply` zaten yalnız en s
 işareti kalkmış çağrılar açık kalır: ödenmiş şeydir.
 
 ### Veri ve bağımlılık
-- Göç `V55__decision_held_back_calls.sql`: `decision.weekly_call` için `full_call boolean`, `held_back boolean` (varsayılan false;
-  eski satırlar tam karar sayılmaz: 1.0 kullanıcıları bir ücretsiz tam karar daha alır, kabul).
+- Göçler: `V55__decision_held_back_calls.sql` (`decision.weekly_call.held_back`, varsayılan false), `V56__subscription_free_call_use.sql`
+  (sayaç). Sayaç eski hesaplar için 0'dan başlar: 1.0 kullanıcıları bir ücretsiz tam karar daha alır (kabul).
 - Modül sınırı: `decision` → `subscription` bağımlılığı `allowedDependencies`'e eklenir (K5; `subscription` `decision`'a bağlı değil, döngü yok).
 - Dışa aktarma: kullanıcının kendi verisi olarak kilitli çağrılar dahil **olduğu gibi** çıkar (veri sahibinin erişim hakkı, 5.1.1(v)).
-  Bu, ücret duvarını dışa aktarmayla aşmanın yolunu açık bırakır; bilinçli, Levent'in bilgisine.
+  Bu, ücret duvarını dışa aktarmayla aşmanın yolunu açık bırakır; **bilinçli** (erişim hakkı), Levent'in bilgisine.
 
 ### Doğrulama
-`FreeCallsTests` (tam karar ayrımı, hak, güvenlik ağı hiç kilitlenmez), `LockedCallViewTests` (indirgenmiş şekil), `LockedCallsApiTests`
-(ikinci tam karar 403/okuma/uygulanmama, abone olunca açılma; veritabanı, CI), `ContractTests` (`locked` alanı), parametre kaynağı.
+`FreeCallsTests` (tam karar ayrımı, hak, güvenlik ağı hiç kilitlenmez), `LockedCallViewTests` (indirgenmiş şekil), `ClientFeaturesTests` (başlık, eski istemci), `FreeCallUseTests`, `LockedCallsApiTests` (eski istemci değişmez; sağlık verisi silinince hak yenilenmez;
+ikinci tam karar 403/okuma/uygulanmama, abone olunca açılma; veritabanı, CI), `ContractTests` (`locked` alanı), parametre kaynağı.

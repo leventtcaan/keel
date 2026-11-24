@@ -46,6 +46,9 @@ class LockedCallsApiTests {
     @Autowired
     JdbcClient jdbc;
 
+    /** What the calling phone says it can show: the newer phone by default, null for the 1.0 in the stores. */
+    private String features = "locked-calls";
+
     @Test
     @SuppressWarnings("unchecked")
     void theFirstFullCallIsFreeAndTheSecondIsKeptButLocked() throws Exception {
@@ -82,6 +85,19 @@ class LockedCallsApiTests {
     }
 
     @Test
+    void wipingTheHealthDataDoesNotRenewTheFreeCall() throws Exception {
+        AccountId account = onACut();
+        checkIn(account);
+        assertThat(context.getBean(app.keel.subscription.FreeCallUse.class).used(account)).isEqualTo(1);
+
+        assertThat(send(account, "DELETE", "/v1/consents/HEALTH_DATA?confirmDataDeletion=true")).hasStatusOk();
+
+        assertThat(jdbc.sql("select count(*) from decision.weekly_call where account_id = :a").param("a", account.value()).query(Long.class).single())
+                .as("the calls are gone").isZero();
+        assertThat(context.getBean(app.keel.subscription.FreeCallUse.class).used(account)).as("the spent call stays spent").isEqualTo(1);
+    }
+
+    @Test
     @SuppressWarnings("unchecked")
     void subscribingOpensTheLockedCallOfThisWeek() throws Exception {
         AccountId account = onACut();
@@ -114,6 +130,39 @@ class LockedCallsApiTests {
         assertThat(send(account, "GET", "/v1/decisions/" + older.get("id"))).hasStatusOk().bodyJson().extractingPath("$.action").isNotNull();
         assertThat(jdbc.sql("select application from decision.weekly_call where id = :id").param("id", UUID.fromString((String) older.get("id")))
                 .query(String.class).single()).isNotEqualTo("APPLIED");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void thePhoneOfBeforeIsServedAsBeforeAndItsFullCallsStillCount() throws Exception {
+        AccountId account = onACut();
+        features = null;
+        Map<String, Object> first = checkIn(account);
+        pushBackAWeek(first);
+
+        Map<String, Object> second = checkIn(account);
+
+        // As on main: no hold, a whole view, applied by default when it moves the plan.
+        assertThat(second).containsKeys("action", "reasons", "changes").doesNotContainKey("locked");
+        assertThat(jdbc.sql("select held_back from decision.weekly_call where account_id = :a").param("a", account.value()).query(Boolean.class).list())
+                .containsOnly(false);
+        assertThat(context.getBean(app.keel.subscription.FreeCallUse.class).used(account)).as("both counted, as on any device").isEqualTo(2);
+        assertThat(send(account, "GET", "/v1/decisions/" + second.get("id") + "/basis")).hasStatusOk();
+        assertThat(send(account, "GET", "/v1/decisions/" + second.get("id") + "/what-if")).hasStatusOk();
+    }
+
+    @Test
+    void aCallHeldBackForANewPhoneIsReadInFullByTheOldOne() throws Exception {
+        // The accepted edge (ADR-091 Ek 1): the old phone has no lock to show, and it is served as it always was.
+        AccountId account = onACut();
+        pushBackAWeek(checkIn(account));
+        Map<String, Object> locked = checkIn(account);
+        assertThat(locked).containsEntry("locked", true);
+
+        features = null;
+
+        assertThat(send(account, "GET", "/v1/decisions/current")).hasStatusOk().bodyJson().extractingPath("$.action").isNotNull();
+        assertThat(send(account, "GET", "/v1/decisions/" + locked.get("id") + "/basis")).hasStatusOk();
     }
 
     /** Makes the call last week's: the account's next check-in is this week's. */
@@ -163,9 +212,13 @@ class LockedCallsApiTests {
         var request = switch (method) {
             case "GET" -> mvc.get();
             case "PUT" -> mvc.put();
+            case "DELETE" -> mvc.delete();
             default -> mvc.post();
         };
         request = request.uri(uri).header("Authorization", TestSessions.bearer(context, account));
+        if (features != null) {
+            request = request.header("X-Keel-Features", features);
+        }
         if (body != null) {
             request = request.contentType(MediaType.APPLICATION_JSON).content(JSON.writeValueAsString(body));
         }

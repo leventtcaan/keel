@@ -47,8 +47,12 @@ record FreeCalls(int allowance) {
                 .anyMatch(reason -> SafetyHold.CYCLE_CHECK_NEEDED.value().equals(reason.get("rule")));
     }
 
-    /** Whether a call just made is held back: full, the account's free ones used up ({@code earlierFull} before it), no subscription now. */
-    boolean heldBack(boolean full, long earlierFull, boolean entitled) {
-        return full && !entitled && earlierFull >= allowance;
+    /**
+     * Whether a call just made is held back: full, the account's free ones used up ({@code earlierFull} before it), no
+     * subscription now, and a phone that said it can show a locked call ({@code lockAware}). A call from a phone that did not
+     * is full all the same (it spends the allowance, the same on every device) but never held back (ADR-091 Ek 1).
+     */
+    boolean heldBack(boolean lockAware, boolean full, long earlierFull, boolean entitled) {
+        return lockAware && full && !entitled && earlierFull >= allowance;
     }
 }

@@ -53,26 +53,34 @@ class FreeCallsTests {
     void theFirstFullCallIsFreeTheNextOnesWaitForTheSubscription() {
         FreeCalls free = new FreeCalls(1);
 
-        assertThat(free.heldBack(true, 0, false)).as("the first full call").isFalse();
-        assertThat(free.heldBack(true, 1, false)).as("the second").isTrue();
-        assertThat(free.heldBack(true, 5, false)).as("the sixth").isTrue();
+        assertThat(free.heldBack(true, true, 0, false)).as("the first full call").isFalse();
+        assertThat(free.heldBack(true, true, 1, false)).as("the second").isTrue();
+        assertThat(free.heldBack(true, true, 5, false)).as("the sixth").isTrue();
     }
 
     @Test
     void anAccountWithTheSubscriptionIsNeverHeldBack() {
-        assertThat(new FreeCalls(1).heldBack(true, 3, true)).isFalse();
+        assertThat(new FreeCalls(1).heldBack(true, true, 3, true)).isFalse();
     }
 
     @Test
     void aCallThatIsNotFullIsNeverHeldBack() {
-        assertThat(new FreeCalls(1).heldBack(false, 9, false)).isFalse();
+        assertThat(new FreeCalls(1).heldBack(true, false, 9, false)).isFalse();
+    }
+
+    @Test
+    void aPhoneThatCannotShowALockedCallIsNeverHeldBackButItsFullCallsCount() {
+        FreeCalls free = new FreeCalls(1);
+
+        assertThat(free.heldBack(false, true, 9, false)).isFalse();
+        assertThat(free.heldBack(true, true, 1, false)).as("the same account on a newer phone").isTrue();
     }
 
     @Test
     void theAllowanceIsWhateverTheParameterSays() {
-        assertThat(new FreeCalls(0).heldBack(true, 0, false)).isTrue();
-        assertThat(new FreeCalls(3).heldBack(true, 2, false)).isFalse();
-        assertThat(new FreeCalls(3).heldBack(true, 3, false)).isTrue();
+        assertThat(new FreeCalls(0).heldBack(true, true, 0, false)).isTrue();
+        assertThat(new FreeCalls(3).heldBack(true, true, 2, false)).isFalse();
+        assertThat(new FreeCalls(3).heldBack(true, true, 3, false)).isTrue();
     }
 
     private static Map<String, Object> call(String type, String... rules) {

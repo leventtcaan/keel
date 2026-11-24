@@ -120,6 +120,8 @@ final class AccountFixture {
         send(account, "PUT", "/v1/state", Map.of("kind", "SICK"));
         // A day's use of the coach (K-508): a count, the account's.
         assertThat(context.getBean(app.keel.subscription.Quota.class).take(account, app.keel.subscription.Quota.Use.COACH_MESSAGE)).isPresent();
+        // The free full calls spent (ADR-091 Ek 1, K-1201): a count outside the health data.
+        context.getBean(app.keel.subscription.FreeCallUse.class).record(account);
         // A subscription from RevenueCat's webhook (K-701): the state and the event that made it, the account's.
         java.time.Instant now = java.time.Instant.now();
         assertThat(app.keel.subscription.TestWebhooks.send(mvc, context, app.keel.subscription.TestWebhooks.event("evt-" + UUID.randomUUID(),

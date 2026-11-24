@@ -140,31 +140,22 @@ class CallStore {
 
     /** Keeps the call; false when this account already has one for that week or that clientId (the caller reads it back). */
     boolean keep(AccountId account, Call call) {
-        return keep(account, call, false, false);
+        return keep(account, call, false);
     }
 
-    /**
-     * Keeps the call, a full one ({@code fullCall}, K-1201) and whether it is held back for an account without the
-     * subscription ({@code heldBack}: kept, not applied, shown as its week only).
-     */
-    boolean keep(AccountId account, Call call, boolean fullCall, boolean heldBack) {
+    /** Keeps the call, held back or not for an account without the subscription ({@code heldBack}: kept, not applied, shown as its week only; K-1201). */
+    boolean keep(AccountId account, Call call, boolean heldBack) {
         return jdbc.sql("""
                 insert into decision.weekly_call (id, account_id, client_id, week_of, made_on, decided_at, parameters_hash, snapshot, decision, application,
-                    full_call, held_back)
+                    held_back)
                 values (:id, :account, :client, :week, :madeOn, :at, :hash, cast(:snapshot as jsonb), cast(:decision as jsonb), :application,
-                    :fullCall, :heldBack)
+                    :heldBack)
                 on conflict do nothing""")
-                .param("fullCall", fullCall).param("heldBack", heldBack)
+                .param("heldBack", heldBack)
                 .param("id", call.id()).param("account", account.value()).param("client", call.clientId()).param("week", call.weekOf())
                 .param("madeOn", call.madeOn()).param("at", call.decidedAt().atOffset(ZoneOffset.UTC)).param("hash", call.parametersHash())
                 .param("snapshot", json.writeValueAsString(call.snapshot())).param("decision", json.writeValueAsString(call.decision()))
                 .param("application", call.application().name()).update() == 1;
-    }
-
-    /** The account's full calls so far, whatever became of them: what the free allowance is spent on (K-1201). */
-    long fullCalls(AccountId account) {
-        return jdbc.sql("select count(*) from decision.weekly_call where account_id = :account and full_call").param("account", account.value())
-                .query(Long.class).single();
     }
 
     /** The ids of the account's calls held back for want of the subscription. */
