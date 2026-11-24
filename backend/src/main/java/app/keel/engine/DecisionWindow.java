@@ -45,8 +45,8 @@ public final class DecisionWindow {
     }
 
     /**
-     * The first week's mean against the last's, over the observation: the loss toward the goal is under
-     * observation_flat_fraction of flat_margin_kg (a gain is under it too). A week without weigh-ins has no mean to judge:
+     * The first week's mean against the last's, over the observation: the change between the first and last week's mean, up or down, is under
+     * observation_flat_fraction of flat_margin_kg either way (a gain beyond it is not flat either: the weight is not held). A week without weigh-ins has no mean to judge:
      * it counts as flat here so that DataSufficiency says what is missing.
      */
     static boolean confidentlyFlat(WeightSeries weights, LocalDate today, Parameters parameters) {
@@ -55,10 +55,10 @@ public final class DecisionWindow {
         if (weeks.stream().anyMatch(week -> week.kg().isEmpty())) {
             return true;
         }
-        BigDecimal loss = weeks.getFirst().kg().get().subtract(weeks.getLast().kg().get());
+        BigDecimal change = weeks.getFirst().kg().get().subtract(weeks.getLast().kg().get()).abs();
         BigDecimal limit = BigDecimal.valueOf(parameters.number(ParameterKey.FLAT_MARGIN_KG))
                 .multiply(BigDecimal.valueOf(parameters.number(ParameterKey.OBSERVATION_FLAT_FRACTION)));
-        return loss.compareTo(limit) < 0;
+        return change.compareTo(limit) < 0;
     }
 
     static int days(Snapshot snapshot, Parameters parameters) {

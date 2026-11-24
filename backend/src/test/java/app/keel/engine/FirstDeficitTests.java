@@ -77,29 +77,29 @@ class FirstDeficitTests {
     }
 
     @Test
-    void theFractionIsHalfTheNoiseMargin() {
-        assertThat(MALE.number(ParameterKey.OBSERVATION_FLAT_FRACTION)).isEqualTo(0.5);
+    void theFractionIsAQuarterOfTheNoiseMargin() {
+        assertThat(MALE.number(ParameterKey.OBSERVATION_FLAT_FRACTION)).isEqualTo(0.25);
         assertThat(MALE.number(ParameterKey.FLAT_MARGIN_KG)).isEqualTo(0.58);
     }
 
+    private static Snapshot twoWeeks(double first, double second) {
+        return new Snapshot(dayOfPlan(14), Sex.MALE, Phase.CUT, PLAN_START, week(first, second), java.util.Optional.empty())
+                .withEnergy(new EnergyBudget(2848, 300)).withProfile(PROFILE).withObservingMaintenance(true)
+                .withCheckIn(CheckIn.NONE.withAdherence(new BigDecimal("0.9")).withTraining(CheckIn.Training.STABLE));
+    }
+
     @Test
-    void anAmbiguousLoserKeepsTheLongReadAndGetsNoDayFifteenCut() {
-        // Weekly means 80.0 → 79.5 (GS-24 type, 0.5 a week), 79.71 (GS-23 type, 0.29): not under half the margin (0.29).
-        for (double second : new double[] {79.5, 79.71, 79.3}) {
-            Snapshot snapshot = new Snapshot(dayOfPlan(14), Sex.MALE, Phase.CUT, PLAN_START, week(80.0, second), java.util.Optional.empty())
-                    .withEnergy(new EnergyBudget(2848, 300)).withProfile(PROFILE).withObservingMaintenance(true)
-                    .withCheckIn(CheckIn.NONE.withAdherence(new BigDecimal("0.9")).withTraining(CheckIn.Training.STABLE));
-            assertThat(call(decide(snapshot))).as("second week %s", second).isEqualTo("no_decision_yet/window_not_full");
+    void anAmbiguousLoserOrAGainerKeepsTheLongReadAndGetsNoDayFifteenCut() {
+        // Weekly means 80.0 → 79.5 (0.5 a week), 79.71, 79.8 (0.2) and a gain of 1.5 or 0.2 are all beyond 0.145 either way.
+        for (double second : new double[] {79.5, 79.71, 79.8, 80.2, 81.5}) {
+            assertThat(call(decide(twoWeeks(80.0, second)))).as("second week %s", second).isEqualTo("no_decision_yet/window_not_full");
         }
     }
 
     @Test
-    void justUnderHalfTheMarginIsFlatAndAWeightGainIsToo() {
-        for (double second : new double[] {79.72, 80.0, 80.7}) {
-            Snapshot snapshot = new Snapshot(dayOfPlan(14), Sex.MALE, Phase.CUT, PLAN_START, week(80.0, second), java.util.Optional.empty())
-                    .withEnergy(new EnergyBudget(2848, 300)).withProfile(PROFILE).withObservingMaintenance(true)
-                    .withCheckIn(CheckIn.NONE.withAdherence(new BigDecimal("0.9")).withTraining(CheckIn.Training.STABLE));
-            assertThat(call(decide(snapshot))).as("second week %s", second).isEqualTo("adjust_calories:-500/not_toward_goal");
+    void aWeightHeldWithinAQuarterOfTheMarginStartsTheDeficit() {
+        for (double second : new double[] {79.9, 80.0, 80.1, 79.86, 80.14}) {
+            assertThat(call(decide(twoWeeks(80.0, second)))).as("second week %s", second).isEqualTo("adjust_calories:-500/not_toward_goal");
         }
     }
 
@@ -204,12 +204,21 @@ class FirstDeficitTests {
     }
 
     @Property
-    void noDayFifteenCutWhenTheLossReachesTheFractionOfTheMargin(@ForAll("observed") Observed observed) {
+    void noDayFifteenCutWhenTheWeightMovesEitherWayByTheFractionOfTheMargin(@ForAll("observed") Observed observed) {
         double limit = MALE.number(ParameterKey.FLAT_MARGIN_KG) * MALE.number(ParameterKey.OBSERVATION_FLAT_FRACTION);
-        double loss = -observed.secondWeekChangeTenths() / 10.0;
-        if (loss >= limit) {
+        double change = Math.abs(observed.secondWeekChangeTenths() / 10.0);
+        if (change >= limit) {
             Decision decision = DecisionPipeline.decide(observed.snapshot(), MALE);
             assertThat(decision.action() instanceof Action.AdjustCalories(int kcal) && kcal < 0).isFalse();
+        }
+    }
+
+    @Property
+    void aHeldWeightGetsADayFifteenCall(@ForAll("observed") Observed observed) {
+        // Positive side: within the threshold (±0.1 kg at tenths) the 14-day read is taken, so day 14 is a call, not "not yet".
+        if (Math.abs(observed.secondWeekChangeTenths()) <= 1 && observed.adherencePct() >= 70) {
+            Decision decision = DecisionPipeline.decide(observed.snapshot(), MALE);
+            assertThat(decision.reasons().getFirst().rule().value()).isNotIn("window_not_full", "observing", "data_insufficient");
         }
     }
 }
