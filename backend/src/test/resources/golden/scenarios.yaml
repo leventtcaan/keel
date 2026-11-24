@@ -236,20 +236,22 @@ scenarios:
              {is: continue/toward_goal, confidence: high}]
 
   - id: GS-27
-    title: "Twice-a-week weigher losing 1.2 kg a week: invisible to the weekly cap, caught by the 8-week loss (J1 C6)"
+    title: "Twice-a-week weigher losing 1.2 kg a week: the weekly cap catches it in week 5 beyond its noise margin, not only the 8-week loss in week 9 (J1 C6)"
     user: {sex: male, phase: cut, height: 190}
     # K-1204: two weigh-ins a week no longer stop the weekly read: from week 4 (2+2 edge weigh-ins, a 4-week window) the
-    # spine decides (continue/toward_goal: it reads 1.2 kg a week as moving). The weekly loss cap still needs dense data
-    # (SafetyNet keeps its rule, ADR-091 Ek 4), so a 1.2 kg-a-week loss goes unnoticed by it in weeks 4-8: the open gap this
-    # scenario documents (the proposal's SafetyNet change is a separate approval). Week 9 (day 62): the
-    # trend 8 weeks back (days 0-6) is 100.0, now 90.4: 9.6 kg > 8 % of 100 and still falling → +500. Week 10 holds at
-    # 90.4: 8 weeks back is now 98.8, 8.4 kg > 7.9 still, but the loss has stopped — raising again would stack; the
-    # new plan's window comes before the weigh-in count (DataSufficiency order).
+    # spine decides (continue/toward_goal: it reads 1.2 kg a week as moving). K-1226: the weekly loss cap reads sparse data too,
+    # but only beyond the noise margin: a span of k weeks must lose more than k caps plus the edge weeks' margin (2+2 weigh-ins:
+    # 0.82 kg). One week's 1.2 kg is under cap 0.96 + 0.82, so weeks 2-4 stay silent; in week 5 (day 34) the trend 4 weeks back is
+    # 100.0, now 95.2: 4.8 kg > 4 × 0.952 + 0.82 = 4.63 → +500. Before K-1226 weeks 5-8 said continue/toward_goal and only week 9
+    # (day 62) answered, by the 8-week loss: 100.0 → 90.4 is 9.6 kg > 8 % of 100 and still falling → +500. (This scenario's weights
+    # keep falling whatever the plan does, so the cap answers every week while it holds.) Week 10 holds at 90.4: 8 weeks back is
+    # now 98.8, 8.4 kg > 7.9 still, but the loss has stopped — raising again would stack; the new plan's window comes before the
+    # weigh-in count (DataSufficiency order).
     mornings: 2
     weeks: [100.0, 98.8, 97.6, 96.4, 95.2, 94.0, 92.8, 91.6, 90.4, 90.4]
-    expect: [observing, data_insufficient, data_insufficient, continue/toward_goal, continue/toward_goal, continue/toward_goal,
-             continue/toward_goal, continue/toward_goal, {is: "increase_calories:500/rapid_loss", confidence: high},
-             window_not_full]
+    expect: [observing, data_insufficient, data_insufficient, continue/toward_goal, "increase_calories:500/loss_rate_cap",
+             "increase_calories:500/loss_rate_cap", "increase_calories:500/loss_rate_cap", "increase_calories:500/loss_rate_cap",
+             {is: "increase_calories:500/rapid_loss", confidence: high}, window_not_full]
 
   - id: GS-28
     title: "Woman bulking at the ideal 0.5 kg a month: a 28-day window reads it as flat, so +250 every 28 days (L-10)"

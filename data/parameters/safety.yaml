@@ -28,6 +28,12 @@ parameters:
     unit: weeks
     tag: literatur
     source: "arastirma/ham/J1-cinsiyet.md#C6"
+  - key: loss_cap_sparse_max_span_weeks
+    value: 5
+    unit: weeks
+    tag: urun
+    source: "arastirma/ham/H1-olcum.md#3.4"
+    note: "SEÇİM, ürün (K-1226, ADR-091 Ek 4 devamı); türetilen kısım gürültü payı. Haftada 4'ten az tartıda kayıp tavanı (loss_rate_cap, loss_rate_cap_bodyweight; G2 K-17, H3 Ç1) 1..bu kadar hafta geriye bakar: kenar haftaların trendi arasındaki kayıp, k·tavan + NoiseMargin(kenar tartı sayıları) değerini AŞARSA güvenlik kararı (gürültü payı = ADR-020 L-10 türetiminin n1, n2'ye genellemesi, 1,96·0,42·√(1/n1+1/n2); alıntı değil). k hafta geriye bakınca haftalık pay 1/k'ya düşer: 2+2 tartıda tek haftada 0,82 kg pay tavanın 0,2 kg üstündeki sabit kaybı gizler, 5 haftada 0,16 kg/hafta kalır. 5 = decision_window_max_weeks − 1: karar penceresi seyrek veride en çok bu kadar haftalık adım okur (K-1204). Yoğun veride (son iki haftanın her biri min_weighins_per_week) kural değişmez, payı yoktur. Sekiz haftalık kayıp (rapid_loss) tartı sayısına hiç bağlı değildir, seyrekte zaten çalışır."
   - key: lea_threshold_kcal_per_kg_ffm
     by_sex: {male: 25, female: 30}
     unit: kcal_per_kg_ffm_per_day
