@@ -14,7 +14,7 @@ final class FakeLanguageModel implements LanguageModel {
 
     private static final int REMEMBERED = 100;
 
-    private final Deque<String> answers = new ArrayDeque<>();
+    private final Deque<ModelReply> answers = new ArrayDeque<>();
     private RuntimeException failure;
     private final List<ModelRequest> requests = new ArrayList<>();
 
@@ -30,13 +30,17 @@ final class FakeLanguageModel implements LanguageModel {
             failure = null;
             throw thrown;
         }
-        String text = answers.isEmpty() ? "{}" : answers.removeFirst();
-        return new ModelReply(text, 0, 0);
+        return answers.isEmpty() ? new ModelReply("{}", 0, 0) : answers.removeFirst();
     }
 
     /** The next answer, after the ones already told. */
     synchronized void answer(String text) {
-        answers.addLast(text);
+        answer(text, 0, 0);
+    }
+
+    /** The next answer, with the tokens it cost (what the spend counts). */
+    synchronized void answer(String text, int inputTokens, int outputTokens) {
+        answers.addLast(new ModelReply(text, inputTokens, outputTokens));
     }
 
     synchronized List<ModelRequest> requests() {

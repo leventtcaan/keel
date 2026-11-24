@@ -290,8 +290,14 @@ keel:
     provider-name: none
     model: fake
     max-output: 400 # tokens
-    input-price-per-million: 0
-    output-price-per-million: 0
+    # Prices per million tokens are not set: unknown until checked on the provider's page ([doğrulanmadı], K6), and a call then counts
+    # at coach_unpriced_call_cost_usd (data/parameters/coach.yaml) — never at nothing (CoachSpend).
+    # OpenAI (provider: openai, ADR-092; the model, the prices and the key are set where it is switched on: application-prod.yml).
+    # The key is the environment's (V5): KEEL_OPENAI_API_KEY (empty or absent: not set, and a server on provider openai does not start).
+    openai:
+      api-key: ${KEEL_OPENAI_API_KEY}
+      base-uri: https://api.openai.com/v1/
+      timeout: 20s
     # What each purpose sends, as the AI consent names the data (V2): a call goes only with data the user agreed to send.
     # The consent text and its list are the product owner's (K-511); these are the names the code asks for.
     data-types:

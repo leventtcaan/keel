@@ -36,6 +36,17 @@ class LanguageModelConfigurationTests {
     }
 
     @Test
+    void openAiStartsOnlyWithItsKeyAndAlsoInProduction() {
+        OpenAiProperties withKey = new OpenAiProperties("sk-test-key", null, null, null, null);
+
+        assertThat(LanguageModelConfiguration.languageModel(properties("openai"), true, withKey)).isInstanceOf(OpenAiLanguageModel.class);
+        assertThatIllegalStateException().isThrownBy(() -> LanguageModelConfiguration.languageModel(properties("openai"), true, new OpenAiProperties(" ", null, null, null, null)))
+                .withMessageContaining("KEEL_OPENAI_API_KEY");
+        assertThatIllegalStateException().isThrownBy(() -> LanguageModelConfiguration.languageModel(properties("openai"), true))
+                .withMessageContaining("KEEL_OPENAI_API_KEY");
+    }
+
+    @Test
     void inProductionTheFakeDoesNotStart() {
         assertThatIllegalStateException().isThrownBy(() -> LanguageModelConfiguration.languageModel(properties("fake"), true))
                 .withMessageContaining("fake").withMessageContaining("production");

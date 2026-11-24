@@ -11,7 +11,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * names an adapter the server has; {@code providerName} is who it sends to, as the AI consent names it (V2: a call goes
  * only where the user agreed); {@code dataTypes} what each purpose carries, as the consent names it; a question and a
  * reply's longest length in characters (K-505). The provider ("fake" until K-511 chooses one, ADR-041); the output limit is in tokens; prices are
- * per million tokens, as providers list them. A missing or impossible value stops the server from starting.
+ * per million tokens, as providers list them (unset until checked on the provider's page). A missing or impossible value stops the server from starting.
  */
 @ConfigurationProperties("keel.coach")
 record CoachProperties(String provider, String providerName, String model, Integer maxOutput, BigDecimal inputPricePerMillion, BigDecimal outputPricePerMillion,
@@ -34,14 +34,24 @@ record CoachProperties(String provider, String providerName, String model, Integ
         if (maxQuestionChars == null || maxQuestionChars < 1 || maxReplyChars == null || maxReplyChars < 1) {
             throw new IllegalStateException("keel.coach.max-question-chars and max-reply-chars are at least 1");
         }
-        if (inputPricePerMillion == null || outputPricePerMillion == null || inputPricePerMillion.signum() < 0
-                || outputPricePerMillion.signum() < 0) {
-            throw new IllegalStateException("keel.coach prices are per million tokens, 0 or more");
+        // A price not set is a price not known (ADR-092 #4: [doğrulanmadı] until checked): CoachSpend then counts each call at the
+        // parameter's high estimate, never at nothing.
+        if ((inputPricePerMillion != null && inputPricePerMillion.signum() < 0) || (outputPricePerMillion != null && outputPricePerMillion.signum() < 0)
+                || (inputPricePerMillion == null) != (outputPricePerMillion == null)) {
+            throw new IllegalStateException("keel.coach prices are per million tokens, 0 or more, both set or neither");
         }
     }
 
-    /** What a reply cost at these prices. */
+    /** Whether both prices are known (set). */
+    boolean priced() {
+        return inputPricePerMillion != null;
+    }
+
+    /** What a reply cost at these prices; only when {@link #priced}. */
     BigDecimal cost(ModelReply reply) {
+        if (!priced()) {
+            throw new IllegalStateException("keel.coach prices are not set");
+        }
         return inputPricePerMillion.multiply(BigDecimal.valueOf(reply.inputTokens())).add(outputPricePerMillion.multiply(BigDecimal.valueOf(reply.outputTokens())))
                 .divide(MILLION, MathContext.DECIMAL64);
     }

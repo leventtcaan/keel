@@ -14,11 +14,12 @@ read -rp "Path to the Sign in with Apple .p8 file: " p8
 [[ -f $p8 ]] || { echo "no file at $p8" >&2; exit 1; }
 read -rsp "RevenueCat webhook secret (Enter: a random one until RevenueCat is set up): " revenuecat; echo
 read -rsp "RevenueCat secret API key, sk_... (Enter: none yet; the REST refresh stays off and account deletions wait for it): " revenuecat_api; echo
+read -rsp "OpenAI API key, sk-... (Enter: none yet; the conversational coach stays off, ADR-092): " openai_api; echo
 
 # Compose's .env reader cuts an unquoted value at " #" and expands "$": refuse what it would change, instead of a server
 # that quietly rejects every webhook (security review I8).
 [[ $domain =~ ^[a-z0-9.-]+$ ]] || { echo "the domain: lower-case letters, digits, dots and dashes only" >&2; exit 1; }
-for value in "${client_id:-x}" "$team_id" "$key_id" "${revenuecat:-x}" "${revenuecat_api:-x}"; do
+for value in "${client_id:-x}" "$team_id" "$key_id" "${revenuecat:-x}" "${revenuecat_api:-x}" "${openai_api:-x}"; do
   [[ $value =~ ^[A-Za-z0-9._~+/=-]+$ ]] || { echo "a value holds a character the .env file would change; nothing written" >&2; exit 1; }
 done
 
@@ -34,5 +35,7 @@ done
   printf "KEEL_REVENUECAT_WEBHOOK_SECRET=%s\n" "${revenuecat:-$(openssl rand -hex 32)}"
   # Empty is allowed (K-704): the server then skips RevenueCat's REST API and says so once at start.
   printf "KEEL_REVENUECAT_API_KEY=%s\n" "${revenuecat_api}"
+  # Empty is allowed (ADR-092): the conversational coach stays off (keel.coach.provider: off); on provider openai a server without it does not start.
+  printf "KEEL_OPENAI_API_KEY=%s\n" "${openai_api}"
 } | ssh "$host" 'umask 077; [ ! -e /opt/keel/.env ] || { echo "/opt/keel/.env exists: not replaced" >&2; exit 1; }; cat > /opt/keel/.env'
 echo "written: /opt/keel/.env on $host (mode 600)"

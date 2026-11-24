@@ -1,0 +1,13 @@
+parameters:
+  - key: coach_monthly_budget_usd
+    value: 20
+    unit: usd_per_month
+    tag: urun
+    source: "plan/kararlar/ADR-092-konusan-koc.md#Karar"
+    note: "Aylık toplam model harcaması tavanı (herkes için, ADR-092 #4). Aşılınca koç o ayın sonuna dek motorun kendi cümlesiyle konuşur. 20 öneridir, Levent onaylar; OpenAI panelindeki proje bütçe tavanı ayrıca ve bunun üstünde değil altında olmalı (ikinci emniyet)."
+  - key: coach_unpriced_call_cost_usd
+    value: 0.01
+    unit: usd_per_call
+    tag: urun
+    source: "plan/kararlar/ADR-092-konusan-koc.md#Karar"
+    note: "Fail-safe: keel.coach fiyatları [doğrulanmadı] iken (openai.com/api/pricing'den kontrol edilene dek boş) her çağrı bu yüksek tahminle sayılır; bütçe asla 0 maliyetle işlemez. Fiyatlar girilince kullanılmaz."

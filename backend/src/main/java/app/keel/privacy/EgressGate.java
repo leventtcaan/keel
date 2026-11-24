@@ -126,4 +126,32 @@ public class EgressGate {
         consents.requireAi(account, provider, dataType);
         return call.get();
     }
+
+    /**
+     * The way a language model's adapter posts to its provider (ADR-092 #4): to {@code provider} only, carrying only
+     * {@code dataType}, each post under the consent that names both (checked again, so a withdrawal between two tries stops the
+     * second). https only — a local address may use http, for the tests' stand-in provider. The body and the headers (a key) are
+     * never logged; a redirect is not followed, so a key goes only where it was sent.
+     */
+    public AiChannel aiChannel(AccountId account, String provider, String dataType) {
+        return (uri, headers, json, timeout) -> {
+            consents.requireAi(account, provider, dataType);
+            if (!"https".equals(uri.getScheme()) && !("http".equals(uri.getScheme()) && isLocal(uri.getHost()))) {
+                throw new IllegalArgumentException("a call to an AI goes over https");
+            }
+            HttpRequest.Builder request = HttpRequest.newBuilder(uri).timeout(timeout).header("Content-Type", "application/json")
+                    .header("Accept", "application/json").POST(HttpRequest.BodyPublishers.ofString(json));
+            try {
+                headers.forEach(request::header);
+            } catch (IllegalArgumentException invalidHeader) {
+                throw new ApiException(ErrorCode.INTERNAL); // the JDK's message may quote the key (V5)
+            }
+            Answer answer = exchange(request.build());
+            return new AiResponse(answer.status(), answer.body());
+        };
+    }
+
+    private static boolean isLocal(String host) {
+        return "localhost".equals(host) || "127.0.0.1".equals(host) || "[::1]".equals(host);
+    }
 }
