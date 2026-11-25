@@ -6071,6 +6071,23 @@ tasks:
     refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md", "plan/tasarim-gezinti-notlari.md", "prototip/gorsel-yon/y5-e1.jpg"]
     learn: ["Mutlak konumlu çizgi ve eşit sütunlar", "Renk rolüyle durum gösterme"]
 
+  - id: K-1230
+    title: "Ana ekran: karar kartı ve kilo trendi satırı Sıcak defter dilinde (9c-3)"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: S
+    status: done
+    depends_on: [K-1229]
+    why: "Gezinti Durak 1 ve taslak y5-e1: kararın üstünde boş bir şerit (yalnız ok), çizgiyle ayrılmış alt satır; kilo üçlü satırda küçük bir kutu, 'nereye gidiyorum' görünmüyor"
+    acceptance:
+      - "Karar kartında ok başlığın satırında; boş şerit yok; alt satır çizgisiz, boşlukla ayrılır"
+      - "Kilo kendi satırında: serif kilo, altında değişim, yanında sunucunun trend noktalarından küçük petrol çizgi (son nokta işaretli); çizim ekran okuyucudan gizli, etiket okunur"
+      - "Yeni metin yok; pencere/eşik eklenmez (noktalar sunucunun)"
+    tests: ["home-warm-notebook.test.tsx", "this-week-screen.test.tsx", "today-numbers.test.tsx", "npm run check"]
+    refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md", "prototip/gorsel-yon/y5-e1.jpg"]
+    learn: ["SVG ile küçük çizgi grafik", "Erişilebilirlikte süs çizimini gizlemek"]
+
   - id: K-1227
     title: "Yerler arası yürüme rotası haritada (noktalı), adım karşılığı"
     milestone: M12

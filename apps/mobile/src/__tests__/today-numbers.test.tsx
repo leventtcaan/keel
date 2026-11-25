@@ -219,9 +219,10 @@ describe('each number opens its place', () => {
 });
 
 describe('the tiles share the row', () => {
-  test('every tile is an equal share of the row, with no gutter for the "+" (gezinti Durak 1)', async () => {
+  test('every tile is an equal share of the row, with no gutter for the "+" (gezinti Durak 1); the weight has its own line (9c-3)', async () => {
     await show();
-    const tiles = ['protein', 'steps', 'weight'].map((id) => StyleSheet.flatten(screen.getByTestId(`number-${id}`).props.style));
+    const tiles = ['protein', 'steps'].map((id) => StyleSheet.flatten(screen.getByTestId(`number-${id}`).props.style));
+    expect(StyleSheet.flatten(screen.getByTestId('number-weight').props.style)).toMatchObject({ flexDirection: 'row' });
     for (const style of tiles) expect(style).toMatchObject({ flexGrow: 1, flexBasis: 0, minWidth: 0 });
     const row = StyleSheet.flatten(screen.getByTestId('number-protein').parent?.props.style);
     expect(row.paddingRight ?? 0).toBe(0);

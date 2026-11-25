@@ -242,6 +242,10 @@ export const tokens = {
     planRadio: 24,
     /** The progress photo's camera (K-1055, prototype yeniden-yapim §10): the shutter. */
     shutter: 78,
+    /** The weight's small trend line on This week (9c-3): its box, and the latest point's dot. */
+    trendWidth: 120,
+    trendHeight: 36,
+    trendDot: 6,
     /** Sets per muscle: the muscle's name column and the count column beside its bar. */
     barName: 92,
     barCount: 44,

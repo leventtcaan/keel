@@ -27,11 +27,14 @@ type Props = {
 /** The weekly call. It sits on the page in the serif voice; the inverted black block is gone (ADR-094 §1). */
 export function DecisionBlock({ eyebrow, aside, title, children, onPress, pressLabel, pressHint, footer, testID }: Props) {
   const { color } = useTheme();
+  const heading = (
+    <Text accessibilityRole="header" style={[styles.title, styles.titleBeside, { color: color.decisionText }]}>
+      {title}
+    </Text>
+  );
   const body = (
     <>
-      {aside === undefined ? (
-        eyebrow !== undefined && <Text style={[styles.eyebrow, { color: color.accentInk }]}>{eyebrow}</Text>
-      ) : (
+      {aside !== undefined && (eyebrow !== undefined || onPress === undefined) ? (
         <View style={styles.top}>
           {/* A mark with no label keeps to the right; no empty text is laid out beside it. */}
           {eyebrow === undefined ? (
@@ -41,10 +44,19 @@ export function DecisionBlock({ eyebrow, aside, title, children, onPress, pressL
           )}
           <InverseSurface>{aside}</InverseSurface>
         </View>
+      ) : (
+        eyebrow !== undefined && <Text style={[styles.eyebrow, { color: color.accentInk }]}>{eyebrow}</Text>
       )}
-      <Text accessibilityRole="header" style={[styles.title, { color: color.decisionText }]}>
-        {title}
-      </Text>
+      {aside !== undefined && eyebrow === undefined && onPress !== undefined ? (
+        // A block that opens, with no label above: its arrow sits on the title's own line (ADR-094 §3, 9c-3), no band of
+        // its own over the call. A block that does not open keeps its mark on its own row (the paywall's tag, approved v2).
+        <View style={styles.top}>
+          {heading}
+          <InverseSurface>{aside}</InverseSurface>
+        </View>
+      ) : (
+        heading
+      )}
       <InverseSurface>{children}</InverseSurface>
     </>
   );
@@ -77,4 +89,6 @@ const styles = StyleSheet.create({
     ...tokens.face.display,
     fontSize: tokens.type.decisionTitle,
   },
+  /** Beside the mark the title takes the rest of the line and wraps there (a long Turkish call). */
+  titleBeside: { flexShrink: 1 },
 });
