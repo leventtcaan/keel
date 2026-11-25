@@ -473,6 +473,10 @@
       "HIGH": "Yüksek"
     },
     "nextCall": "Sonraki karar {date}",
+    "section": {
+      "why": "Neden",
+      "change": "Ne değişiyor"
+    },
     "gotIt": "Anladım",
     "practice": {
       "title": "Uygulamada",

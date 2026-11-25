@@ -8,10 +8,11 @@ import { tokens } from '@/theme/tokens';
  * The points are the server's (U1), drawn oldest to newest across the box, the newest marked with a dot. It says nothing a
  * screen reader needs: the number and its change beside it are read, so the drawing is hidden from it.
  */
-export function TrendLine({ points }: { points: number[] }) {
+export function TrendLine({ points, width, height }: { points: number[]; width?: number; height?: number }) {
   const { color } = useTheme();
   if (points.length < 2) return null;
-  const { trendWidth: w, trendHeight: h, trendDot: dot } = tokens.size;
+  const { trendDot: dot } = tokens.size;
+  const [w, h] = [width ?? tokens.size.trendWidth, height ?? tokens.size.trendHeight];
   const [low, high] = [Math.min(...points), Math.max(...points)];
   const span = high - low;
   const at = (i: number): [number, number] => {

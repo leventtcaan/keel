@@ -6088,6 +6088,24 @@ tasks:
     refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md", "prototip/gorsel-yon/y5-e1.jpg"]
     learn: ["SVG ile küçük çizgi grafik", "Erişilebilirlikte süs çizimini gizlemek"]
 
+  - id: K-1231
+    title: "Karar ekranı Sıcak defter dilinde: grafik, başlıklar, tarih ve güven (9c-4a)"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: M
+    status: doing
+    depends_on: [K-1230]
+    why: "Gezinti Durak 1: karar detay sayfası çok zayıf, cümle yığını. ADR-094 Ek 1 (Levent): grafik, başlıklar, bütçe 50, Uygulamada kalır"
+    acceptance:
+      - "Kararın okuduğu haftalar küçük bir grafik (sunucunun basis'i; ilk ve son değer etiketli); basis yoksa grafik yok, karar durur"
+      - "Tarih ve güven tek satırda; kararın altında çizgi yok"
+      - "'Ne değişiyor' (değişiklik varsa) ve 'Neden' başlıkları; kelime bütçesi 50"
+      - "Mevcut karar ekranı testleri değişmeden geçer"
+    tests: ["call-warm-notebook.test.tsx", "call-screen.test.tsx", "copy-budget.test.ts", "npm run check"]
+    refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md", "prototip/gorsel-yon/y5-e2.jpg"]
+    learn: ["Ekranda ikinci okuma (basis)", "onLayout ile genişliğe göre çizim"]
+
   - id: K-1227
     title: "Yerler arası yürüme rotası haritada (noktalı), adım karşılığı"
     milestone: M12
