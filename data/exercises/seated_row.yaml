@@ -13,3 +13,7 @@ clips:
   first_rep: clips/seated_row/first-rep.mp4
   last_rep: clips/seated_row/last-rep.mp4
 review: pending
+image: exercises/seated_row/form.webp
+image_review: pending
+loop: exercises/seated_row/loop.mp4
+loop_review: pending

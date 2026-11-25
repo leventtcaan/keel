@@ -13,3 +13,7 @@ clips:
   first_rep: clips/incline_dumbbell_press/first-rep.mp4
   last_rep: clips/incline_dumbbell_press/last-rep.mp4
 review: pending
+image: exercises/incline_dumbbell_press/form.webp
+image_review: pending
+loop: exercises/incline_dumbbell_press/loop.mp4
+loop_review: pending

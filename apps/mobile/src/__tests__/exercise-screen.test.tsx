@@ -21,6 +21,26 @@ type BodyData = ReadonlyArray<{ slug?: string; color?: string }>;
 const mockBody = jest.fn((_props: { side?: string; data: BodyData; gender?: string }) => null);
 jest.mock('react-native-body-highlighter', () => ({ __esModule: true, default: (props: { side?: string; data: BodyData; gender?: string }) => mockBody(props) }));
 jest.mock('expo-router', () => ({ router: { back: jest.fn() }, useLocalSearchParams: () => mockParams }));
+// The loop's player is native; what the screen sets on it and asks of it is what is tested.
+const mockPlayer = { loop: false, muted: false, audioMixingMode: 'auto', play: jest.fn(), pause: jest.fn() };
+jest.mock('expo-video', () => {
+  const { View } = require('react-native');
+  const { useRef } = require('react');
+  return {
+    // As the real hook: the setup runs once, when the player is made, not on every render.
+    useVideoPlayer: (_source: unknown, setup?: (player: typeof mockPlayer) => void) => {
+      const made = useRef(false);
+      if (!made.current) {
+        made.current = true;
+        setup?.(mockPlayer);
+      }
+      return mockPlayer;
+    },
+    VideoView: (props: object) => <View testID="form-loop-video" {...props} />,
+  };
+});
+let mockReduce = false;
+jest.mock('@/theme/useReduceMotion', () => ({ useReduceMotion: () => mockReduce }));
 
 const move = (id: string, extra: Partial<Schemas['Exercise']>): Schemas['Exercise'] => ({
   id,
@@ -40,6 +60,8 @@ const CATALOG = [
   move('romanian_deadlift', { muscles: ['hamstrings'], equipment: 'BARBELL' }),
   move('future_move', { muscles: ['chest'], image: 'exercises/future_move/form.webp' }),
   move('lateral_raise', { kind: 'ISOLATION', muscles: ['side_delts'], equipment: 'DUMBBELL' }),
+  move('bench_press', { muscles: ['chest'], equipment: 'BARBELL', image: 'exercises/bench_press/form.webp', loop: 'exercises/bench_press/loop.mp4' }),
+  move('future_loop', { muscles: ['chest'], image: 'exercises/squat/form.webp', loop: 'exercises/future_loop/loop.mp4' }),
 ];
 let mockSetups: Record<string, Record<string, string>> = {};
 let mockOwn: Move[] = [];
@@ -254,3 +276,50 @@ test('no image when this build has no file for the path the server names', async
   expect(await screen.findByText(t('demo.tips'))).toBeOnTheScreen();
   expect(screen.queryByTestId('form-image')).toBeNull();
 });
+
+describe('the loop clip (ADR-091 Ek 6)', () => {
+  beforeEach(() => {
+    mockReduce = false;
+    Object.assign(mockPlayer, { loop: false, muted: false, audioMixingMode: 'auto' });
+    mockPlayer.play.mockClear();
+    mockPlayer.pause.mockClear();
+  });
+
+  test('plays in place of the image, silent, looping, without stopping the music the user is playing', async () => {
+    mockParams = { exercise: 'bench_press' };
+    await show();
+    expect(await screen.findByLabelText(t('demo.formLoop', { exercise: t('exercises.bench_press.name') }))).toBeOnTheScreen();
+    expect(screen.queryByTestId('form-image')).toBeNull();
+    expect(mockPlayer).toMatchObject({ loop: true, muted: true, audioMixingMode: 'mixWithOthers' });
+    expect(mockPlayer.play).toHaveBeenCalled();
+    const flat = JSON.stringify(screen.toJSON());
+    expect(flat.indexOf('form-loop')).toBeLessThan(flat.indexOf(t('demo.tips')));
+  });
+
+  test('can be paused and played again, and the button says which it does', async () => {
+    mockParams = { exercise: 'bench_press' };
+    await show();
+    await fireEvent.press(await screen.findByLabelText(t('demo.loopPause')));
+    expect(mockPlayer.pause).toHaveBeenCalledTimes(1);
+    await fireEvent.press(await screen.findByLabelText(t('demo.loopPlay')));
+    expect(mockPlayer.play).toHaveBeenCalledTimes(2);
+    expect(screen.getByLabelText(t('demo.loopPause'))).toBeOnTheScreen();
+  });
+
+  test('with Reduce Motion on, the still image stands instead and nothing plays', async () => {
+    mockReduce = true;
+    mockParams = { exercise: 'bench_press' };
+    await show();
+    expect(await screen.findByTestId('form-image')).toBeOnTheScreen();
+    expect(screen.queryByTestId('form-loop')).toBeNull();
+    expect(mockPlayer.play).not.toHaveBeenCalled();
+  });
+
+  test('a loop this build has no file for leaves the image', async () => {
+    mockParams = { exercise: 'future_loop' };
+    await show();
+    expect(await screen.findByTestId('form-image')).toBeOnTheScreen();
+    expect(screen.queryByTestId('form-loop')).toBeNull();
+  });
+});
+

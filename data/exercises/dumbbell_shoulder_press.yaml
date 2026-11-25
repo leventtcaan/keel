@@ -13,3 +13,7 @@ clips:
   first_rep: clips/dumbbell_shoulder_press/first-rep.mp4
   last_rep: clips/dumbbell_shoulder_press/last-rep.mp4
 review: pending
+image: exercises/dumbbell_shoulder_press/form.webp
+image_review: pending
+loop: exercises/dumbbell_shoulder_press/loop.mp4
+loop_review: pending

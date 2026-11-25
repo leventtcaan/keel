@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import Body, { type Slug } from 'react-native-body-highlighter';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,9 +11,12 @@ import { TextField } from '@/components/TextField';
 import { t } from '@/copy';
 import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
+import { useReduceMotion } from '@/theme/useReduceMotion';
 import { tokens } from '@/theme/tokens';
 import { type Figure, drawingAreas, mapAreas, tipsFor } from '@/train/demo';
+import { FormLoop } from '@/train/FormLoop';
 import { formImage } from '@/train/formImages';
+import { formLoop } from '@/train/formLoops';
 import { workoutParams } from '@/train/params';
 import { exerciseName } from '@/train/program';
 import { type Move, type TrainData, movesOf } from '@/train/trainData';
@@ -34,6 +37,7 @@ export default function ExerciseScreen() {
   const { api, training, report, bodyFigure } = useAppServices();
   const { exercise } = useLocalSearchParams<{ exercise: string }>();
   const { color } = useTheme();
+  const reduceMotion = useReduceMotion();
   const [read, setRead] = useState<{ data: TrainData; own: Move[]; setup: Record<string, string> } | null>(null);
   const [typed, setTyped] = useState<Record<string, string> | null>(null);
   // The figure the profile gives (ADR-037 › 49); not known, the one drawn until now.
@@ -128,16 +132,21 @@ export default function ExerciseScreen() {
       </View>
     );
   // The drawn form image (ADR-091 #4), above the cues: only when the server gives it (its review passed) and this build has the file.
+  // Its loop (Ek 6) plays in its place when the server gives one too, unless Reduce Motion is on: one picture, never two.
   const formSource = formImage(move?.image);
-  const form =
-    formSource === undefined ? null : (
+  const loopSource = reduceMotion ? undefined : formLoop(move?.loop);
+  const name = exerciseName(exercise, moves);
+  let form: ReactNode = null;
+  if (loopSource !== undefined) form = <FormLoop source={loopSource} label={t('demo.formLoop', { exercise: name })} />;
+  else if (formSource !== undefined)
+    form = (
       <Image
         testID="form-image"
         source={formSource}
         resizeMode="contain"
         accessible
         accessibilityRole="image"
-        accessibilityLabel={t('demo.formImage', { exercise: exerciseName(exercise, moves) })}
+        accessibilityLabel={t('demo.formImage', { exercise: name })}
         style={styles.form}
       />
     );

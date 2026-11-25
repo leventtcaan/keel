@@ -13,3 +13,7 @@ clips:
   first_rep: clips/lateral_raise/first-rep.mp4
   last_rep: clips/lateral_raise/last-rep.mp4
 review: pending
+image: exercises/lateral_raise/form.webp
+image_review: pending
+loop: exercises/lateral_raise/loop.mp4
+loop_review: pending

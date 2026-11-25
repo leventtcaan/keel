@@ -15,3 +15,5 @@ clips:
 review: pending
 image: exercises/romanian_deadlift/form.webp
 image_review: pending
+loop: exercises/romanian_deadlift/loop.mp4
+loop_review: pending

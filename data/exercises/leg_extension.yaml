@@ -13,3 +13,7 @@ clips:
   first_rep: clips/leg_extension/first-rep.mp4
   last_rep: clips/leg_extension/last-rep.mp4
 review: pending
+image: exercises/leg_extension/form.webp
+image_review: pending
+loop: exercises/leg_extension/loop.mp4
+loop_review: pending

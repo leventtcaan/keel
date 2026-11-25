@@ -15,3 +15,5 @@ clips:
 review: pending
 image: exercises/lat_pulldown/form.webp
 image_review: pending
+loop: exercises/lat_pulldown/loop.mp4
+loop_review: pending

@@ -13,3 +13,7 @@ clips:
   first_rep: clips/leg_press/first-rep.mp4
   last_rep: clips/leg_press/last-rep.mp4
 review: pending
+image: exercises/leg_press/form.webp
+image_review: pending
+loop: exercises/leg_press/loop.mp4
+loop_review: pending

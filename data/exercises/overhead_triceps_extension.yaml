@@ -13,3 +13,7 @@ clips:
   first_rep: clips/overhead_triceps_extension/first-rep.mp4
   last_rep: clips/overhead_triceps_extension/last-rep.mp4
 review: pending
+image: exercises/overhead_triceps_extension/form.webp
+image_review: pending
+loop: exercises/overhead_triceps_extension/loop.mp4
+loop_review: pending

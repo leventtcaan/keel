@@ -13,3 +13,7 @@ clips:
   first_rep: clips/face_pull/first-rep.mp4
   last_rep: clips/face_pull/last-rep.mp4
 review: pending
+image: exercises/face_pull/form.webp
+image_review: pending
+loop: exercises/face_pull/loop.mp4
+loop_review: pending

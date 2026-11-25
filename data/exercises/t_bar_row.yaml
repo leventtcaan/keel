@@ -13,3 +13,7 @@ clips:
   first_rep: clips/t_bar_row/first-rep.mp4
   last_rep: clips/t_bar_row/last-rep.mp4
 review: pending
+image: exercises/t_bar_row/form.webp
+image_review: pending
+loop: exercises/t_bar_row/loop.mp4
+loop_review: pending
