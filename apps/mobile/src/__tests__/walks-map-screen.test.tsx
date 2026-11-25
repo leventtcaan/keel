@@ -7,7 +7,7 @@ import { createWalks } from '@/walks/store';
 import { stepsPerKm, suggestWalk } from '@/walks/suggest';
 import { ThemeProvider } from '@/theme/theme';
 
-const mockLines: { dash?: number[]; count: number }[] = [];
+const mockLines: { dash?: number[]; count: number; coordinates: unknown[] }[] = [];
 let mockLongPress: ((event: { nativeEvent: { coordinate: { latitude: number; longitude: number } } }) => void) | undefined;
 jest.mock('react-native-maps', () => {
   const { View } = require('react-native');
@@ -17,7 +17,7 @@ jest.mock('react-native-maps', () => {
   };
   const Marker = ({ title }: { title?: string }) => <View testID={`marker-${title ?? 'draft'}`} />;
   const Polyline = (p: { lineDashPattern?: number[]; coordinates: unknown[] }) => {
-    mockLines.push({ dash: p.lineDashPattern, count: p.coordinates.length });
+    mockLines.push({ dash: p.lineDashPattern, count: p.coordinates.length, coordinates: p.coordinates });
     return <View testID="polyline" />;
   };
   return { __esModule: true, default: MapView, Marker, Polyline };
@@ -87,7 +87,7 @@ test('a search that finds nothing, and one that fails, are said apart', async ()
 });
 
 test('two places picked show the dotted walk, its distance and steps, and it is kept in My walks', async () => {
-  walk.mockResolvedValue({ km: 1.8, approximate: false });
+  walk.mockResolvedValue({ km: 1.8, approximate: false, path: [{ lat: 36.89, lng: 30.7 }, { lat: 36.9, lng: 30.71 }] });
   await open();
   await addByHold('Home', 36.89, 30.7);
   await addByHold('Gym', 36.9, 30.71);
@@ -106,8 +106,25 @@ test('two places picked show the dotted walk, its distance and steps, and it is 
   expect(suggestWalk({ remaining: 4800, routes: saved, stepsPerKm: stepsPerKm(170) })).toMatchObject({ kind: 'route', route: { name: 'Home to Gym' }, roundTripSteps: 5101 });
 });
 
+test("the dotted line follows Apple's route, and nothing is drawn while it is being measured", async () => {
+  let answer: (leg: unknown) => void = () => undefined;
+  walk.mockReturnValue(new Promise((resolve) => (answer = resolve)));
+  await open();
+  await addByHold('Home', 36.89, 30.7);
+  await addByHold('Gym', 36.9, 30.71);
+  await fireEvent.press(screen.getByLabelText('Home. Tap to use it as the start or the end.'));
+  mockLines.length = 0;
+  await fireEvent.press(screen.getByLabelText('Gym. Tap to use it as the start or the end.'));
+  await screen.findByText('Measuring the walk');
+  expect(mockLines).toHaveLength(0);
+  const path = [{ lat: 36.89, lng: 30.7 }, { lat: 36.895, lng: 30.703 }, { lat: 36.898, lng: 30.709 }, { lat: 36.9, lng: 30.71 }];
+  await act(async () => answer({ km: 1.8, approximate: false, path }));
+  await screen.findByText(/1.8 km one way/);
+  expect(mockLines.at(-1)?.coordinates).toEqual(path.map((p) => ({ latitude: p.lat, longitude: p.lng })));
+});
+
 test('a walk Apple could not route says it is approximate', async () => {
-  walk.mockResolvedValue({ km: 1.4, approximate: true });
+  walk.mockResolvedValue({ km: 1.4, approximate: true, path: [{ lat: 36.89, lng: 30.7 }, { lat: 36.9, lng: 30.71 }] });
   await open();
   await addByHold('Home', 36.89, 30.7);
   await addByHold('Gym', 36.9, 30.71);

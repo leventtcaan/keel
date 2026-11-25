@@ -14,7 +14,8 @@ test('the module is declared and has the two calls the JS side uses', () => {
   expect(config.apple.modules).toEqual(['PlacesModule']);
   expect(swift).toMatch(/Name\("Places"\)/);
   expect(swift).toMatch(/AsyncFunction\("search"\)/);
-  expect(swift).toMatch(/AsyncFunction\("walkingDistance"\)/);
+  expect(swift).toMatch(/AsyncFunction\("walkingRoute"\)/);
+  expect(swift).toMatch(/getCoordinates/);
   expect(swift).toMatch(/\.walking/);
 });
 

@@ -22,4 +22,5 @@ export const walkParams = {
   placesMax: param<number>('walk_places_max'),
   searchMinChars: param<number>('walk_place_search_min_chars'),
   detourFactor: param<number>('walk_detour_factor'),
+  routePointsMax: param<number>('walk_route_points_max'),
 };

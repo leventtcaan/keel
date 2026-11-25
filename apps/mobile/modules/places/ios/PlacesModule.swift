@@ -1,8 +1,8 @@
 import ExpoModulesCore
 import MapKit
 
-/// Apple Maps for the saved places (K-1227, ADR-093): an address typed by the user to a name and a point, and the walking distance
-/// between two points. Neither reads where the phone is (no CLLocationManager, no location permission); the text typed and the two
+/// Apple Maps for the saved places (K-1227, ADR-093): an address typed by the user to a name and a point, and the walking route
+/// (its distance and its line) between two points. Neither reads where the phone is (no CLLocationManager, no location permission); the text typed and the two
 /// points are sent to Apple's map service, which the app says next to the search box. Compiled by the EAS build only.
 public class PlacesModule: Module {
   public func definition() -> ModuleDefinition {
@@ -23,16 +23,24 @@ public class PlacesModule: Module {
       }
     }
 
-    // The walking route's length in metres; null when Apple has no walking route between the two points; throws when the
-    // request fails (offline, say), and the caller then falls back to the straight line.
-    AsyncFunction("walkingDistance") { (fromLat: Double, fromLng: Double, toLat: Double, toLng: Double) async throws -> Double? in
+    // The walking route: its length in metres and the points of its line on the streets ([lat, lng] pairs, start to end); null when
+    // Apple has no walking route between the two points; throws when the request fails (offline, say), and the caller then falls
+    // back to the straight line.
+    AsyncFunction("walkingRoute") { (fromLat: Double, fromLng: Double, toLat: Double, toLng: Double) async throws -> [String: Any]? in
       let request = MKDirections.Request()
       request.source = MKMapItem(placemark: MKPlacemark(coordinate: CLLocationCoordinate2D(latitude: fromLat, longitude: fromLng)))
       request.destination = MKMapItem(placemark: MKPlacemark(coordinate: CLLocationCoordinate2D(latitude: toLat, longitude: toLng)))
       request.transportType = .walking
       request.requestsAlternateRoutes = false
       let response = try await MKDirections(request: request).calculate()
-      return response.routes.first?.distance
+      guard let route = response.routes.first else { return nil }
+      let line = route.polyline
+      var coordinates = [CLLocationCoordinate2D](repeating: kCLLocationCoordinate2DInvalid, count: line.pointCount)
+      line.getCoordinates(&coordinates, range: NSRange(location: 0, length: line.pointCount))
+      return [
+        "metres": route.distance,
+        "points": coordinates.map { [$0.latitude, $0.longitude] },
+      ]
     }
   }
 }

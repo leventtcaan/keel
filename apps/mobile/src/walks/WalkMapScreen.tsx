@@ -221,12 +221,9 @@ export function WalkMapScreen() {
               <Marker key={p.id} coordinate={{ latitude: p.lat, longitude: p.lng }} title={p.name} pinColor={p.id === fromId || p.id === toId ? color.accent : color.muted} />
             ))}
             {draft !== null && <Marker coordinate={{ latitude: draft.lat, longitude: draft.lng }} pinColor={color.text} />}
-            {from !== null && to !== null && (
+            {ready !== null && (
               <Polyline
-                coordinates={[
-                  { latitude: from.lat, longitude: from.lng },
-                  { latitude: to.lat, longitude: to.lng },
-                ]}
+                coordinates={ready.path.map((p) => ({ latitude: p.lat, longitude: p.lng }))}
                 strokeColor={color.accent}
                 strokeWidth={4}
                 lineCap={ROUND}
