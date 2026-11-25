@@ -48,5 +48,5 @@ export function GoalLine({ planned, move }: { planned: Schemas['PlannedExercise'
 }
 
 const styles = StyleSheet.create({
-  value: { fontFamily: tokens.font.display, fontSize: tokens.type.heading },
+  value: { ...tokens.face.display, fontSize: tokens.type.heading },
 });

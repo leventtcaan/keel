@@ -98,6 +98,6 @@ const styles = StyleSheet.create({
   middle: { flexShrink: 1, alignItems: 'center' },
   control: { minHeight: tokens.size.touch, justifyContent: 'center' },
   end: { fontSize: tokens.type.body, fontWeight: tokens.weight.bold },
-  clock: { fontFamily: tokens.font.display, fontSize: tokens.type.decisionTitle, fontVariant: ['tabular-nums'] },
+  clock: { ...tokens.face.display, fontSize: tokens.type.decisionTitle, fontVariant: ['tabular-nums'] },
   dim: { opacity: tokens.opacity.dim },
 });

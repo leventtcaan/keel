@@ -3,7 +3,6 @@
   "main": "expo-router/entry",
   "version": "1.0.1",
   "dependencies": {
-    "@expo-google-fonts/barlow-condensed": "^0.4.1",
     "@expo/ui": "~57.0.20",
     "@kingstinct/react-native-healthkit": "^16.0.0",
     "expo": "~57.0.25",

@@ -20,13 +20,13 @@ type Props = {
 };
 
 /**
- * A choice among a few; the selected one is filled with the text colour (prototype `.chip[aria-pressed]`). On the page
- * that equals the decision-block colours; inside the block (inverse palette) it flips, so it never vanishes into it.
+ * A choice among a few. The selected one is petrol, the colour of a selection (ADR-094 §1), on its soft ground with a petrol
+ * ring and label: a solid petrol fill is the screen's one primary button, so a chosen answer never looks like a second one.
  */
 export function Chip({ label, selected = false, disabled = false, accessibilityLabel, touch = false, needed = false, onPress }: Props) {
   const { color } = useTheme();
   const fill = selected
-    ? { backgroundColor: color.text, borderColor: color.text }
+    ? { backgroundColor: color.accentSoft, borderColor: color.accent, borderWidth: tokens.border.outline }
     : { backgroundColor: color.surface, borderColor: needed ? color.accent : color.edge, ...(needed ? { borderWidth: tokens.border.outline } : {}) };
   return (
     <Pressable
@@ -36,7 +36,7 @@ export function Chip({ label, selected = false, disabled = false, accessibilityL
       disabled={disabled}
       onPress={onPress}
       style={[styles.chip, fill, touch && styles.touch, disabled && styles.dim]}>
-      <FitText style={[styles.label, { color: selected ? color.background : color.text }]}>{label}</FitText>
+      <FitText style={[styles.label, { color: selected ? color.accent : color.text }]}>{label}</FitText>
     </Pressable>
   );
 }

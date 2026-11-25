@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
   },
   column: { paddingVertical: ROW * AROUND },
   row: { height: ROW, alignItems: 'center', justifyContent: 'center' },
-  value: { fontFamily: tokens.font.displayBold, fontSize: tokens.type.number },
-  middle: { fontFamily: tokens.font.display, fontSize: tokens.type.heading },
+  value: { ...tokens.face.displayBold, fontSize: tokens.type.number },
+  middle: { ...tokens.face.display, fontSize: tokens.type.heading },
   unit: { fontSize: tokens.type.label, fontWeight: tokens.weight.bold },
 });

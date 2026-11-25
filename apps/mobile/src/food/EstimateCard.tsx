@@ -50,7 +50,7 @@ export function EstimateCard({ estimate, question }: { estimate: components['sch
 
 const styles = StyleSheet.create({
   label: { fontSize: tokens.type.label, fontWeight: tokens.weight.semibold },
-  big: { fontFamily: tokens.font.displayBold, fontSize: tokens.type.stepperValue, fontVariant: ['tabular-nums'] },
+  big: { ...tokens.face.displayBold, fontSize: tokens.type.stepperValue, fontVariant: ['tabular-nums'] },
   text: { fontSize: tokens.type.body, fontVariant: ['tabular-nums'] },
   small: { fontSize: tokens.type.bodySmall, fontVariant: ['tabular-nums'] },
   detailsRow: { minHeight: tokens.size.touch / 2, justifyContent: 'center' },

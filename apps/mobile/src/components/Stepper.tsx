@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
   value: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', gap: tokens.space.sm },
   // The dotted line under the number says "type here" (prototype `.stp .sv b`).
   input: {
-    fontFamily: tokens.font.display,
+    ...tokens.face.display,
     fontSize: tokens.type.stepperValue,
     textAlign: 'center',
     minWidth: tokens.size.touch,

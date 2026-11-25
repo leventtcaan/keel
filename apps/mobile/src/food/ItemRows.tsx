@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
   detailsRow: { minHeight: tokens.size.touch / 2, justifyContent: 'center' },
   title: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
   small: { fontSize: tokens.type.bodySmall },
-  big: { fontFamily: tokens.font.displayBold, fontSize: tokens.type.stepperValue, fontVariant: ['tabular-nums'] },
+  big: { ...tokens.face.displayBold, fontSize: tokens.type.stepperValue, fontVariant: ['tabular-nums'] },
   macroLine: { fontSize: tokens.type.body, fontVariant: ['tabular-nums'] },
   kcal: { fontSize: tokens.type.body, fontVariant: ['tabular-nums'] },
 });

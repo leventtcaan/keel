@@ -107,10 +107,11 @@ describe.each(Object.entries(palettes))('inverse of the %s palette', (_, p) => {
       track: p.decisionLine,
       accent: p.accentInk,
       onAccent: p.onAccentInk,
-      // A primary button inside the block takes the block's accent: the page's black button would vanish on a black block.
+      // A primary button inside the block takes the block's accent (petrol: the block is the page under ADR-094).
       cta: p.accentInk,
       onCta: p.onAccentInk,
-      accentSoft: p.decisionLine,
+      // A selection keeps its soft petrol ground inside the block (ADR-094 §1).
+      accentSoft: p.accentSoft,
     });
   });
 

@@ -104,15 +104,15 @@ function Window({ eyebrow, title, note, dark = false }: { eyebrow: string; title
 
 const styles = StyleSheet.create({
   section: { gap: tokens.space.sm },
-  heading: { fontFamily: tokens.font.display, fontSize: tokens.type.heading },
+  heading: { ...tokens.face.display, fontSize: tokens.type.heading },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.xs },
   top: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: tokens.space.sm },
-  big: { fontFamily: tokens.font.display, fontSize: tokens.type.screenTitle },
+  big: { ...tokens.face.display, fontSize: tokens.type.screenTitle },
   since: { flexShrink: 1, textAlign: 'right' },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },
   windows: { flexDirection: 'row', gap: tokens.space.sm },
   window: { flex: 1, borderRadius: tokens.radius.card, padding: tokens.space.md, gap: tokens.space.xs },
   eyebrow: { fontSize: tokens.type.label, fontWeight: tokens.weight.semibold },
-  windowTitle: { fontFamily: tokens.font.displayBold, fontSize: tokens.type.number },
+  windowTitle: { ...tokens.face.displayBold, fontSize: tokens.type.number },
 });

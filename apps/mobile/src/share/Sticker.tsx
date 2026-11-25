@@ -68,8 +68,10 @@ function Words({ item }: { item: Extract<Item, { kind: 'text' }> }) {
       x={item.x}
       y={item.y}
       fontSize={item.size}
+      // react-native-svg resolves families through the old RCTFont path, which knows no system designs: the serif falls back
+      // to the system font, so the display words keep their weight (the sticker's own design is a later 9c part).
       fontFamily={item.font === 'display' ? tokens.font.display : undefined}
-      fontWeight={item.font === 'display' ? undefined : tokens.weight.bold}
+      fontWeight={item.font === 'display' ? tokens.weight.black : tokens.weight.bold}
       textAnchor={item.anchor ?? 'start'}
       fill={TONE[item.tone]}>
       {item.text}

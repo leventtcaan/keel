@@ -117,6 +117,6 @@ const styles = StyleSheet.create({
   grow: { flex: 1 },
   open: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, minHeight: tokens.size.touch, paddingVertical: tokens.space.xs },
   text: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.semibold },
-  amount: { fontFamily: tokens.font.displayBold, fontSize: tokens.type.number, fontVariant: ['tabular-nums'] },
+  amount: { ...tokens.face.displayBold, fontSize: tokens.type.number, fontVariant: ['tabular-nums'] },
   dim: { opacity: tokens.opacity.dim },
 });

@@ -37,7 +37,7 @@ export function LineChart({ prefix, points, summary }: Props) {
   const scale = lineScale(points, BOX);
   const last = points[points.length - 1];
   const at = (p: ChartPoint) => ({ cx: scale.x(p.day), cy: scale.y(p.value) });
-  const label = { fontFamily: tokens.font.displaySemiBold, fontSize: tokens.type.label, fill: color.muted };
+  const label = { ...tokens.face.displaySemiBold, fontSize: tokens.type.label, fill: color.muted };
   return (
     <View testID={`${prefix}-chart`} accessible accessibilityRole="image" accessibilityLabel={summary} style={{ aspectRatio: WIDTH / HEIGHT }}>
       <Svg width="100%" height="100%" viewBox={`0 0 ${WIDTH} ${HEIGHT}`}>

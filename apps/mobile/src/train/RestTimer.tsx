@@ -124,7 +124,7 @@ export function RestTimer({ since, band, onAdjust }: { since: number; band: Rest
 const styles = StyleSheet.create({
   rest: { alignItems: 'center', gap: tokens.space.sm, paddingVertical: tokens.space.xl },
   line: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: tokens.space.md },
-  time: { flexShrink: 1, fontFamily: tokens.font.display, fontSize: tokens.type.restClock, fontVariant: ['tabular-nums'], textAlign: 'center' },
+  time: { flexShrink: 1, ...tokens.face.display, fontSize: tokens.type.restClock, fontVariant: ['tabular-nums'], textAlign: 'center' },
   label: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
   title: { fontSize: tokens.type.heading, fontWeight: tokens.weight.bold },
   pair: { flexDirection: 'row', gap: tokens.space.sm },

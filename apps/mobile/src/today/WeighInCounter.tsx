@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
   block: { gap: tokens.space.sm },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space.xs },
   title: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.semibold },
-  number: { fontFamily: tokens.font.displayBold, fontSize: tokens.type.number },
+  number: { ...tokens.face.displayBold, fontSize: tokens.type.number },
   segment: { flex: 1, height: tokens.space.sm, borderRadius: tokens.radius.track, borderWidth: 2 },
   letter: { flex: 1, textAlign: 'center', fontSize: tokens.type.label, fontWeight: tokens.weight.semibold },
   note: { fontSize: tokens.type.bodySmall },

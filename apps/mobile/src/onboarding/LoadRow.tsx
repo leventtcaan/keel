@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
     minHeight: tokens.size.row,
   },
   name: { flex: 1, fontSize: tokens.type.body, fontWeight: tokens.weight.bold },
-  value: { fontFamily: tokens.font.display, fontSize: tokens.type.number },
+  value: { ...tokens.face.display, fontSize: tokens.type.number },
   // Not set: a quiet empty slot (a plus and the words, muted), so it does not read as a value.
   empty: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.xs },
   emptyText: { fontSize: tokens.type.body },

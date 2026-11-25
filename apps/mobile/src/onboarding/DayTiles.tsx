@@ -60,6 +60,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: tokens.space.xs,
   },
-  count: { fontFamily: tokens.font.display, fontSize: tokens.type.tile },
+  count: { ...tokens.face.display, fontSize: tokens.type.tile },
   unit: { fontSize: tokens.type.label, fontWeight: tokens.weight.bold },
 });

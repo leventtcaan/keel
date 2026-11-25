@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
   headButton: { width: tokens.size.touch, height: tokens.size.touch, alignItems: 'center', justifyContent: 'center' },
   part: { gap: tokens.space.sm },
   bigLine: { flexDirection: 'row', alignItems: 'baseline', gap: tokens.space.sm },
-  big: { fontFamily: tokens.font.displayBold, fontSize: tokens.type.display, fontVariant: ['tabular-nums'] },
+  big: { ...tokens.face.displayBold, fontSize: tokens.type.display, fontVariant: ['tabular-nums'] },
   bigUnit: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm },
   macros: { flexDirection: 'row', gap: tokens.space.sm },

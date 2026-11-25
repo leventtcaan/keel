@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, padding: tokens.space.sm, borderRadius: tokens.radius.button },
   summary: { minHeight: tokens.size.touch, justifyContent: 'center', paddingHorizontal: tokens.space.md, borderRadius: tokens.radius.button },
   markText: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.bold },
-  set: { fontFamily: tokens.font.displayBold, fontSize: tokens.type.number },
+  set: { ...tokens.face.displayBold, fontSize: tokens.type.number },
   small: { fontSize: tokens.type.label, fontWeight: tokens.weight.bold },
   grow: { flex: 1 },
   skipped: { paddingLeft: tokens.space.xl + tokens.space.sm },

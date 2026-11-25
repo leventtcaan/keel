@@ -1635,8 +1635,8 @@ const styles = StyleSheet.create({
   addActions: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
   dim: { opacity: tokens.opacity.dim },
   grow: { flex: 1 },
-  name: { fontFamily: tokens.font.display, fontSize: tokens.type.heading },
+  name: { ...tokens.face.display, fontSize: tokens.type.heading },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },
-  nextSet: { fontFamily: tokens.font.display, fontSize: tokens.type.heading, textAlign: 'center' },
+  nextSet: { ...tokens.face.display, fontSize: tokens.type.heading, textAlign: 'center' },
 });

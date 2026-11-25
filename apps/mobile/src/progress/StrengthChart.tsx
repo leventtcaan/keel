@@ -47,7 +47,7 @@ export function StrengthChart({ points, from, today, units, move }: Props) {
   const easier = points.filter((p) => p.easier).map((p) => shortDate(p.week));
   const spokenAll = easier.length === 0 ? spoken : `${spoken} ${t('strength.spokenEasier', { weeks: easier.join(', ') })}`;
   const at = (p: StrengthPoint) => ({ cx: scale.x(p.week), cy: scale.y(shown(p.kg)) });
-  const label = { fontFamily: tokens.font.displaySemiBold, fontSize: tokens.type.label, fill: color.muted };
+  const label = { ...tokens.face.displaySemiBold, fontSize: tokens.type.label, fill: color.muted };
 
   return (
     <View testID="strength-chart" accessible accessibilityRole="image" accessibilityLabel={spokenAll} style={{ aspectRatio: WIDTH / HEIGHT }}>

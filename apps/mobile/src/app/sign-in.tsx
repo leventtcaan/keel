@@ -111,7 +111,7 @@ export default function SignInScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   body: { paddingHorizontal: tokens.space.lg, paddingTop: tokens.space.md, gap: tokens.space.md },
-  mark: { fontFamily: tokens.font.display, fontSize: tokens.type.decisionTitle },
+  mark: { ...tokens.face.display, fontSize: tokens.type.decisionTitle },
   lead: { fontSize: tokens.type.body },
   bottom: { paddingHorizontal: tokens.space.lg, paddingBottom: tokens.space.lg, gap: tokens.space.md },
   text: { fontSize: tokens.type.body },

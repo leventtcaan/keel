@@ -1,94 +1,107 @@
 /**
- * Design tokens: turquoise on a white page, an inverted decision block, a dark focus mode (ADR-070, replaces ADR-016's
- * RUBİN). The only file in the app allowed to hold colour values, font names and type sizes; tokens.test.ts enforces it.
- * The person picks Light, Dark or System in Settings, Light until they do (ADR-070 #3).
- * Reference: prototip/yeni-yuz.html (`.phone` and `.phone[data-mode="dark"]`).
- *
- * The light accent is #007684, one shade under ADR-070's #007C8C: the accent is text too ("in use", links), and #007C8C
- * reaches only 4.42:1 on the surface; #007684 reaches 4.80:1 there and 5.35:1 under white (ADR-070 Ek 1).
+ * Design tokens: "Sıcak defter" (ADR-094, replaces ADR-070): an off-white paper page, petrol for the decision and the
+ * action, coral for "where you are and how far you came", three soft grounds that group things, no inverted block.
+ * The only file in the app allowed to hold colour values, font names and type sizes; tokens.test.ts enforces it.
+ * Each colour keeps one role in every screen, sheet and pop-up (ADR-094 §1, colour-roles.test.ts). The person picks
+ * Light, Dark or System in Settings, Light until they do (ADR-070 #3, kept). Reference: prototip/gorsel-yon/y5-*.jpg.
+ * Contrast of every pair is held in contrast.test.ts (text 4.5:1, marks 3:1).
  */
 const light = {
-  background: '#FFFFFF',
-  surface: '#F1F3F3',
+  /** The paper. */
+  background: '#F7F5F0',
+  /** A card or a neutral group: the day's sand ground (ADR-094 §1: no white card on the paper). */
+  surface: '#F1ECE3',
   /** Buttons that sit on a surface (RIR and scale pickers). */
-  raise: '#FFFFFF',
-  line: '#DCE0E0',
-  /** What shows a control or its state: a field's box, an unselected chip, a pending dot. 3:1 on the page and a surface (WCAG 1.4.11, K-816). `line` stays the quiet divider. */
-  edge: '#7E8888',
-  text: '#0B0C0C',
-  textSecondary: '#2B2F2F',
-  muted: '#586061',
-  track: '#E4E8E8',
-  /** A week the 12 weeks grid draws plainly (Progress): neutral, not the warning colour (U7), 3:1 against the card (WCAG 1.4.11). */
-  weekMissed: '#7E8888',
-  /** Filled controls, selection and the decision's number. Text on it uses onAccent (5.35:1). */
-  accent: '#007684',
+  raise: '#FCFBF8',
+  line: '#E4DED2',
+  /** What shows a control or its state: a field's box, an unselected chip, a pending dot. 3:1 on the page, a surface and each soft ground (WCAG 1.4.11, K-816). `line` stays the quiet divider. */
+  edge: '#837C70',
+  text: '#24221F',
+  textSecondary: '#45413B',
+  muted: '#6B665E',
+  /** The empty part of a bar: light enough that the coral fill on it reaches 3:1. */
+  track: '#EEE9E0',
+  /** A week the 12 weeks grid draws plainly (Progress): neutral, never the warning or the progress colour (U7), 3:1 against the card. */
+  weekMissed: '#837C70',
+  /** Petrol: the decision and the action (the call's accent, links and text buttons, a selection, a done mark, the chart's line). */
+  accent: '#1F6B73',
   onAccent: '#FFFFFF',
-  /** A selected option's ground and the accent's quiet fills. */
-  accentSoft: '#DDF3F4',
+  /** A selected option's ground and the accent's quiet fills; the target band under a chart. */
+  accentSoft: '#E3EEEE',
   /** Between accentSoft and accent: the muscle map's area partly filled (a share of the week's target, ADR-078 #4). */
-  accentMid: '#7CC4CA',
-  /** The primary button: black on light, turquoise on dark (ADR-070 #2). */
-  cta: '#0B0C0C',
+  accentMid: '#8DB8BC',
+  /** The primary button: petrol, as every action (ADR-094 §3). */
+  cta: '#1F6B73',
   onCta: '#FFFFFF',
-  /** Accent used inside the decision block, and the text on it. */
-  accentInk: '#2EE6D6',
-  onAccentInk: '#0B0C0C',
-  /** Real warnings only, never the accent (ADR-070 #1). */
-  warn: '#D12F1F',
+  /** Coral as a mark: today, the walked part of the week, a progress bar's fill, "you are here". Never a warning, a range, the primary button or body text (ADR-094 §1). */
+  progress: '#CF6647',
+  /** Coral as a short label (today's name): the darker shade that reads as text. */
+  progressText: '#A84F38',
+  /** Soft grounds (ADR-094 §1), at most three groups on a screen: time (the week path, history), the day (the day's numbers, a coach answer), a suggestion (what the coach or the engine proposes). */
+  tintTime: '#E8F0EA',
+  tintDay: '#F1ECE3',
+  tintSuggest: '#FBEAE3',
+  /** The call's accent and its text on it. The call sits on the page now (no inverted block), so these are the page's own. */
+  accentInk: '#1F6B73',
+  onAccentInk: '#FFFFFF',
+  /** Real warnings only: a destructive action, a safety hold; always with a word or an icon (ADR-094 §1). */
+  warn: '#B3261E',
   onWarn: '#FFFFFF',
-  decisionBackground: '#0B0C0C',
-  decisionText: '#FFFFFF',
-  decisionTextSecondary: '#D3D9D9',
-  decisionMuted: '#A9B1B1',
-  decisionLine: '#2A2F2F',
+  /** The decision "block" is the page itself (ADR-094 §1 drops ADR-070 #2's inverted block). */
+  decisionBackground: '#F7F5F0',
+  decisionText: '#24221F',
+  decisionTextSecondary: '#45413B',
+  decisionMuted: '#6B665E',
+  decisionLine: '#E4DED2',
   /** `edge` inside the block. */
-  decisionEdge: '#7E8888',
+  decisionEdge: '#837C70',
   /**
-   * The three macros, the same everywhere a number of them is drawn (a food row, the portion step, the day's bars; Evre 7 A): protein in the
-   * brand's turquoise, carbs amber, fat violet. Each is 4.5:1 on the page and on a surface, and always beside its letter or name: colour
-   * alone never says which macro it is.
+   * The three macros, the same everywhere a number of them is drawn (a food row, the portion step, the day's bars; Evre 7 A): protein in
+   * petrol, carbs a brown amber, fat violet; none of them coral (coral is progress, ADR-094 §1). Each is 4.5:1 on the page and on a
+   * surface, and always beside its letter or name: colour alone never says which macro it is.
    */
-  macroProtein: '#007684',
-  macroCarbs: '#A15C00',
+  macroProtein: '#1F6B73',
+  macroCarbs: '#8F5A12',
   macroFat: '#5B4FC4',
   /** The floating "+"'s shadow, the one control that sits over the content (K-1050). */
-  shadow: '#0B0C0C',
+  shadow: '#24221F',
 } as const;
 
 const dark: Record<keyof typeof light, string> = {
-  background: '#0E1010',
-  surface: '#191C1C',
-  raise: '#262A2A',
-  line: '#2A2F2F',
-  edge: '#727D7D',
-  text: '#F1F4F4',
-  textSecondary: '#D3D9D9',
-  muted: '#9AA4A4',
-  track: '#262A2A',
-  weekMissed: '#6B7575',
-  accent: '#35D7CF',
-  onAccent: '#061212',
-  accentSoft: '#113030',
-  accentMid: '#1F7E7A',
-  cta: '#35D7CF',
-  onCta: '#061212',
-  // On the light block of dark mode: the same text-safe turquoise as the light accent (4.84:1 on the block).
-  accentInk: '#007684',
-  onAccentInk: '#FFFFFF',
-  warn: '#FF6B5A',
-  onWarn: '#0E1010',
-  // The decision block inverts against the background in dark mode.
-  decisionBackground: '#F1F4F4',
-  // The page's own background: a selected chip on the page is drawn in exactly the block's colours (Chip).
-  decisionText: '#0E1010',
-  decisionTextSecondary: '#2B2F2F',
-  decisionMuted: '#4C5555',
-  decisionLine: '#C9D0D0',
-  decisionEdge: '#727D7D',
-  macroProtein: '#35D7CF',
-  macroCarbs: '#F2A33A',
-  macroFat: '#9C8CFF',
+  background: '#17191B',
+  surface: '#24231F',
+  raise: '#2E2D29',
+  line: '#2E3135',
+  edge: '#837D73',
+  text: '#ECE8E1',
+  textSecondary: '#D3CEC5',
+  muted: '#A39E95',
+  track: '#2E2D29',
+  weekMissed: '#837D73',
+  accent: '#5FB3BB',
+  onAccent: '#17191B',
+  accentSoft: '#16302F',
+  accentMid: '#3B7F86',
+  cta: '#5FB3BB',
+  onCta: '#17191B',
+  progress: '#F08C70',
+  progressText: '#F08C70',
+  tintTime: '#1E2A25',
+  tintDay: '#24231F',
+  tintSuggest: '#2E211C',
+  accentInk: '#5FB3BB',
+  onAccentInk: '#17191B',
+  warn: '#FF8A80',
+  onWarn: '#17191B',
+  decisionBackground: '#17191B',
+  decisionText: '#ECE8E1',
+  decisionTextSecondary: '#D3CEC5',
+  decisionMuted: '#A39E95',
+  decisionLine: '#2E3135',
+  decisionEdge: '#837D73',
+  macroProtein: '#5FB3BB',
+  macroCarbs: '#E0A85A',
+  macroFat: '#A89BFF',
   shadow: '#000000',
 };
 
@@ -96,14 +109,14 @@ export const palettes = { light, dark } as const;
 export type ColorScheme = keyof typeof palettes;
 export type Palette = Record<keyof typeof light, string>;
 
-/** The workout and its celebration: always dark, whatever the person chose (ADR-070 #4). */
+/** The workout and its celebration: always dark, whatever the person chose (ADR-070 #4), in the same roles (ADR-094 §4). */
 export const focusPalette: Palette = dark;
 
 export const tokens = {
-  /** ADR-070 #6: filled cards, no outlined ones. */
+  /** ADR-094 §3: soft groups 20, buttons a pill (half the primary button's height). */
   radius: {
-    card: 16,
-    button: 12,
+    card: 20,
+    button: 26,
     /** A choice the person picks: onboarding answers, option cards. */
     option: 16,
     chip: 8,
@@ -117,13 +130,16 @@ export const tokens = {
     xl: 28,
   },
   /**
-   * Headings, the decision's label and large numbers use Barlow Condensed 900 in capitals; body text uses the system font
-   * so Dynamic Type works (ADR-070 #5). The names are the keys fonts.ts registers with expo-font.
+   * ADR-094 §2: headings, the call and the big weight speak in the iOS system serif (New York); numbers in the system's
+   * rounded design (SF Pro Rounded); body text stays the system font so Dynamic Type works. React Native 0.86.3 maps these
+   * family names to UIFontDescriptor system designs (RCTFontUtils.mm › RCTGetFontDescriptorSystemDesign, checked
+   * 2026-11-25), so there is nothing to load. The key names stay from ADR-070 so the screens keep their roles:
+   * `display` is the serif voice, `displayBold` and `displaySemiBold` are numbers.
    */
   font: {
-    display: 'BarlowCondensed_900Black',
-    displayBold: 'BarlowCondensed_700Bold',
-    displaySemiBold: 'BarlowCondensed_600SemiBold',
+    display: 'ui-serif',
+    displayBold: 'ui-rounded',
+    displaySemiBold: 'ui-rounded',
   },
   type: {
     screenTitle: 34,
@@ -145,7 +161,7 @@ export const tokens = {
     stepperValue: 36,
     /** The smallest a long stepper number is set (191.46 lb, a number past the usual length): shrinks to here, never below. */
     stepperValueMin: 22,
-    /** ADR-070 #5. */
+    /** ADR-070 #5, kept by ADR-094. */
     body: 17,
     bodySmall: 15,
     label: 13,
@@ -169,6 +185,15 @@ export const tokens = {
     /** The heaviest system weight (UIFontWeightBlack); FitText sizes a label's box with a hidden copy in it (K-910). */
     black: '900',
   },
+  /**
+   * A face is a family with its weight (ADR-094 §2): the serif speaks semibold, numbers are semibold or medium. Components
+   * spread a face (`...tokens.face.display`) instead of naming a family, so no screen is left at a regular weight.
+   */
+  face: {
+    display: { fontFamily: 'ui-serif', fontWeight: '600' },
+    displayBold: { fontFamily: 'ui-rounded', fontWeight: '600' },
+    displaySemiBold: { fontFamily: 'ui-rounded', fontWeight: '500' },
+  },
   border: {
     hairline: 1,
     outline: 1.5,
@@ -185,8 +210,8 @@ export const tokens = {
     control: 50,
     /** Apple's minimum touch target (ADR-070 #6). */
     touch: 44,
-    /** The screen's one primary button (ADR-070 #6). */
-    primaryButton: 54,
+    /** The screen's one primary button: a 52 pt pill (ADR-094 §3). */
+    primaryButton: 52,
     /** A grouped list's row (ADR-070 Ek 2 #2, prototype `.row`): taller than size.touch, so a row is never a squeeze. */
     row: 52,
     /** The stepper's - and + (prototype `.stp .sb2`). */

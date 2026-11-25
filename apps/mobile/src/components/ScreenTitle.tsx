@@ -4,7 +4,7 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
 /**
- * The screen's heading; one of the two places uppercase is allowed (ADR-016). `accent` is a second line in the accent colour (the
+ * The screen's heading; in the serif voice, sentence case (ADR-094 §2). `accent` is a second line in the accent colour (the
  * paywall's "for 2 weeks"); `label` is what a screen reader says of both lines together.
  */
 export function ScreenTitle({ children, accent, label }: { children: string; accent?: string; label?: string }) {
@@ -23,5 +23,5 @@ export function ScreenTitle({ children, accent, label }: { children: string; acc
 }
 
 const styles = StyleSheet.create({
-  title: { fontFamily: tokens.font.display, fontSize: tokens.type.screenTitle, textTransform: 'uppercase' },
+  title: { ...tokens.face.display, fontSize: tokens.type.screenTitle },
 });

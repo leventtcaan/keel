@@ -21,12 +21,12 @@ const inkOf = (label: string) => StyleSheet.flatten(screen.getByText(label).prop
 describe.each(schemes)('roles in the %s theme', (scheme) => {
   const p = palettes[scheme];
 
-  test('primary is the cta fill with the onCta label, 54 pt tall at the medium size', async () => {
+  test('primary is the cta fill with the onCta label, 52 pt tall at the medium size', async () => {
     await renderIn(scheme, <Button label="Go" onPress={() => {}} />);
     expect(drawn('Go')).toMatchObject({ backgroundColor: p.cta, borderRadius: tokens.radius.button, minHeight: tokens.size.primaryButton });
     expect(inkOf('Go').color).toBe(p.onCta);
-    // On light the cta is black, not the turquoise accent (ADR-070 #2); on dark they are the same turquoise.
-    if (scheme === 'light') expect(drawn('Go').backgroundColor).not.toBe(p.accent);
+    // The primary action is petrol, the colour of the decision and the action, in both themes (ADR-094 §1).
+    expect(drawn('Go').backgroundColor).toBe(p.accent);
   });
 
   test('secondary is a surface fill with the ink label and no outline', async () => {

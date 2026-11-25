@@ -330,7 +330,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: tokens.space.sm,
     overflow: 'hidden',
   },
-  session: { fontFamily: tokens.font.displayBold, fontSize: tokens.type.heading },
+  session: { ...tokens.face.displayBold, fontSize: tokens.type.heading },
   fine: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.semibold },
   move: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
   moveText: { flex: 1 },
