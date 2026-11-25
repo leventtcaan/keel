@@ -121,13 +121,12 @@ export function TodayCard({ card, program, today, parts, onChanged }: Props) {
 
   const name = (day: Schemas['ProgramDay'] | null) => (day === null ? '' : dayName(day));
   const fine = (text: string) => <Text style={[styles.fine, { color: color.textSecondary }]}>{text}</Text>;
-  const head = (title: string, session: string, right: ReactNode, tag?: string) => (
+  // The label is today's name, in coral text as the week path's today (ADR-094 §1 progressText); the session's name is
+  // the card's heading, in the serif voice (§2).
+  const head = (title: string, session: string, right: ReactNode) => (
     <View style={styles.head}>
       <View style={styles.titles}>
-        <View style={styles.row}>
-          <Text style={[styles.title, { color: color.muted }]}>{title}</Text>
-          {tag === undefined ? null : <Text style={[styles.tag, { color: color.accent, backgroundColor: color.accentSoft }]}>{tag}</Text>}
-        </View>
+        <Text style={[styles.title, { color: color.progressText }]}>{title}</Text>
         <Text accessibilityRole="header" style={[styles.session, { color: color.text }]}>
           {session}
         </Text>
@@ -146,15 +145,16 @@ export function TodayCard({ card, program, today, parts, onChanged }: Props) {
       <Icon name="slider.horizontal.3" size="small" tone="accent" />
     </Pressable>
   );
-  // The cardio line (prototype `.cl`): planned minutes, or done once the server says it was logged today (K-1029).
+  // The cardio line (prototype `.cl`): planned minutes, or done once the server says it was logged today (K-1029). No ruled
+  // line above it (ADR-094: ground and space group things); its icon and the "and N more" line part it from the moves.
   const cardioLine = (minutes: number | null, logged: boolean, optional: boolean) =>
     logged ? (
-      <View style={[styles.row, styles.cardio, { borderTopColor: color.line }]}>
+      <View testID="cardio-row" style={styles.row}>
         <Icon name="checkmark.circle.fill" size="small" tone="accent" testID="cardio-icon" />
         <Text style={[styles.fine, { color: color.textSecondary }]}>{t('thisWeek.today.cardioDone')}</Text>
       </View>
     ) : minutes === null ? null : (
-      <View style={[styles.row, styles.cardio, { borderTopColor: color.line }]}>
+      <View testID="cardio-row" style={styles.row}>
         <Icon name="figure.run" size="small" tone="muted" testID="cardio-icon" />
         <Text style={[styles.fine, { color: color.textSecondary }]}>{optional ? t('thisWeek.today.cardioOptional') : t('thisWeek.today.cardio', { minutes })}</Text>
       </View>
@@ -277,11 +277,13 @@ export function TodayCard({ card, program, today, parts, onChanged }: Props) {
           const before = lastTodayLine(planned, move, units);
           // That line already carries today's ask when it has one, so the target is not said twice (as the Train card does).
           const asked = before !== null && planned.nextLoadKg !== undefined && planned.nextReps !== undefined;
-          const last = before === null ? null : <Text style={[styles.last, { color: color.accent }]}>{before}</Text>;
+          // In ink, its numbers tabular: the line carries today's ask, so it reads as the move's own fact, not a quiet note;
+          // not petrol, which is the decision and the action (ADR-094 §1), and this line is neither.
+          const last = before === null ? null : <Text style={[styles.last, { color: color.text }]}>{before}</Text>;
           const target = asked ? null : <Text style={[styles.target, { color: color.text }]}>{targetOf(planned, move, units)}</Text>;
           return (
             <View key={id} testID={`move-${id}`} style={styles.move}>
-              <MoveThumb equipment={move?.equipment} />
+              <MoveThumb equipment={move?.equipment} onSurface />
               <View style={styles.moveText}>
                 <Text style={[styles.moveName, { color: color.text }]}>{exerciseName(id, parts?.moves)}</Text>
                 {last}
@@ -310,7 +312,7 @@ export function TodayCard({ card, program, today, parts, onChanged }: Props) {
     }
   }
   return (
-    <View testID="today-card" accessibilityLabel={t('thisWeek.today.label')} style={[styles.card, { backgroundColor: color.surface }]}>
+    <View testID="today-card" accessibilityLabel={t('thisWeek.today.label')} style={[styles.card, { backgroundColor: color.tintDay }]}>
       {body}
       {problem}
     </View>
@@ -322,22 +324,14 @@ const styles = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space.sm },
   titles: { flex: 1, gap: tokens.space.xs },
   row: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, flexWrap: 'wrap' },
-  title: { fontSize: tokens.type.label, fontWeight: tokens.weight.bold },
-  tag: {
-    fontSize: tokens.type.label,
-    fontWeight: tokens.weight.bold,
-    borderRadius: tokens.radius.chip,
-    paddingHorizontal: tokens.space.sm,
-    overflow: 'hidden',
-  },
-  session: { ...tokens.face.displayBold, fontSize: tokens.type.heading },
+  title: { fontSize: tokens.type.label, fontWeight: tokens.weight.semibold },
+  session: { ...tokens.face.display, fontSize: tokens.type.heading },
   fine: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.semibold },
   move: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
   moveText: { flex: 1 },
-  last: { fontSize: tokens.type.bodySmall },
+  last: { fontSize: tokens.type.bodySmall, fontVariant: ['tabular-nums'] },
   moveName: { fontSize: tokens.type.body },
-  target: { fontSize: tokens.type.body, fontVariant: ['tabular-nums'] },
-  cardio: { borderTopWidth: tokens.border.hairline, paddingTop: tokens.space.sm },
+  target: { ...tokens.face.displaySemiBold, fontSize: tokens.type.body, fontVariant: ['tabular-nums'] },
   icon: { width: tokens.size.touch, height: tokens.size.touch, alignItems: 'center', justifyContent: 'center' },
   dim: { opacity: tokens.opacity.dim },
   tick: { width: tokens.size.touch, height: tokens.size.touch, borderRadius: tokens.size.touch / 2, alignItems: 'center', justifyContent: 'center' },

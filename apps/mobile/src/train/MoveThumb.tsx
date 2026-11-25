@@ -28,7 +28,11 @@ const SYMBOL: Record<Equipment, SFSymbol> = {
   BODYWEIGHT: 'figure.core.training',
 };
 
-export function MoveThumb({ equipment }: { equipment: Equipment | undefined }) {
+/**
+ * `onSurface`: the icon sits on a sand group (This week's today card), whose ground is the tile's own; it takes the raised
+ * ground instead, so it is not lost in it (ADR-094 §1, 9c-5).
+ */
+export function MoveThumb({ equipment, onSurface = false }: { equipment: Equipment | undefined; onSurface?: boolean }) {
   const { color } = useTheme();
   if (equipment === undefined) return null;
   return (
@@ -36,7 +40,7 @@ export function MoveThumb({ equipment }: { equipment: Equipment | undefined }) {
       testID={`move-thumb-${equipment}`}
       accessible={false}
       importantForAccessibility="no-hide-descendants"
-      style={[styles.tile, { backgroundColor: color.surface }]}>
+      style={[styles.tile, { backgroundColor: onSurface ? color.raise : color.surface }]}>
       <Icon name={SYMBOL[equipment]} />
     </View>
   );

@@ -6123,6 +6123,24 @@ tasks:
     refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md", "plan/kararlar/ADR-050-projeksiyon-saglik-kapisi.md", "plan/kararlar/ADR-052-projeksiyon-senaryolari.md"]
     learn: ["Sağlık kapısını ekrandan ekrana korumak", "Senaryo seçimi, hesap değil"]
 
+  - id: K-1233
+    title: "Ana ekran: bugünün antrenman kartı Sıcak defter dilinde (9c-5)"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: S
+    status: done
+    depends_on: [K-1230]
+    why: "Gezinti Durak 1 (Levent): 'Bugün › antrenman fena değil, daha iyi yapılabilir'. Kart hâlâ ADR-070 dilinde: oturum adı rakam yazısıyla, geçen seferin satırı petrol (petrol karar ve eylemdir), hareket simgesi kum kartta kum zeminde görünmüyor, kardiyo satırı çizgiyle ayrılıyor"
+    acceptance:
+      - "Kartın her türü (session, open, done, moved, skipped, rest, restWeek) kum zeminde; oturum adı serif başlık; 'Today' etiketi mercan yazı (bugünün adı rolü)"
+      - "Start kartın tek birincil düğmesi; değiştir simgesi ve Full workout / Undo metin düğmesi petrol; yapılan işareti petrol"
+      - "Geçen seferin satırı ikincil metin (petrol değil); hedef sayıları yuvarlak rakam; hareket simgesi kartın zemininden ayrılır"
+      - "Satırlar çizgisiz, boşlukla ayrılır; büyük harf yok; yeni metin yok (ana ekran bütçesi 74 aşılmaz)"
+    tests: ["today-warm-notebook.test.tsx", "this-week-screen.test.tsx", "today-workout.test.ts", "copy-budget.test.ts", "npm run check"]
+    refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md", "prototip/gorsel-yon/y5-e1.jpg", "plan/tasarim-gezinti-notlari.md"]
+    learn: ["Bir rengin rolünü bileşen bileşen korumak", "Aynı zeminde kaybolan öğe"]
+
   - id: K-1227
     title: "Yerler arası yürüme rotası haritada (noktalı), adım karşılığı"
     milestone: M12
