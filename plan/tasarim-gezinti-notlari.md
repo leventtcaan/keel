@@ -72,6 +72,17 @@ Hiçbiri ücretli üyeye kilitli değil.
 Her özelliğin **devamı, fazlası, artısı, dahası** ücretli: kullanıcı kullandıkça, daha fazlasını istediği noktada ücretliye geçsin. "Bir nevi freemium ama
 tam da değil": çekirdek ücretsiz, derinlik ücretli. Tasarımda her özellik için "ücretsiz kısım nerede biter, dahası ne" sorusu sorulacak.
 
+## Durak 5 · Yemek
+- **Öğün kaydet ekranında fontlar kayıyor**, başka yerlerde de. Levent: sebebi inatla fazla yazı yazmak, her şeyi boğmak.
+- **Türkçe yemek aramada bir şey çıkmıyor.** Agent: simülatörün sahte sunucusunda yemek veritabanı küçük bir yerine koyma listesi (`keel-sim/.sim/fixture.js:118`),
+  Türk yemekleri yok; gerçek veritabanında var (`data/food/tr-dishes.json`, #758). Ama gerçek aramanın Türkçe sorgularda iyi olduğu simülatörde hiç
+  görülmedi → tasarım işinde gerçek sunucuya karşı denenmeli (ya da fixture gerçek aramayla beslenmeli).
+- Yemek: **logic, UX ve UI üçüne de el atılmalı.**
+
+## Gezintinin sınırı (agent)
+Simülatör sahte sunucuya (fixture) bağlı: yemek araması, karar mantığı ve sunucudan gelen her şey önceden yazılı. Tasarım işinde gerçek davranış ya gerçek
+sunucuya karşı (test hesabı) ya da gerçek veriyle beslenen fixture ile gösterilmeli.
+
 ## Onaylar
 "Hepsi onay" körlemesine verildi (Levent): #770 (görsel/döngü inceleme kayıtları, rıza metni 2, şartlar) otomatik birleşmeden çıkarıldı; gezinti sonrası
 Levent'in gerçek kararıyla yeniden.
