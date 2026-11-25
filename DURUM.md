@@ -5,10 +5,10 @@ guncelleme: 2026-11-25
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (25 Kas gece — 9c-3: karar oku + kilo trendi satırı, PR #778 K1 onayı bekliyor)
+## ▶ DEVAM NOKTASI (25 Kas gece — 9c-3: karar oku + kilo trendi satırı, PR #778 otomatik birleşmede)
 **9c-2 birleşti (#776).** **9c-3 (K-1230, #777 → PR #778):** açılan karar bloğunda ok başlığın satırında (paywall etiketi kendi satırında kalır, v2 onaylı),
 alt satır çizgisiz, kilo kendi satırında serif + sunucunun trend noktalarından petrol çizgi (`TrendLine`). Simülatörde görüldü. **Not:** yerelde onboarding testleri
-makine yükünden (load ~300, takas 8,8 GB, Chrome + yt-dlp) zaman aşımına düştü; CI hakem. **Bekleyen:** Levent K1 (1 beklenti). **Sıradaki:** 9c-4 bugünün
+makine yükünden (load ~300, takas 8,8 GB, Chrome + yt-dlp) zaman aşımına düştü; CI hakem. **Levent K1 onayladı;** #778 otomatik birleşmede (CI onboarding testlerini de doğrular). **Sıradaki:** 9c-4 bugünün
 antrenman satırı (TodayCard) + karar detay ekranı.
 
 ## (önceki) ▶ DEVAM NOKTASI (25 Kas gece — 9c-2: hafta yolu + günün sayıları, PR #776 otomatik birleşmede)
