@@ -244,7 +244,7 @@ class DecisionService {
         // Appetite and how the first week felt are the user's answers (K-227, ADR-077 #4): no data says them.
         CheckIn answeredIn = new CheckIn(dataSays.look(), answers.checkIn().training(), answers.checkIn().recovery(), dataSays.waist(),
                 dataSays.adherence(), answers.checkIn().appetite(), week1Feel(answers.checkIn().week1Feel(), week.firstWeek().isPresent()));
-        // The set log wins where it reads (K-1218, ADR-091 #4): the call is made on it, kept with it, and says it beside the answer.
+        // The set log wins where it reads (K-1218, ADR-091 Ek 7): the call is made on it, kept with it, and says it beside the answer.
         TrainingTrend.Reading log = trainingLog(account, week);
         CheckIn checkIn = TrainingTrend.withLog(answeredIn, log);
         Optional<TrainingStatus> status = training(account, week);

@@ -145,10 +145,10 @@ class TrainingTrendTests {
     }
 
     @Test
-    void aWeekWithoutASessionWhereTheLogIsOtherwiseEnoughIsNotTrained() {
-        // Sessions 26, 19, 12 and 9 days back: nothing in the seven days to today.
+    void aWeekWithoutASessionIsUnknownNeverNotTrainedSoTheUserIsAsked() {
+        // Sessions 26, 19, 12 and 9 days back: nothing in the seven days to today. A missing log is no evidence (design §4).
         Lift squat = new Lift("squat", List.of(max(26, "100"), max(19, "100"), max(12, "106"), max(9, "106")));
-        assertThat(read(squat).training()).isEqualTo(Training.NOT_TRAINED);
+        assertThat(read(squat)).isEqualTo(Reading.UNKNOWN);
         // No log at all is no evidence: the user may train elsewhere.
         assertThat(TrainingTrend.read(List.of(new Lift("squat", List.of())), TODAY, Set.of(), P)).isEqualTo(Reading.UNKNOWN);
         assertThat(TrainingTrend.read(List.of(), TODAY, Set.of(), P)).isEqualTo(Reading.UNKNOWN);
@@ -259,8 +259,6 @@ class TrainingTrendTests {
                 new Reading(Training.STABLE, Recovery.UNKNOWN)))).containsExactly("toward_goal", "training_log_stable");
         assertThat(rules(TrainingTrend.decide(readsTheAnswer, CheckIn.NONE.withTraining(Training.STABLE),
                 new Reading(Training.DECLINING, Recovery.UNKNOWN)))).containsExactly("training_first", "training_log_declining");
-        assertThat(rules(TrainingTrend.decide(readsTheAnswer, CheckIn.NONE.withTraining(Training.STABLE),
-                new Reading(Training.NOT_TRAINED, Recovery.UNKNOWN)))).containsExactly("training_first", "training_log_not_trained");
     }
 
     @Test

@@ -14,7 +14,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 /**
- * Where training and recovery stand, read from the set log (K-1218, ADR-091 #4; design plan/k1218-oneri.md): a pure
+ * Where training and recovery stand, read from the set log (K-1218, ADR-091 Ek 7; design plan/k1218-oneri.md): a pure
  * function of the program's compound lifts and their working sets.
  *
  * <ul>
@@ -24,8 +24,8 @@ import java.util.function.Function;
  *       lift without twice that many sessions is not read.</li>
  *   <li><b>Training</b>: the majority of the readable lifts (trend_majority; at least trend_min_lifts of them, or the one
  *       compound a program has). A majority DOWN is DECLINING; a majority UP and none DOWN IMPROVING; else STABLE. Too few
- *       readable lifts: UNKNOWN, and the engine asks (U3). With a readable log and not one session in the seven days to
- *       today: NOT_TRAINED.</li>
+ *       readable lifts: UNKNOWN, and the engine asks (U3). Not one session logged in the seven days to today is UNKNOWN
+ *       too, never NOT_TRAINED: a missing log is no evidence, the user may train elsewhere (design §4), so they are asked.</li>
  *   <li><b>Recovery</b>: only POOR. A lift is tired when, at a load and reps done in all of its sessions read, the mean RIR
  *       of the last sessions is rir_drift_poor or more under that of the sessions before them (G7 K-67: effort rising) and
  *       its e1RM is not UP; a majority of the lifts that have such a load is POOR. The log cannot say GOOD: sleep and food
@@ -42,7 +42,6 @@ public final class TrainingTrend {
     static final RuleId TRAINING_LOG_DECLINING = new RuleId("training_log_declining");
     static final RuleId TRAINING_LOG_IMPROVING = new RuleId("training_log_improving");
     static final RuleId TRAINING_LOG_STABLE = new RuleId("training_log_stable");
-    static final RuleId TRAINING_LOG_NOT_TRAINED = new RuleId("training_log_not_trained");
     static final RuleId RECOVERY_LOG_POOR = new RuleId("recovery_log_poor");
 
     // The metric the log reading rests on (e1RM as a trend, H3 B15); the margins are noted in the parameters.
@@ -106,6 +105,12 @@ public final class TrainingTrend {
         if (lifts.isEmpty() || excluded.stream().anyMatch(day -> !day.isBefore(weekFrom) && !day.isAfter(today))) {
             return Reading.UNKNOWN;
         }
+        // No session logged this week: the log cannot say how the week went (a missing log is no evidence), so the answer stands.
+        boolean loggedThisWeek = lifts.stream().flatMap(lift -> lift.sessions().stream())
+                .anyMatch(session -> !session.day().isBefore(weekFrom) && !session.day().isAfter(today));
+        if (!loggedThisWeek) {
+            return Reading.UNKNOWN;
+        }
         LocalDate windowFrom = today.minusDays(parameters.wholeNumber(ParameterKey.TREND_WINDOW_DAYS) - 1L);
         List<LiftRead> reads = lifts.stream().map(lift -> readLift(lift, windowFrom, today, excluded, parameters)).toList();
         int needed = Math.max(1, Math.min(parameters.wholeNumber(ParameterKey.TREND_MIN_LIFTS), lifts.size()));
@@ -117,11 +122,7 @@ public final class TrainingTrend {
             BigDecimal half = majority.multiply(BigDecimal.valueOf(directions.size()));
             long down = directions.stream().filter(direction -> direction == Direction.DOWN).count();
             long up = directions.stream().filter(direction -> direction == Direction.UP).count();
-            boolean trainedThisWeek = lifts.stream().flatMap(lift -> lift.sessions().stream())
-                    .anyMatch(session -> !session.day().isBefore(weekFrom) && !session.day().isAfter(today));
-            if (!trainedThisWeek) {
-                training = Training.NOT_TRAINED;
-            } else if (BigDecimal.valueOf(down).compareTo(half) >= 0) {
+            if (BigDecimal.valueOf(down).compareTo(half) >= 0) {
                 training = Training.DECLINING;
             } else if (down == 0 && BigDecimal.valueOf(up).compareTo(half) >= 0) {
                 training = Training.IMPROVING;
@@ -218,7 +219,8 @@ public final class TrainingTrend {
                 case DECLINING -> TRAINING_LOG_DECLINING;
                 case IMPROVING -> TRAINING_LOG_IMPROVING;
                 case STABLE -> TRAINING_LOG_STABLE;
-                default -> TRAINING_LOG_NOT_TRAINED;
+                // read() never says these: no session this week, or too little log, is UNKNOWN.
+                case NOT_TRAINED, UNKNOWN -> throw new IllegalStateException("the log never reads " + log.training());
             }, LOG_METRIC));
         }
         if (log.recovery() == Recovery.POOR && answered.recovery() != Recovery.UNKNOWN && answered.recovery() != Recovery.POOR) {
