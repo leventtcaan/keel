@@ -5,14 +5,18 @@ guncelleme: 2026-11-24
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (25 Kas sabah — Evre 8: 8a + 8b'nin çoğu + 8c koç birleşti; Levent onayları bekleniyor)
+## ▶ DEVAM NOKTASI (25 Kas öğle — harita rotası simülatörde doğrulandı; Levent onayları bekleniyor)
 **Birleşenler (main):** 8a: #732-#744 (ücretsiz çekirdek + kilitli karar, arama v2, ana ekran sayıları, odak ekranı, motor K-1203/04/05) · #749 seyrek veride kayıp
 tavanı · #745/#750 gerçek dinlenme kaydı + aralık + tercih · #747 adım → yürüyüş önerisi (ilk ekranda, akşam hatırlatması varsayılan kapalı) · #748 çok dil
 altyapısı · #753 Türkçe (3.022 anahtar, Türkçe yasak ifade listeleri, mağaza metni) · #756 günlük döngü bağlantıları · #758 57 Türk yemeği + ev ölçüleri
 (TürKomp yok; USDA tarifleri; V64/V65 güvenli arama sütunu + arka plan doldurma) · #746/#761/#762 40 Codex form görseli (hepsi `image_review: pending`) ·
 #754 yayın sonrası rutin · koç #755/#757/#759/#760 (ADR-092: OpenAI gpt-5-nano, doğrulayıcı + sağlık ön kontrolü + kullanıcı başı/aylık tavan; **üretimde kapalı**).
-**Açık PR'lar:** #763/#764 harita rotası (K-1227; EAS simülatör derlemesiyle yerel kod doğrulanıyor) · #765 Live Activity (K-1215; Apple Developer'da uzantı +
-App Group kaydı Levent'te, sonra birleşir).
+**25 Kas öğle:** #763 birleşti (yerler + Apple Haritalar araması + yürüme rotası modülü) · #764 harita ekranı main'e hedeflendi, otomatik birleşmede: noktalı
+çizgi artık Apple'ın yürüme rotasının noktalarını izliyor (Swift `walkingRoute` metre + nokta döndürür, en çok `walk_route_points_max` 300 nokta; rota yoksa düz çizgi
++ "tahmin" metni). Simülatörde (EAS build 3c7962ee) Hadrian Kapısı → Arkeoloji Müzesi: 2,8 km, 3.771 adım, çizgi sahil yolunu izledi · #766 birleşti: Türkçede
+ondalık virgül (82,5 kg; `formatDecimal`, `t()` sayıları dil işaretiyle yazar, alan metni düz kalır) · #767 otomatik birleşmede: "min" → "dk" (10 metin) ve
+copy-tr testinde "min" artık nötr sayılmıyor.
+**Açık PR'lar:** #764 (CI) · #767 (CI) · #765 Live Activity (K-1215; Apple Developer'da uzantı + App Group kaydı Levent'te, sonra birleşir; yeni EAS derlemesi gerekir).
 **Levent'i bekleyen (onay sayfası: https://claude.ai/artifact/7HphxVmjMHbXXF5GPqDqc8, kayıtlar `onaylar` koleksiyonunda):** 40 form görseli · 26 Türkçe madde ·
 AI rıza metni (en+tr, 2-draft) · kullanım şartları taslağı · K-1218 (kayıt mı cevap mı kazanır). Ayrıca: OpenAI fiyatlarının doğrulanması (Antigravity, tam ekran
 onayı gerekli) → sonra VPS'e `KEEL_OPENAI_API_KEY` + koç ayarları (Levent "sen yap, $20 tavan" dedi; 1.0.1 yayınlanana kadar `provider: off`) · OpenAI panelinde
