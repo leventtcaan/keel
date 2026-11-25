@@ -1,0 +1,11 @@
+DIRECTION 1 · "Defter" (calm editorial, light).
+Mood: a quiet notebook, a thoughtful coach's handwriting-free page; airy, unhurried, human. Content sits on the page, not in boxes.
+Palette: background warm off-white #F6F4EF; raised surface #FFFFFF used sparingly with a hairline #E6E2DA; ink #1E2226;
+secondary text #6B6F73; ONE accent deep petrol #1F6B73 (a calm, desaturated teal) used only for the decision and the
+primary button; positive soft sage #7FA88F only for "done" marks. No black blocks. No saturated colour. No red.
+Type: headlines in a soft text serif (Apple New York style), sentence case, regular weight, large (decision headline ~34 pt);
+body and labels SF Pro, sentence case; numbers SF Pro with tabular figures, medium weight. Never all caps.
+Shapes: few cards; sections separated by whitespace and thin rules; corner radius 14; primary button petrol fill with white
+text, full width, 52 pt; secondary as plain petrol text. Week path: a thin horizontal line with 7 small circles, done = filled
+sage, today = petrol ring, training days slightly larger. Charts: thin 2 pt petrol line, soft petrol range band at 12% opacity,
+no grid except one baseline. No concentric activity rings.

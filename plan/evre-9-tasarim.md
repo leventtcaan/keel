@@ -21,6 +21,10 @@ Kaynak: Levent'in simülatör gezintisi (25 Kas 2026) → `plan/tasarim-gezinti-
 2. Codex (görsel): **3 yön × 3 ekran** (ana ekran, karar detayı, koç) taslak. Gerçek veriyle, Türkçe, az metin.
 3. Levent seçer (ya da karıştırır) → yeni görsel dil ADR'si (ADR-070 YERİNİ ALDI), token'lar (`src/theme/tokens.ts`).
 
+**9a BİTTİ (25 Kas):** Levent "B · Sıcak defter"i seçti → **ADR-094** (KABUL). Araştırma `arastirma/ham/gorsel-dil-2026-11-25.md` + doğrulama
+`arastirma/ham/gorsel-dil-dogrulama-2026-11-25.md`; taslaklar `prototip/gorsel-yon/` (1. tur 3 yön, 2. tur 3 karışım). Levent'in şartı: rol tablosu her
+ekranda, sheet'te, pop-up'ta ve gelecekteki her ekranda aynen. Sıradaki: 9c'nin ilk parçası token + bileşen (`tokens.ts`, serif/rounded font erişimi K6 ile doğrulanır).
+
 ### 9b · Mantık temizliği (9a ile paralel yürüyebilir)
 - **Cepte kalan tekrar** önceden dolu gelmesin (varsayım gerçek cevap gibi gidiyor; K-1218 sinyalini körleştiriyor). Metin: "yedek tekrar" → "cepte kalan tekrar".
 - **Dinlenme:** kaydedilen gerçek süre bir yere bağlansın (öğrenen aralık, toparlanma sinyali) ya da yük olmaktan çıksın. Erken "Hazır" ayrı bilgi.

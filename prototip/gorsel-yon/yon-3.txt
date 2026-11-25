@@ -1,0 +1,11 @@
+DIRECTION 3 · "Gece stüdyo" (precise and quiet, dark).
+Mood: a calm instrument panel at night; precise, confident, premium, low light, nothing shouting.
+Palette: background matte graphite #15171A; surface #1F2226 with hairline #2C3036; primary text #ECEAE6; secondary #8D9298;
+ONE accent warm amber #F2A65A used only for the decision and primary button; positive muted sage #8FBF9F for done marks.
+No pure black, no pure white, no neon, no red.
+Type: SF Pro; big numbers in SF Pro Display light/regular tabular figures (hero number ~56 pt); headlines semibold sentence
+case (~26 pt); small labels medium, sentence case, secondary colour. Never all caps.
+Shapes: precise modules on a grid, radius 12, hairline borders instead of shadows; primary button amber fill with graphite text,
+52 pt; secondary as outlined hairline button. Week path: 7 thin vertical segments like a meter, done = sage, today = amber
+outline, training days taller. Charts: crisp 1.5 pt amber line, range as a hatched or 10% amber band, tick marks minimal.
+No concentric activity rings.

@@ -1,0 +1,14 @@
+DIRECTION A · "Sakin defter" (mostly Defter, with Ritim's week path and coach action).
+Mood: a quiet notebook page, airy and unhurried, but alive: the week reads as a path you are walking.
+Palette: background warm off-white #F6F4EF; ink #1E2226; secondary #6B6F73; hairline #E6E2DA; ONE accent deep petrol #1F6B73
+(decision headline text, primary button, "you are here"); soft sage #7FA88F only for done; a very light petrol tint #E3EEEE
+used in exactly two places: under the week path and as the coach's action card. No black blocks, no saturated colour, no red,
+no decorative illustrations.
+Type: decision headline in a soft text serif (Apple New York style), regular weight, sentence case, large (~34 pt), set in petrol;
+everything else SF Pro sentence case; numbers SF Pro tabular, medium. Never all caps.
+Layout: almost no cards; content sits on the page, separated by whitespace and thin rules. The three daily numbers in one row,
+no boxes, label above value. Week path: a gentle curved ribbon (like a path) across the 7 days, the walked part (Pzt to Sal)
+filled petrol, a small "you are here" dot on Sal, training days as small markers on the ribbon, done day with a sage check.
+Charts: thin 2 pt petrol line, a soft petrol target band at 12% opacity, only one baseline. Coach: the action card is large
+and clear, its button full width petrol. Primary button petrol fill, white text, radius 14, 52 pt; secondary as petrol text.
+No concentric activity rings.

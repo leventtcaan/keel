@@ -1,5 +1,5 @@
 # ADR-070 · Görsel dil: turkuaz, açık zemin, koyu odak modu, uygulama içi tema seçici
-- **Durum:** KABUL (Levent, 2026-10-07)
+- **Durum:** YERİNİ ALDI → ADR-094 (Levent, 2026-11-25). Önceki: KABUL (Levent, 2026-10-07)
 - **Tarih:** 2026-10-07 · **Karar veren:** Levent (renk seçimi ve prototip onayı, 7 Eki); öneren: agent
 - **Yerine geçtiği:** ADR-016 (renk, tema ve köşe kısmı; Barlow Condensed başlık ve sistem gövde fontu aynen sürer)
 

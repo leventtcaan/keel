@@ -1,0 +1,13 @@
+DIRECTION B · "Sıcak defter" (equal mix of Defter's calm and Ritim's warmth).
+Mood: calm and human, warm without being sweet; a coach's notebook with a little colour where it matters.
+Palette: background warm off-white #F7F5F0; ink #24221F; secondary #736E66; TWO accents with fixed roles:
+petrol #1F6B73 = the decision and the primary action; coral #E07A5F = "you / today / progress" (today marker, walked part
+of the week, progress bars). Soft tinted surfaces only where they group something: sage tint #E8F0EA for the week path,
+coral tint #FBEAE3 for the coach action card, sand tint #F1ECE3 for the three numbers. No white cards with shadows, no black,
+no red, no illustrations.
+Type: decision headline in a soft text serif (Apple New York style) sentence case ~32 pt in ink; numbers in SF Pro Rounded
+tabular, friendly and large; labels SF Pro regular sentence case. Never all caps.
+Layout: generous whitespace; three tinted groups at most per screen, radius 20. Week path: a soft rounded ribbon on the sage
+tint, walked part coral, a coral dot on Sal ("you are here"), training days as small rounded markers. The three numbers in
+one sand-tinted strip, each with a thin progress bar in coral. Chart: smooth petrol line, soft coral target corridor.
+Primary button petrol pill with white text 52 pt; secondary as a sand-tinted pill. No concentric activity rings.

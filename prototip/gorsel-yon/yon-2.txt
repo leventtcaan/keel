@@ -1,0 +1,11 @@
+DIRECTION 2 · "Ritim" (warm and organic, light).
+Mood: gentle, encouraging, alive; the week feels like a path you walk, not a checklist. Friendly but adult, not childish.
+Palette: background soft warm white #FAF7F2; tinted surfaces instead of white cards: coral tint #FBE9E1, sage tint #E6F0EA,
+sand tint #F2ECE2; ink #2A2724; secondary #7A736B; TWO soft accents: coral #E07A5F (decision, primary button) and
+sage #6FA287 (progress, done). No black blocks, no neon, no red alarm colour.
+Type: SF Pro Rounded throughout; headlines semibold sentence case (~30 pt); numbers SF Pro Rounded tabular, large and friendly;
+labels regular. Never all caps.
+Shapes: soft rounded tinted cards, radius 22; pill-shaped primary button coral with white text, 52 pt; secondary as sand tinted pill.
+Week path: an organic soft band (a gentle curved ribbon) across the week, the walked part filled sage, a small dot "you are here"
+on Sal, training days as small rounded markers on the ribbon. Charts: smooth rounded line with a soft gradient area, range
+as a soft coral corridor. No concentric activity rings.

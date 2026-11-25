@@ -1,11 +1,22 @@
 ---
-guncelleme: 2026-11-24
+guncelleme: 2026-11-25
 ---
 # DURUM
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (25 Kas akşam — 1.0.1 DURDU; Evre 9 tasarım ve mantık başlıyor)
+## ▶ DEVAM NOKTASI (25 Kas gece — 9a-1 BİTTİ: görsel dil ADR-094 "Sıcak defter")
+**Karar (Levent):** "kesinlikle B": kırık beyaz kâğıt, petrol = karar ve eylem, mercan = bugün ve ilerleme (uyarı/aralıkta asla), yumuşak renkli gruplar,
+serif başlık + SF Pro + Rounded tabular rakam, büyük harf yok, siyah ters blok yok. **Şartı:** her sayfa, pop-up, sheet ve ileride eklenecek her şey aynı rol
+tablosuyla (ADR-094 §1). ADR-070 YERİNİ ALDI.
+**Yol:** Antigravity (Gemini 3.8 Flash High) araştırma + ayrı doğrulama turu (46 doğrulandı, 15 çelişiyor: çoğu yanlış App Store kimliği) →
+`arastirma/ham/gorsel-dil-*.md`; Codex (gpt-6-luna) 1. tur Defter/Ritim/Gece stüdyo, Levent Gece'yi eledi, "Defter + Ritim karışımı" istedi; 2. tur A/B/C → B.
+Taslaklar `prototip/gorsel-yon/` (y5 = seçilen), yan yana sayfa https://claude.ai/artifact/Y9TPWgp4J4S6ZMFg7SmVhy (özel).
+**Sıradaki:** 9c-1 token + bileşen: `tokens.ts` ADR-094 tablosuyla, Barlow kalkar, serif/rounded erişimi kurulu RN'de doğrulanır (K6, [doğrulanmadı]), yeni mimari
+test (mercan uyarı/birincilde yasak, uppercase yok), sonra ana ekran (hafta yolu). 9b mantık temizliği paralel yürüyebilir.
+**Not:** mercan Runna'nın `#F07561`ine yakın (ΔE00 8,4), ikincil rol olduğu için kabul edildi.
+
+## (önceki) ▶ DEVAM NOKTASI (25 Kas akşam — 1.0.1 DURDU; Evre 9 tasarım ve mantık başlıyor)
 **Karar (Levent, simülatör gezintisi):** 1.0.1 tasarım bitene kadar çıkmaz ("içimize her noktası sinmeden çıkarmayalım"; "körlemesine onaylama yok").
 Gezinti notları `plan/tasarim-gezinti-notlari.md` (ana ekran, antrenman, gelişim, yemek, harita, kilitli karar, koç; Levent'in sözleriyle), düğme
 denetimi `plan/tasarim-antrenman-dugme-denetimi.md`, plan `plan/evre-9-tasarim.md` (9a görsel yön → 9b mantık → 9c ekran ekran → 9d para haritası).
@@ -15,7 +26,7 @@ Levent onayıyla güncellendi) · #771 (sürüm 1.0.1, app-config testi Levent o
 (Apple Developer kaydı Levent'te).
 **Bugün birleşenler:** #763/#764 harita (rota sokakları izler) · #766 Türkçe ondalık virgül · #767 "dk" · #768/#769 form döngüleri (40 klip,
 expo-video) · #772 K-1218 kayıt kazanır (agent incelemesi: haftada seans yoksa NOT_TRAINED değil, soru sorulur).
-**Levent kararları bekliyor:** görsel dil (ADR-070'in yerine) · fotoğrafa AI (V1 ile çelişir) · para haritası ("dahası ücretli") · koç açılışı
+**Levent kararları bekliyor:** fotoğrafa AI (V1 ile çelişir) · para haritası ("dahası ücretli") · koç açılışı
 (OpenAI fiyatı + panel tavanı $25) · anahtarları yenile (sohbete yapıştırıldı).
 
 ## (önceki) ▶ DEVAM NOKTASI (25 Kas akşam — form döngü klipleri 40/40, onay sayfasında; Levent onayları bekleniyor)

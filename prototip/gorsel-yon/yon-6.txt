@@ -1,0 +1,12 @@
+DIRECTION C · "Sade ritim" (mostly Ritim, calmed down by Defter's restraint).
+Mood: warm, encouraging and soft, but grown up and quiet: fewer boxes, more air, no decoration.
+Palette: background soft warm white #FAF7F2; ink #2A2724; secondary #7A736B; coral #E07A5F for the decision and primary
+button; sage #6FA287 for progress and done; tints coral #FBE9E1 and sage #E6F0EA used for at most two surfaces per screen.
+No black blocks, no neon, no red alarm colour, NO illustrations (no mountains, suns or leaves).
+Type: decision headline in a soft text serif (Apple New York style) semibold sentence case ~32 pt; everything else
+SF Pro Rounded; numbers SF Pro Rounded tabular, large and friendly. Never all caps.
+Layout: the decision sits directly on the page (no card), the week path below it on a sage tint as a soft curved ribbon
+with the walked part sage and a coral "you are here" dot on Sal; the three daily numbers in one row without boxes, each with
+a thin sage progress bar; weight trend without a card on a thin rule. Rounded radius 22 where surfaces exist. Primary button
+coral pill with white text 52 pt; secondary as plain coral text. Coach: answer bubble soft, action card on coral tint with a
+large coral "Plana ekle". No concentric activity rings.
