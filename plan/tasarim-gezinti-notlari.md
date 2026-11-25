@@ -91,6 +91,13 @@ sunucuya karşı (test hesabı) ya da gerçek veriyle beslenen fixture ile göst
 - Agent notu: bugün yol Ayarlar › Senin hakkında › Aktivite › Yürüyüşlerim › Haritayı aç (5 dokunuş); ana ekrandaki adım önerisi satırı kayıtlı
   yürüyüşleri zaten kullanıyor (K-1216), harita oradan açılabilir.
 
+## Durak 7 · Kilitli karar ve abonelik
+- Kilitli karar kartı: "KARARIN HAZIR · 23 Kas Pzt haftası. Abonelikle birlikte gelir." + "Planları gör". (Levent yorum yapmadı.)
+- **Abonelik ekranı simülatörde görülemiyor:** RevenueCat anahtarı yalnız production derlemesinde; geliştirme derlemesi "Satın alma, uygulamanın App Store
+  sürümünde çalışır" diyor. Tasarım işinde: yalnız geliştirme derlemesinde örnek fiyatlarla çizilen **önizleme modu** (tasarım simülatörde
+  değerlendirilsin); gerçek akış TestFlight sandbox'ta.
+- Bu boş hal bile zayıf: açık turkuaz başlık + tek cümle, ne yapacağını söylemiyor.
+
 ## Onaylar
 "Hepsi onay" körlemesine verildi (Levent): #770 (görsel/döngü inceleme kayıtları, rıza metni 2, şartlar) otomatik birleşmeden çıkarıldı; gezinti sonrası
 Levent'in gerçek kararıyla yeniden.
