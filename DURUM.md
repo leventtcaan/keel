@@ -5,7 +5,13 @@ guncelleme: 2026-11-25
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (25 Kas gece — 9c-3: karar oku + kilo trendi satırı, PR #778 otomatik birleşmede)
+## ▶ DEVAM NOKTASI (25 Kas gece — 9c-4a: karar ekranı, PR #780 otomatik birleşmede)
+**9c-3 birleşti (#778).** **9c-4a (K-1231, #779 → PR #780):** karar ekranı basis'ten hafta grafiği (tek VoiceOver öğesi, yükseklik ayrılı), tarih + güven tek satır,
+"Ne değişiyor"/"Neden" başlıkları, bütçe 50, Uygulamada kum haplar. **ADR-094 Ek 1 (Levent):** 8 hafta aralığı uyuma en yakın senaryoyla, bütçe 50, Uygulamada kalır.
+Mevcut testler değişmedi (K1 yok). Tam jest 312/312 (boş makinede). **Sıradaki:** 9c-4b "8 hafta sonra" aralığı (projeksiyon, uyuma en yakın senaryo) →
+9c-5 bugünün antrenman satırı. Neden cümlelerinin kısalması Türkçe metin onaylarıyla (#770).
+
+## (önceki) ▶ DEVAM NOKTASI (25 Kas gece — 9c-3: karar oku + kilo trendi satırı, PR #778 otomatik birleşmede)
 **9c-2 birleşti (#776).** **9c-3 (K-1230, #777 → PR #778):** açılan karar bloğunda ok başlığın satırında (paywall etiketi kendi satırında kalır, v2 onaylı),
 alt satır çizgisiz, kilo kendi satırında serif + sunucunun trend noktalarından petrol çizgi (`TrendLine`). Simülatörde görüldü. **Not:** yerelde onboarding testleri
 makine yükünden (load ~300, takas 8,8 GB, Chrome + yt-dlp) zaman aşımına düştü; CI hakem. **Levent K1 onayladı;** #778 otomatik birleşmede (CI onboarding testlerini de doğrular). **Sıradaki:** 9c-4 bugünün
