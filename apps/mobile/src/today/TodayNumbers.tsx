@@ -142,7 +142,8 @@ export function TodayNumbers({ protein, steps, weight, walk = null, units }: Pro
         accessibilityLabel={label}
         accessibilityHint={t('thisWeek.numbers.weightHint')}
         onPress={() => router.navigate('/progress')}
-        style={({ pressed }) => [styles.weight, { borderTopColor: color.line }, pressed && styles.dim]}>
+        // Set apart from the numbers above it by a hairline; first in its card (no numbers above), no line.
+        style={({ pressed }) => [styles.weight, tiles.length > 0 || (walk !== null && steps?.steps != null) ? { borderTopWidth: tokens.border.hairline, borderTopColor: color.line } : null, pressed && styles.dim]}>
         <View style={styles.weightWords}>
           <Text style={[styles.kilos, { color: color.text }]}>{shown}</Text>
           {noteText}
@@ -183,7 +184,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: tokens.space.md,
     minHeight: tokens.size.touch,
-    borderTopWidth: tokens.border.hairline,
     paddingTop: tokens.space.sm,
   },
   weightWords: { flexShrink: 1, gap: tokens.space.xs },

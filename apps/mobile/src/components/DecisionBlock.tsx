@@ -34,16 +34,22 @@ export function DecisionBlock({ eyebrow, aside, title, children, onPress, pressL
   );
   const body = (
     <>
-      {aside !== undefined && eyebrow !== undefined ? (
+      {aside !== undefined && (eyebrow !== undefined || onPress === undefined) ? (
         <View style={styles.top}>
-          <Text style={[styles.eyebrow, styles.eyebrowBeside, { color: color.accentInk }]}>{eyebrow}</Text>
+          {/* A mark with no label keeps to the right; no empty text is laid out beside it. */}
+          {eyebrow === undefined ? (
+            <View style={styles.eyebrowBeside} />
+          ) : (
+            <Text style={[styles.eyebrow, styles.eyebrowBeside, { color: color.accentInk }]}>{eyebrow}</Text>
+          )}
           <InverseSurface>{aside}</InverseSurface>
         </View>
       ) : (
         eyebrow !== undefined && <Text style={[styles.eyebrow, { color: color.accentInk }]}>{eyebrow}</Text>
       )}
-      {aside !== undefined && eyebrow === undefined ? (
-        // No label above: the mark sits on the title's own line (ADR-094 §3, 9c-3), no band of its own over the call.
+      {aside !== undefined && eyebrow === undefined && onPress !== undefined ? (
+        // A block that opens, with no label above: its arrow sits on the title's own line (ADR-094 §3, 9c-3), no band of
+        // its own over the call. A block that does not open keeps its mark on its own row (the paywall's tag, approved v2).
         <View style={styles.top}>
           {heading}
           <InverseSurface>{aside}</InverseSurface>

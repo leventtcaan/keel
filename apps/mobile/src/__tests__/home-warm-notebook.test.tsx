@@ -8,6 +8,7 @@ import { StyleSheet, Text } from 'react-native';
 
 import type { components } from '@/api/schema';
 import { DecisionBlock } from '@/components/DecisionBlock';
+import { TrendLine } from '@/components/TrendLine';
 import { ThemeProvider } from '@/theme/theme';
 import { type ColorScheme, palettes } from '@/theme/tokens';
 import { TodayBlock } from '@/today/TodayBlock';
@@ -175,5 +176,53 @@ describe.each(['light', 'dark'] as ColorScheme[])('%s theme, 9c-3', (scheme) => 
       expect(String(line.props.d).match(/[ML]/g)).toHaveLength(POINTS.length);
       expect(screen.getByTestId('trend-end', { includeHiddenElements: true })).toBeTruthy();
     });
+  });
+});
+
+describe('9c-3 edges', () => {
+  test("a block that does not open keeps its mark on a row of its own (the paywall's tag, v2 approved)", async () => {
+    await render(
+      <ThemeProvider scheme="light">
+        <DecisionBlock title="Pro" aside={<Text testID="mark">Yours</Text>} />
+      </ThemeProvider>,
+    );
+    let row = screen.getByTestId('mark').parent;
+    while (row !== null && StyleSheet.flatten(row.props.style)?.flexDirection !== 'row') row = row.parent;
+    expect(within(row!).queryByText('Pro')).toBeNull();
+  });
+
+  test.each([
+    ['flat', [80, 80, 80]],
+    ['two points', [81, 80.4]],
+  ])('the trend line draws a %s series inside its box', async (_, points) => {
+    await render(
+      <ThemeProvider scheme="light">
+        <TrendLine points={points} />
+      </ThemeProvider>,
+    );
+    const d = String(screen.getByTestId('trend-line', { includeHiddenElements: true }).props.d);
+    expect(d.match(/[ML]/g)).toHaveLength(points.length);
+    expect(d).not.toMatch(/NaN|Infinity/);
+  });
+
+  test('one point is no line', async () => {
+    await render(
+      <ThemeProvider scheme="light">
+        <TrendLine points={[80]} />
+      </ThemeProvider>,
+    );
+    expect(screen.queryByTestId('trend-line', { includeHiddenElements: true })).toBeNull();
+  });
+
+  test('the weight first in its card (no numbers above it) has no ruled line on top', async () => {
+    const ready = <T,>(value: T): Loaded<T> => ({ state: 'ready', value });
+    const WEIGHT: WeightRead = { summary: ready({ weighInCount: 30, trendMinWeighIns: 7, trendReady: true }), trend: ready([{ day: '2026-11-01', kg: 88 }, { day: '2026-11-24', kg: 87.4 }]) };
+    await render(
+      <ThemeProvider scheme="light">
+        <TodayBlock budget={{ state: 'none' }} targets={{ state: 'none' }} weight={WEIGHT} units="METRIC" />
+      </ThemeProvider>,
+    );
+    await act(async () => {});
+    expect(StyleSheet.flatten(screen.getByTestId('number-weight').props.style).borderTopWidth).toBeUndefined();
   });
 });
