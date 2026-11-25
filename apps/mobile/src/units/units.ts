@@ -84,6 +84,11 @@ export function weightNumber(kg: number, system: UnitSystem): string {
   return formatDecimal(roundTo(system === 'METRIC' ? kg : kg / KG_PER_LB, P.weightDecimals), P.weightDecimals, { fixed: true });
 }
 
+/** The weight's unit word, "kg" or "lb", as a range is followed by it (the projection's rows, the call's "in 8 weeks"). */
+export function unitOf(system: UnitSystem): string {
+  return t(system === 'METRIC' ? 'units.kgUnit' : 'units.lbUnit');
+}
+
 export function formatWeight(kg: number, system: UnitSystem): string {
   return t(system === 'METRIC' ? 'units.kg' : 'units.lb', { value: weightNumber(kg, system) });
 }

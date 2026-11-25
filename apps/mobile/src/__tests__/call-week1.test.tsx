@@ -74,7 +74,8 @@ jest.mock('expo-router', () => ({
 }));
 let mockParams: { id?: string } = {};
 const said = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
-const mockServices = { api: { GET: mockGET, POST: mockPOST, PATCH: mockPATCH }, report: jest.fn() };
+// The projection is off (its default, ADR-050): the call screen asks nothing of it.
+const mockServices = { api: { GET: mockGET, POST: mockPOST, PATCH: mockPATCH }, report: jest.fn(), projectionSwitch: { on: () => false } };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => 'METRIC' }));
 
 beforeEach(() => {

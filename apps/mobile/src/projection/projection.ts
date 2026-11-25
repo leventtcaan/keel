@@ -13,6 +13,25 @@ import type { KeyValue } from '@/units/preference';
 import type { ProjectionAccess } from './scoff';
 
 export type Direction = 'LOSS' | 'GAIN';
+/** A scenario as the server sends it: a share of planned days kept and its range, in kg. */
+export type Scenario = { adherence: number; lowKg: number; kg: number; highKg: number };
+
+// The scenario the figure and the update follow: the middle one, "80 % of planned days" (H2 §4.4).
+const FIGURE_SHARE = 0.8;
+
+/** The scenario the projection screen's figure follows: "80 % of planned days", or the middle one sent. */
+export function figureScenario<S extends Scenario>(scenarios: S[]): S | undefined {
+  return scenarios.find((scenario) => scenario.adherence === FIGURE_SHARE) ?? scenarios[Math.floor(scenarios.length / 2)];
+}
+
+/**
+ * The scenario nearest the share of planned days the person has kept (ADR-094 Ek 1, Levent: the call screen's "in 8 weeks"):
+ * the server's scenarios, one chosen, nothing worked out (U1). With no share known, the figure's own (the middle one).
+ */
+export function nearestScenario<S extends Scenario>(scenarios: S[], adherence: number | undefined): S | undefined {
+  if (adherence === undefined || scenarios.length === 0) return figureScenario(scenarios);
+  return scenarios.reduce((best, scenario) => (Math.abs(scenario.adherence - adherence) < Math.abs(best.adherence - adherence) ? scenario : best));
+}
 /** The scenario the figure follows, as last shown: its share of planned days, its middle number and its range, in kg. */
 export type Seen = { adherence: number; kg: number; low: number; high: number };
 

@@ -56,12 +56,14 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: () => mockParams,
 }));
 jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
-const mockServices = { api: { GET: mockGET, POST: mockPOST }, report: jest.fn() };
+let mockProjectionOn = false;
+const mockServices = { api: { GET: mockGET, POST: mockPOST }, report: jest.fn(), projectionSwitch: { on: () => mockProjectionOn } };
 let mockUnits: 'METRIC' | 'IMPERIAL' = 'METRIC';
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => mockUnits }));
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockProjectionOn = false;
   mockParams = {};
   mockUnits = 'METRIC';
   mockPost = ok({});
@@ -171,5 +173,74 @@ describe('the call in the warm notebook (9c-4a)', () => {
   test('no change, no "what changes" heading', async () => {
     await show();
     expect(screen.queryByRole('header', { name: t('callScreen.section.change') })).toBeNull();
+  });
+});
+
+// 9c-4b (ADR-094 Ek 1, Levent): "in 8 weeks", the range of the server's scenario nearest the person's own share of planned
+// days kept; only with the projection turned on (its health gate, ADR-050), only for this week's call, always a range (U5).
+const PROJECTION = (on: string): Schemas['Projection'] => ({
+  shown: true,
+  todayKg: 87.4,
+  direction: 'LOSS',
+  on,
+  scenarios: [
+    { adherence: 0.6, lowKg: 84.6, kg: 85.4, highKg: 86.1 },
+    { adherence: 0.8, lowKg: 83.7, kg: 84.6, highKg: 85.4 },
+    { adherence: 0.95, lowKg: 83.0, kg: 84.0, highKg: 84.9 },
+  ],
+});
+const withAdherence = (adherence?: number) => ({ ...BASIS([89.6, 87.4]), ...(adherence === undefined ? {} : { adherence }) });
+
+describe('the call ahead (9c-4b)', () => {
+  beforeEach(() => {
+    mockProjectionOn = true;
+    jest.useFakeTimers({ now: new Date('2026-12-28T10:00:00Z'), doNotFake: ['nextTick', 'setImmediate', 'queueMicrotask'] });
+    mockAnswers['/v1/projection'] = ok(PROJECTION('2027-02-22'));
+  });
+  afterEach(() => jest.useRealTimers());
+
+  test("the range of the scenario nearest the person's own share kept, with its weeks and its share", async () => {
+    mockAnswers['/v1/decisions/{id}/basis'] = ok(withAdherence(0.86));
+    await show();
+    const ahead = within(screen.getByTestId('call-ahead'));
+    expect(ahead.getByText(t('callScreen.ahead', { weeks: 8 }))).toBeOnTheScreen();
+    // 0.86 is nearest 0.8: its range, never its middle number alone.
+    expect(ahead.getByText(/^83\.7\D+85\.4/)).toBeOnTheScreen();
+    expect(ahead.queryByText(/84\.6/)).toBeNull();
+    expect(ahead.getByText(t('projection.view.scenario', { pct: 80 }))).toBeOnTheScreen();
+  });
+
+  test('with no share known, the middle scenario, as the projection screen follows', async () => {
+    mockAnswers['/v1/decisions/{id}/basis'] = ok(withAdherence());
+    await show();
+    expect(within(screen.getByTestId('call-ahead')).getByText(t('projection.view.scenario', { pct: 80 }))).toBeOnTheScreen();
+  });
+
+  test('a high share follows the 95% scenario', async () => {
+    mockAnswers['/v1/decisions/{id}/basis'] = ok(withAdherence(0.97));
+    await show();
+    expect(within(screen.getByTestId('call-ahead')).getByText(/^83(\.0)?\D+84\.9/)).toBeOnTheScreen();
+  });
+
+  test('the projection turned off: nothing ahead, and it is not even asked for', async () => {
+    mockProjectionOn = false;
+    mockAnswers['/v1/decisions/{id}/basis'] = ok(withAdherence(0.86));
+    await show();
+    expect(screen.queryByTestId('call-ahead')).toBeNull();
+    expect(mockGET).not.toHaveBeenCalledWith('/v1/projection', expect.anything());
+    expect(mockGET.mock.calls.map((c) => c[0])).not.toContain('/v1/projection');
+  });
+
+  test('not shown by the server (its gates): nothing ahead', async () => {
+    mockAnswers['/v1/projection'] = ok({ shown: false, reason: 'TOO_EARLY' });
+    await show();
+    expect(screen.queryByTestId('call-ahead')).toBeNull();
+  });
+
+  test('a past call opened read only: nothing ahead', async () => {
+    mockParams = { id: 'd7' };
+    mockAnswers['/v1/decisions/{id}'] = ok(decision({ id: 'd7' }));
+    await show();
+    expect(screen.queryByTestId('call-ahead')).toBeNull();
   });
 });

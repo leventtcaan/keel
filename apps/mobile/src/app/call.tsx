@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { DecisionBlock } from '@/components/DecisionBlock';
+import { RangeText } from '@/components/RangeText';
 import { TrendLine } from '@/components/TrendLine';
 import { ProblemText, announce } from '@/components/ProblemText';
 import { t } from '@/copy';
@@ -16,7 +17,8 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { useReduceMotion } from '@/theme/useReduceMotion';
 import { TrendCount } from '@/weighIn/TrendCount';
-import { formatWeight, weightNumber } from '@/units/units';
+import { nearestScenario } from '@/projection/projection';
+import { formatWeight, unitOf, weightInput, weightNumber } from '@/units/units';
 import { appliedSave, applyCall, callFace, declineCall } from '@/today/call';
 import { ChangeRows } from '@/today/ChangeRows';
 import { changeRows } from '@/today/callChanges';
@@ -25,7 +27,8 @@ import { SourceMark } from '@/today/SourceMark';
 import { useWeek1 } from '@/today/useWeek1';
 import { LockedCallView } from '@/today/LockedCallView';
 import { PracticeRow } from '@/today/PracticeRow';
-import { type CallRead, type Loaded, labelKey, load, readCall, weekdayDate } from '@/today/today';
+import { type CallRead, type Loaded, labelKey, load, localDay, readCall, weekdayDate } from '@/today/today';
+import { daysBetween } from '@/today/week';
 import { openDetail } from '@/settings/detail';
 
 type Decision = components['schemas']['Decision'];
@@ -60,7 +63,7 @@ const SAID: Record<string, string> = {
 export default function CallScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const readOnly = id !== undefined;
-  const { api, report } = useAppServices();
+  const { api, report, projectionSwitch } = useAppServices();
   const units = useUnits();
   const saved = useSaved();
   const { color } = useTheme();
@@ -109,19 +112,34 @@ export default function CallScreen() {
 
   // The weeks the call read (GET /v1/decisions/{id}/basis, as Why this call reads them), drawn as a small chart (9c-4a). Not
   // there (no subscription, no consent, none): no chart, the call stands as it is.
-  const [basis, setBasis] = useState<{ id: string; weeks: number[] } | null>(null);
+  const [basis, setBasis] = useState<{ id: string; weeks: number[]; adherence?: number } | null>(null);
   const [chartWidth, setChartWidth] = useState(0);
   const readId = call?.state === 'ready' ? call.value.id : null;
   useEffect(() => {
     if (readId === null) return;
     let live = true;
     void load(() => api.GET('/v1/decisions/{id}/basis', { params: { path: { id: readId } } })).then((found) => {
-      if (live) setBasis(found.state === 'ready' ? { id: readId, weeks: found.value.weeks.map((week) => week.kg) } : null);
+      if (live) setBasis(found.state === 'ready' ? { id: readId, weeks: found.value.weeks.map((week) => week.kg), adherence: found.value.adherence } : null);
     });
     return () => {
       live = false;
     };
   }, [api, readId]);
+
+  // Where the plan leads (ADR-094 Ek 1, Levent, 9c-4b): the server's projection, only while the person has it turned on (its
+  // health gate, ADR-050: off, it is not even asked for) and only for this week's call, never a past one opened read only.
+  const [projection, setProjection] = useState<components['schemas']['Projection'] | null>(null);
+  const projectionOn = !readOnly && readId !== null && projectionSwitch.on();
+  useEffect(() => {
+    if (!projectionOn) return;
+    let live = true;
+    void load(() => api.GET('/v1/projection')).then((found) => {
+      if (live) setProjection(found.state === 'ready' ? found.value : null);
+    });
+    return () => {
+      live = false;
+    };
+  }, [api, projectionOn]);
 
   const [rise] = useState(() => new Animated.Value(0));
   const shown = call?.state === 'ready';
@@ -244,6 +262,18 @@ export default function CallScreen() {
           </View>
         </View>
       );
+    // "In 8 weeks": the scenario nearest the share of planned days the person kept, as a range (U5), its share said under it.
+    const scenario =
+      projectionOn && projection?.shown === true && projection.on !== undefined ? nearestScenario(projection.scenarios ?? [], basis?.id === decision.id ? basis.adherence : undefined) : undefined;
+    const weeksAhead = projection?.on === undefined ? 0 : Math.round(daysBetween(localDay(new Date()), projection.on) / 7);
+    const ahead =
+      scenario === undefined || weeksAhead <= 0 ? null : (
+        <View testID="call-ahead" style={[styles.ahead, { backgroundColor: color.tintDay }]}>
+          <Text style={[styles.small, styles.strong, { color: color.textSecondary }]}>{t('callScreen.ahead', { weeks: weeksAhead })}</Text>
+          <RangeText low={Number(weightInput(scenario.lowKg, units))} high={Number(weightInput(scenario.highKg, units))} unit={unitOf(units)} />
+          <Text style={[styles.small, { color: color.muted }]}>{t('projection.view.scenario', { pct: Math.round(scenario.adherence * 100) })}</Text>
+        </View>
+      );
     const changes = week1?.rows ?? changeRows(decision, units);
     const heading = (key: string) => (
       <Text accessibilityRole="header" style={[styles.heading, { color: color.text }]}>
@@ -279,6 +309,7 @@ export default function CallScreen() {
           {observation}
         </View>
         {weighInsLeft}
+        {ahead}
         <View style={styles.meta}>
           <Text style={[styles.small, { color: color.textSecondary }]}>{t('callScreen.nextCall', { date: weekdayDate(decision.nextCallOn) })}</Text>
         </View>
@@ -347,6 +378,7 @@ const styles = StyleSheet.create({
   heading: { ...tokens.face.display, fontSize: tokens.type.heading, paddingBottom: tokens.space.xs },
   chart: { borderRadius: tokens.radius.card, padding: tokens.space.md, gap: tokens.space.sm },
   chartBox: { height: tokens.size.callChartHeight },
+  ahead: { borderRadius: tokens.radius.card, padding: tokens.space.md, gap: tokens.space.xs },
   chartEnds: { flexDirection: 'row', justifyContent: 'space-between' },
   reason: { flexDirection: 'row', alignItems: 'flex-start', gap: tokens.space.sm, borderTopWidth: tokens.border.hairline, paddingVertical: tokens.space.sm },
   waits: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, borderTopWidth: tokens.border.hairline, paddingVertical: tokens.space.sm },

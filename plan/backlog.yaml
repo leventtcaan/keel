@@ -6106,6 +6106,23 @@ tasks:
     refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md", "prototip/gorsel-yon/y5-e2.jpg"]
     learn: ["Ekranda ikinci okuma (basis)", "onLayout ile genişliğe göre çizim"]
 
+  - id: K-1232
+    title: "Karar ekranında '8 hafta sonra' aralığı, uyuma en yakın senaryo (9c-4b)"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: S
+    status: doing
+    depends_on: [K-1231]
+    why: "ADR-094 Ek 1 (Levent): karar ekranında tahmin aralığı, kişinin uyumuna en yakın senaryoyla; projeksiyonun sağlık kapısı (ADR-050) korunur"
+    acceptance:
+      - "Yalnız projeksiyon açıkken (SCOFF kapısı, ADR-050) ve yalnız bu haftanın kararında; kapalıysa istek gitmez, geçmiş kararda görünmez"
+      - "Sunucunun senaryolarından basis.adherence'a en yakın olanın aralığı (U5: daima aralık, orta sayı gösterilmez); uyum bilinmiyorsa projeksiyon ekranının ortadaki senaryosu"
+      - "Altında senaryonun uyum payı (ADR-052); kelime bütçesi 53 (Levent)"
+    tests: ["call-warm-notebook.test.tsx", "call-screen.test.tsx", "copy-budget.test.ts", "npm run check"]
+    refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md", "plan/kararlar/ADR-050-projeksiyon-saglik-kapisi.md", "plan/kararlar/ADR-052-projeksiyon-senaryolari.md"]
+    learn: ["Sağlık kapısını ekrandan ekrana korumak", "Senaryo seçimi, hesap değil"]
+
   - id: K-1227
     title: "Yerler arası yürüme rotası haritada (noktalı), adım karşılığı"
     milestone: M12

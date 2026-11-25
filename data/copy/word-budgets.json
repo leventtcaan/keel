@@ -1689,12 +1689,14 @@
     },
     {
       "screen": "call",
-      "budget": 50,
-      "source": "ADR-077 #3, then to 50 by K-1231 (Levent, 25 Nov: the headings 'What changes' and 'Why', 9c-4a, prototype y5-e2)",
+      "budget": 53,
+      "source": "ADR-077 #3, then to 50 by K-1231 (Levent, 25 Nov: the headings 'What changes' and 'Why', 9c-4a, prototype y5-e2), then to 53 by 9c-4b (Levent, 25 Nov: 'In 8 weeks' with the share of planned days its range follows, ADR-052)",
       "task": "K-978",
-      "note": "The budget is 50 (ADR-094 Ek 1, Levent 25 Nov: the headings 'What changes' and 'Why'). The kind of source of a reason (EXPERIENCE, LITERATURE, PRODUCT) is a symbol on the screen with its full words as the VoiceOver label (today.call.source.<tag>), so it is not a line of words and U14 stays said for everyone; with no sentence to read (the safety call) the words themselves show, and are counted in that face. The back label is counted. Reason lines that ran over were shortened (decision.ruleShort.cut_step, adherence_low), not the budget raised.",
+      "note": "The budget is 53 (ADR-094 Ek 1, Levent 25 Nov: the headings 'What changes' and 'Why', and 'In 8 weeks' with its share). The kind of source of a reason (EXPERIENCE, LITERATURE, PRODUCT) is a symbol on the screen with its full words as the VoiceOver label (today.call.source.<tag>), so it is not a line of words and U14 stays said for everyone; with no sentence to read (the safety call) the words themselves show, and are counted in that face. The back label is counted. Reason lines that ran over were shortened (decision.ruleShort.cut_step, adherence_low), not the budget raised.",
       "file": "src/app/call.tsx",
       "keys": [
+        "callScreen.ahead",
+        "projection.view.scenario",
         "callScreen.section.why",
         "callScreen.section.change",
         "callScreen.inPlan",
