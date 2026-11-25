@@ -2561,6 +2561,11 @@ export interface components {
              *     then shows no image.
              */
             image?: string;
+            /**
+             * @description A short silent loop of one repetition drawn from the form image (ADR-091 Ek 6), a path in the app's assets
+             *     (exercises/<id>/loop.mp4). Absent until the loop passed its own review; the app then shows the form image alone.
+             */
+            loop?: string;
         };
         /**
          * @description The two demonstration clips (ADR-017) — the first rep and the last rep near the target RIR. Paths in the app's
