@@ -58,8 +58,9 @@ export function StrengthChart({ points, from, today, units, move }: Props) {
           x={(scale.bandX + WIDTH) / 2}
           y={BAND_LABEL_Y}
           textAnchor="middle"
+          // react-native-svg resolves families through the old RCTFont path, which knows no system designs: this label
+          // falls back to the system font at its weight (as the share sticker does).
           {...label}
-          fontFamily={tokens.font.displayBold}
           fill={color.accent}>
           {t('strength.band')}
         </SvgText>

@@ -31,7 +31,7 @@ export function OptionCard({ title, body, tag, hero = false, icon, selected, dis
   const { color } = useTheme();
   const label = [title, tag, body].filter((part) => part !== undefined).join(', ');
   const ring = hero
-    ? { backgroundColor: color.decisionBackground, borderColor: selected ? color.accent : color.decisionBackground }
+    ? { backgroundColor: color.surface, borderColor: selected ? color.accent : color.surface }
     : { backgroundColor: color.surface, borderColor: selected ? color.text : color.surface };
   const content = <Content title={title} body={body} tag={tag} hero={hero} icon={icon} selected={selected} />;
   return (

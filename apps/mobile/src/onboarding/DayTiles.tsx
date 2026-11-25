@@ -23,7 +23,8 @@ export function DayTiles({ chosen, onChoose, disabled = false }: Props) {
     <View accessibilityRole="radiogroup" style={styles.tiles}>
       {offeredDayCounts.map((count) => {
         const selected = count === chosen;
-        const ink = selected ? color.decisionText : color.text;
+        // The chosen tile is a selection (ADR-094 §1): petrol on its soft ground, as a chosen chip.
+        const ink = selected ? color.accent : color.text;
         return (
           <Pressable
             key={count}
@@ -35,11 +36,11 @@ export function DayTiles({ chosen, onChoose, disabled = false }: Props) {
             style={[
               styles.tile,
               selected
-                ? { backgroundColor: color.decisionBackground, borderColor: color.decisionBackground }
+                ? { backgroundColor: color.accentSoft, borderColor: color.accent }
                 : { backgroundColor: color.background, borderColor: color.edge },
             ]}>
             <Text style={[styles.count, { color: ink }]}>{count}</Text>
-            <Text style={[styles.unit, { color: selected ? color.decisionMuted : color.muted }]}>{t('onboarding.days.unit')}</Text>
+            <Text style={[styles.unit, { color: selected ? color.accent : color.muted }]}>{t('onboarding.days.unit')}</Text>
           </Pressable>
         );
       })}

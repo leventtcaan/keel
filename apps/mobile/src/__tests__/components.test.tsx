@@ -110,12 +110,12 @@ describe.each(schemes)('%s theme', (scheme) => {
     expect(screen.getByText('Hard')).toHaveStyle({ color: p.accent });
   });
 
-  test('ProgressBar fills with the accent on the track colour', async () => {
+  test('ProgressBar fills with the progress coral on the track colour (ADR-094 §1)', async () => {
     await renderIn(scheme, <ProgressBar value={0.4} label="Protein" />);
     const bar = screen.getByRole('progressbar', { name: 'Protein' });
     // The track's outline is the control edge: the bar's extent is told at 3:1, not by a 1.2:1 fill (K-816).
     expect(bar).toHaveStyle({ backgroundColor: p.track, height: tokens.size.track, borderColor: p.edge, borderWidth: tokens.border.hairline });
-    expect(screen.getByTestId('progress-fill')).toHaveStyle({ backgroundColor: p.accent, width: '40%' });
+    expect(screen.getByTestId('progress-fill')).toHaveStyle({ backgroundColor: p.progress, width: '40%' });
   });
 
   test('ScreenTitle is a serif header in sentence case, in the text colour (ADR-094)', async () => {

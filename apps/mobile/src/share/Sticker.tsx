@@ -8,9 +8,12 @@ import { type Item, MARGIN, layout } from './layout';
 import { shareParams } from './params';
 import type { Sticker, WeekCell } from './stickers';
 
-/** What a sticker is drawn with: the decision block's colours (ADR-070), the same in light and dark — it is an image. */
-const ink = palettes.light;
-const TONE = { text: ink.decisionText, accent: ink.accentInk, muted: ink.decisionTextSecondary };
+/**
+ * What a sticker is drawn with: the dark palette (ADR-094 §4), the same whatever the person's theme, since it is an image
+ * that sits on a photo: light words on a see-through dark panel, petrol for the weeks.
+ */
+const ink = palettes.dark;
+const TONE = { text: ink.text, accent: ink.accent, muted: ink.textSecondary };
 const PANEL_RADIUS = 56;
 const CELL_RADIUS = 12;
 const OUTLINE = 4;
@@ -55,7 +58,7 @@ export const StickerImage = forwardRef<Svg, Props>(function StickerImage({ stick
       accessibilityLabel={[t('share.spoken'), ...pieces].join('. ')}>
       {ground}
       <G transform={`translate(0 ${canvas - height - (backdrop === undefined ? 0 : MARGIN)})`}>
-        <Rect x={0} y={0} width={shareParams.storyWidth} height={height} rx={PANEL_RADIUS} fill={ink.decisionBackground} fillOpacity={tokens.opacity.scrim} />
+        <Rect x={0} y={0} width={shareParams.storyWidth} height={height} rx={PANEL_RADIUS} fill={ink.background} fillOpacity={tokens.opacity.scrim} />
         {items.map((item, i) => (item.kind === 'text' ? <Words key={i} item={item} /> : <Cell key={i} item={item} />))}
       </G>
     </Svg>

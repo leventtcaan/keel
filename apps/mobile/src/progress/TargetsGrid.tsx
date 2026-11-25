@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.bold },
   value: { ...tokens.face.display, fontSize: tokens.type.heading, fontVariant: ['tabular-nums'] },
-  of: { fontFamily: undefined, fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.semibold },
+  of: { fontFamily: tokens.font.text, fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.semibold },
   source: { fontSize: tokens.type.label, fontWeight: tokens.weight.semibold },
   dim: { opacity: tokens.opacity.dim },
 });

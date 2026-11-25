@@ -140,6 +140,8 @@ export const tokens = {
     display: 'ui-serif',
     displayBold: 'ui-rounded',
     displaySemiBold: 'ui-rounded',
+    /** Body text set back to the system font inside a heading or number (a unit after a value). */
+    text: 'system-ui',
   },
   type: {
     screenTitle: 34,
