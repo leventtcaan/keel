@@ -59,9 +59,14 @@ describe('tr.json against en.json', () => {
   test('a text kept in English is on the list, or says nothing in a language (symbols, numbers, units, placeholders)', () => {
     const listed = new Set(intentional.keys);
     const exercise = new RegExp(intentional.exercisePattern);
-    const neutral = (text: string) => !/\p{L}{3,}/u.test(text.replace(/\{\w+\}/g, '').replace(/\b(kg|lb|kcal|cm|ft|min|PR|RIR|RPE|e1RM)\b/g, ''));
+    const neutral = (text: string) => !/\p{L}{3,}/u.test(text.replace(/\{\w+\}/g, '').replace(/\b(kg|lb|kcal|cm|ft|PR|RIR|RPE|e1RM)\b/g, ''));
     const same = [...english].filter(([key, text]) => text === turkish.get(key) && !neutral(text) && !listed.has(key) && !exercise.test(key));
     expect(same.map(([key]) => key)).toEqual([]);
+  });
+
+  test('a minute is "dk" in Turkish: no English "min" outside a placeholder', () => {
+    const english = [...turkish].filter(([, text]) => /\bmin\b/.test(text.replace(/\{\w+\}/g, ''))).map(([key]) => key);
+    expect(english).toEqual([]);
   });
 
   test('the list holds only keys that exist and are still English', () => {
