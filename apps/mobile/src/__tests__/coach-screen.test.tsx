@@ -560,10 +560,11 @@ test('without a subscription the free questions end at the paywall: a note and t
   expect(mockPush).toHaveBeenCalledWith('/paywall');
 });
 
-test('dictation is the keyboard\'s own microphone: the box says so, takes several lines and nothing hides what is said', async () => {
+// K1 (9c-6a, Levent 26 Nov): the box is one line as in y5-e3; the dictation hint is the field's VoiceOver hint, not printed under it.
+test('dictation is the keyboard\'s own microphone: the box tells VoiceOver so, takes several lines and nothing hides what is said', async () => {
   await show();
   const box = screen.getByLabelText(t('coach.input'));
-  expect(screen.getByText(t('coach.dictate'))).toBeOnTheScreen();
+  expect(box.props.accessibilityHint).toBe(t('coach.dictate'));
   expect(box.props.multiline).toBe(true);
   expect(box.props.secureTextEntry).toBeFalsy();
 });

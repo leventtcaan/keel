@@ -1,14 +1,13 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
-import { DecisionBlock } from '@/components/DecisionBlock';
+import { Icon } from '@/components/Icon';
 import { announce } from '@/components/ProblemText';
 import { ScreenTitle } from '@/components/ScreenTitle';
-import { TextField } from '@/components/TextField';
 import { MEAL_CHIP, ask, chipAnswer, coachChips, isChip, STARTERS, loadHistory, readMeal, remember, type Remembered, type Said } from '@/coach/conversation';
 import { t } from '@/copy';
 import { weeklyNote } from '@/coach/note';
@@ -170,34 +169,61 @@ export default function CoachScreen() {
     announce(t(REMEMBER_WORDS[result]));
   };
 
-  // The newest message in sight; the box above the keyboard (iOS lifts the view, Android resizes the window).
+  // The newest message in sight; the box above the keyboard (iOS lifts the view, Android resizes the window). The coach opens as
+  // a sheet, so the view does not start at the top of the screen: KeyboardAvoidingView reads its own frame in the sheet against
+  // the keyboard's place on the screen, so it is told how far down the screen it starts, or the box stays under the keyboard.
+  // The sheet stands on the screen's foot, so that is the window's height less the sheet's, plus where the view sits in the
+  // sheet (the safe area's top). Measured from layout: inside a sheet, measuring in the window answers from the sheet's top.
   const scroll = useRef<ScrollView>(null);
   const reduceMotion = useReduceMotion();
+  const display = useWindowDimensions();
+  const [sheet, setSheet] = useState<number | null>(null);
+  const [inset, setInset] = useState(0);
+  const top = sheet === null ? 0 : Math.max(0, display.height - sheet + inset);
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
-      <KeyboardAvoidingView style={styles.safe} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.head}>
-          <ScreenTitle>{t('screens.coach.title')}</ScreenTitle>
-          <CoachChips keys={STARTERS.map((starter) => `coach.starter.${starter}`)} onChip={onStarter} />
-          {today !== null && <CoachChips keys={coachChips(today, day)} onChip={onChip} />}
-        </View>
-        <ScrollView ref={scroll} contentContainerStyle={styles.body} onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: !reduceMotion })}>
-          {messages.map((message) => (
-            <Bubble
-              key={message.id}
-              message={message}
-              kept={remembered[message.id]}
-              onRemember={() => void keep(message.id, 'text' in message && message.from === 'user' ? message.text : '')}
-              onRetry={(words, to) => void send(words, to, true)}
-            />
-          ))}
-          {waiting && <Text style={[styles.small, { color: color.muted }]}>{t('coach.thinking')}</Text>}
-        </ScrollView>
-        <View style={styles.input}>
-          <TextField label={t(mode === 'meal' ? 'coach.meal.input' : 'coach.input')} hint={t('coach.dictate')} value={text} onChangeText={setText} multiline />
-          <Button label={t('coach.send')} size="sm" disabled={waiting || text.trim() === ''} onPress={submit} />
-        </View>
-      </KeyboardAvoidingView>
+    <SafeAreaView
+      testID="coach-sheet"
+      style={[styles.safe, { backgroundColor: color.background }]}
+      edges={['top', 'bottom']}
+      onLayout={(event) => setSheet(event.nativeEvent.layout.height)}>
+      <View testID="coach-frame" style={styles.safe} onLayout={(event) => setInset(event.nativeEvent.layout.y)}>
+        <KeyboardAvoidingView style={styles.safe} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={top}>
+          <View style={styles.head}>
+            <ScreenTitle>{t('screens.coach.title')}</ScreenTitle>
+          </View>
+          <ScrollView
+            ref={scroll}
+            contentContainerStyle={styles.body}
+            keyboardShouldPersistTaps="handled"
+            onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: !reduceMotion })}
+            // The keyboard shrinks the list, not its content: the newest message is brought back into sight.
+            onLayout={() => scroll.current?.scrollToEnd({ animated: false })}>
+            {messages.map((message) => (
+              <Bubble
+                key={message.id}
+                message={message}
+                kept={remembered[message.id]}
+                onRemember={() => void keep(message.id, 'text' in message && message.from === 'user' ? message.text : '')}
+                onRetry={(words, to) => void send(words, to, true)}
+              />
+            ))}
+            {waiting && <Text style={[styles.small, { color: color.muted }]}>{t('coach.thinking')}</Text>}
+          </ScrollView>
+          <Bar
+            // While words are being written the ready questions step aside: the messages keep the room above the keyboard.
+            ready={
+              text !== ''
+                ? []
+                : [{ keys: STARTERS.map((starter) => `coach.starter.${starter}`), onChip: onStarter }, ...(today === null ? [] : [{ keys: coachChips(today, day), onChip }])]
+            }
+            label={t(mode === 'meal' ? 'coach.meal.input' : 'coach.input')}
+            text={text}
+            onChangeText={setText}
+            canSend={!waiting && text.trim() !== ''}
+            onSend={submit}
+          />
+        </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -261,8 +287,8 @@ function Bubble({
     const way = message.typed !== true || kept === 'saved' ? null : <Button label={t('coach.remember')} variant="ghost" size="sm" onPress={onRemember} />;
     return (
       <View style={styles.userSide}>
-        <View style={[styles.user, { backgroundColor: color.surface }]}>
-          <Text style={[styles.text, { color: color.text }]}>{message.text}</Text>
+        <View testID="user-bubble" style={[styles.user, { backgroundColor: color.accent }]}>
+          <Text style={[styles.text, { color: color.onAccent }]}>{message.text}</Text>
         </View>
         {way}
         {said}
@@ -275,8 +301,10 @@ function Bubble({
     const kind = message.problem;
     const go = kind === 'failed' ? () => onRetry(message.text, message.mode) : () => router.push(WAYS[kind]);
     return (
-      <View style={styles.coach}>
-        <Text style={[styles.text, { color: color.textSecondary }]}>{t(wordsOf(message.problem, message.mode, problem.words))}</Text>
+      <View style={styles.coachSide}>
+        <CoachWords>
+          <Text style={[styles.text, { color: color.textSecondary }]}>{t(wordsOf(message.problem, message.mode, problem.words))}</Text>
+        </CoachWords>
         <Button label={t(problem.way)} variant="ghost" size="sm" onPress={go} />
       </View>
     );
@@ -285,16 +313,19 @@ function Bubble({
   const { said, standard } = message;
   // The model's words, checked on the server (ADR-092 #2), first; then the app's own lines. Built outside the JSX children (the raw-text guard).
   const words = said.text === undefined ? null : <Text style={[styles.text, { color: color.text }]}>{said.text}</Text>;
+  // The words in the coach's sand bubble; the call's card and the way on after it, on the page (ADR-094 §3, y5-e3).
   return (
-    <View style={styles.coach}>
-      <Heading words={said.heading} />
-      {words}
-      {said.lines.map((line) => (
-        <Text key={line.key} style={[styles.text, { color: color.text }]}>
-          {t(line.key, line.values)}
-        </Text>
-      ))}
-      {standard && <Text style={[styles.small, { color: color.muted }]}>{t('coach.standard')}</Text>}
+    <View style={styles.coachSide}>
+      <CoachWords>
+        <Heading words={said.heading} />
+        {words}
+        {said.lines.map((line) => (
+          <Text key={line.key} style={[styles.text, { color: color.text }]}>
+            {t(line.key, line.values)}
+          </Text>
+        ))}
+        {standard && <Text style={[styles.small, { color: color.muted }]}>{t('coach.standard')}</Text>}
+      </CoachWords>
       {said.call !== undefined && <CallSaid call={said.call} />}
       <WayOn open={said.open} />
     </View>
@@ -309,8 +340,10 @@ function MealSaid({ draft }: { draft: Schemas['MealDraft'] }) {
   const { color } = useTheme();
   if (draft.items.length === 0) {
     return (
-      <View style={styles.coach}>
-        <Text style={[styles.text, { color: color.text }]}>{t('coach.meal.unread')}</Text>
+      <View style={styles.coachSide}>
+        <CoachWords>
+          <Text style={[styles.text, { color: color.text }]}>{t('coach.meal.unread')}</Text>
+        </CoachWords>
         <Button label={t('coach.meal.byName')} variant="ghost" size="sm" onPress={() => router.push('/meal')} />
       </View>
     );
@@ -320,7 +353,7 @@ function MealSaid({ draft }: { draft: Schemas['MealDraft'] }) {
     router.push('/meal');
   };
   return (
-    <View style={styles.coach}>
+    <View style={styles.coachSide}>
       <DraftPicks
         draft={draft}
         describe={mealItem}
@@ -350,14 +383,76 @@ function WayOn({ open }: { open: Said['open'] }) {
   return <Button label={t(open.key)} variant="ghost" size="sm" onPress={() => router.push({ pathname: '/workout', params: { day: open.day } })} />;
 }
 
-/** The call as it stands: its words and when new data looks at it again; on to why. No apply here (Today's). */
+/**
+ * The call as it stands: its words and when new data looks at it again; on to why. No apply here (Today's). A card inside the
+ * answer, on the sage ground of time (ADR-094 §3), its title in the serif voice as the call speaks everywhere.
+ */
 function CallSaid({ call }: { call: Schemas['CoachCall'] }) {
   const { color } = useTheme();
   return (
-    <DecisionBlock eyebrow={t(labelKey(call.copyKey))} title={t(`${call.copyKey}.title`)}>
-      <Text style={[styles.small, { color: color.decisionMuted }]}>{t('coach.call.nextReview', { date: weekdayDate(call.nextReview) })}</Text>
-      <Button label={t('today.call.data')} variant="ghost" size="sm" onPress={() => router.push({ pathname: '/why', params: { id: call.decisionId } })} />
-    </DecisionBlock>
+    <View testID="coach-call" style={[styles.card, { backgroundColor: color.tintTime }]}>
+      <Text style={[styles.small, { color: color.muted }]}>{t(labelKey(call.copyKey))}</Text>
+      <Text accessibilityRole="header" style={[styles.callTitle, { color: color.text }]}>
+        {t(`${call.copyKey}.title`)}
+      </Text>
+      <Text style={[styles.small, { color: color.textSecondary }]}>{t('coach.call.nextReview', { date: weekdayDate(call.nextReview) })}</Text>
+      <Button label={t('today.call.data')} variant="text" size="sm" onPress={() => router.push({ pathname: '/why', params: { id: call.decisionId } })} />
+    </View>
+  );
+}
+
+/** The coach's words: a sand bubble on the left (ADR-094 §3, y5-e3). */
+function CoachWords({ children }: { children: ReactNode }) {
+  const { color } = useTheme();
+  return (
+    <View testID="coach-bubble" style={[styles.said, { backgroundColor: color.tintDay }]}>
+      {children}
+    </View>
+  );
+}
+
+type Ready = { keys: string[]; onChip: (key: string) => void };
+
+/** How many lines the box shows before it scrolls. */
+const BOX_LINES = 3;
+
+/**
+ * The foot of the screen (ADR-094 §3, y5-e3), above the keyboard: the ready questions as sand pills, then one line to write in
+ * and the petrol send, the screen's one fill. The field's name and the dictation hint (the keyboard's own microphone) are read
+ * by VoiceOver; the name is also the words inside the empty box.
+ */
+function Bar({ ready, label, text, onChangeText, canSend, onSend }: { ready: Ready[]; label: string; text: string; onChangeText: (text: string) => void; canSend: boolean; onSend: () => void }) {
+  const { color } = useTheme();
+  // The box grows to three lines at the reader's text size (Dynamic Type), then scrolls.
+  const { fontScale } = useWindowDimensions();
+  return (
+    <View testID="coach-bar" style={styles.bar}>
+      {ready.map((row) => (
+        <CoachChips key={row.keys.join()} keys={row.keys} onChip={row.onChip} />
+      ))}
+      <View style={styles.line}>
+        <TextInput
+          accessibilityLabel={label}
+          accessibilityHint={t('coach.dictate')}
+          placeholder={label}
+          placeholderTextColor={color.muted}
+          value={text}
+          onChangeText={onChangeText}
+          multiline
+          // The box's edge in the control edge (3:1, WCAG 1.4.11, K-816): its words are only a placeholder.
+          style={[styles.box, { backgroundColor: color.tintDay, borderColor: color.edge, color: color.text, maxHeight: tokens.size.touch * BOX_LINES * fontScale }]}
+        />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('coach.send')}
+          accessibilityState={{ disabled: !canSend }}
+          disabled={!canSend}
+          onPress={onSend}
+          style={({ pressed }) => [styles.send, { backgroundColor: color.cta }, (!canSend || pressed) && styles.dim]}>
+          <Icon name="arrow.up" tone="onCta" />
+        </Pressable>
+      </View>
+    </View>
   );
 }
 
@@ -369,11 +464,23 @@ const styles = StyleSheet.create({
     gap: tokens.space.sm,
   },
   body: { padding: tokens.space.lg, gap: tokens.space.md },
-  input: {
-    paddingHorizontal: tokens.space.lg,
-    paddingBottom: tokens.space.sm,
-    gap: tokens.space.sm,
+  bar: { paddingBottom: tokens.space.sm, gap: tokens.space.sm },
+  line: { flexDirection: 'row', alignItems: 'flex-end', gap: tokens.space.sm, paddingHorizontal: tokens.space.lg },
+  box: {
+    flex: 1,
+    minHeight: tokens.size.touch,
+    borderWidth: tokens.border.hairline,
+    borderRadius: tokens.radius.button,
+    paddingHorizontal: tokens.space.md,
+    paddingTop: tokens.space.sm + tokens.space.xs,
+    paddingBottom: tokens.space.sm + tokens.space.xs,
+    fontSize: tokens.type.body,
   },
+  send: { width: tokens.size.touch, height: tokens.size.touch, borderRadius: tokens.size.touch / 2, alignItems: 'center', justifyContent: 'center' },
+  dim: { opacity: tokens.opacity.dim },
+  card: { borderRadius: tokens.radius.card, padding: tokens.space.md, gap: tokens.space.xs },
+  callTitle: { ...tokens.face.display, fontSize: tokens.type.heading },
+  said: { alignSelf: 'flex-start', maxWidth: '92%', padding: tokens.space.md, borderRadius: tokens.radius.card, gap: tokens.space.sm },
   userSide: { alignSelf: 'flex-end', alignItems: 'flex-end', maxWidth: '85%', gap: tokens.space.xs },
   user: {
     alignSelf: 'flex-end',
@@ -381,7 +488,7 @@ const styles = StyleSheet.create({
     padding: tokens.space.md,
     borderRadius: tokens.radius.card,
   },
-  coach: { gap: tokens.space.sm },
+  coachSide: { gap: tokens.space.sm },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },
 });
