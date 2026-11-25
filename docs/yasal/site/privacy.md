@@ -192,7 +192,9 @@ said projections aren't available, that result stays on the phone, so signing ou
 ## Who receives data {#recipients}
 
 - **Apple** — for Sign in with Apple (Apple tells us your app-specific id) and for subscriptions bought through the App
-  Store, under Apple's own privacy policy.
+  Store, under Apple's own privacy policy. Apple Maps shows the map on the places screen and answers a place search and a walk
+  between two places: the address you type, the two points and the map area go from your phone to Apple, not through our
+  server. Your saved places stay on your phone, and the app never reads where your phone is.
 - **RevenueCat** (RevenueCat, Inc., United States) — handles subscriptions for us. It receives your account's random id (no
   name, no email, no health data) and, from its software in the app, your App Store purchase record, store country and
   currency, device and iOS version, and IP address. It is set up when the plans are shown (every new account sees them after onboarding) and when you restore or

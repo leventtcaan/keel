@@ -19,4 +19,7 @@ export const walkParams = {
   stepsPerKmDefault: param<number>('walk_steps_per_km_default'),
   minRemainingSteps: param<number>('walk_min_remaining_steps'),
   maxOvershoot: param<number>('walk_max_overshoot_ratio'),
+  placesMax: param<number>('walk_places_max'),
+  searchMinChars: param<number>('walk_place_search_min_chars'),
+  detourFactor: param<number>('walk_detour_factor'),
 };

@@ -71,6 +71,30 @@
       "tag": "urun",
       "source": "arastirma/ham/rakip-ozellik-2026-11-24.md#9.",
       "note": "A route's round trip is suggested only when it covers the steps left and is at most this times them; a longer route would be a far bigger walk than the gap, and the line falls back to minutes."
+    },
+    {
+      "key": "walk_places_max",
+      "value": 8,
+      "unit": "count",
+      "tag": "urun",
+      "source": "plan/k1227-plan.md#Veri modeli",
+      "note": "K-1227: the most saved places (home, gym, a few more) kept on the phone; a short list to pick two from, not an address book."
+    },
+    {
+      "key": "walk_place_search_min_chars",
+      "value": 3,
+      "unit": "count",
+      "tag": "urun",
+      "source": "plan/k1227-plan.md#Akış",
+      "note": "K-1227: a search is sent to Apple Maps only from this many characters, so a half-typed word is not."
+    },
+    {
+      "key": "walk_detour_factor",
+      "value": 1.3,
+      "unit": "ratio",
+      "tag": "urun",
+      "source": "plan/k1227-plan.md#Öneri",
+      "note": "[kaynak yok] K-1227: when Apple Maps gives no walking route (offline, no data), the walk is the straight line times this, because a walk follows streets and is longer than a crow's flight. 1.3 is the figure commonly quoted for urban street networks; no file in arastirma/ holds it and it was not checked against a primary source (K6), so it is a product estimate, and the screen says the distance is approximate whenever it is used."
     }
   ]
 }
