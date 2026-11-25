@@ -6037,7 +6037,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: doing
+    status: done
     depends_on: []
     why: "ADR-094 (Levent, 25 Kas): ADR-070'in turkuaz + siyah ters blok + Barlow büyük harf dili yerine petrol karar, mercan ilerleme, kırık beyaz kâğıt; her ekran ve pop-up aynı rol tablosu"
     acceptance:
