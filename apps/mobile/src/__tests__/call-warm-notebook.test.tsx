@@ -118,6 +118,42 @@ describe('the call in the warm notebook (9c-4a)', () => {
     expect(within(chart).getByText('87.4 kg')).toBeOnTheScreen();
   });
 
+  test('the weeks are one element for VoiceOver, said in words; the chart keeps its height before it is drawn', async () => {
+    mockAnswers['/v1/decisions/{id}/basis'] = ok(BASIS([89.6, 89.0, 88.4, 88.0, 87.7, 87.4]));
+    await show();
+    expect(screen.getByLabelText(t('callScreen.weeksSpoken', { weeks: 5, first: '89.6 kg', latest: '87.4 kg' }))).toBeOnTheScreen();
+    expect(StyleSheet.flatten(screen.getByTestId('call-weeks-box').props.style)).toMatchObject({ height: expect.any(Number) });
+  });
+
+  test.each([
+    ['not allowed (no subscription)', refused(403, 'ENTITLEMENT_REQUIRED')],
+    ['no consent', refused(403, 'CONSENT_REQUIRED')],
+    ['not there', refused(404, 'NOT_FOUND')],
+    ['offline', 'offline' as const],
+  ])('a basis that cannot be read (%s): no chart, the call stands', async (_, answer) => {
+    mockAnswers['/v1/decisions/{id}/basis'] = answer;
+    await show();
+    expect(screen.queryByTestId('call-weeks')).toBeNull();
+    expect(screen.getByText(t('decision.stop_load_increase.label'))).toBeOnTheScreen();
+  });
+
+  test('a past call opened read only draws its own weeks', async () => {
+    mockParams = { id: 'd7' };
+    mockAnswers['/v1/decisions/{id}'] = ok(decision({ id: 'd7' }));
+    mockAnswers['/v1/decisions/{id}/basis'] = ok(BASIS([90, 89.5]));
+    await show();
+    expect(mockGET).toHaveBeenCalledWith('/v1/decisions/{id}/basis', { params: { path: { id: 'd7' } } });
+    expect(screen.getByTestId('call-weeks')).toBeOnTheScreen();
+  });
+
+  test('a call still waiting says its date with no confidence and no dot', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(
+      decision({ action: { type: 'NO_DECISION_YET' } as Schemas['Decision']['action'], copyKey: 'decision.no_decision_yet.observing', reasons: [{ rule: 'observing', source: { tag: 'LITERATURE' } }] }),
+    );
+    await show();
+    expect(within(screen.getByTestId('call-date-line')).queryByText(/Confidence/)).toBeNull();
+  });
+
   test('no basis (not allowed, not there, one week): no chart, the rest of the call stands', async () => {
     mockAnswers['/v1/decisions/{id}/basis'] = ok(BASIS([88]));
     await show();

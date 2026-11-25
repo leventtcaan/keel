@@ -473,6 +473,7 @@
       "HIGH": "Yüksek"
     },
     "nextCall": "Sonraki karar {date}",
+    "weeksSpoken": "{weeks} hafta önce {first}, şimdi {latest}",
     "section": {
       "why": "Neden",
       "change": "Ne değişiyor"

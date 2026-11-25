@@ -229,8 +229,15 @@ export default function CallScreen() {
     const weeks = basis?.id === decision.id && basis.weeks.length >= 2 ? basis.weeks : null;
     const chart =
       weeks === null ? null : (
-        <View testID="call-weeks" style={[styles.chart, { backgroundColor: color.tintTime }]} onLayout={(e) => setChartWidth(e.nativeEvent.layout.width - 2 * tokens.space.md)}>
-          {chartWidth > 0 ? <TrendLine points={weeks} width={chartWidth} height={tokens.size.callChartHeight} /> : null}
+        // One element for VoiceOver: what the weeks went from and to, in words (the drawing and its two labels are not read apart).
+        <View
+          testID="call-weeks"
+          accessible
+          accessibilityLabel={t('callScreen.weeksSpoken', { weeks: weeks.length - 1, first: formatWeight(weeks[0], units), latest: formatWeight(weeks[weeks.length - 1], units) })}
+          style={[styles.chart, { backgroundColor: color.tintTime }]}
+          onLayout={(e) => setChartWidth(e.nativeEvent.layout.width - 2 * tokens.space.md)}>
+          {/* The chart's height is kept from the start, so nothing under it moves once its width is known. */}
+          <View testID="call-weeks-box" style={styles.chartBox}>{chartWidth > 0 ? <TrendLine points={weeks} width={chartWidth} height={tokens.size.callChartHeight} /> : null}</View>
           <View style={styles.chartEnds}>
             <Text style={[styles.small, { color: color.textSecondary }]}>{weightNumber(weeks[0], units)}</Text>
             <Text style={[styles.small, styles.strong, { color: color.text }]}>{formatWeight(weeks[weeks.length - 1], units)}</Text>
@@ -267,7 +274,7 @@ export default function CallScreen() {
         {/* Where the call lands in the day (K-1217): this week's call only, never a past one opened read only. */}
         {readOnly ? null : <PracticeRow decision={decision} />}
         <View>
-          {heading('callScreen.section.why')}
+          {reasons.length === 0 && observation === null ? null : heading('callScreen.section.why')}
           {reasons}
           {observation}
         </View>
@@ -339,6 +346,7 @@ const styles = StyleSheet.create({
   dot: { width: tokens.space.xs, height: tokens.space.xs, borderRadius: tokens.space.xs / 2 },
   heading: { ...tokens.face.display, fontSize: tokens.type.heading, paddingBottom: tokens.space.xs },
   chart: { borderRadius: tokens.radius.card, padding: tokens.space.md, gap: tokens.space.sm },
+  chartBox: { height: tokens.size.callChartHeight },
   chartEnds: { flexDirection: 'row', justifyContent: 'space-between' },
   reason: { flexDirection: 'row', alignItems: 'flex-start', gap: tokens.space.sm, borderTopWidth: tokens.border.hairline, paddingVertical: tokens.space.sm },
   waits: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, borderTopWidth: tokens.border.hairline, paddingVertical: tokens.space.sm },
