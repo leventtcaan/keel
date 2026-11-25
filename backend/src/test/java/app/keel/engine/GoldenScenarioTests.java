@@ -99,7 +99,9 @@ class GoldenScenarioTests {
             LocalDate today = first.plusDays(DAYS_PER_WEEK - 1L);
 
             Snapshot snapshot = snapshot(today, sex, plan, weighIns, user, profile, answers);
-            Decision decision = DecisionPipeline.decide(snapshot, parameters);
+            // The set log, where the scenario has one (K-1218): it is laid over the answers as the decision module does.
+            Decision decision = TrainingTrend.decide(answered -> DecisionPipeline.decide(snapshot.withCheckIn(answered), parameters),
+                    snapshot.checkIn(), log(answers, today, parameters));
             Expectation expectation = Expectation.of(expected.get(week - 1));
             wanted.add(expectation.toString());
             actual.add(expectation.describe(decision, today));
@@ -164,6 +166,29 @@ class GoldenScenarioTests {
                 .withMenstrualLossReported(Boolean.TRUE.equals(answers.get("menstrual_loss_reported")))
                 .withCheckIn(checkIn(answers));
         return training(answers).map(snapshot::withTraining).orElse(snapshot);
+    }
+
+    /**
+     * The week's set log, as a scenario writes it (K-1218): {@code lifts: {squat: [[days back, kg, reps, rir], ...]}} — one row a
+     * session of one set, days back from the check-in day, oldest first — and {@code excluded_days: [days back, ...]} for the
+     * days a lighter or rest week, or a declared state, takes out. Without {@code lifts} there is no log: nothing read, so the
+     * answers stand and the engine is run as it always was.
+     */
+    @SuppressWarnings("unchecked")
+    private static TrainingTrend.Reading log(Map<String, Object> answers, LocalDate today, Parameters parameters) {
+        if (!(answers.get("lifts") instanceof Map<?, ?> lifts)) {
+            return TrainingTrend.Reading.UNKNOWN;
+        }
+        List<TrainingTrend.Lift> read = new ArrayList<>();
+        ((Map<String, List<List<Object>>>) lifts).forEach((id, rows) -> read.add(new TrainingTrend.Lift(id, rows.stream()
+                .map(row -> new TrainingTrend.Session(today.minusDays(((Number) row.get(0)).longValue()),
+                        List.of(new TrainingTrend.LoggedSet(decimal(row.get(1)), ((Number) row.get(2)).intValue(), ((Number) row.get(3)).intValue()))))
+                .toList())));
+        java.util.Set<LocalDate> excluded = new java.util.HashSet<>();
+        if (answers.get("excluded_days") instanceof List<?> days) {
+            days.forEach(day -> excluded.add(today.minusDays(((Number) day).longValue())));
+        }
+        return TrainingTrend.read(read, today, excluded, parameters);
     }
 
     private static CheckIn checkIn(Map<String, Object> answers) {
