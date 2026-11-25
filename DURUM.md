@@ -8,9 +8,9 @@ guncelleme: 2026-11-25
 ## ▶ DEVAM NOKTASI (25 Kas gece — 9c-5: bugünün antrenman kartı, PR #784 otomatik birleşmede)
 **9c-4b birleşti (#782).** **9c-5 (K-1233, #783):** ana ekrandaki antrenman kartının 7 türü kum zeminde; "Bugün" etiketi mercan yazı (bugünün adı rolü),
 oturum adı serif, Start tek petrol dolgu, geçen seferin satırı ikincil metin (petrol değil), hedef yuvarlak rakam, hareket simgesi kumda kaybolmasın diye
-`raise` zeminde (`MoveThumb onSurface`), kardiyo satırı çizgisiz. Yeni metin yok, mevcut beklentiler değişmedi (K1 yok). Simülatörde (Metro 8082) görüldü.
-**Levent'e soru:** bugünkü hedefi sağda yuvarlak rakam sütununa almak ("Son 95 kg × 9" altta, "95 kg × 10" sağda) daha güçlü olur ama
-`this-week-screen.test.tsx`'te "aynı hedef iki kez yazılmaz" beklentilerini değiştirir (K1). **Sıradaki:** Levent'in cevabı, sonra 9c-6.
+`raise` zeminde (`MoveThumb onSurface`), kardiyo satırı çizgisiz. Yeni metin yok. Simülatörde (Metro 8082) görüldü.
+**Levent (25 Kas): "sütun yap" → K1:** bugünkü hedef her hareketin sağında yuvarlak rakam ("95 kg × 10"), adın altında yalnız "Son 95 kg × 9"
+(`lastLine`); `this-week-screen.test.tsx`'te 2 beklenti değişti (satır artık "Son → bugün" değil; pound testi hedefi de ister). **Sıradaki:** 9c-6.
 Antrenman sekmesindeki kart (`src/train/TodayCard.tsx`) aynı dile henüz geçmedi (hareket simgesi orada da kumda).
 
 ## (önceki) ▶ DEVAM NOKTASI (25 Kas gece — 9c-4b: karar ekranında "8 hafta sonra", PR #782 otomatik birleşmede)

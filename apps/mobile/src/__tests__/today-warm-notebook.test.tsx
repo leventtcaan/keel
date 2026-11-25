@@ -112,11 +112,18 @@ describe.each(['light', 'dark'] as ColorScheme[])('%s theme', (scheme) => {
   });
 
   describe("the session's moves", () => {
-    test("the last time with today's ask is ink, its numbers tabular, not the petrol of the decision", async () => {
+    test('the last time is quiet secondary text under the name, its numbers tabular, not the petrol of the decision', async () => {
       await show(KINDS[0][1]);
-      const last = within(screen.getByTestId('move-squat')).getByText(/77\.5/);
-      expect(flat(last)).toMatchObject({ color: p.text, fontVariant: ['tabular-nums'] });
-      expect(flat(last).color).not.toBe(p.accent);
+      const last = within(screen.getByTestId('move-squat')).getByText('Last 77.5 kg × 8');
+      expect(flat(last)).toMatchObject({ color: p.textSecondary, fontVariant: ['tabular-nums'] });
+    });
+
+    test("today's ask stands on the right in the rounded numbers, beside a last time too", async () => {
+      await show(KINDS[0][1]);
+      const ask = within(screen.getByTestId('move-squat')).getByText('80 kg × 8');
+      expect(flat(ask)).toMatchObject({ fontFamily: tokens.face.displaySemiBold.fontFamily, fontVariant: ['tabular-nums'], color: p.text, textAlign: 'right', flexShrink: 0 });
+      // Read apart from the last time, VoiceOver says whose number it is.
+      expect(ask.props.accessibilityLabel).toBe(t('dayPlan.today', { plan: '80 kg × 8' }));
     });
 
     test("a target is written in the rounded numbers, tabular, in ink", async () => {

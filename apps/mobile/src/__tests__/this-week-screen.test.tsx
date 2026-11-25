@@ -14,7 +14,8 @@ import { GuideProvider } from '@/guide/GuideProvider';
 import { ThemeProvider } from '@/theme/theme';
 import { palettes } from '@/theme/tokens';
 import { weekRecordText } from '@/today/week';
-import { lastTodayLine } from '@/train/beforeWorkout';
+import { lastLine } from '@/train/beforeWorkout';
+import { repCount } from '@/train/reps';
 import { progressParams } from '@/progress/params';
 import { workoutParams } from '@/train/params';
 import { formatLoad } from '@/units/units';
@@ -659,16 +660,18 @@ describe("today's workout (#home)", () => {
       return exercises;
     };
 
-    test('a move with a last time shows the same line as Train under its name: last, then today', async () => {
+    // 9c-5 (25 Nov): today's ask stands on the right as the move's number; the last time is under the name alone.
+    test('a move with a last time: the last time under its name, today\'s ask on the right, each said once', async () => {
       const exercises = withHistory();
       await show();
-      const squatLine = lastTodayLine(exercises[0], squat, 'METRIC');
-      expect(squatLine).toBe('Last 77.5 kg × 7 → 80 kg × 8');
-      expect(within(screen.getByTestId('move-squat')).getByText(squatLine as string)).toBeOnTheScreen();
+      const move = within(screen.getByTestId('move-squat'));
+      expect(lastLine(exercises[0], squat, 'METRIC')).toBe('Last 77.5 kg × 7');
+      expect(move.getByText('Last 77.5 kg × 7')).toBeOnTheScreen();
+      expect(move.getByText('80 kg × 8')).toBeOnTheScreen();
+      expect(move.queryByText(/→/)).toBeNull();
       // No target yet: the last time alone, and the plan stays on the right.
-      expect(within(screen.getByTestId('move-lat_pulldown')).getByText(lastTodayLine(exercises[2], lat, 'METRIC') as string)).toBeOnTheScreen();
-      // The line carries today's ask, so it is not said twice beside it.
-      expect(within(screen.getByTestId('move-squat')).queryByText('80 kg × 8')).toBeNull();
+      expect(within(screen.getByTestId('move-lat_pulldown')).getByText(lastLine(exercises[2], lat, 'METRIC') as string)).toBeOnTheScreen();
+      expect(within(screen.getByTestId('move-lat_pulldown')).getByText(t('train.setsReps', { sets: 3, reps: repCount({ min: 8, max: 12 }) }))).toBeOnTheScreen();
     });
 
     test('a move done for the first time has no line, and keeps its target', async () => {
@@ -683,7 +686,8 @@ describe("today's workout (#home)", () => {
       mockUnits = 'IMPERIAL';
       const exercises = withHistory();
       await show();
-      expect(within(screen.getByTestId('move-squat')).getByText(lastTodayLine(exercises[0], squat, 'IMPERIAL') as string)).toBeOnTheScreen();
+      expect(within(screen.getByTestId('move-squat')).getByText(lastLine(exercises[0], squat, 'IMPERIAL') as string)).toBeOnTheScreen();
+      expect(within(screen.getByTestId('move-squat')).getByText(t('thisWeek.today.target', { load: formatLoad(80, 'IMPERIAL'), reps: 8 }))).toBeOnTheScreen();
     });
 
     test('without the moves read there is no line to word, only the target', async () => {

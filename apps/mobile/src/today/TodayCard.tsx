@@ -13,7 +13,7 @@ import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { type Changed, changeToday } from '@/train/changes';
-import { lastTodayLine } from '@/train/beforeWorkout';
+import { lastLine } from '@/train/beforeWorkout';
 import { MoveThumb } from '@/train/MoveThumb';
 import { OpenElsewhere } from '@/train/OpenElsewhere';
 import { workoutParams } from '@/train/params';
@@ -273,14 +273,17 @@ export function TodayCard({ card, program, today, parts, onChanged }: Props) {
         .map((planned) => {
           const id = planned.exerciseId;
           const move = parts?.moves.get(id);
-          // The last time beside today's ask, by the Train card's own function (the same words); the headline moves only.
-          const before = lastTodayLine(planned, move, units);
-          // That line already carries today's ask when it has one, so the target is not said twice (as the Train card does).
-          const asked = before !== null && planned.nextLoadKg !== undefined && planned.nextReps !== undefined;
-          // In ink, its numbers tabular: the line carries today's ask, so it reads as the move's own fact, not a quiet note;
-          // not petrol, which is the decision and the action (ADR-094 §1), and this line is neither.
-          const last = before === null ? null : <Text style={[styles.last, { color: color.text }]}>{before}</Text>;
-          const target = asked ? null : <Text style={[styles.target, { color: color.text }]}>{targetOf(planned, move, units)}</Text>;
+          // The last time under the name, quiet: history, not the decision (petrol) and not today's ask (ADR-094 §1).
+          const before = lastLine(planned, move, units);
+          const last = before === null ? null : <Text style={[styles.last, { color: color.textSecondary }]}>{before}</Text>;
+          // Today's ask is the move's own number on the right, said once, in the rounded numbers (9c-5).
+          // Read apart from the last time, VoiceOver says it is today's ("Today: 80 kg × 8").
+          const ask = targetOf(planned, move, units);
+          const target = (
+            <Text accessibilityLabel={t('dayPlan.today', { plan: ask })} style={[styles.target, { color: color.text }]}>
+              {ask}
+            </Text>
+          );
           return (
             <View key={id} testID={`move-${id}`} style={styles.move}>
               <MoveThumb equipment={move?.equipment} onSurface />
@@ -331,7 +334,8 @@ const styles = StyleSheet.create({
   moveText: { flex: 1 },
   last: { fontSize: tokens.type.bodySmall, fontVariant: ['tabular-nums'] },
   moveName: { fontSize: tokens.type.body },
-  target: { ...tokens.face.displaySemiBold, fontSize: tokens.type.body, fontVariant: ['tabular-nums'] },
+  // The number keeps its width and the name wraps beside it (a long name, large Dynamic Type).
+  target: { ...tokens.face.displaySemiBold, fontSize: tokens.type.body, fontVariant: ['tabular-nums'], textAlign: 'right', flexShrink: 0 },
   icon: { width: tokens.size.touch, height: tokens.size.touch, alignItems: 'center', justifyContent: 'center' },
   dim: { opacity: tokens.opacity.dim },
   tick: { width: tokens.size.touch, height: tokens.size.touch, borderRadius: tokens.size.touch / 2, alignItems: 'center', justifyContent: 'center' },
