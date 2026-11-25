@@ -5,7 +5,20 @@ guncelleme: 2026-11-24
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (25 Kas akşam — form döngü klipleri 40/40, onay sayfasında; Levent onayları bekleniyor)
+## ▶ DEVAM NOKTASI (25 Kas akşam — 1.0.1 DURDU; Evre 9 tasarım ve mantık başlıyor)
+**Karar (Levent, simülatör gezintisi):** 1.0.1 tasarım bitene kadar çıkmaz ("içimize her noktası sinmeden çıkarmayalım"; "körlemesine onaylama yok").
+Gezinti notları `plan/tasarim-gezinti-notlari.md` (ana ekran, antrenman, gelişim, yemek, harita, kilitli karar, koç; Levent'in sözleriyle), düğme
+denetimi `plan/tasarim-antrenman-dugme-denetimi.md`, plan `plan/evre-9-tasarim.md` (9a görsel yön → 9b mantık → 9c ekran ekran → 9d para haritası).
+**Sıradaki:** Part 9a-1 → `plan/oturum-promptlari/evre-9.md` (Antigravity görsel dil araştırması + Codex 3 yön × 3 ekran; kod yok).
+**Bekleyen PR:** #770 (onaylar) **otomatik birleşmeden çıkarıldı**, Levent'in gerçek bakışını bekliyor (ayrıca kırmızıydı: WorkoutLogTests beklentisi
+Levent onayıyla güncellendi) · #771 (sürüm 1.0.1, app-config testi Levent onayıyla 1.0.1) otomatik birleşmede, zararsız · #765 Live Activity
+(Apple Developer kaydı Levent'te).
+**Bugün birleşenler:** #763/#764 harita (rota sokakları izler) · #766 Türkçe ondalık virgül · #767 "dk" · #768/#769 form döngüleri (40 klip,
+expo-video) · #772 K-1218 kayıt kazanır (agent incelemesi: haftada seans yoksa NOT_TRAINED değil, soru sorulur).
+**Levent kararları bekliyor:** görsel dil (ADR-070'in yerine) · fotoğrafa AI (V1 ile çelişir) · para haritası ("dahası ücretli") · koç açılışı
+(OpenAI fiyatı + panel tavanı $25) · anahtarları yenile (sohbete yapıştırıldı).
+
+## (önceki) ▶ DEVAM NOKTASI (25 Kas akşam — form döngü klipleri 40/40, onay sayfasında; Levent onayları bekleniyor)
 **Birleşenler (main):** 8a: #732-#744 (ücretsiz çekirdek + kilitli karar, arama v2, ana ekran sayıları, odak ekranı, motor K-1203/04/05) · #749 seyrek veride kayıp
 tavanı · #745/#750 gerçek dinlenme kaydı + aralık + tercih · #747 adım → yürüyüş önerisi (ilk ekranda, akşam hatırlatması varsayılan kapalı) · #748 çok dil
 altyapısı · #753 Türkçe (3.022 anahtar, Türkçe yasak ifade listeleri, mağaza metni) · #756 günlük döngü bağlantıları · #758 57 Türk yemeği + ev ölçüleri

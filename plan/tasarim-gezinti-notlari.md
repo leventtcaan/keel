@@ -98,6 +98,14 @@ sunucuya karşı (test hesabı) ya da gerçek veriyle beslenen fixture ile göst
   değerlendirilsin); gerçek akış TestFlight sandbox'ta.
 - Bu boş hal bile zayıf: açık turkuaz başlık + tek cümle, ne yapacağını söylemiyor.
 
+## Durak 8-9 · Koç ve AI (Levent, gezintinin sonu)
+- **AI koç ücretli üyelikte çok daha merkezde olmalı** ve tasarım, koçun **işleri kişinin üzerinden aldığını** hissettirmeli. Bugün uygulamada hiçbir AI
+  kırıntısı görünmüyor (koç üretimde kapalı, simülatörde sabit cümle), o yüzden yorum yapılamadı.
+- **Fotoğrafa AI** entegre edilebilir, ama yazılımsal kısıtla (patlamamak için): güvenilir ve maliyet etkin, her noktada.
+  Agent: **V1 "fotoğraf cihazda kalır"** kuralına çarpar; değişmesi Levent ADR'si + sağlayıcıyı adıyla söyleyen ayrı onay + App Store sağlık/fotoğraf
+  kuralları ister. Karar bekliyor.
+- Levent'in hükmü: "gayet eksik bir uygulama var elimizde, tek tek ele alıp sakince halletmek gerekli, kesinlikle her şeyi." Gezinti bitti (Ayarlar gezilmedi).
+
 ## Onaylar
 "Hepsi onay" körlemesine verildi (Levent): #770 (görsel/döngü inceleme kayıtları, rıza metni 2, şartlar) otomatik birleşmeden çıkarıldı; gezinti sonrası
 Levent'in gerçek kararıyla yeniden.
