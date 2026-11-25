@@ -5,7 +5,16 @@ guncelleme: 2026-11-25
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (25 Kas gece — 9a-1 BİTTİ: görsel dil ADR-094 "Sıcak defter")
+## ▶ DEVAM NOKTASI (25 Kas gece — 9c-1: ADR-094 token + font, PR #774 otomatik birleşmede)
+**9c-1 (K-1228, #773 → PR #774):** `tokens.ts` ADR-094 rol tablosuyla (kâğıt `#F7F5F0`, petrol karar/eylem/seçim, mercan `progress` yalnız ilerleme,
+üç tint, `warn` `#B3261E`, siyah ters blok kalktı: `decision*` = sayfa), başlık `ui-serif` + rakam `ui-rounded` (RN 0.86.3 `RCTFontUtils.mm`'de doğrulandı;
+Barlow ve paketi kalktı), `tokens.face` (aile + ağırlık), büyük harf hiçbir yerde yok, seçili çip/gün kutusu petrol çerçeve + yumuşak zemin (tek dolu petrol =
+birincil), paylaşım çıkartması sabit koyu palet, ilerleme çubuğu mercan. Yeni `colour-roles.test.ts` (anayasa denetiminde). Levent K1 listesini onayladı.
+Jest 310/310; simülatörde Bu hafta + karar ekranı görüldü. **Bilinen sınır:** SVG yazı (grafik etiketi, çıkartma) sistem fontuna düşer (react-native-svg eski RCTFont yolu).
+**Sıradaki:** 9c-2 ana ekran (hafta yolu, karar kartı, günün sayıları tek kum şerit; taslak `prototip/gorsel-yon/y5-e1.jpg`), simülatörde Levent'le.
+Worktree `keel-1228` (node_modules keel-main'e bağlı) birleşince silinebilir.
+
+## (önceki) ▶ DEVAM NOKTASI (25 Kas gece — 9a-1 BİTTİ: görsel dil ADR-094 "Sıcak defter")
 **Karar (Levent):** "kesinlikle B": kırık beyaz kâğıt, petrol = karar ve eylem, mercan = bugün ve ilerleme (uyarı/aralıkta asla), yumuşak renkli gruplar,
 serif başlık + SF Pro + Rounded tabular rakam, büyük harf yok, siyah ters blok yok. **Şartı:** her sayfa, pop-up, sheet ve ileride eklenecek her şey aynı rol
 tablosuyla (ADR-094 §1). ADR-070 YERİNİ ALDI.

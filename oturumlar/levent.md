@@ -280,3 +280,4 @@
 - takıldım: Antigravity penceresi tam ekran Space'teydi, ilk tam ekran onayı cevapsız kaldı (doğrulama Levent dönünce başladı); Codex "10,000" yazdı (istem binlik noktayla düzeltildi); raporda 7 yanlış App Store kimliği
 - sıradaki: 9c-1 token + bileşen (serif/rounded font erişimi K6 doğrulaması önce)
 - AI: araştırma ve doğrulama Antigravity, görseller Codex, sentez ve ADR agent; Levent 2 seçim yaptı
+- ek (25 Kas gece, 9c-1): K-1228 → PR #774 (otomatik birleşmede): ADR-094 token'ları, ui-serif/ui-rounded (RN kaynağında doğrulandı), büyük harf yok, Barlow kalktı, colour-roles testi; bağımsız inceleme 4 gerçek hata buldu (çıkartma koyu zeminde okunmuyordu, gün kutusu seçimi görünmüyordu, geri al bandı ve öneri kartı zeminle aynıydı) → düzeltildi; CI veri envanterinde kaldırılan paketi yakaladı → düzeltildi. Levent K1'i onayladı. Not: paylaşılan keel-main'de yanlışlıkla dal açtım, hemen geri aldım; iş keel-1228 worktree'sinde. Sıradaki 9c-2 ana ekran
