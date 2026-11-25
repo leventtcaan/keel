@@ -4,6 +4,7 @@ import type { SFSymbol } from 'expo-symbols';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
+import { ProgressBar } from '@/components/ProgressBar';
 import { t } from '@/copy';
 import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
@@ -17,10 +18,24 @@ import type { WeightNumber } from './numbers';
 
 const num = (n: number) => formatNumber(n);
 
-type TileProps = { id: string; icon: SFSymbol; value: string; note?: string | null; badge?: SFSymbol; label: string; hint: string; onPress: () => void };
+type TileProps = {
+  id: string;
+  icon: SFSymbol;
+  value: string;
+  note?: string | null;
+  badge?: SFSymbol;
+  /** How far the day came against its target, 0…1, as a thin coral bar (ADR-094 §3); none for the weight. */
+  share?: { value: number; label: string } | null;
+  label: string;
+  hint: string;
+  onPress: () => void;
+};
 
-/** One number of today: its glyph, the number, and (the weight only) the change under it. The whole tile is the way to its place. */
-function Tile({ id, icon, value, note = null, badge, label, hint, onPress }: TileProps) {
+/**
+ * One number of today: its glyph, the number, its bar or (the weight only) the change under it. It sits on the strip's
+ * sand ground with no tile of its own (ADR-094 §3: no white box in a group). The whole number is the way to its place.
+ */
+function Tile({ id, icon, value, note = null, badge, share = null, label, hint, onPress }: TileProps) {
   const { color } = useTheme();
   const noteText =
     note === null ? null : (
@@ -30,6 +45,7 @@ function Tile({ id, icon, value, note = null, badge, label, hint, onPress }: Til
     );
   // Built outside the JSX children (the raw-text guard reads them).
   const mark = badge === undefined ? null : <Icon name={badge} size="small" tone="muted" testID={`number-${id}-badge`} />;
+  const bar = share === null ? null : <ProgressBar value={share.value} label={share.label} />;
   const head = (
     <View style={styles.head}>
       <Icon name={icon} size="small" tone="muted" />
@@ -43,11 +59,12 @@ function Tile({ id, icon, value, note = null, badge, label, hint, onPress }: Til
       accessibilityLabel={label}
       accessibilityHint={hint}
       onPress={onPress}
-      style={({ pressed }) => [styles.tile, { backgroundColor: color.background }, pressed && styles.dim]}>
+      style={({ pressed }) => [styles.tile, pressed && styles.dim]}>
       {head}
       <Text style={[styles.value, { color: color.text }]}>
         {value}
       </Text>
+      {bar}
       {noteText}
     </Pressable>
   );
@@ -76,6 +93,7 @@ export function TodayNumbers({ protein, steps, weight, walk = null, units }: Pro
     const [eaten, target] = [num(protein.eaten), num(protein.target)];
     tiles.push(
       <Tile key="protein" id="protein" icon="p.circle" value={t('thisWeek.numbers.protein', { eaten, target })} label={t('progress.targets.label.protein', { eaten, target })}
+        share={protein.target > 0 ? { value: protein.eaten / protein.target, label: t('progress.targets.label.protein', { eaten, target }) } : null}
         hint={t('progress.targets.hint.meal')} onPress={() => router.push('/food')} />,
     );
   }
@@ -91,6 +109,7 @@ export function TodayNumbers({ protein, steps, weight, walk = null, units }: Pro
       const open = openHealth;
       tiles.push(
         <Tile key="steps" id="steps" icon="figure.walk" value={t('thisWeek.numbers.steps', { steps: count, target })} label={t('progress.targets.label.steps', { steps: count, target })}
+          share={steps.target > 0 ? { value: (steps.steps ?? 0) / steps.target, label: t('progress.targets.label.steps', { steps: count, target }) } : null}
           hint={t('progress.targets.hint.health')} onPress={open} />,
       );
     }
@@ -136,7 +155,7 @@ const styles = StyleSheet.create({
   stack: { gap: tokens.space.sm },
   row: { flexDirection: 'row', gap: tokens.space.sm },
   walk: { fontSize: tokens.type.label, fontWeight: tokens.weight.semibold, fontVariant: ['tabular-nums'] },
-  tile: { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0, minHeight: tokens.size.touch, borderRadius: tokens.radius.card, padding: tokens.space.sm, gap: tokens.space.xs },
+  tile: { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0, minHeight: tokens.size.touch, paddingVertical: tokens.space.xs, gap: tokens.space.xs },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   value: { ...tokens.face.displayBold, fontSize: tokens.type.body, fontVariant: ['tabular-nums'] },
   note: { fontSize: tokens.type.label, fontWeight: tokens.weight.semibold, fontVariant: ['tabular-nums'] },
