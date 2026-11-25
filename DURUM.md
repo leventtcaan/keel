@@ -5,7 +5,7 @@ guncelleme: 2026-11-24
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (25 Kas öğle — harita rotası simülatörde doğrulandı; Levent onayları bekleniyor)
+## ▶ DEVAM NOKTASI (25 Kas akşam — form döngü klipleri 40/40, onay sayfasında; Levent onayları bekleniyor)
 **Birleşenler (main):** 8a: #732-#744 (ücretsiz çekirdek + kilitli karar, arama v2, ana ekran sayıları, odak ekranı, motor K-1203/04/05) · #749 seyrek veride kayıp
 tavanı · #745/#750 gerçek dinlenme kaydı + aralık + tercih · #747 adım → yürüyüş önerisi (ilk ekranda, akşam hatırlatması varsayılan kapalı) · #748 çok dil
 altyapısı · #753 Türkçe (3.022 anahtar, Türkçe yasak ifade listeleri, mağaza metni) · #756 günlük döngü bağlantıları · #758 57 Türk yemeği + ev ölçüleri
@@ -16,7 +16,14 @@ altyapısı · #753 Türkçe (3.022 anahtar, Türkçe yasak ifade listeleri, ma�
 + "tahmin" metni). Simülatörde (EAS build 3c7962ee) Hadrian Kapısı → Arkeoloji Müzesi: 2,8 km, 3.771 adım, çizgi sahil yolunu izledi · #766 birleşti: Türkçede
 ondalık virgül (82,5 kg; `formatDecimal`, `t()` sayıları dil işaretiyle yazar, alan metni düz kalır) · #767 otomatik birleşmede: "min" → "dk" (10 metin) ve
 copy-tr testinde "min" artık nötr sayılmıyor.
-**Açık PR'lar:** #764 (CI) · #767 (CI) · #765 Live Activity (K-1215; Apple Developer'da uzantı + App Group kaydı Levent'te, sonra birleşir; yeni EAS derlemesi gerekir).
+**25 Kas öğleden sonra · form videosu (ADR-091 Ek 6):** Codex'te video aracı yok (Codex'e soruldu); Levent "Codex kareleri + döngü"yü seçti. Hareketin
+onaylı görseli referans, Codex tek görselde 3×3 = 9 kare çizer, `tools/media_loop.py` kareleri zemin çizgisine (satır + sol uç) hizalayıp 1→9→1 sessiz MP4
+yapar. 40/40 klip (4,5 MB); denetim ajanı 4'ünü bozuk buldu (bench iki tekrar, leg press ok, chest-supported row ve pec deck makine değiştiriyor) →
+istem sıkılaştırıldı, yeniden üretildi; 14 küçük kusur onay sayfasında not olarak. #768 birleşti (araç + `loop`/`loop_review` kapısı); #769 otomatik
+birleşmede (40 klip, `expo-video ~57.0.5`, sessiz + müziği kesmez + durdurulabilir, Hareketi Azalt'ta görsel; ayrıca **37 hareketin eksik `image` kaydı**
+eklendi, yoksa onaylı görseller hiç sunulmayacaktı). Simülatörde (EAS a6e3a403) squat ekranında döngü + durdur doğrulandı. Ham ızgaralar
+`~/Documents/keel-media/loops/`. Sim fixture'da `SIM_PREVIEW_MEDIA=1` bekleyen görsel/klibi gösterir (yerel).
+**Açık PR'lar:** #769 (CI) · #765 Live Activity (K-1215; Apple Developer'da uzantı + App Group kaydı Levent'te, sonra birleşir; yeni EAS derlemesi gerekir).
 **Levent'i bekleyen (onay sayfası: https://claude.ai/artifact/7HphxVmjMHbXXF5GPqDqc8, kayıtlar `onaylar` koleksiyonunda):** 40 form görseli · 26 Türkçe madde ·
 AI rıza metni (en+tr, 2-draft) · kullanım şartları taslağı · K-1218 (kayıt mı cevap mı kazanır). Ayrıca: OpenAI fiyatlarının doğrulanması (Antigravity, tam ekran
 onayı gerekli) → sonra VPS'e `KEEL_OPENAI_API_KEY` + koç ayarları (Levent "sen yap, $20 tavan" dedi; 1.0.1 yayınlanana kadar `provider: off`) · OpenAI panelinde
