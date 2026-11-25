@@ -5,8 +5,8 @@ guncelleme: 2026-11-26
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (26 Kas gece — 9c-6b-1: Bu hafta'da koç satırı, PR otomatik birleşmede)
-**9c-6b-1 (K-1235, #787):** ana ekranda kararın altında yalnız "Koça mesaj yaz" satırı (koçun kutusunun metni, yeni metin yok); dokununca koç bu kararla ve
+## ▶ DEVAM NOKTASI (26 Kas gece — 9c-6b-1: Bu hafta'da koç satırı, PR #790 otomatik birleşmede)
+**9c-6b-1 (K-1235, #787 → PR #790):** ana ekranda kararın altında yalnız "Koça mesaj yaz" satırı (koçun kutusunun metni, yeni metin yok); dokununca koç bu kararla ve
 klavyesi açık gelir; satır yalnız karar ya da kilitli karar varken. **Levent (26 Kas):** simülatörde üç varyanttan 1'i seçti (hap yok: "kullanıcı gözüyle alakasız")
 → ADR-092 Ek 2 #1, ana ekran bütçesi 74 → 77. Koçta "Bu kararı açıkla" yalnız sunucu sağlayıcı açık (`GET /v1/consents/ai-offer` 200) ve abonelik aktif
 (`GET /v1/subscription`) derken; "Bu karar neden?" her zaman. Cevap gelene kadar starter sırası bekler (inceleme: kayma). K1 yok: yalnız fikstüre "sağlayıcı açık +
