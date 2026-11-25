@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useState, useSyncExternalStore } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -81,6 +82,7 @@ export function WalksEditor() {
       <Text style={[styles.note, { color: color.muted }]}>{t('settings.walks.hint')}</Text>
       {rows.length > 0 && <ListGroup>{rows}</ListGroup>}
       {form}
+      <Button label={t('settings.walks.map')} accessibilityLabel={t('settings.walks.mapLabel')} variant="secondary" onPress={() => router.push('/walk-map')} />
       {problem !== null && <ProblemText style={[styles.note, { color: color.text }]}>{problem}</ProblemText>}
     </View>
   );

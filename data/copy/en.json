@@ -2831,6 +2831,41 @@
       "minutes": "{steps} steps left today. That is about {minutes} minutes of walking."
     }
   },
+  "walkMap": {
+    "title": "Walk map",
+    "mapLabel": "Map of your places and the walk between two of them",
+    "searchLabel": "Search an address or a place",
+    "search": "Search",
+    "searchNote": "Search uses Apple Maps; your places stay on this phone.",
+    "holdHint": "Or press and hold the map.",
+    "noMatch": "Nothing found. Try other words, or press and hold the map.",
+    "searchFailed": "Couldn't search. Check your connection and try again.",
+    "resultLabel": "{name}, {address}. Use this place.",
+    "nameLabel": "Name this place",
+    "save": "Save place",
+    "saveLabel": "Save this place",
+    "cancel": "Cancel",
+    "invalid": "Give it a name.",
+    "failed": "Couldn't save that. Try again.",
+    "full": "Eight places is the most. Remove one to add another.",
+    "places": "Your places",
+    "none": "No places yet.",
+    "pick": "Tap two places to see their walk.",
+    "from": "From",
+    "to": "To",
+    "placeLabel": "{name}. Tap to use it as the start or the end.",
+    "removeLabel": "Remove {name}",
+    "measuring": "Measuring the walk",
+    "leg": "{distance} one way, about {steps} steps",
+    "legApprox": "About {distance} one way, about {steps} steps. Apple Maps had no route, so this is estimated.",
+    "round": "{steps} steps there and back",
+    "saveWalk": "Save as a walk",
+    "saveWalkLabel": "Save {name} in My walks",
+    "walkSaved": "Saved in My walks. Today's walk line can use it.",
+    "walkFull": "My walks has three. Remove one there first.",
+    "walkExists": "Already in My walks.",
+    "routeName": "{from} to {to}"
+  },
   "units": {
     "kg": "{value} kg",
     "lb": "{value} lb",
@@ -3379,7 +3414,9 @@
       "rowLabel": "{name}, {distance} one way",
       "full": "Three walks is the most. Remove one to add another.",
       "invalid": "Give it a name and a distance, like 1.8.",
-      "failed": "Couldn't save that. Try again."
+      "failed": "Couldn't save that. Try again.",
+      "map": "Open the map",
+      "mapLabel": "Open the walk map"
     },
     "units": {
       "title": "Units",

@@ -40,9 +40,20 @@ test('nothing in the walks copy blames or asks to make up for anything (U7)', ()
 });
 
 test('no location library or API is imported anywhere in the app (the Apple Health text says the app does not read location)', () => {
-  const forbidden = /expo-location|expo-maps|react-native-maps|react-native-geolocation|@react-native-community\/geolocation|CoreLocation|MapKit|navigator\.geolocation|requestForegroundPermissionsAsync|watchPositionAsync|getCurrentPositionAsync/;
+  const forbidden = /expo-location|expo-maps|react-native-geolocation|@react-native-community\/geolocation|CoreLocation|MapKit|navigator\.geolocation|requestForegroundPermissionsAsync|watchPositionAsync|getCurrentPositionAsync/;
   const offenders = sourceFiles()
     .filter((file) => forbidden.test(fs.readFileSync(file, 'utf8')))
     .map((file) => path.relative(SRC, file));
   expect(offenders).toEqual([]);
+});
+
+// K-1227 (ADR-093): the walk map shows Apple Maps through react-native-maps, in that one screen, which never asks for where the phone is.
+test('react-native-maps is imported by the walk map screen alone, and that screen keeps the user location off', () => {
+  const importers = sourceFiles()
+    .filter((file) => /from 'react-native-maps'/.test(fs.readFileSync(file, 'utf8')))
+    .map((file) => path.relative(SRC, file));
+  expect(importers).toEqual(['walks/WalkMapScreen.tsx']);
+  const screen = fs.readFileSync(path.join(SRC, 'walks/WalkMapScreen.tsx'), 'utf8');
+  expect(screen).toMatch(/showsUserLocation=\{false\}/);
+  expect(screen).toMatch(/showsMyLocationButton=\{false\}/);
 });
