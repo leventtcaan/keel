@@ -23,3 +23,5 @@ Orkestratör ön bakışı (küçük boyutta, toplu görünüm): genel stil tuta
 - **Yeniden üret:** `dip` (paralel barlar çizilmemiş, figür havada) · `squat` (bar konumu: başın arkasında mı belirsiz; front squat'a benziyor).
 - **Bakılacak:** çerçeve ve "Start/End" yazı boyutu karelere göre değişiyor (stil tutarlılığı).
 - Hepsi `image_review: pending`; Levent kontrol listesiyle tek tek onaylar (`by: levent, checklist: pass`), onaylanan sunucudan gelir.
+
+## Yeniden üretim (25 Kas): dip (paralel barlar açıkça tarif edildi) ve squat (bar boynun arkasında, baş plakanın önünde) — orkestratör bakışı: ikisi de düzeldi; onay Levent'te.
