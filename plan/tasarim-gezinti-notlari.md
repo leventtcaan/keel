@@ -59,6 +59,19 @@ Gezinti bitince bu notlar tek bir tasarım işine dönüşür: görsel yön ara�
 | Bitiş ekranı / Paylaş | hiçbir şey | | not, form, efor göstermiyor |
 Hiçbiri ücretli üyeye kilitli değil.
 
+## Durak 4 · Gelişim sekmesi
+- **Sayfa çok uzun.** Grafikler güzel ve mantıklı; takip edilmesi gerekenler takip edilmeli.
+- **Güç bölümünde seçim düğmeleri** çok kötü görünüyor, UX'e uygun değil.
+- **Bu haftanın kasları** daha etkileşimli olabilir. **Kas başına set** kıymetli ama bu kadar yer kaplamamalı (kimsenin pek umurunda olan bir metrik değil).
+- **"Düzen" yazan kartı kaldır** ("çok ama çok kötü").
+- **Kararlar listesi** bu kadar uzayıp gitmesi çok sağlıksız.
+- **Fotoğraf ekleme** nerede, çok uzakta; kişi eklemek isteyecek. Fotoğraf belirli aralıkla ve ücretli üyelikle alınabilir (sınır + ücretliye yönlendirme).
+  Not (agent): fotoğraflar cihazda kalıyor (V1), sunucu maliyeti yok; sınır tamamen ürün tercihi olur.
+
+## Para ilkesi (Levent, Durak 4)
+Her özelliğin **devamı, fazlası, artısı, dahası** ücretli: kullanıcı kullandıkça, daha fazlasını istediği noktada ücretliye geçsin. "Bir nevi freemium ama
+tam da değil": çekirdek ücretsiz, derinlik ücretli. Tasarımda her özellik için "ücretsiz kısım nerede biter, dahası ne" sorusu sorulacak.
+
 ## Onaylar
 "Hepsi onay" körlemesine verildi (Levent): #770 (görsel/döngü inceleme kayıtları, rıza metni 2, şartlar) otomatik birleşmeden çıkarıldı; gezinti sonrası
 Levent'in gerçek kararıyla yeniden.
