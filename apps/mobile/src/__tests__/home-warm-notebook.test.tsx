@@ -4,14 +4,16 @@
  * bar of how far the day came, no white tiles in it.
  */
 import { act, render, screen, within } from '@testing-library/react-native';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 
 import type { components } from '@/api/schema';
+import { DecisionBlock } from '@/components/DecisionBlock';
 import { ThemeProvider } from '@/theme/theme';
 import { type ColorScheme, palettes } from '@/theme/tokens';
 import { TodayBlock } from '@/today/TodayBlock';
 import type { Loaded } from '@/today/today';
 import { WeekStrip } from '@/today/WeekStrip';
+import type { WeightRead } from '@/today/numbers';
 import type { StripDay } from '@/today/week';
 
 type Schemas = components['schemas'];
@@ -122,6 +124,56 @@ describe.each(['light', 'dark'] as ColorScheme[])('%s theme', (scheme) => {
     test('the strip keeps no empty gutter at its right end for the "+" (gezinti, Durak 1)', async () => {
       await show();
       expect(flat('food-line').paddingRight).toBeUndefined();
+    });
+  });
+});
+
+// 9c-3 (prototype gorsel-yon/y5-e1): the call's arrow sits on the call's own line, no empty band above it; the weight has a
+// line of its own under the day's numbers, the trend drawn from the server's points.
+describe.each(['light', 'dark'] as ColorScheme[])('%s theme, 9c-3', (scheme) => {
+  const p = palettes[scheme];
+
+  test("the call's arrow is on the title's line, not on a band of its own", async () => {
+    await render(
+      <ThemeProvider scheme={scheme}>
+        <DecisionBlock title="Daha çok hareket" aside={<Text testID="mark">›</Text>} onPress={() => {}} />
+      </ThemeProvider>,
+    );
+    // The nearest row around the arrow holds the title too.
+    let row = screen.getByTestId('mark').parent;
+    while (row !== null && StyleSheet.flatten(row.props.style)?.flexDirection !== 'row') row = row.parent;
+    expect(row).not.toBeNull();
+    expect(within(row!).getByText('Daha çok hareket')).toBeOnTheScreen();
+  });
+
+  describe('the weight line', () => {
+    const ready = <T,>(value: T): Loaded<T> => ({ state: 'ready', value });
+    const POINTS = [89.6, 89.0, 88.4, 88.0, 87.7, 87.4].map((kg, i) => ({ day: `2026-10-${String(13 + 7 * i).padStart(2, '0')}`, kg }));
+    const WEIGHT: WeightRead = { summary: ready({ weighInCount: 30, trendMinWeighIns: 7, trendReady: true }), trend: ready(POINTS) };
+    const show = async () => {
+      await render(
+        <ThemeProvider scheme={scheme}>
+          <TodayBlock budget={{ state: 'none' }} targets={ready({ stepsPerDay: 10000, trainingSessionsPerWeek: 4 })} stepsToday={6240} weight={WEIGHT} units="METRIC" />
+        </ThemeProvider>,
+      );
+      await act(async () => {});
+    };
+
+    test('stands on its own line under the other numbers, the kilos in the serif voice', async () => {
+      await show();
+      const weight = screen.getByTestId('number-weight');
+      expect(within(weight).queryByTestId('number-steps')).toBeNull();
+      expect(StyleSheet.flatten(weight.props.style)).toMatchObject({ flexDirection: 'row' });
+      expect(StyleSheet.flatten(within(weight).getByText('87.4 kg').props.style)).toMatchObject({ fontFamily: 'ui-serif' });
+    });
+
+    test("draws the trend from the server's points in petrol, the latest point marked", async () => {
+      await show();
+      // The drawing is hidden from screen readers (the number and its change are read), so it is looked up among hidden ones.
+      const line = screen.getByTestId('trend-line', { includeHiddenElements: true });
+      // One move to the oldest point, then a segment to each next one.
+      expect(String(line.props.d).match(/[ML]/g)).toHaveLength(POINTS.length);
+      expect(screen.getByTestId('trend-end', { includeHiddenElements: true })).toBeTruthy();
     });
   });
 });

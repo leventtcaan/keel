@@ -79,7 +79,7 @@ export function Hero({ hero, today, onChanged }: Props) {
 
   const line = (text: string) => <Text style={[styles.line, { color: color.decisionTextSecondary }]}>{text}</Text>;
   const foot = (left: string | null, right: ReactNode) => (
-    <View style={[styles.row, styles.foot, { borderTopColor: color.decisionLine }]}>
+    <View style={[styles.row, styles.foot]}>
       {left === null ? <View /> : <Text style={[styles.meta, { color: color.decisionMuted }]}>{left}</Text>}
       {right}
     </View>
@@ -195,7 +195,8 @@ export function Hero({ hero, today, onChanged }: Props) {
 const styles = StyleSheet.create({
   block: { borderRadius: tokens.radius.card, padding: tokens.space.lg, gap: tokens.space.sm },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space.sm },
-  foot: { borderTopWidth: tokens.border.hairline, paddingTop: tokens.space.sm, marginTop: tokens.space.xs, flexWrap: 'wrap' },
+  // Set apart by space, not a ruled line (ADR-094 §3, 9c-3).
+  foot: { paddingTop: tokens.space.xs, flexWrap: 'wrap' },
   meta: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.semibold },
   line: { fontSize: tokens.type.body },
   center: { textAlign: 'center' },

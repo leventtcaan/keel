@@ -30,7 +30,13 @@ export async function loadWeight(api: ApiClient, day: string): Promise<WeightRea
 }
 
 export type WeightNumber =
-  | { kind: 'trend'; kg: number; change: { direction: 'down' | 'up' | 'steady'; size: string; span: string; since: string } | null }
+  | {
+      kind: 'trend';
+      kg: number;
+      change: { direction: 'down' | 'up' | 'steady'; size: string; span: string; since: string } | null;
+      /** The server's trend points over the same window, oldest first, as kilograms: the small line on This week draws them. */
+      points: number[];
+    }
   | { kind: 'waiting'; count: number; min: number };
 
 /** The period the change covers, as it is spoken (the accessibility label, not the first view's words): whole weeks ("12 weeks"), under a week in days ("5 days"). */
@@ -55,9 +61,15 @@ export function weightNumber(read: WeightRead | undefined, units: UnitSystem): W
   } else return waiting;
   const points = read.trend.value;
   const [from, to] = [points[0], points[points.length - 1]];
-  if (from.day === to.day) return { kind: 'trend', kg: to.kg, change: null };
+  const line = points.map((point) => point.kg);
+  if (from.day === to.day) return { kind: 'trend', kg: to.kg, change: null, points: line };
   const { delta, size } = weightChange(from.kg, to.kg, units);
-  return { kind: 'trend', kg: to.kg, change: { direction: delta === 0 ? 'steady' : delta < 0 ? 'down' : 'up', size, span: spanText(from.day, to.day), since: from.day } };
+  return {
+    kind: 'trend',
+    kg: to.kg,
+    change: { direction: delta === 0 ? 'steady' : delta < 0 ? 'down' : 'up', size, span: spanText(from.day, to.day), since: from.day },
+    points: line,
+  };
 }
 
 /** Protein eaten (the middle of the server's range, as the food line shows its number, ADR-090 #5) against the day's target. */

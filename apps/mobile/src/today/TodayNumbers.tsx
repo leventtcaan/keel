@@ -5,6 +5,7 @@ import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
 import { ProgressBar } from '@/components/ProgressBar';
+import { TrendLine } from '@/components/TrendLine';
 import { t } from '@/copy';
 import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
@@ -119,7 +120,11 @@ export function TodayNumbers({ protein, steps, weight, walk = null, units }: Pro
       <Tile key="weight" id="weight" icon="scalemass" value={t('progress.weight.count', { count: weight.count, min: weight.min })} label={t('progress.weight.spoken', { count: weight.count, min: weight.min })}
         hint={t('thisWeek.numbers.weightWaitingHint')} onPress={() => router.push('/weigh-in')} />,
     );
-  } else if (weight?.kind === 'trend') {
+  }
+  // The weight's trend has a line of its own under the day's numbers (9c-3, prototype gorsel-yon/y5-e1): the kilos in the
+  // serif voice, the change under them, the shape of the trend beside them. The whole line opens Progress.
+  let weightLine = null;
+  if (weight?.kind === 'trend') {
     const shown = formatWeight(weight.kg, units);
     const { change } = weight;
     const label =
@@ -129,12 +134,25 @@ export function TodayNumbers({ protein, steps, weight, walk = null, units }: Pro
             weight: shown,
             change: t(`thisWeek.numbers.spoken${change.direction === 'down' ? 'Down' : change.direction === 'up' ? 'Up' : 'Steady'}`, { size: change.size, span: change.span }),
           });
-    tiles.push(
-      <Tile key="weight" id="weight" icon="scalemass" value={shown} note={change === null ? null : t(`thisWeek.numbers.${change.direction}`, { size: change.size })} label={label}
-        hint={t('thisWeek.numbers.weightHint')} onPress={() => router.navigate('/progress')} />,
+    const noteText = change === null ? null : <Text style={[styles.note, { color: color.textSecondary }]}>{t(`thisWeek.numbers.${change.direction}`, { size: change.size })}</Text>;
+    weightLine = (
+      <Pressable
+        testID="number-weight"
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityHint={t('thisWeek.numbers.weightHint')}
+        onPress={() => router.navigate('/progress')}
+        style={({ pressed }) => [styles.weight, { borderTopColor: color.line }, pressed && styles.dim]}>
+        <View style={styles.weightWords}>
+          <Text style={[styles.kilos, { color: color.text }]}>{shown}</Text>
+          {noteText}
+        </View>
+        <TrendLine points={weight.points} />
+      </Pressable>
     );
   }
-  if (tiles.length === 0) return null;
+  if (tiles.length === 0 && weightLine === null) return null;
+  const row = tiles.length === 0 ? null : <View style={styles.row}>{tiles}</View>;
   // The steps left as a walk (K-1216), under the numbers (first screen, budget 74, K-1216): an offer in one line, never a debt (U7).
   const walkText =
     walk === null || steps?.steps == null ? null : (
@@ -142,11 +160,11 @@ export function TodayNumbers({ protein, steps, weight, walk = null, units }: Pro
         <Text style={[styles.walk, { color: color.textSecondary }]}>{walkLine(walk.remaining, walk.suggestion)}</Text>
       </Pressable>
     );
-  if (walkText === null) return <View style={styles.row}>{tiles}</View>;
   return (
     <View style={styles.stack}>
-      <View style={styles.row}>{tiles}</View>
+      {row}
       {walkText}
+      {weightLine}
     </View>
   );
 }
@@ -159,5 +177,16 @@ const styles = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   value: { ...tokens.face.displayBold, fontSize: tokens.type.body, fontVariant: ['tabular-nums'] },
   note: { fontSize: tokens.type.label, fontWeight: tokens.weight.semibold, fontVariant: ['tabular-nums'] },
+  weight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: tokens.space.md,
+    minHeight: tokens.size.touch,
+    borderTopWidth: tokens.border.hairline,
+    paddingTop: tokens.space.sm,
+  },
+  weightWords: { flexShrink: 1, gap: tokens.space.xs },
+  kilos: { ...tokens.face.display, fontSize: tokens.type.heading, fontVariant: ['tabular-nums'] },
   dim: { opacity: tokens.opacity.dim },
 });

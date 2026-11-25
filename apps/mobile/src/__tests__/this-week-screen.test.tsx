@@ -245,6 +245,13 @@ describe('an ordinary week', () => {
     expect(screen.getByText(t('thisWeek.hero.inDays', { count: 3 }))).toBeOnTheScreen();
   });
 
+  // 9c-3 (ADR-094 §3): the call's foot is set apart by space, not by a ruled line.
+  test("the next call's line sits under the call with no ruled line above it", async () => {
+    await show();
+    const foot = screen.getByText(t('thisWeek.hero.nextCall', { day: 'Monday' })).parent;
+    expect(StyleSheet.flatten(foot?.props.style)?.borderTopWidth).toBeUndefined();
+  });
+
   // K-1048: no empty band over the title. The arrow is the block's mark, not a control, so it is the height of its glyph, not of a
   // touch target; the prototype's "This week's call" label is left out to hold the home first view to 40 words (ADR-069 #4).
   test("the hero's top row is only as tall as the arrow: it reserves no touch target's height, and no empty text is laid out beside it", async () => {
