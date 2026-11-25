@@ -37,6 +37,9 @@ const CALL = { decisionId: 'd1', copyKey: 'decision.adjust_calories.not_toward_g
 // Tuesday: a session today.
 const PROGRAM: Schemas['Program'] = { id: 'p1', source: 'GENERATED', days: [{ id: 'a', nameKey: 'programDays.upper_a.name', weekday: 'TUESDAY', exercises: [] }] };
 
+const OFFER: Schemas['AiConsentOffer'] = { provider: 'OpenAI', dataTypes: ['COACH_QUESTION'] };
+const PAID: Schemas['Subscription'] = { appUserId: '6f1c2a4e-0d9b-4a7e-9c3f-2b8e5d1a7c40', active: true, status: 'ACTIVE' };
+
 let mockAnswers: Record<string, Answer | 'offline'> = {};
 let mockSent: Answer | 'offline' = ok({ mode: 'DETERMINISTIC', copyKey: 'coach.answer.call', call: CALL });
 const mockGET = jest.fn(async (path: string, _init?: unknown) => {
@@ -52,7 +55,7 @@ const mockPOST = jest.fn(async (path: string, _init?: unknown) => {
   return answer;
 });
 const mockPush = jest.fn();
-let mockParams: { chip?: string; decisionId?: string } = {};
+let mockParams: { chip?: string; decisionId?: string; write?: string } = {};
 jest.mock('expo-router', () => ({
   router: { push: (...args: unknown[]) => mockPush(...args), back: () => {} },
   useLocalSearchParams: () => mockParams,
@@ -73,7 +76,14 @@ afterAll(() => jest.useRealTimers());
 beforeEach(() => {
   jest.clearAllMocks();
   mockParams = {};
-  mockAnswers = { '/v1/decisions/current': ok(DECISION), '/v1/program': ok(PROGRAM), '/v1/weigh-ins': ok([]) };
+  // The model is there and paid for (ADR-092 Ek 2 #3): the server has a provider (its AI offer) and the subscription is active.
+  mockAnswers = {
+    '/v1/decisions/current': ok(DECISION),
+    '/v1/program': ok(PROGRAM),
+    '/v1/weigh-ins': ok([]),
+    '/v1/consents/ai-offer': ok(OFFER),
+    '/v1/subscription': ok(PAID),
+  };
   mockSent = ok({ mode: 'DETERMINISTIC', copyKey: 'coach.answer.call', call: CALL });
   mockParsed = ok({ mode: 'DETERMINISTIC', items: [] });
   mockRemembered = ok({ id: 'm1', text: 'x', createdAt: '2026-09-29T09:00:00Z' });
@@ -530,6 +540,52 @@ test('the three starter questions are the first suggestions', async () => {
   expect(names.slice(0, 3)).toEqual([t('coach.starter.why'), t('coach.starter.week'), t('coach.starter.whatif')]);
 });
 
+// ADR-092 Ek 2 #3 (Levent, 26 Nov): two questions asked the same thing. "Why this call?" (the day's chip, answered on the phone
+// and free) always stays; "Explain this call" goes to the model, so it is offered only when the server has a provider and the
+// subscription pays for it. Unread is not open: nothing offers a paid question the server did not say is there.
+describe('"Explain this call" only with the model on and paid for', () => {
+  const NO_PROVIDER = refused(404, 'NOT_FOUND');
+  test.each([
+    ['the server has no provider (its AI offer is 404)', { '/v1/consents/ai-offer': NO_PROVIDER }],
+    ['the subscription is not active', { '/v1/subscription': ok({ ...PAID, active: false, status: 'EXPIRED' }) }],
+    ['the account never subscribed', { '/v1/subscription': ok({ appUserId: PAID.appUserId, active: false }) }],
+    ['the subscription could not be read', { '/v1/subscription': 'offline' as const }],
+    ['the AI offer could not be read', { '/v1/consents/ai-offer': 'offline' as const }],
+  ])('not offered when %s; "Why this call?" stays', async (_, answers) => {
+    mockAnswers = { ...mockAnswers, ...answers };
+    await show();
+    expect(screen.queryByRole('button', { name: t('coach.starter.why') })).toBeNull();
+    expect(screen.getByRole('button', { name: t('today.chips.why') })).toBeOnTheScreen();
+    const names = screen.getAllByRole('button').map((b) => b.props.accessibilityLabel as string);
+    expect(names.slice(0, 2)).toEqual([t('coach.starter.week'), t('coach.starter.whatif')]);
+  });
+
+  test('until both are answered no starter is shown: none jumps in front of another under a finger', async () => {
+    let answer: (value: Answer) => void = () => {};
+    const held = new Promise<Answer>((resolve) => (answer = resolve));
+    const real = mockGET.getMockImplementation()!;
+    mockGET.mockImplementation(async (path: string, init?: unknown) => (path === '/v1/subscription' ? held : real(path, init)));
+    try {
+      await show();
+      expect(screen.queryByRole('button', { name: t('coach.starter.week') })).toBeNull();
+      expect(screen.getByRole('button', { name: t('today.chips.why') })).toBeOnTheScreen();
+      await act(async () => answer(ok(PAID)));
+      const names = screen.getAllByRole('button').map((b) => b.props.accessibilityLabel as string);
+      expect(names.slice(0, 3)).toEqual([t('coach.starter.why'), t('coach.starter.week'), t('coach.starter.whatif')]);
+    } finally {
+      mockGET.mockImplementation(real);
+    }
+  });
+
+  test('both read: offered first, beside "Why this call?"', async () => {
+    await show();
+    expect(screen.getByRole('button', { name: t('coach.starter.why') })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: t('today.chips.why') })).toBeOnTheScreen();
+    expect(mockGET).toHaveBeenCalledWith('/v1/consents/ai-offer');
+    expect(mockGET).toHaveBeenCalledWith('/v1/subscription');
+  });
+});
+
 test.each([
   ['coach.starter.why'],
   ['coach.starter.week'],
@@ -558,6 +614,18 @@ test('without a subscription the free questions end at the paywall: a note and t
   expect(screen.getByText(t('coach.subscription'))).toBeOnTheScreen();
   await press(t('subscription.seePlans'));
   expect(mockPush).toHaveBeenCalledWith('/paywall');
+});
+
+// ADR-092 Ek 2 #1: This week's line looks like the coach's box, so the coach it opens is ready to be written in; opened any other way
+// (a chip, the call's button) the keyboard stays down and the conversation is in view.
+test('opened from This week\'s line, the box has the keyboard; otherwise not', async () => {
+  mockParams = { decisionId: 'd1', write: '1' };
+  await show();
+  expect(screen.getByLabelText(t('coach.input')).props.autoFocus).toBe(true);
+  await screen.unmount();
+  mockParams = { decisionId: 'd1' };
+  await show();
+  expect(screen.getByLabelText(t('coach.input')).props.autoFocus).toBe(false);
 });
 
 // K1 (9c-6a, Levent 26 Nov): the box is one line as in y5-e3; the dictation hint is the field's VoiceOver hint, not printed under it.

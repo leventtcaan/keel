@@ -74,7 +74,9 @@ Orta: sağlayıcı kapısı (`LanguageModel`, `EgressGate`) zaten soyut; `coach.
 Bağlam: gezinti Durak 8-9'da Levent "AI koç ücretli üyelikte çok daha merkezde olmalı, işleri kişinin üzerinden aldığını hissettirmeli" dedi. Taslak
 `prototip/gorsel-yon/y5-e3.jpg`'de eylem kartı var ("Akşam yürüyüşü · 25 dk · ~3.000 adım · Plana ekle"). Bugün koça yalnız karar ekranındaki "Bu kararı sor"
 düğmesiyle giriliyor; sağlayıcı üretimde kapalı. Agent üç soru sordu; Levent önerilen seçeneklerin üçünü de seçti:
-1. **Giriş: Bu hafta'da koç satırı, sekme yok.** Ana ekranda kararın altında tek satır "Koça sor" ve 2-3 bağlamlı hazır soru hapı (ADR-094 §3 kum hap). Karar
+1. **Giriş: Bu hafta'da koç satırı, sekme yok.** Ana ekranda kararın altında yalnız koça giden tek satır ("Message the coach" / "Koça mesaj yaz",
+   koçun kendi kutusunun metni). Levent, 26 Kas: simülatörde gösterilen üç varyanttan 1'i seçti (yalnız satır; satır + 2 hap ve satır + 3 hap elendi),
+   çünkü kullanıcı gözüyle hapların içeriği bu ekranda çok alakasız kalıyor. Hazır sorular koçun içinde kalır; ana ekran bütçesi 77 (K-1235). Karar
    ekranındaki düğme kalır. Antrenman bitişi ve yemek ekranı kendi bağlamlı haplarını alır. Ayrı Koç sekmesi açılmaz: ücretsiz kullanıcıya çoğu paywall'a çıkan bir
    sekme olur, sağlayıcı kapalıyken boş kalır. Ücretlilik değişmez (ADR-091 b): motorun cümleleri ücretsiz, model sorusu ücretli.
 2. **Eylem kartları yalnız motorun önerileri (U1).** Koç bir eylem uydurmaz; kart, motorun zaten hesapladığı bir öneriyi gösterir, LLM yalnız anlatır:
@@ -84,6 +86,6 @@ düğmesiyle giriliyor; sağlayıcı üretimde kapalı. Agent üç soru sordu; L
    - Görünüş: ADR-094 §3, mercan zemin (`tintSuggest`) + petrol düğme. İkisi de sağlayıcı kapalıyken çalışır.
 3. **Çift soru:** koçta "Bu karar neden?" (günün çipi, telefonda ve ücretsiz cevaplanır) kalır; "Bu kararı açıkla" başlangıç sorusu yalnız sağlayıcı açık ve
    kişi ücretliyken görünür.
-Etkilenen: `src/app/(tabs)/index.tsx` (ana ekran, kelime bütçesi 74: koç satırı aşarsa Levent'e sorulur), `src/app/coach.tsx`, `src/coach/conversation.ts`
+Etkilenen: `src/app/(tabs)/index.tsx` (ana ekran, kelime bütçesi 74 → 77), `src/app/coach.tsx`, `src/coach/conversation.ts`
 (STARTERS), antrenman bitişi ve yemek ekranı, `data/copy/*` (yeni metin en+tr). Doğrulama: koç satırı ve hapların testleri; eylem kartının motorun önerisi
 yokken görünmediği ve "Plana ekle"nin planı değil yalnız hatırlatmayı değiştirdiği testler; başlangıç sorusunun sağlayıcı kapalı / ücretsizken görünmediği test.

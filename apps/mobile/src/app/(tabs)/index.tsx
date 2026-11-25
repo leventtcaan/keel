@@ -15,6 +15,7 @@ import { useGuide } from '@/guide/GuideProvider';
 import { workoutLine } from '@/guide/workoutLine';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
+import { CoachRow } from '@/today/CoachRow';
 import { Hero } from '@/today/Hero';
 import { StateCard } from '@/today/StateCard';
 import type { TodayData } from '@/today/today';
@@ -35,8 +36,8 @@ type Program = components['schemas']['Program'];
 /**
  * This week (K-969, ADR-077 #1, prototype #home and #home-mon): the week strip under the week's number and record, one
  * hero block (the first week, this week's call, Monday's "Open your call", a paused week, or the calls off without the
- * consent), then today's workout and the food line. No coach bar, no paragraphs (ADR-069 #3, ADR-077 #1): the consistency's parts, the first weeks'
- * words and the coach's questions are off this screen. Settings top right. Every week, date and count is the server's;
+ * consent), the coach's one line under a call (ADR-092 Ek 2 #1), then today's numbers and workout. No paragraphs (ADR-069 #3, ADR-077 #1):
+ * the consistency's parts, the first weeks' words and the coach's questions are off this screen. Settings top right. Every week, date and count is the server's;
  * the phone lays its week out and counts the days to the dates it gave (ADR-077 Ek 2). A part that failed says so once.
  */
 export default function TodayScreen() {
@@ -117,6 +118,8 @@ export default function TodayScreen() {
           <Hero hero={hero} today={today} onChanged={reload} />
         </View>
       );
+    // The coach under the call (ADR-092 Ek 2 #1): only where there is a call to ask about, read or still locked.
+    const coach = hero.kind === 'call' ? <CoachRow decisionId={hero.decision.id} /> : hero.kind === 'locked' ? <CoachRow /> : null;
     const workout =
       card.kind === 'none' ? null : (
         <View ref={workoutRef} collapsable={false}>
@@ -155,6 +158,7 @@ export default function TodayScreen() {
             check-in open the Monday block is the one hero: the check-in asks whether the state still holds (word budget). */}
         {stateCard}
         {call}
+        {coach}
         {numbers}
         {noProgram}
         {workout}

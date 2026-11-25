@@ -6167,12 +6167,12 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-1234]
     why: "ADR-092 Ek 2 #1 ve #3 (Levent, 26 Kas): koç ücretli üyelikte merkezde, ama sekme değil; bugün koça yalnız karar ekranından giriliyor"
     acceptance:
-      - "Bu hafta'da kararın altında tek satır 'Koça sor' ve 2-3 bağlamlı kum hap (ADR-094 §3); hap koçu o soruyla açar"
-      - "Ana ekranın kelime bütçesi (74) aşılmaz; aşacaksa Levent'e sorulur; yeni metin en+tr"
+      - "Bu hafta'da kararın altında tek satır 'Koça sor'; koçu bu kararla açar. Hazır soru hapı ana ekranda yok (Levent 26 Kas, ADR-092 Ek 2 #4)"
+      - "Ana ekranın kelime bütçesi aşılmaz; satır için 74 → 77 (Levent 26 Kas); yeni metin en+tr"
       - "Koçta 'Bu kararı açıkla' başlangıç sorusu yalnız sağlayıcı açık ve kişi ücretliyken görünür; 'Bu karar neden?' günün çipi kalır"
       - "Ücretlilik değişmez (ADR-091 b): motorun cümleleri ücretsiz, model sorusu paywall'a gider"
     tests: ["this-week-screen.test.tsx", "coach-screen.test.tsx", "copy-budget.test.ts", "npm run check"]
