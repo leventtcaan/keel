@@ -80,8 +80,8 @@ describe('release identity (K-1033, ADR-080 Ek 2)', () => {
     expect(config.ios?.bundleIdentifier).toBe('dev.leventtcaan.keel');
   });
 
-  test('the first release is 1.0.0, and the app uses only standard encryption (HTTPS, hashing): export compliance is answered in the build', () => {
-    expect(config.version).toBe('1.0.0');
+  test('the store version is 1.0.1 (K-1209, ADR-091 #2), and the app uses only standard encryption (HTTPS, hashing): export compliance is answered in the build', () => {
+    expect(config.version).toBe('1.0.1');
     // expo's config plugin writes this as ITSAppUsesNonExemptEncryption in Info.plist.
     expect(config.ios?.config?.usesNonExemptEncryption).toBe(false);
   });
