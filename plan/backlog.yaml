@@ -6059,7 +6059,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: doing
+    status: done
     depends_on: [K-1228]
     why: "Gezinti Durak 1: gün şeridi neredeyim demiyor, insana dokunmuyor; kalan yiyecek kartı sağda boşluklu (PLUS_GUTTER yaması). ADR-094 §3: hafta yolu, kum şerit, mercan ilerleme"
     acceptance:
