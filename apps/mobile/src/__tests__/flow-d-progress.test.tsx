@@ -65,6 +65,8 @@ const mockServices = {
   // What waits on the phone is sent before the read (K-1051); nothing waits here.
   queue: { drain: async () => {} },
   photos: { checks: async () => [], forget: async () => {} },
+  // The projection is off (its default, ADR-050): the call screen asks nothing of it.
+  projectionSwitch: { on: () => false },
   report: jest.fn(),
 };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => 'METRIC' }));

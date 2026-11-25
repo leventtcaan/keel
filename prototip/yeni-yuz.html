@@ -1446,7 +1446,7 @@ const SCREENS = {
     <div class="opts">${[['up', 'Getting stronger', 'up'], ['same', 'About the same', 'eq'], ['down', 'Getting weaker', 'down']].map(([v, l, ic]) => `<button class="opt" type="button" data-act="ci" data-val="${v}" aria-pressed="${S.checkin === v}"><span class="oi">${I[ic](22)}</span><span class="ot">${l}</span></button>`).join('')}</div>
     <div class="dock"><button class="btn primary wide" type="button" data-act="reveal" data-val="call" ${S.checkin ? '' : 'disabled'}>Show my call</button></div>` },
 
-  call: { n: 'Karar', t: 50, r: () => {
+  call: { n: 'Karar', t: 53, r: () => {
     const c = CALL_W12, kept = S.kept.w12;
     return `${navtop('', c.date)}
     <section class="block ${S.reveal ? 'reveal' : ''}" aria-label="The call">

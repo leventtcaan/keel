@@ -10,21 +10,19 @@ import { Card } from '@/components/Card';
 import { RangeText } from '@/components/RangeText';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
-import { type Seen, updateNote, widthFactor } from '@/projection/projection';
+import { type Seen, figureScenario, updateNote, widthFactor } from '@/projection/projection';
 import { Silhouette } from '@/projection/Silhouette';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { type Loaded, load, weekdayDate } from '@/today/today';
-import { type UnitSystem, weightInput } from '@/units/units';
+import { type UnitSystem, unitOf, weightInput } from '@/units/units';
 
 type Projection = components['schemas']['Projection'];
 type Scenario = NonNullable<Projection['scenarios']>[number];
 type Note = NonNullable<ReturnType<typeof updateNote>>;
 
 const PERCENT = 100;
-// The scenario the figure and the update follow: the middle one, "80 % of planned days" (H2 §4.4).
-const FIGURE_SHARE = 0.8;
 
 /**
  * The shape projection (K-606, U12, prototype 4.5). Off unless turned on here; turning it on goes through the SCOFF
@@ -126,10 +124,6 @@ export default function ProjectionScreen() {
   );
 }
 
-function figureScenario(scenarios: Scenario[]): Scenario | undefined {
-  return scenarios.find((scenario) => scenario.adherence === FIGURE_SHARE) ?? scenarios[Math.floor(scenarios.length / 2)];
-}
-
 function reportByName(report: (problem: { name: string }) => void, error: unknown) {
   report({ name: error instanceof Error ? error.name : 'Unknown' }); // by name only (V3)
 }
@@ -216,10 +210,6 @@ function Options({ onKeep, onOff }: { onKeep: () => void; onOff: () => void }) {
       <Button label={t('projection.view.off')} variant="ghost" size="sm" onPress={onOff} />
     </View>
   );
-}
-
-function unitOf(units: UnitSystem): string {
-  return t(units === 'METRIC' ? 'units.kgUnit' : 'units.lbUnit');
 }
 
 const styles = StyleSheet.create({

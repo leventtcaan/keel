@@ -362,6 +362,10 @@
     "confidence": "Confidence {level}",
     "level": { "LOW": "Low", "MEDIUM": "Medium", "HIGH": "High" },
     "nextCall": "Next call {date}",
+    "ahead": {
+      "one": "In 1 week",
+      "other": "In {count} weeks"
+    },
     "weeksSpoken": "{weeks} weeks ago {first}, now {latest}",
     "section": {
       "why": "Why",
