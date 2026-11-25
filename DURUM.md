@@ -5,7 +5,13 @@ guncelleme: 2026-11-25
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (25 Kas gece — 9c-4a: karar ekranı, PR #780 otomatik birleşmede)
+## ▶ DEVAM NOKTASI (25 Kas gece — 9c-4b: karar ekranında "8 hafta sonra", PR #782 otomatik birleşmede)
+**9c-4a birleşti (#780).** **9c-4b (K-1232, #781 → PR #782):** uyuma en yakın senaryonun aralığı + uyum payı, bütçe 53 (Levent). **Yalnız projeksiyon açıkken
+(SCOFF, ADR-050); projeksiyon/SCOFF ADR-069 ile emekli olduğu için bugün kimsede görünmez — Levent: "kod girsin, kapalı kalsın".**
+**Eklentiler (Levent, 25 Kas):** pyright-lsp, superpowers, caveman, claude-mem → `keel/.claude/settings.local.json` (local kapsam, repoya girmez). claude-mem Bun ister,
+Bun kurulu değil (Levent kurar); eklentiler yeni oturumda etkin. **Sıradaki:** 9c-5 bugünün antrenman satırı (TodayCard).
+
+## (önceki) ▶ DEVAM NOKTASI (25 Kas gece — 9c-4a: karar ekranı, PR #780 otomatik birleşmede)
 **9c-3 birleşti (#778).** **9c-4a (K-1231, #779 → PR #780):** karar ekranı basis'ten hafta grafiği (tek VoiceOver öğesi, yükseklik ayrılı), tarih + güven tek satır,
 "Ne değişiyor"/"Neden" başlıkları, bütçe 50, Uygulamada kum haplar. **ADR-094 Ek 1 (Levent):** 8 hafta aralığı uyuma en yakın senaryoyla, bütçe 50, Uygulamada kalır.
 Mevcut testler değişmedi (K1 yok). Tam jest 312/312 (boş makinede). **Sıradaki:** 9c-4b "8 hafta sonra" aralığı (projeksiyon, uyuma en yakın senaryo) →
