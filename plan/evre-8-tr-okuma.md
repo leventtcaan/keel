@@ -1,5 +1,7 @@
 # Türkçe metin okuma listesi (Levent, 1.0.1'den önce)
 
+> **25 Kas 2026: Levent onayladı** (onay sayfası, 26 madde): bugünkü çeviriler kalır; aşağıdaki iki öneri seçilmedi (ADR-091 Ek 8).
+
 Çeviri: PR #753 (`data/copy/tr.json`, 3.022 anahtar). PR gövdesinde ajanın emin olmadığı ~40 anahtar listeli. Simülatör yürüyüşünde (25 Kas) göze çarpanlar:
 
 | Anahtar | Bugünkü | Öneri |
