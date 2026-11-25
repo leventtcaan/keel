@@ -3051,6 +3051,41 @@
       "minutes": "Bugün {steps} adım kaldı. Bu yaklaşık {minutes} dakikalık yürüyüş."
     }
   },
+  "walkMap": {
+    "title": "Yürüyüş haritası",
+    "mapLabel": "Yerlerinin ve ikisi arasındaki yürüyüşün haritası",
+    "searchLabel": "Adres ya da yer ara",
+    "search": "Ara",
+    "searchNote": "Arama Apple Haritalar'ı kullanır; yerlerin bu telefonda kalır.",
+    "holdHint": "Ya da haritaya basılı tut.",
+    "noMatch": "Bir şey bulunamadı. Başka sözcükler dene ya da haritaya basılı tut.",
+    "searchFailed": "Arama yapılamadı. Bağlantını kontrol edip tekrar dene.",
+    "resultLabel": "{name}, {address}. Bu yeri kullan.",
+    "nameLabel": "Bu yere ad ver",
+    "save": "Yeri kaydet",
+    "saveLabel": "Bu yeri kaydet",
+    "cancel": "Vazgeç",
+    "invalid": "Bir ad ver.",
+    "failed": "Kaydedilemedi. Tekrar dene.",
+    "full": "En fazla sekiz yer eklenir. Yenisi için birini sil.",
+    "places": "Yerlerin",
+    "none": "Henüz yer yok.",
+    "pick": "Aralarındaki yürüyüşü görmek için iki yere dokun.",
+    "from": "Nereden",
+    "to": "Nereye",
+    "placeLabel": "{name}. Başlangıç ya da bitiş olarak kullanmak için dokun.",
+    "removeLabel": "{name} yerini sil",
+    "measuring": "Yürüyüş ölçülüyor",
+    "leg": "Tek yön {distance}, yaklaşık {steps} adım",
+    "legApprox": "Tek yön yaklaşık {distance}, yaklaşık {steps} adım. Apple Haritalar rota vermedi, bu bir tahmin.",
+    "round": "Gidiş dönüş {steps} adım",
+    "saveWalk": "Yürüyüş olarak kaydet",
+    "saveWalkLabel": "{name} yürüyüşünü Yürüyüşlerim'e kaydet",
+    "walkSaved": "Yürüyüşlerim'e kaydedildi. Bugünkü yürüyüş satırı bunu kullanabilir.",
+    "walkFull": "Yürüyüşlerim'de üç yürüyüş var. Önce oradan birini sil.",
+    "walkExists": "Zaten Yürüyüşlerim'de.",
+    "routeName": "{from} ile {to}"
+  },
   "units": {
     "kg": "{value} kg",
     "lb": "{value} lb",
@@ -3612,7 +3647,9 @@
       "rowLabel": "{name}, tek yön {distance}",
       "full": "En fazla üç yürüyüş eklenir. Yenisi için birini sil.",
       "invalid": "Bir ad ve 1,8 gibi bir mesafe gir.",
-      "failed": "Kaydedilemedi. Tekrar dene."
+      "failed": "Kaydedilemedi. Tekrar dene.",
+      "map": "Haritayı aç",
+      "mapLabel": "Yürüyüş haritasını aç"
     },
     "units": {
       "title": "Birimler",
