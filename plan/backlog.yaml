@@ -6112,7 +6112,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: doing
+    status: done
     depends_on: [K-1231]
     why: "ADR-094 Ek 1 (Levent): karar ekranında tahmin aralığı, kişinin uyumuna en yakın senaryoyla; projeksiyonun sağlık kapısı (ADR-050) korunur"
     acceptance:
