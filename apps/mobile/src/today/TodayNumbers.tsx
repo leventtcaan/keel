@@ -109,7 +109,7 @@ export function TodayNumbers({ protein, steps, weight, walk = null, units }: Pro
       const open = openHealth;
       tiles.push(
         <Tile key="steps" id="steps" icon="figure.walk" value={t('thisWeek.numbers.steps', { steps: count, target })} label={t('progress.targets.label.steps', { steps: count, target })}
-          share={steps.target > 0 ? { value: (steps.steps ?? 0) / steps.target, label: t('progress.targets.label.steps', { steps: count, target }) } : null}
+          share={steps.target > 0 ? { value: steps.steps / steps.target, label: t('progress.targets.label.steps', { steps: count, target }) } : null}
           hint={t('progress.targets.hint.health')} onPress={open} />,
       );
     }

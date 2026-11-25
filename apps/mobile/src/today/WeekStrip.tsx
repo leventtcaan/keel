@@ -42,7 +42,8 @@ export function WeekStrip({ head, days, onDay }: { head: WeekHead; days: StripDa
         {right === null ? null : <Text style={[styles.headText, { color: color.textSecondary }]}>{right}</Text>}
       </View>
       <View testID="week-strip" accessibilityLabel={t('thisWeek.strip.label')} style={styles.week}>
-        <View testID="week-line" style={[styles.line, styles.fullLine, { backgroundColor: color.track }]} />
+        {/* The line still to walk is the control edge, 3:1 on the path's ground (WCAG 1.4.11); the walked part over it is coral. */}
+        <View testID="week-line" style={[styles.line, styles.fullLine, { backgroundColor: color.edge }]} />
         {walked}
         {days.map((day) => (
           <Pressable

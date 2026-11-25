@@ -45,9 +45,29 @@ describe.each(['light', 'dark'] as ColorScheme[])('%s theme', (scheme) => {
 
     test('the line runs through the days; the walked part, Monday to today, is coral', async () => {
       await show();
-      expect(flat('week-line')).toMatchObject({ backgroundColor: p.track });
+      // The line still to walk reads on the ground (3:1, WCAG 1.4.11): the control edge, whose contrast contrast.test.ts holds.
+      expect(flat('week-line')).toMatchObject({ backgroundColor: p.edge });
       // Seven equal columns: Monday's centre is at 1/14, today (Tuesday, the second) one column on.
       expect(flat('week-walked')).toMatchObject({ backgroundColor: p.progress, left: `${100 / 14}%`, width: `${100 / 7}%` });
+    });
+
+    test.each([0, 1, 2, 3, 4, 5, 6])('today the day at %i: the walked part ends at its centre', async (at) => {
+      await render(
+        <ThemeProvider scheme={scheme}>
+          <WeekStrip head={{ week: null, record: null, countedByWeek: true }} days={DAYS.map((day, i) => ({ ...day, today: i === at }))} />
+        </ThemeProvider>,
+      );
+      expect(flat('week-walked')).toMatchObject({ left: `${100 / 14}%`, width: `${(at * 100) / 7}%` });
+    });
+
+    test('no day is today (a week shown that is not this one): no walked part', async () => {
+      await render(
+        <ThemeProvider scheme={scheme}>
+          <WeekStrip head={{ week: null, record: null, countedByWeek: true }} days={DAYS.map((day) => ({ ...day, today: false }))} />
+        </ThemeProvider>,
+      );
+      expect(screen.queryByTestId('week-walked')).toBeNull();
+      expect(screen.getByTestId('week-line')).toBeOnTheScreen();
     });
 
     test("today is ringed in coral and its letter is coral; no other day has a ring", async () => {
@@ -86,6 +106,7 @@ describe.each(['light', 'dark'] as ColorScheme[])('%s theme', (scheme) => {
     test('sit in the sand strip with no tile of their own', async () => {
       await show();
       expect(flat('food-line')).toMatchObject({ backgroundColor: p.surface });
+      expect(within(screen.getByTestId('food-line')).getByTestId('number-protein')).toBeOnTheScreen();
       expect(flat('number-protein').backgroundColor).toBeUndefined();
       expect(flat('number-steps').backgroundColor).toBeUndefined();
     });
