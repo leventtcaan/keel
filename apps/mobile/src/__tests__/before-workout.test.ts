@@ -3,7 +3,7 @@
  * asked today ("Last 180 kg × 8, today 180 kg × 9"). No prose: numbers the server already has (lastBestSet, nextLoadKg, nextReps).
  */
 import type { components } from '@/api/schema';
-import { estimatedMinutes, lastTodayLine } from '@/train/beforeWorkout';
+import { estimatedMinutes, lastLine, lastTodayLine } from '@/train/beforeWorkout';
 import { workoutParams } from '@/train/params';
 
 type Schemas = components['schemas'];
@@ -51,5 +51,20 @@ describe('last time beside today', () => {
 
   test('the first session of a move: nothing to compare, no line', () => {
     expect(lastTodayLine(planned({ nextLoadKg: 60, nextReps: 8 }), bench, 'METRIC')).toBeNull();
+  });
+});
+
+describe('the last time alone (This week, 9c-5: today\'s ask stands on the right)', () => {
+  test('a target known: only the last best set, never the ask', () => {
+    expect(lastLine(planned({ lastBestSet: { loadKg: 80, reps: 8 }, nextLoadKg: 80, nextReps: 9 }), bench, 'METRIC')).toBe('Last 80 kg × 8');
+  });
+
+  test('in pounds, as real weights', () => {
+    expect(lastLine(planned({ lastBestSet: { loadKg: 83.91, reps: 8 }, nextLoadKg: 86.18, nextReps: 8 }), bench, 'IMPERIAL')).toBe('Last 185 lb × 8');
+  });
+
+  test('the first session of a move, or a move not read: no line', () => {
+    expect(lastLine(planned({ nextLoadKg: 60, nextReps: 8 }), bench, 'METRIC')).toBeNull();
+    expect(lastLine(planned({ lastBestSet: { loadKg: 80, reps: 8 } }), undefined, 'METRIC')).toBeNull();
   });
 });

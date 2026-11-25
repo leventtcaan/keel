@@ -13,7 +13,7 @@ import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { type Changed, changeToday } from '@/train/changes';
-import { lastTodayLine } from '@/train/beforeWorkout';
+import { lastLine } from '@/train/beforeWorkout';
 import { MoveThumb } from '@/train/MoveThumb';
 import { OpenElsewhere } from '@/train/OpenElsewhere';
 import { workoutParams } from '@/train/params';
@@ -121,13 +121,12 @@ export function TodayCard({ card, program, today, parts, onChanged }: Props) {
 
   const name = (day: Schemas['ProgramDay'] | null) => (day === null ? '' : dayName(day));
   const fine = (text: string) => <Text style={[styles.fine, { color: color.textSecondary }]}>{text}</Text>;
-  const head = (title: string, session: string, right: ReactNode, tag?: string) => (
+  // The label is today's name, in coral text as the week path's today (ADR-094 §1 progressText); the session's name is
+  // the card's heading, in the serif voice (§2).
+  const head = (title: string, session: string, right: ReactNode) => (
     <View style={styles.head}>
       <View style={styles.titles}>
-        <View style={styles.row}>
-          <Text style={[styles.title, { color: color.muted }]}>{title}</Text>
-          {tag === undefined ? null : <Text style={[styles.tag, { color: color.accent, backgroundColor: color.accentSoft }]}>{tag}</Text>}
-        </View>
+        <Text style={[styles.title, { color: color.progressText }]}>{title}</Text>
         <Text accessibilityRole="header" style={[styles.session, { color: color.text }]}>
           {session}
         </Text>
@@ -146,15 +145,16 @@ export function TodayCard({ card, program, today, parts, onChanged }: Props) {
       <Icon name="slider.horizontal.3" size="small" tone="accent" />
     </Pressable>
   );
-  // The cardio line (prototype `.cl`): planned minutes, or done once the server says it was logged today (K-1029).
+  // The cardio line (prototype `.cl`): planned minutes, or done once the server says it was logged today (K-1029). No ruled
+  // line above it (ADR-094: ground and space group things); its icon and the "and N more" line part it from the moves.
   const cardioLine = (minutes: number | null, logged: boolean, optional: boolean) =>
     logged ? (
-      <View style={[styles.row, styles.cardio, { borderTopColor: color.line }]}>
+      <View testID="cardio-row" style={styles.row}>
         <Icon name="checkmark.circle.fill" size="small" tone="accent" testID="cardio-icon" />
         <Text style={[styles.fine, { color: color.textSecondary }]}>{t('thisWeek.today.cardioDone')}</Text>
       </View>
     ) : minutes === null ? null : (
-      <View style={[styles.row, styles.cardio, { borderTopColor: color.line }]}>
+      <View testID="cardio-row" style={styles.row}>
         <Icon name="figure.run" size="small" tone="muted" testID="cardio-icon" />
         <Text style={[styles.fine, { color: color.textSecondary }]}>{optional ? t('thisWeek.today.cardioOptional') : t('thisWeek.today.cardio', { minutes })}</Text>
       </View>
@@ -273,15 +273,20 @@ export function TodayCard({ card, program, today, parts, onChanged }: Props) {
         .map((planned) => {
           const id = planned.exerciseId;
           const move = parts?.moves.get(id);
-          // The last time beside today's ask, by the Train card's own function (the same words); the headline moves only.
-          const before = lastTodayLine(planned, move, units);
-          // That line already carries today's ask when it has one, so the target is not said twice (as the Train card does).
-          const asked = before !== null && planned.nextLoadKg !== undefined && planned.nextReps !== undefined;
-          const last = before === null ? null : <Text style={[styles.last, { color: color.accent }]}>{before}</Text>;
-          const target = asked ? null : <Text style={[styles.target, { color: color.text }]}>{targetOf(planned, move, units)}</Text>;
+          // The last time under the name, quiet: history, not the decision (petrol) and not today's ask (ADR-094 §1).
+          const before = lastLine(planned, move, units);
+          const last = before === null ? null : <Text style={[styles.last, { color: color.textSecondary }]}>{before}</Text>;
+          // Today's ask is the move's own number on the right, said once, in the rounded numbers (9c-5).
+          // Read apart from the last time, VoiceOver says it is today's ("Today: 80 kg × 8").
+          const ask = targetOf(planned, move, units);
+          const target = (
+            <Text accessibilityLabel={t('dayPlan.today', { plan: ask })} style={[styles.target, { color: color.text }]}>
+              {ask}
+            </Text>
+          );
           return (
             <View key={id} testID={`move-${id}`} style={styles.move}>
-              <MoveThumb equipment={move?.equipment} />
+              <MoveThumb equipment={move?.equipment} onSurface />
               <View style={styles.moveText}>
                 <Text style={[styles.moveName, { color: color.text }]}>{exerciseName(id, parts?.moves)}</Text>
                 {last}
@@ -310,7 +315,7 @@ export function TodayCard({ card, program, today, parts, onChanged }: Props) {
     }
   }
   return (
-    <View testID="today-card" accessibilityLabel={t('thisWeek.today.label')} style={[styles.card, { backgroundColor: color.surface }]}>
+    <View testID="today-card" accessibilityLabel={t('thisWeek.today.label')} style={[styles.card, { backgroundColor: color.tintDay }]}>
       {body}
       {problem}
     </View>
@@ -322,22 +327,15 @@ const styles = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space.sm },
   titles: { flex: 1, gap: tokens.space.xs },
   row: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, flexWrap: 'wrap' },
-  title: { fontSize: tokens.type.label, fontWeight: tokens.weight.bold },
-  tag: {
-    fontSize: tokens.type.label,
-    fontWeight: tokens.weight.bold,
-    borderRadius: tokens.radius.chip,
-    paddingHorizontal: tokens.space.sm,
-    overflow: 'hidden',
-  },
-  session: { ...tokens.face.displayBold, fontSize: tokens.type.heading },
+  title: { fontSize: tokens.type.label, fontWeight: tokens.weight.semibold },
+  session: { ...tokens.face.display, fontSize: tokens.type.heading },
   fine: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.semibold },
   move: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
   moveText: { flex: 1 },
-  last: { fontSize: tokens.type.bodySmall },
+  last: { fontSize: tokens.type.bodySmall, fontVariant: ['tabular-nums'] },
   moveName: { fontSize: tokens.type.body },
-  target: { fontSize: tokens.type.body, fontVariant: ['tabular-nums'] },
-  cardio: { borderTopWidth: tokens.border.hairline, paddingTop: tokens.space.sm },
+  // The number keeps its width and the name wraps beside it (a long name, large Dynamic Type).
+  target: { ...tokens.face.displaySemiBold, fontSize: tokens.type.body, fontVariant: ['tabular-nums'], textAlign: 'right', flexShrink: 0 },
   icon: { width: tokens.size.touch, height: tokens.size.touch, alignItems: 'center', justifyContent: 'center' },
   dim: { opacity: tokens.opacity.dim },
   tick: { width: tokens.size.touch, height: tokens.size.touch, borderRadius: tokens.size.touch / 2, alignItems: 'center', justifyContent: 'center' },
