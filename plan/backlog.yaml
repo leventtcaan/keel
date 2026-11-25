@@ -6141,6 +6141,26 @@ tasks:
     refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md", "prototip/gorsel-yon/y5-e1.jpg", "plan/tasarim-gezinti-notlari.md"]
     learn: ["Bir rengin rolünü bileşen bileşen korumak", "Aynı zeminde kaybolan öğe"]
 
+  - id: K-1234
+    title: "Koç ekranı Sıcak defter dilinde: baloncuklar, karar kartı, hazır sorular, giriş çubuğu (9c-6a)"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: M
+    status: done
+    depends_on: [K-1233]
+    why: "Gezinti Durak 1 (Levent): 'Bu kararı sor' sonrası koç ekranı ve klavye düzeni 'hiç uğraşılmamış, çok zayıf'. ADR-094 §3 Koç ve taslak y5-e3: kişinin baloncuğu petrol, koçun cevabı kum, cevap içi kart adaçayı, hazır sorular kum hap, giriş çubuğu altta sabit"
+    acceptance:
+      - "Kişinin sorusu petrol baloncuk (beyaz/onAccent metin), sağda; koçun cevabı kum zeminli baloncuk, solda"
+      - "Cevaptaki karar kartı adaçayı (tintTime) zeminde; sayfa renginde ters/düz blok yok"
+      - "Hazır sorular kum hap; bir ekranda en çok bir petrol dolgu (gönder)"
+      - "Giriş çubuğu altta sabit: kum zeminli alan, petrol gönder düğmesi (ikon, erişilebilir etiketli); klavye açılınca çubuk klavyenin üstünde"
+      - "Mevcut koç davranış testleri değişmeden geçer; yeni metin yok (eklenecekse bütçe ve Türkçe)"
+      - "AI'ın ücretli üyelikte merkeze alınması ve eylem kartları (Plana ekle) bu kartın dışında: Levent kararı (9c-6b)"
+    tests: ["coach-warm-notebook.test.tsx", "coach-screen.test.tsx", "non-text-contrast.test.tsx", "npm run check"]
+    refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md", "prototip/gorsel-yon/y5-e3.jpg", "plan/kararlar/ADR-092-konusan-koc.md", "plan/tasarim-gezinti-notlari.md"]
+    learn: ["Sohbet ekranında klavye ve sabit çubuk", "Baloncuk rolleri"]
+
   - id: K-1227
     title: "Yerler arası yürüme rotası haritada (noktalı), adım karşılığı"
     milestone: M12
