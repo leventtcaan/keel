@@ -1,0 +1,322 @@
+{
+  "source": "TÜBER 2022 (T.C. Sağlık Bakanlığı, Türkiye Beslenme Rehberi, Yayın No 1031) ve Rakıcıoğlu ve ark., Yemek ve Besin Fotoğraf Kataloğu: Ölçü ve Miktarlar (Hacettepe Üniv.), arastirma/ham/tur3-openai-turkomp-yayin-2026-11-25.md §2.3 Tablo 1-2 üzerinden aktarıldı. Her değer ayrıca kendi satırında [doğrulanmadı] etiketli: değerler araştırma notundan alındı (Antigravity çıktısı), birincil PDF henüz açılıp karşılaştırılmadı. Aralık veren hücrelerde (ör. yemek kaşığı yağ 10-12 g) orta değer yazıldı; tepeleme/silme ayrımı yok, yoğurtta tepeleme (25 g).",
+  "units": [
+    {
+      "id": "su-bardagi",
+      "ml": 200
+    },
+    {
+      "id": "cay-bardagi",
+      "ml": 100
+    },
+    {
+      "id": "yemek-kasigi",
+      "ml": 15
+    },
+    {
+      "id": "tatli-kasigi",
+      "ml": 10
+    },
+    {
+      "id": "cay-kasigi",
+      "ml": 5
+    },
+    {
+      "id": "corba-kepcesi",
+      "ml": 150
+    },
+    {
+      "id": "servis-kepcesi",
+      "ml": 110
+    }
+  ],
+  "classes": [
+    {
+      "id": "yogurt",
+      "first": [
+        "yogurt",
+        "yoghurt",
+        "cacik"
+      ],
+      "grams": {
+        "su-bardagi": {
+          "grams": 200,
+          "table": "Tablo 2",
+          "status": "[doğrulanmadı]"
+        },
+        "cay-bardagi": {
+          "grams": 100,
+          "table": "Tablo 2",
+          "status": "[doğrulanmadı]"
+        },
+        "yemek-kasigi": {
+          "grams": 25,
+          "table": "Tablo 2",
+          "status": "[doğrulanmadı]"
+        },
+        "tatli-kasigi": {
+          "grams": 10,
+          "table": "Tablo 2",
+          "status": "[doğrulanmadı]"
+        },
+        "cay-kasigi": {
+          "grams": 5,
+          "table": "Tablo 2",
+          "status": "[doğrulanmadı]"
+        }
+      }
+    },
+    {
+      "id": "oil",
+      "first": [
+        "oil",
+        "zeytinyagi",
+        "yag",
+        "yagi"
+      ],
+      "grams": {
+        "su-bardagi": {
+          "grams": 180,
+          "table": "Tablo 2",
+          "status": "[doğrulanmadı]"
+        },
+        "cay-bardagi": {
+          "grams": 90,
+          "table": "Tablo 2",
+          "status": "[doğrulanmadı]"
+        },
+        "yemek-kasigi": {
+          "grams": 11,
+          "table": "Tablo 2",
+          "status": "[doğrulanmadı]"
+        },
+        "tatli-kasigi": {
+          "grams": 5,
+          "table": "Tablo 2",
+          "status": "[doğrulanmadı]"
+        },
+        "cay-kasigi": {
+          "grams": 2.5,
+          "table": "Tablo 2",
+          "status": "[doğrulanmadı]"
+        }
+      }
+    },
+    {
+      "id": "flour",
+      "first": [
+        "flour",
+        "un"
+      ],
+      "grams": {
+        "su-bardagi": {
+          "grams": 105,
+          "table": "Tablo 2",
+          "status": "[doğrulanmadı]"
+        },
+        "cay-bardagi": {
+          "grams": 52,
+          "table": "Tablo 2",
+          "status": "[doğrulanmadı]"
+        },
+        "yemek-kasigi": {
+          "grams": 10,
+          "table": "Tablo 2",
+          "status": "[doğrulanmadı]"
+        },
+        "tatli-kasigi": {
+          "grams": 5,
+          "table": "Tablo 2",
+          "status": "[doğrulanmadı]"
+        },
+        "cay-kasigi": {
+          "grams": 2.5,
+          "table": "Tablo 2",
+          "status": "[doğrulanmadı]"
+        }
+      }
+    },
+    {
+      "id": "sugar",
+      "first": [
+        "sugar",
+        "sugars",
+        "seker"
+      ],
+      "grams": {
+        "su-bardagi": {
+          "grams": 175,
+          "table": "Tablo 2",
+          "status": "[doğrulanmadı]"
+        },
+        "cay-bardagi": {
+          "grams": 87,
+          "table": "Tablo 2",
+          "status": "[doğrulanmadı]"
+        },
+        "yemek-kasigi": {
+          "grams": 12,
+          "table": "Tablo 2",
+          "status": "[doğrulanmadı]"
+        },
+        "tatli-kasigi": {
+          "grams": 7,
+          "table": "Tablo 2",
+          "status": "[doğrulanmadı]"
+        },
+        "cay-kasigi": {
+          "grams": 4,
+          "table": "Tablo 2",
+          "status": "[doğrulanmadı]"
+        }
+      }
+    },
+    {
+      "id": "cooked-grain",
+      "first": [
+        "rice",
+        "bulgur",
+        "pilav",
+        "pirinc"
+      ],
+      "also": [
+        "cooked",
+        "pisirilmis",
+        "haslanmis",
+        "pilav"
+      ],
+      "grams": {
+        "su-bardagi": {
+          "grams": 145,
+          "table": "Tablo 2",
+          "status": "[doğrulanmadı]"
+        },
+        "cay-bardagi": {
+          "grams": 72,
+          "table": "Tablo 2",
+          "status": "[doğrulanmadı]"
+        },
+        "yemek-kasigi": {
+          "grams": 32,
+          "table": "Tablo 2",
+          "status": "[doğrulanmadı]"
+        },
+        "tatli-kasigi": {
+          "grams": 15,
+          "table": "Tablo 2",
+          "status": "[doğrulanmadı]"
+        },
+        "cay-kasigi": {
+          "grams": 7,
+          "table": "Tablo 2",
+          "status": "[doğrulanmadı]"
+        }
+      }
+    },
+    {
+      "id": "cooked-legume",
+      "first": [
+        "beans",
+        "chickpeas",
+        "lentils",
+        "peas",
+        "fasulye",
+        "nohut",
+        "mercimek"
+      ],
+      "also": [
+        "cooked",
+        "pisirilmis",
+        "haslanmis"
+      ],
+      "grams": {
+        "su-bardagi": {
+          "grams": 150,
+          "table": "Tablo 2",
+          "status": "[doğrulanmadı]"
+        },
+        "cay-bardagi": {
+          "grams": 75,
+          "table": "Tablo 2",
+          "status": "[doğrulanmadı]"
+        },
+        "yemek-kasigi": {
+          "grams": 30,
+          "table": "Tablo 2",
+          "status": "[doğrulanmadı]"
+        },
+        "tatli-kasigi": {
+          "grams": 15,
+          "table": "Tablo 2",
+          "status": "[doğrulanmadı]"
+        },
+        "cay-kasigi": {
+          "grams": 7,
+          "table": "Tablo 2",
+          "status": "[doğrulanmadı]"
+        }
+      }
+    },
+    {
+      "id": "liquid",
+      "first": [
+        "water",
+        "milk",
+        "juice",
+        "buttermilk",
+        "ayran",
+        "kefir",
+        "su",
+        "sut",
+        "soup",
+        "corba",
+        "corbasi"
+      ],
+      "except": [
+        "chocolate",
+        "powder",
+        "dry",
+        "dried",
+        "condensed",
+        "cheese"
+      ],
+      "grams": {
+        "su-bardagi": {
+          "grams": 200,
+          "table": "Tablo 2",
+          "status": "[doğrulanmadı]"
+        },
+        "cay-bardagi": {
+          "grams": 100,
+          "table": "Tablo 2",
+          "status": "[doğrulanmadı]"
+        },
+        "yemek-kasigi": {
+          "grams": 15,
+          "table": "Tablo 2",
+          "status": "[doğrulanmadı]"
+        },
+        "tatli-kasigi": {
+          "grams": 10,
+          "table": "Tablo 2",
+          "status": "[doğrulanmadı]"
+        },
+        "cay-kasigi": {
+          "grams": 5,
+          "table": "Tablo 2",
+          "status": "[doğrulanmadı]"
+        },
+        "corba-kepcesi": {
+          "grams": 150,
+          "table": "Tablo 1",
+          "status": "[doğrulanmadı]"
+        },
+        "servis-kepcesi": {
+          "grams": 110,
+          "table": "Tablo 1",
+          "status": "[doğrulanmadı]"
+        }
+      }
+    }
+  ]
+}

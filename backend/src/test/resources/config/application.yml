@@ -77,3 +77,6 @@ logging:
     "[org.apache.catalina.core.ContainerBase.[Tomcat-2].[localhost].[/].[dispatcherServlet]]": off
     "[org.apache.catalina.core.ContainerBase.[Tomcat-3].[localhost].[/].[dispatcherServlet]]": off
     "[org.apache.catalina.core.ContainerBase.[Tomcat-4].[localhost].[/].[dispatcherServlet]]": off
+
+# The folded search text is backfilled by the test that asks for it (SearchFoldedTests), not in the background under the others.
+keel.nutrition.search.fold-backfill.enabled: false

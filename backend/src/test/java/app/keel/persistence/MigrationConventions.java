@@ -37,7 +37,7 @@ final class MigrationConventions {
             "\\bview\\s+(?:if\\s+not\\s+exists\\s+)?",
             "\\breferences\\s+",
             "\\b(?:into|from|join|like)\\s+(?:only\\s+)?",
-            "(?<!on\\s)\\bupdate\\s+(?:only\\s+)?",
+            "(?<!on\\s)(?<!or\\s)\\bupdate\\s+(?:only\\s+)?",
             "\\bpartition\\s+of\\s+",
             "\\bschema\\s+(?:if\\s+not\\s+exists\\s+)?",
             "\\bcomment\\s+on\\s+column\\s+")

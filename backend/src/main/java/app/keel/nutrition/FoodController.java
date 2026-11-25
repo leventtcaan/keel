@@ -33,7 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
  * asked; logging a meal (K-209) is health data and is.
  */
 @RestController
-@EnableConfigurationProperties({FoodController.NutritionLimits.class, FoodRanking.Weights.class, FoodScoring.Settings.class, FoodPortions.Settings.class})
+@EnableConfigurationProperties({FoodController.NutritionLimits.class, FoodRanking.Weights.class, FoodScoring.Settings.class, FoodPortions.Settings.class, SearchFoldBackfill.Settings.class})
 class FoodController {
 
     /** What a request can ask for (keel.nutrition). */

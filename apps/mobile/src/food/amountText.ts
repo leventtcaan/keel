@@ -2,6 +2,7 @@ import type { components } from '@/api/schema';
 import { t } from '@/copy';
 
 import { PORTION } from './draft';
+import { TURKISH_MEASURE, isTurkishMeasure } from './turkishMeasures';
 
 const GRAMS = 'g';
 
@@ -22,10 +23,16 @@ export function amountLine(name: string, amount: Pick<components['schemas']['Amo
   return t('food.suggestions.item', { name, quantity: String(quantity), unit });
 }
 
-/** A unit on its chip: grams and a recipe's portions in the app's words, a serving by its name. */
+/** A unit on its chip: grams, a recipe's portions and a Turkish measure in the app's words, a serving by its name. */
 export function unitLabel(unit: string): string {
   if (unit === GRAMS) return t('meal.item.grams');
+  if (isTurkishMeasure(unit)) return t(`meal.item.measure.${unit.slice(TURKISH_MEASURE.length)}`);
   return unit === PORTION ? t('meal.item.portions') : unit;
+}
+
+/** What a chip says for a unit: the server's label for its own portions ("1 large"), the app's words for a Turkish measure. */
+export function portionLabel(portions: readonly { unit: string; label: string }[] | undefined, unit: string): string {
+  return isTurkishMeasure(unit) ? unitLabel(unit) : (portions?.find((p) => p.unit === unit)?.label ?? unitLabel(unit));
 }
 
 /**
