@@ -1,11 +1,19 @@
 ---
-guncelleme: 2026-11-25
+guncelleme: 2026-11-26
 ---
 # DURUM
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (26 Kas — 9c-6a birleşti; 9c-6b kararları ADR-092 Ek 2)
+## ▶ DEVAM NOKTASI (26 Kas gece — 9c-6b-1: Bu hafta'da koç satırı, PR otomatik birleşmede)
+**9c-6b-1 (K-1235, #787):** ana ekranda kararın altında yalnız "Koça mesaj yaz" satırı (koçun kutusunun metni, yeni metin yok); dokununca koç bu kararla ve
+klavyesi açık gelir; satır yalnız karar ya da kilitli karar varken. **Levent (26 Kas):** simülatörde üç varyanttan 1'i seçti (hap yok: "kullanıcı gözüyle alakasız")
+→ ADR-092 Ek 2 #1, ana ekran bütçesi 74 → 77. Koçta "Bu kararı açıkla" yalnız sunucu sağlayıcı açık (`GET /v1/consents/ai-offer` 200) ve abonelik aktif
+(`GET /v1/subscription`) derken; "Bu karar neden?" her zaman. Cevap gelene kadar starter sırası bekler (inceleme: kayma). K1 yok: yalnız fikstüre "sağlayıcı açık +
+ücretli" eklendi (coach-screen, coach-warm-notebook). **Disk 26 Kas'ta doldu:** Chrome'un `code_sign_clone` klasörü 177 GB'tı, Levent sildi.
+**Sıradaki:** K-1236 eylem kartları.
+
+## (önceki) ▶ DEVAM NOKTASI (26 Kas — 9c-6a birleşti; 9c-6b kararları ADR-092 Ek 2)
 **9c-5 birleşti (#784).** **9c-6a (K-1234, #785):** koç ekranı y5-e3 diliyle: kişinin baloncuğu petrol (sağda), koçun sözü kum baloncuk (solda), cevaptaki karar
 kartı adaçayı zeminde serif başlıklı (DecisionBlock yerine), hazır sorular çerçevesiz kum hap (yatay kayan iki sıra, kutunun üstünde), giriş tek satır "Koça mesaj
 yaz" + yuvarlak petrol gönder (ekranın tek dolgusu). **Klavye hatası düzeldi:** sheet içinde KeyboardAvoidingView kutuyu klavyenin altında bırakıyordu (ölçüm

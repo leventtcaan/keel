@@ -332,6 +332,54 @@ describe("the first week (ADR-077 #1, Ek 2)", () => {
   });
 });
 
+// ADR-092 Ek 2 #1 (Levent, 26 Nov; 9c-6b-1): the coach is reached from under the week's call by one line, no tab. Levent saw the
+// row with two and with three of the day's questions and kept the line alone: the questions read unrelated to a user here.
+describe("the coach's line under the call (ADR-092 Ek 2 #1)", () => {
+  const line = () => screen.getByRole('button', { name: t('coach.input') });
+
+  test('one line under the call, in the words of the coach\'s own box; no ready questions beside it', async () => {
+    await show();
+    expect(line()).toBeOnTheScreen();
+    expect(screen.getAllByRole('button', { name: t('coach.input') })).toHaveLength(1);
+    for (const chip of ['today.chips.why', 'today.chips.swap', 'today.chips.weighIn', 'today.chips.start', 'coach.meal.chip']) {
+      expect(screen.queryByText(t(chip))).toBeNull();
+    }
+  });
+
+  test('opens the coach about this call, ready to write in; the plan is not touched from here', async () => {
+    await show();
+    await fireEvent.press(line());
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/coach', params: { decisionId: decision().id, write: '1' } });
+    expect(mockPOST).not.toHaveBeenCalled();
+    expect(mockDELETE).not.toHaveBeenCalled();
+  });
+
+  test('a call not unlocked: the line opens the coach on no call (its words stay locked, ADR-091 Ek 1)', async () => {
+    mockAnswers['/v1/decisions/current'] = ok(LOCKED);
+    await show();
+    await fireEvent.press(line());
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/coach', params: { write: '1' } });
+  });
+
+  test.each([
+    ['the first week, no call yet', () => firstWeek()],
+    ['without the health data consent', () => {
+      for (const path of ['/v1/consistency', '/v1/decisions/current', '/v1/first-weeks', '/v1/weigh-ins', '/v1/days/{day}/budget']) mockAnswers[path] = refused(403, 'CONSENT_REQUIRED');
+    }],
+    ['a week paused', () => {
+      mockAnswers['/v1/state'] = ok({ kind: 'BUSY', since: '2026-12-22' });
+    }],
+    ['Monday, the check-in open', () => {
+      onPhone(new Date(2026, 11, 28, 8, 0));
+      mockAnswers['/v1/check-ins/current'] = ok({ weekOf: '2026-12-28', questions: [{ kind: 'HUNGER' }], answered: false });
+    }],
+  ])('no line where there is no call to ask about: %s', async (_, arrange) => {
+    arrange();
+    await show();
+    expect(screen.queryByRole('button', { name: t('coach.input') })).toBeNull();
+  });
+});
+
 describe('Monday, the check-in open (#home-mon)', () => {
   beforeEach(() => {
     onPhone(new Date(2026, 11, 28, 8, 0)); // Monday 28 Dec 2026

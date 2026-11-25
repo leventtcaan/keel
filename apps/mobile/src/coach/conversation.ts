@@ -136,6 +136,23 @@ export async function readMeal(api: ApiClient, text: string): Promise<Read> {
 /** The starter questions, the coach's first suggestions (ADR-092 #7): the first two are sent as they are; the third is the start of the user's own. */
 export const STARTERS = ['why', 'week', 'whatif'] as const;
 
+/**
+ * The starters on offer (ADR-092 Ek 2 #3). "Explain this call" asks the model what the day's free chip "Why this call?" answers on
+ * the phone, so it is offered only while the model is there and paid for; the other two stay (they end at the paywall when not).
+ */
+export function starters(modelOn: boolean): string[] {
+  return STARTERS.filter((starter) => modelOn || starter !== 'why').map((starter) => `coach.starter.${starter}`);
+}
+
+/**
+ * Whether the coach's model is on for this account, in the server's words, not guessed (K6): the server has a provider (its AI
+ * offer; 404 while it has none, ADR-064 #5) and the subscription is active (ADR-091 b). Either one unread is not on.
+ */
+export async function modelOn(api: ApiClient): Promise<boolean> {
+  const [offer, subscription] = await Promise.all([load(() => api.GET('/v1/consents/ai-offer')), load(() => api.GET('/v1/subscription'))]);
+  return offer.state === 'ready' && subscription.state === 'ready' && subscription.value.active;
+}
+
 /** One message of the conversation, as the phone shows it: the user's own words (which they may ask the coach to remember), or the coach's. */
 export type Past =
   | { from: 'user'; text: string; id: string }

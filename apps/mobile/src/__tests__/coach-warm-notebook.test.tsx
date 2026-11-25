@@ -34,7 +34,14 @@ const DECISION: Schemas['Decision'] = {
 const CALL = { decisionId: 'd1', copyKey: 'decision.adjust_calories.not_toward_goal', nextReview: '2026-10-05', nextCallOn: '2026-10-12' };
 
 let mockSent: Answer = ok({ mode: 'DETERMINISTIC', copyKey: 'coach.answer.call', call: CALL });
-const mockAnswers: Record<string, Answer> = { '/v1/decisions/current': ok(DECISION), '/v1/program': refused(404, 'NOT_FOUND'), '/v1/weigh-ins': ok([]) };
+// The model there and paid for (ADR-092 Ek 2 #3), so every starter is on offer: the server's AI offer and an active subscription.
+const mockAnswers: Record<string, Answer> = {
+  '/v1/decisions/current': ok(DECISION),
+  '/v1/program': refused(404, 'NOT_FOUND'),
+  '/v1/weigh-ins': ok([]),
+  '/v1/consents/ai-offer': ok({ provider: 'OpenAI', dataTypes: ['COACH_QUESTION'] }),
+  '/v1/subscription': ok({ appUserId: '6f1c2a4e-0d9b-4a7e-9c3f-2b8e5d1a7c40', active: true, status: 'ACTIVE' }),
+};
 const mockServices = {
   api: {
     GET: jest.fn(async (path: string) => mockAnswers[path] ?? refused(404, 'NOT_FOUND')),

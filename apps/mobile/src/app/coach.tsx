@@ -8,7 +8,7 @@ import { Button } from '@/components/Button';
 import { Icon } from '@/components/Icon';
 import { announce } from '@/components/ProblemText';
 import { ScreenTitle } from '@/components/ScreenTitle';
-import { MEAL_CHIP, ask, chipAnswer, coachChips, isChip, STARTERS, loadHistory, readMeal, remember, type Remembered, type Said } from '@/coach/conversation';
+import { MEAL_CHIP, ask, chipAnswer, coachChips, isChip, loadHistory, modelOn, readMeal, remember, starters, type Remembered, type Said } from '@/coach/conversation';
 import { t } from '@/copy';
 import { weeklyNote } from '@/coach/note';
 import { amountLine } from '@/food/amountText';
@@ -43,10 +43,11 @@ type Kept = Message & { id: number };
  * the server; a message the user typed can be kept in the coach's memory when they say so, and the keyboard's own microphone
  * dictates. The plan never changes from here: the card leads to why, and applying a call is Today's.
  * Opened as a sheet over any tab; a chip on Today opens it on that chip, and the call's "Ask about this call" opens it about that
- * call (`decisionId`). Its first suggestions are the three starter questions.
+ * call (`decisionId`). Its first suggestions are the starter questions ("Explain this call" only with the model on, ADR-092 Ek 2).
  */
 export default function CoachScreen() {
-  const { chip, decisionId } = useLocalSearchParams<{ chip?: string; decisionId?: string }>();
+  // `write`: opened from This week's line, which looks like the box (ADR-092 Ek 2 #1): the box takes the keyboard at once.
+  const { chip, decisionId, write } = useLocalSearchParams<{ chip?: string; decisionId?: string; write?: string }>();
   const { api } = useAppServices();
   const { color } = useTheme();
   const [day] = useState(() => localDay(new Date()));
@@ -62,6 +63,18 @@ export default function CoachScreen() {
   const [waiting, setWaiting] = useState(false);
   const [remembered, setRemembered] = useState<Record<number, Remembered>>({});
   const opened = useRef(false);
+  // Whether "Explain this call" is on offer (ADR-092 Ek 2 #3): only when the server says the model is there and paid for. Until it has
+  // answered (null) the starters wait, so none is put in front of the others under a finger.
+  const [explains, setExplains] = useState<boolean | null>(null);
+  useEffect(() => {
+    let live = true;
+    void modelOn(api).then((on) => {
+      if (live) setExplains(on);
+    });
+    return () => {
+      live = false;
+    };
+  }, [api]);
 
   // The day's parts the chips are made of: the call, the program, today's weigh-ins.
   useEffect(() => {
@@ -214,9 +227,10 @@ export default function CoachScreen() {
             ready={
               text !== ''
                 ? []
-                : [{ keys: STARTERS.map((starter) => `coach.starter.${starter}`), onChip: onStarter }, ...(today === null ? [] : [{ keys: coachChips(today, day), onChip }])]
+                : [...(explains === null ? [] : [{ keys: starters(explains), onChip: onStarter }]), ...(today === null ? [] : [{ keys: coachChips(today, day), onChip }])]
             }
             label={t(mode === 'meal' ? 'coach.meal.input' : 'coach.input')}
+            focus={write === '1'}
             text={text}
             onChangeText={setText}
             canSend={!waiting && text.trim() !== ''}
@@ -421,7 +435,7 @@ const BOX_LINES = 3;
  * and the petrol send, the screen's one fill. The field's name and the dictation hint (the keyboard's own microphone) are read
  * by VoiceOver; the name is also the words inside the empty box.
  */
-function Bar({ ready, label, text, onChangeText, canSend, onSend }: { ready: Ready[]; label: string; text: string; onChangeText: (text: string) => void; canSend: boolean; onSend: () => void }) {
+function Bar({ ready, label, focus, text, onChangeText, canSend, onSend }: { ready: Ready[]; label: string; focus: boolean; text: string; onChangeText: (text: string) => void; canSend: boolean; onSend: () => void }) {
   const { color } = useTheme();
   // The box grows to three lines at the reader's text size (Dynamic Type), then scrolls.
   const { fontScale } = useWindowDimensions();
@@ -435,6 +449,7 @@ function Bar({ ready, label, text, onChangeText, canSend, onSend }: { ready: Rea
           accessibilityLabel={label}
           accessibilityHint={t('coach.dictate')}
           placeholder={label}
+          autoFocus={focus}
           placeholderTextColor={color.muted}
           value={text}
           onChangeText={onChangeText}
