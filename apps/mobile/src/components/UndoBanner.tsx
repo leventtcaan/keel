@@ -82,7 +82,7 @@ export function UndoBanner({ lead, detail, onUndo, onDismiss, durationMs = worko
   return (
     <Animated.View
       testID="undo-banner"
-      style={[styles.band, inline ? styles.inline : { bottom: bottomOffset }, { backgroundColor: color.decisionBackground, opacity: reduce ? 1 : fade }]}>
+      style={[styles.band, inline ? styles.inline : { bottom: bottomOffset }, { backgroundColor: color.surface, borderColor: color.line, opacity: reduce ? 1 : fade }]}>
       <InverseSurface>
         <BannerWords lead={lead} detail={detail} />
         {undoButton}
@@ -115,6 +115,8 @@ const styles = StyleSheet.create({
     gap: tokens.space.sm,
     paddingLeft: tokens.space.lg,
     paddingRight: tokens.space.xs,
+    // A sand band over the content needs its edge: on a sand card it would otherwise melt into it (ADR-094 §3).
+    borderWidth: tokens.border.hairline,
   },
   inline: { position: 'relative', left: 0, right: 0, marginHorizontal: tokens.space.lg, marginBottom: tokens.space.sm },
   words: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', columnGap: tokens.space.sm },

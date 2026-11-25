@@ -26,7 +26,7 @@ export function ProgressBar({ value, label }: Props) {
       accessibilityLabel={label}
       accessibilityValue={{ min: 0, max: 100, now }}
       style={[styles.track, { backgroundColor: color.track, borderColor: color.edge }]}>
-      <AnimatedFill testID="progress-fill" percent={now} style={[styles.fill, { backgroundColor: color.accent }]} />
+      <AnimatedFill testID="progress-fill" percent={now} style={[styles.fill, { backgroundColor: color.progress }]} />
     </View>
   );
 }

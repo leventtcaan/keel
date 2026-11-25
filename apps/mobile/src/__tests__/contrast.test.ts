@@ -1,6 +1,7 @@
 /**
  * Text on filled controls, and every text colour on its surface, must reach WCAG AA (4.5:1) in both themes and in the
- * workout's focus mode (ADR-070) — including the inverse palette that components receive inside the decision block.
+ * workout's focus mode (ADR-094; ADR-070 before it), including the palette components receive inside the decision block
+ * and on the three soft grounds. Marks (progress, edges) reach 3:1 (WCAG 1.4.11).
  */
 import { inverse } from '@/theme/theme';
 import { focusPalette, type Palette, palettes } from '@/theme/tokens';
@@ -104,7 +105,7 @@ describe.each(Object.entries(palettes))('%s accent and warning as text', (_, p) 
   });
 });
 
-test('nothing inside the decision block is drawn in the warning colour: there it would fall under 4.5:1', () => {
+test('nothing inside the decision block is drawn in the warning colour: the call is never a warning', () => {
   // inverse() keeps the warning's colour (a warning looks the same everywhere), so it may not appear on the block. A file
   // that puts something in the block builds it in variables too (the raw-text guard), so the whole file is held to it.
   const fs = jest.requireActual<typeof import('fs')>('fs');
@@ -117,7 +118,6 @@ test('nothing inside the decision block is drawn in the warning colour: there it
   expect(block.length).toBeGreaterThan(2);
   const warned = block.filter((file) => /color\.warn|['"]warn['"]/.test(fs.readFileSync(file, 'utf8')));
   expect(warned.map((file) => path.relative(path.resolve(__dirname, '..'), file))).toEqual([]);
-  for (const [, p] of Object.entries(palettes)) expect(contrast(p.warn, inverse(p).background)).toBeLessThan(4.5);
 });
 
 // K-816 (WCAG 1.4.11 Non-text Contrast, Apple's Sufficient Contrast): what shows that something is a control, or in what
@@ -163,5 +163,33 @@ describe.each(Object.entries(palettes))('%s palette: the macro colours', (_, p) 
 
   test('the three macro colours are three different colours', () => {
     expect(new Set([p.macroProtein, p.macroCarbs, p.macroFat]).size).toBe(3);
+  });
+});
+
+// ADR-094 §1: the three soft grounds group things (time, the day, a suggestion); text and the accent read on each of them.
+const tints = ['tintTime', 'tintDay', 'tintSuggest'] as const;
+describe.each(Object.entries({ light: palettes.light, dark: palettes.dark, focus: focusPalette }))('%s palette: the soft grounds', (_, p) => {
+  test.each(tints)('text, muted text, the accent and the progress label reach 4.5:1 on %s', (tint) => {
+    for (const ink of ['text', 'textSecondary', 'muted', 'accent', 'progressText'] as const) {
+      expect(contrast(p[ink], p[tint])).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  test.each(tints)('the edge of a control reaches 3:1 on %s', (tint) => {
+    expect(contrast(p.edge, p[tint])).toBeGreaterThanOrEqual(3);
+  });
+});
+
+// ADR-094 §1: coral marks where you are and how far you came (today, the walked part of the week, a progress bar's fill).
+describe.each(Object.entries({ light: palettes.light, dark: palettes.dark, focus: focusPalette }))('%s palette: progress', (_, p) => {
+  test('the progress mark reaches 3:1 on the page, a surface, each soft ground and the empty track', () => {
+    for (const ground of ['background', 'surface', 'track', ...tints] as const) {
+      expect(contrast(p.progress, p[ground])).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  test('the progress label reaches 4.5:1 on the page and a surface', () => {
+    expect(contrast(p.progressText, p.background)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(p.progressText, p.surface)).toBeGreaterThanOrEqual(4.5);
   });
 });

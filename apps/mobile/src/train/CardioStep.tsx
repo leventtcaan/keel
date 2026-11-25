@@ -56,10 +56,10 @@ const styles = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.md },
   thumb: { width: tokens.size.primaryButton, height: tokens.size.primaryButton, borderRadius: tokens.radius.card, alignItems: 'center', justifyContent: 'center' },
   grow: { flex: 1, gap: tokens.space.xs },
-  name: { fontFamily: tokens.font.display, fontSize: tokens.type.heading },
+  name: { ...tokens.face.display, fontSize: tokens.type.heading },
   small: { fontSize: tokens.type.bodySmall },
   pace: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, padding: tokens.space.sm, borderRadius: tokens.radius.card },
   kicker: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.bold },
-  value: { fontFamily: tokens.font.display, fontSize: tokens.type.heading },
+  value: { ...tokens.face.display, fontSize: tokens.type.heading },
   note: { flexShrink: 1, maxWidth: '55%', textAlign: 'right' },
 });

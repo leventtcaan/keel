@@ -31,7 +31,7 @@ export function OptionCard({ title, body, tag, hero = false, icon, selected, dis
   const { color } = useTheme();
   const label = [title, tag, body].filter((part) => part !== undefined).join(', ');
   const ring = hero
-    ? { backgroundColor: color.decisionBackground, borderColor: selected ? color.accent : color.decisionBackground }
+    ? { backgroundColor: color.surface, borderColor: selected ? color.accent : color.surface }
     : { backgroundColor: color.surface, borderColor: selected ? color.text : color.surface };
   const content = <Content title={title} body={body} tag={tag} hero={hero} icon={icon} selected={selected} />;
   return (
@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
   withIcon: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.md },
   tile: { width: tokens.size.optionIcon, height: tokens.size.optionIcon, borderRadius: tokens.radius.button, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold, flexGrow: 1, flexShrink: 1 },
-  heroTitle: { fontFamily: tokens.font.display, fontSize: tokens.type.decisionTitle, flexGrow: 1, flexShrink: 1 },
+  heroTitle: { ...tokens.face.display, fontSize: tokens.type.decisionTitle, flexGrow: 1, flexShrink: 1 },
   body: { fontSize: tokens.type.bodySmall },
   tag: {
     alignSelf: 'flex-start',

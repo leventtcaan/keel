@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   card: { borderRadius: tokens.radius.card, padding: tokens.space.md, gap: tokens.space.sm },
-  dayName: { fontFamily: tokens.font.display, fontSize: tokens.type.decisionTitle },
+  dayName: { ...tokens.face.display, fontSize: tokens.type.decisionTitle },
   tag: {
     alignSelf: 'flex-start',
     fontSize: tokens.type.label,

@@ -1,7 +1,7 @@
 # apps/mobile/ — CLAUDE.md
 
 Expo SDK 57 · React Native · TypeScript · expo-router. Kök kurallar: `../../CLAUDE.md`, `../../docs/anayasa.md`.
-Görsel dil **turkuaz, açık varsayılan, Light/Dark/System seçici, antrenman koyu odak modu** (ADR-070; sistem katmanı Native Tabs, ADR-016) · mimari ADR-006.
+Görsel dil **Sıcak defter: kırık beyaz kâğıt, petrol = karar ve eylem, mercan = bugün ve ilerleme, yumuşak renkli gruplar, serif başlık + rounded rakam, büyük harf yok** (ADR-094; renk rolü tablosu her ekran ve pop-up için tek kaynak, `colour-roles.test.ts`). Light/Dark/System seçici ve koyu odak modu sürer (ADR-070 #3-#4); sistem katmanı Native Tabs (ADR-016) · mimari ADR-006.
 
 ## Expo her sürümde değişir — ezberden yazma
 Expo her SDK'da API kırar; hatırladığın API büyük ihtimalle taşınmış ya da kalkmıştır. Bir Expo/EAS/React Native API'sine

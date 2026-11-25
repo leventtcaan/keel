@@ -6031,6 +6031,28 @@ tasks:
     tests: ["katalog testi", "npm run check"]
     refs: ["plan/evre-8-butun-urun.md", "plan/kararlar/ADR-091-evre-8-kararlari.md"]
 
+  - id: K-1228
+    title: "Görsel dil Sıcak defter: token'lar, fontlar, temel bileşenler (9c-1)"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: M
+    status: done
+    depends_on: []
+    why: "ADR-094 (Levent, 25 Kas): ADR-070'in turkuaz + siyah ters blok + Barlow büyük harf dili yerine petrol karar, mercan ilerleme, kırık beyaz kâğıt; her ekran ve pop-up aynı rol tablosu"
+    acceptance:
+      - "tokens.ts: ADR-094 §1 rol tablosu iki temada (paper, ink, decision petrol, progress mercan, üç tint, warn); siyah ters blok kalkar (decision* = sayfa)"
+      - "Fontlar: başlık ui-serif, sayılar ui-rounded (RN 0.86.3 RCTFontUtils.mm'de doğrulandı, K6); Barlow ve paketi kalkar; ağırlık tokens.face'ten"
+      - "Büyük harf hiçbir yerde yok (ScreenTitle, DecisionBlock dahil)"
+      - "Seçili çip petrol; birincil düğme petrol hap"
+      - "Mimari test: mercan ve öneri zemini uyarı/birincil düğme dosyalarında kullanılamaz"
+    tests:
+      - "contrast.test.ts: metin ≥4,5:1, işaret ≥3:1, iki tema + odak modu, yeni roller"
+      - "visual-language.test.ts ADR-094'e göre; typography.test.ts uppercase istisnası yok; fonts.test.ts sistem fontları"
+      - "npm run check"
+    refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md", "prototip/gorsel-yon/README.md"]
+    learn: ["Tasarım token'ları", "Renk rolleri", "iOS sistem font tasarımları"]
+
   - id: K-1227
     title: "Yerler arası yürüme rotası haritada (noktalı), adım karşılığı"
     milestone: M12

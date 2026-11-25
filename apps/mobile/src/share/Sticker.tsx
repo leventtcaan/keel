@@ -8,9 +8,12 @@ import { type Item, MARGIN, layout } from './layout';
 import { shareParams } from './params';
 import type { Sticker, WeekCell } from './stickers';
 
-/** What a sticker is drawn with: the decision block's colours (ADR-070), the same in light and dark — it is an image. */
-const ink = palettes.light;
-const TONE = { text: ink.decisionText, accent: ink.accentInk, muted: ink.decisionTextSecondary };
+/**
+ * What a sticker is drawn with: the dark palette (ADR-094 §4), the same whatever the person's theme, since it is an image
+ * that sits on a photo: light words on a see-through dark panel, petrol for the weeks.
+ */
+const ink = palettes.dark;
+const TONE = { text: ink.text, accent: ink.accent, muted: ink.textSecondary };
 const PANEL_RADIUS = 56;
 const CELL_RADIUS = 12;
 const OUTLINE = 4;
@@ -55,7 +58,7 @@ export const StickerImage = forwardRef<Svg, Props>(function StickerImage({ stick
       accessibilityLabel={[t('share.spoken'), ...pieces].join('. ')}>
       {ground}
       <G transform={`translate(0 ${canvas - height - (backdrop === undefined ? 0 : MARGIN)})`}>
-        <Rect x={0} y={0} width={shareParams.storyWidth} height={height} rx={PANEL_RADIUS} fill={ink.decisionBackground} fillOpacity={tokens.opacity.scrim} />
+        <Rect x={0} y={0} width={shareParams.storyWidth} height={height} rx={PANEL_RADIUS} fill={ink.background} fillOpacity={tokens.opacity.scrim} />
         {items.map((item, i) => (item.kind === 'text' ? <Words key={i} item={item} /> : <Cell key={i} item={item} />))}
       </G>
     </Svg>
@@ -68,8 +71,10 @@ function Words({ item }: { item: Extract<Item, { kind: 'text' }> }) {
       x={item.x}
       y={item.y}
       fontSize={item.size}
+      // react-native-svg resolves families through the old RCTFont path, which knows no system designs: the serif falls back
+      // to the system font, so the display words keep their weight (the sticker's own design is a later 9c part).
       fontFamily={item.font === 'display' ? tokens.font.display : undefined}
-      fontWeight={item.font === 'display' ? undefined : tokens.weight.bold}
+      fontWeight={item.font === 'display' ? tokens.weight.black : tokens.weight.bold}
       textAnchor={item.anchor ?? 'start'}
       fill={TONE[item.tone]}>
       {item.text}

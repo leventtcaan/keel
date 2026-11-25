@@ -79,5 +79,5 @@ export function WeightCard({ part, units }: { part: WeightPart; units: UnitSyste
 const styles = StyleSheet.create({
   change: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.bold },
   fine: { fontSize: tokens.type.bodySmall },
-  big: { fontFamily: tokens.font.display, fontSize: tokens.type.heading, fontVariant: ['tabular-nums'] },
+  big: { ...tokens.face.display, fontSize: tokens.type.heading, fontVariant: ['tabular-nums'] },
 });

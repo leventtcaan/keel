@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
   meta: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.semibold },
   line: { fontSize: tokens.type.body },
   center: { textAlign: 'center' },
-  count: { fontFamily: tokens.font.displayBold, fontSize: tokens.type.number },
+  count: { ...tokens.face.displayBold, fontSize: tokens.type.number },
   chevron: { alignItems: 'flex-end', justifyContent: 'center' },
   ritual: {
     alignSelf: 'center',
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginVertical: tokens.space.sm,
   },
-  ritualOpen: { fontFamily: tokens.font.display, fontSize: tokens.type.heading },
+  ritualOpen: { ...tokens.face.display, fontSize: tokens.type.heading },
   ritualCall: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.semibold },
   dim: { opacity: tokens.opacity.dim },
 });

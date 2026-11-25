@@ -115,7 +115,7 @@ export function DayTotals({ budget, targets, summary, hint }: Props) {
 }
 
 const styles = StyleSheet.create({
-  big: { fontFamily: tokens.font.displayBold, fontSize: tokens.type.number, fontVariant: ['tabular-nums'] },
+  big: { ...tokens.face.displayBold, fontSize: tokens.type.number, fontVariant: ['tabular-nums'] },
   macros: { flexDirection: 'row', gap: tokens.space.md },
   macro: { flex: 1, gap: 2 },
   macroName: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.xs },

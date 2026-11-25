@@ -1,15 +1,13 @@
 // constitution-audit (tools/anayasa-denetimi.sh)
 /**
- * Type rules from ADR-016, checked in the source:
- * - uppercase only in the screen title and the decision title;
+ * Type rules, checked in the source:
+ * - no capitals anywhere, headings included (ADR-094 §2: sentence case; long Turkish words choke in capitals);
  * - font names, sizes and weights only in the token file (K2) — components read tokens.font / tokens.type.
  */
 import { offenders, PATTERNS } from './support/sourceScan';
 
-const UPPERCASE_ALLOWED = ['components/ScreenTitle.tsx', 'components/DecisionBlock.tsx'];
-
-test('uppercase appears only in the screen title and the decision title', () => {
-  expect(offenders(PATTERNS.uppercase, UPPERCASE_ALLOWED)).toEqual([]);
+test('no uppercase transform anywhere (ADR-094 §2)', () => {
+  expect(offenders(PATTERNS.uppercase)).toEqual([]);
 });
 
 test('no font name literal outside the token file', () => {

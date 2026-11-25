@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
   dot: { width: tokens.size.swatch, height: tokens.size.swatch, borderRadius: tokens.size.swatch / 2 },
   guide: { flex: 1, paddingHorizontal: tokens.space.xl, paddingVertical: tokens.space.sm },
   count: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
-  number: { fontFamily: tokens.font.display, fontSize: tokens.type.countdown },
+  number: { ...tokens.face.display, fontSize: tokens.type.countdown },
   hint: { marginHorizontal: tokens.space.lg, marginBottom: tokens.space.md, borderRadius: tokens.radius.card, overflow: 'hidden', paddingHorizontal: tokens.space.md, paddingVertical: tokens.space.sm },
   hintText: { fontSize: tokens.type.bodySmall, textAlign: 'center' },
   bar: { paddingHorizontal: tokens.space.xl, paddingVertical: tokens.space.md, gap: tokens.space.md },

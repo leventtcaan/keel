@@ -31,7 +31,7 @@ test('shows "Saved" and an Undo button, on the inverse band', async () => {
   await renderIt(<UndoBanner onUndo={() => {}} onDismiss={() => {}} />);
   expect(screen.getByText(t('undoBanner.saved'))).toBeOnTheScreen();
   expect(screen.getByRole('button', { name: t('undoBanner.undo') })).toBeOnTheScreen();
-  expect(StyleSheet.flatten(screen.getByTestId('undo-banner').props.style)).toMatchObject({ backgroundColor: palettes.light.decisionBackground });
+  expect(StyleSheet.flatten(screen.getByTestId('undo-banner').props.style)).toMatchObject({ backgroundColor: palettes.light.surface, borderColor: palettes.light.line });
   expect(StyleSheet.flatten(screen.getByText(t('undoBanner.saved')).props.style).color).toBe(palettes.light.decisionText);
 });
 

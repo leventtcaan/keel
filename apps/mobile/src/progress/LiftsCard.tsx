@@ -88,7 +88,7 @@ export function LiftsCard({ lifts, moves, units }: { lifts: Lift[]; moves: Reado
 const styles = StyleSheet.create({
   chips: { flexDirection: 'row', gap: tokens.space.xs },
   top: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: tokens.space.sm },
-  big: { fontFamily: tokens.font.display, fontSize: tokens.type.heading, fontVariant: ['tabular-nums'] },
+  big: { ...tokens.face.display, fontSize: tokens.type.heading, fontVariant: ['tabular-nums'] },
   fine: { fontSize: tokens.type.bodySmall, flexShrink: 1, textAlign: 'right' },
   effort: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.bold },
 });

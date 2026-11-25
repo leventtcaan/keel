@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
   band: { borderBottomLeftRadius: tokens.radius.card * 2, borderBottomRightRadius: tokens.radius.card * 2, paddingHorizontal: tokens.space.lg, paddingBottom: tokens.space.md, gap: tokens.space.xs },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: tokens.size.touch },
   brand: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
-  brandName: { fontFamily: tokens.font.display, fontSize: tokens.type.heading },
+  brandName: { ...tokens.face.display, fontSize: tokens.type.heading },
   body: { padding: tokens.space.lg, gap: tokens.space.md },
   part: { gap: tokens.space.md },
   plans: { gap: tokens.space.sm },

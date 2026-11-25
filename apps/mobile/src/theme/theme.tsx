@@ -1,7 +1,8 @@
 /**
- * Theme: the palette for the person's appearance choice (ADR-070 #3: Light, Dark or System, Light until they pick), the
- * inverse surface that the decision block and selected states use, and the focus mode that the workout and its
- * celebration always take (ADR-070 #4). Components read colours only through useTheme().
+ * Theme: the palette for the person's appearance choice (ADR-070 #3, kept by ADR-094: Light, Dark or System, Light until
+ * they pick), the decision block's palette, and the focus mode that the workout and its celebration always take (ADR-070 #4,
+ * in ADR-094's dark palette). Components read colours only through useTheme(). Under ADR-094 the call sits on the page, so
+ * the block's palette equals the page's; `inverse` stays the one place that would change it.
  */
 import { createContext, type ReactNode, useContext } from 'react';
 import { useColorScheme } from 'react-native';
@@ -34,10 +35,11 @@ export function inverse(p: Palette): Palette {
     track: p.decisionLine,
     accent: p.accentInk,
     onAccent: p.onAccentInk,
-    // The page's primary button is black on light: on the black block it would vanish, so it takes the block's accent.
+    // Inside the block the primary button takes the block's accent (petrol on the page under ADR-094).
     cta: p.accentInk,
     onCta: p.onAccentInk,
-    accentSoft: p.decisionLine,
+    // The block is the page (ADR-094), so a selection keeps its soft petrol ground there too.
+    accentSoft: p.accentSoft,
   };
 }
 

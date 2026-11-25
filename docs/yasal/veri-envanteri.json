@@ -1520,7 +1520,6 @@
    "expo-sqlite"
   ],
   "dependencies": {
-   "@expo-google-fonts/barlow-condensed": null,
    "@expo/ui": null,
    "@kingstinct/react-native-healthkit": null,
    "expo": null,

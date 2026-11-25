@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.md, minHeight: tokens.size.row + tokens.space.md, paddingVertical: tokens.space.sm },
   badge: { width: tokens.size.touch, height: tokens.size.touch, borderRadius: tokens.radius.button, alignItems: 'center', justifyContent: 'center' },
   // A large number, in the display face (ADR-070 #5).
-  badgeNumber: { fontFamily: tokens.font.display, fontSize: tokens.type.heading, fontVariant: ['tabular-nums'] },
+  badgeNumber: { ...tokens.face.display, fontSize: tokens.type.heading, fontVariant: ['tabular-nums'] },
   grow: { flex: 1 },
   doneMark: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.xs },
   loading: { alignSelf: 'flex-start', minHeight: tokens.size.touch },

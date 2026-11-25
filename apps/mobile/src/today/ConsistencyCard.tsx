@@ -79,7 +79,7 @@ function recordLine(record: Consistency['record']): string {
 const styles = StyleSheet.create({
   label: { fontSize: tokens.type.label, fontWeight: tokens.weight.bold },
   number: {
-    fontFamily: tokens.font.display,
+    ...tokens.face.display,
     fontSize: tokens.type.screenTitle,
   },
   text: { fontSize: tokens.type.body },
@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
   },
   part: { flex: 1, gap: tokens.space.xs },
   partNumber: {
-    fontFamily: tokens.font.displayBold,
+    ...tokens.face.displayBold,
     fontSize: tokens.type.number,
   },
 });

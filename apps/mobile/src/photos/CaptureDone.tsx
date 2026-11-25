@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
   thumb: { flex: 1, aspectRatio: THUMB_RATIO, borderRadius: tokens.radius.card, overflow: 'hidden', justifyContent: 'flex-end', alignItems: 'flex-start' },
   tag: { margin: tokens.space.sm, borderRadius: tokens.radius.card, overflow: 'hidden', paddingHorizontal: tokens.space.sm, paddingVertical: tokens.space.xs },
   tagText: { fontSize: tokens.type.label, fontWeight: tokens.weight.semibold },
-  next: { fontFamily: tokens.font.display, fontSize: tokens.type.number },
+  next: { ...tokens.face.display, fontSize: tokens.type.number },
   small: { fontSize: tokens.type.bodySmall },
   strong: { fontWeight: tokens.weight.bold },
   buttons: { paddingHorizontal: tokens.space.lg, paddingBottom: tokens.space.md },

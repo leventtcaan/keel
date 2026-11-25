@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { ThemeProvider } from '@/theme/theme';
+import { palettes } from '@/theme/tokens';
 import { ProgramEditor } from '@/train/ProgramEditor';
 import type { EditedDay } from '@/train/programEdit';
 import type { Move } from '@/train/trainData';
@@ -139,7 +140,7 @@ describe('removing and ordering (B3)', () => {
   test('the remove day control is red with a trash icon, not a grey ghost button', async () => {
     await show();
     const control = screen.getByRole('button', { name: t('programEditor.removeDayLabel', { day: 'Upper' }) });
-    expect(within(control).getByText(t('programEditor.removeDay'))).toHaveStyle({ color: '#D12F1F' });
+    expect(within(control).getByText(t('programEditor.removeDay'))).toHaveStyle({ color: palettes.light.warn });
   });
 
   test("a move's options are the system action sheet: up and down only where there is room, remove in red, Cancel last", async () => {

@@ -27,5 +27,5 @@ export function RangeText({ low, high, unit }: Props) {
 }
 
 const styles = StyleSheet.create({
-  range: { fontFamily: tokens.font.displayBold, fontSize: tokens.type.number, fontVariant: ['tabular-nums'] },
+  range: { ...tokens.face.displayBold, fontSize: tokens.type.number, fontVariant: ['tabular-nums'] },
 });

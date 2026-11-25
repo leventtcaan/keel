@@ -7,7 +7,7 @@ import { tokens } from '@/theme/tokens';
 type Props = {
   /** Small line above the title, e.g. the decision label. */
   eyebrow?: string;
-  /** The decision itself; one of the two places uppercase is allowed (ADR-016). */
+  /** The decision itself, in the serif voice, sentence case (ADR-094 §2). */
   title: string;
   /** Beside the eyebrow, on its line: a small mark such as the arrow of a block that opens (This week's hero, K-969). */
   aside?: ReactNode;
@@ -24,7 +24,7 @@ type Props = {
   testID?: string;
 };
 
-/** The weekly call: black block on white, and inverted in dark mode (ADR-016). */
+/** The weekly call. It sits on the page in the serif voice; the inverted black block is gone (ADR-094 §1). */
 export function DecisionBlock({ eyebrow, aside, title, children, onPress, pressLabel, pressHint, footer, testID }: Props) {
   const { color } = useTheme();
   const body = (
@@ -74,8 +74,7 @@ const styles = StyleSheet.create({
   /** Beside the mark the eyebrow takes the rest of the line, so its box is wider than its text (Bold Text, K-910). */
   eyebrowBeside: { flexGrow: 1, flexShrink: 1 },
   title: {
-    fontFamily: tokens.font.display,
+    ...tokens.face.display,
     fontSize: tokens.type.decisionTitle,
-    textTransform: 'uppercase',
   },
 });

@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
   walk: { fontSize: tokens.type.label, fontWeight: tokens.weight.semibold, fontVariant: ['tabular-nums'] },
   tile: { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0, minHeight: tokens.size.touch, borderRadius: tokens.radius.card, padding: tokens.space.sm, gap: tokens.space.xs },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  value: { fontFamily: tokens.font.displayBold, fontSize: tokens.type.body, fontVariant: ['tabular-nums'] },
+  value: { ...tokens.face.displayBold, fontSize: tokens.type.body, fontVariant: ['tabular-nums'] },
   note: { fontSize: tokens.type.label, fontWeight: tokens.weight.semibold, fontVariant: ['tabular-nums'] },
   dim: { opacity: tokens.opacity.dim },
 });

@@ -11,6 +11,7 @@ import { createRef } from 'react';
 import type Svg from 'react-native-svg';
 
 import { t } from '@/copy';
+import { palettes } from '@/theme/tokens';
 import { layout } from '@/share/layout';
 import { shareParams } from '@/share/params';
 import { type Backdrop, StickerImage } from '@/share/Sticker';
@@ -144,4 +145,23 @@ describe('the share code stays on the phone and away from the photos', () => {
     // The writing itself is in the scan: the device side lives under src/share.
     expect(FILES.map((f) => path.basename(f))).toContain('deviceShare.ts');
   });
+});
+
+// ADR-094 §4: a sticker is an image on the user's photo, drawn in the dark palette whatever the theme: light words on a
+// see-through dark panel. (Under ADR-070 it used the black decision block; the block is the page now.)
+test('the sticker is drawn in the dark palette, its words reading on the dark panel', () => {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'share', 'Sticker.tsx'), 'utf8');
+  expect(source).toMatch(/const ink = palettes\.dark;/);
+  expect(source).not.toMatch(/palettes\.light/);
+  const lum = (hex: string) => {
+    const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  };
+  const ratio = (a: string, b: string) => {
+    const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+    return (hi + 0.05) / (lo + 0.05);
+  };
+  for (const ink of [palettes.dark.text, palettes.dark.accent, palettes.dark.textSecondary]) {
+    expect(ratio(ink, palettes.dark.background)).toBeGreaterThanOrEqual(4.5);
+  }
 });

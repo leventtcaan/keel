@@ -1,16 +1,11 @@
 /**
- * Barlow Condensed weights the app uses, registered under the names in tokens.font (ADR-070 #5: headings and large
- * numbers only; body text is the system font). Loaded at runtime so Expo Go and development builds behave the same.
- * Subpath imports bundle only these three files, not the whole family.
+ * Fonts the app loads at runtime, registered under the names in tokens.font. ADR-094 §2 uses only iOS system designs
+ * (the serif and the rounded design), which React Native resolves by name, so there is nothing to load. A family added
+ * later that is not a system design is registered here; fonts.test.ts holds the two lists together.
  */
-import { BarlowCondensed_600SemiBold } from '@expo-google-fonts/barlow-condensed/600SemiBold';
-import { BarlowCondensed_700Bold } from '@expo-google-fonts/barlow-condensed/700Bold';
-import { BarlowCondensed_900Black } from '@expo-google-fonts/barlow-condensed/900Black';
+import type { useFonts } from 'expo-font';
 
-import { tokens } from './tokens';
+/** What useFonts takes as a map of names to font files. */
+type FontMap = Exclude<Parameters<typeof useFonts>[0], string>;
 
-export const fontAssets = {
-  [tokens.font.display]: BarlowCondensed_900Black,
-  [tokens.font.displayBold]: BarlowCondensed_700Bold,
-  [tokens.font.displaySemiBold]: BarlowCondensed_600SemiBold,
-};
+export const fontAssets: FontMap = {};

@@ -3,6 +3,7 @@
  * Colours are read from the palette, never repeated here, so a palette change cannot make these tests lie.
  */
 import { fireEvent, render, screen, userEvent } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 import type { ReactElement } from 'react';
 
 import { Button } from '@/components/Button';
@@ -39,14 +40,11 @@ describe.each(schemes)('%s theme', (scheme) => {
     });
   });
 
-  test('the DecisionBlock is the inverse surface, its title is uppercase display type', async () => {
+  test('the DecisionBlock sits on the page, its title is the serif voice in sentence case (ADR-094)', async () => {
     await renderIn(scheme, <DecisionBlock testID="d" eyebrow="This week" title="Eat a little more" />);
-    expect(screen.getByTestId('d')).toHaveStyle({ backgroundColor: p.decisionBackground });
-    expect(screen.getByText('Eat a little more')).toHaveStyle({
-      color: p.decisionText,
-      fontFamily: tokens.font.display,
-      textTransform: 'uppercase',
-    });
+    expect(screen.getByTestId('d')).toHaveStyle({ backgroundColor: p.background });
+    expect(screen.getByText('Eat a little more')).toHaveStyle({ color: p.decisionText, ...tokens.face.display });
+    expect(StyleSheet.flatten(screen.getByText('Eat a little more').props.style).textTransform).toBeUndefined();
     expect(screen.getByText('This week')).toHaveStyle({ color: p.accentInk });
     expect(screen.getByRole('header', { name: 'Eat a little more' })).toBeOnTheScreen();
   });
@@ -82,7 +80,7 @@ describe.each(schemes)('%s theme', (scheme) => {
     expect(screen.getByText('Later')).toHaveStyle({ color: p.text });
   });
 
-  test('an unselected Chip is a surface with the control edge (3:1, K-816); a selected one is inverse', async () => {
+  test('an unselected Chip is a surface with the control edge (3:1, K-816); a selected one is petrol on its soft ground (ADR-094)', async () => {
     await renderIn(
       scheme,
       <>
@@ -95,8 +93,8 @@ describe.each(schemes)('%s theme', (scheme) => {
       borderColor: p.edge,
       borderRadius: tokens.radius.chip,
     });
-    expect(screen.getByRole('button', { name: 'On' })).toHaveStyle({ backgroundColor: p.decisionBackground });
-    expect(screen.getByText('On')).toHaveStyle({ color: p.decisionText });
+    expect(screen.getByRole('button', { name: 'On' })).toHaveStyle({ backgroundColor: p.accentSoft, borderColor: p.accent, borderWidth: tokens.border.outline });
+    expect(screen.getByText('On')).toHaveStyle({ color: p.accent });
     expect(screen.getByRole('button', { name: 'On' })).toBeSelected();
     expect(screen.getByRole('button', { name: 'Off' })).not.toBeSelected();
   });
@@ -108,26 +106,22 @@ describe.each(schemes)('%s theme', (scheme) => {
         <Chip label="Hard" selected onPress={() => {}} />
       </DecisionBlock>,
     );
-    expect(screen.getByRole('button', { name: 'Hard' })).toHaveStyle({ backgroundColor: p.decisionText });
-    expect(screen.getByText('Hard')).toHaveStyle({ color: p.decisionBackground });
+    expect(screen.getByRole('button', { name: 'Hard' })).toHaveStyle({ backgroundColor: p.accentSoft, borderColor: p.accent });
+    expect(screen.getByText('Hard')).toHaveStyle({ color: p.accent });
   });
 
-  test('ProgressBar fills with the accent on the track colour', async () => {
+  test('ProgressBar fills with the progress coral on the track colour (ADR-094 §1)', async () => {
     await renderIn(scheme, <ProgressBar value={0.4} label="Protein" />);
     const bar = screen.getByRole('progressbar', { name: 'Protein' });
     // The track's outline is the control edge: the bar's extent is told at 3:1, not by a 1.2:1 fill (K-816).
     expect(bar).toHaveStyle({ backgroundColor: p.track, height: tokens.size.track, borderColor: p.edge, borderWidth: tokens.border.hairline });
-    expect(screen.getByTestId('progress-fill')).toHaveStyle({ backgroundColor: p.accent, width: '40%' });
+    expect(screen.getByTestId('progress-fill')).toHaveStyle({ backgroundColor: p.progress, width: '40%' });
   });
 
-  test('ScreenTitle is an uppercase display header in the text colour', async () => {
+  test('ScreenTitle is a serif header in sentence case, in the text colour (ADR-094)', async () => {
     await renderIn(scheme, <ScreenTitle>Today</ScreenTitle>);
-    expect(screen.getByRole('header', { name: 'Today' })).toHaveStyle({
-      color: p.text,
-      fontFamily: tokens.font.display,
-      fontSize: tokens.type.screenTitle,
-      textTransform: 'uppercase',
-    });
+    expect(screen.getByRole('header', { name: 'Today' })).toHaveStyle({ color: p.text, ...tokens.face.display, fontSize: tokens.type.screenTitle });
+    expect(StyleSheet.flatten(screen.getByRole('header', { name: 'Today' }).props.style).textTransform).toBeUndefined();
   });
 });
 
