@@ -366,3 +366,34 @@ scenarios:
     overrides: {2: {mornings: 3}, 3: {adherence: 0.6}}
     expect: [observing, data_insufficient, continue/toward_goal, continue/toward_goal,
              {is: continue/toward_goal, confidence: medium}, continue/toward_goal]
+
+  # K-1218 (ADR-091 #4, plan/k1218-oneri.md): the set log. `lifts: {id: [[days back, kg, reps, rir], ...]}` is one session of one
+  # set a row, days back from the check-in day; `excluded_days` are days back a lighter or rest week, or a declared state,
+  # takes out. 100 kg x 5 at RIR 2 and 106 kg x 5 at RIR 2: e1RM 6 % up, past the 3 % margin; the log wins where it reads.
+  - id: GS-40
+    title: "The log says the lifts are going up, so a flat cut is not asked about training: the engine decides (GS-22 with a log)"
+    user: {sex: male, phase: cut}
+    # GS-22 without a log asks (week 2, check_in_needed_training). Here the same flat cut has four sessions in 28 days with the
+    # e1RM up 6 %: IMPROVING, no question. Flat over the 14 observed days (K-1203) the first call is week 2: training holds
+    # (K-98), so one step down (2848 - 500). Weeks 3 and 4 wait for the new plan's 21-day window, as after any step.
+    checkin: {training: unknown, lifts: {squat: [[26, 100, 5, 2], [19, 100, 5, 2], [12, 106, 5, 2], [5, 106, 5, 2]]}}
+    weeks: [80.0, 80.0, 80.0, 80.0]
+    expect: [observing, "adjust_calories:-500/not_toward_goal", window_not_full, window_not_full]
+
+  - id: GS-41
+    title: "Flat cut, the user says lifts are declining but the log says they are up: the log wins, calories step down (GS-05 reversed)"
+    user: {sex: male, phase: cut}
+    # GS-05 with only the answer stops the step (performance red flag). With four sessions and the e1RM up 6 %, the log
+    # outweighs the answer: the step is taken (the call says both, TrainingTrendTests). Weeks 3 and 4 wait as in GS-40.
+    checkin: {training: declining, lifts: {squat: [[26, 100, 5, 2], [19, 100, 5, 2], [12, 106, 5, 2], [5, 106, 5, 2]]}}
+    weeks: [80.0, 80.0, 80.0, 80.0]
+    expect: [observing, "adjust_calories:-500/not_toward_goal", window_not_full, window_not_full]
+
+  - id: GS-42
+    title: "Flat cut after a lighter week: the log of that week is not read, so the answer stands (declining stays a red flag)"
+    user: {sex: male, phase: cut}
+    # The same log as GS-41, but day 3 back was in a lighter week: a check-in week with an excluded day is not read, so no
+    # evidence against the answer. The answer "declining" holds as in GS-05.
+    checkin: {training: declining, excluded_days: [3], lifts: {squat: [[26, 100, 5, 2], [19, 100, 5, 2], [12, 106, 5, 2], [5, 106, 5, 2]]}}
+    weeks: [80.0, 80.0, 80.0]
+    expect: [observing, fix_training/performance_red_flag, fix_training/performance_red_flag]

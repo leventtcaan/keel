@@ -249,3 +249,39 @@ parameters:
     tag: tecrube
     source: "arastirma/ham/guray/G7-whisper-arsiv.md#K-73"
     note: "Overtraining = planlanan antrenmanı planlandığı gibi yapamamak (K-73, ikili test). Tedavisi 1 hafta TAM mola (K-70). Güray sayı vermiyor; tek kaçan hafta tesadüf olabilir, iki hafta üst üste = sinyal (ADR-020 L-12)."
+  - key: e1rm_trend_noise_pct
+    value: 3.0
+    unit: percent
+    tag: literatur
+    source: "arastirma/ham/H3-bosluk-literatur.md#B15"
+    note: "K-1218: bir hareketin seans e1RM'i son iki seansın ortalamasıyla ondan önceki ikinin ortalaması arasında bu kadar (yüzde) ya da fazla değiştiyse hareket yukarı/aşağı sayılır; aradaki FLAT. Metrik H3 B15 (Epley, tekrar+RIR, en çok 10; eğilim göstergesi). TÜRETİLMİŞ [doğrudan kaynak yok]: Helms 2016'ya göre RIR tahmin hatası ≈ 1 tekrar; Epley'de 1 tekrar ≈ 1/(30+4) ≈ %3 (e1rm_epley_divisor). Eşiğin kendisi için literatürde sayı yok; ürün seçimi olarak değerlendirilmeli."
+  - key: trend_sessions_per_side
+    value: 2
+    unit: sessions
+    tag: urun
+    source: "arastirma/01-urun-ilkeleri.md#26"
+    note: "K-1218. SEÇİM, ürün kararı (ADR-091); sayının araştırma kaynağı yok [kaynak yok]. Eğilim son bu kadar seansın ortalaması ile ondan önceki bu kadar seansınki arasındadır (toplam 2 katı seans gerekir). Tek seans RIR tahmin gürültüsüyle (H3 B15) yanıltır, ortalama onu yumuşatır."
+  - key: trend_window_days
+    value: 28
+    unit: days
+    tag: urun
+    source: "arastirma/01-urun-ilkeleri.md#26"
+    note: "K-1218. SEÇİM, ürün kararı (ADR-091); sayının araştırma kaynağı yok [kaynak yok]. Eğilimi okunan seansların bugüne kadar bu kadar günlük pencerede (bugün dahil) olması gerekir: haftada iki seanslı program için dört seans yaklaşık dört hafta eder."
+  - key: trend_min_lifts
+    value: 2
+    unit: moves
+    tag: urun
+    source: "arastirma/01-urun-ilkeleri.md#26"
+    note: "K-1218. SEÇİM, ürün kararı (ADR-091); sayının araştırma kaynağı yok [kaynak yok]. Toplu durum (antrenman ya da toparlanma) için eğilimi okunabilen en az bu kadar bileşik hareket gerekir; programda tek bileşik hareket varsa bir yeter. Tek harekete bakıp programa hüküm vermemek içindir (U3: yetersizse sorulur)."
+  - key: trend_majority
+    value: 0.5
+    unit: ratio
+    tag: urun
+    source: "arastirma/01-urun-ilkeleri.md#26"
+    note: "K-1218. SEÇİM, ürün kararı (ADR-091); sayının araştırma kaynağı yok [kaynak yok]. Okunabilen bileşik hareketlerin bu payı ya da fazlası aşağıdaysa DECLINING (ya da yorgun hareket payı için POOR); bu pay ya da fazlası yukarıda ve hiçbiri aşağıda değilse IMPROVING; aksi STABLE. Kesimde DECLINING kırmızı bayrak (G7 K-98), bu yüzden aşağı tarafı yarı pay yeter."
+  - key: rir_drift_poor
+    value: 1
+    unit: reps_in_reserve
+    tag: tecrube
+    source: "arastirma/ham/guray/G7-whisper-arsiv.md#K-67"
+    note: "K-1218. G7 K-67: 'aynı işte zorlanmanın (RPE) belirgin yükselmesi' yorgunluk işaretidir; Güray SAYI VERMİYOR [kaynak yok: eşik]. Aynı yük ve tekrarda son iki seansın ortalama RIR'ı öncekilerden bu kadar ya da fazla düştüyse (zorlanma yükseldi) ve e1RM yukarı değilse hareket 'yorgun' sayılır; yorgunlar okunan hareketlerin trend_majority payına ulaşırsa Recovery.POOR. Veri GOOD demez (uyku ve yemek kayıtta görünmez). Sayı ürün seçimi (RIR tahmin hatası ≈ 1 tekrar, Helms 2016). RIR düşüşü deload merdivenine girmez (K-67 deload'u erken tetikleyebilir; ayrı karar)."

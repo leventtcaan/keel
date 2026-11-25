@@ -27,6 +27,7 @@ import app.keel.engine.ShapeProjection;
 import app.keel.engine.Sex;
 import app.keel.engine.Snapshot;
 import app.keel.engine.TrainingStatus;
+import app.keel.engine.TrainingTrend;
 import app.keel.engine.WaistTrend;
 import app.keel.engine.WhatIf;
 import app.keel.engine.WeekTally;
@@ -160,7 +161,8 @@ class DecisionService {
         // Before the first call there is no plan yet: the first one, as the answers would start it, not stored; likewise
         // the estimate a plan without a target would get.
         CallStore.Plan plan = calls.plan(account).map(existing -> withEstimate(existing, week)).orElseGet(() -> firstPlan(week));
-        CheckIn dataSays = dataSays(week, counted(account, week, plan));
+        // What the set log reads of training and recovery is what the data says (K-1218): where it reads, the question is not asked.
+        CheckIn dataSays = TrainingTrend.withLog(dataSays(week, counted(account, week, plan)), trainingLog(account, week));
         Optional<TrainingStatus> training = training(account, week);
         // The cycle question first, outside the budget: a safety question (V4, ADR-020 L-1), asked in the low energy band —
         // and after a hard stop, when this week's call, on the data or on the answers asked for, would open a deficit
@@ -240,10 +242,15 @@ class DecisionService {
         Optional<Consistency.WindowCount> counted = counted(account, week, plan);
         CheckIn dataSays = dataSays(week, counted);
         // Appetite and how the first week felt are the user's answers (K-227, ADR-077 #4): no data says them.
-        CheckIn checkIn = new CheckIn(dataSays.look(), answers.checkIn().training(), answers.checkIn().recovery(), dataSays.waist(),
+        CheckIn answeredIn = new CheckIn(dataSays.look(), answers.checkIn().training(), answers.checkIn().recovery(), dataSays.waist(),
                 dataSays.adherence(), answers.checkIn().appetite(), week1Feel(answers.checkIn().week1Feel(), week.firstWeek().isPresent()));
-        Snapshot snapshot = snapshot(week, plan, checkIn, answers.menstrualLossReported(), answers.cycleResolved(), training(account, week));
-        Decision decision = DecisionPipeline.decide(snapshot, week.parameters());
+        // The set log wins where it reads (K-1218, ADR-091 Ek 7): the call is made on it, kept with it, and says it beside the answer.
+        TrainingTrend.Reading log = trainingLog(account, week);
+        CheckIn checkIn = TrainingTrend.withLog(answeredIn, log);
+        Optional<TrainingStatus> status = training(account, week);
+        Snapshot snapshot = snapshot(week, plan, checkIn, answers.menstrualLossReported(), answers.cycleResolved(), status);
+        Decision decision = TrainingTrend.decide(tried -> DecisionPipeline.decide(
+                snapshot(week, plan, tried,answers.menstrualLossReported(), answers.cycleResolved(), status), week.parameters()), answeredIn, log);
         Map<String, Object> kept = DecisionJson.of(decision);
         // Logging free, the call paid (ADR-091 Ek 1): a full call past the free allowance of an account without the subscription is
         // kept, so subscribing shows it, but not applied: the plan stays as it was. The safety net is never full, so never held (U6).
@@ -415,6 +422,12 @@ class DecisionService {
         // A week with a declared day is neither kept nor missed (K-516, ADR-038).
         return statuses.status(account, week.today(), week.profile().timeZone(), week.profile().checkInDay(),
                 states.daysUpTo(account, week.today()));
+    }
+
+    /** What the set log says about training and recovery (K-1218): nothing where it is thin, in a declared or lighter week, or without a program. */
+    private TrainingTrend.Reading trainingLog(AccountId account, Week week) {
+        return statuses.trend(account, week.today(), week.profile().timeZone(), bodyweight(account, week), states.daysUpTo(account, week.today()),
+                week.parameters());
     }
 
     private Snapshot snapshot(Week week, CallStore.Plan plan, CheckIn checkIn, boolean menstrualLossReported, boolean cycleResolved,

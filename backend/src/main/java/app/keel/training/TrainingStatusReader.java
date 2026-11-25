@@ -1,7 +1,11 @@
 package app.keel.training;
 
+import app.keel.engine.ParameterKey;
+import app.keel.engine.Parameters;
 import app.keel.engine.TrainingStatus;
+import app.keel.engine.TrainingTrend;
 import app.keel.shared.AccountId;
+import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -130,6 +134,47 @@ public class TrainingStatusReader {
             return Map.of();
         }
         return sessions(account, program.get(), made.get(), today.plusDays(1).atStartOfDay(zone).toInstant(), zone, TrainingStatusReader::compound);
+    }
+
+    /**
+     * What the set log says about training and recovery (K-1218): the program's compound lifts' working sets logged in the app
+     * (not imported) since the program was made, within the trend window, read by {@link TrainingTrend}. A bodyweight move
+     * counts its bodyweight plus the added load, and is left out without a bodyweight. Excluded: the days of the ladder's rest
+     * and lighter weeks and the week after each (G7 K-72: the return is gradual) and {@code declaredDays} (K-516). Nothing
+     * without a program.
+     */
+    public TrainingTrend.Reading trend(AccountId account, LocalDate today, ZoneId zone, Optional<BigDecimal> bodyWeightKg, Set<LocalDate> declaredDays,
+            Parameters parameters) {
+        Optional<ProgramStore.Program> program = programs.current(account);
+        Optional<Instant> made = programs.createdAt(account);
+        if (program.isEmpty() || made.isEmpty()) {
+            return TrainingTrend.Reading.UNKNOWN;
+        }
+        LocalDate first = today.minusDays(parameters.wholeNumber(ParameterKey.TREND_WINDOW_DAYS) - 1L);
+        Instant from = first.atStartOfDay(zone).toInstant();
+        Instant since = made.get().isAfter(from) ? made.get() : from;
+        Instant to = today.plusDays(1).atStartOfDay(zone).toInstant();
+        List<TrainingTrend.Lift> lifts = program.get().days().stream().flatMap(day -> day.exercises().stream()).map(ProgramStore.PlannedExercise::exerciseId)
+                .distinct().filter(id -> catalog.find(id).filter(TrainingStatusReader::compound).isPresent())
+                .map(id -> new TrainingTrend.Lift(id, trendSessions(log.workingSets(account, id, since, to), zone, bodyWeightKg))).toList();
+        Set<LocalDate> excluded = new HashSet<>(declaredDays);
+        Breaks breaks = breaks(account, first.minusDays(DAYS_AFTER_A_BREAK), today);
+        Stream.concat(breaks.rest().stream(), breaks.lighter().stream())
+                .forEach(day -> day.datesUntil(day.plusDays(DAYS_AFTER_A_BREAK + 1L)).forEach(excluded::add));
+        return TrainingTrend.read(lifts, today, excluded, parameters);
+    }
+
+    /** The week after a rest or lighter week is not read either (G7 K-72). */
+    private static final int DAYS_AFTER_A_BREAK = 7;
+
+    /** One session per workout, oldest first, as {@link TrainingTrend} reads it: the working sets with a load. */
+    private static List<TrainingTrend.Session> trendSessions(List<TrainingLog.WorkSet> sets, ZoneId zone, Optional<BigDecimal> bodyWeightKg) {
+        Map<Instant, List<TrainingTrend.LoggedSet>> workouts = new java.util.TreeMap<>();
+        for (TrainingLog.WorkSet set : sets) {
+            set.effectiveLoadKg(bodyWeightKg).ifPresent(load -> workouts.computeIfAbsent(set.at(), at -> new java.util.ArrayList<>())
+                    .add(new TrainingTrend.LoggedSet(load, set.reps(), set.rir())));
+        }
+        return workouts.entrySet().stream().map(workout -> new TrainingTrend.Session(workout.getKey().atZone(zone).toLocalDate(), workout.getValue())).toList();
     }
 
     private static boolean compound(ExerciseCatalog.Exercise move) {

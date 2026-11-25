@@ -83,6 +83,22 @@ class CheckInQuestionsTests {
     }
 
     @Test
+    void aSufficientSetLogTakesTheTrainingQuestionOutAndAThinOneLeavesIt() {
+        // K-1218, ADR-091 #4: where the log reads, training is what the data says, so the engine does not wait for the answer; the
+        // recovery question is still asked (the log never says it is good). A log that cannot read changes nothing.
+        Function<CheckIn, Decision> spine = checkIn -> checkIn.training() == CheckIn.Training.UNKNOWN
+                ? call(new Action.NoDecisionYet(), "check_in_needed_training")
+                : checkIn.recovery() == CheckIn.Recovery.UNKNOWN ? call(new Action.NoDecisionYet(), "check_in_needed_recovery")
+                        : call(new Action.Continue(), "toward_goal");
+        CheckIn withLog = app.keel.engine.TrainingTrend.withLog(CheckIn.NONE,
+                new app.keel.engine.TrainingTrend.Reading(CheckIn.Training.IMPROVING, CheckIn.Recovery.UNKNOWN));
+        CheckIn thin = app.keel.engine.TrainingTrend.withLog(CheckIn.NONE, app.keel.engine.TrainingTrend.Reading.UNKNOWN);
+
+        assertThat(CheckInQuestions.needed(spine, withLog, 5)).containsExactly(Answers.Kind.RECOVERY);
+        assertThat(CheckInQuestions.needed(spine, thin, 5)).containsExactly(Answers.Kind.TRAINING, Answers.Kind.RECOVERY);
+    }
+
+    @Test
     void recoveryIsOnlyAfterTheTrainingChoicesThatLeaveItNeeded() {
         // K-1031 review: after "Haven't trained" or "Getting weaker" the engine does not read recovery, so the question says it is
         // only for the other answers (U1: the phone reads this, it does not know the tree).

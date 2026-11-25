@@ -13,6 +13,8 @@ public enum Unit {
     BOOLEAN("boolean", Kind.FLAG, Bound.NONE),
 
     RATIO("ratio", Kind.FRACTION, Bound.UP_TO_ONE),
+    // A change over time read from the set log, in per cent (K-1218): not a body-fat figure, so not internal only.
+    PERCENT("percent", Kind.FRACTION, Bound.UP_TO_HUNDRED),
     PERCENT_INTERNAL_ONLY("percent_internal_only", Kind.FRACTION, Bound.UP_TO_HUNDRED),
 
     KG("kg", Kind.FRACTION, Bound.POSITIVE),
