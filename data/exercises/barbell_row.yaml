@@ -13,3 +13,7 @@ clips:
   first_rep: clips/barbell_row/first-rep.mp4
   last_rep: clips/barbell_row/last-rep.mp4
 review: pending
+image: exercises/barbell_row/form.webp
+image_review: pending
+loop: exercises/barbell_row/loop.mp4
+loop_review: pending

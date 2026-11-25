@@ -13,3 +13,7 @@ clips:
   first_rep: clips/chest_supported_row/first-rep.mp4
   last_rep: clips/chest_supported_row/last-rep.mp4
 review: pending
+image: exercises/chest_supported_row/form.webp
+image_review: pending
+loop: exercises/chest_supported_row/loop.mp4
+loop_review: pending

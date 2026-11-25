@@ -13,3 +13,7 @@ clips:
   first_rep: clips/push_up/first-rep.mp4
   last_rep: clips/push_up/last-rep.mp4
 review: pending
+image: exercises/push_up/form.webp
+image_review: pending
+loop: exercises/push_up/loop.mp4
+loop_review: pending

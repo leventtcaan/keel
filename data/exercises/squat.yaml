@@ -15,3 +15,5 @@ clips:
 review: pending
 image: exercises/squat/form.webp
 image_review: pending
+loop: exercises/squat/loop.mp4
+loop_review: pending

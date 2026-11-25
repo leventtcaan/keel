@@ -13,3 +13,7 @@ clips:
   first_rep: clips/seated_leg_curl/first-rep.mp4
   last_rep: clips/seated_leg_curl/last-rep.mp4
 review: pending
+image: exercises/seated_leg_curl/form.webp
+image_review: pending
+loop: exercises/seated_leg_curl/loop.mp4
+loop_review: pending

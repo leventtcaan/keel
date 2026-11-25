@@ -13,3 +13,7 @@ clips:
   first_rep: clips/hack_squat/first-rep.mp4
   last_rep: clips/hack_squat/last-rep.mp4
 review: pending
+image: exercises/hack_squat/form.webp
+image_review: pending
+loop: exercises/hack_squat/loop.mp4
+loop_review: pending

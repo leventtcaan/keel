@@ -13,3 +13,7 @@ clips:
   first_rep: clips/standing_calf_raise/first-rep.mp4
   last_rep: clips/standing_calf_raise/last-rep.mp4
 review: pending
+image: exercises/standing_calf_raise/form.webp
+image_review: pending
+loop: exercises/standing_calf_raise/loop.mp4
+loop_review: pending

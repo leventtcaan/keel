@@ -13,3 +13,7 @@ clips:
   first_rep: clips/cable_fly/first-rep.mp4
   last_rep: clips/cable_fly/last-rep.mp4
 review: pending
+image: exercises/cable_fly/form.webp
+image_review: pending
+loop: exercises/cable_fly/loop.mp4
+loop_review: pending

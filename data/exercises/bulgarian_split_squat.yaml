@@ -13,3 +13,7 @@ clips:
   first_rep: clips/bulgarian_split_squat/first-rep.mp4
   last_rep: clips/bulgarian_split_squat/last-rep.mp4
 review: pending
+image: exercises/bulgarian_split_squat/form.webp
+image_review: pending
+loop: exercises/bulgarian_split_squat/loop.mp4
+loop_review: pending

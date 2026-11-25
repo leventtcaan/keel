@@ -13,3 +13,7 @@ clips:
   first_rep: clips/barbell_curl/first-rep.mp4
   last_rep: clips/barbell_curl/last-rep.mp4
 review: pending
+image: exercises/barbell_curl/form.webp
+image_review: pending
+loop: exercises/barbell_curl/loop.mp4
+loop_review: pending

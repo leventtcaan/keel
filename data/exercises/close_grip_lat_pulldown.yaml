@@ -13,3 +13,7 @@ clips:
   first_rep: clips/close_grip_lat_pulldown/first-rep.mp4
   last_rep: clips/close_grip_lat_pulldown/last-rep.mp4
 review: pending
+image: exercises/close_grip_lat_pulldown/form.webp
+image_review: pending
+loop: exercises/close_grip_lat_pulldown/loop.mp4
+loop_review: pending

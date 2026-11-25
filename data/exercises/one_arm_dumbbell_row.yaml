@@ -13,3 +13,7 @@ clips:
   first_rep: clips/one_arm_dumbbell_row/first-rep.mp4
   last_rep: clips/one_arm_dumbbell_row/last-rep.mp4
 review: pending
+image: exercises/one_arm_dumbbell_row/form.webp
+image_review: pending
+loop: exercises/one_arm_dumbbell_row/loop.mp4
+loop_review: pending

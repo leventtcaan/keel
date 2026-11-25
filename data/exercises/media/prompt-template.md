@@ -68,7 +68,11 @@ COACHING CUES the drawing must agree with (do not write them): "{cue1}" "{cue2}"
 
 Animation rules (strict): in all nine frames the camera, the scale, the floor line height, the equipment and every part of
 the body or machine that does not move (feet on the floor, a seat, a bench, a cable station) are IDENTICAL, so the frames
-play in sequence without anything jumping. Camera: {view}. Neck neutral. No text, no titles, no arrows, no numbers, no
+play in sequence without anything jumping. The equipment is exactly the one in the reference's Start panel in every frame:
+the same frame, pads, handles and plates, never redrawn as another machine. The movement goes one way only: each frame is a
+little further from the Start position than the one before and frame 9 is the furthest point; never come back toward the
+Start within the nine frames (the animation plays them backwards by itself). Draw each frame centred in its own cell. Do not
+copy the reference's arrow or its "Start" and "End" titles: the reference shows only the style, the person and the equipment. Camera: {view}. Neck neutral. No text, no titles, no arrows, no numbers, no
 borders or dividing lines between frames; the off-white background is continuous. Anatomically correct joint angles,
 the correct number of limbs, hands and fingers, nothing floating or merged.
 <!-- loop:end -->

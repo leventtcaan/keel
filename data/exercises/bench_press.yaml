@@ -13,3 +13,7 @@ clips:
   first_rep: clips/bench_press/first-rep.mp4
   last_rep: clips/bench_press/last-rep.mp4
 review: pending
+image: exercises/bench_press/form.webp
+image_review: pending
+loop: exercises/bench_press/loop.mp4
+loop_review: pending

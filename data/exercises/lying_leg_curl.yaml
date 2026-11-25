@@ -13,3 +13,7 @@ clips:
   first_rep: clips/lying_leg_curl/first-rep.mp4
   last_rep: clips/lying_leg_curl/last-rep.mp4
 review: pending
+image: exercises/lying_leg_curl/form.webp
+image_review: pending
+loop: exercises/lying_leg_curl/loop.mp4
+loop_review: pending

@@ -1,5 +1,5 @@
 {
-  "_about": "K-1219 (ADR-091 Ek 6): how a move's nine drawn frames become its loop clip (tools/media_loop.py). Picked on the squat pilot of 25 Nov 2026: at these numbers most moments show one crisp frame and the steps still read as one movement; longer crossfades stack two poses into a ghost. A look, not a measurement.",
+  "_about": "K-1219 (ADR-091 Ek 6): how a move's nine drawn frames become its loop clip (tools/media_loop.py). Picked on the squat pilot of 25 Nov 2026: at these numbers most moments show one crisp frame and the steps still read as one movement; longer crossfades stack two poses into a ghost. A look, not a measurement. max_bytes: the most one clip may weigh, so forty of them add a few MB to the app, not tens. floor_*: the floor line of each frame (the longest dark row in the lower half of a cell, darker than floor_dark_level on at least floor_min_fraction of the width) is lined up with the first frame's, so a grid drawn with rows a few pixels apart plays without a jump; max_shift_px bounds the move and pads the grid.",
   "grid": 3,
   "hold_start_s": 0.7,
   "step_s": 0.22,
@@ -7,5 +7,9 @@
   "crossfade_s": 0.1,
   "size_px": 720,
   "fps": 30,
-  "crf": 26
+  "crf": 26,
+  "max_bytes": 300000,
+  "floor_dark_level": 110,
+  "floor_min_fraction": 0.3,
+  "max_shift_px": 60
 }

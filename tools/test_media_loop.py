@@ -14,7 +14,8 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import media_loop  # noqa: E402
 import media_prompt  # noqa: E402
 
-LOOP_RULES = ("3 x 3 grid", "nine", "IDENTICAL", "No text", "#FAF8F3", "#007684", "faceless", "Anatomically correct")
+LOOP_RULES = ("3 x 3 grid", "nine", "IDENTICAL", "No text", "#FAF8F3", "#007684", "faceless", "Anatomically correct",
+              "one way only", "Do not\ncopy the reference's arrow", "Start panel in every frame")
 
 
 class Sequence(unittest.TestCase):
@@ -51,6 +52,39 @@ class Sequence(unittest.TestCase):
         self.assertEqual((418, 0, 418), cells[1])
         self.assertEqual((0, 418, 418), cells[3])
         self.assertEqual((836, 836, 418), cells[8])
+
+
+def picture(side: int, floors: dict, grid: int = 3) -> bytes:
+    """An off-white grid image (one byte a pixel) with a dark floor line in each cell: {(row, col): (floor row, left end)}."""
+    pixels = bytearray([250]) * (side * side)
+    size = side // grid
+    for (r, c), (row, left) in floors.items():
+        start = (r * size + row) * side + c * size + left
+        pixels[start:start + size // 2] = bytes([40]) * (size // 2)
+    return bytes(pixels)
+
+
+class FloorAlignment(unittest.TestCase):
+    def test_the_floor_is_the_longest_dark_line_in_the_lower_half_of_a_cell_with_its_left_end(self):
+        p = media_loop.PARAMS
+        image = picture(300, {(0, 0): (80, 10), (1, 0): (70, 20)})
+        self.assertEqual((80, 10), media_loop.floor(image, 300, 0, 0, 100, p))
+        self.assertEqual((70, 20), media_loop.floor(image, 300, 0, 100, 100, p))
+
+    def test_a_floor_touching_the_cell_edge_gives_no_left_end(self):
+        self.assertEqual((80, None), media_loop.floor(picture(300, {(0, 0): (80, 0)}), 300, 0, 0, 100, media_loop.PARAMS))
+
+    def test_no_clear_floor_is_none(self):
+        self.assertEqual((None, None), media_loop.floor(picture(300, {}), 300, 0, 0, 100, media_loop.PARAMS))
+
+    def test_each_frame_moves_so_its_floor_sits_where_the_first_frames_does(self):
+        self.assertEqual([0, 0, -11, -25], media_loop.shifts([400, 400, 389, 375]))
+        self.assertEqual([0, 0, 0], media_loop.shifts([None, 300, 310]), "no floor in the first frame: nothing moves")
+        self.assertEqual([0, 0, -5], media_loop.shifts([300, None, 295]), "a frame with no floor stays put")
+
+    def test_a_shift_never_moves_a_frame_by_more_than_the_padding(self):
+        p = media_loop.PARAMS
+        self.assertEqual([0, p["max_shift_px"], -p["max_shift_px"]], media_loop.shifts([100, 1000, -1000], p["max_shift_px"]))
 
 
 class LoopPrompts(unittest.TestCase):
