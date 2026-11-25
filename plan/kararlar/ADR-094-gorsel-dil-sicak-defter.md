@@ -180,3 +180,5 @@ Hedef bandı çizilmez, çünkü sunucu ona ait bir sayı vermez (U1).
 4. **"8 hafta sonra" kutusu (9c-4b):** aralığın altında senaryonun uyum payı ("Planlı günlerin %80") görünür kalır, çünkü tahmin bir
    davranışa bağlıdır, garanti değildir (ADR-052). Bunun için ekranın bütçesi 50'den 53'e çıktı (Levent). Aralık yalnız projeksiyon açıkken
    görünür; açmak için SCOFF kapısından geçmek gerekir (ADR-050), kapalıysa sunucuya istek de gitmez. Geçmiş kararlarda aralık hiç görünmez.
+   **Bugün kapalı (Levent, 25 Kas):** projeksiyon ve SCOFF ekranları ADR-069 ile v1'de yüzeyden kaldırıldığı için kimse projeksiyonu açamıyor.
+   Kod girer ve kapalı kalır; projeksiyon ayrı bir kararla (SCOFF kapısı + Gelişim girişi, ADR-050 aynen) yeniden açılınca aralık kendiliğinden görünür.
