@@ -5,7 +5,12 @@ guncelleme: 2026-11-25
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (25 Kas gece — 9c-1: ADR-094 token + font, PR #774 otomatik birleşmede)
+## ▶ DEVAM NOKTASI (25 Kas gece — 9c-2: hafta yolu + günün sayıları, PR #776 K1 onayı bekliyor)
+**9c-1 birleşti (#774).** **9c-2 (K-1229, #775 → PR #776):** hafta yolu (adaçayı zemin, yürünen kısım mercan, bugün mercan halka, yapılan petrol tik),
+günün sayıları kum şeritte mercan çubuklu, PLUS_GUTTER kalktı (PLUS_CLEARANCE test edildi). Simülatörde görüldü; inceleme: yürünmemiş çizgi 1,05:1 → `edge`.
+**Bekleyen:** Levent K1 (4 beklenti, PR gövdesinde) → otomatik birleştirme. **Sıradaki:** 9c-3 karar kahramanı + kilo trendi + antrenman satırı.
+
+## (önceki) ▶ DEVAM NOKTASI (25 Kas gece — 9c-1: ADR-094 token + font, PR #774 otomatik birleşmede)
 **9c-1 (K-1228, #773 → PR #774):** `tokens.ts` ADR-094 rol tablosuyla (kâğıt `#F7F5F0`, petrol karar/eylem/seçim, mercan `progress` yalnız ilerleme,
 üç tint, `warn` `#B3261E`, siyah ters blok kalktı: `decision*` = sayfa), başlık `ui-serif` + rakam `ui-rounded` (RN 0.86.3 `RCTFontUtils.mm`'de doğrulandı;
 Barlow ve paketi kalktı), `tokens.face` (aile + ağırlık), büyük harf hiçbir yerde yok, seçili çip/gün kutusu petrol çerçeve + yumuşak zemin (tek dolu petrol =
