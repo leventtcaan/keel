@@ -6094,7 +6094,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: doing
+    status: done
     depends_on: [K-1230]
     why: "Gezinti Durak 1: karar detay sayfası çok zayıf, cümle yığını. ADR-094 Ek 1 (Levent): grafik, başlıklar, bütçe 50, Uygulamada kalır"
     acceptance:
