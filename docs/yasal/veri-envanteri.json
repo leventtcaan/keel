@@ -1514,7 +1514,8 @@
    "expo-secure-store",
    "expo-sensors",
    "expo-splash-screen",
-   "expo-sqlite"
+   "expo-sqlite",
+   "expo-widgets"
   ],
   "dependencies": {
    "@expo-google-fonts/barlow-condensed": null,
@@ -1546,6 +1547,7 @@
    "expo-symbols": null,
    "expo-system-ui": null,
    "expo-web-browser": null,
+   "expo-widgets": null,
    "openapi-fetch": "our server",
    "react": null,
    "react-dom": null,

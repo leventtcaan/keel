@@ -30,6 +30,7 @@ import { createAdopt } from '@/train/openSession';
 import { type SetEdits, createSetEdits } from '@/train/setEdits';
 import { type SessionSkips, createSessionSkips } from '@/train/skips';
 import { type SessionSwaps, createSessionSwaps } from '@/train/sessionSwaps';
+import { liveRest } from '@/train/liveRest';
 import { type AlertAccess, type RestAlert, alertsUnavailable, createRestAlert } from '@/train/restAlert';
 import type { Figure } from '@/train/demo';
 import { type TrainingCache, createTrainingCache } from '@/train/trainData';
@@ -320,6 +321,7 @@ export async function createAppServices({
     projectionSwitch.forget().catch(reportError); // and the projection's switch and what it showed (K-606)
     kv.removeItemAsync(FIGURE).catch(reportError); // and the profile's sex (ADR-037 › 49)
     void restAlert.stop(); // and a rest's alert (K-411; it reports its own failure)
+    liveRest.stop(); // and the rest on the lock screen (K-1215)
     sessionPause.forget().catch(reportError); // and the open session's pause (K-972)
     sessionSkips.forget().catch(reportError); // and what was skipped in it
     sessionSwaps.forget().catch(reportError); // and what was swapped in it

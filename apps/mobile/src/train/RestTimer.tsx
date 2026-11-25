@@ -22,13 +22,14 @@ const ACTIONS = [{ name: 'increment' }, { name: 'decrement' }];
  * accent is for), and waits: nothing blames a longer rest. A tap on the minus or plus beside it, or a press and hold on the clock, makes this rest 15 seconds shorter or longer
  * (`onAdjust` moves the timer in the background with it); a minus and a plus beside the clock do the same with a tap; a screen reader swipes it up or down. Ending the rest is the screen's Ready.
  */
-export function RestTimer({ since, band, onAdjust }: { since: number; band: RestBand; onAdjust?: (seconds: number) => void }) {
+export function RestTimer({ since, band, onAdjust, shift }: { since: number; band: RestBand; onAdjust?: (seconds: number) => void; shift?: number }) {
   const { color } = useTheme();
   const [now, setNow] = useState(() => Date.now());
   // The change the user made to this rest, in seconds: a new rest starts from the band again.
   const [adjusted, setAdjusted] = useState<{ since: number; seconds: number }>({ since, seconds: 0 });
   const [adjusting, setAdjusting] = useState(false);
-  const change = adjusted.since === since ? adjusted.seconds : 0;
+  // `shift` is the change as the screen holds it (K-1215: the lock screen's -15/+15 move the same rest); without it the timer keeps its own.
+  const change = shift ?? (adjusted.since === since ? adjusted.seconds : 0);
   useEffect(() => {
     const tick = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(tick);
