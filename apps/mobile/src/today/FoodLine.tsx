@@ -8,7 +8,6 @@ import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { ProgressBar } from '@/components/ProgressBar';
 import { Icon } from '@/components/Icon';
-import { PLUS_GUTTER } from '@/components/PlusEntry';
 import { t } from '@/copy';
 import { budgetLine } from '@/food/budget';
 import { mid, rangeText } from '@/food/single';
@@ -34,7 +33,7 @@ export function FoodLine({ budget, footer = null }: { budget: Loaded<Schemas['Da
   const [detail, setDetail] = useState(false);
   if (budget.state === 'consent') {
     return (
-      <View testID="food-locked" style={[styles.card, styles.line, styles.clear, { backgroundColor: color.surface }]}>
+      <View testID="food-locked" style={[styles.card, styles.line, { backgroundColor: color.surface }]}>
         <SymbolView name="lock.fill" size={tokens.type.body} tintColor={color.muted} />
         <Text style={[styles.text, styles.grow, { color: color.textSecondary }]}>{t('thisWeek.food.locked')}</Text>
         <Button label={t('thisWeek.food.allow')} accessibilityLabel={t('thisWeek.food.allowLabel')} variant="text" size="sm" onPress={() => openDetail('consent')} />
@@ -82,7 +81,7 @@ export function FoodLine({ budget, footer = null }: { budget: Loaded<Schemas['Da
     ) : null;
   const amountText = amount === null ? null : <Text style={[styles.amount, { color: color.text }]}>{amount}</Text>;
   return (
-    <View testID="food-line" style={[styles.card, styles.clear, { backgroundColor: color.surface }]}>
+    <View testID="food-line" style={[styles.card, { backgroundColor: color.surface }]}>
       <View style={styles.line}>
         {/* The whole left part of the card is the way to Today's food: its words, its bar and a chevron say so (Evre 7 review §7, P0). */}
         <Pressable
@@ -109,8 +108,8 @@ export function FoodLine({ budget, footer = null }: { budget: Loaded<Schemas['Da
 
 const styles = StyleSheet.create({
   card: { borderRadius: tokens.radius.card, padding: tokens.space.md, gap: tokens.space.xs },
-  // The "+" floats over the end of the row when the card is at the fold: Log and the range sit left of it.
-  clear: { paddingRight: PLUS_GUTTER },
+  // No gutter for the "+" (gezinti, Durak 1: a patch, not a design): it floats over content while scrolling, as iOS's do,
+  // and the screen's PLUS_CLEARANCE keeps the last row clear of it at rest.
   line: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, minHeight: tokens.size.touch },
   info: { minHeight: tokens.size.touch, minWidth: tokens.size.touch / 2, alignItems: 'center', justifyContent: 'center' },
   small: { fontSize: tokens.type.bodySmall },

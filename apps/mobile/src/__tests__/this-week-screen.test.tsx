@@ -9,7 +9,7 @@ import { StyleSheet } from 'react-native';
 import TodayScreen from '@/app/(tabs)/index';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
-import { PLUS_GUTTER } from '@/components/PlusEntry';
+import { PLUS_CLEARANCE } from '@/components/PlusEntry';
 import { GuideProvider } from '@/guide/GuideProvider';
 import { ThemeProvider } from '@/theme/theme';
 import { palettes } from '@/theme/tokens';
@@ -1124,11 +1124,12 @@ describe('the food line', () => {
     expect(mockPush).not.toHaveBeenCalledWith('/food');
   });
 
-  test('the card keeps the width the floating "+" can cover free at its right end, so Log is never under it (K-1066)', async () => {
+  test('the card keeps no empty gutter for the "+"; the screen keeps its foot clear of it instead (gezinti Durak 1, replaces K-1066)', async () => {
     mockAnswers['/v1/days/{day}/budget'] = ok(BUDGET(1240, 1480));
     await show();
-    const card = StyleSheet.flatten(screen.getByTestId('food-line').props.style) as { paddingRight: number };
-    expect(card.paddingRight).toBeGreaterThanOrEqual(PLUS_GUTTER);
+    expect(StyleSheet.flatten(screen.getByTestId('food-line').props.style).paddingRight).toBeUndefined();
+    // The "+" floats over content while scrolling; at the end of the screen the last row stands above it.
+    expect(StyleSheet.flatten(screen.getByTestId('this-week-scroll').props.contentContainerStyle)).toMatchObject({ paddingBottom: PLUS_CLEARANCE });
   });
 
   test("a meal logged, the number comes down with the server's range; the range itself is in a tap's detail", async () => {
@@ -1394,21 +1395,21 @@ describe('the first-use guide (K-1065)', () => {
 describe('on the system (K-1045, ADR-070 Ek 2 #7, #8; prototype yeniden-yapim 5)', () => {
   const p = palettes.light;
 
-  test('the strip needs no legend: done is a filled accent day with a tick, planned an accent ring, today an ink ring, any other day a small dot', async () => {
+  test('the strip needs no legend: done is a filled accent day with a tick, planned an accent ring, today a coral ring (ADR-094), any other day a small dot', async () => {
     await show();
     // Monday: trained, filled accent with the tick, no ring.
     expect(screen.getByTestId('mark-2026-12-21')).toHaveStyle({ backgroundColor: p.accent });
     expect(within(screen.getByTestId('day-2026-12-21')).getByTestId('tick')).toBeOnTheScreen();
-    // Friday: planned and today: the accent ring inside the ink ring.
+    // Friday: planned and today: the accent ring inside today's coral ring.
     expect(screen.getByTestId('mark-2026-12-25')).toHaveStyle({ borderColor: p.accent });
-    expect(screen.getByTestId('ring-2026-12-25')).toHaveStyle({ borderColor: p.text });
+    expect(screen.getByTestId('ring-2026-12-25')).toHaveStyle({ borderColor: p.progress });
     // Thursday: nothing planned, nothing done: a small dot, no ring, no fill.
     expect(screen.getByTestId('empty-dot-2026-12-24')).toBeOnTheScreen();
     expect(screen.getByTestId('mark-2026-12-24')).not.toHaveStyle({ backgroundColor: p.accent });
     // A day with a mark has no empty dot.
     expect(screen.queryByTestId('empty-dot-2026-12-21')).toBeNull();
     expect(screen.queryByTestId('empty-dot-2026-12-25')).toBeNull();
-    // Only today has the ink ring.
+    // Only today has the coral ring.
     expect(screen.queryByTestId('ring-2026-12-24')).toBeNull();
   });
 
@@ -1492,7 +1493,7 @@ describe('on the system (K-1045, ADR-070 Ek 2 #7, #8; prototype yeniden-yapim 5)
     mockAnswers['/v1/days/{day}/budget'] = ok(BUDGET(1240, 1480));
     await show();
     expect(screen.getByTestId('food-line-chevron')).toBeOnTheScreen();
-    expect(within(screen.getByTestId('food-line')).getByRole('progressbar')).toBeOnTheScreen();
+    expect(within(screen.getByTestId('food-line-open')).getByRole('progressbar')).toBeOnTheScreen();
     const log = screen.getByRole('button', { name: t('thisWeek.food.logLabel') });
     expect(StyleSheet.flatten(log.props.style)?.backgroundColor).toBe(p.raise);
     expect(within(log).getByText(t('thisWeek.food.log'))).toHaveStyle({ color: p.text });

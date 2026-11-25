@@ -219,15 +219,15 @@ describe('each number opens its place', () => {
 });
 
 describe('the tiles share the row', () => {
-  test('every tile is an equal share of the row, inside the plus gutter', async () => {
+  test('every tile is an equal share of the row, with no gutter for the "+" (gezinti Durak 1)', async () => {
     await show();
     const tiles = ['protein', 'steps', 'weight'].map((id) => StyleSheet.flatten(screen.getByTestId(`number-${id}`).props.style));
     for (const style of tiles) expect(style).toMatchObject({ flexGrow: 1, flexBasis: 0, minWidth: 0 });
     const row = StyleSheet.flatten(screen.getByTestId('number-protein').parent?.props.style);
     expect(row.paddingRight ?? 0).toBe(0);
-    // The card keeps the floating "+" gutter on its right end, tiles included (K-1066): nothing is under the "+".
+    // The card's padding is the same on both ends: the empty strip the "+" gutter left at the right is gone.
     const card = StyleSheet.flatten(screen.getByTestId('food-line').props.style);
-    expect(card.paddingRight).toBeGreaterThan(card.paddingLeft ?? card.padding ?? 0);
+    expect(card.paddingRight).toBeUndefined();
   });
 });
 

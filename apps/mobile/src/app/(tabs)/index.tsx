@@ -166,7 +166,7 @@ export default function TodayScreen() {
     // Bottom edge too: inside native tabs the bottom inset includes the tab bar, so the "+" floats above it (K-1050).
     <SafeAreaView testID="screen" style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
       <View style={styles.frame}>
-        <ScrollView ref={scrollRef} contentContainerStyle={styles.body} scrollEventThrottle={16} onScroll={(e) => {
+        <ScrollView testID="this-week-scroll" ref={scrollRef} contentContainerStyle={styles.body} scrollEventThrottle={16} onScroll={(e) => {
             scrollY.current = e.nativeEvent.contentOffset.y;
           }}>
           <View style={styles.head}>
