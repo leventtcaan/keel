@@ -60,10 +60,12 @@ class WorkoutLogTests {
 
     @Test
     void aFormImageIsServedOnlyOnceItsReviewPasses() throws Exception {
-        // ADR-091 #4: the pilot images are drawn but their review is pending, so the phone is not given them yet.
+        // ADR-091 #4 and Ek 7: the images and loops passed their review (Levent, 25 Nov 2026), so the phone is given them; a
+        // pending one is not (ExerciseCatalogTests.aMoveMayHaveAFormImageWithItsOwnReview, WorkoutController maps only a passed review).
         List<Map<String, Object>> exercises = list(get(TestSessions.newAccount(), "/v1/exercises"));
 
-        assertThat(exercises).anySatisfy(move -> assertThat(move).containsEntry("id", "squat").doesNotContainKey("image"));
+        assertThat(exercises).anySatisfy(move -> assertThat(move).containsEntry("id", "squat")
+                .containsEntry("image", "exercises/squat/form.webp").containsEntry("loop", "exercises/squat/loop.mp4"));
     }
 
     @Test
