@@ -10,7 +10,7 @@ import { DecisionBlock } from '@/components/DecisionBlock';
 import { RangeText } from '@/components/RangeText';
 import { TrendLine } from '@/components/TrendLine';
 import { ProblemText, announce } from '@/components/ProblemText';
-import { t } from '@/copy';
+import { t, tp } from '@/copy';
 import { useSaved } from '@/saved/saved';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
@@ -126,11 +126,12 @@ export default function CallScreen() {
     };
   }, [api, readId]);
 
-  // Where the plan leads (ADR-094 Ek 1, Levent, 9c-4b): the server's projection, only while the person has it turned on (its
+  // Where the plan leads (ADR-094 Ek 1, 9c-4b): the server's projection, only while the person has it turned on (its
   // health gate, ADR-050: off, it is not even asked for) and only for this week's call, never a past one opened read only.
   const [projection, setProjection] = useState<components['schemas']['Projection'] | null>(null);
   const projectionOn = !readOnly && readId !== null && projectionSwitch.on();
   useEffect(() => {
+    // Off, nothing is asked; the box itself also needs the switch on to show (below), so an earlier read never shows with it off.
     if (!projectionOn) return;
     let live = true;
     void load(() => api.GET('/v1/projection')).then((found) => {
@@ -269,7 +270,7 @@ export default function CallScreen() {
     const ahead =
       scenario === undefined || weeksAhead <= 0 ? null : (
         <View testID="call-ahead" style={[styles.ahead, { backgroundColor: color.tintDay }]}>
-          <Text style={[styles.small, styles.strong, { color: color.textSecondary }]}>{t('callScreen.ahead', { weeks: weeksAhead })}</Text>
+          <Text style={[styles.small, styles.strong, { color: color.textSecondary }]}>{tp('callScreen.ahead', weeksAhead)}</Text>
           <RangeText low={Number(weightInput(scenario.lowKg, units))} high={Number(weightInput(scenario.highKg, units))} unit={unitOf(units)} />
           <Text style={[styles.small, { color: color.muted }]}>{t('projection.view.scenario', { pct: Math.round(scenario.adherence * 100) })}</Text>
         </View>

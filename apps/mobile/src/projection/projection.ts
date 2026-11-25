@@ -25,7 +25,7 @@ export function figureScenario<S extends Scenario>(scenarios: S[]): S | undefine
 }
 
 /**
- * The scenario nearest the share of planned days the person has kept (ADR-094 Ek 1, Levent: the call screen's "in 8 weeks"):
+ * The scenario nearest the share of planned days the person has kept (ADR-094 Ek 1: the call screen's "in 8 weeks"):
  * the server's scenarios, one chosen, nothing worked out (U1). With no share known, the figure's own (the middle one).
  */
 export function nearestScenario<S extends Scenario>(scenarios: S[], adherence: number | undefined): S | undefined {

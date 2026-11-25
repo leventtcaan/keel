@@ -8,7 +8,7 @@ import { AccessibilityInfo, StyleSheet } from 'react-native';
 
 import CallScreen from '@/app/call';
 import type { components } from '@/api/schema';
-import { t } from '@/copy';
+import { t, tp } from '@/copy';
 import { ThemeProvider } from '@/theme/theme';
 import { WithSaved } from './support/saved';
 
@@ -203,11 +203,19 @@ describe('the call ahead (9c-4b)', () => {
     mockAnswers['/v1/decisions/{id}/basis'] = ok(withAdherence(0.86));
     await show();
     const ahead = within(screen.getByTestId('call-ahead'));
-    expect(ahead.getByText(t('callScreen.ahead', { weeks: 8 }))).toBeOnTheScreen();
+    expect(ahead.getByText(tp('callScreen.ahead', 8))).toBeOnTheScreen();
     // 0.86 is nearest 0.8: its range, never its middle number alone.
     expect(ahead.getByText(/^83\.7\D+85\.4/)).toBeOnTheScreen();
     expect(ahead.queryByText(/84\.6/)).toBeNull();
     expect(ahead.getByText(t('projection.view.scenario', { pct: 80 }))).toBeOnTheScreen();
+  });
+
+  test('one week ahead is said in the singular', async () => {
+    mockAnswers['/v1/projection'] = ok(PROJECTION('2027-01-04'));
+    mockAnswers['/v1/decisions/{id}/basis'] = ok(withAdherence(0.86));
+    await show();
+    expect(within(screen.getByTestId('call-ahead')).getByText(tp('callScreen.ahead', 1))).toBeOnTheScreen();
+    expect(tp('callScreen.ahead', 1)).toBe('In 1 week');
   });
 
   test('with no share known, the middle scenario, as the projection screen follows', async () => {
@@ -242,5 +250,6 @@ describe('the call ahead (9c-4b)', () => {
     mockAnswers['/v1/decisions/{id}'] = ok(decision({ id: 'd7' }));
     await show();
     expect(screen.queryByTestId('call-ahead')).toBeNull();
+    expect(mockGET.mock.calls.map((c) => c[0])).not.toContain('/v1/projection');
   });
 });
