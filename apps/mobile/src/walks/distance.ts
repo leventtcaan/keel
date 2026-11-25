@@ -1,6 +1,7 @@
 /** A route's one-way distance in the user's unit (K-1216): typed in km or mi, kept in km, shown back in the unit it was typed in. */
 import { type UnitSystem, parseNumber, roundTo } from '@/units/units';
 import { t } from '@/copy';
+import { formatDecimal } from '@/copy/format';
 
 import { walkParams as W } from './params';
 
@@ -25,5 +26,5 @@ export function distanceInput(km: number, system: UnitSystem): string {
 }
 
 export function formatDistance(km: number, system: UnitSystem): string {
-  return t(system === 'METRIC' ? 'walks.km' : 'walks.mi', { value: distanceInput(km, system) });
+  return t(system === 'METRIC' ? 'walks.km' : 'walks.mi', { value: formatDecimal(roundTo(system === 'METRIC' ? km : km / KM_PER_MI, W.distanceDecimals), W.distanceDecimals) });
 }

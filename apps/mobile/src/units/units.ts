@@ -5,6 +5,7 @@
  */
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
+import { formatDecimal, formatPlain } from '@/copy/format';
 
 import params from '../../../../data/parameters/units.json';
 
@@ -65,8 +66,6 @@ export function parseNumber(text: string): number | null {
 }
 
 const fixed = (value: number, decimals: number) => roundTo(value, decimals).toFixed(decimals);
-/** A trailing ".0" dropped: 100, 102.5. */
-const trimmed = (value: number, decimals: number) => String(roundTo(value, decimals));
 
 // ── body weight ──────────────────────────────────────────────────────────────────────────────────────────────
 /** The number alone, as an input field shows it. */
@@ -80,8 +79,13 @@ export function weightStepKg(system: UnitSystem): number {
   return system === 'METRIC' ? step : step * KG_PER_LB;
 }
 
+/** The number alone, as a person reads it ("82,5" in Turkish); weightInput is the plain one the code reads back. */
+export function weightNumber(kg: number, system: UnitSystem): string {
+  return formatDecimal(roundTo(system === 'METRIC' ? kg : kg / KG_PER_LB, P.weightDecimals), P.weightDecimals, { fixed: true });
+}
+
 export function formatWeight(kg: number, system: UnitSystem): string {
-  return t(system === 'METRIC' ? 'units.kg' : 'units.lb', { value: weightInput(kg, system) });
+  return t(system === 'METRIC' ? 'units.kg' : 'units.lb', { value: weightNumber(kg, system) });
 }
 
 /**
@@ -90,7 +94,7 @@ export function formatWeight(kg: number, system: UnitSystem): string {
  */
 export function weightChange(fromKg: number, toKg: number, system: UnitSystem): { delta: number; size: string } {
   const delta = roundTo(Number(weightInput(toKg, system)) - Number(weightInput(fromKg, system)), P.weightDecimals);
-  return { delta, size: t(system === 'METRIC' ? 'units.kg' : 'units.lb', { value: Math.abs(delta).toFixed(P.weightDecimals) }) };
+  return { delta, size: t(system === 'METRIC' ? 'units.kg' : 'units.lb', { value: formatDecimal(Math.abs(delta), P.weightDecimals, { fixed: true }) }) };
 }
 
 /** kg as the server keeps it, or null when the text is not a weight (empty, text, zero). */
@@ -135,7 +139,7 @@ export function volumeValue(kg: number, system: UnitSystem): number {
 }
 
 export function formatLoad(kg: number, system: UnitSystem): string {
-  const value = system === 'METRIC' ? trimmed(kg, P.loadDecimals) : String(lbOfLoad(kg));
+  const value = system === 'METRIC' ? formatDecimal(roundTo(kg, P.loadDecimals), P.loadDecimals) : formatPlain(lbOfLoad(kg));
   return t(system === 'METRIC' ? 'units.kg' : 'units.lb', { value });
 }
 
@@ -144,7 +148,7 @@ export function formatLoad(kg: number, system: UnitSystem): string {
  * 1.25 lb plate is stored as 0.57 kg, which is 1.26 lb.
  */
 export function formatPlate(kg: number, system: UnitSystem): string {
-  return String(system === 'METRIC' ? roundTo(kg, P.storedKgDecimals) : Math.round((kg / KG_PER_LB) * LB_PLATE_STEPS) / LB_PLATE_STEPS);
+  return formatPlain(system === 'METRIC' ? roundTo(kg, P.storedKgDecimals) : Math.round((kg / KG_PER_LB) * LB_PLATE_STEPS) / LB_PLATE_STEPS);
 }
 
 /** Zero is a load: a bodyweight move logs 0 added. */
@@ -156,7 +160,7 @@ export function parseLoadKg(text: string, system: UnitSystem): number | null {
 
 // ── waist ────────────────────────────────────────────────────────────────────────────────────────────────────
 export function formatWaist(cm: number, system: UnitSystem): string {
-  const value = fixed(system === 'METRIC' ? cm : cm / CM_PER_IN, P.waistDecimals);
+  const value = formatDecimal(roundTo(system === 'METRIC' ? cm : cm / CM_PER_IN, P.waistDecimals), P.waistDecimals, { fixed: true });
   return t(system === 'METRIC' ? 'units.cm' : 'units.in', { value });
 }
 
