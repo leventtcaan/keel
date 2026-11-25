@@ -6,6 +6,7 @@
 import en from '../../../../data/copy/en.json';
 import tr from '../../../../data/copy/tr.json';
 
+import { formatPlain } from './format';
 import { DEFAULT_LOCALE, type Locale, activeLocale } from './locales';
 import { pluralCategory } from './plural';
 
@@ -27,8 +28,13 @@ const readingOrder = (): Locale[] => {
   return locale === DEFAULT_LOCALE ? [DEFAULT_LOCALE] : [locale, DEFAULT_LOCALE];
 };
 
+/** A number goes in with the language's decimal mark (formatPlain); a string as it is. */
 const fill = (template: string, vars: Record<string, string | number>) =>
-  template.replace(/\{(\w+)\}/g, (_, name: string) => String(vars[name] ?? `{${name}}`));
+  template.replace(/\{(\w+)\}/g, (_, name: string) => {
+    const value = vars[name];
+    if (value === undefined || value === null) return `{${name}}`;
+    return typeof value === 'number' ? formatPlain(value) : value;
+  });
 
 export function t(key: string, vars: Record<string, string | number> = {}): string {
   const path = key.split('.');

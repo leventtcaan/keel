@@ -4,6 +4,7 @@ import { type AccessibilityActionEvent, Pressable, StyleSheet, Text, TextInput, 
 import { Icon } from '@/components/Icon';
 import { useDoneBar } from '@/components/KeyboardDone';
 import { t } from '@/copy';
+import { formatDecimal } from '@/copy/format';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
@@ -54,9 +55,9 @@ function round(value: number, decimals: number): number {
   return Math.round(value * scale) / scale;
 }
 
-/** "72.5", and "72" for a whole number: no trailing zero; with `fixed`, "72.0". */
+/** "72.5" ("72,5" in Turkish), and "72" for a whole number: no trailing zero; with `fixed`, "72.0". parse() reads either mark back. */
 function show(value: number, decimals: number, fixed = false): string {
-  return fixed ? round(value, decimals).toFixed(decimals) : String(round(value, decimals));
+  return formatDecimal(round(value, decimals), decimals, { fixed });
 }
 
 /**

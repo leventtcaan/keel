@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Chip } from '@/components/Chip';
 import { t } from '@/copy';
+import { formatPlain } from '@/copy/format';
 import { stepComplete } from '@/onboarding/draft';
 import { useDraft } from '@/onboarding/OnboardingContext';
 import { StepFrame } from '@/onboarding/StepFrame';
@@ -18,7 +19,7 @@ import {
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
-import { INCHES_PER_FOOT, type UnitSystem, weightInput } from '@/units/units';
+import { INCHES_PER_FOOT, type UnitSystem, weightNumber } from '@/units/units';
 
 /**
  * #ob-about (ADR-072 #2): height, weight and year of birth on scroll wheels, sex in two options "for the energy math".
@@ -55,7 +56,7 @@ export default function AboutStep() {
         values={weightValues(system)}
         value={weightOnWheel(draft.weight, system)}
         unset={draft.weight === ''}
-        format={(value) => (metric ? weightInput(value, 'METRIC') : String(value))}
+        format={(value) => (metric ? weightNumber(value, 'METRIC') : formatPlain(value))}
         onChange={(value) => update({ weight: String(value) })}
       />
     ) : null;
