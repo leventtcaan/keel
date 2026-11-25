@@ -6077,7 +6077,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: doing
+    status: done
     depends_on: [K-1229]
     why: "Gezinti Durak 1 ve taslak y5-e1: kararın üstünde boş bir şerit (yalnız ok), çizgiyle ayrılmış alt satır; kilo üçlü satırda küçük bir kutu, 'nereye gidiyorum' görünmüyor"
     acceptance:
