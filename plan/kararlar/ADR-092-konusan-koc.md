@@ -69,3 +69,21 @@ Orta: sağlayıcı kapısı (`LanguageModel`, `EgressGate`) zaten soyut; `coach.
 - **Hafıza** kullanıcının kendi cümlesidir (modelin yazdığı değil): "hatırla" onayı `POST /v1/coach/memory`; koçun söyleyemeyeceği ifade reddedilir; dolunca 409. Geçmiş ve hafıza `coach.message` / `coach.memory_item`; sağlık verisi sayılır (konuşma kararlar hakkında): HEALTH_DATA ve THIRD_PARTY_AI geri çekilince, hesap silinince silinir; dışa aktarmada `coach` bölümü.
 - **Modül sınırı:** `coach` artık `consent`'e bağlı (`ConsentWithdrawn` dinlemek için); ADR-015 haritasındaki modül listesi değişmedi.
 - **Rıza metni 2-draft** (OpenAI adıyla; Levent onaylayınca "-draft" kalkar). Telefonun hangi sağlayıcı ve veri adıyla rıza vereceğini sunucu söyler: `GET /v1/consents/ai-offer`.
+
+## Ek 2 · Koç merkezde, eylem kartları motordan (Levent, 2026-11-26; 9c-6b)
+Bağlam: gezinti Durak 8-9'da Levent "AI koç ücretli üyelikte çok daha merkezde olmalı, işleri kişinin üzerinden aldığını hissettirmeli" dedi. Taslak
+`prototip/gorsel-yon/y5-e3.jpg`'de eylem kartı var ("Akşam yürüyüşü · 25 dk · ~3.000 adım · Plana ekle"). Bugün koça yalnız karar ekranındaki "Bu kararı sor"
+düğmesiyle giriliyor; sağlayıcı üretimde kapalı. Agent üç soru sordu; Levent önerilen seçeneklerin üçünü de seçti:
+1. **Giriş: Bu hafta'da koç satırı, sekme yok.** Ana ekranda kararın altında tek satır "Koça sor" ve 2-3 bağlamlı hazır soru hapı (ADR-094 §3 kum hap). Karar
+   ekranındaki düğme kalır. Antrenman bitişi ve yemek ekranı kendi bağlamlı haplarını alır. Ayrı Koç sekmesi açılmaz: ücretsiz kullanıcıya çoğu paywall'a çıkan bir
+   sekme olur, sağlayıcı kapalıyken boş kalır. Ücretlilik değişmez (ADR-091 b): motorun cümleleri ücretsiz, model sorusu ücretli.
+2. **Eylem kartları yalnız motorun önerileri (U1).** Koç bir eylem uydurmaz; kart, motorun zaten hesapladığı bir öneriyi gösterir, LLM yalnız anlatır:
+   - Yürüyüş kartı: kalan adım, kişinin kendi rotalarıyla yürüyüş (K-1216, `readWalk`); "Plana ekle" bugünün akşam yürüyüş hatırlatmasını kurar (telefondaki
+     hatırlatma; plan, hedef ya da karar değişmez).
+   - Öğün kartı: `GET /v1/days/{day}/suggestions` (kalan kaloriye uyan, kişinin sık yediği öğünler); "Kaydet" öğün ekranına götürür (bugünkü taslak geçişi).
+   - Görünüş: ADR-094 §3, mercan zemin (`tintSuggest`) + petrol düğme. İkisi de sağlayıcı kapalıyken çalışır.
+3. **Çift soru:** koçta "Bu karar neden?" (günün çipi, telefonda ve ücretsiz cevaplanır) kalır; "Bu kararı açıkla" başlangıç sorusu yalnız sağlayıcı açık ve
+   kişi ücretliyken görünür.
+Etkilenen: `src/app/(tabs)/index.tsx` (ana ekran, kelime bütçesi 74: koç satırı aşarsa Levent'e sorulur), `src/app/coach.tsx`, `src/coach/conversation.ts`
+(STARTERS), antrenman bitişi ve yemek ekranı, `data/copy/*` (yeni metin en+tr). Doğrulama: koç satırı ve hapların testleri; eylem kartının motorun önerisi
+yokken görünmediği ve "Plana ekle"nin planı değil yalnız hatırlatmayı değiştirdiği testler; başlangıç sorusunun sağlayıcı kapalı / ücretsizken görünmediği test.

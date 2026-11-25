@@ -5,15 +5,16 @@ guncelleme: 2026-11-25
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (26 Kas — 9c-6a: koç ekranı Sıcak defter dilinde, PR otomatik birleşmede)
+## ▶ DEVAM NOKTASI (26 Kas — 9c-6a birleşti; 9c-6b kararları ADR-092 Ek 2)
 **9c-5 birleşti (#784).** **9c-6a (K-1234, #785):** koç ekranı y5-e3 diliyle: kişinin baloncuğu petrol (sağda), koçun sözü kum baloncuk (solda), cevaptaki karar
 kartı adaçayı zeminde serif başlıklı (DecisionBlock yerine), hazır sorular çerçevesiz kum hap (yatay kayan iki sıra, kutunun üstünde), giriş tek satır "Koça mesaj
 yaz" + yuvarlak petrol gönder (ekranın tek dolgusu). **Klavye hatası düzeldi:** sheet içinde KeyboardAvoidingView kutuyu klavyenin altında bırakıyordu (ölçüm
 sheet'in tepesinden); ofset = pencere yüksekliği − sheet yüksekliği + güvenli alan. **K1 (Levent, 26 Kas):** giriş etiketi ve dikte ipucu yalnız VoiceOver'da
 (`coach-screen.test.tsx` dikte testi, 1 beklenti). Yeni metin yok. Simülatörde görüldü.
-**Levent'i bekleyen (9c-6b):** AI'ın ücretli üyelikte merkeze alınması (giriş noktaları: Bugün, sekmeler, paywall) ve taslaktaki eylem kartları ("Akşam yürüyüşü ·
-Plana ekle", makro kartı): bugün ne veri ne endpoint var, koç planı değiştirmez (U1, ADR-092); ürün + para kararı. Ayrıca hazır sorularda "Bu kararı açıkla" ile
-"Bu karar neden?" aynı şeyi soruyor (starter + gün çipi), metin işi. **Sıradaki:** 9c-6b kararları ya da 9c-7 antrenman sekmesi.
+**9c-6a birleşti (#786).** **9c-6b kararları (Levent, 26 Kas) → ADR-092 Ek 2:** koç Bu hafta'da karar altında tek satır + bağlamlı haplar (sekme yok);
+eylem kartları yalnız motorun önerileri (K-1216 yürüyüş → "Plana ekle" = akşam hatırlatması; günün öğün önerileri → Kaydet; U1 korunur); çift soruda günün çipi kalır,
+"Bu kararı açıkla" yalnız sağlayıcı açık + ücretli. Kartlar: **K-1235** (Bu hafta satırı + çift soru) → **K-1236** (eylem kartları) → **K-1237** (antrenman bitişi ve
+yemek hapları). **Sıradaki:** K-1235.
 
 ## (önceki) ▶ DEVAM NOKTASI (25 Kas gece — 9c-5: bugünün antrenman kartı, PR #784 otomatik birleşmede)
 **9c-4b birleşti (#782).** **9c-5 (K-1233, #783):** ana ekrandaki antrenman kartının 7 türü kum zeminde; "Bugün" etiketi mercan yazı (bugünün adı rolü),
