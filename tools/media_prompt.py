@@ -1,7 +1,8 @@
 """The form-image prompt of one move (K-1219, ADR-091 #4): the standard template with the move's slots filled.
 
-    python3 tools/media_prompt.py <exercise_id>     # prints the prompt
-    python3 tools/media_prompt.py --all             # checks that all moves fill every slot
+    python3 tools/media_prompt.py <exercise_id>          # prints the form image prompt
+    python3 tools/media_prompt.py --loop <exercise_id>   # prints the loop clip prompt (nine frames, one image)
+    python3 tools/media_prompt.py --all                  # checks that all moves fill every slot of both
 
 Slots come from data/exercises/<id>.yaml, data/copy/en.json and data/exercises/media/poses.json; the template is the block
 in data/exercises/media/prompt-template.md. Standard library only; the YAML files are flat, read line by line (as clip.py).
@@ -18,15 +19,17 @@ MEDIA = CATALOG / "media"
 COPY = ROOT / "data" / "copy" / "en.json"
 
 BEGIN, END = "<!-- prompt:begin -->", "<!-- prompt:end -->"
+LOOP_BEGIN, LOOP_END = "<!-- loop:begin -->", "<!-- loop:end -->"
 POSE_SLOTS = ("apparatus", "view", "start", "end", "path")
 CUES = ("cue1", "cue2", "cue3")
 
 
-def template(media: pathlib.Path = MEDIA) -> str:
+def template(media: pathlib.Path = MEDIA, loop: bool = False) -> str:
     text = (media / "prompt-template.md").read_text(encoding="utf-8")
-    if BEGIN not in text or END not in text:
-        raise SystemExit("prompt-template.md has no prompt block")
-    return text.split(BEGIN, 1)[1].split(END, 1)[0].strip() + "\n"
+    begin, end = (LOOP_BEGIN, LOOP_END) if loop else (BEGIN, END)
+    if begin not in text or end not in text:
+        raise SystemExit(f"prompt-template.md has no {'loop' if loop else 'prompt'} block")
+    return text.split(begin, 1)[1].split(end, 1)[0].strip() + "\n"
 
 
 def move(exercise_id: str, catalog: pathlib.Path = CATALOG) -> dict:
@@ -64,9 +67,9 @@ def slots(exercise_id: str, catalog: pathlib.Path = CATALOG, media: pathlib.Path
     return filled
 
 
-def prompt(exercise_id: str, catalog: pathlib.Path = CATALOG, media: pathlib.Path = MEDIA, copy: pathlib.Path = COPY) -> str:
+def prompt(exercise_id: str, catalog: pathlib.Path = CATALOG, media: pathlib.Path = MEDIA, copy: pathlib.Path = COPY, loop: bool = False) -> str:
     """The filled template; a slot with no value stops it instead of leaving a hole."""
-    text = template(media)
+    text = template(media, loop)
     values = slots(exercise_id, catalog, media, copy)
     wanted = {name for _, name, _, _ in string.Formatter().parse(text) if name}
     lacking = sorted(w for w in wanted if not str(values.get(w, "")).strip())
@@ -80,13 +83,17 @@ def ids(catalog: pathlib.Path = CATALOG) -> list[str]:
 
 
 def main(argv: list[str]) -> int:
+    if len(argv) == 2 and argv[0] == "--loop":
+        sys.stdout.write(prompt(argv[1], loop=True))
+        return 0
     if len(argv) != 1:
         print(__doc__, file=sys.stderr)
         return 2
     if argv[0] == "--all":
         for exercise_id in ids():
             prompt(exercise_id)
-        print(f"{len(ids())} prompts, no empty slot")
+            prompt(exercise_id, loop=True)
+        print(f"{len(ids())} moves, both prompts, no empty slot")
         return 0
     sys.stdout.write(prompt(argv[0]))
     return 0

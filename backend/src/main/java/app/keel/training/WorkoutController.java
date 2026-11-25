@@ -81,7 +81,8 @@ class WorkoutController {
     /** Contract Exercise; the clips only once they passed the filming checklist (ADR-017, K-219), the form image once its own review passed (ADR-091 #4). */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record Exercise(String id, String nameKey, ExerciseCatalog.Kind kind, List<String> muscles, List<String> alternatives,
-            ExerciseCatalog.Load load, ExerciseCatalog.Equipment equipment, boolean unilateral, List<String> setupFields, Clips clips, String image) {
+            ExerciseCatalog.Load load, ExerciseCatalog.Equipment equipment, boolean unilateral, List<String> setupFields, Clips clips, String image,
+            String loop) {
     }
 
     /** Contract ExerciseClips: paths in the app's assets. */
@@ -153,7 +154,7 @@ class WorkoutController {
         return catalog.all().stream().map(move -> new Exercise(move.id(), move.nameKey(), move.kind(), move.muscles(),
                 move.alternatives(), move.load(), move.equipment(), move.unilateral(), move.setup(),
                 move.reviewed() ? new Clips(move.clips().firstRep(), move.clips().lastRep()) : null,
-                move.imageReviewed() ? move.image() : null)).toList();
+                move.imageReviewed() ? move.image() : null, move.loopReviewed() ? move.loop() : null)).toList();
     }
 
     @PostMapping("/v1/workouts")

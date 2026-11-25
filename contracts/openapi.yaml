@@ -3457,6 +3457,11 @@ components:
             The drawn form image (ADR-091 #4), a path in the app's assets (exercises/<id>/form.webp or .png): two panels,
             start and end. Absent until the image passed the checklist (its own review, apart from the clips'); the app
             then shows no image.
+        loop:
+          type: string
+          description: |
+            A short silent loop of one repetition drawn from the form image (ADR-091 Ek 6), a path in the app's assets
+            (exercises/<id>/loop.mp4). Absent until the loop passed its own review; the app then shows the form image alone.
     ExerciseClips:
       type: object
       description: |

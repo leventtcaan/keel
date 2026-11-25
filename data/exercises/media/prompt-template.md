@@ -42,3 +42,34 @@ THE MOVE
 
 COACHING CUES the drawing must agree with (do not write them in the image): "{cue1}" "{cue2}" "{cue3}"
 <!-- prompt:end -->
+
+## Loop clip (K-1219, ADR-091 #4, Ek 6)
+The image model makes no video, so a move's short loop is drawn as nine frames in one image, with the move's approved
+form image as the reference: one image keeps the mannequin, the camera and the floor the same in every frame.
+`tools/media_loop.sh <id>` fills the block below (`tools/media_prompt.py --loop <id>`), cuts the 3 x 3 grid and plays
+frames 1 to 9 and back as a silent loop (`tools/media_loop.py`), saved as `apps/mobile/assets/exercises/<id>/loop.mp4`.
+Each loop gets its own `loop_review` record, as the image does.
+
+<!-- loop:begin -->
+Edit task. The attached image is our approved instructional illustration of the exercise "{name}" (two panels, "Start"
+and "End"). Keep its exact style: flat vector, faceless gender-neutral grey mannequin, thin dark-grey outlines, soft
+light-grey shading, plain off-white #FAF8F3 background, turquoise #007684 only on the target muscles ({muscles}). The same
+mannequin, proportions, clothes and equipment as the reference.
+
+Create ONE new square image divided into a 3 x 3 grid of nine equal square frames. The nine frames are consecutive, evenly
+spaced moments of ONE repetition, from the Start position to the End position, for an animation, read left to right, top
+to bottom:
+- frame 1 (top-left): {start} (as the reference's Start panel)
+- frames 2 to 8: evenly spaced in-between positions, each a little further along the movement than the one before; {path}
+- frame 9 (bottom-right): {end} (as the reference's End panel)
+
+THE MOVE: equipment {apparatus}; equipment type {equipment}; setup visible and drawn correctly: {setup}.
+COACHING CUES the drawing must agree with (do not write them): "{cue1}" "{cue2}" "{cue3}"
+
+Animation rules (strict): in all nine frames the camera, the scale, the floor line height, the equipment and every part of
+the body or machine that does not move (feet on the floor, a seat, a bench, a cable station) are IDENTICAL, so the frames
+play in sequence without anything jumping. Camera: {view}. Neck neutral. No text, no titles, no arrows, no numbers, no
+borders or dividing lines between frames; the off-white background is continuous. Anatomically correct joint angles,
+the correct number of limbs, hands and fingers, nothing floating or merged.
+<!-- loop:end -->
+

@@ -183,3 +183,15 @@ Hukuk sitesi `terms.md` "Coaching needs a subscription" diyor; ücretsiz katmanl
 - **AI koç sağlayıcısı: OpenAI.** Doğrudan DeepSeek API'si reddedildi (veri Çin'de, ZDR ve DPA yok, Garante yasağı: `arastirma/ham/deepseek-dogrulama-2026-11-24.md`). Levent: "uğraşmayalım" → OpenAI'nin standart API koşulları (API verisi eğitimde kullanılmaz; kötüye kullanım izleme için sınırlı saklama) kabul; ZDR başvurusu zorunlu değil (ADR-041/044'ün ZDR şartı bu sağlayıcı için gevşetildi, rıza metni sağlayıcıyı adıyla ve saklama koşuluyla söyler, V2). **Maliyet kuralı:** en düşük maliyetli, eski nesil küçük model; en yeni/büyük modeller kullanılmaz; aylık harcama tavanı ve kullanıcı başına kota zorunlu. Model adı ve fiyatı resmî dokümandan doğrulanmadan koda girmez (K6). Anahtar `~/.secrets/nextcall/openai-api-key` (600), depoda/logda yok (V5); VPS'e `KEEL_OPENAI_API_KEY` olarak Levent onayıyla.
 - **Adım önerisi ilk ekranda** (ana ekran bütçesi 70 → 74). **Yürüyüş hatırlatması** beşinci tür, varsayılan kapalı (ADR-090'ın dört tür sınırı bu kadar genişler).
 - **Yeni istek (K-1227):** kayıtlı yerler (ev, salon) arasında harita üzerinde noktalı yürüme rotası ve adım karşılığı; yerler cihazda, konum takibi yok, rıza metni güncellenir.
+
+## Ek 6 · Form döngü klibi: dokuz kare, tek görsel (Levent, 25 Kas 2026)
+- **Neden bu yol:** #4 "video dahil" dedi; Codex'te video üretme aracı yok (25 Kas, Codex'e soruldu: yalnız `image_gen` var, görselden
+  video yok). Levent seçti: Codex kareleri + döngü (Sora API ücretli seçenek ve "yalnız görsel" seçenekleri elendi).
+- **Yöntem:** hareketin onaylı form görseli referans verilir; Codex tek görselde 3 × 3 ızgara çizer (kare 1 başlangıç, 9 bitiş, arası
+  eşit adım; `prompt-template.md` › loop bloğu). Tek görsel, mankenin, kameranın ve zeminin kareler arasında kaymasını önler (pilot:
+  ±5 px). `tools/media_loop.py` kareleri keser, 1→9→1 oynatır, kısa çapraz geçişle sessiz MP4 yazar (`data/exercises/media/loop.json`).
+  Pilot (squat): 4 kare kare-kare aktı, uzun geçiş iki pozu üst üste bindirdi; 9 kare + 0,1 sn geçiş seçildi.
+- **Kapı:** `loop` + `loop_review` (görselden ayrı inceleme); sunucu klibi yalnız inceleme geçince verir, klip form görseli olmadan
+  olamaz. Ham ızgaralar depoya girmez (`~/Documents/keel-media/loops/`).
+- **Uygulamada:** `expo-video` (SDK 57 listesinde ~57.0.5, 25 Kas doğrulandı), sessiz döngü, durdur/oynat düğmesi (WCAG 2.2.2: 5 sn'den
+  uzun hareket durdurulabilmeli), Hareketi Azalt açıkken yalnız görsel.

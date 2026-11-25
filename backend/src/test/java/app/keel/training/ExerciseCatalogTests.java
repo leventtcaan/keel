@@ -256,6 +256,54 @@ class ExerciseCatalogTests {
     }
 
     @Test
+    void aMoveMayHaveALoopClipWithItsOwnReviewDrawnFromItsFormImage() {
+        // ADR-091 Ek 6: nine frames drawn from the form image make a short loop; its review is its own, apart from the image's.
+        Map<String, Object> drawn = with(with(move("squat", "compound", List.of("quads"), List.of()), "image", "exercises/squat/form.webp"),
+                "image_review", "pending");
+        Map<String, Object> looped = with(with(drawn, "loop", "exercises/squat/loop.mp4"), "loop_review", "pending");
+        Map<String, Object> passed = Map.of("date", "2026-11-25", "by", "levent", "checklist", "pass", "notes", "smooth, angles right");
+
+        assertThat(ExerciseCatalog.of(Map.of("squat.yaml", drawn), MUSCLES).find("squat")).hasValueSatisfying(move -> {
+            assertThat(move.loop()).isNull();
+            assertThat(move.loopReviewed()).isFalse();
+        });
+        assertThat(ExerciseCatalog.of(Map.of("squat.yaml", looped), MUSCLES).find("squat")).hasValueSatisfying(move -> {
+            assertThat(move.loop()).isEqualTo("exercises/squat/loop.mp4");
+            assertThat(move.loopReviewed()).isFalse();
+        });
+        assertThat(ExerciseCatalog.of(Map.of("squat.yaml", with(looped, "loop_review", passed)), MUSCLES).find("squat")).hasValueSatisfying(move -> {
+            assertThat(move.loopReviewed()).isTrue();
+            assertThat(move.imageReviewed()).as("the image's review is its own").isFalse();
+        });
+    }
+
+    @Test
+    void aLoopClipMustBeTheMovesOwnHaveAReviewAndAFormImage() {
+        Map<String, Object> squat = move("squat", "compound", List.of("quads"), List.of());
+        Map<String, Object> drawn = with(with(squat, "image", "exercises/squat/form.webp"), "image_review", "pending");
+        Map<String, Object> looped = with(with(drawn, "loop", "exercises/squat/loop.mp4"), "loop_review", "pending");
+
+        assertThatIllegalArgumentException().as("another move's loop").isThrownBy(() -> ExerciseCatalog.of(Map.of("squat.yaml",
+                with(looped, "loop", "exercises/bench_press/loop.mp4")), MUSCLES));
+        assertThatIllegalArgumentException().as("not mp4").isThrownBy(() -> ExerciseCatalog.of(Map.of("squat.yaml",
+                with(looped, "loop", "exercises/squat/loop.gif")), MUSCLES));
+        assertThatIllegalArgumentException().as("a loop with no review").isThrownBy(() -> ExerciseCatalog.of(Map.of("squat.yaml",
+                with(drawn, "loop", "exercises/squat/loop.mp4")), MUSCLES));
+        assertThatIllegalArgumentException().as("a review with no loop").isThrownBy(() -> ExerciseCatalog.of(Map.of("squat.yaml",
+                with(drawn, "loop_review", "pending")), MUSCLES));
+        assertThatIllegalArgumentException().as("a loop with no form image to be drawn from").isThrownBy(() -> ExerciseCatalog.of(Map.of("squat.yaml",
+                with(with(squat, "loop", "exercises/squat/loop.mp4"), "loop_review", "pending")), MUSCLES));
+    }
+
+    @Test
+    void aReviewedLoopClipIsInTheApp() throws IOException {
+        ExerciseCatalog catalog = ExerciseCatalog.of(repository(), vocabulary());
+
+        assertThat(catalog.all().stream().filter(ExerciseCatalog.Exercise::loopReviewed))
+                .allSatisfy(move -> assertThat(APP_ASSETS.resolve(move.loop())).as(move.id()).exists());
+    }
+
+    @Test
     void anUnknownFieldIsRefusedSoATypoCannotDropData() {
         // "alternates" for "alternatives" would otherwise load as no alternatives at all.
         Map<String, Object> typo = new HashMap<>(move("squat", "compound", List.of("quads"), List.of()));

@@ -1,0 +1,11 @@
+{
+  "_about": "K-1219 (ADR-091 Ek 6): how a move's nine drawn frames become its loop clip (tools/media_loop.py). Picked on the squat pilot of 25 Nov 2026: at these numbers most moments show one crisp frame and the steps still read as one movement; longer crossfades stack two poses into a ghost. A look, not a measurement.",
+  "grid": 3,
+  "hold_start_s": 0.7,
+  "step_s": 0.22,
+  "hold_end_s": 0.4,
+  "crossfade_s": 0.1,
+  "size_px": 720,
+  "fps": 30,
+  "crf": 26
+}
