@@ -83,6 +83,14 @@ tam da değil": çekirdek ücretsiz, derinlik ücretli. Tasarımda her özellik 
 Simülatör sahte sunucuya (fixture) bağlı: yemek araması, karar mantığı ve sunucudan gelen her şey önceden yazılı. Tasarım işinde gerçek davranış ya gerçek
 sunucuya karşı (test hesabı) ya da gerçek veriyle beslenen fixture ile gösterilmeli.
 
+## Durak 6 · Yürüyüş haritası
+- Kaliteli bir iş (Levent). **Ayarlar'ın derinliğinden çıkmalı:** uygulama içinde **kardiyo akışına** ya da **günlük yürüyüş akışına** dahil edilsin,
+  **ücretli özellik** olarak.
+- UI, UX ve kullanım senaryosu olarak çok daha iyileştirilsin; amaç insanların günlerini **öngörülebilir** yaşaması (ev ↔ salon kaç adım, bugün ne
+  kadar kaldı, hangi yürüyüş kapatır).
+- Agent notu: bugün yol Ayarlar › Senin hakkında › Aktivite › Yürüyüşlerim › Haritayı aç (5 dokunuş); ana ekrandaki adım önerisi satırı kayıtlı
+  yürüyüşleri zaten kullanıyor (K-1216), harita oradan açılabilir.
+
 ## Onaylar
 "Hepsi onay" körlemesine verildi (Levent): #770 (görsel/döngü inceleme kayıtları, rıza metni 2, şartlar) otomatik birleşmeden çıkarıldı; gezinti sonrası
 Levent'in gerçek kararıyla yeniden.
