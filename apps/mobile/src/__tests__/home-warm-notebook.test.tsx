@@ -132,7 +132,6 @@ describe.each(['light', 'dark'] as ColorScheme[])('%s theme', (scheme) => {
 // 9c-3 (prototype gorsel-yon/y5-e1): the call's arrow sits on the call's own line, no empty band above it; the weight has a
 // line of its own under the day's numbers, the trend drawn from the server's points.
 describe.each(['light', 'dark'] as ColorScheme[])('%s theme, 9c-3', (scheme) => {
-  const p = palettes[scheme];
 
   test("the call's arrow is on the title's line, not on a band of its own", async () => {
     await render(

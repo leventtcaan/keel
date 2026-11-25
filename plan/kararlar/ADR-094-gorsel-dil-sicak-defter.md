@@ -167,3 +167,13 @@ Orta. Renkler tek dosyada (`tokens.ts`) ama tipografi, ters blok kaldırma ve ha
   - `textTransform: 'uppercase'` yok.
 - Her ekran Evre 9c'de simülatörde Levent'e gösterilir. Kabul ölçütü: ekran, `prototip/gorsel-yon/y5-*` taslaklarıyla aynı dili
   konuşur ve rol tablosuna uyar. Taslağın birebir kopyası istenmez.
+
+## Ek 1 · Karar ekranı (9c-4, 2026-11-25, Levent)
+Levent'in üç seçimi (karar ekranı, taslak `prototip/gorsel-yon/y5-e2.jpg`):
+1. **"8 hafta sonra" aralığı karar ekranında görünür.** Sunucunun projeksiyon senaryolarından kişinin son uyumuna en yakın olanın
+   aralığı gösterilir. Daima aralık (U5), sayı sunucudan (U1); seçim yalnız hangi senaryonun gösterileceğidir (9c-4b).
+2. **Ekranın kelime bütçesi 45 → 50.** "Ne değişiyor" ve "Neden" başlıkları girer. Uzun neden cümleleri kısa etiket + sayıya
+   iner; bu metin işi Türkçe metin onaylarıyla (#770) birlikte yapılır.
+3. **"Uygulamada" düğmeleri kalır**, sade kum haplar olarak ("her düğme bir yere bağlanır").
+Agent (teknik): grafik kararın okuduğu haftalardan (`/v1/decisions/{id}/basis`, "Bu karar neden" ekranının okuması) çizilir.
+Hedef bandı çizilmez, çünkü sunucu ona ait bir sayı vermez (U1).

@@ -1689,12 +1689,14 @@
     },
     {
       "screen": "call",
-      "budget": 45,
-      "source": "ADR-077 #3",
+      "budget": 50,
+      "source": "ADR-077 #3, then to 50 by K-1231 (Levent, 25 Nov: the headings 'What changes' and 'Why', 9c-4a, prototype y5-e2)",
       "task": "K-978",
-      "note": "The budget stays 45, the prototype's target. The kind of source of a reason (EXPERIENCE, LITERATURE, PRODUCT) is a symbol on the screen with its full words as the VoiceOver label (today.call.source.<tag>), so it is not a line of words and U14 stays said for everyone; with no sentence to read (the safety call) the words themselves show, and are counted in that face. The back label is counted. Reason lines that ran over were shortened (decision.ruleShort.cut_step, adherence_low), not the budget raised.",
+      "note": "The budget is 50 (ADR-094 Ek 1, Levent 25 Nov: the headings 'What changes' and 'Why'). The kind of source of a reason (EXPERIENCE, LITERATURE, PRODUCT) is a symbol on the screen with its full words as the VoiceOver label (today.call.source.<tag>), so it is not a line of words and U14 stays said for everyone; with no sentence to read (the safety call) the words themselves show, and are counted in that face. The back label is counted. Reason lines that ran over were shortened (decision.ruleShort.cut_step, adherence_low), not the budget raised.",
       "file": "src/app/call.tsx",
       "keys": [
+        "callScreen.section.why",
+        "callScreen.section.change",
         "callScreen.inPlan",
         "decision.adjust_calories.label",
         "decision.adjust_calories.not_toward_goal.title",
@@ -1717,6 +1719,7 @@
       ],
       "dynamic": [{"what": "the day the call was made (Mon, Dec 28)", "words": 2}, {"what": "the next call's date (Mon, Jan 4)", "words": 2}],
       "notFirstView": [
+        "callScreen.weeksSpoken",
         "lockedCall.title",
         "lockedCall.line",
         "subscription.seePlans",

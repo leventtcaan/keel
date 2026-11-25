@@ -749,11 +749,17 @@ tasks:
     project_fields_synced: true
     url: https://github.com/leventtcaan/keel/issues/775
   K-1230:
-    hash: 8c73e4b3dd8a9b9a
+    hash: b656c1e34958427b
     issue: 777
     item: PVTI_lAHOCKkQ2c4BlAgHzhL4UR8
     project_fields_synced: true
     url: https://github.com/leventtcaan/keel/issues/777
+  K-1231:
+    hash: 309f270747994258
+    issue: 779
+    item: PVTI_lAHOCKkQ2c4BlAgHzhL41tQ
+    project_fields_synced: true
+    url: https://github.com/leventtcaan/keel/issues/779
   K-201:
     hash: 7891d8135e5c3b9f
     issue: 25

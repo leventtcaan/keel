@@ -246,6 +246,8 @@ export const tokens = {
     trendWidth: 120,
     trendHeight: 36,
     trendDot: 6,
+    /** The call screen's chart of the weeks the call read (9c-4a): full width, this tall. */
+    callChartHeight: 72,
     /** Sets per muscle: the muscle's name column and the count column beside its bar. */
     barName: 92,
     barCount: 44,

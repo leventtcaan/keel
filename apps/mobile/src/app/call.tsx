@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { DecisionBlock } from '@/components/DecisionBlock';
+import { TrendLine } from '@/components/TrendLine';
 import { ProblemText, announce } from '@/components/ProblemText';
 import { t } from '@/copy';
 import { useSaved } from '@/saved/saved';
@@ -15,6 +16,7 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { useReduceMotion } from '@/theme/useReduceMotion';
 import { TrendCount } from '@/weighIn/TrendCount';
+import { formatWeight, weightNumber } from '@/units/units';
 import { appliedSave, applyCall, callFace, declineCall } from '@/today/call';
 import { ChangeRows } from '@/today/ChangeRows';
 import { changeRows } from '@/today/callChanges';
@@ -105,6 +107,22 @@ export default function CallScreen() {
     };
   }, [api, needsWeighIns, reads]);
 
+  // The weeks the call read (GET /v1/decisions/{id}/basis, as Why this call reads them), drawn as a small chart (9c-4a). Not
+  // there (no subscription, no consent, none): no chart, the call stands as it is.
+  const [basis, setBasis] = useState<{ id: string; weeks: number[] } | null>(null);
+  const [chartWidth, setChartWidth] = useState(0);
+  const readId = call?.state === 'ready' ? call.value.id : null;
+  useEffect(() => {
+    if (readId === null) return;
+    let live = true;
+    void load(() => api.GET('/v1/decisions/{id}/basis', { params: { path: { id: readId } } })).then((found) => {
+      if (live) setBasis(found.state === 'ready' ? { id: readId, weeks: found.value.weeks.map((week) => week.kg) } : null);
+    });
+    return () => {
+      live = false;
+    };
+  }, [api, readId]);
+
   const [rise] = useState(() => new Animated.Value(0));
   const shown = call?.state === 'ready';
   useEffect(() => {
@@ -170,9 +188,10 @@ export default function CallScreen() {
     const waits = decision.action.type === 'NO_DECISION_YET';
     // Built outside the JSX children (the raw-text guard reads them).
     const tick = face.foot === 'inPlan' ? <SymbolView name="checkmark" size={tokens.type.body} tintColor={color.accentInk} weight="bold" /> : null;
+    // Set apart by space, not a ruled line (ADR-094 §3).
     const foot =
       face.foot === null ? null : (
-        <View style={[styles.foot, { borderTopColor: color.decisionLine }]}>
+        <View style={styles.foot}>
           {tick}
           <Text style={[styles.small, { color: color.decisionTextSecondary }]}>{t(`callScreen.${face.foot}`)}</Text>
         </View>
@@ -206,10 +225,42 @@ export default function CallScreen() {
         </View>
       );
     // One way to the coach about this call (ADR-092 #7); its starter questions are in the coach itself. Counted in the screen's words.
+    // The six weeks the call read, the server's numbers: the first and the latest labelled, nothing worked out here (U1).
+    const weeks = basis?.id === decision.id && basis.weeks.length >= 2 ? basis.weeks : null;
+    const chart =
+      weeks === null ? null : (
+        // One element for VoiceOver: what the weeks went from and to, in words (the drawing and its two labels are not read apart).
+        <View
+          testID="call-weeks"
+          accessible
+          accessibilityLabel={t('callScreen.weeksSpoken', { weeks: weeks.length - 1, first: formatWeight(weeks[0], units), latest: formatWeight(weeks[weeks.length - 1], units) })}
+          style={[styles.chart, { backgroundColor: color.tintTime }]}
+          onLayout={(e) => setChartWidth(e.nativeEvent.layout.width - 2 * tokens.space.md)}>
+          {/* The chart's height is kept from the start, so nothing under it moves once its width is known. */}
+          <View testID="call-weeks-box" style={styles.chartBox}>{chartWidth > 0 ? <TrendLine points={weeks} width={chartWidth} height={tokens.size.callChartHeight} /> : null}</View>
+          <View style={styles.chartEnds}>
+            <Text style={[styles.small, { color: color.textSecondary }]}>{weightNumber(weeks[0], units)}</Text>
+            <Text style={[styles.small, styles.strong, { color: color.text }]}>{formatWeight(weeks[weeks.length - 1], units)}</Text>
+          </View>
+        </View>
+      );
+    const changes = week1?.rows ?? changeRows(decision, units);
+    const heading = (key: string) => (
+      <Text accessibilityRole="header" style={[styles.heading, { color: color.text }]}>
+        {t(key)}
+      </Text>
+    );
     const askButton = <Button label={t('coach.askAbout')} variant="ghost" size="sm" onPress={() => router.push({ pathname: '/coach', params: { decisionId: decision.id } })} />;
     body = (
       <>
-        <Text style={[styles.small, { color: color.muted }]}>{weekdayDate(decision.madeOn)}</Text>
+        {/* The date and the confidence on one line (prototype y5-e2), a dot between them; waiting, no confidence to say. */}
+        <View testID="call-date-line" style={styles.dateLine}>
+          <Text style={[styles.small, { color: color.muted }]}>{weekdayDate(decision.madeOn)}</Text>
+          {waits ? null : <View style={[styles.dot, { backgroundColor: color.muted }]} />}
+          {waits ? null : (
+            <Text style={[styles.small, { color: color.muted }]}>{t('callScreen.confidence', { level: t(`callScreen.level.${decision.confidence}`) })}</Text>
+          )}
+        </View>
         <Animated.View
           style={{ opacity: rise, transform: [{ translateY: rise.interpolate({ inputRange: [0, 1], outputRange: [tokens.motion.revealRise, 0] }) }] }}>
           <DecisionBlock testID="call-block" title={t(labelKey(decision.copyKey))}>
@@ -217,18 +268,18 @@ export default function CallScreen() {
             {foot}
           </DecisionBlock>
         </Animated.View>
-        <ChangeRows rows={week1?.rows ?? changeRows(decision, units)} />
+        {chart}
+        {changes.length === 0 ? null : heading('callScreen.section.change')}
+        <ChangeRows rows={changes} />
         {/* Where the call lands in the day (K-1217): this week's call only, never a past one opened read only. */}
         {readOnly ? null : <PracticeRow decision={decision} />}
         <View>
+          {reasons.length === 0 && observation === null ? null : heading('callScreen.section.why')}
           {reasons}
           {observation}
         </View>
         {weighInsLeft}
         <View style={styles.meta}>
-          {waits ? null : (
-            <Text style={[styles.small, { color: color.textSecondary }]}>{t('callScreen.confidence', { level: t(`callScreen.level.${decision.confidence}`) })}</Text>
-          )}
           <Text style={[styles.small, { color: color.textSecondary }]}>{t('callScreen.nextCall', { date: weekdayDate(decision.nextCallOn) })}</Text>
         </View>
         {waits ? null : askButton}
@@ -290,7 +341,13 @@ const styles = StyleSheet.create({
   small: { fontSize: tokens.type.bodySmall },
   line: { fontSize: tokens.type.body },
   sentence: { flex: 1 },
-  foot: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, borderTopWidth: tokens.border.hairline, paddingTop: tokens.space.sm },
+  foot: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, paddingTop: tokens.space.xs },
+  dateLine: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: tokens.space.sm },
+  dot: { width: tokens.space.xs, height: tokens.space.xs, borderRadius: tokens.space.xs / 2 },
+  heading: { ...tokens.face.display, fontSize: tokens.type.heading, paddingBottom: tokens.space.xs },
+  chart: { borderRadius: tokens.radius.card, padding: tokens.space.md, gap: tokens.space.sm },
+  chartBox: { height: tokens.size.callChartHeight },
+  chartEnds: { flexDirection: 'row', justifyContent: 'space-between' },
   reason: { flexDirection: 'row', alignItems: 'flex-start', gap: tokens.space.sm, borderTopWidth: tokens.border.hairline, paddingVertical: tokens.space.sm },
   waits: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, borderTopWidth: tokens.border.hairline, paddingVertical: tokens.space.sm },
   meta: { flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap', gap: tokens.space.sm },
