@@ -203,6 +203,24 @@ const mockServices = {
   healthWriting: { workoutFinished: jest.fn(async (_workout: unknown) => {}) },
 };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => mockUnits, useRestChoice: () => mockRestChoice }));
+// The rest on the lock screen (K-1215): the native side is the port's; the screen is checked by what it tells the port.
+type LivePress = 'less' | 'more' | 'ready';
+const mockLive = {
+  show: jest.fn((_props: { title: string; next: string; since: number; endsAt: number }) => {}),
+  stop: jest.fn(() => {}),
+  listeners: [] as ((press: LivePress) => void)[],
+  press: (press: LivePress) => mockLive.listeners.forEach((listen) => listen(press)),
+};
+jest.mock('@/train/liveRest', () => ({
+  liveRest: {
+    show: (props: Parameters<typeof mockLive.show>[0]) => mockLive.show(props),
+    stop: () => mockLive.stop(),
+    onPress: (listen: (press: LivePress) => void) => {
+      mockLive.listeners.push(listen);
+      return () => void (mockLive.listeners = mockLive.listeners.filter((one) => one !== listen));
+    },
+  },
+}));
 
 function reset() {
   jest.clearAllMocks();
@@ -5612,5 +5630,71 @@ describe('the rest is its own state (K-1207)', () => {
     await screen.findByRole('button', { name: /^Next: / });
     expect(within(screen.getByTestId('up-next')).getByText(t('exercises.one_arm_dumbbell_row.name'))).toBeOnTheScreen();
     expect(screen.getByTestId('up-next-taken')).toBeOnTheScreen();
+  });
+});
+
+describe('the rest on the lock screen and the Dynamic Island (K-1215)', () => {
+  const logFirst = async () => fireEvent.press(await screen.findByText(t('workout.log', { number: 1 })));
+  beforeEach(() => {
+    mockLive.listeners = [];
+  });
+
+  test('a rest starts the activity: the next move, the next set, from the moment the rest began to its low end', async () => {
+    await show();
+    await logFirst();
+    await screen.findByTestId('rest');
+    expect(mockLive.show).toHaveBeenCalled();
+    const [shown] = mockLive.show.mock.calls[mockLive.show.mock.calls.length - 1];
+    expect(shown.endsAt - shown.since).toBe(workoutParams.restSecondsMin * 1000);
+    expect(shown.title).toBe(t('exercises.bench_press.name'));
+    expect(shown.next).toBe(screen.getByTestId('rest-next').props.accessibilityLabel);
+    expect(mockLive.stop).not.toHaveBeenCalled();
+  });
+
+  test("the screen's -15 / +15 move the activity too, and the lock screen's move the screen and the background alert", async () => {
+    await show();
+    await logFirst();
+    await screen.findByTestId('rest');
+    const last = () => mockLive.show.mock.calls[mockLive.show.mock.calls.length - 1][0];
+    const base = last().endsAt;
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.rest.moreLabel', { seconds: 15 }) }));
+    expect(last().endsAt).toBe(base + 15_000);
+    mockServices.restAlert.start.mockClear();
+    await act(async () => mockLive.press('less'));
+    await act(async () => mockLive.press('less'));
+    expect(last().endsAt).toBe(base - 15_000);
+    expect(within(screen.getByTestId('rest')).getByText('1:45')).toBeOnTheScreen();
+    expect(mockServices.restAlert.start).toHaveBeenCalledTimes(2);
+    await act(async () => mockLive.press('more'));
+    expect(within(screen.getByTestId('rest')).getByText('2:00')).toBeOnTheScreen();
+  });
+
+  test("Ready on the lock screen is the screen's Ready: the rest ends, the set card is back, the activity goes", async () => {
+    await show();
+    await logFirst();
+    await screen.findByTestId('rest');
+    await act(async () => mockLive.press('ready'));
+    await screen.findByText('Log set 2');
+    expect(screen.queryByTestId('rest')).toBeNull();
+    expect(mockLive.stop).toHaveBeenCalled();
+    expect(mockLive.listeners).toHaveLength(0);
+  });
+
+  test('a pause and leaving the session end the activity', async () => {
+    await show();
+    await logFirst();
+    await screen.findByTestId('rest');
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.pauseLabel') }));
+    expect(screen.queryByTestId('rest')).toBeNull();
+    expect(mockLive.stop).toHaveBeenCalled();
+    mockLive.stop.mockClear();
+    await screen.unmount();
+    expect(mockLive.stop).not.toHaveBeenCalled(); // already gone: nothing left to end
+  });
+
+  test('no rest, no activity: before a set is logged nothing is on the lock screen', async () => {
+    await show();
+    await screen.findByText('Log set 1');
+    expect(mockLive.show).not.toHaveBeenCalled();
   });
 });

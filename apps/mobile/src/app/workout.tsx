@@ -38,6 +38,7 @@ import { OwnMoveForm, type SaveOutcome } from '@/train/OwnMoveForm';
 import { SupersetLink } from '@/train/SupersetLink';
 import { nextInGroup, supersetsInForce } from '@/train/superset';
 import { askFirst } from '@/settings/askFirst';
+import { RestLive } from '@/train/RestLive';
 import { RestTimer } from '@/train/RestTimer';
 import { type RestBand, bandFor, recommendedBand } from '@/train/restBand';
 import { type RestSpan, readySpan, restSecondsOf, startSpan } from '@/train/restRecord';
@@ -115,6 +116,8 @@ function Session() {
   // The band this rest aims for: the recommended one, or the user's own value for the kind of move it followed (K-1214).
   const restChoice = useRestChoice();
   const [restBand, setRestBand] = useState<RestBand>(recommendedBand);
+  // The user's -15 / +15 on this rest, in seconds, from the screen's buttons or the lock screen's (K-1215): one value for both, kept with the rest it belongs to.
+  const [restShift, setRestShift] = useState<{ since: number; seconds: number }>({ since: 0, seconds: 0 });
   // The rest's voice in the background (K-411): set when a rest starts, moved by the next, gone when the session is left.
   useEffect(() => {
     if (rest !== null) void restAlert.start(rest, restBand.low);
@@ -1308,7 +1311,7 @@ function Session() {
   const resting = rest !== null && pause.pausedAt === null && discarded === null && !cardioShown && move !== undefined && row !== null && plan !== null && plan.current !== null;
   const nextNumber = Math.floor((plan?.current ?? 0) / sides) + 1;
   // The next set to make, as one line (kg × reps): the suggestion for the row that is next; its set and side are the spoken label.
-  const nextSet = (() => {
+  const nextLine = (() => {
     if (!resting || row === null || move === undefined) return null;
     const { loadKg, reps } = row.suggested;
     const set = loadKg !== null && reps !== null ? setText({ loadKg, reps }, move, units) : reps !== null ? t('workout.goal.reps', { reps }) : t('workout.setNumber', { number: nextNumber });
@@ -1316,22 +1319,41 @@ function Session() {
       row.side === 'BOTH'
         ? t('workout.rest.nextLabel', { number: nextNumber, set })
         : t('workout.rest.nextSideLabel', { number: nextNumber, side: t(`workout.sideName.${row.side}`), set });
-    return (
-      <Text testID="rest-next" accessibilityLabel={said} style={[styles.nextSet, { color: color.text }]}>
-        {set}
+    return { set, said };
+  })();
+  const nextSet =
+    nextLine === null ? null : (
+      <Text testID="rest-next" accessibilityLabel={nextLine.said} style={[styles.nextSet, { color: color.text }]}>
+        {nextLine.set}
       </Text>
     );
-  })();
   // Up next only where the move changes (a superset's round done: the next set is its partner's), named with its Taken?; the move after
   // this one is the done move's (Next in the dock) and not for the rest between its sets.
   const restUpNext =
     moveId === undefined || restMove === null || moveId === restMove ? null : (
       <UpNext name={name(moveId)} equipment={move?.equipment} onTaken={() => setTaking({ move: moveId, back: null })} />
     );
+  const shiftNow = rest !== null && restShift.since === rest ? restShift.seconds : 0;
+  // -15 / +15 (the screen's, or the lock screen's): the clock, the activity and the background alert all move together.
+  const shiftRest = (by: number) => {
+    if (rest === null) return;
+    const seconds = shiftNow + by;
+    setRestShift({ since: rest, seconds });
+    void restAlert.start(rest + seconds * 1000, restBand.low);
+  };
   const restPage =
     !resting || rest === null ? null : (
       <>
-        <RestTimer since={rest} band={restBand} onAdjust={(seconds) => void restAlert.start(rest + seconds * 1000, restBand.low)} />
+        <RestTimer since={rest} band={restBand} shift={shiftNow} onAdjust={(seconds) => shiftRest(seconds - shiftNow)} />
+        {/* The same rest on the lock screen and in the Dynamic Island (K-1215); draws nothing here. */}
+        <RestLive
+          since={rest}
+          endsAt={rest + (restBand.low + shiftNow) * 1000}
+          title={moveId === undefined ? '' : name(moveId)}
+          next={nextLine?.said ?? ''}
+          onShift={shiftRest}
+          onReady={readyRest}
+        />
         {/* What the set said (the weight found, or the analysis against last time) is said here, where there is room for it. */}
         {weightFound ?? (analysis === null ? null : <InsightLine text={analysis} />)}
         {nextSet}
