@@ -10,7 +10,6 @@ import CallScreen from '@/app/call';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { ThemeProvider } from '@/theme/theme';
-import { palettes } from '@/theme/tokens';
 import { WithSaved } from './support/saved';
 
 type Schemas = components['schemas'];
@@ -56,7 +55,7 @@ jest.mock('expo-router', () => ({
   router: { back: () => mockBack(), push: (to: unknown) => mockPush(to), dismissTo: (to: string) => mockDismiss(to) },
   useLocalSearchParams: () => mockParams,
 }));
-const said = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
+jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
 const mockServices = { api: { GET: mockGET, POST: mockPOST }, report: jest.fn() };
 let mockUnits: 'METRIC' | 'IMPERIAL' = 'METRIC';
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => mockUnits }));
@@ -84,10 +83,6 @@ beforeAll(async () => {
   await show();
   await screen.unmount();
 }, 30_000);
-const press = async (name: string) => {
-  await fireEvent.press(screen.getByRole('button', { name }));
-  await act(async () => {});
-};
 
 
 const BASIS = (kgs: number[]): Schemas['DecisionBasis'] => ({
