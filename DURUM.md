@@ -5,7 +5,12 @@ guncelleme: 2026-11-26
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (26 Kas — K-1239: form sorusu hareket kartında, #796, PR otomatik birleşmede)
+## ▶ DEVAM NOKTASI (26 Kas — K-1240: gerçek dinlenme süresi set satırında, #798, PR otomatik birleşmede)
+**K-1239 birleşti (#797).** **K-1240:** kaydedilen gerçek dinlenme artık biten setin satırında soluk yazıyor ("1:09 dinlenme"); Levent simülatörde
+3 varyanttan (set satırı / dinlenmede "Son dinlenmen" / kalksın) set satırını seçti (ADR-094 Ek 2 › Uygulama #6). Hiçbir kural okumuyor.
+Yan düzeltme: tek taraflı numara "1 · sağ" (önce "1Sağ"). **Sıradaki (9c-7, aynı yöntem):** antrenman sekmesi, bitirme penceresi, bitiş + paylaş kartı.
+
+## (önceki) ▶ DEVAM NOKTASI (26 Kas — K-1239: form sorusu hareket kartında, #796, PR #797 birleşti)
 **K-1238 birleşti (#795).** **K-1239:** form sorusu antrenman sonundan hareketin sonuna taşındı: son setten sonra kartta "Formun nasıldı?
 Temiz / Temiz değil", Temiz seçili (Levent simülatörde 3 varyanttan kartı seçti, ADR-094 Ek 2 › Uygulama #5); bitişte yalnız yarım kalan
 hareket sorulur. Yan düzeltme: iki kutunun eksi/artı sırası birim küçülünce de aynı hizada. K1 (bir test) Levent onaylı.

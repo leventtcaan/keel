@@ -6248,6 +6248,22 @@ tasks:
     tests: ["workout-screen.test.tsx", "npm run check"]
     refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md", "prototip/gorsel-yon/9c7/form-sorusu.jpg"]
 
+  - id: K-1240
+    title: "Antrenman oturumu: gerçek dinlenme süresi set satırında (9c-7c)"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: S
+    status: done
+    depends_on: [K-1239]
+    why: "9b: kaydedilen gerçek dinlenme süresi hiçbir yere bağlı değil; Levent simülatörde 3 varyanttan set satırını seçti (ADR-094 Ek 2 › Uygulama #6)"
+    acceptance:
+      - "Biten setin satırında önündeki dinlenme soluk yazar ve sesli etikette söylenir; dinlenmesi olmayan set yazmaz"
+      - "Hiçbir motor kuralı okumaz; kayıt (restSeconds) aynen sürer"
+      - "Simülatörde Levent'e gösterilir"
+    tests: ["workout-screen.test.tsx", "workout-session.test.ts", "npm run check"]
+    refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md", "prototip/gorsel-yon/9c7/dinlenme-suresi.jpg"]
+
   - id: K-1227
     title: "Yerler arası yürüme rotası haritada (noktalı), adım karşılığı"
     milestone: M12

@@ -225,6 +225,7 @@ export const tokens = {
     restArcStroke: 12,
     /** The set row's "Set 2" column (ADR-094 Ek 2): the loads of the rows line up under each other. */
     setRowName: 96,
+    setRowNameSided: 136,
     /** How many characters of the stepper's number fit at full size; more, and the number is set smaller (see `fitValue`). */
     stepperFitChars: 5,
     /** A display-face character is this many times its font size wide, at most (the box the number is given). */

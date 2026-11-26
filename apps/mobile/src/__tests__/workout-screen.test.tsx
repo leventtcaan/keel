@@ -1369,6 +1369,28 @@ describe('the rest taken is kept on the next set (K-1214)', () => {
     }
   });
 
+  // 9b (ADR-094 Ek 2 › Uygulama #6, the founder chose "in the set row"): the rest taken shows, quietly, in the row of the set after it, and
+  // is said with it; a set with none (a move's first) shows none. It is shown, not read by any rule.
+  test('the rest taken is shown in the row of the set after it, and said with it; the first set shows none', async () => {
+    jest.useFakeTimers({ advanceTimers: true });
+    try {
+      await show();
+      await fireEvent.press(await screen.findByText('Log set 1'));
+      await screen.findByTestId('rest');
+      jest.setSystemTime(Date.now() + 135_000);
+      await fireEvent.press(screen.getByRole('button', { name: /^Ready for set 2/ }));
+      await fireEvent.press(await screen.findByText('Log set 2'));
+      await fireEvent.press(await screen.findByRole('button', { name: /^Ready for set 3/ }));
+      const rows = within(await screen.findByTestId('set-rows'));
+      expect(rows.getByText(t('workout.rest.taken', { time: '2:15' }))).toBeOnTheScreen();
+      expect(rows.getAllByText(new RegExp(t('workout.rest.taken', { time: '' }).trim()))).toHaveLength(1);
+      const second = rows.getByRole('button', { name: new RegExp(`^${t('workout.doneSetNoLeft', { number: '2', set: '62.5 kg × 6' })}`) });
+      expect(second.props.accessibilityLabel).toContain(t('workout.rest.takenLabel', { time: '2:15' }));
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   test('a pause ends the rest: the set after it carries none', async () => {
     jest.useFakeTimers({ advanceTimers: true });
     try {

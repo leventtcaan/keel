@@ -31,6 +31,11 @@ export function setText(set: { loadKg: number; reps: number | string }, move: Sc
   return t(key, { load: formatLoad(set.loadKg, units), reps: set.reps });
 }
 
+/** A set's number as a row or a card writes it: "2", or "2 · left" for a side of a one-sided move (a space, never "2L" glued, 9c-7). */
+export function setNumberText(number: number, side: Schemas['Side']): string {
+  return side === 'BOTH' ? String(number) : t('workout.setSideNumber', { number, side: t(`workout.sideName.${side}`) });
+}
+
 export function restText(seconds: number): string {
   return t('workout.rest.time', { minutes: Math.floor(seconds / 60), seconds: String(seconds % 60).padStart(2, '0') });
 }

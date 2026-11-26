@@ -56,7 +56,7 @@ import { TakenSheet } from '@/train/TakenSheet';
 import { orderBehind, pushBehind, takenChoices } from '@/train/taken';
 import { workoutParams } from '@/train/params';
 import { repsText } from '@/train/reps';
-import { buildSet, exerciseStatus, loadText, parseEntry, parseLoad, platesLine, setText } from '@/train/session';
+import { buildSet, exerciseStatus, loadText, parseEntry, parseLoad, platesLine, setNumberText, setText } from '@/train/session';
 import { type Move, type TrainData, movesOf, ownMove } from '@/train/trainData';
 import { localDay } from '@/today/today';
 import { formatLoad } from '@/units/units';
@@ -1336,7 +1336,7 @@ function Session() {
     if (!resting || row === null || move === undefined) return null;
     const { loadKg, reps } = row.suggested;
     const set = loadKg !== null && reps !== null ? setText({ loadKg, reps }, move, units) : reps !== null ? t('workout.goal.reps', { reps }) : null;
-    const number = row.side === 'BOTH' ? String(nextNumber) : `${nextNumber}${t(`workout.side.${row.side}`)}`;
+    const number = setNumberText(nextNumber, row.side);
     // No set to name (nothing to go on yet): the set's number alone, with no dangling comma.
     const said =
       set === null
@@ -1364,7 +1364,7 @@ function Session() {
     if (last?.done == null || doneMove === undefined) return note === null ? null : <InsightLine text={note} />;
     const doneSides = doneMove.unilateral ? 2 : 1;
     const count = Math.floor(index / doneSides) + 1;
-    const number = last.side === 'BOTH' ? String(count) : `${count}${t(`workout.side.${last.side}`)}`;
+    const number = setNumberText(count, last.side);
     // Built outside the JSX (the raw-text guard reads what is inside it).
     const insight =
       note === null ? null : (
