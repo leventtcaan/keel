@@ -7,7 +7,6 @@
  * only reads (GET), and the image is never sent by the app.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
-import { StyleSheet } from 'react-native';
 
 import ShareScreen from '@/app/share';
 import { t } from '@/copy';

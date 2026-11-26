@@ -27,7 +27,7 @@ const PEEK = 28;
 type Facts = StickerFacts & { partial: boolean; waiting: boolean };
 
 /**
- * Share (K-975, ADR-076; ADR-094 Ek 2 › Uygulama #10, Levent 26 Nov): started by the user, from the end of a workout
+ * Share (K-975, ADR-076; ADR-094 Ek 2 › Uygulama #10, 26 Nov): started by the user, from the end of a workout
  * (`?workout=`) or from Progress, never offered on its own. The cards (Workout, PR, Weeks on track, Progress) are made on this
  * phone from what the server says and swiped through one at a time, as a row of pictures; the user may add a photo of
  * their own behind them (the gallery or the camera; else a dark ground). The card shown, captured as a PNG on the phone

@@ -14,7 +14,7 @@ export type Picked = { uri: string };
 
 /**
  * The photo's file; null when the user closed the picker; 'denied' when the camera is not allowed. Photos only, from the
- * library or the camera (Levent 26 Nov: a video behind the card is later work of its own).
+ * library or the camera (ADR-094 Ek 2 › Uygulama #10: a video behind the card is later work of its own, K-1245).
  */
 export async function pickBackground(source: Source): Promise<Picked | 'denied' | null> {
   if (source === 'camera') {

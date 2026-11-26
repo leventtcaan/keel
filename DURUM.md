@@ -5,7 +5,15 @@ guncelleme: 2026-11-26
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (26 Kas — K-1243: bitiş ekranı, #804, PR otomatik birleşmede; K-1244 sırada)
+## ▶ DEVAM NOKTASI (26 Kas — K-1244: paylaş kartı ve akışı, #806, PR otomatik birleşmede; 9c-7 bitti)
+**K-1243 birleşti (#805).** **K-1244:** paylaş kartı C · kâğıt kart, RN görünümü + `react-native-view-shot` ile PNG (New York serif, SF Rounded
+rakam, mercan üst yazı + tarih, rekor fosforlu kendi satırında, sağ altta küçük logo). Levent simülatörde revize etti → kartlar **kaydırılan
+dizi**, tek **Fotoğraf ekle**, tek **Paylaş** (Story / Instagram'da düğmeleri kalktı); yalnız foto, ücretsiz (ADR-094 Ek 2 › Uygulama #10
+revizesi). K1 (8 madde) Levent onaylı. Yeni dev build EAS `52c820eb` (simülatörde kurulu; yerel derleme yerine: disk + Xcode 16.1).
+**Mağaza sürümü Levent'te** (yerel modül → yeni derleme şart; OTA yok). Disk temizliği: 33 birleşmiş çalışma klasörü + önbellekler, 3,6 → 8,2 GB.
+**Sıradaki:** K-1245 (kartın arkasında video, ölü Story kodu) ya da Evre 9'un sıradaki parçası (plan/yol-haritasi.md) — Levent seçer.
+
+## (önceki) ▶ DEVAM NOKTASI (26 Kas — K-1243: bitiş ekranı, #804, PR otomatik birleşmede; K-1244 sırada)
 **K-1242 birleşti (#803).** **K-1243:** bitiş ekranı Levent'in seçtiği "sakin akış" (ADR-094 Ek 2 › Uygulama #9). **Paylaş kartı** için Levent C · kâğıt
 kartı ve tam serif için yeni derlemeyi seçti (Uygulama #10) → **K-1244 (todo):** view-shot + yeni dev build, tam boy taslak `9c7/paylas-c.jpg`.
 Levent remote: bu sekansta görseller foto olarak (SendUserFile) gönderildi.

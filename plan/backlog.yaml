@@ -6320,16 +6320,34 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-1243]
     why: "9c-7: kart SVG, serif çizilemiyor (kalın siyah eski dil), üstü boş, 'incline dumbbell press PR'; Levent C kâğıt kartı ve yeni derlemeyi seçti (ADR-094 Ek 2 › Uygulama #10)"
     acceptance:
       - "Kart prototip/gorsel-yon/9c7/paylas-c.jpg düzeninde: kırık beyaz panel, serif başlık, rounded sayılar, mercan üst yazı, rekora fosforlu vurgu, Next Call imzası"
       - "Kart RN görünümünden react-native-view-shot ile PNG'ye çevrilir (npx expo install; PR'da gerekçe + alternatif: SVG'ye OFL serif gömmek)"
       - "Seçim hapları tek tip (Antrenman / PR / Hedefte geçen haftalar / Gelişim; Galeri / Kamera / Koyu / Instagram'da)"
+      - "Revize (Levent 26 Kas, simülatörde): haplar yerine kaydırılan kart dizisi + noktalar, tek 'Fotoğraf ekle', tek 'Paylaş' (Story ve Instagram'da düğmeleri kalkar), sağ altta küçük logo; yalnız fotoğraf, ücretsiz"
       - "Yeni geliştirme derlemesiyle simülatörde Levent'e gösterilir; mağaza sürümü Levent'te"
     tests: ["share-screen.test.tsx", "npm run check", "simülatör (yeni dev build)"]
-    refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md", "prototip/gorsel-yon/9c7/paylas-c.jpg"]
+    refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md", "prototip/gorsel-yon/9c7/paylas-c.jpg", "prototip/gorsel-yon/9c7/paylas-sonra.jpg"]
+
+  - id: K-1245
+    title: "Paylaş: kartın arkasında kendi videon (telefonda birleştirilir), kullanılmayan Story kodu temizlenir"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-1244]
+    why: "Levent 26 Kas (K-1244 revizesi): 'kendinden foto-video ekleyebilsin'; bu turda yalnız foto. Tek Paylaş düğmesiyle video ancak kart videonun üstüne telefonda birleştirilerek tek dosya gider. Instagram Story yolu (src/share/story.ts, deviceStory.ts, storyConfig.ts, shareStory servisi) ekranda artık kullanılmıyor"
+    acceptance:
+      - "Önce yön: telefonda birleştirme (AVFoundation, yeni yerel modül ya da hazır paket, K6 doğrulaması) mı, Story yolu yalnız video için mi; karar ADR'de"
+      - "Video telefonda kalır (V1); süre sınırı parametre dosyasında"
+      - "Kullanılmayan Story kodu ve testleri kalkar ya da video yolunda kullanılır; ölü kod kalmaz"
+      - "Ücret: Levent 26 Kas fotoğrafı ücretsiz seçti; video için ayrıca sorulur"
+    tests: ["jest", "simülatör (yeni dev build)"]
+    refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md"]
 
   - id: K-1227
     title: "Yerler arası yürüme rotası haritada (noktalı), adım karşılığı"
