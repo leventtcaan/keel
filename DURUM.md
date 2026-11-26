@@ -5,7 +5,12 @@ guncelleme: 2026-11-26
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (26 Kas — K-1242: bitirme penceresi, #802, PR otomatik birleşmede)
+## ▶ DEVAM NOKTASI (26 Kas — K-1243: bitiş ekranı, #804, PR otomatik birleşmede; K-1244 sırada)
+**K-1242 birleşti (#803).** **K-1243:** bitiş ekranı Levent'in seçtiği "sakin akış" (ADR-094 Ek 2 › Uygulama #9). **Paylaş kartı** için Levent C · kâğıt
+kartı ve tam serif için yeni derlemeyi seçti (Uygulama #10) → **K-1244 (todo):** view-shot + yeni dev build, tam boy taslak `9c7/paylas-c.jpg`.
+Levent remote: bu sekansta görseller foto olarak (SendUserFile) gönderildi.
+
+## (önceki) ▶ DEVAM NOKTASI (26 Kas — K-1242: bitirme penceresi, #802, PR #803 birleşti)
 **K-1241 birleşti (#801).** **K-1242:** bitirme penceresi Levent'in seçtiği 3. varyant: serif soru, "Yapılmamış N set var", tek petrol "Bitir ve kaydet",
 "Antrenmana dön", küçük yazı "Sonra devam et" ve kırmızı "Antrenmanı sil"; bu pencereden bitirince ayrı uyarı yok, not adımı kalır (ADR-094 Ek 2 ›
 Uygulama #8). Metinler Levent anlamadığı için açıldı. **Sıradaki (9c-7, son):** bitiş + paylaş kartı (aynı yöntem).

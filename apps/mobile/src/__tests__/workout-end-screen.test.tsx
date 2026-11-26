@@ -5,14 +5,14 @@
  * muscle map; this week's sessions as segments; Share and Done. No e1RM, no badge. Not on the server yet: the hero and
  * a way to try again, no number made up.
  */
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { AccessibilityInfo, StyleSheet } from 'react-native';
 
 import WorkoutEndScreen from '@/app/workout-end';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { ThemeProvider } from '@/theme/theme';
-import { focusPalette } from '@/theme/tokens';
+import { focusPalette, tokens } from '@/theme/tokens';
 import type { Move } from '@/train/trainData';
 import type { WorkoutEnd } from '@/train/workoutEnd';
 
@@ -356,21 +356,36 @@ describe('one primary (ADR-070 Ek 2 #1)', () => {
   const fill = (name: string) => StyleSheet.flatten(screen.getByRole('button', { name }).props.style)?.backgroundColor;
   const primaries = () => screen.getAllByRole('button').filter((b) => StyleSheet.flatten(b.props.style)?.backgroundColor === focusPalette.cta);
 
-  test('Done is the only primary, in the turquoise of the focus mode; Share your workout is a secondary', async () => {
+  // K1 (K-1243; ADR-094 Ek 2 › Uygulama #9, the founder chose "the calm flow"): Share is words under Done, not a filled secondary.
+  test('Done is the only primary, in the turquoise of the focus mode; Share your workout is words, no fill', async () => {
     await show();
     await screen.findByText(t('workoutEnd.title'));
     expect(primaries().map((b) => b.props.accessibilityLabel)).toEqual([t('workoutEnd.done')]);
-    expect(fill(t('workoutEnd.share'))).toBe(focusPalette.surface);
+    expect(fill(t('workoutEnd.share'))).toBeUndefined();
     expect(fill(t('workoutEnd.done'))).toBe(focusPalette.cta);
     expect(focusPalette.cta).toBe(focusPalette.accent);
   });
 
-  test('Done comes last, under Share', async () => {
+  // K1 (K-1243): was "Done comes last, under Share". Done and Share stand at the foot of the screen, out of the scroll, Done first.
+  test('Done and then Share stand at the foot of the screen, out of the scroll', async () => {
     await show();
     await screen.findByText(t('workoutEnd.title'));
-    const names = screen.getAllByRole('button').map((b) => b.props.accessibilityLabel);
-    expect(names.indexOf(t('workoutEnd.share'))).toBeGreaterThanOrEqual(0);
-    expect(names.indexOf(t('workoutEnd.done'))).toBeGreaterThan(names.indexOf(t('workoutEnd.share')));
+    const dock = within(screen.getByTestId('end-dock'));
+    const names = dock.getAllByRole('button').map((b) => b.props.accessibilityLabel);
+    expect(names).toEqual([t('workoutEnd.done'), t('workoutEnd.share')]);
+    expect(within(screen.getByTestId('end-scroll')).queryByRole('button', { name: t('workoutEnd.done') })).toBeNull();
+  });
+
+  // 9c-7 (ADR-094 Ek 2 › Uygulama #9): the Sıcak defter roles on the celebration: the title in the serif, the mark and the week coral
+  // (how far you came), the record on a sand card with its coral kicker, never a dark petrol block.
+  test('the serif title, the coral mark and week, the record on sand with a coral kicker', async () => {
+    await show();
+    expect(await screen.findByText(t('workoutEnd.title'))).toHaveStyle({ fontFamily: tokens.face.display.fontFamily });
+    expect(screen.getByTestId('hero-mark')).toHaveStyle({ backgroundColor: focusPalette.progress });
+    for (const seg of screen.getAllByTestId('segment-done')) expect(seg).toHaveStyle({ backgroundColor: focusPalette.progress });
+    const record = screen.getAllByTestId('record')[0];
+    expect(screen.getByText(t('workoutEnd.recordKicker'))).toHaveStyle({ color: focusPalette.progressText });
+    expect(StyleSheet.flatten(record.parent?.props.style)?.backgroundColor).not.toBe(focusPalette.accentSoft);
   });
 
   test('not on the server yet: Try again is a secondary, and Done is still the one primary', async () => {

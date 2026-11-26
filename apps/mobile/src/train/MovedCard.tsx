@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
     padding: tokens.space.md,
     gap: tokens.space.sm,
   },
-  heading: { fontSize: tokens.type.heading, fontWeight: tokens.weight.bold },
+  heading: { ...tokens.face.display, fontSize: tokens.type.heading },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
