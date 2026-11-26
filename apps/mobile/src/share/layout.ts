@@ -12,8 +12,8 @@ import type { Sticker } from './stickers';
 
 /** The card's margins in a Story-sized image: at the sides, and under it. */
 export const FRAME = { side: 40, foot: 60 };
-/** The card: its padding, corner, the room round the record's highlight, the gaps between its parts, a week's cell. */
-export const CARD = { padding: 70, radius: 56, highlight: 14, gap: 44, statGap: 24, cellGap: 12, cellMax: 72, cellRadius: 12 };
+/** The card: its padding, corner, the room round the record's highlight, the gaps between its parts, a week's cell, the app's mark at its foot. */
+export const CARD = { padding: 70, radius: 56, highlight: 14, gap: 44, statGap: 24, cellGap: 12, cellMax: 72, cellRadius: 12, mark: 56, markRadius: 13 };
 /** The width the card's words have. */
 export const INNER = shareParams.storyWidth - 2 * FRAME.side - 2 * CARD.padding;
 /** The width of an average character as a share of the text's size: the serif is narrow, the rounded numbers are not. */

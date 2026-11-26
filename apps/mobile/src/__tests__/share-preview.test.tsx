@@ -4,7 +4,6 @@
 import { render } from '@testing-library/react-native';
 import { PixelRatio, StyleSheet } from 'react-native';
 
-import { FRAME } from '@/share/layout';
 import { shareParams } from '@/share/params';
 import { Preview } from '@/share/Preview';
 import type { Sticker } from '@/share/stickers';
@@ -20,7 +19,7 @@ const views = (node: Node | null, out: Node[] = []): Node[] => {
 };
 const style = (node: Node) => StyleSheet.flatten(node.props.style) as Record<string, any>;
 
-async function shown(backdrop?: { kind: 'dark' }) {
+async function shown(backdrop: { kind: 'dark' } = { kind: 'dark' }) {
   const { toJSON } = await render(<Preview sticker={STICKER} backdrop={backdrop} width={240} imageRef={{ current: null }} />);
   const [frame, image] = views(toJSON() as Node);
   return { frame: style(frame), image: style(image) };
@@ -39,26 +38,4 @@ test('the image is drawn at the size whose pixels are the width in share.json, a
   expect(image.width).toBeCloseTo(drawn, 5);
   expect(image.transform).toEqual([{ scale: 240 / drawn }]);
   expect(image).toMatchObject({ top: 0, transformOrigin: 'top left' }); // a backdrop fills the frame
-});
-
-test('with no backdrop the card alone sits at the foot of the frame, above its margin, as in a Story', async () => {
-  const { image } = await shown();
-
-  expect(image.top).toBeUndefined();
-  expect(image.bottom).toBeCloseTo((FRAME.foot * 240) / shareParams.storyWidth, 5);
-  // Scaled from its foot, so its foot stays where it is put.
-  expect(image.transformOrigin).toBe('bottom left');
-});
-
-// Seen on the simulator (K-1244): drawn in a box of no height the sticker alone measured 0 tall and could not be captured.
-// It is drawn in the frame, at its own size, under the image shown (which covers it), so it has a size and is in the window.
-test('the sticker alone, for a Story, is drawn first in the frame at its own size, at the foot, under the image shown', async () => {
-  const { toJSON } = await render(<Preview sticker={STICKER} backdrop={{ kind: 'dark' }} width={240} imageRef={{ current: null }} bareRef={{ current: null }} />);
-  const [under, over] = (toJSON() as Node).children as Node[];
-  const drawn = shareParams.storyWidth / PixelRatio.get();
-
-  expect(style(under)).toMatchObject({ position: 'absolute', width: drawn, transformOrigin: 'bottom left' });
-  expect(style(under).bottom).toBeCloseTo((FRAME.foot * 240) / shareParams.storyWidth, 5);
-  expect(style(under).height).toBeUndefined();
-  expect(style(over)).toMatchObject({ top: 0, transformOrigin: 'top left' });
 });

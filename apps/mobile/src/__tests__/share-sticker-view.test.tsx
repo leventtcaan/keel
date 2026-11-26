@@ -58,6 +58,8 @@ const show = async (sticker: Sticker, width = 360, backdrop?: Backdrop) => {
 };
 const texts = () => tree.filter((n) => n.type === 'Text').map((n) => (n.children ?? []).join(''));
 const images = () => tree.filter((n) => n.type === 'Image');
+/** The user's photo: an image of a file, not the app's own mark. */
+const photos = () => images().filter((n) => typeof (n.props.source as { uri?: unknown })?.uri === 'string' && !String((n.props.source as { uri: string }).uri).includes('icon'));
 /** The view right round a text: the record's mark is the one round its line. */
 const holder = (words: string) => tree.find((n) => n.type === 'View' && (n.children ?? []).some((c) => typeof c !== 'string' && c.type === 'Text' && (c.children ?? []).join('') === words))!;
 
@@ -103,6 +105,19 @@ test('sizes in image units scaled to the width asked: the title at 1080 wide is 
   expect(style(screen.getByText(WORKOUT.title)).fontSize).toBeCloseTo(tokens.type.shareTitle / 3, 5);
 });
 
+// Levent 26 Nov: the app's mark, small, at the card's foot on the right, beside the word mark (ADR-094 Ek 2 › Uygulama #10).
+test("the app's mark, small, beside the word mark at the card's foot: a picture the card's own label covers", async () => {
+  await show(WORKOUT, shareParams.storyWidth);
+
+  const mark = screen.getByTestId('app-mark');
+  expect(mark.props.accessible).toBe(false);
+  expect(style(mark).width).toBe(CARD.mark);
+  expect(style(mark).height).toBe(CARD.mark);
+  expect(CARD.mark).toBeLessThanOrEqual(tokens.type.shareSign * 1.5);
+  // The mark and the word mark are the card's last row, at its right edge.
+  expect(style(holder(t('app.name')))).toMatchObject({ flexDirection: 'row', alignSelf: 'flex-end' });
+});
+
 describe('behind the card', () => {
   test('dark: a Story-sized image (9:16 from share.json), a solid dark ground, the card low in it inside its margins', async () => {
     await show(WORKOUT, 360, { kind: 'dark' });
@@ -112,13 +127,13 @@ describe('behind the card', () => {
     expect(style(screen.getByTestId('image')).height).toBeCloseTo(360 * (shareParams.storyHeight / shareParams.storyWidth), 5);
     expect(style(screen.getByTestId('image')).paddingHorizontal).toBeCloseTo(FRAME.side * k, 5);
     expect(style(screen.getByTestId('image')).paddingBottom).toBeCloseTo(FRAME.foot * k, 5);
-    expect(images()).toEqual([]);
+    expect(photos()).toEqual([]);
   });
 
   test("a photo: the user's file, covering the image, under the card", async () => {
     await show(WORKOUT, 360, PHOTO);
 
-    const [photo] = images();
+    const [photo] = photos();
     expect(photo.props.source).toEqual({ uri: PHOTO.uri });
     expect(photo.props.resizeMode).toBe('cover');
     expect(style(photo)).toMatchObject({ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 });

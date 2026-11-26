@@ -1,5 +1,5 @@
 import { forwardRef } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, type ImageSourcePropType, StyleSheet, Text, View } from 'react-native';
 
 import { t } from '@/copy';
 import { palettes, tokens } from '@/theme/tokens';
@@ -14,6 +14,8 @@ import type { Sticker, WeekCell } from './stickers';
  * record, the highlighter under the record, petrol for the weeks as on Progress.
  */
 const ink = palettes.light;
+/** The app's mark (its icon), small at the card's foot beside the word mark; Metro needs a static require for an asset. */
+const MARK: ImageSourcePropType = require('../../assets/images/icon.png');
 
 /** What the card sits on, drawn into the same image: the user's photo or a plain dark ground. None: the card alone. */
 export type Backdrop = { kind: 'dark' } | { kind: 'photo'; uri: string };
@@ -110,9 +112,12 @@ export const StickerImage = forwardRef<View, Props>(function StickerImage({ stic
             ))}
           </View>
         )}
-        <Text allowFontScaling={false} style={[tokens.face.display, styles.muted, styles.sign, { fontSize: u(tokens.type.shareSign) }]}>
-          {t('app.name')}
-        </Text>
+        <View style={[styles.sign, { gap: u(CARD.cellGap) }]}>
+          <Image testID="app-mark" source={MARK} accessible={false} style={{ width: u(CARD.mark), height: u(CARD.mark), borderRadius: u(CARD.markRadius) }} />
+          <Text allowFontScaling={false} style={[tokens.face.display, styles.muted, { fontSize: u(tokens.type.shareSign) }]}>
+            {t('app.name')}
+          </Text>
+        </View>
       </View>
     </View>
   );
@@ -147,5 +152,5 @@ const styles = StyleSheet.create({
   number: { fontVariant: ['tabular-nums'] },
   marked: { alignSelf: 'flex-start' },
   highlight: { backgroundColor: ink.tintSuggest },
-  sign: { alignSelf: 'flex-end' },
+  sign: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-end' },
 });

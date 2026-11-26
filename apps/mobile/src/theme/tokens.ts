@@ -242,6 +242,8 @@ export const tokens = {
     targetBox: 104,
     weekCell: 24,
     dot: 14,
+    /** The share screen's page dots under the cards (one per card, the one shown filled). */
+    pageDot: 8,
     swatch: 10,
     /** An onboarding answer's or point's icon tile (prototype `.opt .oi`, `.bullets .bi`). */
     optionIcon: 40,

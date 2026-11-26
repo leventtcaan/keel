@@ -1802,20 +1802,20 @@
     },
     "background": {
       "gallery": "Galeri",
-      "camera": "Kamera",
-      "dark": "Koyu",
-      "instagram": "Instagram'da"
+      "camera": "Kamera"
     },
-    "instagramNote": "Yalnızca çıkartma gider, arkasında fotoğraf olmaz. Arka planı Instagram'da ekle.",
-    "story": "Story'de paylaş",
-    "storyFallback": "Instagram burada kullanılamıyor, o yüzden paylaşım sayfası açıldı.",
-    "videoNote": "Videon Story'de çıkartmanın arkasında oynar. Başka yerde çıkartma tek başına gider.",
-    "videoTooLong": "Bu video {seconds} saniyeden uzun. Daha kısa birini seç.",
+    "photo": {
+      "add": "Fotoğraf ekle",
+      "remove": "Fotoğrafı kaldır",
+      "cancel": "Vazgeç"
+    },
+    "cards": "Kartlar",
+    "page": "{kind}, {n}/{count}",
     "denied": "Bu uygulama için kameraya izin verilmemiş. iPhone Ayarlar'dan izin verebilir ya da galeriden fotoğraf seçebilirsin.",
     "photoFailed": "Fotoğraf açılamadı. Başka birini dene.",
     "share": "Paylaş",
     "preparing": "Çıkartman hazırlanıyor",
-    "note": "Bu telefonda yapılır. Vücut ağırlığı yok. Fotoğrafın senin kalır. Kaydet, TikTok ve diğerleri paylaşım sayfasında.",
+    "note": "Bu telefonda yapılır. Vücut ağırlığı yok. Fotoğrafın senin kalır. Instagram, TikTok, Kaydet ve diğerleri paylaşım sayfasında.",
     "nothing": "Henüz paylaşacak bir şey yok. Bir antrenman, hedefte geçen bir hafta ya da daha güçlü bir kaldırış sana çıkartma verir.",
     "failed": "Çıkartma yapılamadı. Tekrar dene.",
     "partial": "Bir kısmı okunamadı (bağlantı mı yok?). Çıkartmalar okunabilenleri gösterir.",
