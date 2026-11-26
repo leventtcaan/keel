@@ -5,7 +5,17 @@ guncelleme: 2026-11-26
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (26 Kas gece — 9c-6b-1: Bu hafta'da koç satırı, PR #790 otomatik birleşmede)
+## ▶ DEVAM NOKTASI (26 Kas gece, otonom — 9c-6b-2: koçta eylem kartları, PR #791 otomatik birleşmede)
+**9c-6b-1 birleşti (#790).** **9c-6b-2 (K-1236, #788 → PR #791):** koç açılışta, geçmişten sonra motorun iki önerisini kart olarak gösterir (mercan zemin + petrol düğme):
+yürüyüş (Today'in okuduğu kalan adım + kişinin rotası, `walkLabel`; kalan ≥ 2.000 adımken) ve öğün (`/v1/days/{day}/suggestions`'ın ilki). "Plana ekle" yalnız bugünün
+18:00 yürüyüş hatırlatmasını kurar (`reminders.planWalkToday`, tarihli anahtar); Ayarlar'daki kişinin düğmesi, plan, hedef, karar değişmez. "Kaydet" öğün ekranına
+taslak götürür. Kart "kuruldu"yu yalnız hatırlatma gerçekten çalacaksa der (inceleme: sessiz dönem ve yalnız-check-in ayarı); kapalıysa Ayarlar yolu, saat geçtiyse
+"bugün yok", sessiz dönemse "duraklatıldı". `walk_nudge_enabled` bayrağı 25 Kas'tan beri zaten açıktı. Koç kartı bütçesi `coachActionMaxWords` 12 (koç ekranı
+prototipte yok, konuşma ekranı; kart başına). Yeni metin en+tr (coach.action.*). K1 yok: mevcut testlerde beklenti de fikstür de değişmedi. **Simülatörde görülmedi**
+(gece otonom; yürüyüş kartı Health adımı ister, simülatörde yok) → Levent sabah görsün. **Sıradaki:** K-1237 (antrenman bitişi ve yemek ekranında koç hapları;
+K-1235'teki "haplar alakasız" görüşü yüzünden önce Levent'e göster).
+
+## (önceki) ▶ DEVAM NOKTASI (26 Kas gece — 9c-6b-1: Bu hafta'da koç satırı, PR #790 otomatik birleşmede)
 **9c-6b-1 (K-1235, #787 → PR #790):** ana ekranda kararın altında yalnız "Koça mesaj yaz" satırı (koçun kutusunun metni, yeni metin yok); dokununca koç bu kararla ve
 klavyesi açık gelir; satır yalnız karar ya da kilitli karar varken. **Levent (26 Kas):** simülatörde üç varyanttan 1'i seçti (hap yok: "kullanıcı gözüyle alakasız")
 → ADR-092 Ek 2 #1, ana ekran bütçesi 74 → 77. Koçta "Bu kararı açıkla" yalnız sunucu sağlayıcı açık (`GET /v1/consents/ai-offer` 200) ve abonelik aktif

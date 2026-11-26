@@ -2966,6 +2966,22 @@
     "rangeSpoken": "{low} ile {high} arasında"
   },
   "coach": {
+    "action": {
+      "walk": {
+        "title": "Akşam yürüyüşü",
+        "add": "Plana ekle",
+        "set": "Bugün {time} için hatırlatma kuruldu.",
+        "off": "Hatırlatmalar kapalı. Ayarlar'dan açabilirsin.",
+        "settings": "Ayarları aç",
+        "late": "Saat {time} geçti, bugün hatırlatma yok.",
+        "failed": "Hatırlatma kurulamadı. Tekrar dene.",
+        "quiet": "Hatırlatmalar bugün duraklatıldı."
+      },
+      "meal": {
+        "title": "Bugün kalana uyar",
+        "log": "Kaydet"
+      }
+    },
     "askAbout": "Bu kararı sor",
     "starter": {
       "why": "Bu kararı açıkla",

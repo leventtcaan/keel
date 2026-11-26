@@ -86,7 +86,7 @@ const MINUTES_A_DAY = 24 * 60;
 const MINUTES_A_WEEK = 7 * MINUTES_A_DAY;
 
 /** "HH:mm" as minutes after midnight; the contract's pattern (Schedule.usualTrainingTime) guarantees the shape. */
-function minutesOf(time: string): number {
+export function minutesOf(time: string): number {
   const [hour, minute] = time.split(':').map(Number);
   return hour * 60 + minute;
 }
@@ -99,7 +99,7 @@ function weeklyAt(day: Schedule['checkInDay'], minuteOfDay: number, earlier = 0)
 }
 
 /** The phone's calendar day of a moment, as the API writes a day. */
-const dayOf = (moment: Date) =>
+export const dayOf = (moment: Date) =>
   `${moment.getFullYear()}-${String(moment.getMonth() + 1).padStart(2, '0')}-${String(moment.getDate()).padStart(2, '0')}`;
 
 /** The days after a calendar day, for the weeks the reminders come back by date (rest_resume_weeks). */
