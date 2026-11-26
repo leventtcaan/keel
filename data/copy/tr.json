@@ -1823,12 +1823,11 @@
     "sticker": {
       "workout": {
         "plain": "Antrenman",
-        "recordLabel": "{move} PR",
-        "baselineValue": "Başlangıç",
-        "baselineLabel": "set"
+        "kicker": "Antrenman tamam · {date}"
       },
+      "mark": "{move} · {set}",
       "pr": {
-        "kicker": "Yeni PR",
+        "kicker": "Yeni rekor",
         "best": "şimdiye kadarki en iyi set",
         "change": "+{load}",
         "since": "{date} tarihinden beri"

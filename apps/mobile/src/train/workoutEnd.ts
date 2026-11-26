@@ -65,18 +65,18 @@ async function findWorkout(deps: Pick<EndDeps, 'queue' | 'workoutRecords'>, clie
 export type WorkoutSummaryRead =
   | { kind: 'pending' }
   | { kind: 'failed'; problem: 'NoConnection' | 'ServerError' }
-  | { kind: 'ready'; summary: Schemas['WorkoutSummary']; programDayId: string | null };
+  | { kind: 'ready'; summary: Schemas['WorkoutSummary']; programDayId: string | null; endedAt: string };
 
 /**
- * Only the workout's summary and its program day (the share stickers, K-975): found and read as the end screen does, and
- * nothing more: no health data, no program, no week, no moves.
+ * Only the workout's summary, its program day and when it ended (the share stickers, K-975): found and read as the end
+ * screen does, and nothing more: no health data, no program, no week, no moves.
  */
 export async function loadWorkoutSummary(deps: Pick<EndDeps, 'api' | 'queue' | 'workoutRecords'>, clientId: string): Promise<WorkoutSummaryRead> {
   const found = await findWorkout(deps, clientId);
   if (found.kind !== 'found') return found;
   const summary = await load(() => deps.api.GET('/v1/workouts/{id}/summary', { params: { path: { id: found.id } } }));
   if (summary.state !== 'ready') return { kind: 'failed', problem: summary.state === 'failed' ? summary.problem : 'ServerError' };
-  return { kind: 'ready', summary: summary.value, programDayId: found.body.programDayId ?? null };
+  return { kind: 'ready', summary: summary.value, programDayId: found.body.programDayId ?? null, endedAt: found.ended };
 }
 
 export async function loadWorkoutEnd(deps: EndDeps, clientId: string): Promise<WorkoutEnd> {

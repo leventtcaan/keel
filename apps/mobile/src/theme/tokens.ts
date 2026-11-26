@@ -172,15 +172,17 @@ export const tokens = {
     /** Nothing below 11 pt (ADR-016, kept by ADR-070). */
     min: 11,
     /**
-     * The share stickers' text, in their image units (1080 wide, K-975) — an image, scaled to the screen to preview and
-     * kept at full size in the PNG: large enough to read in a feed; a long text steps down from these (layout.ts).
+     * The share card's text, in its image units (1080 wide, K-975; the paper card, ADR-094 Ek 2 › Uygulama #10): an image,
+     * scaled to the screen to preview and kept at full size in the PNG, large enough to read in a feed; a long text steps
+     * down from these (layout.ts). The record's line is `shareMark`, the word mark under it `shareSign`.
      */
     shareKicker: 40,
-    shareTitle: 150,
-    shareValue: 104,
+    shareTitle: 132,
+    shareValue: 110,
     shareLabel: 36,
     shareLine: 48,
-    shareMark: 72,
+    shareMark: 56,
+    shareSign: 48,
   },
   weight: {
     regular: '400',

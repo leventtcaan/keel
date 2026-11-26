@@ -5,6 +5,7 @@
  * Nothing goes to the server: the screen only reads (GET), and the image is never sent by the app.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 
 import ShareScreen from '@/app/share';
 import { t } from '@/copy';
@@ -61,20 +62,25 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: () => mockParams,
   useFocusEffect: (effect: () => void) => jest.requireActual<typeof import('react')>('react').useEffect(effect, []),
 }));
-// The sticker as text, with the image the ref would make: the real drawing is share-sticker-view.test.tsx.
+// The sticker as text, with the image a capture of its view would make: the real drawing is share-sticker-view.test.tsx.
 let mockDataUrl: string | undefined = 'iVBORw0KGgo=';
 // The second drawing, the sticker alone (what Stories take as the sticker), is told apart by its testID.
 let mockBareUrl: string | undefined = 'BARE0KGgo=';
+// react-native-view-shot turns a view into the PNG: here it answers with the image of the view it is handed (none: empty).
+jest.mock('react-native-view-shot', () => ({
+  captureRef: jest.fn(async (ref: { current: { drawing: string } | null }) => (ref.current?.drawing === 'bare' ? mockBareUrl : mockDataUrl) ?? ''),
+}));
 jest.mock('@/share/Sticker', () => {
   const { forwardRef: mockForwardRef, useImperativeHandle: mockHandle } = jest.requireActual<typeof import('react')>('react');
   const { Text: MockText } = jest.requireActual<typeof import('react-native')>('react-native');
   return {
     StickerImage: mockForwardRef(function MockSticker({ sticker, backdrop, testID }: { sticker: Sticker; backdrop?: { kind: string; uri?: string }; testID?: string }, ref) {
-      mockHandle(ref, () => ({ toDataURL: (done: (base64?: string) => void) => done(testID === 'bare' ? mockBareUrl : mockDataUrl) }));
+      mockHandle(ref, () => ({ drawing: testID === 'bare' ? 'bare' : 'shown' }));
       if (testID === 'bare') return <MockText testID="bare">{backdrop === undefined ? 'none' : backdrop.kind}</MockText>;
+      const mark = sticker.mark === undefined ? [] : [sticker.mark.label, sticker.mark.text];
       return (
         <>
-          <MockText testID="sticker">{[sticker.kicker, sticker.title, ...sticker.stats.flatMap((s) => [s.value, s.label]), ...sticker.lines].join('\n')}</MockText>
+          <MockText testID="sticker">{[sticker.kicker, sticker.title, ...sticker.stats.flatMap((s) => [s.value, s.label]), ...mark, ...sticker.lines].join('\n')}</MockText>
           <MockText testID="backdrop">{backdrop === undefined ? 'none' : `${backdrop.kind} ${backdrop.uri ?? ''}`.trim()}</MockText>
         </>
       );
@@ -95,6 +101,7 @@ const READY: WorkoutSummaryRead = {
     muscles: [],
   },
   programDayId: 'day-a',
+  endedAt: '2026-10-13T08:52:00Z',
 };
 const CONSISTENCY = {
   weekOf: '2026-10-12',
@@ -174,6 +181,28 @@ test('picking a sticker shows its words and marks it picked', async () => {
   expect(sticker()).toContain(t('share.sticker.pr.best'));
 });
 
+// ADR-094 Ek 2 › Uygulama #10: the choices are of one kind, two to a row, each as wide as the other, a row's last one too.
+test('the choices are one kind: two to a row, every chip as wide as the others, in both groups', async () => {
+  await show();
+
+  expect(screen.getAllByTestId('choice-row')).toHaveLength(4);
+  const cells = screen.getAllByTestId('choice');
+  expect(cells).toHaveLength(8);
+  const looks = new Set(cells.map((c) => JSON.stringify(StyleSheet.flatten(c.props.style))));
+  expect(looks.size).toBe(1);
+  expect(StyleSheet.flatten(cells[0].props.style)).toMatchObject({ flex: 1 });
+});
+
+test('an odd number of choices keeps the last one as wide as the rest: the row is filled with room, not a stretched chip', async () => {
+  mockEnd = { ...READY, summary: { ...READY.summary, marks: [] } } as WorkoutSummaryRead;
+  await show();
+
+  // Workout, Weeks on track, Progress: the third shares its row with room as wide as a chip.
+  expect(screen.getAllByTestId('choice')).toHaveLength(7);
+  expect(screen.getAllByTestId('choice-room')).toHaveLength(1);
+  expect(StyleSheet.flatten(screen.getByTestId('choice-room').props.style)).toEqual(StyleSheet.flatten(screen.getAllByTestId('choice')[0].props.style));
+});
+
 test('from Progress (no workout): the weeks and the lifts only; no workout, no PR', async () => {
   mockParams = {};
   await show();
@@ -184,7 +213,7 @@ test('from Progress (no workout): the weeks and the lifts only; no workout, no P
   expect(chip('progress')).toBeTruthy();
 });
 
-test('Share makes the PNG on the phone and hands it to the sheet once; the button waits for the sheet', async () => {
+test('Share makes the PNG on the phone from the view as shown, and hands it to the sheet once; the button waits for the sheet', async () => {
   let close: () => void = () => {};
   mockServices.shareImage.mockImplementationOnce(() => new Promise<void>((resolve) => (close = resolve)));
   await show();
@@ -194,6 +223,9 @@ test('Share makes the PNG on the phone and hands it to the sheet once; the butto
   await fireEvent.press(screen.getByRole('button', { name: t('share.preparing') }));
   expect(mockServices.shareImage).toHaveBeenCalledTimes(1);
   expect(mockServices.shareImage).toHaveBeenCalledWith('iVBORw0KGgo=');
+  // A PNG (it keeps the card's round corners on nothing), in base64 for the sheet's file.
+  const { captureRef } = jest.requireMock('react-native-view-shot') as { captureRef: jest.Mock };
+  expect(captureRef).toHaveBeenCalledWith(expect.anything(), { format: 'png', result: 'base64' });
   expect(screen.getByRole('button', { name: t('share.preparing') }).props.accessibilityState?.disabled).toBe(true);
 
   await act(async () => close());

@@ -4,7 +4,7 @@
 import { render } from '@testing-library/react-native';
 import { PixelRatio, StyleSheet } from 'react-native';
 
-import { layout } from '@/share/layout';
+import { FRAME } from '@/share/layout';
 import { shareParams } from '@/share/params';
 import { Preview } from '@/share/Preview';
 import type { Sticker } from '@/share/stickers';
@@ -38,14 +38,14 @@ test('the image is drawn at the size whose pixels are the width in share.json, a
 
   expect(image.width).toBeCloseTo(drawn, 5);
   expect(image.transform).toEqual([{ scale: 240 / drawn }]);
-  expect(image.top).toBe(0); // a backdrop fills the frame
+  expect(image).toMatchObject({ top: 0, transformOrigin: 'top left' }); // a backdrop fills the frame
 });
 
-test('with no backdrop the sticker alone sits low in the frame, as in a Story, inside it', async () => {
-  const { frame, image } = await shown();
-  const height = (image.height as number) * (240 / (shareParams.storyWidth / PixelRatio.get()));
+test('with no backdrop the card alone sits at the foot of the frame, above its margin, as in a Story', async () => {
+  const { image } = await shown();
 
-  expect(image.height).toBeCloseTo(((shareParams.storyWidth / PixelRatio.get()) * layout(STICKER).height) / shareParams.storyWidth, 5);
-  expect(image.top).toBeGreaterThan(frame.height / 2);
-  expect(image.top + height).toBeLessThan(frame.height);
+  expect(image.top).toBeUndefined();
+  expect(image.bottom).toBeCloseTo((FRAME.foot * 240) / shareParams.storyWidth, 5);
+  // Scaled from its foot, so its foot stays where it is put.
+  expect(image.transformOrigin).toBe('bottom left');
 });

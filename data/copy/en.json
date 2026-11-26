@@ -1620,12 +1620,11 @@
     "sticker": {
       "workout": {
         "plain": "Workout",
-        "recordLabel": "{move} PR",
-        "baselineValue": "Baseline",
-        "baselineLabel": "set"
+        "kicker": "Workout complete · {date}"
       },
+      "mark": "{move} · {set}",
       "pr": {
-        "kicker": "New PR",
+        "kicker": "New best",
         "best": "best set ever",
         "change": "+{load}",
         "since": "since {date}"
