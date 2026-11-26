@@ -5,8 +5,8 @@ guncelleme: 2026-11-26
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (26 Kas — K-1238: set ve dinlenme A · Odak, PR otomatik birleşmede)
-**K-1238 (#794):** set ve dinlenme ekranları ADR-094 Ek 2'deki A · Odak düzeniyle kuruldu (yan yana uzun kutular, "Cepte kalan tekrar" boş gelir,
+## ▶ DEVAM NOKTASI (26 Kas — K-1238: set ve dinlenme A · Odak, PR #795 otomatik birleşmede)
+**K-1238 (#794 → PR #795):** set ve dinlenme ekranları ADR-094 Ek 2'deki A · Odak düzeniyle kuruldu (yan yana uzun kutular, "Cepte kalan tekrar" boş gelir,
 bu hareketin set satırları, tek mercan yay, az önceki set kartı + "Sıradaki" kum kartı, okunur "Bitir", şerit dinlenmede de). Levent simülatörde
 3 varyanttan **"boş gider"i** seçti; K1 listesini ve öğe bütçesini (set ham 22→24, dinlenme 8→10) onayladı (Ek 2 › Uygulama). Görseller
 `prototip/gorsel-yon/9c7/rir-bos-kayit.jpg`, `9c7-sonra.jpg`. **Sıradaki (9c-7, aynı yöntem: şu an + 2-3 varyant, simülatörde):** form sorusu hareketin
