@@ -2746,6 +2746,21 @@
     "rangeSpoken": "between {low} and {high}"
   },
   "coach": {
+    "action": {
+      "walk": {
+        "title": "Evening walk",
+        "add": "Add to plan",
+        "set": "Reminder set for {time} today.",
+        "off": "Reminders are off. Turn them on in Settings.",
+        "settings": "Open Settings",
+        "late": "It's past {time}, so no reminder today.",
+        "failed": "Couldn't set the reminder. Try again."
+      },
+      "meal": {
+        "title": "Fits what's left today",
+        "log": "Log"
+      }
+    },
     "subscription": "Questions to the coach come with a subscription. Your log and your first full call work without one.",
     "mealSubscription": "Reading a meal from your words comes with a subscription. You can still log it by name.",
     "entry": "Ask the coach",

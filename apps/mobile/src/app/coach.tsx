@@ -10,10 +10,12 @@ import { announce } from '@/components/ProblemText';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { MEAL_CHIP, ask, chipAnswer, coachChips, isChip, loadHistory, modelOn, readMeal, remember, starters, type Remembered, type Said } from '@/coach/conversation';
 import { t } from '@/copy';
+import { MealCard, WalkCard, type WalkToday } from '@/coach/ActionCards';
 import { weeklyNote } from '@/coach/note';
 import { amountLine } from '@/food/amountText';
 import { DraftPicks, anyMatched } from '@/food/DraftPicks';
 import { handOffMeal, type HandedMeal } from '@/food/handoff';
+import { notificationParams } from '@/notifications/params';
 import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { useReduceMotion } from '@/theme/useReduceMotion';
@@ -31,7 +33,10 @@ type Message =
   | { from: 'user'; text: string; typed?: boolean }
   | { from: 'coach'; said: Said; standard: boolean }
   | { from: 'coach'; meal: Schemas['MealDraft'] }
-  | { from: 'coach'; problem: 'consent' | 'subscription' | 'failed'; text: string; mode: Mode };
+  | { from: 'coach'; problem: 'consent' | 'subscription' | 'failed'; text: string; mode: Mode }
+  // The engine's suggested actions (K-1236, ADR-092 Ek 2 #2): today's walk for the steps left, a food that fits what is left.
+  | { from: 'coach'; action: 'walk'; walk: WalkToday }
+  | { from: 'coach'; action: 'meal'; suggestion: Schemas['Suggestion'] };
 
 /** A message with its own id: a retry removes one, and a draft's picks must stay with their draft (K-509 review). */
 type Kept = Message & { id: number };
@@ -48,7 +53,7 @@ type Kept = Message & { id: number };
 export default function CoachScreen() {
   // `write`: opened from This week's line, which looks like the box (ADR-092 Ek 2 #1): the box takes the keyboard at once.
   const { chip, decisionId, write } = useLocalSearchParams<{ chip?: string; decisionId?: string; write?: string }>();
-  const { api } = useAppServices();
+  const { api, reminders } = useAppServices();
   const { color } = useTheme();
   const [day] = useState(() => localDay(new Date()));
   const [today, setToday] = useState<TodayData | null>(null);
@@ -84,7 +89,12 @@ export default function CoachScreen() {
       load(() => api.GET('/v1/program')),
       load(() => api.GET('/v1/weigh-ins', { params: { query: { from: day, to: day } } })),
       loadHistory(api),
-    ]).then(([decision, program, weighIns, past]) => {
+      // The engine's suggestions for the action cards: none is no card, and a read that fails is none (the coach goes on).
+      Promise.resolve()
+        .then(() => reminders.walkToday())
+        .catch(() => null),
+      load(() => api.GET('/v1/days/{day}/suggestions', { params: { path: { day } } })),
+    ]).then(([decision, program, weighIns, past, walk, suggested]) => {
       // The week's note opens the conversation (K-517): the call, its leading rule, the one focus — no model, no quota. Then where the
       // conversation was left (ADR-092 #3), and anything said now after it.
       const start: Message[] = [];
@@ -94,6 +104,11 @@ export default function CoachScreen() {
       }
       if (live) {
         start.push(...past.map((message): Message => (message.from === 'user' ? { from: 'user', text: message.text, typed: true } : { from: 'coach', said: message.said, standard: message.standard })));
+        // Then what the engine suggests today, after where the conversation was left, so it is in sight on opening: a walk only for
+        // enough steps left to be worth a ring (the nudge's own floor), one food that fits.
+        if (walk !== null && walk.remaining >= notificationParams.walkNudgeMinRemaining) start.push({ from: 'coach', action: 'walk', walk });
+        const fits = suggested.state === 'ready' ? suggested.value[0] : undefined;
+        if (fits !== undefined) start.push({ from: 'coach', action: 'meal', suggestion: fits });
         if (start.length > 0) setMessages((said) => [...start, ...said]);
       }
       if (live)
@@ -109,7 +124,7 @@ export default function CoachScreen() {
     return () => {
       live = false;
     };
-  }, [api, day, setMessages]);
+  }, [api, reminders, day, setMessages]);
 
   const answerChip = useCallback(
     (key: string) => {
@@ -264,6 +279,7 @@ const mealItem = (item: Schemas['MealDraft']['items'][number]) =>
  */
 function spokenOf(message: Message): string {
   if (message.from === 'user') return message.text;
+  if ('action' in message) return message.action === 'walk' ? `${t('coach.action.walk.title')} ${message.walk.body}` : `${t('coach.action.meal.title')} ${amountLine(message.suggestion.name, message.suggestion.amount)}`;
   if ('problem' in message) return t(wordsOf(message.problem, message.mode, PROBLEMS[message.problem].words));
   if ('meal' in message) {
     const { items } = message.meal;
@@ -323,6 +339,7 @@ function Bubble({
       </View>
     );
   }
+  if ('action' in message) return message.action === 'walk' ? <WalkCard walk={message.walk} /> : <MealCard suggestion={message.suggestion} />;
   if ('meal' in message) return <MealSaid draft={message.meal} />;
   const { said, standard } = message;
   // The model's words, checked on the server (ADR-092 #2), first; then the app's own lines. Built outside the JSX children (the raw-text guard).
