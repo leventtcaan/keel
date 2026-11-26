@@ -2974,7 +2974,8 @@
         "off": "Hatırlatmalar kapalı. Ayarlar'dan açabilirsin.",
         "settings": "Ayarları aç",
         "late": "Saat {time} geçti, bugün hatırlatma yok.",
-        "failed": "Hatırlatma kurulamadı. Tekrar dene."
+        "failed": "Hatırlatma kurulamadı. Tekrar dene.",
+        "quiet": "Hatırlatmalar bugün duraklatıldı."
       },
       "meal": {
         "title": "Bugün kalana uyar",

@@ -2754,7 +2754,8 @@
         "off": "Reminders are off. Turn them on in Settings.",
         "settings": "Open Settings",
         "late": "It's past {time}, so no reminder today.",
-        "failed": "Couldn't set the reminder. Try again."
+        "failed": "Couldn't set the reminder. Try again.",
+        "quiet": "Reminders are paused today."
       },
       "meal": {
         "title": "Fits what's left today",

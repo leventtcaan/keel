@@ -36,7 +36,7 @@ const mockGET = jest.fn(async (path: string, _init?: unknown) => mockAnswers[pat
 const mockPOST = jest.fn(async (_path: string, _init?: unknown) => ok({}));
 const mockPUT = jest.fn(async (_path: string, _init?: unknown) => ok({}));
 let mockWalk: typeof WALK | null = WALK;
-let mockPlanned: 'set' | 'off' | 'late' | 'none' = 'set';
+let mockPlanned: 'set' | 'off' | 'late' | 'quiet' | 'none' = 'set';
 const mockReminders = {
   walkToday: jest.fn(async () => mockWalk),
   planWalkToday: jest.fn(async () => mockPlanned),
@@ -130,6 +130,21 @@ describe('the walk card', () => {
     expect(card('walk').getByText(t('coach.action.walk.set', { time: '18:00' }))).toBeOnTheScreen();
   });
 
+  test('a declared state quiets today: says so, no button', async () => {
+    mockPlanned = 'quiet';
+    await show();
+    await act(async () => fireEvent.press(card('walk').getByRole('button', { name: t('coach.action.walk.add') })));
+    expect(card('walk').getByText(t('coach.action.walk.quiet'))).toBeOnTheScreen();
+    expect(card('walk').queryByRole('button', { name: t('coach.action.walk.add') })).toBeNull();
+  });
+
+  test('nothing left to walk by the time it is pressed (past midnight, a new read): the card goes', async () => {
+    mockPlanned = 'none';
+    await show();
+    await act(async () => fireEvent.press(card('walk').getByRole('button', { name: t('coach.action.walk.add') })));
+    expect(screen.queryByTestId('coach-action-walk')).toBeNull();
+  });
+
   test('nothing read today, or too few steps left: no walk card', async () => {
     mockWalk = null;
     await show();
@@ -186,6 +201,7 @@ test('each card stays within the coach card budget (word-budgets.json, coachActi
     [t('coach.action.walk.title'), t('coach.action.walk.off'), t('coach.action.walk.settings')],
     [t('coach.action.walk.title'), t('coach.action.walk.late', { time: '18:00' })],
     [t('coach.action.walk.title'), t('coach.action.walk.set', { time: '18:00' })],
+    [t('coach.action.walk.title'), t('coach.action.walk.quiet')],
     [t('coach.action.meal.title'), t('coach.action.meal.log')],
   ]) {
     expect(wordsOf(words.join(' '))).toBeLessThanOrEqual(max);

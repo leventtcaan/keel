@@ -18,13 +18,14 @@ type Schemas = components['schemas'];
 export type WalkToday = { day: string; remaining: number; body: string; at: string; planned: boolean };
 
 /** What "Add to plan" said back, or that it could not be asked. */
-type Planned = 'set' | 'off' | 'late' | 'none' | 'failed';
+type Planned = 'set' | 'off' | 'late' | 'quiet' | 'none' | 'failed';
 
 /** What a press says on the card: today's reminder set, the reminders off (with the way to Settings), past the time, or a failure. */
 const SAID: Record<Exclude<Planned, 'none'>, string> = {
   set: 'coach.action.walk.set',
   off: 'coach.action.walk.off',
   late: 'coach.action.walk.late',
+  quiet: 'coach.action.walk.quiet',
   failed: 'coach.action.walk.failed',
 };
 
@@ -41,7 +42,9 @@ export function WalkCard({ walk }: { walk: WalkToday }) {
     setSaid(answer);
     if (answer !== 'none') announce(t(SAID[answer], { time: walk.at }));
   };
-  const line = said === null || said === 'none' ? null : <Words words={t(SAID[said], { time: walk.at })} />;
+  // Nothing left to walk by the time it was pressed (past midnight, a newer read): the card has nothing to offer.
+  if (said === 'none') return null;
+  const line = said === null ? null : <Words words={t(SAID[said], { time: walk.at })} />;
   const way =
     said === null ? (
       <Button label={t('coach.action.walk.add')} onPress={() => void add()} />

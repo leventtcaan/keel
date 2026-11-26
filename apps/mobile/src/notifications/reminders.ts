@@ -183,15 +183,12 @@ export async function createReminders({ kv, access, now, report, muted = async (
     return facts !== null && facts.day === dayOf(now()) ? facts : null;
   }
 
-  /** What should be scheduled now, from what is kept — read inside the turn, so the plan is never older than a change. */
-  async function reschedule(): Promise<void> {
+  /** The plan as it stands now, or none when nothing may be planned (off, not allowed, a state with no last day). */
+  async function planNow(): Promise<Reminder[] | null> {
     const silenced = settings.enabled && (await muted());
     const until = silenced ? await mutedUntil() : null;
     // A state with no last day says nothing of when to come back: nothing is planned until it ends.
-    if (!settings.enabled || !(await access.permission()).granted || (silenced && until === null)) {
-      await access.clear();
-      return;
-    }
+    if (!settings.enabled || !(await access.permission()).granted || (silenced && until === null)) return null;
     const plan = planReminders({
       schedule: scheduleOf(await kv.getItemAsync(KEY.schedule)),
       programDays: programDaysOf(await kv.getItemAsync(KEY.programDays)),
@@ -207,8 +204,18 @@ export async function createReminders({ kv, access, now, report, muted = async (
       mealsOff: settings.mealsOff === true,
       walkNudge: walkNudge && (settings.walkOn === true || (await walkPlannedToday())) ? walkNudgeOf(await kv.getItemAsync(KEY.walkNudge)) : null,
     });
-    await access.replace(settings.only === undefined ? plan : plan.filter((reminder) => reminder.kind === settings.only));
+    return settings.only === undefined ? plan : plan.filter((reminder) => reminder.kind === settings.only);
   }
+
+  /** What should be scheduled now, from what is kept — read inside the turn, so the plan is never older than a change. */
+  async function reschedule(): Promise<void> {
+    const plan = await planNow();
+    if (plan === null) await access.clear();
+    else await access.replace(plan);
+  }
+
+  /** Whether today's walk is in what the phone will ring: what "set" and "planned" say (K-1236 review), never only what was asked. */
+  const walkRings = async () => ((await planNow()) ?? []).some((reminder) => reminder.kind === 'walk');
 
   return {
     /** Synchronous, for rendering (useSyncExternalStore). */
@@ -375,22 +382,22 @@ export async function createReminders({ kv, access, now, report, muted = async (
 
     /**
      * Today's walk as the coach offers it (K-1236, ADR-092 Ek 2 #2): the steps left and the line Today last read (the engine's target
-     * less Health's count, against the user's routes, K-1216), the nudge's time, and whether it is already planned for today (the
-     * user's switch, or "Add to plan" earlier today). None when Today has read nothing today.
+     * less Health's count, against the user's routes, K-1216), the nudge's time, and whether it will ring today (the user's switch or
+     * "Add to plan" earlier today, with the reminders on, allowed, not quieted, and the time still ahead). None when Today has read nothing today.
      */
     walkToday: async (): Promise<(WalkNudgeFacts & { at: string; planned: boolean }) | null> => {
       const facts = await todaysWalk();
       if (facts === null) return null;
-      return { ...facts, at: P.walkNudgeTime, planned: settings.walkOn === true || (await walkPlannedToday()) };
+      return { ...facts, at: P.walkNudgeTime, planned: await walkRings() };
     },
 
     /**
      * "Add to plan" (K-1236): today's evening walk reminder alone, by date; the user's own switch, the plan, the targets and the call
      * stay as they are. What it says back: `set`; `off` while the reminders are off or not allowed (the way is Settings); `late` once
-     * the time has passed; `none` when nothing is left to walk (too few steps, or nothing read today).
+     * the time has passed; `quiet` when a declared state (or the check-in-only switch) keeps it from ringing; `none` when nothing is left to walk (too few steps, or nothing read today).
      */
-    planWalkToday: async (): Promise<'set' | 'off' | 'late' | 'none'> => {
-      let said: 'set' | 'off' | 'late' | 'none' = 'none';
+    planWalkToday: async (): Promise<'set' | 'off' | 'late' | 'quiet' | 'none'> => {
+      let said: 'set' | 'off' | 'late' | 'quiet' | 'none' = 'none';
       await inTurn(
         async () => {
           const facts = await todaysWalk();
@@ -407,7 +414,12 @@ export async function createReminders({ kv, access, now, report, muted = async (
           }
           await kv.setItemAsync(KEY.walkToday, facts.day);
           await reschedule();
-          said = 'set';
+          // Asked, but a declared state (or the check-in-only switch) keeps it from ringing: said so, and not kept as asked.
+          if (await walkRings()) said = 'set';
+          else {
+            await kv.removeItemAsync(KEY.walkToday);
+            said = 'quiet';
+          }
         },
         { rethrow: true },
       );

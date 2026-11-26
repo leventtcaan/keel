@@ -30,11 +30,12 @@ function device(granted = true) {
   };
   return { state, access };
 }
-async function setUp({ at = noon, on = true, granted = true, walkNudge = true } = {}) {
+async function setUp({ at = noon, on = true, granted = true, walkNudge = true, mutedUntil = null as string | null } = {}) {
   const kv = memoryKv();
   const { state, access } = device(granted);
   let now = at;
-  const reminders = await createReminders({ kv, access, now: () => now, report: () => {}, walkNudge });
+  const quiet = mutedUntil === null ? {} : { muted: async () => true, mutedUntil: async () => mutedUntil };
+  const reminders = await createReminders({ kv, access, now: () => now, report: () => {}, walkNudge, ...quiet });
   if (on) await reminders.turnOn();
   return { kv, state, reminders, later: (moment: Date) => void (now = moment) };
 }
@@ -97,4 +98,27 @@ test('forgotten with the account', async () => {
   await reminders.planWalkToday();
   await reminders.forget();
   expect([...kv.items.keys()]).toEqual([]);
+});
+
+// Review (K-1236): "set" and "planned" are said only when the walk is in what the phone will ring.
+test('a declared state quiets today: not set, and the card is told it is quiet', async () => {
+  const { state, reminders } = await setUp({ mutedUntil: '2026-11-27' });
+  await reminders.keepWalkNudge(facts);
+  expect(await reminders.planWalkToday()).toBe('quiet');
+  expect(walkOf(state.scheduled)).toEqual([]);
+  expect((await reminders.walkToday())?.planned).toBe(false);
+});
+
+test('"planned" is what will ring: not with the reminders off, nor once the time has passed, though the switch is on', async () => {
+  const off = await setUp();
+  await off.reminders.keepWalkNudge(facts);
+  await off.reminders.setWalk(true);
+  expect((await off.reminders.walkToday())?.planned).toBe(true);
+  await off.reminders.turnOff();
+  expect((await off.reminders.walkToday())?.planned).toBe(false);
+  const late = await setUp();
+  await late.reminders.keepWalkNudge(facts);
+  await late.reminders.planWalkToday();
+  late.later(new Date(2026, 10, 25, 18, 30));
+  expect((await late.reminders.walkToday())?.planned).toBe(false);
 });
