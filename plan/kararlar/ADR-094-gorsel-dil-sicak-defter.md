@@ -182,3 +182,16 @@ Hedef bandı çizilmez, çünkü sunucu ona ait bir sayı vermez (U1).
    görünür; açmak için SCOFF kapısından geçmek gerekir (ADR-050), kapalıysa sunucuya istek de gitmez. Geçmiş kararlarda aralık hiç görünmez.
    **Bugün kapalı (Levent, 25 Kas):** projeksiyon ve SCOFF ekranları ADR-069 ile v1'de yüzeyden kaldırıldığı için kimse projeksiyonu açamıyor.
    Kod girer ve kapalı kalır; projeksiyon ayrı bir kararla (SCOFF kapısı + Gelişim girişi, ADR-050 aynen) yeniden açılınca aralık kendiliğinden görünür.
+
+## Ek 2 · Antrenman akışı: set ve dinlenme (9c-7, 2026-11-26, Levent)
+Bugünkü 7 ekran simülatörde çekildi ve sorunları işaretlendi (`prototip/gorsel-yon/9c7/9c7-simdi.jpg`). Set ve dinlenme için Codex üç yön çizdi
+(`9c7/a-*`, `b-*`, `c-*`; istemler `ekranlar.txt`, `yon-*.txt`). **Levent A · Odak'ı seçti:**
+- **Set:** hareket adı serif, "Set 2 / 3" küçük; bugünkü hedef büyük ("28 kg × 6"); ağırlık ve tekrar yan yana iki uzun kutu (rakam ortada, eksi/artı
+  kutunun altında; etiket rakamın üstüne binmez); "Cepte kalan tekrar" 0 · 1 · 2+ **hiçbiri seçili gelmez** (9b); bu hareketin setleri sessiz satırlar
+  (yapılan ✓, şimdiki mercan işaret, bekleyen); altta tek petrol "Set N kaydet".
+- **Dinlenme:** ayrı, sakin ekran; büyük geri sayım çevresinde **tek** mercan yay (iç içe halka değil, ADR-070 #8), boşalarak; "Önerilen 2-3 dk",
+  -15/+15; az önce yapılan set ve "Geçen seferden ağır."; "Sıradaki · Set 2 · 28 kg × 6" kum kartta; altta tek petrol "Hazır".
+- Üst çubuk: "Bitir" okunur (sönük değil), ortada geçen süre, "Duraklat"; altında hareketler şeridi (yapılan ink, şimdiki mercan).
+- Oturum koyu kalır (§4), bu ADR'nin koyu paletiyle. Taslak kusurları (B'deki İngilizce "reps", C'deki uydurma "Bugünün hedefi") taşınmaz.
+9b mantık maddeleri bu ekranlarla birlikte yapılır (Levent): cepte kalan tekrar önceden dolu gelmez; form sorusu hareketin sonunda; dinlenmenin gerçek
+süresi bir yere bağlanır ya da kalkar (bu son ikisi ayrıca görselle sorulur).

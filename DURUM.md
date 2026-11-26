@@ -5,7 +5,12 @@ guncelleme: 2026-11-26
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (27 Kas — K-1237: yemek ekranında koç satırı, PR #793 otomatik birleşmede)
+## ▶ DEVAM NOKTASI (27 Kas — 9c-7 antrenman akışı: yön seçildi, uygulama yeni oturumda)
+**K-1237 birleşti (#793); 9c-6b bitti.** **9c-7 (plan 9c madde 4, antrenman akışı):** bugünkü 7 ekran simülatörde çekildi, sorunlar işaretlendi
+(`prototip/gorsel-yon/9c7/9c7-simdi.jpg`). Set + dinlenme için Codex 3 yön çizdi; **Levent A · Odak'ı seçti → ADR-094 Ek 2**; 9b mantığı bu ekranlarla
+birlikte (Levent). Kart **K-1238**. **Bağlam %79'da durdu → yeni oturum:** `plan/oturum-promptlari/9c7-devam.md`.
+
+## (önceki) ▶ DEVAM NOKTASI (27 Kas — K-1237: yemek ekranında koç satırı, PR #793 otomatik birleşmede)
 **Koçun hazır soruları birleşti (#792).** **K-1237 (#789):** Levent iki ekranı simülatörde gördü (ADR-092 Ek 2 #5): koç satırı yalnız bugünün yemek ekranında,
 kalan kalorinin altında; antrenman bitişi sakin; iki ekranda hap yok; koçtaki öğün kartı kalır; ilerleme kuralı sorusu şimdilik yok. K1 yok, yeni metin yok.
 **9c-6b bitti** (K-1235, K-1236, K-1237). **Sıradaki:** Evre 9'un sıradaki parçası (plan/yol-haritasi.md) — önce görsel yönle Levent'e gösterilecek.

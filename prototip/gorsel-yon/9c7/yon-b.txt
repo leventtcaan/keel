@@ -1,0 +1,4 @@
+DIRECTION B · "Defter satırları": the session as a notebook page. Set screen: the move name as a serif heading, then the sets as ruled
+lines like a notebook table (columns: set, kg, reps, reps in reserve); the current line is opened in place as a surface card holding the
+two steppers and the three chips; done lines quiet with a check. Rest screen: the same page stays, and the rest is a coral bar across the
+top of the current card filling down to zero with "1:24" beside it; the next line ("Sıradaki · Set 2 · 28 kg × 6") is highlighted.

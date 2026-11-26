@@ -1,0 +1,4 @@
+DIRECTION C · "Kart": one big surface card per set. Set screen: a single large card centred: "Set 2 / 3" small, weight and reps as two
+huge Rounded numbers ("28 kg" and "6") stacked, each with round minus/plus buttons on its sides; the chips row under them inside the card;
+below the card a row of three small set dots (done, current coral, waiting). Rest screen: the card flips to rest: "1:24" huge in the card,
+a full-width coral bar along the card's bottom edge emptying left to right, "Sıradaki · Set 2 · 28 kg × 6" at the card's foot.

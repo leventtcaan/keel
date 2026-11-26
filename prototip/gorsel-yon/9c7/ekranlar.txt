@@ -1,0 +1,28 @@
+APP: Next Call, a training and nutrition coach. This is the WORKOUT SESSION, which is always DARK (focus mode).
+Device: iPhone 16 Pro portrait, 1206 x 2622 px, iOS status bar (9:41), home indicator. One phone screen per image, flat front view,
+no hand, no device frame, no marketing text around it. Text crisp and spelled exactly as given (Turkish: ç ğ ı İ ö ş ü).
+Numbers Turkish format: decimal comma (2,5), thousands dot. No em dash or en dash. Never ALL CAPS. Little text: if a label is not
+listed, do not invent it.
+PALETTE (dark, fixed roles, nothing else): page #17191B; surface/group #24231F; raised #2E2D29; hairline #2E3135; ink #ECE8E1;
+secondary text #D3CEC5; muted #A39E95; PETROL #5FB3BB = the one primary action and selection (button fill, text on it #17191B);
+CORAL #F08C70 = progress and "now" only (a progress bar or arc, the current-set marker); soft petrol tint #16302F for a selected chip.
+No other colours, no red, no gradients, no glow, no shadows, no concentric rings, no illustrations.
+TYPE: move name and big titles in a soft text serif (Apple New York style), sentence case; all numbers in SF Pro Rounded, tabular,
+large and friendly; labels SF Pro regular. Radius 20 on groups. Generous spacing.
+TOP BAR (both screens): left "Bitir" (ink, clearly readable), centre elapsed time "12:40" (Rounded), right "Duraklat".
+Under it a thin progress of the session's moves: 9 short segments, first 3 done (ink), current one coral, rest muted.
+
+SCREEN A · SET (logging a set)
+- Move: small rounded icon of a dumbbell, name "Incline dumbbell press", small "Set 2 / 3".
+- Today's target, large: "28 kg × 6".
+- Two inputs: weight "28 kg" and reps "6", each with a minus and a plus button. The label of each input must NOT overlap its number.
+- Reps-in-reserve question: label "Cepte kalan tekrar" and three chips "0" "1" "2+", NONE selected yet (the person must choose).
+- The sets of this move as quiet rows: "Set 1   28 kg × 6   ✓" done; "Set 2" current (coral marker); "Set 3   28 kg × 6" waiting.
+- Bottom dock: one primary petrol pill "Set 2 kaydet".
+
+SCREEN B · REST (between sets)
+- The rest time counting down, very large: "1:24", with a coral progress shape that empties as time passes (see direction).
+- Small "Önerilen 2-3 dk" under it; two small buttons "-15" and "+15".
+- What was just done: "Set 1 · 28 kg × 6" with a small line "Geçen seferden ağır."
+- What comes next, clearly: "Sıradaki · Set 2 · 28 kg × 6".
+- Bottom dock: one primary petrol pill "Hazır".
