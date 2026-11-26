@@ -206,3 +206,7 @@ süresi bir yere bağlanır ya da kalkar (bu son ikisi ayrıca görselle sorulur
 5. **Form sorusu hareketin sonunda, hareket kartında** (K-1239, Levent; `9c7/form-sorusu.jpg`, sonra `9c7/form-sonra.jpg`): son setten
    sonra kartta "Formun nasıldı? Temiz / Temiz değil", Temiz seçili; Sıradaki düğmesi aynı (ek dokunuş yok). Açılan pencere ve
    "Temiz · Sıradaki" düğmesi seçilmedi. Bitişte yalnız son setinden önce bırakılan hareketler sorulur; not kutusu kalır.
+6. **Gerçek dinlenme süresi set satırında** (K-1240, Levent; `9c7/dinlenme-suresi.jpg`, sonra `9c7/dinlenme-sonra.jpg`): biten setin satırında
+   önündeki dinlenme soluk yazar ("1:09 dinlenme") ve sesli etikette söylenir. Yalnız gösterilir, hiçbir kural okumaz; kayıt (K-1214) sürer.
+   Dinlenme ekranında "Son dinlenmen" ve kaydı kaldırmak seçilmedi. Öğrenen aralık ayrı kural + kaynak ister (kural-ekle).
+   Yan düzeltme: tek taraflı harekette görünen numara "1 · sağ" (önce "1Sağ" bitişikti), tek taraflı satırda sol sütun geniş.

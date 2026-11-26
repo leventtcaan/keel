@@ -5,7 +5,8 @@
 import type { components } from '@/api/schema';
 import { onboardingParams } from '@/onboarding/params';
 import { workoutParams } from '@/train/params';
-import { buildSet, clockText, exerciseStatus, parseEntry, restText, rirChoice, setText, stepLoad, stepReps } from '@/train/session';
+import { t } from '@/copy';
+import { buildSet, clockText, exerciseStatus, parseEntry, restText, rirChoice, setNumberText, setText, stepLoad, stepReps } from '@/train/session';
 import type { ExercisePlan } from '@/train/workout';
 
 type Schemas = components['schemas'];
@@ -99,6 +100,11 @@ test("the set the queue sends: a working set with the row's side and the RIR pic
     side: 'BOTH',
   });
   expect(buildSet('c2', row, 'LEFT', { loadKg: 20, reps: 12 }, 3)).toMatchObject({ side: 'LEFT', rir: 3 });
+});
+
+test("a set's number as a row writes it: a side is named after it, never glued to it (\"1R\")", () => {
+  expect(setNumberText(2, 'BOTH')).toBe('2');
+  expect(setNumberText(1, 'RIGHT')).toBe(`1 · ${t('workout.sideName.RIGHT')}`);
 });
 
 test('no reps left picked (9b, ADR-094 Ek 2): the set goes without one, never with a number nobody chose', () => {
