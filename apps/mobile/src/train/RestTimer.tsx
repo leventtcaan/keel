@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { type AccessibilityActionEvent, Pressable, StyleSheet, Text, View } from 'react-native';
+import Svg, { Circle } from 'react-native-svg';
 
 import { BottomSheet } from '@/components/BottomSheet';
 import { Button } from '@/components/Button';
@@ -11,6 +12,41 @@ import { haptics } from './haptics';
 import { workoutParams } from './params';
 import type { RestBand } from './restBand';
 import { bandText, restText } from './session';
+
+/**
+ * The one coral arc round the clock (ADR-094 Ek 2; ADR-070 #8: one ring, never rings inside rings): the share of this rest still
+ * to go, from the top round to the left, emptying from its far end as it counts. Coral, "how far you came" (ADR-094 §1); gone
+ * once the rest is over. A picture: the clock says the time.
+ */
+function RestArc({ share }: { share: number }) {
+  const { color } = useTheme();
+  const size = tokens.size.restArc;
+  const width = tokens.size.restArcStroke;
+  const radius = (size - width) / 2;
+  const around = 2 * Math.PI * radius;
+  const left = Math.min(1, Math.max(0, share));
+  // Built outside the JSX (the raw-text guard reads what is inside it).
+  const arc =
+    left === 0 ? null : (
+      <Circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        stroke={color.progress}
+        strokeWidth={width}
+        strokeLinecap="round"
+        fill="none"
+        strokeDasharray={`${around} ${around}`}
+        strokeDashoffset={around * (1 - left)}
+        transform={`rotate(90 ${size / 2} ${size / 2}) scale(-1 1) translate(${-size} 0)`}
+      />
+    );
+  return (
+    <Svg testID="rest-arc" accessible={false} width={size} height={size} style={StyleSheet.absoluteFill}>
+      {arc}
+    </Svg>
+  );
+}
 
 const ACTIONS = [{ name: 'increment' }, { name: 'decrement' }];
 
@@ -34,7 +70,8 @@ export function RestTimer({ since, band, onAdjust }: { since: number; band: Rest
     return () => clearInterval(tick);
   }, []);
   const elapsed = Math.floor((now - since) / 1000);
-  const left = band.low + change - elapsed;
+  const length = band.low + change;
+  const left = length - elapsed;
   const over = left <= 0;
   // Past the band's upper end (a fixed value has none): said once, plainly. The band moves with the user's 15 s changes.
   const past = band.high !== null && elapsed >= band.high + change;
@@ -91,25 +128,28 @@ export function RestTimer({ since, band, onAdjust }: { since: number; band: Rest
       <Text style={[styles.label, { color: color.muted }]}>{t('workout.rest.over')}</Text>
     ) : band.high !== null ? (
       <Text testID="rest-band" style={[styles.label, { color: color.muted }]}>
-        {bandText(band.low + change, band.high + change)}
+        {t('workout.rest.suggested', { band: bandText(band.low + change, band.high + change) })}
       </Text>
     ) : null;
   return (
     <View testID="rest" accessibilityRole="timer" style={styles.rest}>
-      <Pressable
-        testID="rest-clock"
-        accessibilityRole="adjustable"
-        accessibilityLabel={t('workout.rest.label')}
-        accessibilityValue={{ text: time }}
-        accessibilityHint={t('workout.rest.adjustHint')}
-        accessibilityActions={ACTIONS}
-        onAccessibilityAction={spoken}
-        onLongPress={() => setAdjusting(true)}
-        delayLongPress={400}>
-        <Text style={[styles.time, { color: over ? color.accent : color.text }]}>
-          {time}
-        </Text>
-      </Pressable>
+      <View style={styles.dial}>
+        <RestArc share={length <= 0 ? 0 : Math.max(0, left) / length} />
+        <Pressable
+          testID="rest-clock"
+          accessibilityRole="adjustable"
+          accessibilityLabel={t('workout.rest.label')}
+          accessibilityValue={{ text: time }}
+          accessibilityHint={t('workout.rest.adjustHint')}
+          accessibilityActions={ACTIONS}
+          onAccessibilityAction={spoken}
+          onLongPress={() => setAdjusting(true)}
+          delayLongPress={400}>
+          <Text style={[styles.time, { color: over ? color.accent : color.text }]}>
+            {time}
+          </Text>
+        </Pressable>
+      </View>
       {line}
       {/* One centred row under the clock, never over its digits (simulator check of K-1207). */}
       <View testID="rest-steps" style={styles.line}>
@@ -122,7 +162,8 @@ export function RestTimer({ since, band, onAdjust }: { since: number; band: Rest
 }
 
 const styles = StyleSheet.create({
-  rest: { alignItems: 'center', gap: tokens.space.sm, paddingVertical: tokens.space.xl },
+  rest: { alignItems: 'center', gap: tokens.space.sm, paddingVertical: tokens.space.lg },
+  dial: { width: tokens.size.restArc, height: tokens.size.restArc, alignItems: 'center', justifyContent: 'center' },
   line: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: tokens.space.md },
   time: { flexShrink: 1, ...tokens.face.display, fontSize: tokens.type.restClock, fontVariant: ['tabular-nums'], textAlign: 'center' },
   label: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },

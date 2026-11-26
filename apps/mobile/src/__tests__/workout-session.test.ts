@@ -101,6 +101,10 @@ test("the set the queue sends: a working set with the row's side and the RIR pic
   expect(buildSet('c2', row, 'LEFT', { loadKg: 20, reps: 12 }, 3)).toMatchObject({ side: 'LEFT', rir: 3 });
 });
 
+test('no reps left picked (9b, ADR-094 Ek 2): the set goes without one, never with a number nobody chose', () => {
+  expect(buildSet('c6', bench, 'BOTH', { loadKg: 60, reps: 8 }, null)).not.toHaveProperty('rir');
+});
+
 test('the RIR picker is 0, 1 and 2+; an older set logged as 3 or more shows as 2+ (K-960, ADR-075 #2)', () => {
   expect(workoutParams.rirChoices).toEqual([0, 1, 2]);
   expect([0, 1, 2, 3, 5].map(rirChoice)).toEqual([0, 1, 2, 2, 2]);

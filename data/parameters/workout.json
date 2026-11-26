@@ -41,19 +41,19 @@
     },
     {
       "key": "session_set_max_raw_elements",
-      "value": 22,
+      "value": 24,
       "unit": "elements",
       "tag": "urun",
       "source": "plan/evre-8-butun-urun.md#1.3",
-      "note": "K-1207: the looser second guard of the set screen, counting every dot, stepper button and chip on its own (the first guard counts the bar, the dots, a stepper and the reps-left row as one each). The audit's 53 and the state before were 41 this way."
+      "note": "K-1207: the looser second guard of the set screen, counting every dot, stepper button and chip on its own (the first guard counts the bar, the dots, a stepper, the reps-left row and the move's set rows as one each). The audit's 53 and the state before were 41 this way. 22 -> 24 (K-1238, the founder 26 Nov 2026, ADR-094 Ek 2): the A layout's quiet set rows (one line per set of the move)."
     },
     {
       "key": "session_rest_max_elements",
-      "value": 8,
+      "value": 10,
       "unit": "elements",
       "tag": "urun",
       "source": "plan/evre-8-butun-urun.md#1.3",
-      "note": "K-1207 (the rest screen): the most discrete things (a text, a button, a field; the bar one) the rest shows while it runs: the clock, what the set said, the next set, Up next where the move changes, Ready. The audit counted about 58. A test renders a rest and counts them (elementCount.ts)."
+      "note": "K-1207 (the rest screen): the most discrete things (a text, a button, a field; the bar and the moves strip one each) the rest shows while it runs: the strip, the clock, the set just done and what it said, the next set, Up next where the move changes, Ready. The audit counted about 58. A test renders a rest and counts them (elementCount.ts). 8 -> 10 (K-1238, the founder 26 Nov 2026, ADR-094 Ek 2): the A layout keeps the strip over the rest and names the set just done."
     },
     {
       "key": "session_rest_max_raw_elements",

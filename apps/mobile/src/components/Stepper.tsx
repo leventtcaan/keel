@@ -40,6 +40,11 @@ type Props = {
   compact?: boolean;
   /** Every shown value keeps all its decimals ("191.0", as the weigh-in's "Last" writes it) instead of dropping a trailing zero. */
   fixed?: boolean;
+  /**
+   * The tall box (ADR-094 Ek 2, the set screen's A · Focus): the number alone in the middle, big, and the minus and the plus
+   * side by side under it, so two boxes fit side by side and no name sits on the number. The name is the screen reader's.
+   */
+  tall?: boolean;
 };
 
 const ACTIONS = [{ name: 'increment' }, { name: 'decrement' }];
@@ -64,10 +69,19 @@ function show(value: number, decimals: number, fixed = false): string {
  * The number's size and box for the text it holds: full size up to the usual length, then smaller in proportion (never below
  * the smallest), in a box as wide as all of it, so a long number ("191.46") is whole and never cut at the field's edge.
  */
-export function fitValue(text: string): { fontSize: number; width: number } {
+export function fitValue(text: string, full: number = tokens.type.stepperValue): { fontSize: number; width: number } {
   const chars = Math.max(text.length, 1);
-  const fontSize = Math.max(tokens.type.stepperValueMin, Math.floor((tokens.type.stepperValue * tokens.size.stepperFitChars) / Math.max(chars, tokens.size.stepperFitChars)));
+  const fontSize = Math.max(tokens.type.stepperValueMin, Math.floor((full * tokens.size.stepperFitChars) / Math.max(chars, tokens.size.stepperFitChars)));
   return { fontSize, width: Math.max(tokens.size.touch, Math.ceil(chars * fontSize * tokens.size.stepperCharEm)) };
+}
+
+/**
+ * The tall box's number (ADR-094 Ek 2): it shares its line with the unit ("102.5 kg" in half a 375 pt phone), so its size is set as if the
+ * unit's characters were the number's too, and its box is as wide as the number alone.
+ */
+function fitTall(text: string, unit: string | undefined): { fontSize: number; width: number } {
+  const { fontSize } = fitValue(unit === undefined ? text : `${text} ${unit}`, tokens.type.setBoxValue);
+  return { fontSize, width: Math.max(tokens.size.touch, Math.ceil(Math.max(text.length, 1) * fontSize * tokens.size.stepperCharEm)) };
 }
 
 /** What was typed as a number, a comma or a dot for the decimal; null when it is no number yet ("", "-", "1,2,3"). */
@@ -81,7 +95,7 @@ function parse(text: string): number | null {
  * − value + as one component (ADR-070 Ek 2 #5): the value is a field one taps and types into (decimal keyboard, a comma or
  * a dot), the buttons step it. One adjustable control for VoiceOver: swipe up or down to step.
  */
-export function Stepper({ label, value, onChange, onEmpty, step, min = Number.NEGATIVE_INFINITY, max = Number.POSITIVE_INFINITY, unit, decimals, placeholder = '-', steps, compact = false, fixed = false }: Props) {
+export function Stepper({ label, value, onChange, onEmpty, step, min = Number.NEGATIVE_INFINITY, max = Number.POSITIVE_INFINITY, unit, decimals, placeholder = '-', steps, compact = false, fixed = false, tall = false }: Props) {
   const { color } = useTheme();
   // Its pad has no Return key: the Done bar over the keyboard closes it (K-1065).
   const { id: doneId, bar } = useDoneBar(true);
@@ -139,7 +153,13 @@ export function Stepper({ label, value, onChange, onEmpty, step, min = Number.NE
         keyboardType={places > 0 ? 'decimal-pad' : 'number-pad'}
         inputAccessoryViewID={doneId}
         selectTextOnFocus
-        style={[styles.input, compact && styles.inputCompact, fitValue(typing ? draft.text : shown), { color: color.text, borderBottomColor: color.edge }]}
+        style={[
+          styles.input,
+          compact && styles.inputCompact,
+          tall && styles.inputTall,
+          tall ? fitTall(typing ? draft.text : shown, unit) : fitValue(typing ? draft.text : shown),
+          { color: color.text, borderBottomColor: color.edge },
+        ]}
       />
       {unit !== undefined && <Text style={[styles.unit, { color: color.muted }]}>{unit}</Text>}
       {bar}
@@ -156,6 +176,17 @@ export function Stepper({ label, value, onChange, onEmpty, step, min = Number.NE
   ) : (
     field
   );
+  if (tall)
+    return (
+      <View testID="stepper-box" style={[styles.tall, { backgroundColor: color.surface }]}>
+        <View style={styles.tallValue}>{field}</View>
+        <View style={[styles.tallButtons, { borderTopColor: color.line }]}>
+          <StepButton direction={-1} label={t('stepper.decrease', { label })} disabled={stepTo(-1) === null} onPress={() => stepBy(-1)} wide />
+          <View style={[styles.divider, { backgroundColor: color.line }]} />
+          <StepButton direction={1} label={t('stepper.increase', { label })} disabled={stepTo(1) === null} onPress={() => stepBy(1)} wide />
+        </View>
+      </View>
+    );
   return (
     <View testID="stepper-box" style={[styles.box, compact && styles.boxCompact, { backgroundColor: color.surface }]}>
       <StepButton direction={-1} label={t('stepper.decrease', { label })} disabled={stepTo(-1) === null} onPress={() => stepBy(-1)} />
@@ -165,7 +196,8 @@ export function Stepper({ label, value, onChange, onEmpty, step, min = Number.NE
   );
 }
 
-function StepButton({ direction, label, disabled, onPress }: { direction: 1 | -1; label: string; disabled: boolean; onPress: () => void }) {
+/** `wide`: a half of the tall box's foot, flat on the box (no raised square), as tall as a touch target. */
+function StepButton({ direction, label, disabled, onPress, wide = false }: { direction: 1 | -1; label: string; disabled: boolean; onPress: () => void; wide?: boolean }) {
   const { color } = useTheme();
   return (
     <Pressable
@@ -174,7 +206,7 @@ function StepButton({ direction, label, disabled, onPress }: { direction: 1 | -1
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [styles.button, { backgroundColor: color.raise }, (pressed || disabled) && styles.dim]}>
+      style={({ pressed }) => [wide ? styles.wideButton : [styles.button, { backgroundColor: color.raise }], (pressed || disabled) && styles.dim]}>
       <Icon name={direction === 1 ? 'plus' : 'minus'} />
     </Pressable>
   );
@@ -199,6 +231,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  tall: { flex: 1, borderRadius: tokens.radius.card, overflow: 'hidden' },
+  tallValue: { paddingHorizontal: tokens.space.sm, paddingVertical: tokens.space.lg, alignItems: 'center', justifyContent: 'center' },
+  tallButtons: { flexDirection: 'row', borderTopWidth: tokens.border.hairline },
+  wideButton: { flex: 1, minHeight: tokens.size.stepperButton, alignItems: 'center', justifyContent: 'center' },
+  divider: { width: tokens.border.hairline },
   dim: { opacity: tokens.opacity.dim },
   value: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', gap: tokens.space.sm },
   // The dotted line under the number says "type here" (prototype `.stp .sv b`).
@@ -213,5 +250,7 @@ const styles = StyleSheet.create({
   },
   // The number's line is its size and its air above and below goes, so the caption and the number are as tall as a button.
   inputCompact: { lineHeight: tokens.type.stepperValue, paddingVertical: 0 },
+  // The set box's number is a number (ADR-094 §2: rounded), not the serif.
+  inputTall: { ...tokens.face.displayBold },
   unit: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.semibold },
 });

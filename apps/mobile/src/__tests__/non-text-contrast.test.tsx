@@ -31,10 +31,11 @@ describe.each(schemes)('%s theme', (scheme) => {
       </ThemeProvider>,
     );
     const dot = (name: string) => screen.getByRole('button', { name: new RegExp(name) }).children[0];
-    // K1 (K-1207): the accent is for the one thing to do and the timer, so the move under way is the brightest grey and a move done the middle one.
-    expect(dot('Bench')).toHaveStyle({ backgroundColor: p.text });
+    // K1 (K-1238, ADR-094 Ek 2): the strip's move under way is coral, "you are here" (never petrol, the thing to do), a move done ink,
+    // one to come the control edge.
+    expect(dot('Bench')).toHaveStyle({ backgroundColor: p.progress });
     expect(dot('Row')).toHaveStyle({ backgroundColor: p.edge });
-    expect(dot('Squat')).toHaveStyle({ backgroundColor: p.muted });
+    expect(dot('Squat')).toHaveStyle({ backgroundColor: p.text });
   });
 
   test('a weigh-in not yet made is an outlined dot in the control edge', async () => {

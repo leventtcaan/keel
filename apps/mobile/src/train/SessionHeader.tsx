@@ -78,7 +78,8 @@ export function SessionHeader({ since, onEnd, pause, onPause }: Props) {
           onPress={onEnd}
           hitSlop={tokens.space.sm}
           style={({ pressed }) => [styles.control, pressed && styles.dim]}>
-          <Text style={[styles.end, { color: color.muted }]}>{t('workout.end')}</Text>
+          {/* Read, not faint (ADR-094 Ek 2): the way out of a session is a control like Pause, in the same ink. */}
+          <Text style={[styles.end, { color: color.text }]}>{t('workout.end')}</Text>
         </Pressable>
       </View>
       <View style={styles.middle}>

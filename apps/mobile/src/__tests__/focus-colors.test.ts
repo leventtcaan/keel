@@ -15,7 +15,7 @@ const rolesIn = (file: string) => new Set([...read(file).matchAll(/\bcolor\.(\w+
 const FOCUS = [
   'app/workout.tsx',
   'train/ActiveSet.tsx',
-  'train/DoneSets.tsx',
+  'train/SetRows.tsx',
   'train/GoalLine.tsx',
   'train/MoveDots.tsx',
   'train/SessionHeader.tsx',

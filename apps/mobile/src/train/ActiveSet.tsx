@@ -26,8 +26,8 @@ export type Entry = {
   load: string;
   loadKg: number | null;
   reps: string;
-  /** The reps left that is logged with the set: the plan's aim until the person picks one (what was always sent). */
-  rir: number;
+  /** The reps left the person picked; null until they pick one (9b, ADR-094 Ek 2): nothing is chosen for them. */
+  rir: number | null;
   note: string | null;
 };
 
@@ -46,9 +46,11 @@ type Props = {
 };
 
 /**
- * The one set under way (ADR-075 #1-#2, prototype `.active`): the weight and the reps, each a stepper whose number can
- * be typed too, filled with the suggestion; reps left picked from 0, 1 and 2+. A bodyweight move has no weight; a weighted
- * one steps what is added. The button that logs it is the screen's, in its dock, so it never moves.
+ * The one set under way (ADR-075 #1-#2; ADR-094 Ek 2, A · Focus): the weight and the reps side by side, each a tall box whose
+ * number sits alone in the middle and can be typed too, its minus and plus under it, filled with the suggestion; then reps left
+ * in the tank, 0, 1 or 2+, none picked until the person picks (left alone, the set is logged without it). A bodyweight move has
+ * no weight (the reps box takes the row); a weighted one steps what is added. The button that logs it is the screen's, in its
+ * dock, so it never moves.
  */
 export function ActiveSet({ move, aim, gym, entry, onChange, problem, problemOccurrence, onLayout }: Props) {
   const { color } = useTheme();
@@ -69,11 +71,11 @@ export function ActiveSet({ move, aim, gym, entry, onChange, problem, problemOcc
     return next === null ? null : () => onChange({ reps: String(next) });
   };
   const loadLabel = t(move.load === 'BODYWEIGHT_PLUS_EXTERNAL' ? 'workout.addedLabel' : 'workout.loadLabel', { unit });
-  // Compact steppers (prototype `.stp.c`): each names its field inside its box, so there is no label line over it.
+  // Tall boxes (ADR-094 Ek 2): the number alone, its name the screen reader's, so no caption sits on the digits.
   const load =
     move.load === 'BODYWEIGHT' ? null : (
       <Stepper
-        compact
+        tall
         label={loadLabel}
         value={numberOf(entry.load)}
         onChange={(number) => onChange({ load: String(number), loadKg: null })}
@@ -104,15 +106,16 @@ export function ActiveSet({ move, aim, gym, entry, onChange, problem, problemOcc
         multiline
       />
     );
-  // Reps left (RIR): one compact row with the plan's aim selected, as it always was, so what is logged when it is left alone is what the
-  // person sees. The aim is said by the row's own text ("Reps left"), which a screen reader reaches, as its hint.
+  // Reps left in the tank (RIR): its name over three wide choices, none picked until the person picks one (9b; ADR-094 Ek 2 #1):
+  // a number nobody chose is never shown as chosen, and left alone the set goes without one. The plan's aim is said by the name,
+  // which a screen reader reaches, as its hint.
   const aimHint = aim === null ? undefined : t('workout.targetRir', { max: aim });
   return (
     <View testID="active-set" onLayout={onLayout} style={styles.entry}>
       <View style={styles.steppers}>
         {load}
         <Stepper
-          compact
+          tall
           label={t('workout.repsLabel')}
           value={numberOf(entry.reps)}
           onChange={(number) => onChange({ reps: String(number) })}
@@ -125,14 +128,16 @@ export function ActiveSet({ move, aim, gym, entry, onChange, problem, problemOcc
       </View>
       {picking ? <Text style={[styles.small, { color: color.muted }]}>{t('workout.pick.why')}</Text> : null}
       <View testID="rir-row" style={styles.rir}>
-        <Text accessibilityHint={aimHint} style={[styles.small, styles.grow, { color: color.muted }]}>
-          {t('workout.rir.short')}
+        <Text accessibilityHint={aimHint} style={[styles.rirTitle, { color: color.text }]}>
+          {t('workout.rir.title')}
         </Text>
-        {workoutParams.rirChoices.map((rir, i) => {
-          return (
-            <Chip key={rir} label={i === last ? t('workout.rir.more') : String(rir)} selected={rirChoice(entry.rir) === rir} onPress={() => onChange({ rir })} />
-          );
-        })}
+        <View style={styles.choices}>
+          {workoutParams.rirChoices.map((rir, i) => (
+            <View key={rir} style={styles.grow}>
+              <Chip touch label={i === last ? t('workout.rir.more') : String(rir)} selected={entry.rir !== null && rirChoice(entry.rir) === rir} onPress={() => onChange({ rir })} />
+            </View>
+          ))}
+        </View>
       </View>
       {noteField}
       {said}
@@ -149,10 +154,11 @@ function numberOf(text: string): number | null {
 const styles = StyleSheet.create({
   // Filled boxes on the page, no outline (K-1207: the near-white frame said "look here" about a card that is the whole screen).
   entry: { gap: tokens.space.sm },
-  // One under the other (prototype `.setc`): the shared Stepper is wide enough for "102.5 kg" between its buttons, which two
-  // side by side on a 375 pt phone are not (about 54 pt left for the number between four 48 pt buttons).
-  steppers: { gap: tokens.space.sm },
-  rir: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
+  // Side by side (ADR-094 Ek 2): the tall box puts its buttons under the number, so the whole width of a half is the number's.
+  steppers: { flexDirection: 'row', gap: tokens.space.sm },
+  rir: { gap: tokens.space.sm },
+  rirTitle: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
+  choices: { flexDirection: 'row', gap: tokens.space.sm },
   grow: { flex: 1 },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },

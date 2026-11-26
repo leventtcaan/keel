@@ -274,8 +274,8 @@ const reached = (element: { props: Record<string, unknown>; parent: unknown }) =
 };
 /** What is said about the set under way: the move's name (a header) carries "Set 2 of 3, 6-10 reps". */
 const setSaid = () => String(reached(within(screen.getByTestId('move-head')).getByRole('header')).props.accessibilityLabel);
-/** The aim for reps left: the hint of the row's own "Reps left" text. */
-const aimSaid = () => String(reached(within(screen.getByTestId('rir-row')).getByText(t('workout.rir.short'))).props.accessibilityHint);
+/** The aim for reps left: the hint of the row's own name, "Reps left in the tank" (ADR-094 Ek 2). */
+const aimSaid = () => String(reached(within(screen.getByTestId('rir-row')).getByText(t('workout.rir.title'))).props.accessibilityHint);
 /** After a set the rest has the screen (K-1207): Ready gives the set card back. Waits for either, taps Ready if it is the one there. */
 const toSet = async (name: string) => {
   const found = await waitFor(() => {
@@ -344,14 +344,15 @@ test("the day's moves, and the move under way filled with the server's next targ
   expect(screen.getByLabelText('Reps').props.value).toBe('6');
 });
 
-test('one tap logs the set as suggested, with the target RIR, under the workout; then the rest timer runs', async () => {
+// K1 (K-1238; 9b, ADR-094 Ek 2 #1, Levent chose "it goes empty"): reps left is not picked for the person, so one tap logs the set without it.
+test('one tap logs the set as suggested, with no reps left nobody picked, under the workout; then the rest timer runs', async () => {
   await show();
   await fireEvent.press(await screen.findByText('Log set 1'));
   expect(sets()).toEqual([
     {
       kind: 'set',
       workoutClientId: 'w1',
-      body: { clientId: expect.any(String), exerciseId: 'bench_press', setType: 'WORKING', loadKg: 62.5, reps: 6, rir: 1, side: 'BOTH' },
+      body: { clientId: expect.any(String), exerciseId: 'bench_press', setType: 'WORKING', loadKg: 62.5, reps: 6, side: 'BOTH' },
     },
   ]);
   // K1 (K-1207): the rest has the screen; the set card is back with Ready, as Log set 2.
@@ -808,7 +809,7 @@ describe('a move added to the session, outside the plan (K-416)', () => {
         setType: 'WORKING',
         loadKg: 50,
         reps: 10,
-        rir: workoutParams.targetRirMax,
+        // K1 (K-1238): reps left not picked is not sent; the server reads the plan's aim (G1 K-5) for it.
         side: 'BOTH',
       },
     });
@@ -1359,7 +1360,8 @@ describe("the rest band and the user's own rest (K-1214)", () => {
   test('the recommended band: the clock from 2:00, the band 2-3 min under it, the alert at the low end', async () => {
     const rest = await logFirstSet();
     expect(rest.getByText('2:00')).toBeTruthy();
-    expect(rest.getByTestId('rest-band')).toHaveTextContent('2-3 min');
+    // K1 (K-1238, ADR-094 Ek 2): the band says what it is, "Suggested 2-3 min".
+    expect(rest.getByTestId('rest-band')).toHaveTextContent(t('workout.rest.suggested', { band: '2-3 min' }));
     expect(mockServices.restAlert.start).toHaveBeenLastCalledWith(expect.any(Number), 120);
   });
 
@@ -1673,8 +1675,8 @@ describe('the focus mode session (K-971, ADR-075 #1-#2, ADR-070 #4)', () => {
     await show();
     expect(await toSet(t('workout.log', { number: 2 }))).toBeOnTheScreen();
     expect(clock()).toMatch(/^12:0\d$/);
-    expect(screen.getByTestId('done-summary')).toHaveTextContent('62.5×7'); // K-1207: the sets done are one line, opened by a tap
-    await openDone();
+    // K1 (K-1238, ADR-094 Ek 2): the sets are rows of their own, the one done with its mark, no longer a folded line.
+    expect(within(screen.getByTestId('set-rows')).getByText('62.5 kg × 7')).toBeOnTheScreen();
     expect(screen.getByLabelText(t('workout.doneSet', { number: 1, set: '62.5 kg × 7', left: '1' }))).toBeOnTheScreen();
     expect(setSaid()).toContain(t('workout.setOf', { number: 2, count: 3 }));
   });
@@ -1932,29 +1934,31 @@ describe('the focus mode session (K-971, ADR-075 #1-#2, ADR-070 #4)', () => {
       expect(screen.getByRole('button', { name: stepName('lessReps') })).toBeDisabled();
     });
 
-    // K1 (K-1207): the aim is not a second line; it is the hint of the row's own "Reps left" text, which a screen reader reaches.
-    test('reps left is one compact row: 0, 1 and 2+, the plan\'s aim selected, the aim said by its text', async () => {
+    // K1 (K-1238; 9b, ADR-094 Ek 2 #1): "Reps left in the tank" over 0, 1 and 2+, none picked for the person; the aim is still the
+    // hint of the row's own name, which a screen reader reaches.
+    test('reps left in the tank: 0, 1 and 2+, none of them picked until the person picks, the aim said by its name', async () => {
       await show();
       await screen.findByText(t('workout.log', { number: 1 }));
-      expect(screen.getByText(t('workout.rir.short'))).toBeOnTheScreen();
+      expect(screen.getByText(t('workout.rir.title'))).toBeOnTheScreen();
       expect(aimSaid()).toBe(t('workout.targetRir', { max: 1 }));
-      expect(screen.getByRole('button', { name: '1' })).toBeSelected(); // what is logged when it is left alone is what is seen
-      for (const choice of ['0', '2+']) expect(screen.getByRole('button', { name: choice })).not.toBeSelected();
+      for (const choice of ['0', '1', '2+']) expect(screen.getByRole('button', { name: choice })).not.toBeSelected();
+      // Logging is not held back for it (Levent, 26 Nov: "it goes empty").
+      expect(screen.getByRole('button', { name: t('workout.log', { number: 1 }) })).toBeEnabled();
     });
 
-    test('left alone the row logs the aim it shows; picked, the pick; the next set starts at the aim again', async () => {
+    test('left alone the set goes without reps left; picked, the pick; the next set starts with none picked again', async () => {
       await show();
       await fireEvent.press(await screen.findByText(t('workout.log', { number: 1 })));
-      expect(sets()[0].body).toMatchObject({ rir: 1 });
+      expect(sets()[0].body).not.toHaveProperty('rir');
       await toSet(t('workout.log', { number: 2 }));
-      expect(screen.getByRole('button', { name: '1' })).toBeSelected();
+      for (const choice of ['0', '1', '2+']) expect(screen.getByRole('button', { name: choice })).not.toBeSelected();
       await fireEvent.press(screen.getByRole('button', { name: '2+' }));
       expect(screen.getByRole('button', { name: '2+' })).toBeSelected();
       expect(screen.getByRole('button', { name: '1' })).not.toBeSelected();
       await fireEvent.press(await toSet(t('workout.log', { number: 2 })));
       expect(sets()[1].body).toMatchObject({ rir: 2 });
       await toSet(t('workout.log', { number: 3 }));
-      expect(screen.getByRole('button', { name: '1' })).toBeSelected();
+      for (const choice of ['0', '1', '2+']) expect(screen.getByRole('button', { name: choice })).not.toBeSelected();
     });
   });
 });
@@ -2174,8 +2178,8 @@ describe('Skip set and Skip move (K-972, ADR-075 #5): nothing is sent, no catch-
     await show();
     await screen.findByText(t('workout.log', { number: 1 }));
     await skipSet();
-    expect(screen.getByTestId('done-summary')).toHaveTextContent(t('workout.skipped')); // K-1207: one line; the Skipped row opens with it
-    await openDone();
+    // K1 (K-1238, ADR-094 Ek 2): the Skipped row is one of the move's set rows, not a folded line.
+    expect(within(screen.getByTestId('set-rows')).getByText(t('workout.skipped'))).toBeOnTheScreen();
     expect(screen.getByLabelText(t('workout.skippedSet', { number: '1' }))).toBeOnTheScreen();
     expect(screen.getByText(t('workout.log', { number: 2 }))).toBeOnTheScreen();
     expect(sets()).toEqual([]);
@@ -2269,7 +2273,8 @@ describe('Skip set and Skip move (K-972, ADR-075 #5): nothing is sent, no catch-
     await skipSet();
     await fireEvent.press(await toSet(t('workout.log', { number: 2 })));
     expect(sets()).toEqual([
-      { kind: 'set', workoutClientId: 'w1', body: { clientId: expect.any(String), exerciseId: 'bench_press', setType: 'WORKING', loadKg: 62.5, reps: 6, rir: 1, side: 'BOTH' } },
+      // K1 (K-1238): no reps left picked, none sent.
+      { kind: 'set', workoutClientId: 'w1', body: { clientId: expect.any(String), exerciseId: 'bench_press', setType: 'WORKING', loadKg: 62.5, reps: 6, side: 'BOTH' } },
     ]);
   });
 
@@ -3033,7 +3038,8 @@ describe('a move swapped inside the session (K-972, ADR-073 #6, ADR-075 #5): thi
       {
         kind: 'set',
         workoutClientId: 'w1',
-        body: { clientId: expect.any(String), exerciseId: 'dumbbell_bench_press', setType: 'WORKING', loadKg: 30, reps: 10, rir: 1, side: 'BOTH' },
+        // K1 (K-1238): reps left not picked is not sent; the planned move's aim is the server's to read.
+        body: { clientId: expect.any(String), exerciseId: 'dumbbell_bench_press', setType: 'WORKING', loadKg: 30, reps: 10, side: 'BOTH' },
       },
     ]);
     expect(await toSet(t('workout.log', { number: 2 }))).toBeOnTheScreen();
@@ -4059,8 +4065,8 @@ describe('the moves swapped away from (K-973, ADR-075 Ek 7, Ek 8)', () => {
     await toSet(t('workout.log', { number: 2 }));
     await swapTo(DUMBBELL);
     await pickMove('Bench press');
-    await openDone();
-    expect(screen.getByLabelText(t('workout.doneSet', { number: '1', set: '62.5 kg × 6', left: '1' }))).toBeOnTheScreen();
+    // K1 (K-1238): logged with no reps left picked, the done row says the set without it.
+    expect(screen.getByLabelText(t('workout.doneSetNoLeft', { number: '1', set: '62.5 kg × 6' }))).toBeOnTheScreen();
     expect(screen.queryByText(t('workout.log', { number: 2 }))).toBeNull(); // no open row to log
   });
 });
@@ -4083,12 +4089,11 @@ describe('the analysis line after the sets (K-973, ADR-075 #4)', () => {
     await toSet(t('workout.log', { number: n })); // after a set the rest has the screen: Ready first (K-1207)
     if (count !== undefined) await fireEvent.changeText(reps(), count);
     await fireEvent.press(await screen.findByRole('button', { name: t('workout.log', { number: n }) }));
-    // K-1207: what the sets said is on the rest, while it runs; the last set of a move has no rest, and there it opens with the sets done
-    // (one line until a tap), which the helper opens as the person would to read it.
+    // K-1207: what the sets said is on the rest, while it runs; the last set of a move has no rest, and there it is under the move's
+    // set rows (K1, K-1238: the rows are open, no folded line to open).
     await waitFor(() => {
-      if (screen.queryByTestId('rest') === null && screen.queryByTestId('done-summary') === null) throw new Error('neither the rest nor the sets done');
+      if (screen.queryByTestId('rest') === null && screen.queryByTestId('set-rows') === null) throw new Error('neither the rest nor the set rows');
     });
-    if (screen.queryByTestId('rest') === null) await openDone();
   };
   beforeEach(() => serve(BENCH));
 
@@ -4098,16 +4103,16 @@ describe('the analysis line after the sets (K-973, ADR-075 #4)', () => {
     expect(await screen.findByText("+1 rep vs last time.")).toBeOnTheScreen();
   });
 
-  test('it sits in the sets done, under their rows, closed until they are opened, and not in the dock', async () => {
+  // K1 (K-1238, ADR-094 Ek 2): was "it sits in the sets done, closed until they are opened". The rest says it, on the card of the set
+  // just done; the set card holds the set, and the line is under the set rows only once the move is done (no rest after its last set).
+  test('it is said on the rest, with the set just done, and not in the dock; the set card holds the set', async () => {
     await show();
     await logWith(1);
-    expect(within(screen.getByTestId('session-scroll')).getByTestId('insight')).toBeOnTheScreen(); // on the rest, where there is room for it
-    await backToCard();
-    expect(screen.queryByTestId('insight')).toBeNull(); // the sets done are one line, closed
-    await openDone();
-    const line = await screen.findByTestId('insight');
-    expect(within(screen.getByTestId('dock')).queryByTestId('insight')).toBeNull();
+    const line = within(screen.getByTestId('rest-done')).getByTestId('insight'); // on the rest, where there is room for it
     expect(line.props.accessibilityLabel).toBe("+1 rep vs last time.");
+    expect(within(screen.getByTestId('dock')).queryByTestId('insight')).toBeNull();
+    await backToCard();
+    expect(screen.queryByTestId('insight')).toBeNull();
   });
 
   test('the best set of the move today, not the last one: 9 then 6 still reads the 9', async () => {
@@ -4118,21 +4123,33 @@ describe('the analysis line after the sets (K-973, ADR-075 #4)', () => {
     expect(await screen.findByText("+3 reps vs last time.")).toBeOnTheScreen(); // on the rest: the best of the move, not the last set
   });
 
-  test('a set deleted takes the line with it; a set corrected changes it', async () => {
+  // K1 (K-1238, ADR-094 Ek 2): the line is the rest's to say (not on the set card), so what a correction or a delete changes is read on the
+  // next rest; the rows are open (no folded line), and a set logged with no reps left picked is said without it.
+  test('a set corrected changes the line: the next rest reads the corrected set', async () => {
     await show();
     await logWith(1, '9');
     await screen.findByText("+3 reps vs last time.");
     await backToCard();
-    await openDone();
-    const doneRow = () => screen.getByRole('button', { name: t('workout.doneSet', { number: '1', set: '62.5 kg × 9', left: '1' }) });
-    await fireEvent.press(doneRow());
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.doneSetNoLeft', { number: '1', set: '62.5 kg × 9' }) }));
     const editor = within(screen.getByTestId('edit-set'));
     await fireEvent.press(editor.getByRole('button', { name: stepName('lessReps') }));
     await fireEvent.press(editor.getByRole('button', { name: t('workout.edit.done') }));
-    expect(await screen.findByText("+2 reps vs last time.")).toBeOnTheScreen();
-    await fireEvent.press(screen.getByRole('button', { name: t('workout.doneSet', { number: '1', set: '62.5 kg × 8', left: '1' }) }));
+    await logWith(2, '6');
+    expect(await screen.findByText("+2 reps vs last time.")).toBeOnTheScreen(); // the corrected 8 is the best now, not the 9
+  });
+
+  test('a set deleted takes its part of the line with it: the next rest reads the sets that are left', async () => {
+    await show();
+    await logWith(1, '9');
+    await screen.findByText("+3 reps vs last time.");
+    await backToCard();
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.doneSetNoLeft', { number: '1', set: '62.5 kg × 9' }) }));
     await fireEvent.press(within(screen.getByTestId('edit-set')).getByRole('button', { name: t('workout.edit.delete') }));
-    await waitFor(() => expect(screen.queryByTestId('insight')).toBeNull());
+    await waitFor(() => expect(screen.queryByRole('button', { name: t('workout.doneSetNoLeft', { number: '1', set: '62.5 kg × 9' }) })).toBeNull());
+    expect(screen.queryByTestId('insight')).toBeNull();
+    await logWith(1, '6'); // the deleted set's row is the one under way again
+    await screen.findByTestId('rest');
+    expect(screen.queryByText("+3 reps vs last time.")).toBeNull(); // the 9 is gone: today is the 6
   });
 
   test('a set skipped is no set: no line', async () => {
@@ -4945,25 +4962,27 @@ describe('the first view of a set (K-1048)', () => {
     expect(log).toHaveStyle({ minHeight: tokens.size.primaryButton });
   });
 
-  test('the weight and the reps are compact steppers: the field is named in the box, with no label line above it', async () => {
+  // K1 (K-1238, ADR-094 Ek 2): was "compact steppers, the field named in the box". The two are tall boxes side by side: the number alone
+  // in the middle, no caption on it (the field's name is the screen reader's), the minus and the plus under it as full touch targets.
+  test('the weight and the reps are two tall boxes side by side: the number alone, the minus and plus under it', async () => {
     await show();
     await screen.findByText(t('workout.log', { number: 1 }));
     const boxes = card().getAllByTestId('stepper-box');
     expect(boxes).toHaveLength(2);
-    for (const box of boxes) expect(StyleSheet.flatten(box.props.style).padding).toBe(tokens.space.xs);
+    expect(StyleSheet.flatten(boxes[0].parent?.props.style)).toMatchObject({ flexDirection: 'row' });
     const weight = t('workout.loadLabel', { unit: t('units.kgUnit') });
-    expect(within(boxes[0]).getByText(weight, { includeHiddenElements: true })).toBeOnTheScreen();
-    expect(within(boxes[1]).getByText(t('workout.repsLabel'), { includeHiddenElements: true })).toBeOnTheScreen();
-    // The name is said once, by the field; the buttons are still full touch targets.
-    expect(screen.getAllByText(weight, { includeHiddenElements: true })).toHaveLength(1);
-    expect(screen.getByRole('button', { name: stepName('moreLoad') })).toHaveStyle({ width: tokens.size.stepperButton, height: tokens.size.stepperButton });
-    expect(screen.getByRole('button', { name: stepName('lessReps') })).toHaveStyle({ width: tokens.size.stepperButton, height: tokens.size.stepperButton });
+    // No caption over the number: the name is the field's, said once.
+    expect(screen.queryAllByText(weight, { includeHiddenElements: true })).toHaveLength(0);
+    expect(within(boxes[0]).getByLabelText(weight)).toBeOnTheScreen();
+    expect(within(boxes[1]).getByLabelText(t('workout.repsLabel'))).toBeOnTheScreen();
+    for (const name of [stepName('moreLoad'), stepName('lessReps')])
+      expect(StyleSheet.flatten(screen.getByRole('button', { name }).props.style)).toMatchObject({ flex: 1, minHeight: tokens.size.stepperButton });
   });
 
-  test('"Reps left" is one optional row under the steppers in the card, before the dock', async () => {
+  test('"Reps left in the tank" is one optional row under the steppers in the card, before the dock', async () => {
     await show();
     await screen.findByText(t('workout.log', { number: 1 }));
-    expect(card().getByText(t('workout.rir.short'))).toBeOnTheScreen();
+    expect(card().getByText(t('workout.rir.title'))).toBeOnTheScreen();
     expect(aimSaid()).toBe(t('workout.targetRir', { max: 1 }));
     expect(card().queryByText(t('workout.targetRir', { max: 1 }))).toBeNull(); // K1 (K-1207): said to a screen reader, not written
   });
@@ -5366,8 +5385,9 @@ describe('the set screen shows one thing (K-1207)', () => {
     await show();
     await toSet(t('workout.log', { number: 2 }));
     const { count, labels } = countElements(screen.toJSON(), true);
-    // The budget is the card's "about ten": the bar, the dots, the name, More, the target, the sets done, two steppers, reps left, Log set.
-    expect(labels).toEqual(['[session-header]', '[move-dots]', 'Bench press', '[button More]', '62.5 kg × 6', expect.stringContaining('[button Sets done:'), '[stepper-box]', '[stepper-box]', '[rir-row]', '[button Log set 2]']);
+    // The budget is the card's "about ten": the bar, the dots, the name (its set count is said by it), More, the target, two boxes, reps left,
+    // the move's set rows (one picture, as the dots: K1, K-1238, ADR-094 Ek 2, where the folded "sets done" line was) and Log set.
+    expect(labels).toEqual(['[session-header]', '[move-dots]', 'Bench press', '[button More]', '62.5 kg × 6', '[stepper-box]', '[stepper-box]', '[rir-row]', '[set-rows]', '[button Log set 2]']);
     expect(labels.filter((l) => l.includes(t('workout.upNext')))).toEqual([]);
     expect(count).toBeLessThanOrEqual(workoutParams.setScreenMaxElements);
     // The looser second guard: with no unit, every dot, stepper button and chip counted on its own.
@@ -5455,17 +5475,22 @@ describe('the rest is its own state (K-1207)', () => {
     await screen.findByTestId('rest');
   };
 
-  test('after a set the card is gone: the clock, the next set and one Ready are what is on the screen', async () => {
+  // K1 (K-1238, ADR-094 Ek 2): the moves strip stays over the rest (it was gone with the card), the set just done is on its own card, and
+  // the next set is on the sand card, "Up next · Set 2 · 62.5 kg × 7".
+  test('after a set the card is gone: the strip, the clock, the set just done, the next set and one Ready are what is on the screen', async () => {
     withBest();
     await show();
     await logFirst();
-    for (const gone of ['active-set', 'rir-row', 'move-dots', 'done-summary', 'goal', 'up-next', 'rest-slot']) expect(screen.queryByTestId(gone)).toBeNull();
+    for (const gone of ['active-set', 'rir-row', 'set-rows', 'goal', 'up-next', 'rest-slot']) expect(screen.queryByTestId(gone)).toBeNull();
+    expect(screen.getByTestId('move-dots')).toBeOnTheScreen();
+    expect(within(screen.getByTestId('rest-done')).getByText(t('workout.rest.justDone', { number: '1', set: '62.5 kg × 7' }))).toBeOnTheScreen();
+    expect(screen.getByTestId('rest-arc')).toBeOnTheScreen();
     expect(screen.queryByLabelText('Weight (kg)')).toBeNull();
     expect(screen.queryByText(t('workout.log', { number: 2 }))).toBeNull();
     expect(within(screen.getByTestId('rest')).getByText('2:00')).toBeOnTheScreen();
     // The next set, one line: the suggestion for row 2, said with its number.
     const next = screen.getByTestId('rest-next');
-    expect(next).toHaveTextContent('62.5 kg × 7');
+    expect(next).toHaveTextContent(t('workout.rest.upNext', { number: '2', set: '62.5 kg × 7' }));
     expect(next.props.accessibilityLabel).toBe(t('workout.rest.nextLabel', { number: 2, set: '62.5 kg × 7' }));
     // One primary, in the dock where Log set was: Ready.
     const ready = within(screen.getByTestId('dock')).getByRole('button', { name: READY });
@@ -5479,14 +5504,17 @@ describe('the rest is its own state (K-1207)', () => {
     await show();
     await logFirst();
     const { count, labels } = countElements(screen.toJSON(), true);
+    // K1 (K-1238, ADR-094 Ek 2): the strip over the rest, the set just done on its card with what it said, and the next set named.
     expect(labels).toEqual([
       '[session-header]',
+      '[move-dots]',
       '2:00',
-      '2-3 min', // the band, quiet under the clock (K-1214)
+      'Suggested 2-3 min', // the band, quiet under the clock (K-1214)
       '[button Rest 15 seconds shorter]',
       '[button Rest 15 seconds longer]',
+      'Set 1 · 62.5 kg × 7',
       '+1 rep vs last time.',
-      '62.5 kg × 7',
+      'Up next · Set 2 · 62.5 kg × 7',
       '[button Ready for set 2]',
     ]);
     expect(count).toBeLessThanOrEqual(workoutParams.restScreenMaxElements);

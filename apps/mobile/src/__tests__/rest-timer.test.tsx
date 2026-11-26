@@ -4,6 +4,7 @@
  */
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 
+import { t } from '@/copy';
 import { FocusMode, ThemeProvider } from '@/theme/theme';
 import { focusPalette } from '@/theme/tokens';
 import { haptics } from '@/train/haptics';
@@ -120,7 +121,8 @@ describe('felt in its last seconds (K-1207)', () => {
 // K-1214: the band is said quietly under the clock while it counts; past its upper end the clock says so, with no word of blame.
 test('the band 2-3 min is under the clock while it counts; at the low end the line is "go when you are ready"; past the high end it names it', async () => {
   await show(Date.now() - 30_000);
-  expect(screen.getByTestId('rest-band')).toHaveTextContent('2-3 min');
+  // K1 (K-1238, ADR-094 Ek 2): "Suggested 2-3 min".
+  expect(screen.getByTestId('rest-band')).toHaveTextContent(t('workout.rest.suggested', { band: '2-3 min' }));
   await act(async () => jest.advanceTimersByTime(95_000)); // 2:05 in
   expect(screen.queryByTestId('rest-band')).toBeNull();
   expect(screen.getByText('Go when you are ready')).toBeTruthy();
@@ -142,5 +144,5 @@ test('the 15 s change moves the band with the clock', async () => {
   await show(Date.now(), undefined);
   await fireEvent.press(screen.getByRole('button', { name: 'Rest 15 seconds longer' }));
   expect(screen.getByText('2:15')).toBeTruthy();
-  expect(screen.getByTestId('rest-band')).toHaveTextContent('2:15-3:15');
+  expect(screen.getByTestId('rest-band')).toHaveTextContent(t('workout.rest.suggested', { band: '2:15-3:15' }));
 });
