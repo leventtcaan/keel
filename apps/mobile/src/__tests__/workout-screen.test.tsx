@@ -557,6 +557,43 @@ test("in lb, an untouched suggestion logs the server's kg; a typed one, what was
   expect(sets()[1].body).toMatchObject({ loadKg: 63.5 });
 });
 
+// 9b (ADR-094 Ek 2 › Uygulama #5, the founder chose "on the move's card"): a move's form is asked when its last set is done, on its card, clean
+// picked; the finish asks only about a move left before its last set.
+describe('the form question at the end of the move', () => {
+  const doBench = async () => {
+    await fireEvent.press(await screen.findByText(t('workout.log', { number: 1 })));
+    await fireEvent.press(await toSet(t('workout.log', { number: 2 })));
+    await fireEvent.press(await toSet(t('workout.log', { number: 3 })));
+    return within(await screen.findByTestId('form-check'));
+  };
+
+  test('after the last set the card asks how the form was, clean picked; not asked before it', async () => {
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    expect(screen.queryByTestId('form-check')).toBeNull();
+    const form = await doBench();
+    expect(form.getByText(t('workout.form.title'))).toBeOnTheScreen();
+    expect(form.getByRole('button', { name: `Bench press: ${t('workout.form.clean')}` })).toBeSelected();
+    expect(form.getByRole('button', { name: `Bench press: ${t('workout.form.unclean')}` })).not.toBeSelected();
+    // The way on is the dock's, as before: Next.
+    expect(within(screen.getByTestId('dock')).getByRole('button', { name: /^Next: / })).toBeOnTheScreen();
+  });
+
+  test('not clean on the card is sent with the finish, and the finish does not ask about that move again', async () => {
+    await show();
+    const form = await doBench();
+    await fireEvent.press(form.getByRole('button', { name: `Bench press: ${t('workout.form.unclean')}` }));
+    expect(form.getByRole('button', { name: `Bench press: ${t('workout.form.unclean')}` })).toBeSelected();
+    await endAndFinish();
+    const sheet = within(await screen.findByTestId('finish-form'));
+    expect(sheet.queryByLabelText(`Bench press: ${t('workout.form.clean')}`)).toBeNull(); // the card's answer stands
+    expect(sheet.queryByText(t('workout.form.title'))).toBeNull();
+    await fireEvent.press(screen.getByText('Finish'));
+    const finish = mockRecord.mock.calls.map(([o]) => o).find((o) => o.kind === 'finish');
+    expect(finish).toMatchObject({ body: { uncleanExerciseIds: ['bench_press'] } });
+  });
+});
+
 test('a move marked not clean and then clean again is sent as clean', async () => {
   await show();
   await fireEvent.press(await screen.findByText('Log set 1'));
@@ -4361,11 +4398,15 @@ describe('the last step: cardio (K-973, ADR-074 #3, ADR-075 #6)', () => {
     expect(dock().getByRole('button', { name: t('workout.finish') })).toBeOnTheScreen();
   });
 
-  test('Finish from the step finishes the workout (the form question first, as always)', async () => {
+  // K1 (9b; ADR-094 Ek 2 › Uygulama #5, the founder chose to ask on the move's card): every move is done here, so its form was asked on
+  // its card; the finish sheet opens without the question, with the note and Finish.
+  test('Finish from the step finishes the workout: the finish sheet, without the form question of moves already asked', async () => {
     await show();
     await toCardio();
     await fireEvent.press(dock().getByRole('button', { name: t('workout.finish') }));
-    expect(await screen.findByText(t('workout.form.title'))).toBeOnTheScreen();
+    const sheet = within(await screen.findByTestId('finish-form'));
+    expect(sheet.queryByText(t('workout.form.title'))).toBeNull();
+    expect(sheet.getByRole('button', { name: t('workout.finishNow') })).toBeOnTheScreen();
   });
 
   test('a cardio that cannot be kept is said, and the step stays', async () => {

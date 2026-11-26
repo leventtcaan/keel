@@ -6231,6 +6231,23 @@ tasks:
     refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md", "prototip/gorsel-yon/9c7/a-set.jpg", "prototip/gorsel-yon/9c7/a-rest.jpg", "plan/evre-9-tasarim.md"]
     learn: ["Spor salonunda tek bakışta okunan ekran"]
 
+  - id: K-1239
+    title: "Antrenman oturumu: form sorusu hareketin sonunda, hareket kartında (9c-7b)"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: S
+    status: done
+    depends_on: [K-1238]
+    why: "9b (Levent): form antrenman sonunda toplu soruluyor, hangi hareket nasıldı hatırlanmıyor; Levent simülatörde 3 varyanttan kartı seçti (ADR-094 Ek 2 › Uygulama #5)"
+    acceptance:
+      - "Hareketin son setinden sonra kartta 'How was your form?' Temiz / Temiz değil, Temiz seçili; Sıradaki aynı"
+      - "Kartta verilen cevap bitişte uncleanExerciseIds ile gider; bitiş penceresi o hareketi yeniden sormaz"
+      - "Son setinden önce bırakılan hareket bitişte yine sorulur"
+      - "Simülatörde Levent'e gösterilir; K1 değişikliği listelenir"
+    tests: ["workout-screen.test.tsx", "npm run check"]
+    refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md", "prototip/gorsel-yon/9c7/form-sorusu.jpg"]
+
   - id: K-1227
     title: "Yerler arası yürüme rotası haritada (noktalı), adım karşılığı"
     milestone: M12

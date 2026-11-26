@@ -232,7 +232,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   tall: { flex: 1, borderRadius: tokens.radius.card, overflow: 'hidden' },
-  tallValue: { paddingHorizontal: tokens.space.sm, paddingVertical: tokens.space.lg, alignItems: 'center', justifyContent: 'center' },
+  // The value takes the height the row gives (two boxes side by side are one height), so both boxes' buttons are on one line.
+  tallValue: { flex: 1, paddingHorizontal: tokens.space.sm, paddingVertical: tokens.space.lg, alignItems: 'center', justifyContent: 'center' },
   tallButtons: { flexDirection: 'row', borderTopWidth: tokens.border.hairline },
   wideButton: { flex: 1, minHeight: tokens.size.stepperButton, alignItems: 'center', justifyContent: 'center' },
   divider: { width: tokens.border.hairline },
