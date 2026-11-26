@@ -22,6 +22,7 @@ import { tokens } from '@/theme/tokens';
 import { EditSet } from '@/train/EditSet';
 import { EndSheet } from '@/train/EndSheet';
 import { FinishForm } from '@/train/FinishForm';
+import { FormCheck } from '@/train/FormCheck';
 import { haptics } from '@/train/haptics';
 import { GoalLine } from '@/train/GoalLine';
 import { CardioStep } from '@/train/CardioStep';
@@ -200,6 +201,13 @@ function Session() {
     back: { workout: string; sets: string[] };
   } | null>(null);
   const [unclean, setUnclean] = useState<Set<string>>(() => new Set());
+  const markForm = (id: string, clean: boolean) =>
+    setUnclean((current) => {
+      const next = new Set(current);
+      if (clean) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   const [sessionNote, setSessionNote] = useState('');
   const [busy, setBusy] = useState(false);
   // The finish being kept (it can take seconds): said on its button, so the screen is never blank while it works.
@@ -1293,6 +1301,10 @@ function Session() {
         <SetRows key={move.id} plan={plan} move={move} onEdit={(set, number) => setEditing({ set, number })}>
           {plan.current === null ? analysisLine : null}
         </SetRows>
+        {/* The move done: its form is asked here, while it is fresh (9b; ADR-094 Ek 2 › Uygulama #5). */}
+        {plan.current === null && plan.rows.some((r) => r.done !== null) ? (
+          <FormCheck name={name(move.id)} clean={!unclean.has(move.id)} onMark={(clean) => markForm(move.id, clean)} />
+        ) : null}
       </>
     );
   // In a superset the move after this set is its partner (the round's order), else the next move of the day with sets left.
@@ -1527,21 +1539,19 @@ function Session() {
       <Text style={[styles.text, { color: color.muted }]}>{t('workout.dayGone')}</Text>
     ) : null;
   const loadFailed = failed ? <Text style={[styles.text, { color: color.muted }]}>{t('workout.loadFailed')}</Text> : null;
+  // The moves whose form the finish still asks: those left before their last set (a move done was asked on its card, 9b).
+  const unasked = worked.filter((id) => {
+    const at = entries.findIndex((e) => e.exerciseId === id);
+    return at < 0 || (plans[at]?.current ?? null) !== null;
+  });
   const form = (
     <>
       <FinishForm
-        moves={worked}
+        moves={unasked}
         named={moves}
         unclean={unclean}
         busy={busy}
-        onMark={(id, clean) =>
-          setUnclean((current) => {
-            const next = new Set(current);
-            if (clean) next.delete(id);
-            else next.add(id);
-            return next;
-          })
-        }
+        onMark={markForm}
         note={sessionNote}
         onNote={setSessionNote}
         onFinish={() => void finish()}

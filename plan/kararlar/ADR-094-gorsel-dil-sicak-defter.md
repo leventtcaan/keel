@@ -203,3 +203,6 @@ süresi bir yere bağlanır ya da kalkar (bu son ikisi ayrıca görselle sorulur
    `data/parameters/workout.json`. Sayaç bu hareketin set satırlarını tek birim sayar (hareket noktaları gibi).
 3. Analiz satırı ("Geçen seferden ağır.") set ekranında değil: dinlenmede az önceki setin kartında; hareket bitince set satırlarının altında.
 4. Set satırlarındaki ✓ mürekkep (odak ekranında petrol yalnız eylem ve biten sayaç için, K-1207 kuralı).
+5. **Form sorusu hareketin sonunda, hareket kartında** (K-1239, Levent; `9c7/form-sorusu.jpg`, sonra `9c7/form-sonra.jpg`): son setten
+   sonra kartta "Formun nasıldı? Temiz / Temiz değil", Temiz seçili; Sıradaki düğmesi aynı (ek dokunuş yok). Açılan pencere ve
+   "Temiz · Sıradaki" düğmesi seçilmedi. Bitişte yalnız son setinden önce bırakılan hareketler sorulur; not kutusu kalır.
