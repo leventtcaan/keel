@@ -905,15 +905,8 @@
       "logged": "Logged. Next time starts from here.",
       "below": "Below the range."
     },
-    "doneNumber": "set {number}",
-    "doneShort": "{load}×{reps}",
-    "doneShortAdded": "+{load}×{reps}",
-    "doneSeparator": " · ",
-    "doneSummaryLabel": "Sets done: {sets}",
-    "doneSummaryHint": "Shows each set, to correct or delete it.",
-    "doneSummaryClose": "Hides the sets.",
-    "doneLeft": "{left} left",
     "doneSet": "Set {number}, done: {set}, {left} left",
+    "doneSetNoLeft": "Set {number}, done: {set}",
     "next": "Next: {name}",
     "upNext": "Up next",
     "head": {
@@ -941,7 +934,7 @@
     "saveFailed": "That set couldn't be saved on the phone. Try again.",
     "rir": {
       "label": "Set {number} · reps left in the tank",
-      "short": "Reps left",
+      "title": "Reps left in the tank",
       "more": "2+"
     },
     "rest": {
@@ -949,6 +942,7 @@
       "over": "Go when you are ready",
       "past": "Past {high}. Go when you are ready",
       "band": "{low}-{high} min",
+      "suggested": "Suggested {band}",
       "bandExact": "{low}-{high}",
       "time": "{minutes}:{seconds}",
       "less": "-{seconds}",
@@ -960,6 +954,8 @@
       "readyLabel": "Ready for set {number}",
       "nextLabel": "Next: set {number}, {set}",
       "nextSideLabel": "Next: set {number}, {side}, {set}",
+      "justDone": "Set {number} · {set}",
+      "upNext": "Up next · Set {number} · {set}",
       "adjustHint": "Press and hold to change the rest",
       "adjustTitle": "Rest",
       "alert": {

@@ -6219,7 +6219,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-1237]
     why: "ADR-094 Ek 2 (Levent, 26 Kas): set/dinlenme ekranları simülatörde sorunlu (etiket çakışması, boş alt yarı, dolan süre yok, sıradaki set yok); 9b: RIR önceden dolu gelmesin"
     acceptance:

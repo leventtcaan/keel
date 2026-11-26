@@ -4,7 +4,8 @@
  * - a text (a host Text with words) is one; a button (an accessible pressable) is one, its label inside it is not counted again;
  * - a field (TextInput) is one;
  * - a `unit` is one however many parts it has: the session's bar (End, time, Pause: chrome that is the same in every state),
- *   the move dots (one progress picture), a stepper (a number with its two buttons) and the reps-left row (one optional answer);
+ *   the move dots (one progress picture), a stepper (a number with its two buttons), the reps-left row (one optional answer) and the
+ *   move's set rows (one picture of the move, as the dots are of the session; K-1238, ADR-094 Ek 2);
  * - what a person cannot see or reach (hidden from accessibility, opacity 0) is not counted.
  * `raw` counts the same screen with no unit: every dot, every button of a stepper, every chip.
  */
@@ -12,7 +13,7 @@ import type { ReactTestRendererJSON } from 'react-test-renderer';
 
 type Node = ReactTestRendererJSON | string;
 
-export const UNITS = ['session-header', 'move-dots', 'stepper-box', 'rir-row'];
+export const UNITS = ['session-header', 'move-dots', 'stepper-box', 'rir-row', 'set-rows'];
 
 export type Count = { count: number; labels: string[] };
 

@@ -209,7 +209,11 @@ export function buildSet(
   move: Schemas['Exercise'],
   side: Schemas['Side'],
   entry: Entry,
-  rir: number,
+  /**
+   * Null: no reps left was picked (9b, ADR-094 Ek 2 › Uygulama #1), and none is sent. The server's next target reads the plan's aim for
+   * such a set (NextTargets.session); no e1RM is estimated from it (E1rm.estimate needs a RIR).
+   */
+  rir: number | null,
   note?: string,
   supersetId?: string,
   restSeconds?: number | null,
@@ -221,7 +225,7 @@ export function buildSet(
     setType: 'WORKING',
     loadKg: entry.loadKg,
     reps: entry.reps,
-    rir,
+    ...(rir === null ? {} : { rir }),
     side,
     ...(words === null ? {} : { note: words }),
     ...(supersetId === undefined ? {} : { supersetId }),

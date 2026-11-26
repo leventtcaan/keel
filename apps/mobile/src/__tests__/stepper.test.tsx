@@ -47,6 +47,16 @@ describe('a long number fits (Evre 7 final pass, #684: "191.46" was cut)', () =>
     expect(style().fontSize).toBe(tokens.type.stepperValueMin);
   });
 
+  // K-1238 (ADR-094 Ek 2): the tall set box shares the number's line with the unit in half a phone's width, so the unit counts in its size.
+  test('the tall box: a short weight is the big size; a long one with its unit is set smaller, its box as wide as the number alone', async () => {
+    await renderIt(<Held tall start={28} />);
+    expect(style().fontSize).toBe(tokens.type.setBoxValue);
+    await fireEvent.changeText(field(), '102.5');
+    const { fontSize, width } = style() as { fontSize: number; width: number };
+    expect(fontSize).toBeLessThan(tokens.type.setBoxValue);
+    expect(width).toBe(Math.max(tokens.size.touch, Math.ceil('102.5'.length * fontSize * tokens.size.stepperCharEm)));
+  });
+
   test('typing a comma for the decimal is a point: 191,5 is 191.5', async () => {
     await renderIt(<Held start={190} step={0.1} />);
     await fireEvent.changeText(field(), '191,5');

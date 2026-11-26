@@ -195,3 +195,11 @@ Bugünkü 7 ekran simülatörde çekildi ve sorunları işaretlendi (`prototip/g
 - Oturum koyu kalır (§4), bu ADR'nin koyu paletiyle. Taslak kusurları (B'deki İngilizce "reps", C'deki uydurma "Bugünün hedefi") taşınmaz.
 9b mantık maddeleri bu ekranlarla birlikte yapılır (Levent): cepte kalan tekrar önceden dolu gelmez; form sorusu hareketin sonunda; dinlenmenin gerçek
 süresi bir yere bağlanır ya da kalkar (bu son ikisi ayrıca görselle sorulur).
+
+**Uygulama (K-1238, #794, 2026-11-26, Levent; görseller `9c7/rir-bos-kayit.jpg`, `9c7/9c7-sonra.jpg`):**
+1. "Cepte kalan tekrar" seçilmeden kaydedilirse **boş gider** (Levent, simülatörde üç varyanttan 1'i seçti): Kaydet hep çalışır, set RIR'sız
+   kaydedilir; sunucu o seti planın hedefiyle okur (`NextTargets.session`), e1RM'e girmez. Kaydet pasif ya da dinlenmede soru seçilmedi.
+2. Öğe bütçesi A'ya göre (Levent onayı): set ekranı ham 22 → 24 (set satırları), dinlenme 8 → 10 (şerit + az önceki set kartı);
+   `data/parameters/workout.json`. Sayaç bu hareketin set satırlarını tek birim sayar (hareket noktaları gibi).
+3. Analiz satırı ("Geçen seferden ağır.") set ekranında değil: dinlenmede az önceki setin kartında; hareket bitince set satırlarının altında.
+4. Set satırlarındaki ✓ mürekkep (odak ekranında petrol yalnız eylem ve biten sayaç için, K-1207 kuralı).

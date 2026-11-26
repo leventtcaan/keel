@@ -48,5 +48,6 @@ export function GoalLine({ planned, move }: { planned: Schemas['PlannedExercise'
 }
 
 const styles = StyleSheet.create({
-  value: { ...tokens.face.display, fontSize: tokens.type.heading },
+  // The set to make, big and centred (ADR-094 Ek 2, A · Focus): the one number read from across the bench.
+  value: { ...tokens.face.display, fontSize: tokens.type.display, textAlign: 'center' },
 });

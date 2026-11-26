@@ -1087,15 +1087,8 @@
       "logged": "Kaydedildi. Bir dahaki sefer buradan başlar.",
       "below": "Aralığın altında."
     },
-    "doneNumber": "set {number}",
-    "doneShort": "{load}×{reps}",
-    "doneShortAdded": "+{load}×{reps}",
-    "doneSeparator": " · ",
-    "doneSummaryLabel": "Biten setler: {sets}",
-    "doneSummaryHint": "Her seti gösterir, düzeltmek ya da silmek için.",
-    "doneSummaryClose": "Setleri gizler.",
-    "doneLeft": "{left} kaldı",
     "doneSet": "Set {number}, bitti: {set}, {left} kaldı",
+    "doneSetNoLeft": "Set {number}, bitti: {set}",
     "next": "Sıradaki: {name}",
     "upNext": "Sıradaki",
     "head": {
@@ -1123,8 +1116,8 @@
     "saveFailed": "Set telefona kaydedilemedi. Tekrar dene.",
     "rir": {
       "label": "Set {number} · yedek tekrar",
-      "short": "Yedek tekrar",
-      "more": "2+"
+      "more": "2+",
+      "title": "Cepte kalan tekrar"
     },
     "rest": {
       "label": "Dinlenme",
@@ -1147,7 +1140,10 @@
       "alert": {
         "title": "Dinlenme bitti",
         "body": "{min} dinlenme. Hazır olunca sıradaki set."
-      }
+      },
+      "suggested": "Önerilen {band}",
+      "justDone": "Set {number} · {set}",
+      "upNext": "Sıradaki · Set {number} · {set}"
     },
     "sets": "{count} set",
     "setsOne": "1 set",

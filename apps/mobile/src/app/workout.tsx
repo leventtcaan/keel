@@ -19,7 +19,6 @@ import { newClientId } from '@/sync/send';
 import type { LocalRecord } from '@/sync/store';
 import { FocusMode, useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
-import { DoneSets } from '@/train/DoneSets';
 import { EditSet } from '@/train/EditSet';
 import { EndSheet } from '@/train/EndSheet';
 import { FinishForm } from '@/train/FinishForm';
@@ -42,6 +41,7 @@ import { RestTimer } from '@/train/RestTimer';
 import { type RestBand, bandFor, recommendedBand } from '@/train/restBand';
 import { type RestSpan, readySpan, restSecondsOf, startSpan } from '@/train/restRecord';
 import { SessionHeader } from '@/train/SessionHeader';
+import { SetRows } from '@/train/SetRows';
 import { ActiveSet, type Entry } from '@/train/ActiveSet';
 import { UpNext } from '@/train/UpNext';
 import { Warmups } from '@/train/Warmups';
@@ -385,8 +385,8 @@ function Session() {
           load: row === null || row.suggested.loadKg === null ? '' : loadText(row.suggested.loadKg, units),
           loadKg: row?.suggested.loadKg ?? null,
           reps: row === null || row.suggested.reps === null ? '' : String(row.suggested.reps),
-          // A move outside the plan has no target of its own: the work sets' aim (G1 K-5, target_rir_max).
-          rir: planned?.targetRir ?? workoutParams.targetRirMax,
+          // None picked for the person (9b; ADR-094 Ek 2 #1): reps left is theirs to say, set by set; left alone, none is sent.
+          rir: null,
           note: null,
         };
   const setEntry = (change: Partial<typeof entry>) => setTyped({ ...entry, ...change });
@@ -1231,18 +1231,29 @@ function Session() {
   const openHowTo = () => router.push({ pathname: '/exercise', params: { exercise: moveId } });
   // "Set 2 of 3, 6-10 reps": said with the move's name (a screen reader reaches the name; the card shows no heading, Log set names the set).
   const setSaid = heading === '' ? '' : planned === undefined ? heading : [heading, repsText(planned.reps)].join(', ');
+  // Which set this is, under the name (ADR-094 Ek 2). The header's label says it already, so a screen reader does not hear it twice.
+  const setCount =
+    heading === '' ? null : (
+      <Text accessibilityElementsHidden importantForAccessibility="no" style={[styles.setCount, { color: color.muted }]}>
+        {heading}
+      </Text>
+    );
   const head =
     moveId === undefined ? null : (
       <View testID="move-head" style={styles.head}>
         <View style={styles.nameRow}>
           {/* Only the equipment class, and only when it is known (ADR-070 Ek 2 #3): a picture, not a control or a text (K-1207). */}
           {move?.equipment === undefined ? null : <MoveThumb equipment={move.equipment} />}
-          <Text
-            accessibilityRole="header"
-            accessibilityLabel={[name(moveId), setSaid].filter((part) => part !== '').join(', ')}
-            style={[styles.name, styles.grow, { color: color.text }]}>
-            {name(moveId)}
-          </Text>
+          {/* The name in the serif and, under it, which set this is (ADR-094 Ek 2). */}
+          <View style={styles.grow}>
+            <Text
+              accessibilityRole="header"
+              accessibilityLabel={[name(moveId), setSaid].filter((part) => part !== '').join(', ')}
+              style={[styles.name, { color: color.text }]}>
+              {name(moveId)}
+            </Text>
+            {setCount}
+          </View>
           <Button label={t('workout.more')} variant="secondary" size="touch" onPress={() => setMoreOpen(true)} />
         </View>
         {supersetBlock}
@@ -1255,11 +1266,8 @@ function Session() {
       </Card>
     ) : (
       <>
-        {/* The order (K-971, K-1207): the target as one line, the sets done as one line (what they said opens with them), then the one under way, its warm-ups folded above it. */}
+        {/* The order (ADR-094 Ek 2, A · Focus): the target big, the warm-ups, the set under way, then this move's sets as quiet rows. */}
         {planned !== undefined && <GoalLine planned={planned} move={move} />}
-        <DoneSets key={move.id} plan={plan} move={move} onEdit={(set, number) => setEditing({ set, number })}>
-          {analysisLine}
-        </DoneSets>
         {weightFound}
         {plan.skippedMove === true ? skippedMove : null}
         {offerNote}
@@ -1281,6 +1289,10 @@ function Session() {
         )}
         {warmBlock}
         {entryBlock}
+        {/* What the sets said is the rest's to say; once the move is done (no rest after its last set) it is said here. */}
+        <SetRows key={move.id} plan={plan} move={move} onEdit={(set, number) => setEditing({ set, number })}>
+          {plan.current === null ? analysisLine : null}
+        </SetRows>
       </>
     );
   // In a superset the move after this set is its partner (the round's order), else the next move of the day with sets left.
@@ -1307,19 +1319,52 @@ function Session() {
   // is tapped. Not while paused (the pause ends the rest), nor over the cardio step or a discarded workout.
   const resting = rest !== null && pause.pausedAt === null && discarded === null && !cardioShown && move !== undefined && row !== null && plan !== null && plan.current !== null;
   const nextNumber = Math.floor((plan?.current ?? 0) / sides) + 1;
-  // The next set to make, as one line (kg × reps): the suggestion for the row that is next; its set and side are the spoken label.
+  // The next set to make (ADR-094 Ek 2): on the sand card, "Up next · Set 2 · 28 kg × 6"; its set and side are the spoken label.
   const nextSet = (() => {
     if (!resting || row === null || move === undefined) return null;
     const { loadKg, reps } = row.suggested;
-    const set = loadKg !== null && reps !== null ? setText({ loadKg, reps }, move, units) : reps !== null ? t('workout.goal.reps', { reps }) : t('workout.setNumber', { number: nextNumber });
+    const set = loadKg !== null && reps !== null ? setText({ loadKg, reps }, move, units) : reps !== null ? t('workout.goal.reps', { reps }) : null;
+    const number = row.side === 'BOTH' ? String(nextNumber) : `${nextNumber}${t(`workout.side.${row.side}`)}`;
+    // No set to name (nothing to go on yet): the set's number alone, with no dangling comma.
     const said =
-      row.side === 'BOTH'
-        ? t('workout.rest.nextLabel', { number: nextNumber, set })
-        : t('workout.rest.nextSideLabel', { number: nextNumber, side: t(`workout.sideName.${row.side}`), set });
+      set === null
+        ? t('workout.setNumber', { number })
+        : row.side === 'BOTH'
+          ? t('workout.rest.nextLabel', { number: nextNumber, set })
+          : t('workout.rest.nextSideLabel', { number: nextNumber, side: t(`workout.sideName.${row.side}`), set });
     return (
-      <Text testID="rest-next" accessibilityLabel={said} style={[styles.nextSet, { color: color.text }]}>
-        {set}
-      </Text>
+      <View style={[styles.restCard, { backgroundColor: color.tintDay }]}>
+        <Text testID="rest-next" accessibilityLabel={said} style={[styles.nextSet, { color: color.text }]}>
+          {set === null ? t('workout.setNumber', { number }) : t('workout.rest.upNext', { number, set })}
+        </Text>
+      </View>
+    );
+  })();
+  // The set just done, and what it said against last time (the weight found, or the analysis), on one quiet card (ADR-094 Ek 2).
+  const justDone = (() => {
+    if (!resting) return null;
+    const id = restMove ?? moveId;
+    const rested = id === moveId ? plan : (plans[entries.findIndex((e) => e.exerciseId === id)] ?? null);
+    const doneMove = id === null || id === undefined ? undefined : moves.get(id);
+    const index = rested === null ? -1 : rested.rows.findLastIndex((r) => r.done !== null);
+    const last = index < 0 || rested === null ? null : rested.rows[index];
+    const note = calibration?.kind === 'found' ? t('workout.calibrate.found', { load: formatLoad(calibration.kg, units) }) : analysis;
+    if (last?.done == null || doneMove === undefined) return note === null ? null : <InsightLine text={note} />;
+    const doneSides = doneMove.unilateral ? 2 : 1;
+    const count = Math.floor(index / doneSides) + 1;
+    const number = last.side === 'BOTH' ? String(count) : `${count}${t(`workout.side.${last.side}`)}`;
+    // Built outside the JSX (the raw-text guard reads what is inside it).
+    const insight =
+      note === null ? null : (
+        <Text testID="insight" accessibilityLabel={note} style={[styles.small, { color: color.muted }]}>
+          {note}
+        </Text>
+      );
+    return (
+      <View testID="rest-done" style={[styles.restCard, { backgroundColor: color.surface }]}>
+        <Text style={[styles.doneSet, { color: color.text }]}>{t('workout.rest.justDone', { number, set: setText(last.done, doneMove, units) })}</Text>
+        {insight}
+      </View>
     );
   })();
   // Up next only where the move changes (a superset's round done: the next set is its partner's), named with its Taken?; the move after
@@ -1331,9 +1376,11 @@ function Session() {
   const restPage =
     !resting || rest === null ? null : (
       <>
+        {/* The moves strip stays over the rest (ADR-094 Ek 2): where the session is, done in ink, this one in coral. */}
+        {entries.length > 0 && dots}
         <RestTimer since={rest} band={restBand} onAdjust={(seconds) => void restAlert.start(rest + seconds * 1000, restBand.low)} />
-        {/* What the set said (the weight found, or the analysis against last time) is said here, where there is room for it. */}
-        {weightFound ?? (analysis === null ? null : <InsightLine text={analysis} />)}
+        {/* What the set said (the weight found, or the analysis against last time) is said with the set, where there is room for it. */}
+        {justDone}
         {nextSet}
         {/* A weight offered for the next set ("That weight is light", Use or Keep) is decided here, while resting. */}
         {offerNote}
@@ -1638,5 +1685,8 @@ const styles = StyleSheet.create({
   name: { ...tokens.face.display, fontSize: tokens.type.heading },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },
-  nextSet: { ...tokens.face.display, fontSize: tokens.type.heading, textAlign: 'center' },
+  nextSet: { ...tokens.face.display, fontSize: tokens.type.heading },
+  doneSet: { ...tokens.face.display, fontSize: tokens.type.number },
+  restCard: { gap: tokens.space.xs, paddingHorizontal: tokens.space.lg, paddingVertical: tokens.space.md, borderRadius: tokens.radius.card },
+  setCount: { fontSize: tokens.type.body },
 });

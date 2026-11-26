@@ -161,6 +161,8 @@ export const tokens = {
     buttonSmall: 14,
     /** The stepper's value, in the display face (prototype `.stp .sv b`). */
     stepperValue: 36,
+    /** The set box's number (ADR-094 Ek 2, A · Focus): read from a bench, so bigger than a form's stepper. */
+    setBoxValue: 52,
     /** The smallest a long stepper number is set (191.46 lb, a number past the usual length): shrinks to here, never below. */
     stepperValueMin: 22,
     /** ADR-070 #5, kept by ADR-094. */
@@ -218,6 +220,11 @@ export const tokens = {
     row: 52,
     /** The stepper's - and + (prototype `.stp .sb2`). */
     stepperButton: 48,
+    /** The rest's dial (ADR-094 Ek 2): the coral arc round the clock, and its stroke. */
+    restArc: 280,
+    restArcStroke: 12,
+    /** The set row's "Set 2" column (ADR-094 Ek 2): the loads of the rows line up under each other. */
+    setRowName: 96,
     /** How many characters of the stepper's number fit at full size; more, and the number is set smaller (see `fitValue`). */
     stepperFitChars: 5,
     /** A display-face character is this many times its font size wide, at most (the box the number is given). */
