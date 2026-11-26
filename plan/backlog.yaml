@@ -6203,11 +6203,11 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-1235]
     why: "ADR-092 Ek 2 #1 (Levent, 26 Kas): koç, kişinin o an baktığı şeyin yanında"
     acceptance:
-      - "Antrenman bitiş ekranında ve yemek ekranında 1-2 kum hap; hap koçu o soruyla açar"
+      - "Yemek ekranında (bugün) kalan kalorinin altında koç satırı; antrenman bitişinde koç girişi yok; iki ekranda hap yok (Levent 27 Kas, ADR-092 Ek 2 #5)"
       - "Ekranların kelime bütçesi aşılmaz; yeni metin en+tr"
     tests: ["workout-screen.test.tsx", "food-screen.test.tsx", "copy-budget.test.ts", "npm run check"]
     refs: ["plan/kararlar/ADR-092-konusan-koc.md"]

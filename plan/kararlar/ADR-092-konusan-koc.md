@@ -92,6 +92,10 @@ düğmesiyle giriliyor; sağlayıcı üretimde kapalı. Agent üç soru sordu; L
    (bugün tartılmadıysa), "Bu nasıl işliyor?". Model açık + ücretli: "Bu karar neden?", "Bu hafta ne yapmalıyım?", "Ya şunu yaparsam…". "Bu kararı açıkla"
    kalkar (#3'ün ikinci yarısının yerine geçer): aynı soruyu "Bu karar neden?" sorar. Yazıyla öğün koça bağlantıyla girer (`/coach?chip=coach.meal.chip`; yemek
    ekranındaki girişi K-1237). Koç başlığı sheet kenarından ayrılır, içerik altına kayınca ince çizgi çıkar.
+5. **Antrenman bitişi ve yemek ekranı (Levent, 27 Kas; simülatörde görülerek, K-1237).** Koç satırı yalnız bugünün yemek ekranında, kalan kalorinin altında
+   (Bu hafta'daki satırın aynısı); geçmiş günde ve rıza yokken yok. Antrenman bitişi sakin kalır (Bitti ve paylaş yeter). Bu iki ekranda hap yok: motorun burada
+   cevaplayabildiği bir soru yok. Koçtaki öğün kartı, yemek ekranındaki "Bugün kalana uyar" ile aynı öneriyi gösterse de kalır (koç işi kişinin üzerinden alır).
+   "Sıradaki neden 28 kg × 7?" gibi ilerleme kuralını anlatan soru şimdilik yok (yeni cevap + kaynak gerekir; Levent: şimdilik hayır).
 Etkilenen: `src/app/(tabs)/index.tsx` (ana ekran, kelime bütçesi 74 → 77), `src/app/coach.tsx`, `src/coach/conversation.ts`
 (STARTERS), antrenman bitişi ve yemek ekranı, `data/copy/*` (yeni metin en+tr). Doğrulama: koç satırı ve hapların testleri; eylem kartının motorun önerisi
 yokken görünmediği ve "Plana ekle"nin planı değil yalnız hatırlatmayı değiştirdiği testler; başlangıç sorusunun sağlayıcı kapalı / ücretsizken görünmediği test.
