@@ -56,7 +56,7 @@ import { TakenSheet } from '@/train/TakenSheet';
 import { orderBehind, pushBehind, takenChoices } from '@/train/taken';
 import { workoutParams } from '@/train/params';
 import { repsText } from '@/train/reps';
-import { buildSet, exerciseStatus, loadText, parseEntry, parseLoad, platesLine, setNumberText, setText } from '@/train/session';
+import { buildSet, exerciseStatus, loadText, parseEntry, parseLoad, platesLine, setNumberText, setsLeft, setText } from '@/train/session';
 import { type Move, type TrainData, movesOf, ownMove } from '@/train/trainData';
 import { localDay } from '@/today/today';
 import { formatLoad } from '@/units/units';
@@ -657,11 +657,12 @@ function Session() {
   // Nothing kept yet: close and send nothing. A workout kept without a working set: finish it, there is nothing to ask.
   // Moves with sets still to do (a skipped move is done with); finishing early asks once (Evre 7 C2).
   const movesLeft = entries.filter((_, i) => plans[i] != null && plans[i]?.current !== null && plans[i]?.skippedMove !== true).length;
-  const onFinish = () => {
+  // From End (fromEnd) the sheet has said the sets not done yet (9c-7): Finish and save asks nothing more about them.
+  const onFinish = (fromEnd = false) => {
     setEnding(false);
     if (active === null) leaveEmpty();
     else if (worked.length === 0) void finish();
-    else if (movesLeft > 0)
+    else if (movesLeft > 0 && !fromEnd)
       askFirst({
         title: t(movesLeft === 1 ? 'workout.finishEarly.one' : 'workout.finishEarly.other', { count: movesLeft }),
         body: t('workout.finishEarly.body'),
@@ -1431,7 +1432,7 @@ function Session() {
   const cardioDock = (
     <View style={styles.cardioDock}>
       {cardioChoices}
-      <Button label={t('workout.finish')} variant={cardioStatus === null ? 'ghost' : 'primary'} onPress={onFinish} />
+      <Button label={t('workout.finish')} variant={cardioStatus === null ? 'ghost' : 'primary'} onPress={() => onFinish()} />
     </View>
   );
   const dockButton =
@@ -1447,7 +1448,7 @@ function Session() {
     ) : day === null && active === null ? null : cardioDue ? (
       <Button label={t('workout.cardio.next')} onPress={openCardio} />
     ) : (
-      <Button label={t(closing ? 'workout.saving' : 'workout.finish')} onPress={onFinish} disabled={busy} busy={closing} />
+      <Button label={t(closing ? 'workout.saving' : 'workout.finish')} onPress={() => onFinish()} disabled={busy} busy={closing} />
     );
   // The last skip, said, with its Undo (K-972): over the foot of the page, above the dock, so it takes no height and nothing under
   // the finger moves when it comes (final walk of phase 7).
@@ -1472,7 +1473,8 @@ function Session() {
   );
   const endSheet = (
     <EndSheet
-      onFinish={onFinish}
+      onFinish={() => onFinish(true)}
+      setsLeft={setsLeft(plans)}
       onLater={stale ? null : later}
       onDiscard={() => void discard()}
       onBack={() => setEnding(false)}

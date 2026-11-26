@@ -5,7 +5,12 @@ guncelleme: 2026-11-26
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (26 Kas — K-1241: Antrenman sekmesi, #800, PR otomatik birleşmede)
+## ▶ DEVAM NOKTASI (26 Kas — K-1242: bitirme penceresi, #802, PR otomatik birleşmede)
+**K-1241 birleşti (#801).** **K-1242:** bitirme penceresi Levent'in seçtiği 3. varyant: serif soru, "Yapılmamış N set var", tek petrol "Bitir ve kaydet",
+"Antrenmana dön", küçük yazı "Sonra devam et" ve kırmızı "Antrenmanı sil"; bu pencereden bitirince ayrı uyarı yok, not adımı kalır (ADR-094 Ek 2 ›
+Uygulama #8). Metinler Levent anlamadığı için açıldı. **Sıradaki (9c-7, son):** bitiş + paylaş kartı (aynı yöntem).
+
+## (önceki) ▶ DEVAM NOKTASI (26 Kas — K-1241: Antrenman sekmesi, #800, PR #801 birleşti)
 **K-1240 birleşti (#799).** **K-1241:** Antrenman sekmesinde bugünün antrenmanı ilk 3 hareket + "ve N tane daha" (Levent simülatörde 3 varyanttan
 seçti, ADR-094 Ek 2 › Uygulama #7); gün adı serif, karar zaman zemininde, "Son" gri, değiştir oku soluk ve zeminsiz.
 **Sıradaki (9c-7, aynı yöntem):** bitirme penceresi ("Bitir" iki kez soruluyor, kutular eşit), bitiş + paylaş kartı.

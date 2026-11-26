@@ -8,7 +8,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { AccessibilityInfo, AppState, Keyboard, ScrollView, StyleSheet } from 'react-native';
 
 import type { components } from '@/api/schema';
-import { t } from '@/copy';
+import { t, tp } from '@/copy';
 import WorkoutScreen from '@/app/workout';
 import type { RestChoice } from '@/train/restBand';
 import { NoAnswer, type Outbound, createSyncQueue, recordClientId } from '@/sync/queue';
@@ -2582,6 +2582,33 @@ describe('End: finish and save, fill in the rest later, or discard (K-972, ADR-0
     expect(within(screen.getByRole('button', { name: t('workout.ending.back') })).getByText(t('workout.ending.back'))).not.toHaveStyle({ color: focusPalette.warn });
     await fireEvent.press(discard);
     expect(within(screen.getByRole('button', { name: t('workout.ending.confirm') })).getByText(t('workout.ending.confirm'))).toHaveStyle({ color: focusPalette.warn });
+  });
+
+  // 9c-7 (ADR-094 Ek 2 › Uygulama #8, the founder chose "the rare ones as small words"): one primary, the sets not done said in the sheet, so
+  // Finish and save asks nothing more before the note.
+  test('End: the serif question, the sets not done said, Finish and save the one filled button; the rare ways out are small words', async () => {
+    started(20);
+    await show();
+    await end();
+    const sheet = within(screen.getByTestId('end-sheet'));
+    expect(sheet.getByText(t('workout.ending.title'))).toHaveStyle({ fontFamily: tokens.face.display.fontFamily });
+    expect(sheet.getByText(tp('workout.ending.setsLeft', 4))).toBeOnTheScreen(); // the bench's 2 of 3 and the row's 2 (a set is both its sides)
+    const filled = sheet.getAllByRole('button').filter((b) => StyleSheet.flatten(b.props.style)?.backgroundColor === focusPalette.cta);
+    expect(filled.map((b) => b.props.accessibilityLabel)).toEqual([`${t('workout.ending.finish')}. ${t('workout.ending.finishNote')}`]);
+    for (const key of ['workout.ending.later', 'workout.ending.discard']) {
+      const small = sheet.getByRole('button', { name: new RegExp(`^${t(key)}`) });
+      expect(StyleSheet.flatten(small.props.style).backgroundColor).toBeUndefined();
+    }
+  });
+
+  test('Finish and save from End goes straight on to the finish: no second "moves left" question', async () => {
+    const alert = answerAlert('keep');
+    started(20);
+    await show();
+    await end();
+    await choose('workout.ending.finish');
+    expect(alert).not.toHaveBeenCalled();
+    expect(await screen.findByTestId('finish-form')).toBeOnTheScreen();
   });
 
   test('fill in the rest later: nothing is finished, the session is left open and counts; it says so', async () => {
