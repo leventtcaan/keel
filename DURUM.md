@@ -5,8 +5,8 @@ guncelleme: 2026-11-26
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (26 Kas gece, otonom — 9c-6b-2: koçta eylem kartları, PR otomatik birleşmede)
-**9c-6b-1 birleşti (#790).** **9c-6b-2 (K-1236, #788):** koç açılışta, geçmişten sonra motorun iki önerisini kart olarak gösterir (mercan zemin + petrol düğme):
+## ▶ DEVAM NOKTASI (26 Kas gece, otonom — 9c-6b-2: koçta eylem kartları, PR #791 otomatik birleşmede)
+**9c-6b-1 birleşti (#790).** **9c-6b-2 (K-1236, #788 → PR #791):** koç açılışta, geçmişten sonra motorun iki önerisini kart olarak gösterir (mercan zemin + petrol düğme):
 yürüyüş (Today'in okuduğu kalan adım + kişinin rotası, `walkLabel`; kalan ≥ 2.000 adımken) ve öğün (`/v1/days/{day}/suggestions`'ın ilki). "Plana ekle" yalnız bugünün
 18:00 yürüyüş hatırlatmasını kurar (`reminders.planWalkToday`, tarihli anahtar); Ayarlar'daki kişinin düğmesi, plan, hedef, karar değişmez. "Kaydet" öğün ekranına
 taslak götürür. Kart "kuruldu"yu yalnız hatırlatma gerçekten çalacaksa der (inceleme: sessiz dönem ve yalnız-check-in ayarı); kapalıysa Ayarlar yolu, saat geçtiyse
