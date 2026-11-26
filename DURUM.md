@@ -5,7 +5,7 @@ guncelleme: 2026-11-26
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (27 Kas — K-1237: yemek ekranında koç satırı, PR otomatik birleşmede)
+## ▶ DEVAM NOKTASI (27 Kas — K-1237: yemek ekranında koç satırı, PR #793 otomatik birleşmede)
 **Koçun hazır soruları birleşti (#792).** **K-1237 (#789):** Levent iki ekranı simülatörde gördü (ADR-092 Ek 2 #5): koç satırı yalnız bugünün yemek ekranında,
 kalan kalorinin altında; antrenman bitişi sakin; iki ekranda hap yok; koçtaki öğün kartı kalır; ilerleme kuralı sorusu şimdilik yok. K1 yok, yeni metin yok.
 **9c-6b bitti** (K-1235, K-1236, K-1237). **Sıradaki:** Evre 9'un sıradaki parçası (plan/yol-haritasi.md) — önce görsel yönle Levent'e gösterilecek.
