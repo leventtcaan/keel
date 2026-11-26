@@ -4,7 +4,7 @@
  * comes first). A chip from the day is answered on the phone, without the model (no quota, nothing sent).
  */
 import type { components } from '@/api/schema';
-import { MEAL_CHIP, STARTERS, ask, chipAnswer, coachChips, linesOf, loadHistory, remember } from '@/coach/conversation';
+import { STARTERS, ask, chipAnswer, linesOf, loadHistory, readyQuestions, remember } from '@/coach/conversation';
 import type { ApiClient } from '@/api/client';
 import type { TodayData } from '@/today/today';
 import { has } from '@/copy';
@@ -135,20 +135,26 @@ describe('chipAnswer', () => {
   });
 });
 
-describe('coachChips', () => {
+// K1 (Levent, 27 Nov): the ready questions are questions the day gives a reason for, three at most; no command, no feature.
+describe('readyQuestions', () => {
   const none = { state: 'none' } as const;
   const day = (parts: Partial<TodayData>): TodayData => ({ consistency: none, decision: none, program: none, weighIns: { state: 'ready', value: [] }, targets: none, budget: none, ...parts });
+  const call: Partial<TodayData> = { decision: { state: 'ready', value: {} as Schemas['Decision'] } };
+  const weighed: Partial<TodayData> = { weighIns: { state: 'ready', value: [{} as Schemas['WeighIn']] } };
+  const session: Partial<TodayData> = { program: { state: 'ready', value: { id: 'p', source: 'GENERATED', days: [{ id: 'a', nameKey: 'x', weekday: 'TUESDAY', exercises: [] }] } as Schemas['Program'] } };
 
-  test("the day's own first, two at most, then a meal in words — never more than three", () => {
-    expect(coachChips(day({ decision: { state: 'ready', value: {} as Schemas['Decision'] } }), '2026-09-29')).toEqual(['today.chips.why', 'today.chips.weighIn', MEAL_CHIP]);
+  test('without the model: why this call, why weigh in (none today), how it works; never the swap or the meal', () => {
+    expect(readyQuestions(day({ ...call, ...session }), '2026-09-29', false)).toEqual(['today.chips.why', 'today.chips.weighIn', 'today.chips.start']);
   });
 
-  test('a day with nothing of its own: a meal in words and how it works', () => {
-    expect(coachChips(day({ weighIns: { state: 'ready', value: [{} as Schemas['WeighIn']] } }), '2026-09-29')).toEqual([MEAL_CHIP, 'today.chips.start']);
+  test('only what the day gives a reason for: no call, weighed already, how it works alone', () => {
+    expect(readyQuestions(day(weighed), '2026-09-29', false)).toEqual(['today.chips.start']);
+    expect(readyQuestions(day({ ...call, ...weighed }), '2026-09-29', false)).toEqual(['today.chips.why', 'today.chips.start']);
   });
 
-  test('one of its own: that, a meal, how it works', () => {
-    expect(coachChips(day({}), '2026-09-29')).toEqual(['today.chips.weighIn', MEAL_CHIP, 'today.chips.start']);
+  test("with the model on and paid for: why this call, then the model's two; no \"Explain this call\"", () => {
+    expect(readyQuestions(day(call), '2026-09-29', true)).toEqual(['today.chips.why', 'coach.starter.week', 'coach.starter.whatif']);
+    expect(readyQuestions(day({}), '2026-09-29', true)).toEqual(['coach.starter.week', 'coach.starter.whatif']);
   });
 });
 
@@ -213,7 +219,8 @@ describe('the conversation read back and what the coach is asked to remember', (
     expect(await remember({ POST: jest.fn().mockRejectedValue(new TypeError('offline')) } as unknown as ApiClient, 'x')).toBe('failed');
   });
 
-  test('three starters', () => {
-    expect(STARTERS).toEqual(['why', 'week', 'whatif']);
+  // K1 (27 Nov): "Explain this call" is gone ("Why this call?" asks it).
+  test('two starters', () => {
+    expect(STARTERS).toEqual(['week', 'whatif']);
   });
 });

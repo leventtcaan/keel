@@ -112,10 +112,12 @@ describe.each(['light', 'dark'] as ColorScheme[])('%s theme', (scheme) => {
     expect(flat(said!)).toMatchObject({ backgroundColor: p.tintDay });
   });
 
+  // K1 (27 Nov): the questions show while the box is in use, and "Explain this call" is no longer one of them.
   test('the ready questions are sand pills by the box, no outline', async () => {
     await show();
+    await act(async () => fireEvent(screen.getByLabelText(t('coach.input')), 'focus'));
     const bar = within(screen.getByTestId('coach-bar'));
-    for (const key of ['coach.starter.why', 'coach.starter.week', 'coach.starter.whatif', 'today.chips.why']) {
+    for (const key of ['today.chips.why', 'coach.starter.week', 'coach.starter.whatif']) {
       const pill = bar.getByRole('button', { name: t(key) });
       expect(flat(pill).backgroundColor).toBe(p.tintDay);
       expect(flat(pill).borderWidth ?? 0).toBe(0);

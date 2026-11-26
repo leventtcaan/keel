@@ -62,12 +62,14 @@ export function isChip(key: string): boolean {
 export const MEAL_CHIP = 'coach.meal.chip';
 
 /**
- * The coach's chips (prototype 2.1): three — the day's own first (two at most), a meal in words always, and how it works
- * when the day gives fewer.
+ * The ready questions under the box (ADR-092 Ek 2 #4): questions only, each one the day gives a reason for, three at most. Without the
+ * model (today, everyone): why this call (a call read), why weigh in every morning (none today), how it works. With the model on
+ * and paid for, the questions it answers: this week, and what if. "Explain this call" is not one: "Why this call?" asks it.
  */
-export function coachChips(today: TodayData, day: string): string[] {
-  const own = chips(today, day).filter((key) => key !== 'today.chips.start').slice(0, 2);
-  return [...own, MEAL_CHIP, 'today.chips.start'].slice(0, 3);
+export function readyQuestions(today: TodayData, day: string, modelOn: boolean): string[] {
+  const own = chips(today, day).filter((key) => key === 'today.chips.why' || key === 'today.chips.weighIn');
+  if (modelOn) return [...own.filter((key) => key === 'today.chips.why'), 'coach.starter.week', 'coach.starter.whatif'];
+  return [...own, 'today.chips.start'].slice(0, 3);
 }
 
 /**
@@ -133,16 +135,8 @@ export async function readMeal(api: ApiClient, text: string): Promise<Read> {
   return draft.state === 'ready' ? { state: 'ready', draft: draft.value } : { state: 'failed' };
 }
 
-/** The starter questions, the coach's first suggestions (ADR-092 #7): the first two are sent as they are; the third is the start of the user's own. */
-export const STARTERS = ['why', 'week', 'whatif'] as const;
-
-/**
- * The starters on offer (ADR-092 Ek 2 #3). "Explain this call" asks the model what the day's free chip "Why this call?" answers on
- * the phone, so it is offered only while the model is there and paid for; the other two stay (they end at the paywall when not).
- */
-export function starters(modelOn: boolean): string[] {
-  return STARTERS.filter((starter) => modelOn || starter !== 'why').map((starter) => `coach.starter.${starter}`);
-}
+/** The starter questions (ADR-092 #7), for the model: the first is sent as it is; the second is the start of the user's own. */
+export const STARTERS = ['week', 'whatif'] as const;
 
 /**
  * Whether the coach's model is on for this account, in the server's words, not guessed (K6): the server has a provider (its AI
