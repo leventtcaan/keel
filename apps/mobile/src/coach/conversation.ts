@@ -61,6 +61,9 @@ export function isChip(key: string): boolean {
 /** A meal said in words, read into a draft of the database's foods (K-504): always on offer in the coach. */
 export const MEAL_CHIP = 'coach.meal.chip';
 
+/** The starter questions (ADR-092 #7), for the model: the first is sent as it is; the second is the start of the user's own. */
+export const STARTERS = ['week', 'whatif'] as const;
+
 /**
  * The ready questions under the box (ADR-092 Ek 2 #4): questions only, each one the day gives a reason for, three at most. Without the
  * model (today, everyone): why this call (a call read), why weigh in every morning (none today), how it works. With the model on
@@ -68,7 +71,7 @@ export const MEAL_CHIP = 'coach.meal.chip';
  */
 export function readyQuestions(today: TodayData, day: string, modelOn: boolean): string[] {
   const own = chips(today, day).filter((key) => key === 'today.chips.why' || key === 'today.chips.weighIn');
-  if (modelOn) return [...own.filter((key) => key === 'today.chips.why'), 'coach.starter.week', 'coach.starter.whatif'];
+  if (modelOn) return [...own.filter((key) => key === 'today.chips.why'), ...STARTERS.map((starter) => `coach.starter.${starter}`)];
   return [...own, 'today.chips.start'].slice(0, 3);
 }
 
@@ -135,8 +138,6 @@ export async function readMeal(api: ApiClient, text: string): Promise<Read> {
   return draft.state === 'ready' ? { state: 'ready', draft: draft.value } : { state: 'failed' };
 }
 
-/** The starter questions (ADR-092 #7), for the model: the first is sent as it is; the second is the start of the user's own. */
-export const STARTERS = ['week', 'whatif'] as const;
 
 /**
  * Whether the coach's model is on for this account, in the server's words, not guessed (K6): the server has a provider (its AI

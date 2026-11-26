@@ -81,6 +81,16 @@ export default function CoachScreen() {
     };
   }, [api]);
 
+  const [mode, setMode] = useState<Mode>('ask');
+  const [focused, setFocused] = useState(false);
+
+  // A meal in words (K-504): the box sends the next message to the meal reader. Reached by a link (`chip=coach.meal.chip`), no
+  // longer by a ready question: it is a feature, not a question (ADR-092 Ek 2 #4).
+  const startMeal = useCallback(() => {
+    setMode('meal');
+    setMessages((said) => [...said, { from: 'user', text: t(MEAL_CHIP) }, { from: 'coach', said: { lines: [{ key: 'coach.meal.prompt' }] }, standard: false }]);
+  }, [setMessages]);
+
   // The day's parts the chips are made of: the call, the program, today's weigh-ins.
   useEffect(() => {
     let live = true;
@@ -111,6 +121,11 @@ export default function CoachScreen() {
         if (fits !== undefined) start.push({ from: 'coach', action: 'meal', suggestion: fits });
         if (start.length > 0) setMessages((said) => [...start, ...said]);
       }
+      // Opened for a meal in words: after the opening, the box asks for the meal.
+      if (live && chip === MEAL_CHIP && !opened.current) {
+        opened.current = true;
+        startMeal();
+      }
       if (live)
         setToday({
           decision,
@@ -124,7 +139,7 @@ export default function CoachScreen() {
     return () => {
       live = false;
     };
-  }, [api, reminders, day, setMessages]);
+  }, [api, reminders, day, chip, setMessages, startMeal]);
 
   const answerChip = useCallback(
     (key: string) => {
@@ -138,27 +153,13 @@ export default function CoachScreen() {
     [today, day, setMessages],
   );
 
-  const [mode, setMode] = useState<Mode>('ask');
-  const [focused, setFocused] = useState(false);
 
-  // A meal in words (K-504): the box sends the next message to the meal reader. Reached by a link (`chip=coach.meal.chip`), no
-  // longer by a ready question: it is a feature, not a question (ADR-092 Ek 2 #4).
-  const startMeal = useCallback(() => {
-    setMode('meal');
-    setMessages((said) => [...said, { from: 'user', text: t(MEAL_CHIP) }, { from: 'coach', said: { lines: [{ key: 'coach.meal.prompt' }] }, standard: false }]);
-  }, [setMessages]);
-
-  // A chip a link opened the coach with is answered once the day is read — only one of the day's own, or the meal in words.
+  // A chip a link opened the coach with is answered once the day is read — only one of the day's own (the meal in words: below).
   useEffect(() => {
-    if (today === null || opened.current || chip === undefined) return;
-    if (chip === MEAL_CHIP) {
-      opened.current = true;
-      startMeal();
-    } else if (isChip(chip)) {
-      opened.current = true;
-      answerChip(chip);
-    }
-  }, [today, chip, answerChip, startMeal]);
+    if (today === null || opened.current || chip === undefined || !isChip(chip)) return;
+    opened.current = true;
+    answerChip(chip);
+  }, [today, chip, answerChip]);
 
   const onChip = (key: string) => (key === MEAL_CHIP ? startMeal() : answerChip(key));
 
@@ -184,8 +185,8 @@ export default function CoachScreen() {
     announce(spokenOf(answer));
   };
 
-  // The starter questions (ADR-092 #7), the first suggestions: the first two are sent as they are, about the call the coach was opened on;
-  // "What if…" puts the start of the user's own question in the box.
+  // The model's starter questions (ADR-092 #7): "This week" is sent as it is, about the call the coach was opened on; "What if…" puts
+  // the start of the user's own question in the box.
   const onStarter = (key: string) => {
     if (key === 'coach.starter.whatif') setText(t('coach.starter.whatifStart'));
     else void send(t(key), 'ask');
@@ -231,6 +232,7 @@ export default function CoachScreen() {
             <ScreenTitle>{t('screens.coach.title')}</ScreenTitle>
           </View>
           <ScrollView
+            testID="coach-list"
             ref={scroll}
             scrollEventThrottle={16}
             onScroll={(event) => setScrolled(event.nativeEvent.contentOffset.y > 0)}

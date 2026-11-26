@@ -4,7 +4,7 @@
  * engine's own words marked as such; the plan never changed from here (applying a call is Today's).
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
-import { AccessibilityInfo } from 'react-native';
+import { AccessibilityInfo, StyleSheet } from 'react-native';
 
 import CoachScreen from '@/app/coach';
 import { MEAL_CHIP } from '@/coach/conversation';
@@ -12,6 +12,7 @@ import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { handedFrom, takeMeal } from '@/food/handoff';
 import { ThemeProvider } from '@/theme/theme';
+import { palettes } from '@/theme/tokens';
 
 type Schemas = components['schemas'];
 type Answer = { data?: unknown; error?: { code: string; message: string }; response: Response };
@@ -646,6 +647,18 @@ test('without a subscription the free questions end at the paywall: a note and t
 
 // ADR-092 Ek 2 #1: This week's line looks like the coach's box, so the coach it opens is ready to be written in; opened any other way
 // (a chip, the call's button) the keyboard stays down and the conversation is in view.
+// ADR-092 Ek 2 #4: the title is set apart by a quiet line once the conversation is scrolled under it, and only then.
+test('the head gets its line once the conversation is scrolled under it', async () => {
+  await show();
+  const head = () => StyleSheet.flatten(screen.getByTestId('coach-head').props.style);
+  const list = screen.getByTestId('coach-list');
+  expect(head().borderBottomColor).toBe('transparent');
+  await act(async () => fireEvent.scroll(list, { nativeEvent: { contentOffset: { y: 5 } } }));
+  expect(head().borderBottomColor).toBe(palettes.light.line);
+  await act(async () => fireEvent.scroll(list, { nativeEvent: { contentOffset: { y: 0 } } }));
+  expect(head().borderBottomColor).toBe('transparent');
+});
+
 test('opened from This week\'s line, the box has the keyboard; otherwise not', async () => {
   mockParams = { decisionId: 'd1', write: '1' };
   await show();
