@@ -5,7 +5,15 @@ guncelleme: 2026-11-26
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (26 Kas gece, otonom — 9c-6b-2: koçta eylem kartları, PR #791 otomatik birleşmede)
+## ▶ DEVAM NOKTASI (27 Kas — koçun hazır soruları, PR K1 onayı bekliyor)
+**9c-6b-2 birleşti (#791).** Levent kartları simülatörde gördü: büyük petrol düğmeli kartlar kalır, alttaki soru hapları "hoş değil" → **ADR-092 Ek 2 #4:** haplar
+yalnız yazı kutusu kullanılırken çıkar (en çok 3, tek sıra), yalnız soru ve o güne uyan: model kapalı "Bu karar neden? · Neden her sabah tartılmalı? · Bu nasıl
+işliyor?", model açık + ücretli "Bu karar neden? · Bu hafta ne yapmalıyım? · Ya şunu yaparsam…". "Egzersiz değiştir", "Öğünü yazıyla kaydet" ve "Bu kararı
+açıkla" hap değil (yazıyla öğün `/coach?chip=coach.meal.chip` bağlantısıyla; yemek ekranı girişi K-1237). Koç başlığı sheet kenarından ayrıldı, kaydırınca ince
+çizgi (Levent: "üstten doğru ölçeklendiğinden emin ol"). **K1 var** (coach-screen, coach-warm-notebook, conversation testleri) → Levent onayı bekleniyor; onaydan
+sonra `gh pr merge --auto --squash`. **Sıradaki:** K-1237 görsel varyantlarla.
+
+## (önceki) ▶ DEVAM NOKTASI (26 Kas gece, otonom — 9c-6b-2: koçta eylem kartları, PR #791 otomatik birleşmede)
 **9c-6b-1 birleşti (#790).** **9c-6b-2 (K-1236, #788 → PR #791):** koç açılışta, geçmişten sonra motorun iki önerisini kart olarak gösterir (mercan zemin + petrol düğme):
 yürüyüş (Today'in okuduğu kalan adım + kişinin rotası, `walkLabel`; kalan ≥ 2.000 adımken) ve öğün (`/v1/days/{day}/suggestions`'ın ilki). "Plana ekle" yalnız bugünün
 18:00 yürüyüş hatırlatmasını kurar (`reminders.planWalkToday`, tarihli anahtar); Ayarlar'daki kişinin düğmesi, plan, hedef, karar değişmez. "Kaydet" öğün ekranına
