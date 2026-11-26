@@ -111,18 +111,21 @@ function Body({ end, units, figure, workout, onRetry }: { end: WorkoutEnd | null
       </View>
     );
   }
+  // Words under Done (ADR-094 Ek 2 › Uygulama #9): sharing is offered, never pressed on the person.
   const share =
-    ready === null ? null : <Button label={t('workoutEnd.share')} variant="secondary" onPress={() => router.push({ pathname: '/share', params: { workout } })} />;
+    ready === null ? null : <Button label={t('workoutEnd.share')} variant="text" onPress={() => router.push({ pathname: '/share', params: { workout } })} />;
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
-      <ScrollView contentContainerStyle={styles.body}>
+      <ScrollView testID="end-scroll" contentContainerStyle={styles.body}>
         <Hero dayName={day === null ? null : dayName(day)} />
         {rest}
-        {/* The screen's one primary is Done (ADR-070 Ek 2 #1); sharing is the alternative beside it. */}
-        {share}
-        <Button label={t('workoutEnd.done')} onPress={() => router.dismissTo('/train')} />
         {ready !== null && <Worked muscles={ready.summary.muscles} figure={figure} />}
       </ScrollView>
+      {/* The screen's one primary is Done (ADR-070 Ek 2 #1), at the foot where the thumb is, with Share under it; the page scrolls above. */}
+      <View testID="end-dock" style={styles.dock}>
+        <Button label={t('workoutEnd.done')} onPress={() => router.dismissTo('/train')} />
+        {share}
+      </View>
     </SafeAreaView>
   );
 }
@@ -142,8 +145,9 @@ function Hero({ dayName: name }: { dayName: string | null }) {
   }, [grow, reduce]);
   return (
     <View style={styles.hero}>
-      <Animated.View testID="hero-mark" style={[styles.mark, { backgroundColor: color.accent, opacity: grow, transform: [{ scale: grow }] }]}>
-        <SymbolView name="checkmark" size={tokens.type.heading} tintColor={color.onAccent} />
+      {/* Coral: how far you came (ADR-094 §1); the petrol is Done's. */}
+      <Animated.View testID="hero-mark" style={[styles.mark, { backgroundColor: color.progress, opacity: grow, transform: [{ scale: grow }] }]}>
+        <SymbolView name="checkmark" size={tokens.type.heading} tintColor={color.background} />
       </Animated.View>
       <Text accessibilityRole="header" style={[styles.title, { color: color.text }]}>
         {t('workoutEnd.title')}
@@ -219,8 +223,9 @@ function Mark({ marks, day, units, known }: { marks: Schemas['SetMark'][]; day: 
   const bests = marks.filter((m) => m.kind === 'RECORD');
   if (bests.length > 0) {
     return (
-      <View style={[styles.card, { backgroundColor: color.accentSoft }]}>
-        <Text accessibilityRole="header" style={[styles.small, styles.bold, { color: color.text }]}>
+      // The record on the sand card, its kicker in coral (ADR-094 Ek 2 › Uygulama #9): no dark petrol block.
+      <View style={[styles.card, { backgroundColor: color.surface }]}>
+        <Text accessibilityRole="header" style={[styles.small, styles.bold, { color: color.progressText }]}>
           {t('workoutEnd.recordKicker')}
         </Text>
         {bests.map((best) => {
@@ -228,7 +233,7 @@ function Mark({ marks, day, units, known }: { marks: Schemas['SetMark'][]; day: 
           const nextLine = next?.nextLoadKg !== undefined && next.nextReps !== undefined ? t('workoutEnd.recordNext', { set: set(next.nextLoadKg, next.nextReps) }) : null;
           return (
             <View key={best.exerciseId} testID="record" style={styles.record}>
-              <Text style={[styles.heading, { color: color.text }]}>{t('workoutEnd.record', { move: exerciseName(best.exerciseId, known), set: set(best.loadKg, best.reps) })}</Text>
+              <Text style={[styles.recordSet, { color: color.text }]}>{t('workoutEnd.record', { move: exerciseName(best.exerciseId, known), set: set(best.loadKg, best.reps) })}</Text>
               {nextLine !== null && <Text style={[styles.small, { color: color.textSecondary }]}>{nextLine}</Text>}
             </View>
           );
@@ -279,7 +284,8 @@ function Week({ done, planned }: { done: number; planned: number }) {
 /** One session of the week: the track, filled when done. */
 function Segment({ filled }: { filled: boolean }) {
   const { color } = useTheme();
-  const fill = filled ? <View testID="segment-done" style={[styles.fill, { backgroundColor: color.accent }]} /> : null;
+  // A week's sessions done, in coral, as the week path is (ADR-094 §1).
+  const fill = filled ? <View testID="segment-done" style={[styles.fill, { backgroundColor: color.progress }]} /> : null;
   return (
     <View testID="segment" style={[styles.segment, { backgroundColor: color.track, borderColor: color.edge }]}>
       {fill}
@@ -292,7 +298,10 @@ const styles = StyleSheet.create({
   body: { padding: tokens.space.lg, gap: tokens.space.md },
   hero: { alignItems: 'center', gap: tokens.space.sm, paddingVertical: tokens.space.lg },
   mark: { width: tokens.size.primaryButton, height: tokens.size.primaryButton, borderRadius: tokens.radius.card, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: tokens.type.decisionTitle, fontWeight: tokens.weight.bold },
+  // The serif (ADR-094 §2), as every screen's title.
+  title: { ...tokens.face.display, fontSize: tokens.type.decisionTitle },
+  recordSet: { ...tokens.face.display, fontSize: tokens.type.heading },
+  dock: { paddingHorizontal: tokens.space.lg, paddingVertical: tokens.space.sm, gap: tokens.space.xs },
   rows: { gap: tokens.space.sm },
   stats: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm },
   stat: { flexGrow: 1, flexBasis: 0, minWidth: tokens.size.primaryButton, borderRadius: tokens.radius.card, padding: tokens.space.sm, gap: tokens.space.xs },
@@ -302,7 +311,7 @@ const styles = StyleSheet.create({
   segment: { flex: 1, height: tokens.size.track, borderRadius: tokens.radius.track, borderWidth: tokens.border.hairline, overflow: 'hidden' },
   fill: { flex: 1 },
   number: { fontSize: tokens.type.number, fontWeight: tokens.weight.bold },
-  heading: { fontSize: tokens.type.heading, fontWeight: tokens.weight.bold },
+  heading: { ...tokens.face.display, fontSize: tokens.type.heading },
   text: { fontSize: tokens.type.body },
   bold: { fontWeight: tokens.weight.semibold },
   small: { fontSize: tokens.type.bodySmall },

@@ -6298,6 +6298,39 @@ tasks:
     tests: ["workout-screen.test.tsx", "workout-session.test.ts", "npm run check"]
     refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md", "prototip/gorsel-yon/9c7/bitirme-penceresi.jpg"]
 
+  - id: K-1243
+    title: "Bitiş ekranı: sakin akış, serif başlık, rekor kum kartta, Bitti altta sabit (9c-7f)"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: S
+    status: done
+    depends_on: [K-1242]
+    why: "9c-7: başlık serif değil, rekor tek koyu blok, kartlar yığın, Paylaş ve Bitti eşit; Levent 3 varyanttan 'sakin akış'ı seçti (ADR-094 Ek 2 › Uygulama #9)"
+    acceptance:
+      - "Serif başlıklar; mercan işaret ve hafta çubuğu; rekor kum kartta mercan üst yazıyla"
+      - "Bitti altta sabit tek dolu düğme, Paylaş altında yazı"
+      - "Simülatörde Levent'e gösterilir; K1 listelenir (2 test, onaylı)"
+    tests: ["workout-end-screen.test.tsx", "npm run check"]
+    refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md", "prototip/gorsel-yon/9c7/bitis-ekrani.jpg"]
+
+  - id: K-1244
+    title: "Paylaş kartı: C · kâğıt kart, uygulamanın yazı tipleriyle (view-shot), yeni derleme (9c-7g)"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-1243]
+    why: "9c-7: kart SVG, serif çizilemiyor (kalın siyah eski dil), üstü boş, 'incline dumbbell press PR'; Levent C kâğıt kartı ve yeni derlemeyi seçti (ADR-094 Ek 2 › Uygulama #10)"
+    acceptance:
+      - "Kart prototip/gorsel-yon/9c7/paylas-c.jpg düzeninde: kırık beyaz panel, serif başlık, rounded sayılar, mercan üst yazı, rekora fosforlu vurgu, Next Call imzası"
+      - "Kart RN görünümünden react-native-view-shot ile PNG'ye çevrilir (npx expo install; PR'da gerekçe + alternatif: SVG'ye OFL serif gömmek)"
+      - "Seçim hapları tek tip (Antrenman / PR / Hedefte geçen haftalar / Gelişim; Galeri / Kamera / Koyu / Instagram'da)"
+      - "Yeni geliştirme derlemesiyle simülatörde Levent'e gösterilir; mağaza sürümü Levent'te"
+    tests: ["share-screen.test.tsx", "npm run check", "simülatör (yeni dev build)"]
+    refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md", "prototip/gorsel-yon/9c7/paylas-c.jpg"]
+
   - id: K-1227
     title: "Yerler arası yürüme rotası haritada (noktalı), adım karşılığı"
     milestone: M12

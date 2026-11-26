@@ -220,3 +220,9 @@ süresi bir yere bağlanır ya da kalkar (bu son ikisi ayrıca görselle sorulur
    Sil / Vazgeç"). Bu pencereden bitirince ayrı "N hareket kaldı" uyarısı yok (Daha fazla ve alt düğmedeki Bitir'de kalır); not adımı sonra
    kalır. Levent eski metinleri anlamadı: "Kalanını sonra doldur" → "Sonra devam et", "Bu antrenmanı at" → "Antrenmanı sil"; İngilizce
    "Carry on later", "Delete this workout". Not yalnız hareket geçmişinde görünür, hiçbir kural okumaz (Levent'e söylendi).
+9. **Bitiş ekranı: sakin akış** (K-1243, Levent; `9c7/bitis-ekrani.jpg`, sonra `9c7/bitis-sonra.jpg`): serif başlıklar, mercan işaret ve
+   hafta çubuğu, rekor kum kartta mercan "Yeni rekor" ile (koyu petrol blok yok); Bitti altta sabit, Paylaş onun altında yazı. Rekor başta
+   ve kartsız defter seçilmedi.
+10. **Paylaş kartı: C · kâğıt kart** (K-1244, Levent; `9c7/paylas-karti.jpg`, tam boy `9c7/paylas-c.jpg`): kırık beyaz kâğıt panel, koyu
+   mürekkep, mercan üst yazı, rekora fosforlu vurgu; serif yazı için kart uygulamanın yazı tipleriyle çizilip görüntüye çevrilir
+   (react-native-view-shot): yeni yerel modül, **yeni derleme ve mağaza sürümü** (Levent onayı). O derlemeye kadar eski kart kalır.
