@@ -1,32 +1,25 @@
 /**
- * Where a sticker's words sit in its image (K-975), in image units (share.json: 1080 wide): the kicker, the title, the
- * stats in two columns, the lines, the weeks as a row of cells, the word mark. Pure, so the drawing (Sticker.tsx) only
- * places what this says and the tests can read it. A text steps down in size, then wraps, rather than run past the margin;
- * a character's width is an estimate (a share of the size), not a measurement, so it errs wide.
+ * The paper card's measures (K-975, ADR-094 Ek 2 › Uygulama #10), in image units (share.json: 1080 wide): where the card
+ * sits in a Story-sized image, its padding, and the size each text is set at so it stays inside the card. The drawing
+ * (Sticker.tsx) lays the card out with flexbox and scales these to points; pure, so the tests can read it. A text steps
+ * down in size before it runs past the card; a character's width is an estimate (a share of the size), not a measurement,
+ * so it errs wide. The drawing sets each text at the size given here (the card is an image: no shrinking by the phone).
  */
-import { t } from '@/copy';
 import { tokens } from '@/theme/tokens';
 
 import { shareParams } from './params';
-import type { Sticker, WeekCell } from './stickers';
+import type { Sticker } from './stickers';
 
-export type Item =
-  | { kind: 'text'; x: number; y: number; text: string; size: number; font: 'display' | 'body'; tone: 'text' | 'accent' | 'muted'; anchor?: 'end' }
-  | { kind: 'cell'; x: number; y: number; size: number; state: WeekCell };
-
-const WIDTH = shareParams.storyWidth;
-/** The margin round the words, and the room left under a sticker set in a Story-sized image. */
-export const MARGIN = 72;
-const INNER = WIDTH - 2 * MARGIN;
-const GAP = 44;
-const COLUMN_GAP = 40;
-const COLUMN = (INNER - COLUMN_GAP) / 2;
-const CELL_GAP = 12;
-const CELL_MAX = 72;
-/** The width of an average character as a share of the text's size: the display face is narrow, the body face is not. */
-export const EM = { display: 0.5, body: 0.6 };
-/** Each step a text may shrink to when it does not fit, before it wraps. */
-const STEPS = [1, 0.8, 0.64, 0.5];
+/** The card's margins in a Story-sized image: at the sides, and under it. */
+export const FRAME = { side: 40, foot: 60 };
+/** The card: its padding, corner, the room round the record's highlight, the gaps between its parts, a week's cell, the app's mark at its foot. */
+export const CARD = { padding: 70, radius: 56, highlight: 14, gap: 44, statGap: 24, cellGap: 12, cellMax: 72, cellRadius: 12, mark: 56, markRadius: 13 };
+/** The width the card's words have. */
+export const INNER = shareParams.storyWidth - 2 * FRAME.side - 2 * CARD.padding;
+/** The width of an average character as a share of the text's size: the serif is narrow, the rounded numbers are not. */
+export const EM = { display: 0.5, number: 0.62, body: 0.6 };
+/** Each step a text may shrink to when it does not fit. */
+const STEPS = [1, 0.8, 0.64, 0.5, 0.4];
 
 /** A line broken at spaces into pieces of at most `max` characters; a single longer word stays whole. */
 export function wrap(text: string, max: number): string[] {
@@ -44,67 +37,62 @@ export function wrap(text: string, max: number): string[] {
   return pieces;
 }
 
-/** The largest size from `base` down at which the text fits `width` in at most `maxLines` lines; else the smallest. */
-function fit(text: string, width: number, base: number, font: 'display' | 'body', maxLines: number) {
-  let chosen = { size: base, lines: [text] };
-  for (const step of STEPS) {
-    const size = Math.round(base * step);
-    const chars = Math.floor(width / (size * EM[font]));
+/** How far the record's line may shrink to stay one line before it takes two. */
+const ONE_LINE_FLOOR = 0.8;
+
+/** Whether every text fits `width` in at most `maxLines` lines at `size`. */
+function fits(texts: string[], width: number, size: number, font: keyof typeof EM, maxLines: number): boolean {
+  const chars = Math.floor(width / (size * EM[font]));
+  return texts.every((text) => {
     const lines = wrap(text, chars);
-    chosen = { size, lines };
-    if (lines.length <= maxLines && lines.every((line) => line.length <= chars)) break;
-  }
-  return chosen;
+    return lines.length <= maxLines && lines.every((line) => line.length <= chars);
+  });
 }
 
-export function layout(sticker: Sticker): { items: Item[]; height: number } {
-  const items: Item[] = [];
-  const text = (x: number, y: number, words: string, size: number, font: 'display' | 'body', tone: 'text' | 'accent' | 'muted', anchor?: 'end') =>
-    items.push({ kind: 'text', x, y, text: words, size, font, tone, anchor });
-  let y = MARGIN;
+/** The largest size from `base` down (not below `floor` of it) at which every text fits; null when none does. */
+function largest(texts: string[], width: number, base: number, font: keyof typeof EM, maxLines: number, floor = 0): number | null {
+  const sizes = STEPS.filter((step) => step >= floor).map((step) => Math.round(base * step));
+  return sizes.find((size) => fits(texts, width, size, font, maxLines)) ?? null;
+}
 
-  y += tokens.type.shareKicker;
-  text(MARGIN, y, sticker.kicker, tokens.type.shareKicker, 'body', 'muted');
-  y += GAP / 2;
+/** The largest size at which every text fits in at most `maxLines` lines; else the smallest step. */
+const fit = (texts: string[], width: number, base: number, font: keyof typeof EM, maxLines: number) =>
+  largest(texts, width, base, font, maxLines) ?? Math.round(base * STEPS[STEPS.length - 1]);
 
-  const title = fit(sticker.title, INNER, tokens.type.shareTitle, 'display', 2);
-  for (const line of title.lines) {
-    y += title.size;
-    text(MARGIN, y, line, title.size, 'display', 'text');
-  }
-  y += GAP;
+/** The record's line: one line if a step or so smaller allows it (seen on the simulator, K-1244), else two lines. */
+const fitMark = (text: string, width: number) =>
+  largest([text], width, tokens.type.shareMark, 'display', 1, ONE_LINE_FLOOR) ?? fit([text], width, tokens.type.shareMark, 'display', 2);
 
-  for (let i = 0; i < sticker.stats.length; i += 2) {
-    const row = sticker.stats.slice(i, i + 2).map((stat, column) => ({ stat, x: MARGIN + column * (COLUMN + COLUMN_GAP) }));
-    const values = row.map(({ stat }) => fit(stat.value, COLUMN, tokens.type.shareValue, 'display', 1));
-    const labels = row.map(({ stat }) => wrap(stat.label, Math.floor(COLUMN / (tokens.type.shareLabel * EM.body))));
-    const top = y;
-    let bottom = top;
-    row.forEach(({ stat, x }, k) => {
-      let at = top + values[k].size;
-      text(x, at, stat.value, values[k].size, 'display', stat.accent ? 'accent' : 'text');
-      for (const line of labels[k]) {
-        at += tokens.type.shareLabel * 1.2;
-        text(x, at, line, tokens.type.shareLabel, 'body', 'muted');
-      }
-      bottom = Math.max(bottom, at);
-    });
-    y = bottom + GAP;
-  }
+export type Sizes = {
+  /** The serif title's size. */
+  title: number;
+  /** The numbers' size, the same for all of them (one row reads as one). */
+  value: number;
+  /** A number's column, and the gap between columns. */
+  column: number;
+  gap: number;
+  /** The record's line, in the serif. */
+  mark: number;
+  /** A week's cell. */
+  cell: number;
+};
 
-  for (const line of sticker.lines.flatMap((l) => wrap(l, Math.floor(INNER / (tokens.type.shareLine * EM.body))))) {
-    y += tokens.type.shareLine * 1.3;
-    text(MARGIN, y, line, tokens.type.shareLine, 'body', 'text');
-  }
-  if (sticker.lines.length > 0) y += GAP;
-
-  if (sticker.weeks.length > 0) {
-    const size = Math.min(CELL_MAX, Math.floor((INNER - CELL_GAP * (sticker.weeks.length - 1)) / sticker.weeks.length));
-    sticker.weeks.forEach((state, i) => items.push({ kind: 'cell', x: MARGIN + i * (size + CELL_GAP), y, size, state }));
-    y += size + GAP;
-  }
-
-  y += tokens.type.shareMark;
-  text(WIDTH - MARGIN, y, t('app.name'), tokens.type.shareMark, 'display', 'text', 'end');
-  return { items, height: y + MARGIN };
+export function layout(sticker: Sticker): Sizes {
+  const count = Math.max(sticker.stats.length, 1);
+  const column = (INNER - CARD.statGap * (count - 1)) / count;
+  const weeks = sticker.weeks.length;
+  return {
+    title: fit([sticker.title], INNER, tokens.type.shareTitle, 'display', 2),
+    value: fit(
+      sticker.stats.map((s) => s.value),
+      column,
+      tokens.type.shareValue,
+      'number',
+      1,
+    ),
+    column,
+    gap: CARD.statGap,
+    mark: sticker.mark === undefined ? tokens.type.shareMark : fitMark(sticker.mark.text, INNER - 2 * CARD.highlight),
+    cell: weeks === 0 ? 0 : Math.min(CARD.cellMax, Math.floor((INNER - CARD.cellGap * (weeks - 1)) / weeks)),
+  };
 }

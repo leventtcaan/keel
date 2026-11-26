@@ -201,12 +201,12 @@ test("the user's own moves not read: the end is still ready, with the catalog's 
 });
 
 describe('the summary alone (the share stickers, K-975)', () => {
-  test("sent: the server's summary and the program day, from one read; no health, no program, no week, no moves", async () => {
+  test("sent: the server's summary, the program day and when it ended, from one read; no health, no program, no week, no moves", async () => {
     const { value, GET, readWatchActiveEnergy } = deps();
     const granted = jest.fn(async () => true);
     value.consents = { granted };
 
-    expect(await loadWorkoutSummary(value, 'w1')).toEqual({ kind: 'ready', summary: SUMMARY, programDayId: 'a' });
+    expect(await loadWorkoutSummary(value, 'w1')).toEqual({ kind: 'ready', summary: SUMMARY, programDayId: 'a', endedAt: '2026-09-29T08:52:00Z' });
 
     expect(GET.mock.calls.map(([path]) => path)).toEqual(['/v1/workouts/{id}/summary']);
     expect(readWatchActiveEnergy).not.toHaveBeenCalled();

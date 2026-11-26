@@ -1937,15 +1937,17 @@
         "workoutEnd.minutes.other",
         "workoutEnd.liftedKg",
         "workoutEnd.sets.other",
-        "share.sticker.workout.recordLabel",
-        "share.sticker.workout.baselineValue",
-        "share.sticker.workout.baselineLabel",
-        "app.name"
+        "share.sticker.workout.kicker",
+        "workoutEnd.recordKicker",
+        "share.sticker.mark",
+        "app.name",
+        "share.photo.add"
       ],
       "dynamic": [
         { "what": "the session's day (Full body A)", "words": 3 },
-        { "what": "the record's load unit (100 kg × 8)", "words": 1 },
-        { "what": "the record's move (squat PR)", "words": 1 }
+        { "what": "the day it ended (Oct 13)", "words": 2 },
+        { "what": "the record's move (Squat)", "words": 1 },
+        { "what": "the record's load unit (100 kg × 8)", "words": 1 }
       ],
       "parts": ["src/share/stickers.ts", "src/share/Sticker.tsx", "src/share/layout.ts"],
       "faces": [
@@ -1985,15 +1987,12 @@
         "share.failed",
         "share.denied",
         "share.photoFailed",
-        "share.instagramNote",
-        "share.story",
-        "share.storyFallback",
-        "share.videoNote",
-        "share.videoTooLong",
         "share.background.gallery",
         "share.background.camera",
-        "share.background.dark",
-        "share.background.instagram",
+        "share.photo.remove",
+        "share.photo.cancel",
+        "share.cards",
+        "share.page",
         "share.partial",
         "share.spoken",
         "workoutEnd.pending",

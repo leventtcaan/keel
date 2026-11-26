@@ -1,21 +1,26 @@
 /**
- * Where a sticker's words sit in its image (K-975): top to bottom, each piece below the last, every line inside the
- * margins at the size that fits, the grid as wide as the weeks it has. The image is 1080 wide (share.json).
+ * The paper card's measures (K-975, ADR-094 Ek 2 › Uygulama #10): the card sits low in a Story-sized image inside its
+ * margins; a text steps down in size rather than run past the card's inner width (the title in at most two lines, a
+ * number in its column, the record's line in at most two lines); the weeks are a row of cells inside the card. All in
+ * image units (share.json: 1080 wide); the drawing (Sticker.tsx) lays them out with flexbox and scales them to points.
  */
-import { EM, type Item, MARGIN, layout, wrap } from '@/share/layout';
+import en from '../../../../data/copy/en.json';
+import tr from '../../../../data/copy/tr.json';
+import { CARD, EM, FRAME, INNER, layout, wrap } from '@/share/layout';
 import { shareParams } from '@/share/params';
 import type { Sticker } from '@/share/stickers';
+import { tokens } from '@/theme/tokens';
 
 const WORKOUT: Sticker = {
   kind: 'workout',
-  kicker: 'Workout complete',
+  kicker: 'Workout complete · Oct 13',
   title: 'Full body A',
   stats: [
     { value: '52', label: 'minutes' },
-    { value: '4,280', label: 'kg lifted', accent: true },
+    { value: '4,280', label: 'kg lifted' },
     { value: '14', label: 'sets' },
-    { value: '100 kg × 8', label: 'squat PR' },
   ],
+  mark: { kind: 'record', label: 'New best', text: 'Squat · 100 kg × 8' },
   lines: [],
   weeks: [],
 };
@@ -27,8 +32,18 @@ const STREAK: Sticker = {
   lines: ['1 spare week'],
   weeks: ['ON_TRACK', 'ON_TRACK', 'SPARE', 'ON_TRACK', 'MISSED', 'PAUSED', 'ON_TRACK', 'ON_TRACK', 'ON_TRACK', 'ON_TRACK', 'ON_TRACK', 'ON_TRACK'],
 };
-const text = (items: Item[]) => items.flatMap((i) => (i.kind === 'text' ? [i] : []));
-const cells = (items: Item[]) => items.flatMap((i) => (i.kind === 'cell' ? [i] : []));
+const LONG: Sticker = {
+  ...WORKOUT,
+  title: 'Romanian deadlift with a long own name',
+  stats: [
+    { value: '1,000.5 lb × 12', label: 'best set ever' },
+    { value: '+20 kg', label: 'since Jul 13' },
+  ],
+  mark: { kind: 'record', label: 'New best', text: 'Seated cable row with a very long own name · 1,000.5 lb × 12' },
+};
+/** A text's estimated width at its size (the same estimate layout.ts sizes by). */
+const width = (text: string, size: number, font: keyof typeof EM) => text.length * size * EM[font];
+const lines = (text: string, size: number, font: keyof typeof EM, room: number) => wrap(text, Math.floor(room / (size * EM[font])));
 
 test('a line is wrapped at words to fit', () => {
   expect(wrap('abcd efgh', 9)).toEqual(['abcd efgh']);
@@ -37,110 +52,89 @@ test('a line is wrapped at words to fit', () => {
   expect(wrap('Supercalifragilisticexpialidocious move', 10)).toEqual(['Supercalifragilisticexpialidocious', 'move']);
 });
 
-test('every piece of text is drawn, in order from the top, no one over another', () => {
-  const { items, height } = layout(WORKOUT);
-  const drawn = text(items);
-
-  expect(drawn.map((i) => i.text)).toEqual(
-    expect.arrayContaining(['Workout complete', 'Full body A', '52', 'minutes', '4,280', 'kg lifted', '14', 'sets', '100 kg × 8', 'squat PR', 'Next Call']),
-  );
-  // Each box is [baseline - size, baseline]; boxes in one column never meet, and all sit inside the image.
-  const boxes = drawn.map((i) => ({ x: i.x, top: i.y - i.size, bottom: i.y }));
-  for (const [a, i] of boxes.entries()) {
-    expect(i.top).toBeGreaterThanOrEqual(0);
-    expect(i.bottom).toBeLessThanOrEqual(height);
-    for (const j of boxes.slice(a + 1)) if (i.x === j.x) expect(j.top >= i.bottom || i.top >= j.bottom).toBe(true);
-  }
+test('the card sits inside the image: its margins at the sides and the foot, its words inside its padding', () => {
+  expect(FRAME.side).toBeGreaterThan(0);
+  expect(FRAME.foot).toBeGreaterThan(0);
+  expect(INNER).toBe(shareParams.storyWidth - 2 * FRAME.side - 2 * CARD.padding);
+  expect(INNER).toBeGreaterThan(shareParams.storyWidth / 2);
 });
 
-test('the stats sit in two columns, the value above its label', () => {
-  const { items } = layout(WORKOUT);
-  const at = (value: string) => text(items).find((i) => i.text === value)!;
-  expect(at('52').x).toBeLessThan(at('4,280').x);
-  expect(at('52').y).toBe(at('4,280').y);
-  expect(at('14').y).toBeGreaterThan(at('52').y);
-  expect(at('minutes').y).toBeGreaterThan(at('52').y);
-  expect(at('minutes').x).toBe(at('52').x);
+test('the words at their full sizes when they fit', () => {
+  const sizes = layout({ ...WORKOUT, stats: [{ value: '66', label: 'minutes' }, { value: '168', label: 'kg lifted' }, { value: '1', label: 'set' }] });
+  expect(sizes.title).toBe(tokens.type.shareTitle);
+  expect(sizes.value).toBe(tokens.type.shareValue);
+  expect(sizes.mark).toBe(tokens.type.shareMark);
 });
 
-test('the word mark closes the sticker, at its right edge', () => {
-  const { items } = layout(WORKOUT);
-  const mark = text(items).find((i) => i.text === 'Next Call')!;
-  expect(mark.anchor).toBe('end');
-  expect(mark.x).toBeLessThanOrEqual(shareParams.storyWidth);
-  expect(Math.max(...text(items).map((i) => i.y))).toBe(mark.y);
+test('the numbers share one row: each its column, the columns filling the inner width', () => {
+  const three = layout(WORKOUT);
+  const two = layout({ ...WORKOUT, stats: WORKOUT.stats.slice(0, 2) });
+  expect(three.column * 3 + three.gap * 2).toBeCloseTo(INNER, 5);
+  expect(two.column).toBeGreaterThan(three.column);
 });
 
-test('a long title takes a smaller size and a second line rather than run past the margin', () => {
+test('a four-digit total sets all three numbers a step smaller, alike, each inside its column', () => {
+  const sizes = layout(WORKOUT);
+  expect(sizes.value).toBeLessThan(tokens.type.shareValue);
+  expect(WORKOUT.stats.filter((s) => width(s.value, sizes.value, 'number') > sizes.column)).toEqual([]);
+});
+
+test('a long title takes a smaller size and at most two lines, inside the card', () => {
   const short = layout({ ...WORKOUT, title: 'Squat' });
-  const long = layout({ ...WORKOUT, title: 'Romanian deadlift with a long own name' });
-  const size = (l: ReturnType<typeof layout>, t: string) => text(l.items).find((i) => i.text.startsWith(t))!.size;
-  expect(size(long, 'Romanian')).toBeLessThan(size(short, 'Squat'));
-  expect(text(long.items).filter((i) => i.size === size(long, 'Romanian')).length).toBeGreaterThan(1);
+  const long = layout(LONG);
+  expect(long.title).toBeLessThan(short.title);
+  const drawn = lines(LONG.title, long.title, 'display', INNER);
+  expect(drawn.length).toBeLessThanOrEqual(2);
+  expect(drawn.filter((line) => width(line, long.title, 'display') > INNER)).toEqual([]);
 });
 
-test('a long value shrinks to its column; a long label wraps under it', () => {
-  const { items } = layout({ ...WORKOUT, stats: [{ value: '1,000.5 lb × 12', label: 'a very long own move name PR' }] });
-  const value = text(items).find((i) => i.text === '1,000.5 lb × 12')!;
-  const full = layout(WORKOUT);
-  expect(value.size).toBeLessThan(text(full.items).find((i) => i.text === '52')!.size);
-  expect(text(items).filter((i) => i.x === value.x && i.y > value.y).length).toBeGreaterThan(1);
+test('a long number shrinks to its column; the record line shrinks to the card', () => {
+  const sizes = layout(LONG);
+  expect(sizes.value).toBeLessThan(tokens.type.shareValue);
+  expect(Math.max(...LONG.stats.map((s) => width(s.value, sizes.value, 'number')))).toBeLessThanOrEqual(sizes.column);
+  expect(sizes.mark).toBeLessThan(tokens.type.shareMark);
+  const drawn = lines(LONG.mark!.text, sizes.mark, 'display', INNER - 2 * CARD.highlight);
+  expect(drawn.length).toBeLessThanOrEqual(2);
 });
 
-test('the grid: one cell per week, in order, side by side inside the margins, each in its state', () => {
-  const grid = cells(layout(STREAK).items);
-  expect(grid.map((c) => c.state)).toEqual(STREAK.weeks);
-  expect(new Set(grid.map((c) => c.y)).size).toBe(1);
-  expect(grid.every((c, i) => i === 0 || c.x > grid[i - 1].x)).toBe(true);
-  const last = grid[grid.length - 1];
-  expect(last.x + last.size).toBeLessThan(shareParams.storyWidth);
-  expect(grid[0].x).toBeGreaterThan(0);
+// Seen on the simulator (K-1244): at full size the record's line broke before "× 6". A line that fits a step smaller
+// stays one line; two lines only for a long name, and the set is never broken (stickers.ts joins it with no-break spaces).
+test("the record's line keeps to one line when a step smaller fits it; a long name may take two", () => {
+  const short = layout({ ...WORKOUT, mark: { kind: 'record', label: 'New best', text: 'Incline dumbbell press · 28\u00a0kg\u00a0×\u00a06' } });
+  expect(lines('Incline dumbbell press · 28\u00a0kg\u00a0×\u00a06', short.mark, 'display', INNER - 2 * CARD.highlight)).toHaveLength(1);
+  expect(short.mark).toBeGreaterThanOrEqual(Math.round(tokens.type.shareMark * 0.8));
+
+  const long = layout(LONG);
+  expect(long.mark).toBeGreaterThanOrEqual(Math.round(tokens.type.shareMark * 0.64));
 });
 
-test('a short history is a short row of larger cells, not padded', () => {
-  const few = cells(layout({ ...STREAK, weeks: ['ON_TRACK', 'SPARE'] }).items);
-  expect(few).toHaveLength(2);
-  expect(few[0].size).toBeGreaterThanOrEqual(cells(layout(STREAK).items)[0].size);
+test('the weeks: one cell each, side by side inside the card; a short history is a short row of larger cells', () => {
+  const sizes = layout(STREAK);
+  expect(sizes.cell * STREAK.weeks.length + CARD.cellGap * (STREAK.weeks.length - 1)).toBeLessThanOrEqual(INNER);
+  const few = layout({ ...STREAK, weeks: ['ON_TRACK', 'SPARE'] });
+  expect(few.cell).toBeGreaterThanOrEqual(sizes.cell);
+  expect(few.cell).toBeLessThanOrEqual(CARD.cellMax);
 });
 
-test('a sticker with no grid draws no cell; the image is as tall as its words and no taller', () => {
-  expect(cells(layout(WORKOUT).items)).toEqual([]);
-  const small = layout({ ...WORKOUT, stats: [] });
-  expect(small.height).toBeLessThan(layout(WORKOUT).height);
-  expect(layout(WORKOUT).height).toBeLessThan(shareParams.storyHeight);
-});
+// The longest words a card can get, from the copy itself: every move's name in both languages, as a PR card's title and
+// as the record's line with a long set; and the longest total in pounds. Each fits at the size given (no third line,
+// nothing past the card), so the card never grows past what its foot-anchored Story frame shows.
+describe('the longest real words fit', () => {
+  const names = [en, tr].flatMap((copy) => Object.values((copy as { exercises: Record<string, { name: string }> }).exercises).map((e) => e.name));
+  const SET = '1,000.5 lb × 12';
 
-describe('the right edge: nothing runs past the margin', () => {
-  const right = (i: Extract<Item, { kind: 'text' }>) => (i.anchor === 'end' ? i.x : i.x + i.text.length * i.size * EM[i.font]);
-  const LIMIT = shareParams.storyWidth - MARGIN;
-  const LONG: Sticker = {
-    ...WORKOUT,
-    title: 'Romanian deadlift with a long own name',
-    stats: [
-      { value: '1,000.5 lb × 12', label: 'a very long own move name PR' },
-      { value: '9,436', label: 'lb lifted', accent: true },
-      { value: '120', label: 'minutes' },
-      { value: '100 kg × 8', label: 'best set ever' },
-    ],
-    lines: ['Romanian deadlift +20 kg', 'Seated cable row with a long name +10 kg'],
-  };
-
-  test.each([
-    ['a workout', WORKOUT],
-    ['a long title, long values and long lines', LONG],
-    ['a streak', STREAK],
-    ['a short history', { ...STREAK, weeks: ['ON_TRACK'] as Sticker['weeks'] }],
-  ])('%s', (_, sticker) => {
-    const { items } = layout(sticker);
-
-    expect(text(items).filter((i) => right(i) > LIMIT).map((i) => i.text)).toEqual([]);
-    expect(cells(items).filter((c) => c.x + c.size > LIMIT).length).toBe(0);
-    // And the left: the word mark keeps its own width inside the margin too.
-    const mark = text(items).find((i) => i.anchor === 'end')!;
-    expect(mark.x - mark.text.length * mark.size * EM[mark.font]).toBeGreaterThan(MARGIN);
+  test.each(names.map((name) => [name]))('%s', (name) => {
+    const sizes = layout({ ...WORKOUT, title: name, mark: { kind: 'record', label: 'New best', text: `${name} · ${SET}` }, stats: [{ value: '12,345', label: 'lb lifted' }, { value: '120', label: 'minutes' }, { value: '40', label: 'sets' }] });
+    for (const [text, size, room] of [
+      [name, sizes.title, INNER],
+      [`${name} · ${SET}`, sizes.mark, INNER - 2 * CARD.highlight],
+    ] as const) {
+      const drawn = lines(text, size, 'display', room);
+      expect(drawn.length).toBeLessThanOrEqual(2);
+      expect(drawn.filter((line) => width(line, size, 'display') > room)).toEqual([]);
+    }
+    expect(['12,345', '120', '40'].filter((v) => width(v, sizes.value, 'number') > sizes.column)).toEqual([]);
   });
 
-  test('the check catches a text that overruns', () => {
-    expect(right({ kind: 'text', x: MARGIN, y: 100, text: 'x'.repeat(60), size: 150, font: 'display', tone: 'text' })).toBeGreaterThan(LIMIT);
-  });
+  test('there are names to try', () => expect(names.length).toBeGreaterThan(50));
 });

@@ -8,6 +8,9 @@
  *   decorative (`accessible={false}`) — so nothing meaningful is silent and nothing decorative is noise.
  * - Text scales with the phone's setting and wraps, never cut: no allowFontScaling, maxFontSizeMultiplier,
  *   numberOfLines or adjustsFontSizeToFit (Apple: "consider allowing the text to wrap … instead of truncation").
+ *   One exception, allowFontScaling only: words drawn into a picture that is read out as one (an element `accessible`,
+ *   `accessibilityRole="image"`, with its own label, as the share card made into a PNG, K-1244) keep the picture's size,
+ *   since VoiceOver reads the label, never those words, and the picture is the same for whoever later sees it.
  * - No movement of our own unless it follows Reduce Motion (useReduceMotion): an animated scroll, a sliding sheet,
  *   Animated/Reanimated/LayoutAnimation. (Apple's criteria single out depth, multi-axis, spinning and endless motion; the
  *   native screen transitions are single-axis slides.)
@@ -61,6 +64,16 @@ function problemsOf(name: string, source: string): Problems {
     return false;
   };
 
+  // An ancestor that is a picture read as one: accessible, the image role, its own words (the share card, K-1244).
+  const insideNamedImage = (node: ts.Node): boolean => {
+    for (let up = node.parent; up !== undefined; up = up.parent) {
+      const element = opening(up);
+      const role = element ? attribute(element, 'accessibilityRole')?.initializer?.getText(file) : undefined;
+      if (element && has(element, 'accessibilityLabel') && has(element, 'accessible') && !notAccessible(element) && role === '"image"') return true;
+    }
+    return false;
+  };
+
   const insideAccessible = (node: ts.Node): boolean => {
     for (let up = node.parent; up !== undefined; up = up.parent) {
       const element = opening(up);
@@ -80,7 +93,9 @@ function problemsOf(name: string, source: string): Problems {
       if (PICTURES.has(tag) && !has(element, 'accessibilityLabel') && !notAccessible(element) && !namedAncestor(node)) {
         problems.push(`${at(node)} ${tag} neither named nor marked decorative`);
       }
-      for (const limit of TEXT_LIMITS) if (has(element, limit)) problems.push(`${at(node)} ${limit}`);
+      for (const limit of TEXT_LIMITS) {
+        if (has(element, limit) && !(limit === 'allowFontScaling' && tag === 'Text' && insideNamedImage(node))) problems.push(`${at(node)} ${limit}`);
+      }
       if (CONTROLS.has(tag) && insideAccessible(node)) problems.push(`${at(node)} ${tag} inside an accessible element: VoiceOver cannot reach it`);
       if ((tag === 'Text' || tag === 'View') && has(element, 'onPress')) problems.push(`${at(node)} onPress on a ${tag}`);
       if (NAMED_CONTROLS.has(tag) && !has(element, 'accessibilityLabel')) problems.push(`${at(node)} ${tag} without accessibilityLabel`);
@@ -136,6 +151,22 @@ test('the reader finds each kind of problem, and lets the right things through',
     'i.tsx:1 TextInput without accessibilityLabel',
   ]);
   expect(problemsOf('m.tsx', `import { useReducedMotion } from 'react-native-reanimated';`)).toEqual([]);
+  // Words in a picture read as one keep the picture's size; nothing else may, and nothing else is let through there.
+  const picture = `const x = (
+    <View accessible accessibilityRole="image" accessibilityLabel={t('a')}>
+      <Text allowFontScaling={false}>{t('b')}</Text>
+      <Text numberOfLines={1}>{t('c')}</Text>
+    </View>
+  );`;
+  expect(problemsOf('c.tsx', picture)).toEqual(['c.tsx:4 numberOfLines']);
+  for (const almost of [
+    `<View accessible accessibilityLabel={t('a')}><Text allowFontScaling={false}>{t('b')}</Text></View>`,
+    `<View accessibilityRole="image" accessibilityLabel={t('a')}><Text allowFontScaling={false}>{t('b')}</Text></View>`,
+    `<View accessible accessibilityRole="image"><Text allowFontScaling={false}>{t('b')}</Text></View>`,
+    `<View accessible accessibilityRole="image" accessibilityLabel={t('a')}><Button allowFontScaling={false} /></View>`,
+  ]) {
+    expect(problemsOf('d.tsx', `const x = ${almost};`)).toContain('d.tsx:1 allowFontScaling');
+  }
 });
 
 test('the app keeps them all', () => {

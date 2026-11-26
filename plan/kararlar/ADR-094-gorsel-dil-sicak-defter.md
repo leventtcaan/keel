@@ -226,3 +226,11 @@ süresi bir yere bağlanır ya da kalkar (bu son ikisi ayrıca görselle sorulur
 10. **Paylaş kartı: C · kâğıt kart** (K-1244, Levent; `9c7/paylas-karti.jpg`, tam boy `9c7/paylas-c.jpg`): kırık beyaz kâğıt panel, koyu
    mürekkep, mercan üst yazı, rekora fosforlu vurgu; serif yazı için kart uygulamanın yazı tipleriyle çizilip görüntüye çevrilir
    (react-native-view-shot): yeni yerel modül, **yeni derleme ve mağaza sürümü** (Levent onayı). O derlemeye kadar eski kart kalır.
+   **Revize (26 Kas, Levent simülatörde, K-1244):** haplar "karışık, alakasız ayrım" bulundu → kartlar **yana kaydırılan bir dizi**
+   (Antrenman, Rekor, Hedefte geçen haftalar, Gelişim; sonraki kart kenardan görünür, altta nokta; VoiceOver'da tek ayarlanabilir öğe),
+   tek **"Fotoğraf ekle"** (galeri ya da kamera sistemin menüsünden; eklenince "Fotoğrafı kaldır"; fotoğraf yoksa koyu zemin), tek
+   **"Paylaş"** (sistem paylaşım sayfası; Instagram orada). "Story'de paylaş" ve "Instagram'da" kalktı. Kartın sağ altında küçük uygulama
+   işareti + "Next Call". Levent: **şimdilik yalnız fotoğraf** (video ayrı iş, K-1245), **ücretsiz** (fotoğraf sunucuya gitmez, V1; maliyet
+   yok). Kartta küçük harfli hareket adı ve "PR" yok: rekor kendi satırında "Yeni rekor · Hareket · 28 kg × 6", set bölünmez.
+   K1 (8 madde: kart/düzen/önizleme/model/ekran/seçici/bitiş testleri, Story ve video testlerinin silinmesi, görüntü içindeki metin için
+   `allowFontScaling` istisnası) Levent onaylı (26 Kas). Görseller `9c7/paylas-sonra.jpg`, tam boy PNG `9c7/paylas-kart.png`.

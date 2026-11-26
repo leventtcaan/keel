@@ -4,7 +4,7 @@
  * server states; no body weight, calorie, body fat or estimated max is ever read here (U4, V3, B10), no blame (U7), and
  * the weekly call is not a sticker (ADR-076 #1). Drawing them is Sticker.tsx; handing them on is shareImage.ts.
  */
-import { formatNumber } from '@/copy/format';
+import { formatDate, formatNumber } from '@/copy/format';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { dayName, exerciseName, shortDate } from '@/train/program';
@@ -17,13 +17,15 @@ type Schemas = components['schemas'];
 
 export type StickerKind = 'workout' | 'pr' | 'streak' | 'progress';
 export type WeekCell = Schemas['ConsistencyWeek']['state'];
-/** A number and what it counts; `accent` marks the one the sticker leads with. */
-export type Stat = { value: string; label: string; accent?: boolean };
-export type Sticker = { kind: StickerKind; kicker: string; title: string; stats: Stat[]; lines: string[]; weeks: WeekCell[] };
+/** A number and what it counts. */
+export type Stat = { value: string; label: string };
+/** The workout's record (or its baseline) as a line of its own under the numbers: the move as the app names it, and the set. */
+export type Mark = { kind: 'record' | 'baseline'; label: string; text: string };
+export type Sticker = { kind: StickerKind; kicker: string; title: string; stats: Stat[]; mark?: Mark; lines: string[]; weeks: WeekCell[] };
 
 export type StickerFacts = {
   /** The workout's summary (the server's) and the program day it was done on; the program names the day. */
-  workout: { summary: Schemas['WorkoutSummary']; program: Schemas['Program'] | null; programDayId: string | null } | null;
+  workout: { summary: Schemas['WorkoutSummary']; program: Schemas['Program'] | null; programDayId: string | null; endedAt?: string } | null;
   consistency: Schemas['Consistency'] | null;
   progress: Schemas['TrainingProgress'] | null;
   /** The catalog's moves and the user's own, by id. */
@@ -39,6 +41,9 @@ export function stickersFor(facts: StickerFacts, units: UnitSystem): Sticker[] {
 }
 
 const setText = (loadKg: number, reps: number, units: UnitSystem) => t('workoutEnd.set', { load: formatLoad(loadKg, units), reps });
+const NO_BREAK = '\u00a0';
+/** The day a workout ended, on this phone's calendar ("Oct 13"). */
+const endDay = (endedAt: string) => formatDate(new Date(endedAt), { month: 'short', day: 'numeric' });
 
 function workout({ workout: end, moves }: StickerFacts, units: UnitSystem): Sticker | null {
   if (end === null) return null;
@@ -46,15 +51,21 @@ function workout({ workout: end, moves }: StickerFacts, units: UnitSystem): Stic
   const day = end.program?.days.find((d) => d.id === end.programDayId);
   const stats: Stat[] = [];
   if (summary.minutes !== undefined) stats.push({ value: String(summary.minutes), label: plural('workoutEnd.minutes', summary.minutes) });
-  stats.push({ value: NUMBER(loadValue(summary.liftedKg, units)), label: t(units === 'METRIC' ? 'workoutEnd.liftedKg' : 'workoutEnd.liftedLb'), accent: true });
+  stats.push({ value: NUMBER(loadValue(summary.liftedKg, units)), label: t(units === 'METRIC' ? 'workoutEnd.liftedKg' : 'workoutEnd.liftedLb') });
   stats.push({ value: String(summary.workingSets), label: plural('workoutEnd.sets', summary.workingSets) });
-  const record = summary.marks.find((m) => m.kind === 'RECORD');
-  if (record !== undefined) {
-    stats.push({ value: setText(record.loadKg, record.reps, units), label: t('share.sticker.workout.recordLabel', { move: exerciseName(record.exerciseId, moves).toLowerCase() }) });
-  } else if (summary.marks.some((m) => m.kind === 'BASELINE')) {
-    stats.push({ value: t('share.sticker.workout.baselineValue'), label: t('share.sticker.workout.baselineLabel') });
-  }
-  return { kind: 'workout', kicker: t('workoutEnd.title'), title: day === undefined ? t('share.sticker.workout.plain') : dayName(day), stats, lines: [], weeks: [] };
+  // A record before a baseline; the move as the app names it, the set beside it (ADR-094 Ek 2 › Uygulama #10).
+  const marked = summary.marks.find((m) => m.kind === 'RECORD') ?? summary.marks.find((m) => m.kind === 'BASELINE');
+  const mark: Mark | undefined =
+    marked === undefined
+      ? undefined
+      : {
+          kind: marked.kind === 'RECORD' ? 'record' : 'baseline',
+          label: t(marked.kind === 'RECORD' ? 'workoutEnd.recordKicker' : 'workoutEnd.baseline'),
+          // The set held together with no-break spaces: a line that wraps breaks in the move's name, never in "28 kg × 6".
+          text: t('share.sticker.mark', { move: exerciseName(marked.exerciseId, moves), set: setText(marked.loadKg, marked.reps, units).replace(/ /g, NO_BREAK) }),
+        };
+  const kicker = end.endedAt === undefined ? t('workoutEnd.title') : t('share.sticker.workout.kicker', { date: endDay(end.endedAt) });
+  return { kind: 'workout', kicker, title: day === undefined ? t('share.sticker.workout.plain') : dayName(day), stats, mark, lines: [], weeks: [] };
 }
 
 function personalRecord({ workout: end, progress: trained, moves }: StickerFacts, units: UnitSystem): Sticker | null {
@@ -65,7 +76,7 @@ function personalRecord({ workout: end, progress: trained, moves }: StickerFacts
     if (baseline === undefined) return null;
     return { kind: 'pr', kicker: exerciseName(baseline.exerciseId, moves), title: t('workoutEnd.baseline'), stats: [], lines: [t('workoutEnd.baselineBody')], weeks: [] };
   }
-  const stats: Stat[] = [{ value: setText(record.loadKg, record.reps, units), label: t('share.sticker.pr.best'), accent: true }];
+  const stats: Stat[] = [{ value: setText(record.loadKg, record.reps, units), label: t('share.sticker.pr.best') }];
   const lift = trained?.lifts.find((l) => l.exerciseId === record.exerciseId);
   if (lift !== undefined && gain(lift) > 0) {
     stats.push({ value: t('share.sticker.pr.change', { load: formatLoad(gain(lift), units) }), label: t('share.sticker.pr.since', { date: shortDate(lift.baseline.day) }) });

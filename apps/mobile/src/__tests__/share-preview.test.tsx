@@ -4,7 +4,6 @@
 import { render } from '@testing-library/react-native';
 import { PixelRatio, StyleSheet } from 'react-native';
 
-import { layout } from '@/share/layout';
 import { shareParams } from '@/share/params';
 import { Preview } from '@/share/Preview';
 import type { Sticker } from '@/share/stickers';
@@ -20,7 +19,7 @@ const views = (node: Node | null, out: Node[] = []): Node[] => {
 };
 const style = (node: Node) => StyleSheet.flatten(node.props.style) as Record<string, any>;
 
-async function shown(backdrop?: { kind: 'dark' }) {
+async function shown(backdrop: { kind: 'dark' } = { kind: 'dark' }) {
   const { toJSON } = await render(<Preview sticker={STICKER} backdrop={backdrop} width={240} imageRef={{ current: null }} />);
   const [frame, image] = views(toJSON() as Node);
   return { frame: style(frame), image: style(image) };
@@ -38,14 +37,5 @@ test('the image is drawn at the size whose pixels are the width in share.json, a
 
   expect(image.width).toBeCloseTo(drawn, 5);
   expect(image.transform).toEqual([{ scale: 240 / drawn }]);
-  expect(image.top).toBe(0); // a backdrop fills the frame
-});
-
-test('with no backdrop the sticker alone sits low in the frame, as in a Story, inside it', async () => {
-  const { frame, image } = await shown();
-  const height = (image.height as number) * (240 / (shareParams.storyWidth / PixelRatio.get()));
-
-  expect(image.height).toBeCloseTo(((shareParams.storyWidth / PixelRatio.get()) * layout(STICKER).height) / shareParams.storyWidth, 5);
-  expect(image.top).toBeGreaterThan(frame.height / 2);
-  expect(image.top + height).toBeLessThan(frame.height);
+  expect(image).toMatchObject({ top: 0, transformOrigin: 'top left' }); // a backdrop fills the frame
 });

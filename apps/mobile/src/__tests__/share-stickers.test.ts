@@ -1,7 +1,7 @@
 // constitution-audit (tools/anayasa-denetimi.sh)
 /**
  * The four stickers' words (K-975, ADR-076 #2): what each says, from the server's numbers as they are. Workout: the
- * session's day, minutes, kilos lifted, sets and the record (or the baseline). PR: the move, the real best set, the kilos
+ * session's day and date, minutes, kilos lifted, sets, and the record (or the baseline) as its own line. PR: the move, the real best set, the kilos
  * gained since its baseline. Streak: weeks on track and the grid. Progress: weeks in and the lifts that gained the most.
  * Never a body weight, a calorie, a body fat or an estimated max (U4, V3, B10), never blame (U7); every text is held to
  * the forbidden phrases, and the stickers to the share list.
@@ -16,7 +16,8 @@ import type { Move } from '@/train/trainData';
 import type { WorkoutEnd } from '@/train/workoutEnd';
 
 type Schemas = components['schemas'];
-type Ready = Extract<WorkoutEnd, { kind: 'ready' }>;
+// The end screen's facts, and when the workout ended (the share screen reads it with the summary).
+type Ready = Extract<WorkoutEnd, { kind: 'ready' }> & { endedAt?: string };
 
 const move = (id: string, name?: string): Move =>
   ({ id, nameKey: `exercises.${id}.name`, name, kind: 'COMPOUND', muscles: [], alternatives: [], load: 'EXTERNAL', equipment: 'BARBELL', unilateral: false, setupFields: [] }) as Move;
@@ -37,6 +38,7 @@ const END: Ready = {
   },
   program: { days: [{ id: 'day-a', nameKey: 'programDays.full_body_a.name', exercises: [] }] } as unknown as Schemas['Program'],
   programDayId: 'day-a',
+  endedAt: '2026-10-13T08:52:00Z',
   week: { done: 3, planned: 3 },
   // An Apple Watch's number is in the end screen's facts: it must never reach a sticker.
   kcal: 310,
@@ -76,42 +78,58 @@ const CONSISTENCY: Schemas['Consistency'] = {
 
 const FULL: StickerFacts = { workout: END, consistency: CONSISTENCY, progress: PROGRESS, moves: MOVES };
 const kind = (stickers: Sticker[], k: Sticker['kind']) => stickers.find((s) => s.kind === k);
-const words = (s: Sticker) => [s.kicker, s.title, ...s.stats.flatMap((x) => [x.value, x.label]), ...s.lines];
+const words = (s: Sticker) => [s.kicker, s.title, ...s.stats.flatMap((x) => [x.value, x.label]), ...(s.mark ? [s.mark.label, s.mark.text] : []), ...s.lines];
 
 test('with everything known: the four stickers, in the order the user picks from', () => {
   expect(stickersFor(FULL, 'METRIC').map((s) => s.kind)).toEqual(['workout', 'pr', 'streak', 'progress']);
 });
 
-test("Workout: the session's day, its minutes, kilos lifted, sets and the record's real set", () => {
+// ADR-094 Ek 2 › Uygulama #10 (the paper card, Levent): the three numbers in one row, the record a line of its own under
+// them, the move named as the app names it (never "incline dumbbell press PR"), the date beside "Workout complete".
+test("Workout: the session's day and date, its minutes, kilos lifted and sets, and the record's real set on a line of its own", () => {
   const workout = kind(stickersFor(FULL, 'METRIC'), 'workout')!;
-  expect(workout.kicker).toBe(t('workoutEnd.title'));
+  expect(workout.kicker).toBe(t('share.sticker.workout.kicker', { date: 'Oct 13' }));
   expect(workout.title).toBe(t('programDays.full_body_a.name'));
   expect(workout.stats).toEqual([
     { value: '52', label: t('workoutEnd.minutes.other') },
-    { value: '4,280', label: t('workoutEnd.liftedKg'), accent: true },
+    { value: '4,280', label: t('workoutEnd.liftedKg') },
     { value: '14', label: t('workoutEnd.sets.other') },
-    { value: '100 kg × 8', label: t('share.sticker.workout.recordLabel', { move: t('exercises.squat.name').toLowerCase() }) },
   ]);
+  expect(workout.mark).toEqual({ kind: 'record', label: t('workoutEnd.recordKicker'), text: t('share.sticker.mark', { move: t('exercises.squat.name'), set: '100\u00a0kg\u00a0×\u00a08' }) });
+  // The set is held together (no-break spaces): a line that wraps breaks in the move's name, never in "100 kg × 8".
+  expect(workout.mark!.text).toBe('Squat · 100\u00a0kg\u00a0×\u00a08');
+});
+
+test('Workout with no end time known: the kicker without a date', () => {
+  const undated: Ready = { ...END, endedAt: undefined };
+  expect(kind(stickersFor({ ...FULL, workout: undated }, 'METRIC'), 'workout')!.kicker).toBe(t('workoutEnd.title'));
 });
 
 test('Workout in pounds: the load and the record in the unit they chose', () => {
   const workout = kind(stickersFor(FULL, 'IMPERIAL'), 'workout')!;
-  expect(workout.stats[1]).toMatchObject({ value: '9,435', label: t('workoutEnd.liftedLb') });
-  expect(workout.stats[3].value).toBe('220 lb × 8');
+  expect(workout.stats[1]).toEqual({ value: '9,435', label: t('workoutEnd.liftedLb') });
+  expect(workout.mark!.text).toBe(t('share.sticker.mark', { move: t('exercises.squat.name'), set: '220\u00a0lb\u00a0×\u00a08' }));
 });
 
-test('Workout of a first session: the baseline in the record is not a record; one minute and one set read in the singular', () => {
+test('Workout of a first session: the baseline set is its line, not a record; one minute and one set read in the singular', () => {
   const first: Ready = { ...END, summary: { ...END.summary, minutes: 1, workingSets: 1, marks: [{ exerciseId: 'squat', kind: 'BASELINE', loadKg: 60, reps: 8 }] } };
   const workout = kind(stickersFor({ ...FULL, workout: first }, 'METRIC'), 'workout')!;
   expect(workout.stats[0]).toEqual({ value: '1', label: t('workoutEnd.minutes.one') });
   expect(workout.stats[2]).toEqual({ value: '1', label: t('workoutEnd.sets.one') });
-  expect(workout.stats[3]).toEqual({ value: t('share.sticker.workout.baselineValue'), label: t('share.sticker.workout.baselineLabel') });
+  expect(workout.mark).toEqual({ kind: 'baseline', label: t('workoutEnd.baseline'), text: t('share.sticker.mark', { move: t('exercises.squat.name'), set: '60\u00a0kg\u00a0×\u00a08' }) });
 });
 
-test('Workout without a length (a session closed by itself) leaves the minutes out; without a record, the fourth cell too', () => {
+test('Workout without a length (a session closed by itself) leaves the minutes out; without a record, no line under the numbers', () => {
   const bare: Ready = { ...END, summary: { ...END.summary, minutes: undefined, marks: [] } };
   const workout = kind(stickersFor({ ...FULL, workout: bare }, 'METRIC'), 'workout')!;
   expect(workout.stats.map((s) => s.label)).toEqual([t('workoutEnd.liftedKg'), t('workoutEnd.sets.other')]);
+  expect(workout.mark).toBeUndefined();
+});
+
+test('no sticker names a move in lower case or says "PR" in its words (the chip may)', () => {
+  const texts = stickersFor(FULL, 'METRIC').flatMap(words);
+  expect(texts.filter((text) => /\bPR\b/.test(text))).toEqual([]);
+  expect(texts.filter((text) => text.includes(t('exercises.squat.name').toLowerCase()))).toEqual([]);
 });
 
 test("Workout of a day the program does not hold (a workout of the user's own): the plain word", () => {
@@ -124,7 +142,7 @@ test('PR: the move, the real best set, the kilos gained since its baseline and w
   expect(pr.kicker).toBe(t('share.sticker.pr.kicker'));
   expect(pr.title).toBe(t('exercises.squat.name'));
   expect(pr.stats).toEqual([
-    { value: '100 kg × 8', label: t('share.sticker.pr.best'), accent: true },
+    { value: '100 kg × 8', label: t('share.sticker.pr.best') },
     { value: '+20 kg', label: t('share.sticker.pr.since', { date: 'Jul 13' }) },
   ]);
 });
