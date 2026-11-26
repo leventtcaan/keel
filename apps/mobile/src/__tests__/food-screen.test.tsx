@@ -187,6 +187,32 @@ test('the AI is off on this surface (ADR-069 #3, K-909): no coach bar, no meal f
   expect(screen.queryByRole('button', { name: t('food.recipes') })).toBeNull();
 });
 
+// ADR-092 Ek 2 #1 (K-1237): the coach beside what the user looks at, on the food screen of today: one line under what is left, the
+// same as This week's. Its ready questions are the coach's own (Ek 2 #4); none here.
+describe("the coach's line (K-1237)", () => {
+  const line = () => screen.queryByRole('button', { name: t('coach.input') });
+
+  test("today: one line under what is left, opening the coach with its box ready; no ready questions here", async () => {
+    await show();
+    expect(line()).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: t('today.chips.why') })).toBeNull();
+    await act(async () => fireEvent.press(line()!));
+    expect(jest.mocked(router.push)).toHaveBeenCalledWith({ pathname: '/coach', params: { write: '1' } });
+  });
+
+  test('a day before today: no line (the coach speaks of today)', async () => {
+    await show();
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('food.day.before') })));
+    expect(line()).toBeNull();
+  });
+
+  test('without the health data consent: no line (nothing of the day to ask about)', async () => {
+    mockAnswers = { '/v1/days/{day}/budget': refused(403, 'CONSENT_REQUIRED'), '/v1/targets': refused(403, 'CONSENT_REQUIRED') };
+    await show();
+    expect(line()).toBeNull();
+  });
+});
+
 test('without the health data consent there is nothing to log: one line and the way to Settings', async () => {
   mockAnswers = { '/v1/days/{day}/budget': refused(403, 'CONSENT_REQUIRED'), '/v1/targets': refused(403, 'CONSENT_REQUIRED') };
   await show();

@@ -7,7 +7,8 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
 /**
- * The coach under the week's call (ADR-092 Ek 2 #1): one line, in the words of the coach's own box, that opens the coach about
+ * The coach beside what the user looks at (ADR-092 Ek 2 #1): under the week's call on This week, under what is left on today's food
+ * (K-1237). One line, in the words of the coach's own box, that opens the coach about
  * this call (or on no call, while it is locked), its box ready to write in. Not a tab, and no ready questions here: they read
  * unrelated on this screen, so the coach offers them itself (ADR-092 Ek 2 #1). A sand line with the control edge (WCAG 1.4.11); no fill, the screen's one
  * petrol fill stays today's Start.

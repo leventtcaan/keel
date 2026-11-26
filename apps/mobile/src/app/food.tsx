@@ -26,6 +26,7 @@ import { useFoodDay } from '@/food/useFoodDay';
 import { useSaved } from '@/saved/saved';
 import { useAppServices } from '@/services/ServicesProvider';
 import { newClientId } from '@/sync/send';
+import { CoachRow } from '@/today/CoachRow';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { load } from '@/today/today';
@@ -267,6 +268,9 @@ export default function FoodScreen() {
         <Button label={t('food.photoSuggestion.open')} variant="ghost" size="sm" onPress={() => router.push('/meal-photo')} />
       </View>
     ) : null;
+  // The coach beside what the user looks at (ADR-092 Ek 2 #1, K-1237): today's food, one line under what is left; not a past day (the coach
+  // speaks of today), not without the consent (nothing of the day to ask about).
+  const coach = data !== null && isToday && !needsConsent ? <CoachRow /> : null;
   const fits = fitRows.length === 0 ? null : <FoodList title={t('food.suggestions.title')} rows={fitRows} testID="fits" />;
   const dock =
     !needsConsent && data !== null ? (
@@ -284,6 +288,7 @@ export default function FoodScreen() {
         {retry}
         {consent}
         {totals}
+        {coach}
         {noBudget}
         {fits}
         {meals}
