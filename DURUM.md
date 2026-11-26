@@ -5,7 +5,7 @@ guncelleme: 2026-11-26
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (26 Kas — K-1239: form sorusu hareket kartında, PR otomatik birleşmede)
+## ▶ DEVAM NOKTASI (26 Kas — K-1239: form sorusu hareket kartında, #796, PR otomatik birleşmede)
 **K-1238 birleşti (#795).** **K-1239:** form sorusu antrenman sonundan hareketin sonuna taşındı: son setten sonra kartta "Formun nasıldı?
 Temiz / Temiz değil", Temiz seçili (Levent simülatörde 3 varyanttan kartı seçti, ADR-094 Ek 2 › Uygulama #5); bitişte yalnız yarım kalan
 hareket sorulur. Yan düzeltme: iki kutunun eksi/artı sırası birim küçülünce de aynı hizada. K1 (bir test) Levent onaylı.
