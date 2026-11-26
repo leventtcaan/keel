@@ -11,7 +11,7 @@ import type { KeyValue } from '@/units/preference';
 
 import { notificationParams as P } from './params';
 import type { MealRhythm } from './mealRhythm';
-import { type FirstCall, type Reminder, type ReminderKind, type Schedule, type WalkNudgeFacts, type WeighInFacts, planReminders } from './plan';
+import { type FirstCall, type Reminder, type ReminderKind, type Schedule, type WalkNudgeFacts, type WeighInFacts, dayOf, minutesOf, planReminders } from './plan';
 
 /** What iOS answers about notifications: allowed or not, and whether its sheet can still be shown. */
 export type NotificationPermission = { granted: boolean; canAskAgain: boolean };
@@ -62,6 +62,7 @@ const KEY = {
   mealsOff: 'reminders.mealsOff',
   walkNudge: 'reminders.walkNudge',
   walkOn: 'reminders.walkOn',
+  walkToday: 'reminders.walkToday',
 };
 const ON = 'on';
 
@@ -172,6 +173,16 @@ export async function createReminders({ kv, access, now, report, muted = async (
   }
   const quietly = (scheduling: Promise<void>) => scheduling.catch(reportError);
 
+  /** The coach's "Add to plan" (K-1236): the walk nudge for this one day, kept as the day it was asked for. */
+  const walkPlannedToday = async () => (await kv.getItemAsync(KEY.walkToday)) === dayOf(now());
+
+  /** The facts Today kept for the walk nudge, when they are today's; none while the kind is removed (the flag). */
+  async function todaysWalk(): Promise<WalkNudgeFacts | null> {
+    if (!walkNudge) return null;
+    const facts = walkNudgeOf(await kv.getItemAsync(KEY.walkNudge));
+    return facts !== null && facts.day === dayOf(now()) ? facts : null;
+  }
+
   /** What should be scheduled now, from what is kept — read inside the turn, so the plan is never older than a change. */
   async function reschedule(): Promise<void> {
     const silenced = settings.enabled && (await muted());
@@ -194,7 +205,7 @@ export async function createReminders({ kv, access, now, report, muted = async (
       weighInWeek: weighInsOf(await kv.getItemAsync(KEY.weighIns)),
       meals: rhythmOf(await kv.getItemAsync(KEY.meals)),
       mealsOff: settings.mealsOff === true,
-      walkNudge: walkNudge && settings.walkOn === true ? walkNudgeOf(await kv.getItemAsync(KEY.walkNudge)) : null,
+      walkNudge: walkNudge && (settings.walkOn === true || (await walkPlannedToday())) ? walkNudgeOf(await kv.getItemAsync(KEY.walkNudge)) : null,
     });
     await access.replace(settings.only === undefined ? plan : plan.filter((reminder) => reminder.kind === settings.only));
   }
@@ -361,6 +372,47 @@ export async function createReminders({ kv, access, now, report, muted = async (
         else await kv.setItemAsync(KEY.walkNudge, kept);
         await reschedule();
       }),
+
+    /**
+     * Today's walk as the coach offers it (K-1236, ADR-092 Ek 2 #2): the steps left and the line Today last read (the engine's target
+     * less Health's count, against the user's routes, K-1216), the nudge's time, and whether it is already planned for today (the
+     * user's switch, or "Add to plan" earlier today). None when Today has read nothing today.
+     */
+    walkToday: async (): Promise<(WalkNudgeFacts & { at: string; planned: boolean }) | null> => {
+      const facts = await todaysWalk();
+      if (facts === null) return null;
+      return { ...facts, at: P.walkNudgeTime, planned: settings.walkOn === true || (await walkPlannedToday()) };
+    },
+
+    /**
+     * "Add to plan" (K-1236): today's evening walk reminder alone, by date; the user's own switch, the plan, the targets and the call
+     * stay as they are. What it says back: `set`; `off` while the reminders are off or not allowed (the way is Settings); `late` once
+     * the time has passed; `none` when nothing is left to walk (too few steps, or nothing read today).
+     */
+    planWalkToday: async (): Promise<'set' | 'off' | 'late' | 'none'> => {
+      let said: 'set' | 'off' | 'late' | 'none' = 'none';
+      await inTurn(
+        async () => {
+          const facts = await todaysWalk();
+          if (facts === null || facts.remaining < P.walkNudgeMinRemaining) return;
+          const moment = now();
+          const at = new Date(moment.getFullYear(), moment.getMonth(), moment.getDate(), 0, minutesOf(P.walkNudgeTime));
+          if (moment >= at) {
+            said = 'late';
+            return;
+          }
+          if (!settings.enabled || !(await access.permission()).granted) {
+            said = 'off';
+            return;
+          }
+          await kv.setItemAsync(KEY.walkToday, facts.day);
+          await reschedule();
+          said = 'set';
+        },
+        { rethrow: true },
+      );
+      return said;
+    },
 
     /** The evening walk nudge on or off on its own (Settings > Reminders); off by default (ADR-090 Ek 10). */
     setWalk: (on: boolean): Promise<void> =>
