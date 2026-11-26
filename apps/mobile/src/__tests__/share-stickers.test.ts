@@ -95,8 +95,9 @@ test("Workout: the session's day and date, its minutes, kilos lifted and sets, a
     { value: '4,280', label: t('workoutEnd.liftedKg') },
     { value: '14', label: t('workoutEnd.sets.other') },
   ]);
-  expect(workout.mark).toEqual({ kind: 'record', label: t('workoutEnd.recordKicker'), text: t('share.sticker.mark', { move: t('exercises.squat.name'), set: '100 kg × 8' }) });
-  expect(workout.mark!.text).toBe('Squat · 100 kg × 8');
+  expect(workout.mark).toEqual({ kind: 'record', label: t('workoutEnd.recordKicker'), text: t('share.sticker.mark', { move: t('exercises.squat.name'), set: '100\u00a0kg\u00a0×\u00a08' }) });
+  // The set is held together (no-break spaces): a line that wraps breaks in the move's name, never in "100 kg × 8".
+  expect(workout.mark!.text).toBe('Squat · 100\u00a0kg\u00a0×\u00a08');
 });
 
 test('Workout with no end time known: the kicker without a date', () => {
@@ -107,7 +108,7 @@ test('Workout with no end time known: the kicker without a date', () => {
 test('Workout in pounds: the load and the record in the unit they chose', () => {
   const workout = kind(stickersFor(FULL, 'IMPERIAL'), 'workout')!;
   expect(workout.stats[1]).toEqual({ value: '9,435', label: t('workoutEnd.liftedLb') });
-  expect(workout.mark!.text).toBe(t('share.sticker.mark', { move: t('exercises.squat.name'), set: '220 lb × 8' }));
+  expect(workout.mark!.text).toBe(t('share.sticker.mark', { move: t('exercises.squat.name'), set: '220\u00a0lb\u00a0×\u00a08' }));
 });
 
 test('Workout of a first session: the baseline set is its line, not a record; one minute and one set read in the singular', () => {
@@ -115,7 +116,7 @@ test('Workout of a first session: the baseline set is its line, not a record; on
   const workout = kind(stickersFor({ ...FULL, workout: first }, 'METRIC'), 'workout')!;
   expect(workout.stats[0]).toEqual({ value: '1', label: t('workoutEnd.minutes.one') });
   expect(workout.stats[2]).toEqual({ value: '1', label: t('workoutEnd.sets.one') });
-  expect(workout.mark).toEqual({ kind: 'baseline', label: t('workoutEnd.baseline'), text: t('share.sticker.mark', { move: t('exercises.squat.name'), set: '60 kg × 8' }) });
+  expect(workout.mark).toEqual({ kind: 'baseline', label: t('workoutEnd.baseline'), text: t('share.sticker.mark', { move: t('exercises.squat.name'), set: '60\u00a0kg\u00a0×\u00a08' }) });
 });
 
 test('Workout without a length (a session closed by itself) leaves the minutes out; without a record, no line under the numbers', () => {

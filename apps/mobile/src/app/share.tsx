@@ -10,9 +10,9 @@ import { ProblemText } from '@/components/ProblemText';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
 import { type Source, discardBackground, pickBackground } from '@/share/background';
-import { Preview, drawnWidth } from '@/share/Preview';
+import { Preview } from '@/share/Preview';
 import { shareParams } from '@/share/params';
-import { type Backdrop, StickerImage } from '@/share/Sticker';
+import type { Backdrop } from '@/share/Sticker';
 import type { StoryBackground } from '@/share/story';
 import { type StickerFacts, stickersFor } from '@/share/stickers';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
@@ -56,7 +56,7 @@ export default function ShareScreen() {
   const [working, setWorking] = useState<'story' | 'sheet' | null>(null);
   const [problem, setProblem] = useState<Problem | null>(null);
   const image = useRef<View>(null);
-  // The sticker alone, drawn out of sight: what a Story takes as the sticker, whatever the preview sits on.
+  // The sticker alone, drawn under the preview (Preview.tsx): what a Story takes as the sticker, whatever the preview sits on.
   const bare = useRef<View>(null);
   // The picker's copy of the chosen photo, in this app's cache: removed when another ground replaces it and when the screen closes.
   const held = useRef<string | null>(null);
@@ -184,7 +184,7 @@ export default function ShareScreen() {
       facts !== null && <Text style={[styles.text, { color: color.textSecondary }]}>{t('share.nothing')}</Text>
     ) : (
       <View style={styles.part}>
-        <Preview sticker={sticker} backdrop={backdrop} width={Math.min(width - 2 * tokens.space.lg, PREVIEW_MAX)} imageRef={image} />
+        <Preview sticker={sticker} backdrop={backdrop} width={Math.min(width - 2 * tokens.space.lg, PREVIEW_MAX)} imageRef={image} bareRef={bare} />
         <Choices>
           {stickers.map((s) => (
             <Chip key={s.kind} touch label={t(`share.kind.${s.kind}`)} selected={s.kind === sticker.kind} onPress={() => setPicked(s.kind)} />
@@ -198,9 +198,6 @@ export default function ShareScreen() {
         <Button label={working === 'story' ? t('share.preparing') : t('share.story')} disabled={busy} busy={working === 'story'} onPress={toStory} />
         <Button label={working === 'sheet' ? t('share.preparing') : t('share.share')} variant="ghost" disabled={busy} busy={working === 'sheet'} onPress={share} />
         <Text style={[styles.small, { color: color.muted }]}>{t('share.note')}</Text>
-        <View style={styles.hidden} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          <StickerImage ref={bare} testID="bare" sticker={sticker} width={drawnWidth()} />
-        </View>
       </View>
     );
 
@@ -261,7 +258,6 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   body: { padding: tokens.space.lg, gap: tokens.space.lg },
   part: { gap: tokens.space.md, alignItems: 'stretch' },
-  hidden: { height: 0, overflow: 'hidden' },
   choices: { gap: tokens.space.sm },
   row: { flexDirection: 'row', gap: tokens.space.sm },
   cell: { flex: 1 },

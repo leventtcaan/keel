@@ -97,6 +97,17 @@ test('a long number shrinks to its column; the record line shrinks to the card',
   expect(drawn.length).toBeLessThanOrEqual(2);
 });
 
+// Seen on the simulator (K-1244): at full size the record's line broke before "× 6". A line that fits a step smaller
+// stays one line; two lines only for a long name, and the set is never broken (stickers.ts joins it with no-break spaces).
+test("the record's line keeps to one line when a step smaller fits it; a long name may take two", () => {
+  const short = layout({ ...WORKOUT, mark: { kind: 'record', label: 'New best', text: 'Incline dumbbell press · 28\u00a0kg\u00a0×\u00a06' } });
+  expect(lines('Incline dumbbell press · 28\u00a0kg\u00a0×\u00a06', short.mark, 'display', INNER - 2 * CARD.highlight)).toHaveLength(1);
+  expect(short.mark).toBeGreaterThanOrEqual(Math.round(tokens.type.shareMark * 0.8));
+
+  const long = layout(LONG);
+  expect(long.mark).toBeGreaterThanOrEqual(Math.round(tokens.type.shareMark * 0.64));
+});
+
 test('the weeks: one cell each, side by side inside the card; a short history is a short row of larger cells', () => {
   const sizes = layout(STREAK);
   expect(sizes.cell * STREAK.weeks.length + CARD.cellGap * (STREAK.weeks.length - 1)).toBeLessThanOrEqual(INNER);

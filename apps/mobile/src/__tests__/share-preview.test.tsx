@@ -49,3 +49,16 @@ test('with no backdrop the card alone sits at the foot of the frame, above its m
   // Scaled from its foot, so its foot stays where it is put.
   expect(image.transformOrigin).toBe('bottom left');
 });
+
+// Seen on the simulator (K-1244): drawn in a box of no height the sticker alone measured 0 tall and could not be captured.
+// It is drawn in the frame, at its own size, under the image shown (which covers it), so it has a size and is in the window.
+test('the sticker alone, for a Story, is drawn first in the frame at its own size, at the foot, under the image shown', async () => {
+  const { toJSON } = await render(<Preview sticker={STICKER} backdrop={{ kind: 'dark' }} width={240} imageRef={{ current: null }} bareRef={{ current: null }} />);
+  const [under, over] = (toJSON() as Node).children as Node[];
+  const drawn = shareParams.storyWidth / PixelRatio.get();
+
+  expect(style(under)).toMatchObject({ position: 'absolute', width: drawn, transformOrigin: 'bottom left' });
+  expect(style(under).bottom).toBeCloseTo((FRAME.foot * 240) / shareParams.storyWidth, 5);
+  expect(style(under).height).toBeUndefined();
+  expect(style(over)).toMatchObject({ top: 0, transformOrigin: 'top left' });
+});

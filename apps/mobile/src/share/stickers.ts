@@ -41,6 +41,7 @@ export function stickersFor(facts: StickerFacts, units: UnitSystem): Sticker[] {
 }
 
 const setText = (loadKg: number, reps: number, units: UnitSystem) => t('workoutEnd.set', { load: formatLoad(loadKg, units), reps });
+const NO_BREAK = '\u00a0';
 /** The day a workout ended, on this phone's calendar ("Oct 13"). */
 const endDay = (endedAt: string) => formatDate(new Date(endedAt), { month: 'short', day: 'numeric' });
 
@@ -60,7 +61,8 @@ function workout({ workout: end, moves }: StickerFacts, units: UnitSystem): Stic
       : {
           kind: marked.kind === 'RECORD' ? 'record' : 'baseline',
           label: t(marked.kind === 'RECORD' ? 'workoutEnd.recordKicker' : 'workoutEnd.baseline'),
-          text: t('share.sticker.mark', { move: exerciseName(marked.exerciseId, moves), set: setText(marked.loadKg, marked.reps, units) }),
+          // The set held together with no-break spaces: a line that wraps breaks in the move's name, never in "28 kg × 6".
+          text: t('share.sticker.mark', { move: exerciseName(marked.exerciseId, moves), set: setText(marked.loadKg, marked.reps, units).replace(/ /g, NO_BREAK) }),
         };
   const kicker = end.endedAt === undefined ? t('workoutEnd.title') : t('share.sticker.workout.kicker', { date: endDay(end.endedAt) });
   return { kind: 'workout', kicker, title: day === undefined ? t('share.sticker.workout.plain') : dayName(day), stats, mark, lines: [], weeks: [] };

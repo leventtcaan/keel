@@ -37,20 +37,31 @@ export function wrap(text: string, max: number): string[] {
   return pieces;
 }
 
-/** The largest size from `base` down at which every text fits `width` in at most `maxLines` lines; else the smallest. */
-function fit(texts: string[], width: number, base: number, font: keyof typeof EM, maxLines: number): number {
-  let size = base;
-  for (const step of STEPS) {
-    size = Math.round(base * step);
-    const chars = Math.floor(width / (size * EM[font]));
-    const fits = texts.every((text) => {
-      const lines = wrap(text, chars);
-      return lines.length <= maxLines && lines.every((line) => line.length <= chars);
-    });
-    if (fits) break;
-  }
-  return size;
+/** How far the record's line may shrink to stay one line before it takes two. */
+const ONE_LINE_FLOOR = 0.8;
+
+/** Whether every text fits `width` in at most `maxLines` lines at `size`. */
+function fits(texts: string[], width: number, size: number, font: keyof typeof EM, maxLines: number): boolean {
+  const chars = Math.floor(width / (size * EM[font]));
+  return texts.every((text) => {
+    const lines = wrap(text, chars);
+    return lines.length <= maxLines && lines.every((line) => line.length <= chars);
+  });
 }
+
+/** The largest size from `base` down (not below `floor` of it) at which every text fits; null when none does. */
+function largest(texts: string[], width: number, base: number, font: keyof typeof EM, maxLines: number, floor = 0): number | null {
+  const sizes = STEPS.filter((step) => step >= floor).map((step) => Math.round(base * step));
+  return sizes.find((size) => fits(texts, width, size, font, maxLines)) ?? null;
+}
+
+/** The largest size at which every text fits in at most `maxLines` lines; else the smallest step. */
+const fit = (texts: string[], width: number, base: number, font: keyof typeof EM, maxLines: number) =>
+  largest(texts, width, base, font, maxLines) ?? Math.round(base * STEPS[STEPS.length - 1]);
+
+/** The record's line: one line if a step or so smaller allows it (seen on the simulator, K-1244), else two lines. */
+const fitMark = (text: string, width: number) =>
+  largest([text], width, tokens.type.shareMark, 'display', 1, ONE_LINE_FLOOR) ?? fit([text], width, tokens.type.shareMark, 'display', 2);
 
 export type Sizes = {
   /** The serif title's size. */
@@ -81,7 +92,7 @@ export function layout(sticker: Sticker): Sizes {
     ),
     column,
     gap: CARD.statGap,
-    mark: sticker.mark === undefined ? tokens.type.shareMark : fit([sticker.mark.text], INNER - 2 * CARD.highlight, tokens.type.shareMark, 'display', 2),
+    mark: sticker.mark === undefined ? tokens.type.shareMark : fitMark(sticker.mark.text, INNER - 2 * CARD.highlight),
     cell: weeks === 0 ? 0 : Math.min(CARD.cellMax, Math.floor((INNER - CARD.cellGap * (weeks - 1)) / weeks)),
   };
 }
