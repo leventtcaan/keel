@@ -86,6 +86,12 @@ düğmesiyle giriliyor; sağlayıcı üretimde kapalı. Agent üç soru sordu; L
    - Görünüş: ADR-094 §3, mercan zemin (`tintSuggest`) + petrol düğme. İkisi de sağlayıcı kapalıyken çalışır.
 3. **Çift soru:** koçta "Bu karar neden?" (günün çipi, telefonda ve ücretsiz cevaplanır) kalır; "Bu kararı açıkla" başlangıç sorusu yalnız sağlayıcı açık ve
    kişi ücretliyken görünür.
+4. **Koçta hazır sorular (Levent, 27 Kas; simülatörde görülerek).** Eylem kartları büyük petrol düğmeleriyle kalır. Alttaki hazır soru hapları açılışta görünmez;
+   yalnız yazı kutusu kullanılırken (yazı yokken) çıkar, en çok 3 tane, tek sıra. Hap bir **soru** olmalı ve o gün kişiye uymalı: komut ("Egzersiz değiştir") ve
+   özellik adı ("Öğünü yazıyla kaydet") hap değildir. Model kapalıyken (bugün herkes): "Bu karar neden?" (karar varken), "Neden her sabah tartılmalı?"
+   (bugün tartılmadıysa), "Bu nasıl işliyor?". Model açık + ücretli: "Bu karar neden?", "Bu hafta ne yapmalıyım?", "Ya şunu yaparsam…". "Bu kararı açıkla"
+   kalkar (#3'ün ikinci yarısının yerine geçer): aynı soruyu "Bu karar neden?" sorar. Yazıyla öğün koça bağlantıyla girer (`/coach?chip=coach.meal.chip`; yemek
+   ekranındaki girişi K-1237). Koç başlığı sheet kenarından ayrılır, içerik altına kayınca ince çizgi çıkar.
 Etkilenen: `src/app/(tabs)/index.tsx` (ana ekran, kelime bütçesi 74 → 77), `src/app/coach.tsx`, `src/coach/conversation.ts`
 (STARTERS), antrenman bitişi ve yemek ekranı, `data/copy/*` (yeni metin en+tr). Doğrulama: koç satırı ve hapların testleri; eylem kartının motorun önerisi
 yokken görünmediği ve "Plana ekle"nin planı değil yalnız hatırlatmayı değiştirdiği testler; başlangıç sorusunun sağlayıcı kapalı / ücretsizken görünmediği test.

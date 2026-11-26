@@ -4,13 +4,15 @@
  * engine's own words marked as such; the plan never changed from here (applying a call is Today's).
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
-import { AccessibilityInfo } from 'react-native';
+import { AccessibilityInfo, StyleSheet } from 'react-native';
 
 import CoachScreen from '@/app/coach';
+import { MEAL_CHIP } from '@/coach/conversation';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
 import { handedFrom, takeMeal } from '@/food/handoff';
 import { ThemeProvider } from '@/theme/theme';
+import { palettes } from '@/theme/tokens';
 
 type Schemas = components['schemas'];
 type Answer = { data?: unknown; error?: { code: string; message: string }; response: Response };
@@ -106,18 +108,37 @@ async function press(name: string) {
   await act(async () => fireEvent.press(screen.getByRole('button', { name })));
 }
 
+/** The ready questions show only while the box is in use (Levent, 27 Nov): a tap in the box first. */
+async function inBox() {
+  await act(async () => fireEvent(screen.getByLabelText(t('coach.input')), 'focus'));
+}
+
 async function send(text: string) {
   await act(async () => fireEvent.changeText(screen.getByLabelText(t('coach.input')), text));
   await press(t('coach.send'));
 }
 
-test("on opening: three chips — the day's own first (the call, today's session), then a meal in words", async () => {
+// K1 (Levent, 27 Nov): the coach opens calm; its ready questions are questions the day gives a reason for, shown in the box's use.
+test('on opening no ready questions; in the box, the questions the day gives (no weigh-in today), no command, no feature', async () => {
+  mockAnswers = { ...mockAnswers, '/v1/consents/ai-offer': refused(404, 'NOT_FOUND') };
   await show();
-  for (const chip of ['today.chips.why', 'today.chips.swap', 'coach.meal.chip']) {
-    expect(screen.getByRole('button', { name: t(chip) })).toBeOnTheScreen();
-  }
-  expect(screen.queryByRole('button', { name: t('today.chips.weighIn') })).toBeNull();
+  expect(screen.queryByRole('button', { name: t('today.chips.why') })).toBeNull();
+  await inBox();
+  const names = screen.getAllByRole('button').map((b) => b.props.accessibilityLabel as string);
+  expect(names.slice(0, 3)).toEqual([t('today.chips.why'), t('today.chips.weighIn'), t('today.chips.start')]);
+  for (const gone of ['today.chips.swap', 'coach.meal.chip', 'coach.starter.why']) expect(screen.queryByRole('button', { name: t(gone) })).toBeNull();
   expect(mockGET).toHaveBeenCalledWith('/v1/weigh-ins', { params: { query: { from: '2026-09-29', to: '2026-09-29' } } });
+});
+
+test('the questions step aside while words are written, and when the box is left', async () => {
+  await show();
+  await inBox();
+  expect(screen.getByRole('button', { name: t('today.chips.why') })).toBeOnTheScreen();
+  await act(async () => fireEvent.changeText(screen.getByLabelText(t('coach.input')), 'Why'));
+  expect(screen.queryByRole('button', { name: t('today.chips.why') })).toBeNull();
+  await act(async () => fireEvent.changeText(screen.getByLabelText(t('coach.input')), ''));
+  await act(async () => fireEvent(screen.getByLabelText(t('coach.input')), 'blur'));
+  expect(screen.queryByRole('button', { name: t('today.chips.why') })).toBeNull();
 });
 
 test("the week's note opens the conversation: the call, its leading rule, the one focus with the call's own number (K-517)", async () => {
@@ -137,6 +158,7 @@ test('no call yet: no note', async () => {
 test("'Why this call?' is answered on the phone: every rule's sentence, the call stands, its card — nothing sent", async () => {
   await show();
   const [rules, cards] = [count(t('decision.rule.not_toward_goal')), count(t('decision.adjust_calories.not_toward_goal.title'))];
+  await inBox();
   await press(t('today.chips.why'));
   expect(count(t('decision.rule.not_toward_goal'))).toBe(rules + 1);
   expect(screen.getByText(t('decision.rule.cut_step'))).toBeOnTheScreen();
@@ -147,6 +169,7 @@ test("'Why this call?' is answered on the phone: every rule's sentence, the call
 
 test("the call's card leads to why — and never applies the call: the plan changes from Today", async () => {
   await show();
+  await inBox();
   await press(t('today.chips.why'));
   await press(t('today.call.data'));
   expect(mockPush).toHaveBeenCalledWith({ pathname: '/why', params: { id: 'd1' } });
@@ -176,9 +199,9 @@ test("'Why this call?' from Today while the call can't be read: says so — neve
   expect(screen.queryByText(t('coach.answer.no_call'))).toBeNull();
 });
 
-test('the swap leads on to today\'s session', async () => {
+test('the swap leads on to today\'s session (opened by a link: it is no longer a ready question)', async () => {
+  mockParams = { chip: 'today.chips.swap' };
   await show();
-  await press(t('today.chips.swap'));
   expect(screen.getByText(t('coach.chip.swap'))).toBeOnTheScreen();
   await press(t('coach.chip.openWorkout'));
   expect(mockPush).toHaveBeenCalledWith({ pathname: '/workout', params: { day: 'a' } });
@@ -291,24 +314,24 @@ test('a retry pressed while another message waits sends nothing more', async () 
 });
 
 describe('a meal in words (K-504 draft)', () => {
-  // No call this week: no note above, so nothing but the draft is on screen to read (its 'no calorie' too).
+  // No call this week: no note above, so nothing but the draft is on screen to read (its 'no calorie' too). A link opens it (the
+  // meal in words is a feature, not a ready question: Levent, 27 Nov).
   beforeEach(() => {
     mockAnswers['/v1/decisions/current'] = refused(404, 'NOT_FOUND');
+    mockParams = { chip: MEAL_CHIP };
   });
 
   const EGGS = { food: 'eggs', amount: { quantity: 2, unit: 'piece' }, confident: true, candidates: [{ id: 'fdc-1', name: 'Egg, whole' }, { id: 'fdc-2', name: 'Egg white' }] };
   const TOAST = { food: 'toast', amount: { quantity: 1, unit: 'slice' }, confident: false, candidates: [{ id: 'fdc-7', name: 'Bread, white, toasted' }, { id: 'fdc-8', name: 'Bread, whole wheat, toasted' }] };
 
   async function tellMeal(text: string) {
-    await press(t('coach.meal.chip'));
     await act(async () => fireEvent.changeText(screen.getByLabelText(t('coach.meal.input')), text));
     await press(t('coach.send'));
   }
 
-  test('the chip asks for the meal; the words go to the meal reader, not to the coach', async () => {
+  test('the link asks for the meal; the words go to the meal reader, not to the coach', async () => {
     mockParsed = ok({ mode: 'MODEL', items: [EGGS] });
     await show();
-    await press(t('coach.meal.chip'));
     expect(screen.getByText(t('coach.meal.prompt'))).toBeOnTheScreen();
     await act(async () => fireEvent.changeText(screen.getByLabelText(t('coach.meal.input')), 'two eggs'));
     await press(t('coach.send'));
@@ -379,13 +402,14 @@ describe('a meal in words (K-504 draft)', () => {
     expect(mockPush).toHaveBeenCalledWith('/meal');
   });
 
-  test("a retry above a draft keeps the draft's picks", async () => {
+  // K1 (27 Nov): the meal is reached once, by the link, so the failed message comes after the draft (the picks must still hold).
+  test("a retry beside a draft keeps the draft's picks", async () => {
     mockSent = 'offline';
     await show();
-    await send('Why?');
     mockParsed = ok({ mode: 'MODEL', items: [TOAST] });
     await tellMeal('toast');
     await press('Bread, whole wheat, toasted');
+    await send('Why?');
     mockSent = ok({ mode: 'MODEL', topic: 'WHY', rule: 'cut_step', call: CALL });
     await press(t('coach.retry'));
     expect(screen.getByRole('button', { name: 'Bread, whole wheat, toasted' })).toHaveProp('accessibilityState', expect.objectContaining({ selected: true }));
@@ -403,12 +427,17 @@ describe('a meal in words (K-504 draft)', () => {
     expect(mockPush).toHaveBeenCalledWith('/paywall');
   });
 
-  test('without the consents: the consent line; no answer: retry reads the meal again', async () => {
+  // K1 (27 Nov): one meal per opening (the link), so the two cases are two tests.
+  test('without the consents: the consent line', async () => {
     mockParsed = refused(403, 'CONSENT_REQUIRED');
     await show();
     await tellMeal('two eggs');
     expect(screen.getByText(t('coach.consent'))).toBeOnTheScreen();
+  });
+
+  test('no answer: retry reads the meal again', async () => {
     mockParsed = 'offline';
+    await show();
     await tellMeal('two eggs');
     mockParsed = ok({ mode: 'MODEL', items: [EGGS] });
     await press(t('coach.retry'));
@@ -451,6 +480,7 @@ test("VoiceOver hears a chip's answer, and the engine's mark on it (K-815)", asy
   mockSent = ok({ mode: 'DETERMINISTIC', copyKey: 'coach.answer.daily_limit', call: CALL });
   await show();
   announced.mockClear();
+  await inBox();
   await press(t('today.chips.why'));
   expect(announced).toHaveBeenCalledTimes(1);
   expect(announced.mock.calls[0][0]).toContain(t('decision.rule.cut_step'));
@@ -530,20 +560,22 @@ test.each([
 
 test('a chip\'s words are the app\'s, not the user\'s: nothing to remember', async () => {
   await show();
+  await inBox();
   await press(t('today.chips.why'));
   expect(screen.queryByRole('button', { name: t('coach.remember') })).toBeNull();
 });
 
-test('the three starter questions are the first suggestions', async () => {
+// K1 (Levent, 27 Nov): with the model on and paid for, the questions it answers; "Explain this call" is gone ("Why this call?" asks it).
+test('with the model on and paid for: why this call, this week, what if', async () => {
   await show();
+  await inBox();
   const names = screen.getAllByRole('button').map((b) => b.props.accessibilityLabel as string);
-  expect(names.slice(0, 3)).toEqual([t('coach.starter.why'), t('coach.starter.week'), t('coach.starter.whatif')]);
+  expect(names.slice(0, 3)).toEqual([t('today.chips.why'), t('coach.starter.week'), t('coach.starter.whatif')]);
+  expect(screen.queryByRole('button', { name: t('coach.starter.why') })).toBeNull();
 });
 
-// ADR-092 Ek 2 #3 (Levent, 26 Nov): two questions asked the same thing. "Why this call?" (the day's chip, answered on the phone
-// and free) always stays; "Explain this call" goes to the model, so it is offered only when the server has a provider and the
-// subscription pays for it. Unread is not open: nothing offers a paid question the server did not say is there.
-describe('"Explain this call" only with the model on and paid for', () => {
+// ADR-092 Ek 2 #3: the model's questions only when the server has a provider and the subscription pays for it; unread is not open.
+describe("the model's questions only with the model on and paid for", () => {
   const NO_PROVIDER = refused(404, 'NOT_FOUND');
   test.each([
     ['the server has no provider (its AI offer is 404)', { '/v1/consents/ai-offer': NO_PROVIDER }],
@@ -554,46 +586,42 @@ describe('"Explain this call" only with the model on and paid for', () => {
   ])('not offered when %s; "Why this call?" stays', async (_, answers) => {
     mockAnswers = { ...mockAnswers, ...answers };
     await show();
-    expect(screen.queryByRole('button', { name: t('coach.starter.why') })).toBeNull();
+    await inBox();
+    for (const key of ['coach.starter.week', 'coach.starter.whatif']) expect(screen.queryByRole('button', { name: t(key) })).toBeNull();
     expect(screen.getByRole('button', { name: t('today.chips.why') })).toBeOnTheScreen();
-    const names = screen.getAllByRole('button').map((b) => b.props.accessibilityLabel as string);
-    expect(names.slice(0, 2)).toEqual([t('coach.starter.week'), t('coach.starter.whatif')]);
   });
 
-  test('until both are answered no starter is shown: none jumps in front of another under a finger', async () => {
+  test('until both are answered no question is shown: none jumps in front of another under a finger', async () => {
     let answer: (value: Answer) => void = () => {};
     const held = new Promise<Answer>((resolve) => (answer = resolve));
     const real = mockGET.getMockImplementation()!;
     mockGET.mockImplementation(async (path: string, init?: unknown) => (path === '/v1/subscription' ? held : real(path, init)));
     try {
       await show();
-      expect(screen.queryByRole('button', { name: t('coach.starter.week') })).toBeNull();
-      expect(screen.getByRole('button', { name: t('today.chips.why') })).toBeOnTheScreen();
+      await inBox();
+      expect(screen.queryByRole('button', { name: t('today.chips.why') })).toBeNull();
       await act(async () => answer(ok(PAID)));
       const names = screen.getAllByRole('button').map((b) => b.props.accessibilityLabel as string);
-      expect(names.slice(0, 3)).toEqual([t('coach.starter.why'), t('coach.starter.week'), t('coach.starter.whatif')]);
+      expect(names.slice(0, 3)).toEqual([t('today.chips.why'), t('coach.starter.week'), t('coach.starter.whatif')]);
     } finally {
       mockGET.mockImplementation(real);
     }
   });
 
-  test('both read: offered first, beside "Why this call?"', async () => {
+  test('both are read from the server', async () => {
     await show();
-    expect(screen.getByRole('button', { name: t('coach.starter.why') })).toBeOnTheScreen();
-    expect(screen.getByRole('button', { name: t('today.chips.why') })).toBeOnTheScreen();
     expect(mockGET).toHaveBeenCalledWith('/v1/consents/ai-offer');
     expect(mockGET).toHaveBeenCalledWith('/v1/subscription');
   });
 });
 
-test.each([
-  ['coach.starter.why'],
-  ['coach.starter.week'],
-])('the starter %s sends its question about the call the coach was opened on', async (key) => {
+test('the starter coach.starter.week sends its question about the call the coach was opened on', async () => {
+  const key = 'coach.starter.week';
   mockParams = { decisionId: 'd1' };
   mockSent = ok({ mode: 'MODEL', topic: 'WHY', rule: 'not_toward_goal', reply: WORDS, call: CALL });
   await show();
   expect(mockPOST).not.toHaveBeenCalled();
+  await inBox();
   await press(t(key));
   expect(mockPOST).toHaveBeenCalledTimes(1);
   expect(mockPOST).toHaveBeenCalledWith('/v1/coach/messages', { body: { text: t(key), decisionId: 'd1' } });
@@ -602,6 +630,7 @@ test.each([
 
 test('"What if…" puts the start of the user\'s own question in the box and sends nothing', async () => {
   await show();
+  await inBox();
   await press(t('coach.starter.whatif'));
   expect(screen.getByLabelText(t('coach.input')).props.value).toBe(t('coach.starter.whatifStart'));
   expect(mockPOST).not.toHaveBeenCalled();
@@ -618,6 +647,18 @@ test('without a subscription the free questions end at the paywall: a note and t
 
 // ADR-092 Ek 2 #1: This week's line looks like the coach's box, so the coach it opens is ready to be written in; opened any other way
 // (a chip, the call's button) the keyboard stays down and the conversation is in view.
+// ADR-092 Ek 2 #4: the title is set apart by a quiet line once the conversation is scrolled under it, and only then.
+test('the head gets its line once the conversation is scrolled under it', async () => {
+  await show();
+  const head = () => StyleSheet.flatten(screen.getByTestId('coach-head').props.style);
+  const list = screen.getByTestId('coach-list');
+  expect(head().borderBottomColor).toBe('transparent');
+  await act(async () => fireEvent.scroll(list, { nativeEvent: { contentOffset: { y: 5 } } }));
+  expect(head().borderBottomColor).toBe(palettes.light.line);
+  await act(async () => fireEvent.scroll(list, { nativeEvent: { contentOffset: { y: 0 } } }));
+  expect(head().borderBottomColor).toBe('transparent');
+});
+
 test('opened from This week\'s line, the box has the keyboard; otherwise not', async () => {
   mockParams = { decisionId: 'd1', write: '1' };
   await show();

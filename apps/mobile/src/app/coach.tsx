@@ -8,7 +8,7 @@ import { Button } from '@/components/Button';
 import { Icon } from '@/components/Icon';
 import { announce } from '@/components/ProblemText';
 import { ScreenTitle } from '@/components/ScreenTitle';
-import { MEAL_CHIP, ask, chipAnswer, coachChips, isChip, loadHistory, modelOn, readMeal, remember, starters, type Remembered, type Said } from '@/coach/conversation';
+import { MEAL_CHIP, ask, chipAnswer, isChip, loadHistory, modelOn, readMeal, readyQuestions, remember, type Remembered, type Said } from '@/coach/conversation';
 import { t } from '@/copy';
 import { MealCard, WalkCard, type WalkToday } from '@/coach/ActionCards';
 import { weeklyNote } from '@/coach/note';
@@ -81,6 +81,16 @@ export default function CoachScreen() {
     };
   }, [api]);
 
+  const [mode, setMode] = useState<Mode>('ask');
+  const [focused, setFocused] = useState(false);
+
+  // A meal in words (K-504): the box sends the next message to the meal reader. Reached by a link (`chip=coach.meal.chip`), no
+  // longer by a ready question: it is a feature, not a question (ADR-092 Ek 2 #4).
+  const startMeal = useCallback(() => {
+    setMode('meal');
+    setMessages((said) => [...said, { from: 'user', text: t(MEAL_CHIP) }, { from: 'coach', said: { lines: [{ key: 'coach.meal.prompt' }] }, standard: false }]);
+  }, [setMessages]);
+
   // The day's parts the chips are made of: the call, the program, today's weigh-ins.
   useEffect(() => {
     let live = true;
@@ -111,6 +121,11 @@ export default function CoachScreen() {
         if (fits !== undefined) start.push({ from: 'coach', action: 'meal', suggestion: fits });
         if (start.length > 0) setMessages((said) => [...start, ...said]);
       }
+      // Opened for a meal in words: after the opening, the box asks for the meal.
+      if (live && chip === MEAL_CHIP && !opened.current) {
+        opened.current = true;
+        startMeal();
+      }
       if (live)
         setToday({
           decision,
@@ -124,7 +139,7 @@ export default function CoachScreen() {
     return () => {
       live = false;
     };
-  }, [api, reminders, day, setMessages]);
+  }, [api, reminders, day, chip, setMessages, startMeal]);
 
   const answerChip = useCallback(
     (key: string) => {
@@ -138,20 +153,15 @@ export default function CoachScreen() {
     [today, day, setMessages],
   );
 
-  // A chip Today opened the coach with is answered once the day is read — only one of the day's own.
+
+  // A chip a link opened the coach with is answered once the day is read — only one of the day's own (the meal in words: below).
   useEffect(() => {
     if (today === null || opened.current || chip === undefined || !isChip(chip)) return;
     opened.current = true;
     answerChip(chip);
   }, [today, chip, answerChip]);
 
-  const [mode, setMode] = useState<Mode>('ask');
-
-  const onChip = (key: string) => {
-    if (key !== MEAL_CHIP) return answerChip(key);
-    setMode('meal');
-    setMessages((said) => [...said, { from: 'user', text: t(key) }, { from: 'coach', said: { lines: [{ key: 'coach.meal.prompt' }] }, standard: false }]);
-  };
+  const onChip = (key: string) => (key === MEAL_CHIP ? startMeal() : answerChip(key));
 
   // Shown at once; one message at a time (a ref: two presses in one frame see the same state). A retry sends the same words
   // again, to where they went first, in place of its problem, without saying them twice.
@@ -175,8 +185,8 @@ export default function CoachScreen() {
     announce(spokenOf(answer));
   };
 
-  // The starter questions (ADR-092 #7), the first suggestions: the first two are sent as they are, about the call the coach was opened on;
-  // "What if…" puts the start of the user's own question in the box.
+  // The model's starter questions (ADR-092 #7): "This week" is sent as it is, about the call the coach was opened on; "What if…" puts
+  // the start of the user's own question in the box.
   const onStarter = (key: string) => {
     if (key === 'coach.starter.whatif') setText(t('coach.starter.whatifStart'));
     else void send(t(key), 'ask');
@@ -207,6 +217,7 @@ export default function CoachScreen() {
   const display = useWindowDimensions();
   const [sheet, setSheet] = useState<number | null>(null);
   const [inset, setInset] = useState(0);
+  const [scrolled, setScrolled] = useState(false);
   const top = sheet === null ? 0 : Math.max(0, display.height - sheet + inset);
   return (
     <SafeAreaView
@@ -216,11 +227,15 @@ export default function CoachScreen() {
       onLayout={(event) => setSheet(event.nativeEvent.layout.height)}>
       <View testID="coach-frame" style={styles.safe} onLayout={(event) => setInset(event.nativeEvent.layout.y)}>
         <KeyboardAvoidingView style={styles.safe} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={top}>
-          <View style={styles.head}>
+          {/* Once the conversation is scrolled under it, a quiet line sets the title apart (no hard cut of a bubble under it). */}
+          <View testID="coach-head" style={[styles.head, { borderBottomColor: scrolled ? color.line : 'transparent' }]}>
             <ScreenTitle>{t('screens.coach.title')}</ScreenTitle>
           </View>
           <ScrollView
+            testID="coach-list"
             ref={scroll}
+            scrollEventThrottle={16}
+            onScroll={(event) => setScrolled(event.nativeEvent.contentOffset.y > 0)}
             contentContainerStyle={styles.body}
             keyboardShouldPersistTaps="handled"
             onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: !reduceMotion })}
@@ -239,11 +254,15 @@ export default function CoachScreen() {
           </ScrollView>
           <Bar
             // While words are being written the ready questions step aside: the messages keep the room above the keyboard.
+            // The ready questions only while the box is in use, and not once words are being written (ADR-092 Ek 2 #4: the coach opens
+            // calm, the engine's cards first): one row, the day's own questions, a starter only with the model on and paid for.
             ready={
-              text !== ''
+              !focused || text !== '' || today === null || explains === null
                 ? []
-                : [...(explains === null ? [] : [{ keys: starters(explains), onChip: onStarter }]), ...(today === null ? [] : [{ keys: coachChips(today, day), onChip }])]
+                : [{ keys: readyQuestions(today, day, explains), onChip: (key: string) => (key.startsWith('coach.starter.') ? onStarter(key) : onChip(key)) }]
             }
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
             label={t(mode === 'meal' ? 'coach.meal.input' : 'coach.input')}
             focus={write === '1'}
             text={text}
@@ -452,7 +471,7 @@ const BOX_LINES = 3;
  * and the petrol send, the screen's one fill. The field's name and the dictation hint (the keyboard's own microphone) are read
  * by VoiceOver; the name is also the words inside the empty box.
  */
-function Bar({ ready, label, focus, text, onChangeText, canSend, onSend }: { ready: Ready[]; label: string; focus: boolean; text: string; onChangeText: (text: string) => void; canSend: boolean; onSend: () => void }) {
+function Bar({ ready, label, focus, onFocus, onBlur, text, onChangeText, canSend, onSend }: { ready: Ready[]; label: string; focus: boolean; onFocus: () => void; onBlur: () => void; text: string; onChangeText: (text: string) => void; canSend: boolean; onSend: () => void }) {
   const { color } = useTheme();
   // The box grows to three lines at the reader's text size (Dynamic Type), then scrolls.
   const { fontScale } = useWindowDimensions();
@@ -467,6 +486,8 @@ function Bar({ ready, label, focus, text, onChangeText, canSend, onSend }: { rea
           accessibilityHint={t('coach.dictate')}
           placeholder={label}
           autoFocus={focus}
+          onFocus={onFocus}
+          onBlur={onBlur}
           placeholderTextColor={color.muted}
           value={text}
           onChangeText={onChangeText}
@@ -492,7 +513,9 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   head: {
     paddingHorizontal: tokens.space.lg,
-    paddingTop: tokens.space.sm,
+    paddingTop: tokens.space.lg,
+    paddingBottom: tokens.space.xs,
+    borderBottomWidth: tokens.border.hairline,
     gap: tokens.space.sm,
   },
   body: { padding: tokens.space.lg, gap: tokens.space.md },
