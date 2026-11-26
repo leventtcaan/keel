@@ -6185,7 +6185,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-1234]
     why: "ADR-092 Ek 2 #2 (Levent, 26 Kas): koç işi kişinin üzerinden alır, ama eylemi motor hazırlar (U1); taslak y5-e3'teki 'Akşam yürüyüşü · Plana ekle'"
     acceptance:
