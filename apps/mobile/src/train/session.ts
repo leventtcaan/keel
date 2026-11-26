@@ -126,6 +126,22 @@ export function stepReps(reps: string, direction: 1 | -1): number | null {
  * The sets planned before any is done, the set under way, or all done; a move outside the plan has no count to say. A
  * one-sided move's two rows (a side each) are one set.
  */
+/**
+ * The sets of the session not done yet (9c-7, End): a set is one set whatever its sides (a one-sided move's left and right are one), not
+ * done while a side of it is neither done nor skipped; a move skipped has none left.
+ */
+export function setsLeft(plans: readonly (ExercisePlan | null | undefined)[]): number {
+  return plans.reduce((count, plan) => {
+    if (plan == null || plan.skippedMove === true) return count;
+    const sides = plan.rows.some((row) => row.side !== 'BOTH') ? 2 : 1;
+    let left = 0;
+    for (let at = 0; at < plan.rows.length; at += sides) {
+      if (plan.rows.slice(at, at + sides).some((row) => row.done === null && row.skipped !== true)) left += 1;
+    }
+    return count + left;
+  }, 0);
+}
+
 export function exerciseStatus(plan: ExercisePlan): string {
   // Skipped with nothing done of it; with a set done, the move is done.
   if (plan.skippedMove === true && plan.rows.every((row) => row.done === null)) return t('workout.statusSkipped');

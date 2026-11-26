@@ -214,3 +214,9 @@ süresi bir yere bağlanır ya da kalkar (bu son ikisi ayrıca görselle sorulur
    `9c7/antrenman-sekmesi-sonra.jpg`): Bu hafta kartıyla aynı dil; dokununca hepsi açılır, "Bu hafta" listesi ilk bakışta görünür. Hepsinde ortak:
    gün adı serif, karar şeridi zaman zemininde (accentSoft seçimin zemini), "Son …" satırı gri, yük sağda rakam, değiştir oku soluk ve zeminsiz
    (dokunma alanı tam). Tam liste ve değiştir düğmesinin kalkması seçilmedi.
+8. **Bitirme penceresi: seyrekler küçük yazı** (K-1242, Levent; `9c7/bitirme-penceresi.jpg`, metinler `9c7/bitirme-metin.jpg`, sonra
+   `9c7/bitirme-sonra.jpg`): serif soru, altında "Yapılmamış N set var" (tek taraflı setin iki yanı bir set); tek petrol "Bitir ve kaydet",
+   ikinci düğme "Antrenmana dön"; altta küçük yazı "Sonra devam et" ve kırmızı "Antrenmanı sil" (bir kez daha sorar: "Antrenman silinsin mi?
+   Sil / Vazgeç"). Bu pencereden bitirince ayrı "N hareket kaldı" uyarısı yok (Daha fazla ve alt düğmedeki Bitir'de kalır); not adımı sonra
+   kalır. Levent eski metinleri anlamadı: "Kalanını sonra doldur" → "Sonra devam et", "Bu antrenmanı at" → "Antrenmanı sil"; İngilizce
+   "Carry on later", "Delete this workout". Not yalnız hareket geçmişinde görünür, hiçbir kural okumaz (Levent'e söylendi).

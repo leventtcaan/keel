@@ -296,3 +296,4 @@
 - ek (26 Kas, K-1239): form sorusu için şu an + 3 varyant simülatörde çekildi (form-sorusu.jpg); Levent "hareket kartında"yı seçti → FormCheck son setten sonra kartta, Temiz seçili; bitişte yalnız yarım kalan hareket; kutu hizası düzeltildi; K1 (1 test) onaylı
 - ek (26 Kas, K-1240): #798: gerçek dinlenme için şu an + 3 varyant simülatörde (dinlenme-suresi.jpg); Levent "set satırında"yı seçti → SetRows'ta soluk süre + sesli etiket; tek taraflı "1 · sağ" düzeltmesi
 - ek (26 Kas, K-1241): #800: Antrenman sekmesi şu an + 3 varyant simülatörde (antrenman-sekmesi.jpg); Levent "ilk 3 + ve N daha"yı seçti → TodayCard katlanır, serif gün adı, gri Son, sade değiştir oku, karar tintTime
+- ek (26 Kas, K-1242): #802: bitirme penceresi şu an (3 adım) + 3 varyant simülatörde; Levent notun mantığa bağlı olup olmadığını sordu (yalnız geçmişte görünür) → 3. varyant + açık metinler (Sonra devam et, Antrenmanı sil, Yapılmamış N set var)

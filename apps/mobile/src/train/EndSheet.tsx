@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { ProblemText, announce } from '@/components/ProblemText';
 import { Button } from '@/components/Button';
-import { t } from '@/copy';
+import { t, tp } from '@/copy';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
@@ -18,36 +18,29 @@ type Props = {
   problem: string | null;
   problemOccurrence?: unknown;
   busy: boolean;
+  /** The sets of the session not done yet (setsLeft): said under the question, so finishing asks nothing more about them. */
+  setsLeft?: number;
 };
 
 /**
- * End (ADR-075 #5, prototype `#endwo`): finish and save (sets not logged stay unlogged); fill in the rest later (the
- * session stays open and counts for its week, K-961, closed by the server after unfinished_session_close_hours); or
- * discard it, asked once more (nothing is saved; the page offers Undo after).
+ * End (ADR-075 #5, prototype `#endwo`; ADR-094 Ek 2 › Uygulama #8): the question in the serif and the sets not done yet under it; Finish and
+ * save is the one filled button (sets not logged stay unlogged), Back to the workout beside it as the other way; the rare ways out are small
+ * words under them: carry on later (the session stays open and counts for its week, K-961, closed by the server after
+ * unfinished_session_close_hours), and delete it, asked once more (nothing is saved; the page offers Undo after).
  */
-export function EndSheet({ onFinish, onLater, onDiscard, onBack, cardioKept = false, problem, problemOccurrence, busy }: Props) {
+export function EndSheet({ onFinish, onLater, onDiscard, onBack, cardioKept = false, problem, problemOccurrence, busy, setsLeft = 0 }: Props) {
   const { color } = useTheme();
   // What discarding leaves: nothing, but the cardio logged in the session (its own record).
   const discardNote = t(cardioKept ? 'workout.ending.discardNoteCardio' : 'workout.ending.discardNote');
   const [confirming, setConfirming] = useState(false);
-  const choice = (title: string, note: string, onPress: () => void) => (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`${title}. ${note}`}
-      onPress={onPress}
-      disabled={busy}
-      style={({ pressed }) => [styles.choice, { backgroundColor: color.surface }, (pressed || busy) && styles.dim]}>
-      {/* A short row: the note is said to VoiceOver (the label), not written under it (Evre 7 C: no prose in a menu). */}
-      <Text style={[styles.title, { color: color.text }]}>{title}</Text>
-    </Pressable>
-  );
+
   const ask = () => {
     setConfirming(true);
     // The button under the finger is replaced by the question: said, not only shown (K-815).
     announce(t('workout.ending.discardAsk'));
   };
   // The answers are full touch targets (44 pt, ADR-070 #6): the medium button, not the small.
-  const discard = confirming ? (
+  const confirm = !confirming ? null : (
     <View style={[styles.choice, { backgroundColor: color.surface }]}>
       <Text style={[styles.title, { color: color.text }]}>{t('workout.ending.discardAsk')}</Text>
       <Text style={[styles.note, { color: color.textSecondary }]}>{discardNote}</Text>
@@ -56,9 +49,23 @@ export function EndSheet({ onFinish, onLater, onDiscard, onBack, cardioKept = fa
         <Button label={t('workout.ending.keep')} variant="secondary" onPress={() => setConfirming(false)} disabled={busy} />
       </View>
     </View>
-  ) : (
-    // Starts the one destructive action of the menu: the warning colour as words, no fill (ADR-070 Ek 2 #1); the note under it.
-    <View style={[styles.choice, { backgroundColor: color.surface }]}>
+  );
+  // The rare ways out, small words on one line (9c-7): carry on later as the accent's words, delete as the warning's (ADR-070 Ek 2 #1).
+  // What each does is said to VoiceOver (the label), not written (Evre 7 C: no prose in a menu); the cardio kept is said where it matters.
+  // Built outside the JSX (the raw-text guard reads what is inside it).
+  const later =
+    onLater === null ? null : (
+      <Button
+        label={t('workout.ending.later')}
+        accessibilityLabel={`${t('workout.ending.later')}. ${t('workout.ending.laterNote')}`}
+        variant="text"
+        onPress={onLater}
+        disabled={busy}
+      />
+    );
+  const rare = confirming ? null : (
+    <View style={styles.rare}>
+      {later}
       <Button
         label={t('workout.ending.discard')}
         accessibilityLabel={`${t('workout.ending.discard')}. ${discardNote}`}
@@ -67,29 +74,34 @@ export function EndSheet({ onFinish, onLater, onDiscard, onBack, cardioKept = fa
         onPress={ask}
         disabled={busy}
       />
-      {/* Said only where it matters: the cardio logged in the session stays (it is its own record); "Nothing is saved" goes without saying. */}
-      {cardioKept ? <Text style={[styles.note, { color: color.textSecondary }]}>{discardNote}</Text> : null}
     </View>
   );
+  const left = setsLeft <= 0 ? null : <Text style={[styles.note, { color: color.textSecondary }]}>{tp('workout.ending.setsLeft', setsLeft)}</Text>;
   return (
     <View testID="end-sheet" style={styles.sheet}>
       <Text style={[styles.heading, { color: color.text }]}>{t('workout.ending.title')}</Text>
-      {choice(t('workout.ending.finish'), t('workout.ending.finishNote'), onFinish)}
-      {onLater === null ? null : choice(t('workout.ending.later'), t('workout.ending.laterNote'), onLater)}
-      {discard}
+      {left}
+      <Button label={t('workout.ending.finish')} accessibilityLabel={`${t('workout.ending.finish')}. ${t('workout.ending.finishNote')}`} onPress={onFinish} disabled={busy} />
       {problem === null ? null : (
         <ProblemText style={[styles.note, { color: color.text }]} occurrence={problemOccurrence}>
           {problem}
         </ProblemText>
       )}
       <Button label={t('workout.ending.back')} variant="secondary" onPress={onBack} disabled={busy} />
+      {confirm}
+      {rare}
+      {/* Said only where it matters: the cardio logged in the session stays (it is its own record); "Nothing is saved" goes without saying. */}
+      {cardioKept && !confirming ? <Text style={[styles.note, styles.center, { color: color.textSecondary }]}>{discardNote}</Text> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   sheet: { gap: tokens.space.sm },
-  heading: { fontSize: tokens.type.heading, fontWeight: tokens.weight.bold },
+  // The question in the serif (ADR-094 §2), as every sheet's title.
+  heading: { ...tokens.face.display, fontSize: tokens.type.heading },
+  center: { textAlign: 'center' },
+  rare: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: tokens.space.md },
   choice: { gap: tokens.space.xs, padding: tokens.space.md, borderRadius: tokens.radius.card, minHeight: tokens.size.touch },
   title: { fontSize: tokens.type.body, fontWeight: tokens.weight.bold },
   note: { fontSize: tokens.type.bodySmall },

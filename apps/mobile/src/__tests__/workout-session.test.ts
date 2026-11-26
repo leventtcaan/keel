@@ -6,7 +6,7 @@ import type { components } from '@/api/schema';
 import { onboardingParams } from '@/onboarding/params';
 import { workoutParams } from '@/train/params';
 import { t } from '@/copy';
-import { buildSet, clockText, exerciseStatus, parseEntry, restText, rirChoice, setNumberText, setText, stepLoad, stepReps } from '@/train/session';
+import { buildSet, clockText, exerciseStatus, parseEntry, restText, rirChoice, setNumberText, setsLeft, setText, stepLoad, stepReps } from '@/train/session';
 import type { ExercisePlan } from '@/train/workout';
 
 type Schemas = components['schemas'];
@@ -200,4 +200,13 @@ test('the reps stepper: one at a time, from one to the most a set takes', () => 
   expect(stepReps(String(workoutParams.maxReps), 1)).toBeNull();
   expect(stepReps('999', -1)).toBe(workoutParams.maxReps); // over the most: down to it
   expect(stepReps('999', 1)).toBeNull();
+});
+
+test('the sets not done: a one-sided set is one set with both its sides; skipped is done with; a move skipped has none left', () => {
+  const set = { loadKg: 20, reps: 8 } as never;
+  const row = (side: 'BOTH' | 'LEFT' | 'RIGHT', done: boolean, skipped = false) => ({ side, suggested: { loadKg: null, reps: null }, last: null, done: done ? set : null, ...(skipped ? { skipped } : {}) });
+  const bench = { exerciseId: 'b', current: 1, rows: [row('BOTH', true), row('BOTH', false), row('BOTH', false, true)] };
+  const oneArm = { exerciseId: 'r', current: 1, rows: [row('LEFT', true), row('RIGHT', false), row('LEFT', false), row('RIGHT', false)] };
+  const skipped = { exerciseId: 's', current: null, skippedMove: true as const, rows: [row('BOTH', false)] };
+  expect(setsLeft([bench, oneArm, skipped, null])).toBe(3);
 });

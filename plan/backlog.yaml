@@ -6281,6 +6281,23 @@ tasks:
     tests: ["train-screen.test.tsx", "npm run check"]
     refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md", "prototip/gorsel-yon/9c7/antrenman-sekmesi.jpg"]
 
+  - id: K-1242
+    title: "Bitirme penceresi: tek ana düğme, kalan setler yazılı, seyrek çıkışlar küçük yazı, açık metinler (9c-7e)"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: S
+    status: done
+    depends_on: [K-1241]
+    why: "9c-7: bitirme üç adım (4 eşit kutu, 'N hareket kaldı' uyarısı, not + Bitir), '9 hareket kaldı' yarım hareketi sayıyordu, metinler anlaşılmıyordu; Levent 3. varyantı ve yeni metinleri seçti (ADR-094 Ek 2 › Uygulama #8)"
+    acceptance:
+      - "Serif soru, 'N sets not done yet' (tek taraflı setin iki yanı bir set), tek dolu düğme Bitir ve kaydet, ikinci Antrenmana dön, küçük yazı Sonra devam et ve Antrenmanı sil"
+      - "Bu pencereden bitirince 'N hareket kaldı' uyarısı yok; Daha fazla ve alt düğmeden bitirince kalır"
+      - "Metinler en+tr: Carry on later / Sonra devam et, Delete this workout / Antrenmanı sil, Delete? Delete / Keep it · Silinsin mi? Sil / Vazgeç"
+      - "Simülatörde Levent'e gösterilir"
+    tests: ["workout-screen.test.tsx", "workout-session.test.ts", "npm run check"]
+    refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md", "prototip/gorsel-yon/9c7/bitirme-penceresi.jpg"]
+
   - id: K-1227
     title: "Yerler arası yürüme rotası haritada (noktalı), adım karşılığı"
     milestone: M12
