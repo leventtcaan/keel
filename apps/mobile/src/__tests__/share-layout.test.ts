@@ -4,6 +4,8 @@
  * number in its column, the record's line in at most two lines); the weeks are a row of cells inside the card. All in
  * image units (share.json: 1080 wide); the drawing (Sticker.tsx) lays them out with flexbox and scales them to points.
  */
+import en from '../../../../data/copy/en.json';
+import tr from '../../../../data/copy/tr.json';
 import { CARD, EM, FRAME, INNER, layout, wrap } from '@/share/layout';
 import { shareParams } from '@/share/params';
 import type { Sticker } from '@/share/stickers';
@@ -101,4 +103,27 @@ test('the weeks: one cell each, side by side inside the card; a short history is
   const few = layout({ ...STREAK, weeks: ['ON_TRACK', 'SPARE'] });
   expect(few.cell).toBeGreaterThanOrEqual(sizes.cell);
   expect(few.cell).toBeLessThanOrEqual(CARD.cellMax);
+});
+
+// The longest words a card can get, from the copy itself: every move's name in both languages, as a PR card's title and
+// as the record's line with a long set; and the longest total in pounds. Each fits at the size given (no third line,
+// nothing past the card), so the card never grows past what its foot-anchored Story frame shows.
+describe('the longest real words fit', () => {
+  const names = [en, tr].flatMap((copy) => Object.values((copy as { exercises: Record<string, { name: string }> }).exercises).map((e) => e.name));
+  const SET = '1,000.5 lb × 12';
+
+  test.each(names.map((name) => [name]))('%s', (name) => {
+    const sizes = layout({ ...WORKOUT, title: name, mark: { kind: 'record', label: 'New best', text: `${name} · ${SET}` }, stats: [{ value: '12,345', label: 'lb lifted' }, { value: '120', label: 'minutes' }, { value: '40', label: 'sets' }] });
+    for (const [text, size, room] of [
+      [name, sizes.title, INNER],
+      [`${name} · ${SET}`, sizes.mark, INNER - 2 * CARD.highlight],
+    ] as const) {
+      const drawn = lines(text, size, 'display', room);
+      expect(drawn.length).toBeLessThanOrEqual(2);
+      expect(drawn.filter((line) => width(line, size, 'display') > room)).toEqual([]);
+    }
+    expect(['12,345', '120', '40'].filter((v) => width(v, sizes.value, 'number') > sizes.column)).toEqual([]);
+  });
+
+  test('there are names to try', () => expect(names.length).toBeGreaterThan(50));
 });

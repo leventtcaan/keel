@@ -3,7 +3,7 @@
  * sits in a Story-sized image, its padding, and the size each text is set at so it stays inside the card. The drawing
  * (Sticker.tsx) lays the card out with flexbox and scales these to points; pure, so the tests can read it. A text steps
  * down in size before it runs past the card; a character's width is an estimate (a share of the size), not a measurement,
- * so it errs wide, and the drawing still lets a text shrink to fit as a last guard.
+ * so it errs wide. The drawing sets each text at the size given here (the card is an image: no shrinking by the phone).
  */
 import { tokens } from '@/theme/tokens';
 
