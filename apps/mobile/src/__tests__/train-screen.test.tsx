@@ -389,6 +389,52 @@ test("today's card is the session the server put on today, by its day's name: ea
   expect(screen.queryByText('Squat')).toBeNull();
 });
 
+// 9c-7 (ADR-094 Ek 2 › Uygulama #7, the founder chose "the first 3 and N more"): today's card speaks as This week's does.
+describe("today's card in the Sıcak defter dress (K-1241)", () => {
+  const MOVES = ['bench_press', 'dip', 'squat', 'row', 'curl'];
+  const many = () => {
+    mockData = {
+      ...withProgram({
+        days: [
+          {
+            ...PROGRAM.days[0],
+            exercises: MOVES.map((exerciseId) => ({ exerciseId, baseSets: 3, sets: 3, reps: { min: 6, max: 10 }, targetRir: 1, nextLoadKg: 20, nextReps: 8 })),
+          },
+          PROGRAM.days[1],
+        ],
+        week: [{ programDayId: 'a', date: '2026-09-29', exerciseIds: MOVES }, THURSDAY],
+      }),
+      exercises: {
+        state: 'ready',
+        value: MOVES.map((id) => ({ id, load: 'EXTERNAL', unilateral: false, equipment: 'BARBELL' })) as Schemas['Exercise'][],
+      },
+    };
+  };
+  const card = () => within(screen.getByTestId('today-card'));
+  const shownMoves = () => card().queryAllByRole('button', { name: new RegExp(`${t('history.openLabel', { exercise: '' })}$`) }).length;
+
+  test('the first three moves, then "and 2 more", which opens the rest', async () => {
+    many();
+    await show();
+    await screen.findByTestId('today-card');
+    expect(shownMoves()).toBe(workoutParams.headlineMovesShown);
+    const more = card().getByRole('button', { name: t('thisWeek.today.more', { count: 2 }) });
+    await fireEvent.press(more);
+    expect(shownMoves()).toBe(MOVES.length);
+    expect(card().queryByRole('button', { name: t('thisWeek.today.more', { count: 2 }) })).toBeNull();
+  });
+
+  test('the session\'s name is in the serif; the swap is a quiet arrow on the page, no raised ground', async () => {
+    const bench = { ...PROGRAM.days[0].exercises[0], swapOptions: ['dip'] };
+    mockData = withProgram({ days: [{ ...PROGRAM.days[0], exercises: [bench, PROGRAM.days[0].exercises[1]] }, PROGRAM.days[1]] });
+    await show();
+    const title = await card().findByRole('header');
+    expect(title).toHaveStyle({ fontFamily: tokens.face.display.fontFamily });
+    const swap = card().getAllByRole('button', { name: /^Swap / })[0];
+    expect(StyleSheet.flatten(swap.props.style).backgroundColor).toBeUndefined();
+  });
+});
+
 test('while loads are held, each load says so', async () => {
   mockData = withProgram({ loadHeldSince: '2026-09-21' });
   await show();

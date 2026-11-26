@@ -56,8 +56,9 @@ export function CallRow({ decision, onChanged }: { decision: Decision; onChanged
     }
   };
   const action = declined ? <Button label={t('train.call.use')} variant="ghost" size="sm" disabled={busy} onPress={() => void use()} /> : null;
+  // The week's call on the time ground (ADR-094 §1: accentSoft is a selection's ground now, not the call's).
   return (
-    <View testID="call-row" style={[styles.row, { backgroundColor: color.accentSoft }]}>
+    <View testID="call-row" style={[styles.row, { backgroundColor: color.tintTime }]}>
       <Text style={[styles.text, { color: color.text }]}>{declined ? t('train.call.notApplied') : t(`${decision.copyKey}.title`)}</Text>
       {action}
       {failed !== null && (

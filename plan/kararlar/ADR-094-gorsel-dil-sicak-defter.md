@@ -210,3 +210,7 @@ süresi bir yere bağlanır ya da kalkar (bu son ikisi ayrıca görselle sorulur
    önündeki dinlenme soluk yazar ("1:09 dinlenme") ve sesli etikette söylenir. Yalnız gösterilir, hiçbir kural okumaz; kayıt (K-1214) sürer.
    Dinlenme ekranında "Son dinlenmen" ve kaydı kaldırmak seçilmedi. Öğrenen aralık ayrı kural + kaynak ister (kural-ekle).
    Yan düzeltme: tek taraflı harekette görünen numara "1 · sağ" (önce "1Sağ" bitişikti), tek taraflı satırda sol sütun geniş.
+7. **Antrenman sekmesi: bugünün antrenmanı ilk 3 hareket + "ve N tane daha"** (K-1241, Levent; `9c7/antrenman-sekmesi.jpg`, sonra
+   `9c7/antrenman-sekmesi-sonra.jpg`): Bu hafta kartıyla aynı dil; dokununca hepsi açılır, "Bu hafta" listesi ilk bakışta görünür. Hepsinde ortak:
+   gün adı serif, karar şeridi zaman zemininde (accentSoft seçimin zemini), "Son …" satırı gri, yük sağda rakam, değiştir oku soluk ve zeminsiz
+   (dokunma alanı tam). Tam liste ve değiştir düğmesinin kalkması seçilmedi.

@@ -6264,6 +6264,23 @@ tasks:
     tests: ["workout-screen.test.tsx", "workout-session.test.ts", "npm run check"]
     refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md", "prototip/gorsel-yon/9c7/dinlenme-suresi.jpg"]
 
+  - id: K-1241
+    title: "Antrenman sekmesi: bugünün antrenmanı ilk 3 hareket + 've N daha', serif başlık, sade değiştir (9c-7d)"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: S
+    status: done
+    depends_on: [K-1240]
+    why: "9c-7 denetimi: başlık serif değil, 'Son → hedef' petrol, 9 kum değiştir düğmesi ağır, karar eski mavi zeminde; Levent simülatörde 3 varyanttan 'ilk 3 + ve N daha'yı seçti (ADR-094 Ek 2 › Uygulama #7)"
+    acceptance:
+      - "Bugünün kartı ilk headline_moves_shown hareketi gösterir, 'and N more' dokununca hepsini açar"
+      - "Gün adı serif; 'Son …' satırı gri; yük sağda; değiştir oku soluk, zeminsiz, tam dokunma alanı"
+      - "Karar şeridi zaman zemininde (tintTime)"
+      - "Simülatörde Levent'e gösterilir"
+    tests: ["train-screen.test.tsx", "npm run check"]
+    refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md", "prototip/gorsel-yon/9c7/antrenman-sekmesi.jpg"]
+
   - id: K-1227
     title: "Yerler arası yürüme rotası haritada (noktalı), adım karşılığı"
     milestone: M12
