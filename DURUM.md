@@ -5,7 +5,12 @@ guncelleme: 2026-11-26
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (26 Kas — K-1240: gerçek dinlenme süresi set satırında, #798, PR otomatik birleşmede)
+## ▶ DEVAM NOKTASI (26 Kas — K-1241: Antrenman sekmesi, #800, PR otomatik birleşmede)
+**K-1240 birleşti (#799).** **K-1241:** Antrenman sekmesinde bugünün antrenmanı ilk 3 hareket + "ve N tane daha" (Levent simülatörde 3 varyanttan
+seçti, ADR-094 Ek 2 › Uygulama #7); gün adı serif, karar zaman zemininde, "Son" gri, değiştir oku soluk ve zeminsiz.
+**Sıradaki (9c-7, aynı yöntem):** bitirme penceresi ("Bitir" iki kez soruluyor, kutular eşit), bitiş + paylaş kartı.
+
+## (önceki) ▶ DEVAM NOKTASI (26 Kas — K-1240: gerçek dinlenme süresi set satırında, #798, PR #799 birleşti)
 **K-1239 birleşti (#797).** **K-1240:** kaydedilen gerçek dinlenme artık biten setin satırında soluk yazıyor ("1:09 dinlenme"); Levent simülatörde
 3 varyanttan (set satırı / dinlenmede "Son dinlenmen" / kalksın) set satırını seçti (ADR-094 Ek 2 › Uygulama #6). Hiçbir kural okumuyor.
 Yan düzeltme: tek taraflı numara "1 · sağ" (önce "1Sağ"). **Sıradaki (9c-7, aynı yöntem):** antrenman sekmesi, bitirme penceresi, bitiş + paylaş kartı.

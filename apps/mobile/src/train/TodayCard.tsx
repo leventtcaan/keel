@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { type ReactNode, useCallback, useRef } from 'react';
+import { type ReactNode, useCallback, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { components } from '@/api/schema';
@@ -77,6 +77,8 @@ export function TodayCard(props: Props) {
 
 function Body({ program, today, date, kind, stale, finishedDay, movedAway, moves, units, underWay, canPick, checkInDay, onStart, openWorkoutId, onReload, onChange, notice }: Props) {
   const { color } = useTheme();
+  // The moves past the first ones, folded under "and N more" until tapped (ADR-094 Ek 2 › Uygulama #7, as This week's card).
+  const [allShown, setAllShown] = useState(false);
   // One sheet per tap: a second tap before the sheet is up must not open a second one (as Start, K-405 review).
   const opening = useRef(false);
   useFocusEffect(
@@ -143,6 +145,18 @@ function Body({ program, today, date, kind, stale, finishedDay, movedAway, moves
       </View>
     );
   }
+  const folded = shown.length - workoutParams.headlineMovesShown;
+  // Built outside the JSX (the raw-text guard reads what is inside it).
+  const more =
+    allShown || folded <= 0 ? null : (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t('thisWeek.today.more', { count: folded })}
+        onPress={() => setAllShown(true)}
+        style={({ pressed }) => [styles.more, pressed && styles.dim]}>
+        <Text style={[styles.text, { color: color.text }]}>{t('thisWeek.today.more', { count: folded })}</Text>
+      </Pressable>
+    );
   return (
     <View testID="today-card" style={[styles.card, { backgroundColor: color.background }]}>
       <View style={styles.head}>
@@ -160,7 +174,7 @@ function Body({ program, today, date, kind, stale, finishedDay, movedAway, moves
       {undo}
       {full}
       {notice}
-      {shown.map(({ planned, insteadOf }, at) => {
+      {shown.slice(0, allShown ? shown.length : workoutParams.headlineMovesShown).map(({ planned, insteadOf }, at) => {
         const name = exerciseName(planned.exerciseId, moves);
         // The swap names the program's move; a move swapped for today offers it back. None with nothing to swap to.
         const plannedId = insteadOf?.exerciseId ?? planned.exerciseId;
@@ -172,8 +186,9 @@ function Body({ program, today, date, kind, stale, finishedDay, movedAway, moves
             accessibilityLabel={t('swap.label', { move: name })}
             onPress={() => sheet({ pathname: '/swap', params: { day: session.day.id, move: plannedId } })}
             hitSlop={tokens.space.xs}
-            style={[styles.swap, { backgroundColor: color.raise }]}>
-            <SymbolView name="arrow.left.arrow.right" size={tokens.type.bodySmall} tintColor={color.text} />
+            style={styles.swap}>
+            {/* A quiet arrow on the page (9c-7): a full touch target, no raised ground, so nine moves are not nine buttons. */}
+            <SymbolView name="arrow.left.arrow.right" size={tokens.type.bodySmall} tintColor={color.muted} />
           </Pressable>
         ) : null;
         const move = moves.get(planned.exerciseId);
@@ -193,10 +208,10 @@ function Body({ program, today, date, kind, stale, finishedDay, movedAway, moves
               style={styles.name}>
               <Text style={[styles.text, styles.bold, { color: color.text }]}>{name}</Text>
               <Text style={[styles.small, { color: color.textSecondary }]}>{t('train.setsReps', { sets: planned.sets, reps: repCount(planned.reps) })}</Text>
-              {before !== null && <Text style={[styles.small, { color: color.accent }]}>{before}</Text>}
+              {before !== null && <Text style={[styles.small, { color: color.muted }]}>{before}</Text>}
               {rack !== null && <Text style={[styles.small, { color: color.textSecondary }]}>{rack}</Text>}
             </Pressable>
-            {load !== null && before === null && (
+            {load !== null && (
               <View style={styles.load}>
                 <Text style={[styles.text, { color: color.text }]}>{load}</Text>
                 {held && <Text style={[styles.small, { color: color.muted }]}>{t('train.held')}</Text>}
@@ -206,6 +221,7 @@ function Body({ program, today, date, kind, stale, finishedDay, movedAway, moves
           </View>
         );
       })}
+      {more}
       {session !== null && cardio !== undefined && program.cardio !== undefined && (
         <View style={[styles.move, styles.cardio, { borderColor: color.line }]}>
           <View style={styles.name}>
@@ -222,7 +238,10 @@ function Body({ program, today, date, kind, stale, finishedDay, movedAway, moves
 const styles = StyleSheet.create({
   card: { borderRadius: tokens.radius.card, padding: tokens.space.md, gap: tokens.space.sm },
   head: { flexDirection: 'row', justifyContent: 'space-between', gap: tokens.space.sm },
-  title: { fontSize: tokens.type.decisionTitle, fontWeight: tokens.weight.bold },
+  // The session's name in the serif (ADR-094 §2), as This week's card names it.
+  title: { ...tokens.face.display, fontSize: tokens.type.decisionTitle },
+  more: { minHeight: tokens.size.touch, justifyContent: 'center' },
+  dim: { opacity: tokens.opacity.dim },
   move: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, minHeight: tokens.size.touch },
   cardio: { borderTopWidth: tokens.border.hairline, paddingTop: tokens.space.sm },
   name: { flex: 1, gap: tokens.space.xs },
