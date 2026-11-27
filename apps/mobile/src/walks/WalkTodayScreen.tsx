@@ -13,8 +13,6 @@ import { useAppServices } from '@/services/ServicesProvider';
 import { openDetail } from '@/settings/detail';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
-import { loadStarting, stepsNumber } from '@/today/numbers';
-import { load } from '@/today/today';
 import { useReadOnFocus } from '@/today/useReadOnFocus';
 
 import { MapLock } from './MapLock';
@@ -23,6 +21,7 @@ import { walkParams as W } from './params';
 import type { Place } from './places';
 import type { Leg } from './route';
 import { stepsPerKm, type WalkOption, walkOptions } from './suggest';
+import { readTodaySteps, stepsLeft } from './todaySteps';
 import { RouteMap } from './WalkMapScreen';
 
 const MAP_HEIGHT = 300;
@@ -48,16 +47,11 @@ export function WalkTodayScreen() {
   const places = useSyncExternalStore(placeStore.subscribe, placeStore.current);
   const access = useMapAccess(api);
   const { data } = useReadOnFocus(
-    useCallback(async () => {
-      const named = (error: unknown) => (report({ name: error instanceof Error ? error.name : 'Unknown' }), null);
-      const [health, targets, profile] = await Promise.all([syncHealth().catch(named), load(() => api.GET('/v1/targets')), load(() => api.GET('/v1/profile'))]);
-      const starting = await loadStarting(api, targets);
-      return { steps: stepsNumber(targets, starting, health?.stepsToday), perKm: stepsPerKm(profile.state === 'ready' ? profile.value.heightCm : null) };
-    }, [api, syncHealth, report]),
+    useCallback(() => readTodaySteps({ api, syncHealth, report }), [api, syncHealth, report]),
   );
 
   const steps = data?.steps ?? null;
-  const remaining = steps === null || steps.steps === null ? Number.NaN : steps.target - steps.steps;
+  const remaining = stepsLeft(steps);
   const options = walkOptions({ remaining, routes, stepsPerKm: data?.perKm ?? stepsPerKm(null) });
 
   // The walk drawn: the one that covers it, when it knows its places (a typed one has none: the places alone, no other walk's line drawn
@@ -107,7 +101,7 @@ export function WalkTodayScreen() {
         <Button label={t('walks.today.addPlaces')} variant="text" size="sm" onPress={() => router.push('/walk-map')} />
       </View>
     );
-  } else if (access === 'open') map = <RouteMap places={drawn ?? places} path={path} height={MAP_HEIGHT} />;
+  } else if (access === 'open') map = <RouteMap places={drawn ?? places} ends={drawn !== null} path={path} height={MAP_HEIGHT} />;
 
   const rows = options.map((option) => {
     const ends = endsOf(option, places);

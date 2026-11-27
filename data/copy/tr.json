@@ -3162,12 +3162,20 @@
     "leg": "Tek yön {distance}, yaklaşık {steps} adım",
     "legApprox": "Tek yön yaklaşık {distance}, yaklaşık {steps} adım. Apple Haritalar rota vermedi, bu bir tahmin.",
     "round": "Gidiş dönüş {steps} adım",
-    "saveWalk": "Yürüyüş olarak kaydet",
+    "saveWalk": "Yürüyüşlerime ekle",
     "saveWalkLabel": "{name} yürüyüşünü Yürüyüşlerim'e kaydet",
     "walkSaved": "Yürüyüşlerim'e kaydedildi. Bugünkü yürüyüş satırı bunu kullanabilir.",
     "walkFull": "Yürüyüşlerim'de üç yürüyüş var. Önce oradan birini sil.",
     "walkExists": "Zaten Yürüyüşlerim'de.",
-    "routeName": "{from} ile {to}"
+    "routeName": "{from} ile {to}",
+    "slipLeg": "{distance} · {minutes} dk tek yön",
+    "roundUnit": "adım gidiş dönüş · {minutes} dk",
+    "covers": "Bugün kalan {steps} adımı kapatır",
+    "leftToday": "Bugün kalan {steps} adım",
+    "coverShare": "Bugün kalan {left} adımın {steps} adımı",
+    "pickOne": "Bir yer daha ekle: yürüyüş iki yer arasında ölçülür.",
+    "edit": "Düzenle",
+    "editDone": "Bitti"
   },
   "units": {
     "kg": "{value} kg",

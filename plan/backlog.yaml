@@ -5971,7 +5971,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: []
     why: "Levent: 'evden salona kaç adım', 6k/10k → 'şu kadar yürü' hissi; altyapıda adım hedefi var, mesafe/yer yok"
     acceptance:
@@ -6424,6 +6424,25 @@ tasks:
     tests: ["jest", "simülatör"]
     refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md", "plan/tasarim-gezinti-notlari.md"]
 
+  - id: K-1252
+    title: "Yürüyüş haritası düzenleme ekranı: sessiz harita, kendi işaretler, arama haritanın üstünde, rota fişi, Düzenle ile silme"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: M
+    status: doing
+    depends_on: [K-1251]
+    why: "9c madde 7'nin kalanı: harita ekranında arama formu haritanın önünde, tek yerde gri harita, tam boy sil düğmeleri, sonuç ve kaydet en altta. İlk tur Levent'e 'LLM'den çıkan ilk görsel' geldi; ikinci turda A · Rota fişi'ni seçti (ADR-094 Ek 7)"
+    acceptance:
+      - "Harita mutedStandard, işletme/bina/pusula yok, koyu temada koyu; Bugünün yürüyüşü haritası da aynı"
+      - "Kendi işaretler: başlangıç halka, varış dolu nokta, diğerleri gri nokta, ad kâğıt etikette; rota kâğıt kenarlı düz petrol çizgi"
+      - "Arama haritanın üstünde tek satır hap; yazınca 'Ara'; tek yerde sokak ölçeği"
+      - "Rota fişi haritanın altında: yer adları serif, tek yön km ve dk, büyük gidiş dönüş adım; bugün kalan adım okunduysa mercan çubuk, kapatıyorsa tik (eksik sayısı yok); tek petrol 'Yürüyüşlerime ekle'"
+      - "Yerlerin: Düzenle ile satır silme; tam boy sil düğmesi yok"
+      - "Simülatörde Levent'e gösterilir; K1 varsa birleştirmeden önce Levent'e sorulur"
+    tests: ["jest", "simülatör"]
+    refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md"]
+
   - id: K-1248
     title: "Türk yemeklerinin porsiyon adı Türkçe, ev ölçüsü kuralı pilav/kuru baklagil yemeklerini tanır, su böreği sıvı sayılmaz"
     milestone: M12
@@ -6461,7 +6480,7 @@ tasks:
     module: mobile
     type: feature
     size: L
-    status: todo
+    status: done
     depends_on: [K-1216]
     why: "Levent 25 Kas: 'gym ile evim arasındaki adım sayımı haritada nokta nokta görsem, planlarımı buna göre güncellerim'"
     acceptance:
