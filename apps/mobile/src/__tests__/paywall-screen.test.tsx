@@ -50,7 +50,7 @@ const mockServices = {
   // The trial reminder's offer (K-707): its own behaviour is trial-reminder-offer.test.tsx.
   trialReminder: { keep: async () => {}, when: async () => null, canRemind: () => true, remind: jest.fn(async () => 'set' as const), forget: async () => {} },
 };
-jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices }));
+jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => 'METRIC' }));
 // No real waiting between the looks at the server.
 jest.mock('@/subscription/paywall', () => ({ ...jest.requireActual('@/subscription/paywall'), wait: async () => {} }));
 const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);

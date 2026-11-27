@@ -1,7 +1,8 @@
 /**
- * The paywall's hero (paywall v2, ADR-072 Ek 3, prototype `#heroCall` / `#heroSet`): the app's own card, drawn as the app draws a
- * call, and marked EXAMPLE: it is not this person's call (no fake proof, U1: the numbers are copy, never computed). The weekly
- * call when the user's plan has calls; without the health data consent there are none (ADR-074), so a set's target instead.
+ * The paywall's hero without calls (paywall v2, ADR-072 Ek 3, prototype `#heroSet`; ADR-094 Ek 8): without the health data
+ * consent there are no calls (ADR-074), so a set's target, drawn as the app draws a call and marked Example in a thin frame: it
+ * is not this person's set (no fake proof, U1: the numbers are copy, never computed). With calls, the example is told in weight
+ * (PaywallHero.tsx).
  */
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -10,16 +11,12 @@ import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
-export type ExampleKind = 'call' | 'set';
+import { FramedTag } from './PaywallParts';
 
-export function ExampleCard({ kind }: { kind: ExampleKind }) {
+export function ExampleCard() {
   const { color } = useTheme();
-  const key = (part: string) => t(`subscription.example.${kind}.${part}`);
-  const tag = (
-    <View style={[styles.tag, { backgroundColor: color.accent }]}>
-      <Text style={[styles.tagText, { color: color.onAccent }]}>{t('subscription.example.tag')}</Text>
-    </View>
-  );
+  const key = (part: string) => t(`subscription.example.set.${part}`);
+  const tag = <FramedTag label={t('subscription.example.tag')} />;
   return (
     <View accessibilityLabel={key('label')}>
       <DecisionBlock eyebrow={key('eyebrow')} aside={tag} title={key('title')}>
@@ -41,8 +38,6 @@ export function ExampleCard({ kind }: { kind: ExampleKind }) {
 }
 
 const styles = StyleSheet.create({
-  tag: { borderRadius: tokens.radius.chip, paddingHorizontal: tokens.space.sm, paddingVertical: tokens.space.xs },
-  tagText: { fontSize: tokens.type.label, fontWeight: tokens.weight.black },
   row: {
     flexDirection: 'row',
     alignItems: 'baseline',
@@ -54,9 +49,9 @@ const styles = StyleSheet.create({
   },
   key: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.semibold },
   nums: { flexDirection: 'row', alignItems: 'baseline', gap: tokens.space.xs },
-  from: { ...tokens.face.display, fontSize: tokens.type.displaySmall, textDecorationLine: 'line-through' },
+  from: { ...tokens.face.displayBold, fontSize: tokens.type.displaySmall, textDecorationLine: 'line-through' },
   arrow: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.bold },
-  to: { ...tokens.face.display, fontSize: tokens.type.display },
+  to: { ...tokens.face.displayBold, fontSize: tokens.type.display },
   unit: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.bold },
   why: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.semibold },
   step: { fontWeight: tokens.weight.bold },

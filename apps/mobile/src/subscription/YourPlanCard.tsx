@@ -6,14 +6,13 @@
  * and the paywall keeps the example card.
  */
 import { formatNumber } from '@/copy/format';
-import { StyleSheet, Text, View } from 'react-native';
+import { View } from 'react-native';
 
 import { DecisionBlock } from '@/components/DecisionBlock';
 import { t } from '@/copy';
 import { CallRow, type StartingCallRow } from '@/onboarding/StartingCall';
+import { FramedTag } from '@/subscription/PaywallParts';
 import type { PlanPreview } from '@/subscription/planPreview';
-import { useTheme } from '@/theme/theme';
-import { tokens } from '@/theme/tokens';
 import { weekdayDate } from '@/today/today';
 
 // "2,440": a whole number of kcal as the app writes it, in English like every word of the app.
@@ -46,12 +45,7 @@ export function yourPlanRows(preview: PlanPreview & { firstCall: string }): Star
 }
 
 export function YourPlanCard({ preview }: { preview: PlanPreview & { firstCall: string } }) {
-  const { color } = useTheme();
-  const tag = (
-    <View style={[styles.tag, { backgroundColor: color.accent }]}>
-      <Text style={[styles.tagText, { color: color.onAccent }]}>{t('subscription.yours.tag')}</Text>
-    </View>
-  );
+  const tag = <FramedTag label={t('subscription.yours.tag')} />;
   return (
     <View accessibilityLabel={t('subscription.yours.label')}>
       <DecisionBlock aside={tag} title={t('subscription.yours.title')}>
@@ -62,8 +56,3 @@ export function YourPlanCard({ preview }: { preview: PlanPreview & { firstCall: 
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  tag: { borderRadius: tokens.radius.chip, paddingHorizontal: tokens.space.sm, paddingVertical: tokens.space.xs },
-  tagText: { fontSize: tokens.type.label, fontWeight: tokens.weight.black },
-});

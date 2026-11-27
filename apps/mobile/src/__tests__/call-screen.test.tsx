@@ -285,7 +285,8 @@ describe("this week's call", () => {
       expect(screen.queryByText(t('callScreen.keep'))).toBeNull();
       expect(screen.queryByText(/Confidence/)).toBeNull();
       await press(t('subscription.seePlans'));
-      expect(mockPush).toHaveBeenCalledWith('/paywall');
+      // The plans open on this call's week: the paywall's hero is the person's own call (ADR-094 Ek 8 #2).
+      expect(mockPush).toHaveBeenCalledWith({ pathname: '/paywall', params: { week: LOCKED.weekOf } });
     });
 
     test('a past locked call opened from Progress says the same', async () => {

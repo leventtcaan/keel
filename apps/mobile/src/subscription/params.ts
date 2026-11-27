@@ -2,7 +2,8 @@
 import params from '../../../../data/parameters/subscription.json';
 
 type Parameter = { key: string; value: unknown };
-function param<T>(key: string): T {
+/** One parameter of subscription.json by its key; throws when the file has none (a typo is never a silent default). */
+export function param<T>(key: string): T {
   const found = (params.parameters as Parameter[]).find((p) => p.key === key);
   if (found === undefined) throw new Error(`subscription.json has no ${key}`);
   return found.value as T;

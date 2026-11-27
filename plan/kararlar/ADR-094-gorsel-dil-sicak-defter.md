@@ -366,3 +366,44 @@ A · Rota fişi, B · Harita sayfanın kendisi (kenardan kenara harita, kâğıt
    silme Düzenle'den, yer işaretiyle bulunur, Bugünün yürüyüşü'nde iki çizgi) Levent onaylı (27 Kas).
 Seçilmeyen: B (harita büyük ama yerler pencerede hap, elle km yine ayrı), C (tek sayfa, elle km birlikte; sayfa uzun, sonuç ilk ekranın altında).
 Elle km Yürüyüşlerim sayfasında kalır (A'nın bilinen bedeli). Hiç yer yokken haritanın başlangıç bölgesi aynen kalır (konum okunmaz, V1).
+
+## Ek 8 · Abonelik ekranı: önce senin kararın, sonra takvim, sonra fiyat (9c madde 8, 2026-11-28, Levent)
+Simülatörde App Store yok; ekran bugüne kadar yalnız TestFlight'ta görülebiliyordu. Önce **abonelik önizleme modu** kuruldu (plan 9b): yalnız
+geliştirme derlemesinde (`__DEV__`) ve `EXPO_PUBLIC_PAYWALL_PREVIEW=1` iken örnek planlar (`data/parameters/subscription.json` ›
+`paywall_preview_plans`: ADR-012'nin $59.99/yıl ve $12.99/ay, ADR-071'in 2 haftası). Hiçbir şey satmaz (Apple sayfası yok, sunucuya bir şey gitmez);
+mağaza derlemesi bayrak ne derse desin gerçek mağazayı alır. Bugünkü ekran simülatörde çekildi ve işaretlendi (`prototip/gorsel-yon/9c8-abonelik/abonelik-simdi.jpg`):
+- sheet içinde durum çubuğu payı 60 pt boş şerit, kaydırınca da tepede kalıyor;
+- açık petrol bant üstünde beyaz kart (kart üstüne kart; açık petrol rol tablosunda yok);
+- "Örnek" ve "%61 tasarruf" dolu petrol: düğmeyle üç dolgu;
+- üç serif başlık yarışıyor, fiyat ve tarihler düz rakam;
+- değer ikonları sözle eşleşmiyor ve kutucukta; ilk iki değer satırı aynı şeyi söylüyor;
+- zaman çizelgesi kum kartta, başlığı küçük gri, siyah halkalar.
+Kilit kartları (Bu hafta, yürüyüş haritası) zaten bu dilde; değişmez.
+
+İlk tur üç yön (`abonelik-varyantlar.jpg`): A · Kâğıt sayfa, B · Takvim önde, C · Karar önde + yatay yol. Levent B ile C'nin karışımını istedi:
+C'deki kararın önde olması daha vurucu, B'nin fiyat kutuları ve takvimi daha iyi; kalori hesabı insanlara yabancı, vaat görmek ister; kilo ya da
+kişinin gelişimi daha bağlayıcı olabilir. **Kural:** kilo vaadi ("8 haftada X kg") paywall'a giremez: U12 (projeksiyon varsayılan kapalı, ilk 4 hafta /
+2 ölçüm, SCOFF), ADR-050 sağlık kapısı, ADR-069 #3 (projeksiyon ana yüzeyden indi), Apple 1.4.1. Girebilen: kişinin **kendi geçmiş kilo çizgisi**
+(sunucunun trendi, U1) ve **hazır bekleyen kararı**. İkinci tur (`abonelik-karisim.jpg`): D · Senin kararın (karar → fiyat → takvim), E · Örnek, kilo
+diliyle, F · Takvim fiyattan önce. Ayrıştırıcı kendi verimiz yok (analitik, A/B yok); kategori kalıbı (`arastirma/ham/M2-akis-kiyasi.md` › K1, K3:
+Cal AI, BetterMe, Ladder önce deneme takvimi, sonra plan; kahraman kişinin kendi çıktısı) F sırasını destekler. **Levent F + E'yi seçti.**
+
+**Uygulama (K-1253):**
+1. **Bant ve kart yok:** sayfa kâğıt. Üstte küçük marka satırı (simge + ad) ve sağda petrol metin düğmesi "Kapat" (zorunlu kapıda Hesap). Durum
+   çubuğu payı yalnız tam ekran kapıda; sheet'te yok.
+2. **Kahraman, sırayla:** onboarding'den hemen sonra kişinin planı (K-1058 kartı, rozet yazı); **kararı kilitliyse "Kararın hazır"**: haftası
+   mercan yazı, serif başlık, kilo trendi hazırsa kendi kilosu (yuvarlak rakam), pencere içindeki değişimi ve petrol trend çizgisi (Bu hafta'daki
+   aynı okuma, `/v1/weight-trend`), altında tek cümle; **değilse örnek karar kilo diliyle** ("Kilon 3 haftadır yerinde", örnek çizgi
+   `paywall_example_weight_kg`, kişinin birimiyle, altında "Karar" satırı) ve "Örnek" çerçeveli yazı. Sağlık verisi rızası yoksa set örneği kalır.
+   Okunamazsa sessizce örnek (hata satırı yok; satış kapısında hata kişiyi korkutur, ödeyen kişi zaten burada değil).
+3. **Takvim adaçayında, fiyattan önce:** başlığı ekranın serif başlığıdır ("Ücretsiz dene" + petrol "2 hafta boyunca"; denemesizse yalnız başlık);
+   bugün mercan nokta ve mercan yazı, sonrakiler petrol halka, ray soluk petrol; tarihler yuvarlak rakam.
+4. **Fiyat kutuları yan yana:** kum zemin, seçili petrol çerçeve + petrol radyo; ad, büyük yuvarlak fiyat, yıllıkta ayda fiyat ve petrol yazı
+   tasarruf (dolgu yok). Yıllık seçili gelir. Fiyat, deneme ve tasarruf mağazanın (ADR-057 D3); sayılar değişmez.
+5. **Değerler petrol tikle**, kutucuk ve ikon yok; kararlı planda "Her hafta bir karar" ile "İlk kararından sonraki her karar" tek satır olur:
+   "İlk kararından sonra her hafta bir karar, gerekçesiyle" (Levent, 28 Kas).
+6. **Alt kısım aynen:** tek petrol düğme, fiyat satırı (Apple 3.1.2), Geri yükle, Şartlar, Gizlilik petrol bağlantı (altı çizgisiz).
+7. **Psikoloji, hepsi Apple ve U7 içinde:** sahiplik (kendi verin, hazır kararın), merak (karar içeride, kayıp dili yok), şeffaf takvim, çapa
+   (yıllık seçili, ayda fiyat, tasarruf), tek düğme. Sahte geri sayım, sahte yorum, gizli kapatma, ikinci paywall yok.
+Seçilmeyen: A, B, C (ilk tur), D (fiyat takvimden önce). **Ayrı iş:** uygulama içi puan isteme (K-1254): yalnız Apple'ın kendi penceresi
+(App Store Review Guidelines 5.6.1: özel puan penceresi yasak; ödüllü puan isteme de yasak, madde numarası **[doğrulanmadı]**), olumlu bir anda.

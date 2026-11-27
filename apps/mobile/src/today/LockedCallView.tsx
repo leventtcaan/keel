@@ -17,7 +17,8 @@ import { type LockedCall, weekdayDate } from './today';
 export function LockedCallView({ call, testID = 'locked-call' }: { call: LockedCall; testID?: string }) {
   const { color } = useTheme();
   const line = <Text style={[styles.line, { color: color.decisionTextSecondary }]}>{t('lockedCall.line', { date: weekdayDate(call.weekOf) })}</Text>;
-  const plans = <Button label={t('subscription.seePlans')} onPress={() => router.push('/paywall')} />;
+  // The plans open on this call's week: the paywall shows the person their own call (ADR-094 Ek 8 #2).
+  const plans = <Button label={t('subscription.seePlans')} onPress={() => router.push({ pathname: '/paywall', params: { week: call.weekOf } })} />;
   return (
     <DecisionBlock testID={testID} title={t('lockedCall.title')} footer={plans}>
       {line}

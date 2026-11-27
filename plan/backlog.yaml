@@ -6443,6 +6443,44 @@ tasks:
     tests: ["jest", "simülatör"]
     refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md"]
 
+  - id: K-1253
+    title: "Abonelik ekranı Sıcak defter: önizleme modu, kararın hazır + kendi kilo çizgin, takvim fiyattan önce, fiyat kutuları"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: M
+    status: done
+    depends_on: [K-1252]
+    why: "9c madde 8: abonelik ekranı simülatörde görülemiyordu (önizleme modu 9b); bant üstünde kart, üç dolu petrol, sistem ikonları, düz rakam. Levent iki turdan sonra F + E'yi seçti (ADR-094 Ek 8)"
+    acceptance:
+      - "Önizleme modu yalnız __DEV__ ve EXPO_PUBLIC_PAYWALL_PREVIEW=1 iken: örnek planlar parametre dosyasından, hiçbir şey satmaz; mağaza derlemesi her zaman gerçek mağaza (test)"
+      - "Bant ve kart yok; sheet'te durum çubuğu payı yok, zorunlu kapıda var; Kapat petrol metin düğmesi"
+      - "Kahraman: onboarding planı > kilitli karar ('Kararın hazır' + kendi kilo trendi) > kilo dilinde örnek (kişinin birimiyle, Örnek yazısı); okunamazsa örnek"
+      - "Takvim adaçayında, serif başlık ekranın başlığı, bugün mercan, tarihler yuvarlak rakam; fiyat kutuları yan yana, seçili petrol çerçeve, tasarruf yazı"
+      - "Değerler petrol tik; kararlı planda iki satır bir ('İlk kararından sonra her hafta bir karar, gerekçesiyle')"
+      - "Fiyat, deneme, tasarruf, fiyat satırı ve yasal metin aynen (Apple 3.1.2, ADR-057 D3)"
+      - "Simülatörde Levent'e gösterilir; K1 varsa birleştirmeden önce Levent'e sorulur"
+    tests: ["jest", "simülatör"]
+    refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md", "plan/kararlar/ADR-057-paywall-telefonda.md", "plan/evre-9-tasarim.md"]
+
+  - id: K-1254
+    title: "Uygulama içi puan isteme: Apple'ın kendi penceresi, olumlu bir anda"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: []
+    why: "Levent (28 Kas, 9c-8): mağaza puanı uygulamadan istensin; App Store dünyasında yapılması gereken ne varsa yapılsın. Apple yalnız kendi API'sine izin verir (Guidelines 5.6.1, özel puan penceresi yasak); ödüllü ya da süzgeçli ('memnun musun?' sonra puan) isteme yasak ya da riskli"
+    acceptance:
+      - "Önce araştırma + ADR: kurulu Expo 57'de puan API'si (ör. expo-store-review) ve Apple'ın sınırları resmî dokümandan doğrulanır (K6); paket eklenecekse gerekçe (K5)"
+      - "Yalnız Apple'ın penceresi; özel pencere, ödül, süzgeç yok; yılda en çok Apple'ın izin verdiği kadar (sistem sınırlar)"
+      - "An parametre dosyasında (ör. rekorlu antrenman bitişi ya da N. karardan sonra); kesinti anında (set, dinlenme, kayıt) asla"
+      - "Ayarlar'da 'Uygulamayı puanla' satırı mağaza sayfasını açar"
+      - "Simülatörde Levent'e gösterilir"
+    tests: ["jest", "simülatör"]
+    refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md"]
+
   - id: K-1248
     title: "Türk yemeklerinin porsiyon adı Türkçe, ev ölçüsü kuralı pilav/kuru baklagil yemeklerini tanır, su böreği sıvı sayılmaz"
     milestone: M12

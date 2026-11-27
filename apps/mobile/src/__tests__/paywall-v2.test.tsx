@@ -60,7 +60,7 @@ const mockServices = {
   photos: { photos: jest.fn(async () => []) },
   planPreviews: { current: () => mockPreview, keep: () => {}, forget: jest.fn() },
 };
-jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useSubscriptionGate: () => 'required' }));
+jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useSubscriptionGate: () => 'required', useUnits: () => 'METRIC' }));
 jest.mock('expo-router', () => ({ router: { back: () => {}, push: () => {} } }));
 jest.mock('@/subscription/paywall', () => ({ ...jest.requireActual('@/subscription/paywall'), wait: async () => {} }));
 jest.mock('@/subscription/links', () => ({
@@ -91,12 +91,12 @@ async function show(scheme: 'light' | 'dark' = 'light') {
 const press = async (name: string) => act(async () => fireEvent.press(screen.getByRole('button', { name })));
 
 describe('the hero: the app\'s own call card, an example', () => {
-  test('with no plan just shown (the paywall met later, from Settings): the weekly call, marked EXAMPLE', async () => {
+  test('with no plan just shown (the paywall met later, from Settings): the weekly call told in weight, marked EXAMPLE (ADR-094 Ek 8 #2)', async () => {
     mockPreview = null;
     await show();
-    const card = screen.getByLabelText(t('subscription.example.call.label'));
+    const card = screen.getByLabelText(t('subscription.example.weight.label'));
     expect(within(card).getByText(t('subscription.example.tag'))).toBeOnTheScreen();
-    expect(within(card).getByText(t('subscription.example.call.title'))).toBeOnTheScreen();
+    expect(within(card).getByText(t('subscription.example.weight.title'))).toBeOnTheScreen();
     expect(screen.queryByLabelText(t('subscription.example.set.label'))).toBeNull();
     expect(screen.queryByLabelText(t('subscription.yours.label'))).toBeNull();
   });
@@ -107,7 +107,7 @@ describe('the hero: the app\'s own call card, an example', () => {
     const card = screen.getByLabelText(t('subscription.example.set.label'));
     expect(within(card).getByText(t('subscription.example.tag'))).toBeOnTheScreen();
     expect(within(card).getByText(t('subscription.example.set.title'))).toBeOnTheScreen();
-    expect(screen.queryByLabelText(t('subscription.example.call.label'))).toBeNull();
+    expect(screen.queryByLabelText(t('subscription.example.weight.label'))).toBeNull();
     expect(screen.queryByLabelText(t('subscription.yours.label'))).toBeNull();
   });
 });
@@ -127,7 +127,7 @@ describe('the hero right after onboarding: the user\'s own plan, tagged Yours (K
     expect(card().getByText(t('onboarding.plan.firstCall'))).toBeOnTheScreen();
     expect(card().getByText(weekdayDate('2026-10-19'))).toBeOnTheScreen();
     expect(card().getByText(t('subscription.yours.callNote', { day: t('onboarding.schedule.dayName.MONDAY') }))).toBeOnTheScreen();
-    expect(screen.queryByLabelText(t('subscription.example.call.label'))).toBeNull();
+    expect(screen.queryByLabelText(t('subscription.example.weight.label'))).toBeNull();
     expect(screen.queryByLabelText(t('subscription.example.set.label'))).toBeNull();
   });
 
@@ -151,18 +151,18 @@ describe('the hero right after onboarding: the user\'s own plan, tagged Yours (K
     mockPreview = { ...PREVIEW, checkInDay: 'THURSDAY' };
     await show();
     expect(screen.getByText(t('subscription.values.call', { day: t('onboarding.schedule.dayName.THURSDAY') }))).toBeOnTheScreen();
-    expect(t('subscription.values.call', { day: 'Thursday' })).toBe('A call every Thursday, with the reason');
+    expect(t('subscription.values.call', { day: 'Thursday' })).toBe('A call every Thursday after your first one, with the reason');
   });
 
-  test('three concrete benefits, in this order: the call, that every call after the first is this, the coach to ask about the week (ADR-092: the coach is on the surface)', async () => {
+  test('two concrete benefits, in this order: the call every week after the first, the coach to ask about the week (ADR-092; ADR-094 Ek 8 #5)', async () => {
     mockPreview = PREVIEW;
     await show();
-    expect(t('subscription.values.after')).toBe('Every call after your first one');
     expect(t('subscription.values.coach')).toBe('The coach, to ask about your week');
     const texts = screen.getAllByText(/.*/).map((node) => String(node.props.children));
-    const at = [t('subscription.values.call', { day: 'Monday' }), t('subscription.values.after'), t('subscription.values.coach')].map((line) => texts.indexOf(line));
+    const at = [t('subscription.values.call', { day: 'Monday' }), t('subscription.values.coach')].map((line) => texts.indexOf(line));
     expect(at.every((i) => i >= 0)).toBe(true);
     expect([...at].sort((a, b) => a - b)).toEqual(at);
+    expect(screen.queryByText(t('subscription.values.after'))).toBeNull();
   });
 
   test('the Apple 3.1.2 lines stay: the price, the period, the trial, the renewal and how to cancel', async () => {
@@ -255,7 +255,7 @@ describe('the bottom that stays', () => {
 });
 
 describe('the plans are above the fold, and nothing hides behind the dock (evre 7 final pass)', () => {
-  test('Yearly and Monthly come right after the headline, before the benefits, the timeline and the terms', async () => {
+  test('the timeline under the screen\'s heading comes first, then Yearly and Monthly, before the benefits and the terms (ADR-094 Ek 8 #3)', async () => {
     mockPreview = PREVIEW;
     await show();
     // The screen top to bottom: each node's own words (a radio's label, a text's string).
@@ -269,12 +269,12 @@ describe('the plans are above the fold, and nothing hides behind the dock (evre 
     };
     [screen.toJSON()].flat().forEach(walk);
     const at = (match: string | RegExp) => words.findIndex((w) => (typeof match === 'string' ? w === match : match.test(w)));
-    const [yearly, monthly, benefit, timeline, terms] = [/^Yearly/, /^Monthly/, t('subscription.values.after'), t('subscription.timeline.heading'), t('subscription.cancelNote')].map(at);
-    expect([yearly, monthly, benefit, timeline, terms].every((i) => i >= 0)).toBe(true);
+    const [timeline, yearly, monthly, benefit, terms] = [t('subscription.titleLead'), /^Yearly/, /^Monthly/, t('subscription.values.coach'), t('subscription.cancelNote')].map(at);
+    expect([timeline, yearly, monthly, benefit, terms].every((i) => i >= 0)).toBe(true);
+    expect(timeline).toBeLessThan(yearly);
     expect(yearly).toBeLessThan(monthly);
     expect(monthly).toBeLessThan(benefit);
-    expect(benefit).toBeLessThan(timeline);
-    expect(timeline).toBeLessThan(terms);
+    expect(benefit).toBeLessThan(terms);
   });
 
   test('the page ends with room as tall as the dock, so the chosen Monthly is never behind it', async () => {
@@ -297,7 +297,7 @@ describe('the status bar (ADR-087 #2, K-6)', () => {
     );
     await act(async () => {});
     const band = screen.getByTestId('status-bar-band');
-    expect(band).toHaveStyle({ height: 59, backgroundColor: palettes.light.accentSoft });
+    expect(band).toHaveStyle({ height: 59, backgroundColor: palettes.light.background }); // the paper: no band colour (ADR-094 Ek 8 #1)
     // Not inside the scroll: it stays put while the page moves.
     expect(within(screen.getByTestId('paywall-scroll')).queryByTestId('status-bar-band')).toBeNull();
     // Above the page in the column, not laid over it.

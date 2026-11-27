@@ -3324,8 +3324,8 @@
     "values": {
       "built": "Program built for your days",
       "own": "Your program, tuned",
-      "call": "A call every {day}, with the reason",
-      "weeklyCall": "A call every week, with the reason",
+      "call": "A call every {day} after your first one, with the reason",
+      "weeklyCall": "A call every week after your first one, with the reason",
       "after": "Every call after your first one",
       "coach": "The coach, to ask about your week",
       "adjust": "Cardio and food that adjust to your week",
@@ -3341,20 +3341,22 @@
       "workoutDay": "First workout",
       "callNote": "then every {day}, with the reason"
     },
+    "ready": {
+      "week": "Week of {date}",
+      "label": "Your call for the week of {date} is ready",
+      "line": "Made from your own week. What it changes is inside.",
+      "change": "{change} in {span}"
+    },
     "example": {
       "tag": "Example",
       "arrow": "→",
-      "call": {
-        "label": "Example of a weekly call",
+      "weight": {
+        "label": "Example of a weekly call: your weight has held for 3 weeks, so 250 kcal less a day",
         "eyebrow": "This week's call",
-        "title": "New calorie target",
-        "row": "Calories",
-        "from": "2,050",
-        "to": "1,800",
-        "unit": "kcal",
-        "spoken": "Calories, from 2,050 to 1,800 kcal.",
-        "why": "-0.3 kg a week over 3 weeks, not toward your goal.",
-        "step": "One step: 250 kcal a day less."
+        "title": "Your weight has held for 3 weeks",
+        "change": "{change} in 3 weeks",
+        "call": "The call",
+        "step": "250 kcal less a day"
       },
       "set": {
         "label": "Example of a set target",

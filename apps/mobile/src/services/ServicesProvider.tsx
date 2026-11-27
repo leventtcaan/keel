@@ -27,6 +27,7 @@ import { type SignInResult, appleReauthorization, deviceNonce, signInWithApple }
 import type { GateState } from '@/subscription/gate';
 import { useGateState } from '@/subscription/useGate';
 import { configuredLegalLinks } from '@/subscription/links';
+import { purchasesFor } from '@/subscription/preview';
 import { revenueCatStore } from '@/subscription/revenueCat';
 import { keychainStorage } from '@/session/keychain';
 import { exportAccount } from '@/settings/exportData';
@@ -94,7 +95,9 @@ async function build(): Promise<PhoneServices> {
     photoCache: devicePhotoCache, // a meal photo's leftovers, cleared when the session ends (K-811, V1)
     appleReauth: appleReauthorization(AppleAuthentication, deviceNonce), // Sign in with Apple ended at deletion (K-812)
     links: configuredLegalLinks(), // without both, nothing is sold and the gate stays open (ADR-057 D3, K-706)
-    purchases: revenueCatStore({ report: reportProblem }), // not available in Expo Go or without the SDK key; set up only when first needed (ADR-057 D1)
+    // Not available in Expo Go or without the SDK key; set up only when first needed (ADR-057 D1). A development build with
+    // EXPO_PUBLIC_PAYWALL_PREVIEW=1 shows sample plans instead (preview.ts); a release build never does.
+    purchases: purchasesFor({ dev: __DEV__, flag: process.env.EXPO_PUBLIC_PAYWALL_PREVIEW, real: () => revenueCatStore({ report: reportProblem }) }),
   });
   // Offline: the kept answers (units, onboarding done) stay; an unknown onboarding state offers to try again.
   if (await services.session.isSignedIn()) services.profile.refresh().catch(() => undefined);

@@ -567,7 +567,8 @@ describe('a call not unlocked (ADR-091 Ek 1, K-1202): ready, and nothing of what
     expect(block.getByText(t('lockedCall.line', { date: 'Mon, Dec 21' }))).toBeOnTheScreen();
     expect(block.getAllByRole('button')).toHaveLength(1);
     await fireEvent.press(block.getByRole('button', { name: t('subscription.seePlans') }));
-    expect(mockPush).toHaveBeenCalledWith('/paywall');
+    // The plans open on this call's week: the paywall's hero is the person's own call (ADR-094 Ek 8 #2).
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/paywall', params: { week: LOCKED.weekOf } });
   });
 
   test('no action, no number, no reason, no way to use it, no next call day', async () => {
