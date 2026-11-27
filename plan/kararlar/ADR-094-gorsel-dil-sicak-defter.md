@@ -297,3 +297,19 @@ Seçilmeyen: A'nın dört kısa hapı ("Öğle", "Ara öğün"), C'nin alt çizg
 **Ayrı işler (mantık, sunucu):** yemeklerin porsiyon adı İngilizce geliyor ("1 bowl (250 g)"); ev ölçüsü kuralı "Pirinç pilavı", "Bulgur
 pilavı", "Kuru fasulye" ve "Mercimek köftesi"ne ölçü vermiyor, "Su böreği"ni sıvı sayıyor (K-1248). Temel yiyecekler yalnız İngilizce adlı:
 "yumurta", "süt", "ekmek" aramada çıkmıyor; Türkçe adlar kaynak ister (K-1249).
+
+## Ek 5 · Günün yemek sayfası: hafta şeridi (9c-6, 2026-11-27, Levent)
+Bugünkü sayfa simülatörde çekildi ve işaretlendi (`prototip/gorsel-yon/9c6/gun-simdi.jpg`, 2 ekran boyu): başlık "Bugünün beslenmesi" ve
+altında yine "Bugün"; oklar ve bir aylık şerit iki ayrı gezinme; seçili gün siyah; makrolar mor, kahve ve petrol çubuk ile nokta; "Bugün kalana
+uyar" öneriler kişinin öğünlerinden önce; öğün başlıkları düz kalın yazı. Agent üç yönü simülatörde çizdi (`9c6/gun-varyantlar.jpg`):
+A · Hafta şeridi, B · Yalnız oklar, C · Katlı öğünler. **Levent A'yı seçti.**
+
+**Uygulama (K-1250):**
+1. **Başlık günün kendisi:** serif "Bugün", "Dün" ya da tarih ("25 Kas Çar"); "Bugünün beslenmesi" ve ikinci etiket kalkar.
+2. **Şerit bir hafta görünür:** oklar kalkar; ayın günleri kaydırılır, bir anda 7 gün (`food.json › day_strip_visible`). Seçili gün petrol
+   dolgu, üstünde beyaz; başka gün seçiliyken bugünün harfi mercan (`progressText`); kayıtlı günde petrol nokta.
+3. **Makrolar mercan çubuk:** üç makronun çubuğu "ne kadar ilerledin" rengiyle (§1), renkli nokta yok, ad ve "yenen / hedef g".
+4. **Öğün başlıkları serif** (§2, bölüm başlığı).
+5. **Öneriler öğünlerden sonra**, başlığı "Kalana uyanlar".
+6. Levent sonucu simülatörde gördü (`9c6/gun-sonra.jpg`). K1 (9 beklenti: oklar yerine şeridin günü, başlık "Today") Levent onaylı (27 Kas).
+Seçilmeyen: B'nin oklu başlığı (kayıtlı günler görünmüyordu), C'nin katlı öğünleri (miktar ve kalori bir dokunuş uzakta).

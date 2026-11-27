@@ -106,9 +106,6 @@
     "train": {
       "title": "Train"
     },
-    "food": {
-      "title": "Today's food"
-    },
     "progress": {
       "title": "Progress"
     },
@@ -1198,10 +1195,6 @@
     "day": {
       "today": "Today",
       "yesterday": "Yesterday",
-      "titleYesterday": "Yesterday's food",
-      "titleOther": "Food",
-      "before": "Day before",
-      "after": "Day after",
       "hasMeals": "has meals"
     },
     "logDay": "Add food to this day",

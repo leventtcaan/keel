@@ -5,7 +5,13 @@ guncelleme: 2026-11-27
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (27 Kas — K-1247: öğün kaydet başlık öğün, #810, PR #813 otomatik birleşmede; 9c-6 öğün kaydı bitti)
+## ▶ DEVAM NOKTASI (27 Kas — K-1250: günün yemek sayfası hafta şeridi, #814, PR #815 otomatik birleşmede; 9c-6 bitti)
+**K-1247 birleşti (#813).** **9c-6 kalanı (günün yemek sayfası):** şu an çekildi, 6 sorun (`prototip/gorsel-yon/9c6/gun-simdi.jpg`); üç yön, **Levent A · Hafta şeridi'ni
+seçti → ADR-094 Ek 5.** K-1250: başlık günün kendisi (serif), oklar yok, şerit bir anda 7 gün (`day_strip_visible`, ay kaydırılır), seçim petrol, makrolar mercan,
+öğün başlıkları serif, öneriler öğünlerden sonra ("Kalana uyanlar"). K1 (9) onaylı. Makro renk token'ları artık kullanılmıyor (silmek kontrast testini siler → ayrı K1).
+**Sıradaki:** Evre 9 › 9c-7 Yürüyüş haritası (Ayarlar'dan çıkar, ücretli), ya da K-1248 (sunucu: Türkçe porsiyon adı, ölçü kuralı) — Levent seçer.
+
+## (önceki) ▶ DEVAM NOKTASI (27 Kas — K-1247: öğün kaydet başlık öğün, #810, PR #813 otomatik birleşmede; 9c-6 öğün kaydı bitti)
 **K-1246 birleşti (#809).** **9c-6 (Yemek):** öğün kaydet, arama ve porsiyon simülatörde çekildi, 12 sorun işaretlendi (`prototip/gorsel-yon/9c6/yemek-simdi.jpg`);
 fikstüre 12 Türk yemeği + ev ölçüleri + sunucu gibi katlamalı arama eklendi (keel-sim/.sim, git dışı); üç yön çizildi, **Levent B · Başlık öğün'ü seçti → ADR-094 Ek 4.**
 K-1247: başlık öğünün kendisi (serif + petrol ok, altında gün · kalori, sistem listesi), öğün başına Türkçe kalıplar (`meal.forSlot.*`), boş öğünde tepsi yok,

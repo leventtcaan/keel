@@ -188,7 +188,8 @@ const styles = StyleSheet.create({
   list: { gap: tokens.space.md },
   meal: { gap: tokens.space.sm },
   header: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.md, minHeight: tokens.size.touch },
-  slot: { flex: 1, fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
+  // A meal's name is a section heading: the serif (ADR-094 §2, Ek 5 #4).
+  slot: { flex: 1, ...tokens.face.display, fontSize: tokens.type.heading },
   mealKcal: { fontSize: tokens.type.body, fontVariant: ['tabular-nums'] },
   card: { borderRadius: tokens.radius.card, overflow: 'hidden' },
   item: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, paddingVertical: tokens.space.sm, paddingHorizontal: tokens.space.md, minHeight: tokens.size.touch },

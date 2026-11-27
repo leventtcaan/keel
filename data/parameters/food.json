@@ -210,6 +210,14 @@
       "note": "How many days back the Food page's day strip goes (ADR-090 Ek 3: at least a month of logged days can be read, changed and logged into)."
     },
     {
+      "key": "day_strip_visible",
+      "value": 7,
+      "unit": "days",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md#Ek 5",
+      "note": "How many days of the strip are in view at once: a week, as the week path of This week (ADR-094 Ek 5 #2); the rest of the month scrolls."
+    },
+    {
       "key": "log_again_days",
       "value": 14,
       "unit": "days",
