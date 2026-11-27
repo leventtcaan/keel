@@ -13,6 +13,7 @@ import PaywallScreen from '@/app/paywall';
 import SubscribeScreen from '@/app/subscribe';
 import { t } from '@/copy';
 import type { Plan, SubscriptionStore } from '@/subscription/store';
+import { lockedWeekOf } from '@/subscription/PaywallHero';
 import { ThemeProvider } from '@/theme/theme';
 import { palettes } from '@/theme/tokens';
 import { weekdayDate } from '@/today/today';
@@ -27,6 +28,7 @@ const NONE: Subscription = { active: false, appUserId: '0b6f2a8e-1c3d-4e5f-8a9b-
 const ANNUAL: Plan = { id: '$rc_annual', period: 'annual', price: '$59.99', amount: 59.99, currency: 'USD', pricePerMonth: '$5.00', trial: { count: 2, unit: 'week' } };
 const MONTHLY: Plan = { id: '$rc_monthly', period: 'monthly', price: '$12.99', amount: 12.99, currency: 'USD', pricePerMonth: null, trial: null };
 const WEEK = '2026-11-25';
+const LOCKED = { id: 'd9', madeOn: WEEK, weekOf: WEEK, nextCallOn: '2026-12-02', locked: true };
 const TREND = [
   { day: '2026-09-02', kg: 92.2 },
   { day: '2026-10-14', kg: 89.6 },
@@ -34,6 +36,8 @@ const TREND = [
 ];
 
 let mockParams: Record<string, string> = { week: WEEK };
+let mockCall: unknown = LOCKED;
+let mockWeightFails = false;
 let mockTrendReady = true;
 let mockUnits: 'METRIC' | 'IMPERIAL' = 'METRIC';
 const mockStore: SubscriptionStore = {
@@ -47,6 +51,8 @@ const mockStore: SubscriptionStore = {
 };
 const mockGet = jest.fn(async (path: string) => {
   if (path === '/v1/subscription') return ok(NONE);
+  if (path === '/v1/decisions/current') return mockCall === null ? failed() : ok(mockCall);
+  if (mockWeightFails) return failed();
   if (path === '/v1/weigh-ins/summary') return ok({ weighInCount: 40, trendMinWeighIns: 7, trendReady: mockTrendReady });
   if (path === '/v1/weight-trend') return ok(TREND);
   return failed();
@@ -79,6 +85,8 @@ beforeEach(() => {
   jest.clearAllMocks();
   jest.useFakeTimers({ now: new Date(2026, 10, 28, 12, 0), advanceTimers: true });
   mockParams = { week: WEEK };
+  mockCall = LOCKED;
+  mockWeightFails = false;
   mockTrendReady = true;
   mockUnits = 'METRIC';
 });
@@ -130,7 +138,7 @@ describe('the page is the paper', () => {
   });
 
   test('the weight cannot be read: the call is still theirs, with no weight line', async () => {
-    mockGet.mockImplementationOnce(async () => failed());
+    mockWeightFails = true;
     await show();
     expect(screen.getByText(t('lockedCall.title'))).toBeOnTheScreen();
     expect(screen.queryByText(formatWeight(87.4, 'METRIC'))).toBeNull();
@@ -200,6 +208,29 @@ describe('the hero', () => {
     await show();
     expect(screen.getByLabelText(t('subscription.example.weight.label'))).toBeOnTheScreen();
     expect(screen.getByRole('radio', { name: /^Yearly/ })).toBeOnTheScreen();
+  });
+
+  test('a link names a week with no call locked for it: the example, never "your call is ready" (U1)', async () => {
+    mockParams = { week: '2099-01-05' };
+    await show();
+    expect(screen.queryByText(t('lockedCall.title'))).toBeNull();
+    expect(screen.getByLabelText(t('subscription.example.weight.label'))).toBeOnTheScreen();
+  });
+
+  test('the call cannot be read: the example, no error on the way to the plans', async () => {
+    mockCall = null;
+    await show();
+    expect(screen.queryByText(t('lockedCall.title'))).toBeNull();
+    expect(screen.getByLabelText(t('subscription.example.weight.label'))).toBeOnTheScreen();
+  });
+
+  test.each([['2026-02-31'], ['2026-13-01'], ['2026-1-5']])('a week that is no calendar day (%s) is no week', (week) => {
+    expect(lockedWeekOf(week)).toBeNull();
+  });
+
+  test('a week given twice in the link is no week', () => {
+    expect(lockedWeekOf([WEEK, WEEK])).toBeNull();
+    expect(lockedWeekOf(WEEK)).toBe(WEEK);
   });
 
   test('no weight promise: no projection words, no "by" date on the hero', async () => {

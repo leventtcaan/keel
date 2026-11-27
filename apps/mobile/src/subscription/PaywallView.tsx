@@ -12,7 +12,7 @@ import { stateWords } from '@/settings/SubscriptionSection';
 import { AccountButton, AccountSheet } from '@/subscription/AccountSheet';
 import { BrandMark } from '@/subscription/BrandMark';
 import { ExampleCard } from '@/subscription/ExampleCard';
-import { type ReadyCall, ReadyCallHero, WeightExample } from '@/subscription/PaywallHero';
+import { type ReadyCall, ReadyCallHero, WeightExample, loadReadyCall } from '@/subscription/PaywallHero';
 import { YourPlanCard } from '@/subscription/YourPlanCard';
 import { configuredLegalLinks } from '@/subscription/links';
 import { type Opened, confirmActive, openPaywall, restorePurchases, subscribe, wait } from '@/subscription/paywall';
@@ -24,7 +24,6 @@ import { TrialReminderOffer } from '@/subscription/TrialReminderOffer';
 import { paywallTimeline, paywallWords, planWords } from '@/subscription/words';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
-import { loadWeight } from '@/today/numbers';
 import { localDay } from '@/today/today';
 
 /** A line above the button: what came of the last thing tried. */
@@ -79,20 +78,23 @@ export function Paywall({ required = false, onActive, preview = null, lockedWeek
   // One purchase or restore at a time: a second tap while Apple's sheet is up does nothing (a ref both taps share).
   const running = useRef(false);
 
-  // Opened from the person's locked call (ADR-094 Ek 8 #2): their call, then their weight once it is read; not read is no line.
-  const [ready, setReady] = useState<ReadyCall | null>(lockedWeek === null ? null : { weekOf: lockedWeek, weight: null });
+  // Opened from the person's locked call (ADR-094 Ek 8 #2): their call once the server confirms it waits for that week, with
+  // their weight. While it is asked there is no hero (no example that turns into their call); not confirmed is the example.
+  // The answer is kept with the week it is for, so a week that changed is asked again, never shown with the old answer.
+  const [answer, setAnswer] = useState<{ week: string; found: ReadyCall | null } | null>(null);
   useEffect(() => {
     if (lockedWeek === null) return;
     let live = true;
-    void loadWeight(api, localDay(new Date()))
+    void loadReadyCall(api, lockedWeek, localDay(new Date()))
       .catch(() => null)
-      .then((weight) => {
-        if (live) setReady({ weekOf: lockedWeek, weight });
+      .then((found) => {
+        if (live) setAnswer({ week: lockedWeek, found });
       });
     return () => {
       live = false;
     };
   }, [api, lockedWeek]);
+  const ready: ReadyCall | null | 'asking' = lockedWeek === null ? null : answer?.week === lockedWeek ? answer.found : 'asking';
 
   const opening = useCallback(() => openPaywall({ api, store: purchases, report, links }).then(stepOf), [api, purchases, report, links]);
   useEffect(() => {
@@ -208,6 +210,7 @@ export function Paywall({ required = false, onActive, preview = null, lockedWeek
     // own call waiting locked, with their weight; else an example told in weight. Without calls, the set's example.
     if (preview !== null && preview.firstCall !== null) hero = <YourPlanCard preview={{ ...preview, firstCall: preview.firstCall }} />;
     else if (!calls) hero = <ExampleCard />;
+    else if (ready === 'asking') hero = null;
     else hero = ready === null ? <WeightExample /> : <ReadyCallHero ready={ready} />;
     // Concrete lines (ADR-094 Ek 8 #5). With calls: the call every week after the first, on the profile's own day (met later,
     // with no plan just shown, without a day), and the coach once it is on (aiLogging.ts, never as a promise) or the cardio and

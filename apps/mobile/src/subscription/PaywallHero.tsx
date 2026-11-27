@@ -1,18 +1,19 @@
 /**
  * The paywall's hero in the warm notebook (ADR-094 Ek 8 #2). Opened from the person's locked call (its "See plans" names the
- * week), it is theirs: "Your call is ready", its week, and — once the server says the trend is ready — their own weight, its
+ * week, and the server confirms it), it is theirs: "Your call is ready", its week, and — once the server says the trend is ready — their own weight, its
  * change and its line, the same reads This week makes (numbers.ts). Otherwise an example told in weight, in their units, marked as one. Never a forecast: no
  * weight to come, no date to reach it (U12, ADR-050, ADR-069 #3); the numbers are the server's or the example's (U1).
  */
 import { StyleSheet, Text, View } from 'react-native';
 
+import type { ApiClient } from '@/api/client';
 import { TrendLine } from '@/components/TrendLine';
 import { t } from '@/copy';
 import { useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
-import { type WeightNumber, type loadWeight, weightNumber } from '@/today/numbers';
-import { weekdayDate } from '@/today/today';
+import { type WeightNumber, loadWeight, weightNumber } from '@/today/numbers';
+import { isLocked, load, weekdayDate } from '@/today/today';
 import { formatWeight, weightChange } from '@/units/units';
 
 import { FramedTag } from './PaywallParts';
@@ -21,9 +22,22 @@ import { param } from './params';
 /** The person's locked call: its week, and their weight's reads (none until they are read, or when they were not). */
 export type ReadyCall = { weekOf: string; weight: Awaited<ReturnType<typeof loadWeight>> | null };
 
-/** A day as the locked call names its week (YYYY-MM-DD), or null: a link's word is checked, never trusted. */
-export function lockedWeekOf(param: string | undefined): string | null {
-  return param !== undefined && /^\d{4}-\d{2}-\d{2}$/.test(param) && !Number.isNaN(Date.parse(`${param}T12:00:00Z`)) ? param : null;
+/** A day as the locked call names its week (YYYY-MM-DD, a real calendar day), or null: a link's word is checked, never trusted. */
+export function lockedWeekOf(param: string | string[] | undefined): string | null {
+  if (typeof param !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(param)) return null;
+  const day = new Date(`${param}T12:00:00Z`);
+  return !Number.isNaN(day.getTime()) && day.toISOString().slice(0, 10) === param ? param : null;
+}
+
+/**
+ * The person's call for that week, only when the server says it waits locked for that very week (a link alone never makes a
+ * call "ready", U1), and then their weight; anything not read is no locked call, and the example stands in.
+ */
+export async function loadReadyCall(api: ApiClient, weekOf: string, today: string): Promise<ReadyCall | null> {
+  const call = await load(() => api.GET('/v1/decisions/current'));
+  if (call.state !== 'ready' || !isLocked(call.value) || call.value.weekOf !== weekOf) return null;
+  const weight = await loadWeight(api, today).catch(() => null);
+  return { weekOf, weight };
 }
 
 /** The weight, its change in words and its line: the server's trend, or the example's points. */
@@ -54,11 +68,9 @@ export function ReadyCallHero({ ready }: { ready: ReadyCall }) {
   const weight = weightNumber(ready.weight ?? undefined, units);
   const line = weight?.kind === 'trend' ? <WeightLine shown={formatWeight(weight.kg, units)} change={changeWords(weight)} points={weight.points} /> : null;
   return (
-    <View accessible={false} accessibilityLabel={t('subscription.ready.label', { date })} style={styles.hero}>
+    <View accessible accessibilityLabel={t('subscription.ready.label', { date })} style={styles.hero}>
       <Text style={[styles.eyebrow, { color: color.progressText }]}>{t('subscription.ready.week', { date })}</Text>
-      <Text accessibilityRole="header" style={[styles.title, { color: color.text }]}>
-        {t('lockedCall.title')}
-      </Text>
+      <Text style={[styles.title, { color: color.text }]}>{t('lockedCall.title')}</Text>
       {line}
       <Text style={[styles.body, { color: color.text }]}>{t('subscription.ready.line')}</Text>
     </View>
@@ -79,7 +91,7 @@ export function WeightExample() {
   const direction = delta === 0 ? 'steady' : delta < 0 ? 'down' : 'up';
   const change = t('subscription.example.weight.change', { change: t(`thisWeek.numbers.${direction}`, { size }) });
   return (
-    <View accessible={false} accessibilityLabel={t('subscription.example.weight.label')} style={styles.hero}>
+    <View accessible accessibilityLabel={t('subscription.example.weight.label')} style={styles.hero}>
       <View style={styles.top}>
         <Text style={[styles.eyebrow, { color: color.progressText }]}>{t('subscription.example.weight.eyebrow')}</Text>
         <FramedTag label={t('subscription.example.tag')} />
