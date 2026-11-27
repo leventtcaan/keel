@@ -5,7 +5,16 @@ guncelleme: 2026-11-27
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (27 Kas — K-1250: günün yemek sayfası hafta şeridi, #814, PR #815 otomatik birleşmede; 9c-6 bitti)
+## ▶ DEVAM NOKTASI (27 Kas — K-1251: Bugünün yürüyüşü sayfası, harita ücretli, #816, PR #817 otomatik birleşmede; 9c-7 bitti)
+**K-1250 birleşti (#815).** **9c-7 (Yürüyüş haritası):** bugünkü yol çekildi ve işaretlendi (5 dokunuş, 12 sorun; `prototip/gorsel-yon/9c7-yuruyus/yuruyus-simdi.jpg`);
+üç yön gerçek rotayla simülatörde (`yuruyus-varyantlar.jpg`), ücretsiz sınırı için üç kilit (`yuruyus-ucretli.jpg`); **Levent A · Kendi sayfası'nı ve 1 · Harita ücretli'yi seçti → ADR-094 Ek 6.**
+K-1251: `/walk` "Bugünün yürüyüşü" (kalan adım + mercan çubuk + dakika, kapatan yürüyüşün rotası, "Hangisi kapatır" listesi); Bu hafta'daki satır petrol ve sayfayı açar,
+kardiyo penceresinde satır, Ayarlar › Aktivite'de Yürüyüşlerim yok. Abonelik yokken harita ve harita ekranı kilitli (okunamazsa kilit değil hata satırı; odakta yeniden okunur).
+Yan düzeltmeler: kesik yürüyüş adı (varış yeri), yürüyüş iki yerini saklar, harita rotaya sığar. K1 yok. Sonra fotosu `yuruyus-sonra.jpg`.
+**Açık:** harita düzenleme ekranı (arama önce, tam boy "sil" düğmeleri) ayrı kart ister; Ayarlar'daki seçili segment hâlâ siyah (9c-9 Ayarlar); K-1216/K-1227 backlog'da hâlâ `todo` (kod var).
+**Sıradaki:** Evre 9 › 9c-8 Abonelik ekranı (önizleme modunda), ya da K-1248 — Levent seçer.
+
+## (önceki) ▶ DEVAM NOKTASI (27 Kas — K-1250: günün yemek sayfası hafta şeridi, #814, PR #815 otomatik birleşmede; 9c-6 bitti)
 **K-1247 birleşti (#813).** **9c-6 kalanı (günün yemek sayfası):** şu an çekildi, 6 sorun (`prototip/gorsel-yon/9c6/gun-simdi.jpg`); üç yön, **Levent A · Hafta şeridi'ni
 seçti → ADR-094 Ek 5.** K-1250: başlık günün kendisi (serif), oklar yok, şerit bir anda 7 gün (`day_strip_visible`, ay kaydırılır), seçim petrol, makrolar mercan,
 öğün başlıkları serif, öneriler öğünlerden sonra ("Kalana uyanlar"). K1 (9) onaylı. Makro renk token'ları artık kullanılmıyor (silmek kontrast testini siler → ayrı K1).
