@@ -1,5 +1,5 @@
 # ADR-095 · Uygulama içi puan isteme: Apple'ın penceresi, rekorlu bitişte
-- **Durum:** ÖNERİ (ürün kararı, Levent'te)
+- **Durum:** KABUL (Levent, 2026-11-28)
 - **Tarih:** 2026-11-28 · **Karar veren:** Levent (öneren: agent) · **Kart:** K-1254 (#821)
 - **Kaynak:** `arastirma/ham/puan-isteme-2026-11-28.md`
 
@@ -14,7 +14,7 @@ süzgeçli geri bildirim manipülasyon sayılır (Business giriş paragrafı). P
 - Kişinin gerçekten iyi hissettiği an (HIG: "demonstrated engagement"), kesinti anı değil (set, dinlenme, kayıt).
 - Veri telefonda kalır (V1-V3): "en son ne zaman sorduk" yalnız cihazda.
 
-## Öneri
+## Karar
 1. **API:** `expo-store-review` `~57.0.3` (Expo'nun kendi paketi; alternatif: kendi yerel modülümüz → bakım yükü, gerekçe yok). `app.config.ts` › `ios.appStoreUrl`.
 2. **An (önerilen A):** antrenman bitiş ekranında, sunucu bu oturumda en az bir **yeni rekor** (`RECORD`) listelediyse, ekran açıldıktan kısa süre sonra.
    Şartlar parametre dosyasında (`data/parameters/review.json`): en az N bitmiş antrenman (öneri 3), ilk kullanımdan en az M gün (öneri 7), iki istek
@@ -33,7 +33,7 @@ süzgeçli geri bildirim manipülasyon sayılır (Business giriş paragrafı). P
 - Pozitif: mağazada puan birikir; Apple'ın penceresi uygulamadan çıkmadan puan aldırır.
 - Negatif: yeni paket ve yeni ikili; etkisi ancak mağaza sürümünde ölçülür (TestFlight'ta görünmez).
 
-## Levent'e sorular
-1. An: A (rekorlu bitiş) mı, B mi, C mi?
-2. Eşikler: 3 antrenman, 7 gün, 14 gün ara uygun mu?
-3. Ayarlar'da "Uygulamayı puanla" satırı olsun mu?
+## Levent'in kararı (28 Kas)
+1. **An: A · rekorlu bitiş.** B ve C seçilmedi.
+2. **Eşikler uygun:** en az 3 bitmiş antrenman, ilk kullanımdan en az 7 gün, iki istek arası en az 14 gün; aynı gün paywall ya da satın alma olduysa sorulmaz.
+3. **Ayarlar'da "Uygulamayı puanla" satırı olsun.**
