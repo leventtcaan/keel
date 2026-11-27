@@ -30,7 +30,7 @@ const refocus = () => act(async () => mockFocus.forEach((effect) => effect()));
 jest.mock('react-native-maps', () => {
   const { View } = require('react-native');
   const MapView = ({ children }: { children: unknown }) => <View testID="map">{children as never}</View>;
-  const Marker = ({ title }: { title?: string }) => <View testID={`marker-${title ?? 'draft'}`} />;
+  const Marker = ({ testID, title, children }: { testID?: string; title?: string; children?: unknown }) => <View testID={testID ?? `marker-${title ?? 'draft'}`}>{children as never}</View>;
   const Polyline = () => <View testID="polyline" />;
   return { __esModule: true, default: MapView, Marker, Polyline };
 });
@@ -141,7 +141,8 @@ describe("today's walk", () => {
     await keepWalks();
     await open();
     expect(screen.getByTestId('map')).toBeTruthy();
-    expect(screen.getByTestId('polyline')).toBeTruthy();
+    // K1 (ADR-094 Ek 7 #2): the walk is two lines now, its paper edge and the petrol line on it.
+    expect(screen.getAllByTestId('polyline')).toHaveLength(2);
     expect(screen.getByTestId('marker-Campus')).toBeTruthy();
     expect(screen.getByTestId('marker-Gym')).toBeTruthy();
     expect(walk).toHaveBeenCalledTimes(1);

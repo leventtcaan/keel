@@ -1,53 +1,97 @@
 import { type ReactNode, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, type ButtonVariant } from '@/components/Button';
+import { Icon } from '@/components/Icon';
 import { ListGroup, ListRow } from '@/components/ListGroup';
 import { ProblemText } from '@/components/ProblemText';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { TextField } from '@/components/TextField';
 import { t } from '@/copy';
-import { formatNumber } from '@/copy/format';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
-import { load } from '@/today/today';
 
-import { formatDistance } from './distance';
+import { DRAFT_OFFSET, MARK_OFFSET, MapMark, type MarkRole } from './MapMark';
 import { walkParams as W } from './params';
 import type { Place } from './places';
 import type { Leg } from './route';
+import { RouteSlip } from './RouteSlip';
 import { stepsPerKm } from './suggest';
+import { readTodaySteps, stepsLeft } from './todaySteps';
 
 type Draft = { name: string; lat: number; lng: number };
 type Found = { name: string; address: string; lat: number; lng: number };
 type Measured = { pair: string; leg: Leg };
-
-/** The dotted line: short dashes and long gaps with round caps read as dots. A look, not a threshold. */
-const DOTS = [1, 8];
-/** Said in code, not text: Button's role and the line's look and the screen reader's politeness. */
-const GHOST: ButtonVariant = 'ghost';
-const POLITE = 'polite';
-const ROUND = 'round';
-const MAP_PADDING = { top: 60, right: 60, bottom: 60, left: 60 };
-
-const nameOf = (error: unknown) => (error instanceof Error ? error.name : 'Unknown');
-const num = (n: number) => formatNumber(Math.round(n));
-const clip = (text: string) => Array.from(text).slice(0, W.nameMaxChars).join('');
+type Point = { latitude: number; longitude: number };
 
 /**
- * The walk map (K-1227, ADR-093): the places the user saved, on Apple Maps, and the walk between two of them as a dotted line with
- * its distance and steps. A place comes from an address search (Apple Maps; said under the box) or from a press and hold on the map.
- * The steps are the distance times the steps in a km (K-1216: from the profile's height, else the default). The two places and the
- * walk are measured once, when the second is picked; a walk can be kept in "My walks", which the home screen's line then uses.
- * Nothing here reads where the phone is.
+ * The quiet map (K-1252, ADR-094 Ek 7 #1): Apple's muted map, no businesses, buildings or compass, no tilt. Said in code, not text:
+ * these are the map's look. Where the phone is stays off on each map itself (showsUserLocation, K-1227's privacy test reads it there).
+ */
+const QUIET = {
+  mapType: 'mutedStandard',
+  showsPointsOfInterests: false,
+  showsBuildings: false,
+  showsCompass: false,
+  pitchEnabled: false,
+} as const;
+/** The walk's line on its paper edge (Ek 7 #2): the edge is drawn first, wider, in the page's colour; a look, not a threshold. */
+const EDGE_WIDTH = 10;
+const LINE_WIDTH = 5;
+const ROUND = 'round';
+const TEXT: ButtonVariant = 'text';
+const POLITE = 'polite';
+const SEARCH = 'search';
+const MAP_HEIGHT = 330;
+/** Room around the points; the top leaves the search pill's height clear. */
+const MAP_PADDING = { top: 110, right: 60, bottom: 50, left: 60 };
+/** One place alone is shown with this much around it (degrees, about a street's scale), not fitted to a single point (Ek 7 #4). */
+const ONE_PLACE_SPAN = 0.008;
+
+const nameOf = (error: unknown) => (error instanceof Error ? error.name : 'Unknown');
+const clip = (text: string) => Array.from(text).slice(0, W.nameMaxChars).join('');
+const pointOf = (p: { lat: number; lng: number }): Point => ({ latitude: p.lat, longitude: p.lng });
+
+/** The map shown on `points`: around the one place when there is one, fitted to all of them when more. */
+function show(map: MapView | null, points: Point[], padding = MAP_PADDING) {
+  if (points.length === 1) map?.animateToRegion?.({ ...points[0], latitudeDelta: ONE_PLACE_SPAN, longitudeDelta: ONE_PLACE_SPAN }, 0);
+  else if (points.length > 1) map?.fitToCoordinates?.(points, { edgePadding: padding, animated: false });
+}
+
+/** The walk's line: the paper edge, then the petrol line on it, solid with round ends. */
+function WalkLine({ path }: { path: Leg['path'] }) {
+  const { color } = useTheme();
+  const coordinates = path.map(pointOf);
+  return (
+    <>
+      <Polyline coordinates={coordinates} strokeColor={color.background} strokeWidth={EDGE_WIDTH} lineCap={ROUND} lineJoin={ROUND} />
+      <Polyline coordinates={coordinates} strokeColor={color.accent} strokeWidth={LINE_WIDTH} lineCap={ROUND} lineJoin={ROUND} />
+    </>
+  );
+}
+
+function PlaceMarker({ place, role, onPress }: { place: Place; role: MarkRole; onPress?: () => void }) {
+  return (
+    <Marker testID={`marker-${place.name}`} coordinate={pointOf(place)} centerOffset={MARK_OFFSET} tracksViewChanges={false} onPress={onPress}>
+      <MapMark role={role} name={place.name} />
+    </Marker>
+  );
+}
+
+/**
+ * The walk map (K-1227, ADR-093; drawn again by K-1252, ADR-094 Ek 7 · route slip): the places the user saved on a quiet Apple map with
+ * the app's own marks, a search on the map's top, and, once two are picked, the walk between them as a petrol line and, under the map,
+ * the route slip: the two places, the one-way distance and minutes, the round trip, and what it does for today's steps when they are read.
+ * A place comes from the search (Apple Maps; said at the foot) or from a press and hold. A walk is kept in "My walks", which Today's
+ * walk then uses. Places are removed from Edit. Nothing here reads where the phone is.
  */
 export function WalkMapScreen() {
-  const { api, geo, places: store, walks, report } = useAppServices();
+  const { api, geo, places: store, walks, report, syncHealth } = useAppServices();
   const system = useUnits();
-  const { color } = useTheme();
+  const { color, scheme } = useTheme();
   const places = useSyncExternalStore(store.subscribe, store.current);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Found[] | null>(null);
@@ -58,23 +102,22 @@ export function WalkMapScreen() {
   const [fromId, setFromId] = useState<string | null>(null);
   const [toId, setToId] = useState<string | null>(null);
   const [measured, setMeasured] = useState<Measured | null>(null);
-  const [perKm, setPerKm] = useState(() => stepsPerKm(null));
+  const [today, setToday] = useState<{ perKm: number; left: number }>(() => ({ perKm: stepsPerKm(null), left: Number.NaN }));
   const [notice, setNotice] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
   const map = useRef<MapView>(null);
 
   const from = places.find((p) => p.id === fromId) ?? null;
   const to = places.find((p) => p.id === toId) ?? null;
 
-  // The stride, from the profile's height (K-1216); the default until it answers or when it cannot.
+  // Today's steps and the stride (K-1216), as Today's walk reads them; the default stride and no today until they answer or when they cannot.
   useEffect(() => {
     let current = true;
-    void load(() => api.GET('/v1/profile')).then((profile) => {
-      if (current && profile.state === 'ready') setPerKm(stepsPerKm(profile.value.heightCm));
-    });
+    void readTodaySteps({ api, syncHealth, report }).then((read) => current && setToday({ perKm: read.perKm, left: stepsLeft(read.steps) }));
     return () => {
       current = false;
     };
-  }, [api]);
+  }, [api, syncHealth, report]);
 
   // The walk between the two picked places, asked once for the pair; an answer for another pair is not this one's.
   const pair = from === null || to === null ? null : `${from.id}:${to.id}`;
@@ -88,16 +131,18 @@ export function WalkMapScreen() {
   }, [geo, from, to, pair]);
   const ready = pair !== null && measured?.pair === pair ? measured.leg : null;
 
-  // The places and, once measured, the walk's own line: the map is fitted to all of it, so a route that leaves the places' box stays in view.
+  // The places and, once measured, the walk's own line: the map shows all of it, so a route that leaves the places' box stays in view.
+  // The draft by its point alone: typing its name gives it a new identity on every key, and must not move the map (K-1252 review).
+  const draftLat = draft?.lat;
+  const draftLng = draft?.lng;
   const points = useMemo(
-    () => [...places, ...(draft === null ? [] : [draft]), ...(ready?.path ?? [])].map((p) => ({ latitude: p.lat, longitude: p.lng })),
-    [places, draft, ready],
+    () => [...places, ...(draftLat === undefined || draftLng === undefined ? [] : [{ lat: draftLat, lng: draftLng }]), ...(ready?.path ?? [])].map(pointOf),
+    [places, draftLat, draftLng, ready],
   );
-  useEffect(() => {
-    if (points.length > 0) map.current?.fitToCoordinates?.(points, { edgePadding: MAP_PADDING, animated: false });
-  }, [points]);
+  useEffect(() => show(map.current, points), [points]);
 
   async function search() {
+    if (Array.from(query.trim()).length < W.searchMinChars) return;
     setSearchProblem(null);
     const found = await geo.find(query);
     if (found === null) {
@@ -138,6 +183,8 @@ export function WalkMapScreen() {
   }
 
   async function remove(place: Place) {
+    // Edit ends with the last place: its Done goes with the list, and a place added after is one to pick (K-1252 review).
+    if (places.length <= 1) setEditing(false);
     if (fromId === place.id) setFromId(null);
     if (toId === place.id) setToId(null);
     await store.remove(place.id).catch((error: unknown) => report({ name: nameOf(error) }));
@@ -160,145 +207,191 @@ export function WalkMapScreen() {
   const fullName = from !== null && to !== null ? t('walkMap.routeName', { from: from.name, to: to.name }) : '';
   const routeName = to === null ? '' : Array.from(fullName).length <= W.nameMaxChars ? fullName : clip(to.name);
   const full = places.length >= W.placesMax;
+  const roleOf = (place: Place): MarkRole => (place.id === fromId ? 'from' : place.id === toId ? 'to' : 'idle');
+  const searchable = Array.from(query.trim()).length >= W.searchMinChars;
+
   const row = (place: Place) => {
-    const role = place.id === fromId ? t('walkMap.from') : place.id === toId ? t('walkMap.to') : undefined;
+    if (editing) {
+      return <ListRow key={place.id} label={place.name} icon="minus.circle.fill" destructive accessibilityLabel={t('walkMap.removeLabel', { name: place.name })} onPress={() => void remove(place)} />;
+    }
+    const role = roleOf(place);
+    const said = role === 'from' ? t('walkMap.from') : role === 'to' ? t('walkMap.to') : undefined;
     return (
       <ListRow
         key={place.id}
         label={place.name}
-        value={role}
-        accessibilityLabel={role === undefined ? t('walkMap.placeLabel', { name: place.name }) : `${role}: ${place.name}`}
+        icon={role === 'from' ? 'circle.circle' : role === 'to' ? 'smallcircle.filled.circle.fill' : 'circle'}
+        value={said}
+        accessibilityLabel={said === undefined ? t('walkMap.placeLabel', { name: place.name }) : `${said}: ${place.name}`}
         onPress={() => pick(place)}
       />
     );
   };
 
-  let walk: ReactNode = <Text style={[styles.note, { color: color.muted }]}>{t('walkMap.pick')}</Text>;
-  if (pair !== null && ready === null) walk = <Text style={[styles.note, { color: color.muted }]}>{t('walkMap.measuring')}</Text>;
-  if (ready !== null) {
-    const { km, approximate } = ready;
-    const values = { distance: formatDistance(km, system), steps: num(km * perKm) };
+  // Under the map: the route slip once the walk is measured, what to do before it.
+  let walk: ReactNode = <Text style={[styles.note, { color: color.textSecondary }]}>{t(places.length < 2 ? 'walkMap.pickOne' : 'walkMap.pick')}</Text>;
+  if (pair !== null && ready === null) walk = <Text style={[styles.note, { color: color.textSecondary }]}>{t('walkMap.measuring')}</Text>;
+  if (ready !== null && from !== null && to !== null) {
     walk = (
       <View style={styles.stack}>
-        <Text accessibilityLiveRegion={POLITE} style={[styles.leg, { color: color.text }]}>{t(approximate ? 'walkMap.legApprox' : 'walkMap.leg', values)}</Text>
-        <Text style={[styles.note, { color: color.muted }]}>{t('walkMap.round', { steps: num(2 * km * perKm) })}</Text>
-        <Button label={t('walkMap.saveWalk')} accessibilityLabel={t('walkMap.saveWalkLabel', { name: routeName })} variant="secondary" onPress={() => from !== null && to !== null && void saveWalk(routeName, km, { from: from.id, to: to.id })} />
+        <RouteSlip from={from} to={to} leg={ready} perKm={today.perKm} left={today.left} system={system} />
+        <Button label={t('walkMap.saveWalk')} accessibilityLabel={t('walkMap.saveWalkLabel', { name: routeName })} onPress={() => void saveWalk(routeName, ready.km, { from: from.id, to: to.id })} />
+        {notice !== null && <Text accessibilityLiveRegion={POLITE} style={[styles.note, { color: color.text }]}>{t(notice)}</Text>}
       </View>
     );
   }
+
+  // Built apart from the JSX tree they join (copy-literals reads the tree's children for text).
+  const draftMark =
+    draft === null ? null : (
+      <Marker testID="marker-draft" coordinate={pointOf(draft)} centerOffset={DRAFT_OFFSET} tracksViewChanges={false}>
+        <MapMark role="draft" />
+      </Marker>
+    );
+  const searchButton = searchable ? (
+    <Pressable accessibilityRole="button" onPress={() => void search()} hitSlop={tokens.space.sm}>
+      <Text style={[styles.pillSearch, { color: color.accent }]}>{t('walkMap.search')}</Text>
+    </Pressable>
+  ) : null;
+  const editButton = places.length === 0 ? null : <Button label={t(editing ? 'walkMap.editDone' : 'walkMap.edit')} variant={TEXT} size="sm" onPress={() => setEditing(!editing)} />;
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         <ScreenTitle>{t('walkMap.title')}</ScreenTitle>
-        <View style={styles.stack}>
-          <TextField label={t('walkMap.searchLabel')} value={query} onChangeText={setQuery} onSearch={() => void search()} hint={t('walkMap.searchNote')} />
-          <Button label={t('walkMap.search')} variant="secondary" disabled={Array.from(query.trim()).length < W.searchMinChars} onPress={() => void search()} />
-          {searchProblem !== null && <ProblemText style={[styles.note, { color: color.text }]}>{t(searchProblem)}</ProblemText>}
-          {results !== null && results.length === 0 && <Text style={[styles.note, { color: color.muted }]}>{t('walkMap.noMatch')}</Text>}
-          {results !== null && results.length > 0 && (
-            <ListGroup>
-              {results.map((r, i) => (
-                <ListRow
-                  key={`${r.lat},${r.lng},${i}`}
-                  label={r.name}
-                  detail={r.address}
-                  accessibilityLabel={t('walkMap.resultLabel', { name: r.name, address: r.address })}
-                  onPress={() => setDraft({ name: clip(r.name), lat: r.lat, lng: r.lng })}
-                />
+
+        <View style={styles.map}>
+          <View accessible accessibilityLabel={t('walkMap.mapLabel')} style={StyleSheet.absoluteFill}>
+            <MapView
+              ref={map}
+              style={StyleSheet.absoluteFill}
+              {...QUIET}
+              showsUserLocation={false}
+              showsMyLocationButton={false}
+              userInterfaceStyle={scheme}
+              onMapReady={() => show(map.current, points)}
+              onLongPress={(event) => {
+                const { latitude, longitude } = event.nativeEvent.coordinate;
+                if (!full) setDraft({ name: '', lat: latitude, lng: longitude });
+              }}
+            >
+              {ready !== null && <WalkLine path={ready.path} />}
+              {/* Keyed by the role too: a mark that changes its part is drawn again (tracksViewChanges is off, the map keeps the first look). */}
+              {places.map((p) => (
+                <PlaceMarker key={`${p.id}:${roleOf(p)}`} place={p} role={roleOf(p)} onPress={() => pick(p)} />
               ))}
-            </ListGroup>
-          )}
-          <Text style={[styles.note, { color: color.muted }]}>{t('walkMap.holdHint')}</Text>
+              {draftMark}
+            </MapView>
+          </View>
+          <View style={[styles.pill, { backgroundColor: color.background, borderColor: color.line }]}>
+            <Icon name="magnifyingglass" size="small" tone="muted" />
+            <TextInput
+              accessibilityLabel={t('walkMap.searchLabel')}
+              placeholder={t('walkMap.searchLabel')}
+              placeholderTextColor={color.muted}
+              value={query}
+              onChangeText={setQuery}
+              onSubmitEditing={() => void search()}
+              returnKeyType={SEARCH}
+              style={[styles.pillInput, { color: color.text }]}
+            />
+            {searchButton}
+          </View>
         </View>
 
-        <View accessible accessibilityLabel={t('walkMap.mapLabel')} style={styles.map}>
-          <MapView
-            ref={map}
-            style={StyleSheet.absoluteFill}
-            showsUserLocation={false}
-            showsMyLocationButton={false}
-            onLongPress={(event) => {
-              const { latitude, longitude } = event.nativeEvent.coordinate;
-              if (!full) setDraft({ name: '', lat: latitude, lng: longitude });
-            }}
-          >
-            {places.map((p) => (
-              <Marker key={p.id} coordinate={{ latitude: p.lat, longitude: p.lng }} title={p.name} pinColor={p.id === fromId || p.id === toId ? color.accent : color.muted} />
-            ))}
-            {draft !== null && <Marker coordinate={{ latitude: draft.lat, longitude: draft.lng }} pinColor={color.text} />}
-            {ready !== null && (
-              <Polyline
-                coordinates={ready.path.map((p) => ({ latitude: p.lat, longitude: p.lng }))}
-                strokeColor={color.accent}
-                strokeWidth={4}
-                lineCap={ROUND}
-                lineDashPattern={DOTS}
+        {searchProblem !== null && <ProblemText style={[styles.note, { color: color.text }]}>{t(searchProblem)}</ProblemText>}
+        {results !== null && results.length === 0 && <Text style={[styles.note, { color: color.textSecondary }]}>{t('walkMap.noMatch')}</Text>}
+        {results !== null && results.length > 0 && (
+          <ListGroup>
+            {results.map((r, i) => (
+              <ListRow
+                key={`${r.lat},${r.lng},${i}`}
+                label={r.name}
+                detail={r.address}
+                accessibilityLabel={t('walkMap.resultLabel', { name: r.name, address: r.address })}
+                onPress={() => setDraft({ name: clip(r.name), lat: r.lat, lng: r.lng })}
               />
-            )}
-          </MapView>
-        </View>
+            ))}
+          </ListGroup>
+        )}
 
-        {draft !== null && (
+        {draft !== null ? (
           <View style={styles.stack}>
             <TextField label={t('walkMap.nameLabel')} value={draft.name} onChangeText={(name) => setDraft({ ...draft, name })} maxLength={W.nameMaxChars} problem={invalid ? t('walkMap.invalid') : null} />
             <Button label={t('walkMap.save')} accessibilityLabel={t('walkMap.saveLabel')} onPress={() => void savePlace()} />
-            <Button label={t('walkMap.cancel')} variant={GHOST} onPress={() => setDraft(null)} />
+            <Button label={t('walkMap.cancel')} variant={TEXT} onPress={() => setDraft(null)} />
           </View>
+        ) : (
+          walk
         )}
         {problem !== null && <ProblemText style={[styles.note, { color: color.text }]}>{t(problem)}</ProblemText>}
-        {full && draft === null && <Text style={[styles.note, { color: color.muted }]}>{t('walkMap.full')}</Text>}
+        {full && draft === null && <Text style={[styles.note, { color: color.textSecondary }]}>{t('walkMap.full')}</Text>}
 
-        <View style={styles.stack}>
-          <Text accessibilityRole="header" style={[styles.heading, { color: color.text }]}>{t('walkMap.places')}</Text>
-          {places.length === 0 ? <Text style={[styles.note, { color: color.muted }]}>{t('walkMap.none')}</Text> : <ListGroup>{places.map(row)}</ListGroup>}
-          {places.map((p) => (
-            <Button key={p.id} label={t('walkMap.removeLabel', { name: p.name })} variant={GHOST} onPress={() => void remove(p)} />
-          ))}
+        <View style={styles.stackSmall}>
+          <View style={styles.head}>
+            <Text accessibilityRole="header" style={[styles.heading, { color: color.text }]}>{t('walkMap.places')}</Text>
+            {editButton}
+          </View>
+          {places.length === 0 ? <Text style={[styles.note, { color: color.textSecondary }]}>{t('walkMap.none')}</Text> : <ListGroup>{places.map(row)}</ListGroup>}
+          <Text style={[styles.small, { color: color.textSecondary }]}>{t('walkMap.holdHint')}</Text>
+          <Text style={[styles.small, { color: color.textSecondary }]}>{t('walkMap.searchNote')}</Text>
         </View>
-
-        {walk}
-        {notice !== null && <Text accessibilityLiveRegion={POLITE} style={[styles.note, { color: color.text }]}>{t(notice)}</Text>}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 /**
- * A walk on the map, to look at (K-1251, Today's walk): the places, and the walk's dotted line when it is measured, fitted to the view. It is
- * here, beside the map screen, so react-native-maps stays in this one file, which never shows where the phone is.
+ * A walk on the map, to look at (K-1251, Today's walk; the quiet map and marks of K-1252): the places, and the walk's line when it is
+ * measured, shown to fit. With `ends` the two places are the walk's start and end; else they are places alone. It is here, beside the map
+ * screen, so react-native-maps stays in this one file, which never shows where the phone is.
  */
-export function RouteMap({ places, path, height }: { places: Place[]; path: Leg['path'] | null; height: number }) {
-  const { color } = useTheme();
+export function RouteMap({ places, path, height, ends = false }: { places: Place[]; path: Leg['path'] | null; height: number; ends?: boolean }) {
+  const { scheme } = useTheme();
   const map = useRef<MapView>(null);
-  const points = (path ?? places).map((p) => ({ latitude: p.lat, longitude: p.lng }));
-  const fit = () => {
-    if (points.length > 0) map.current?.fitToCoordinates?.(points, { edgePadding: MAP_PADDING, animated: false });
-  };
-  // Fitted again only when the points do: the parent draws again on every read and store change (K-1251 review).
+  const points = (path ?? places).map(pointOf);
+  const fit = () => show(map.current, points);
+  // Shown again only when the points change: the parent draws again on every read and store change (K-1251 review).
   const key = points.map((p) => `${p.latitude},${p.longitude}`).join(';');
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(fit, [key]);
+  const roleOf = (index: number): MarkRole => (!ends ? 'idle' : index === 0 ? 'from' : 'to');
   return (
     <View accessible accessibilityLabel={t('walkMap.mapLabel')} style={[styles.map, { height }]}>
-      <MapView ref={map} style={StyleSheet.absoluteFill} showsUserLocation={false} showsMyLocationButton={false} scrollEnabled={false} zoomEnabled={false} onMapReady={fit}>
-        {places.map((p) => (
-          <Marker key={p.id} coordinate={{ latitude: p.lat, longitude: p.lng }} title={p.name} pinColor={color.accent} />
+      <MapView ref={map} style={StyleSheet.absoluteFill} {...QUIET} showsUserLocation={false} showsMyLocationButton={false} userInterfaceStyle={scheme} scrollEnabled={false} zoomEnabled={false} onMapReady={fit}>
+        {path !== null && <WalkLine path={path} />}
+        {places.map((p, i) => (
+          <PlaceMarker key={`${p.id}:${roleOf(i)}`} place={p} role={roleOf(i)} />
         ))}
-        {path !== null && (
-          <Polyline coordinates={path.map((p) => ({ latitude: p.lat, longitude: p.lng }))} strokeColor={color.accent} strokeWidth={4} lineCap={ROUND} lineDashPattern={DOTS} />
-        )}
       </MapView>
     </View>
   );
 }
 
+const PILL = 44;
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  body: { padding: tokens.space.lg, gap: tokens.space.lg },
+  body: { padding: tokens.space.lg, gap: tokens.space.xl },
   stack: { gap: tokens.space.md },
-  map: { height: 280, borderRadius: tokens.radius.card, overflow: 'hidden' },
+  stackSmall: { gap: tokens.space.sm },
+  map: { height: MAP_HEIGHT, borderRadius: tokens.radius.card, overflow: 'hidden' },
+  pill: {
+    position: 'absolute',
+    top: tokens.space.md,
+    left: tokens.space.md,
+    right: tokens.space.md,
+    height: PILL,
+    borderRadius: PILL / 2,
+    borderWidth: tokens.border.hairline,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: tokens.space.md,
+    gap: tokens.space.sm,
+  },
+  pillInput: { flex: 1, fontSize: tokens.type.body },
+  pillSearch: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.semibold },
+  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  heading: { ...tokens.face.display, fontSize: tokens.type.heading },
   note: { fontSize: tokens.type.bodySmall },
-  leg: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
-  heading: { fontSize: tokens.type.label, fontWeight: tokens.weight.semibold },
+  small: { fontSize: tokens.type.label },
 });

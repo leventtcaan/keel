@@ -336,3 +336,33 @@ penceresi (Kardiyo ve Yürüyüş sekmeleri). Ücretsiz sınırı için üç kil
    çizsin; harita ekranı rotayı çizince haritayı rotaya sığdırır.
 Seçilmeyen: B (ana ekran 130 pt uzar, rota o boyda okunmaz), C (alttan gelen pencere ve bir sekme dokunuşu daha); 2 ve 3. Harita düzenleme ekranının
 kendisi (arama önce, tam boy "sil" düğmeleri) ayrı kart.
+
+## Ek 7 · Yürüyüş haritası düzenleme ekranı: rota fişi (9c madde 7, 2026-11-27, Levent)
+Bugünkü ekran simülatörde çekildi ve işaretlendi (`prototip/gorsel-yon/9c7-yuruyus/harita-simdi.jpg`):
+- arama formu ve gri "Ara" düğmesi haritanın önünde;
+- tek yer kalınca harita en yakın zoom'a gidip gri kalıyor;
+- her yerin altında tam boy "X yerini sil" düğmesi;
+- sonuç ve "Yürüyüş olarak kaydet" en altta kum düğme, kayıt notu ekranın dışında, bugünkü açığa bağlı değil;
+- elle km yazmak ayrı sayfa (Yürüyüşlerim).
+İlk tur üç yön (`harita-varyantlar.jpg`: harita önde, nereden-nereye, tek sayfa) Levent'e "LLM'den çıkan ilk görsel" gibi geldi: varsayılan
+iğneler, işletmelerle dolu harita, kart üstüne kart. İkinci tur (`harita-varyantlar-2.jpg`) haritayı ve işaretleri baştan çizdi; üç kompozisyon:
+A · Rota fişi, B · Harita sayfanın kendisi (kenardan kenara harita, kâğıt pencere), C · Yürüyüş defteri (tek sayfa, elle km ile). **Levent A'yı seçti.**
+
+**Uygulama (K-1252):**
+1. **Sessiz harita:** Apple'ın soluk harita tipi (`mutedStandard`), işletme, bina ve pusula yok, eğme kapalı; tema koyuysa harita da koyu.
+   Bugünün yürüyüşü sayfasındaki rota haritası (Ek 6 #1) da aynı haritadır.
+2. **Kendi işaretler:** başlangıç petrol halka, varış dolu petrol nokta, seçilmeyen yer küçük gri nokta; yerin adı noktanın üstünde küçük kâğıt
+   etikette (ince çizgi, 13 pt). Varsayılan iğne ve renkli iğne kalkar. Rota kâğıt kenarlı düz petrol çizgi (noktalı değil); iki sayfada aynı.
+3. **Arama haritanın üstünde tek satır:** büyüteçli kâğıt hap; yazınca sağında petrol "Ara". Sonuçlar haritanın altında sistem listesi.
+   Apple Haritalar notu ve "haritaya basılı tut" en altta küçük yazı.
+4. **Tek yer sokak ölçeğinde:** tek nokta `fitToCoordinates`'e verilmez, o yerin çevresi gösterilir.
+5. **Rota fişi haritanın hemen altında:** halka, yer adı (serif), noktalı dikey çizgi yanında "3,2 km · 39 dk tek yön", dolu nokta, varış adı (serif).
+   Altında büyük yuvarlak rakam "8.476" ve "adım gidiş dönüş · 77 dk". Bugünkü adım okunduysa mercan çubuk yürüyüşün kalan adımın ne kadarını
+   kapattığını gösterir; kapatıyorsa petrol tik ve "Bugün kalan 5.800 adımı kapatır", kapatmıyorsa yalnız "Bugün kalan 5.800 adım" (eksik
+   sayısı yok, U7). Ardından tek petrol birincil düğme "Yürüyüşlerime ekle".
+6. **Yerler:** serif "Yerlerin" başlığı, sağında petrol "Düzenle"; satır simgesi rolü söyler (halka, dolu nokta, boş). "Düzenle" satırlara kırmızı
+   sil işareti koyar, satıra dokunmak siler; tam boy sil düğmeleri kalkar.
+7. Levent sonucu simülatörde gördü (`9c7-yuruyus/harita-sonra.jpg`). K1 (yürüyüş cümlesi ve gidiş dönüş adımı erişilebilirlik etiketinde, çizgi düz,
+   silme Düzenle'den, yer işaretiyle bulunur, Bugünün yürüyüşü'nde iki çizgi) Levent onaylı (27 Kas).
+Seçilmeyen: B (harita büyük ama yerler pencerede hap, elle km yine ayrı), C (tek sayfa, elle km birlikte; sayfa uzun, sonuç ilk ekranın altında).
+Elle km Yürüyüşlerim sayfasında kalır (A'nın bilinen bedeli). Hiç yer yokken haritanın başlangıç bölgesi aynen kalır (konum okunmaz, V1).

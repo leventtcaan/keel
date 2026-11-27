@@ -2918,12 +2918,20 @@
     "leg": "{distance} one way, about {steps} steps",
     "legApprox": "About {distance} one way, about {steps} steps. Apple Maps had no route, so this is estimated.",
     "round": "{steps} steps there and back",
-    "saveWalk": "Save as a walk",
+    "saveWalk": "Add to My walks",
     "saveWalkLabel": "Save {name} in My walks",
     "walkSaved": "Saved in My walks. Today's walk line can use it.",
     "walkFull": "My walks has three. Remove one there first.",
     "walkExists": "Already in My walks.",
-    "routeName": "{from} to {to}"
+    "routeName": "{from} to {to}",
+    "slipLeg": "{distance} · {minutes} min one way",
+    "roundUnit": "steps there and back · {minutes} min",
+    "covers": "Covers the {steps} steps left today",
+    "leftToday": "{steps} steps left today",
+    "coverShare": "{steps} of the {left} steps left today",
+    "pickOne": "Add one more place: a walk is measured between two.",
+    "edit": "Edit",
+    "editDone": "Done"
   },
   "units": {
     "kg": "{value} kg",
