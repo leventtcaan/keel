@@ -5,7 +5,7 @@ guncelleme: 2026-11-28
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (28 Kas — K-1253: abonelik ekranı Sıcak defter, #820, PR otomatik birleşmede; 9c-8 bitti)
+## ▶ DEVAM NOKTASI (28 Kas — K-1253: abonelik ekranı Sıcak defter, #820, PR #822 otomatik birleşmede; 9c-8 bitti)
 **K-1252 birleşti (#819).** **9c-8 (Abonelik):** önce **önizleme modu** (yalnız `__DEV__` + `EXPO_PUBLIC_PAYWALL_PREVIEW=1`; örnek planlar `subscription.json` ›
 `paywall_preview_plans`, hiçbir şey satmaz; sim `.env`'i yasal iki adresi de ister). Bugünkü ekran çekildi ve işaretlendi (`prototip/gorsel-yon/9c8-abonelik/abonelik-simdi.jpg`);
 A/B/C sonra B+C karışımı D/E/F; kilo vaadi U12 + ADR-050 yüzünden yok, kendi geçmiş kilo çizgisi var. **Levent F + E'yi seçti → ADR-094 Ek 8.** K-1253: bant ve kart yok,
