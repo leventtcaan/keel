@@ -6430,7 +6430,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: doing
+    status: done
     depends_on: [K-1251]
     why: "9c madde 7'nin kalanı: harita ekranında arama formu haritanın önünde, tek yerde gri harita, tam boy sil düğmeleri, sonuç ve kaydet en altta. İlk tur Levent'e 'LLM'den çıkan ilk görsel' geldi; ikinci turda A · Rota fişi'ni seçti (ADR-094 Ek 7)"
     acceptance:

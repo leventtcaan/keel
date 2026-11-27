@@ -5,13 +5,13 @@ guncelleme: 2026-11-27
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (27 Kas — K-1252: yürüyüş haritası düzenleme ekranı rota fişi, #818, PR açık, K1 Levent onayı bekliyor)
+## ▶ DEVAM NOKTASI (27 Kas — K-1252: yürüyüş haritası düzenleme ekranı rota fişi, #818, PR #819 otomatik birleşmede; 9c-7 bitti)
 **K-1251 birleşti (#817).** **9c-7 harita düzenleme:** bugünkü ekran çekildi (`prototip/gorsel-yon/9c7-yuruyus/harita-simdi.jpg`, 6 sorun); ilk tur üç yön
 Levent'e "LLM'den çıkan ilk görsel" geldi; ikinci tur (`harita-varyantlar-2.jpg`: sessiz harita, kendi işaretler) → **Levent A · Rota fişi'ni seçti → ADR-094 Ek 7.**
 K-1252: mutedStandard harita (işletme/bina/pusula yok), başlangıç halka · varış dolu nokta · gri nokta + kâğıt etiket, kâğıt kenarlı düz petrol rota (Bugünün
 yürüyüşü haritası da), arama haritanın üstünde hap, tek yerde sokak ölçeği, rota fişi (serif yer adları, büyük gidiş dönüş adım, bugün okunduysa mercan çubuk +
 "kapatır"), Düzenle ile silme. `todaySteps.ts` iki sayfanın ortak okuması. Sonuç `harita-sonra.jpg`. K-1216/K-1227 kartları done (PR'lar birleşmişti, doğrulayıcı kırılıyordu).
-**Sıradaki:** K1 onayı → `gh pr merge --auto --squash`; sonra Evre 9'un sıradaki parçası ya da K-1248 — Levent seçer.
+K1 Levent onaylı. **Sıradaki:** Evre 9'un sıradaki parçası (`plan/evre-9-tasarim.md`) ya da K-1248 (sunucu: Türkçe porsiyon adı) — Levent seçer.
 
 ## ▶ DEVAM NOKTASI (27 Kas — K-1251: Bugünün yürüyüşü sayfası, harita ücretli, #816, PR #817 otomatik birleşmede; 9c-7 bitti)
 **K-1250 birleşti (#815).** **9c-7 (Yürüyüş haritası):** bugünkü yol çekildi ve işaretlendi (5 dokunuş, 12 sorun; `prototip/gorsel-yon/9c7-yuruyus/yuruyus-simdi.jpg`);

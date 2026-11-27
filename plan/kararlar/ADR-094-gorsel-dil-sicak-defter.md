@@ -362,6 +362,7 @@ A · Rota fişi, B · Harita sayfanın kendisi (kenardan kenara harita, kâğıt
    sayısı yok, U7). Ardından tek petrol birincil düğme "Yürüyüşlerime ekle".
 6. **Yerler:** serif "Yerlerin" başlığı, sağında petrol "Düzenle"; satır simgesi rolü söyler (halka, dolu nokta, boş). "Düzenle" satırlara kırmızı
    sil işareti koyar, satıra dokunmak siler; tam boy sil düğmeleri kalkar.
-7. Levent sonucu simülatörde görür. K1 varsa birleştirmeden önce sorulur.
+7. Levent sonucu simülatörde gördü (`9c7-yuruyus/harita-sonra.jpg`). K1 (yürüyüş cümlesi ve gidiş dönüş adımı erişilebilirlik etiketinde, çizgi düz,
+   silme Düzenle'den, yer işaretiyle bulunur, Bugünün yürüyüşü'nde iki çizgi) Levent onaylı (27 Kas).
 Seçilmeyen: B (harita büyük ama yerler pencerede hap, elle km yine ayrı), C (tek sayfa, elle km birlikte; sayfa uzun, sonuç ilk ekranın altında).
 Elle km Yürüyüşlerim sayfasında kalır (A'nın bilinen bedeli). Hiç yer yokken haritanın başlangıç bölgesi aynen kalır (konum okunmaz, V1).
