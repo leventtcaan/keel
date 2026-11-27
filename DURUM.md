@@ -1,11 +1,19 @@
 ---
-guncelleme: 2026-11-26
+guncelleme: 2026-11-27
 ---
 # DURUM
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (26 Kas — K-1244: paylaş kartı ve akışı, #806, PR otomatik birleşmede; 9c-7 bitti)
+## ▶ DEVAM NOKTASI (27 Kas — K-1246: Gelişim kısa defter, #808, PR otomatik birleşmede; 9c-5 bitti)
+**K-1244 birleşti (#807).** **9c-5 (Gelişim):** bugünkü sayfa simülatörde çekildi ve işaretlendi (3,6 ekran boyu), üç yön gerçek veriyle çizildi;
+**Levent A · Kısa defter'i seçti → ADR-094 Ek 3.** K-1246: fotoğraf tek satır kararın (ilk günlerde hedeflerin) altında, grafik petrol çizgi +
+mercan son nokta, güç hapları yerine hareket adı + sistem listesi (petrol), kas haritası küçük ve dokunulur (dokunulan kasın seti altta),
+"Düzen" ve "Kas başına set" kartları kalktı, son 3 karar + "ve N karar daha" (`calls_folded`). Sayfa 2,2 ekran boyu. Fotoğraf pencere cümleleri
+kısaldı (bütçe 50 aynen). Levent simülatör fotosunu onayladı, K1 onaylı. Görseller `prototip/gorsel-yon/9c5/`.
+**Sıradaki:** Evre 9 › 9c-6 Yemek (öğün kaydı, arama, ev ölçüleri) aynı yöntemle, ya da K-1245 (video) — Levent seçer.
+
+## (önceki) ▶ DEVAM NOKTASI (26 Kas — K-1244: paylaş kartı ve akışı, #806, PR otomatik birleşmede; 9c-7 bitti)
 **K-1243 birleşti (#805).** **K-1244:** paylaş kartı C · kâğıt kart, RN görünümü + `react-native-view-shot` ile PNG (New York serif, SF Rounded
 rakam, mercan üst yazı + tarih, rekor fosforlu kendi satırında, sağ altta küçük logo). Levent simülatörde revize etti → kartlar **kaydırılan
 dizi**, tek **Fotoğraf ekle**, tek **Paylaş** (Story / Instagram'da düğmeleri kalktı); yalnız foto, ücretsiz (ADR-094 Ek 2 › Uygulama #10

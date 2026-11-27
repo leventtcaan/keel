@@ -4,7 +4,6 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { ProblemText } from '@/components/ProblemText';
 import { Button } from '@/components/Button';
-import { Section } from '@/components/Section';
 import { t } from '@/copy';
 import { useAppServices } from '@/services/ServicesProvider';
 import { askFirst } from '@/settings/askFirst';
@@ -99,11 +98,22 @@ export function PhotoCard({ today, flowWeek }: Props) {
       </View>
     );
 
+  const window = photoWindow(last, today, flowWeek);
+  // One row near the top of Progress (ADR-094 Ek 3 #2): on the suggested action's ground while a photo is asked for now,
+  // on the quiet one while the window has not opened.
+  const ground = ASKED.includes(window.kind) ? color.tintSuggest : color.tintDay;
   return (
-    <Section card testID="photo-card" title={t('photos.title')}>
-      <Text style={[styles.text, { color: color.textSecondary }]}>{windowText(photoWindow(last, today, flowWeek))}</Text>
+    <View testID="photo-card" style={[styles.card, { backgroundColor: ground }]}>
+      <View testID="photo-row" style={styles.row}>
+        <View style={styles.words}>
+          <Text accessibilityRole="header" style={[styles.title, { color: color.text }]}>
+            {t('photos.title')}
+          </Text>
+          <Text style={[styles.small, { color: color.textSecondary }]}>{windowText(window)}</Text>
+        </View>
+        <Button label={t('photos.take')} size="sm" onPress={() => router.push('/photo-capture')} />
+      </View>
       {count}
-      <Button label={t('photos.take')} onPress={() => router.push('/photo-capture')} />
       {POSES.some((pose) => comparison(checks, pose) !== null) && <CompareLink />}
       {deleting}
       {failures > 0 && (
@@ -111,9 +121,12 @@ export function PhotoCard({ today, flowWeek }: Props) {
           {t('photos.deleteFailed')}
         </ProblemText>
       )}
-    </Section>
+    </View>
   );
 }
+
+/** The windows in which a photo is asked for now: due, offered any time, open since a day. */
+const ASKED: readonly PhotoWindow['kind'][] = ['firstDue', 'anytime', 'open'];
 
 /** The way to the comparison anchor (K-602): only with two days of one pose to set side by side. */
 function CompareLink() {
@@ -125,4 +138,8 @@ const styles = StyleSheet.create({
   remove: { marginTop: tokens.space.md, alignItems: 'flex-start' },
   text: { fontSize: tokens.type.body },
   small: { fontSize: tokens.type.bodySmall },
+  card: { borderRadius: tokens.radius.card, padding: tokens.space.md, gap: tokens.space.sm },
+  row: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.md },
+  words: { flex: 1, gap: tokens.space.xs },
+  title: { ...tokens.face.display, fontSize: tokens.type.body },
 });

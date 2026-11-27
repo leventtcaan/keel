@@ -3694,11 +3694,11 @@
   },
   "photos": {
     "title": "Photos",
-    "first": "Your first photo is due in week {week}. Same spot, same light, every time.",
-    "firstDue": "Your first photo is due. It becomes Day 1.",
-    "anytime": "Take your first photo when you're ready. It becomes Day 1.",
-    "next": "Next photo from {date}. Weekly changes are too small to see.",
-    "open": "Photo window open since {date}. Same spot, same light, morning.",
+    "first": "First photo: week {week}.",
+    "firstDue": "Your first photo is due.",
+    "anytime": "Take your first photo when you're ready.",
+    "next": "Next photo from {date}.",
+    "open": "Photo window open since {date}.",
     "count": {
       "one": "{count} photo day on this phone. Never uploaded, not even to backups.",
       "other": "{count} photo days on this phone. Never uploaded, not even to backups."
@@ -3929,9 +3929,8 @@
       "thisWeek": "this week",
       "legendPlanned": "Planned",
       "legendDone": "Done",
-      "setsTitle": "Sets per muscle",
-      "legendTarget": "Target",
-      "barLabel": "{muscle}, {done} of {target} sets"
+      "barLabel": "{muscle}, {done} of {target} sets",
+      "pickedSets": "{done}/{target} sets"
     },
     "strength": {
       "title": "Strength",
@@ -3946,6 +3945,9 @@
       "legendHeld": "Ring: the call held the load",
       "spoken": "{move}, best set by week: {first} in the week of {firstDate}, {last} in the week of {lastDate}. Lowest {low}, highest {high}.",
       "spokenHeld": "The call held the load in the weeks of {weeks}.",
+      "pickLabel": "{move}, choose another lift",
+      "count": "{count} lifts",
+      "pickCancel": "Cancel",
       "effort": {
         "stuck": "Stuck at {load} for {sessions} sessions.",
         "stuckHeld": "Stuck at {load} for {sessions} sessions. Held this week.",
@@ -3977,17 +3979,8 @@
       "moved": "{label}: {to}",
       "rowLabel": "{title}, {date}",
       "rowLabelNotApplied": "{title}, {date}, not applied",
-      "rowLabelLocked": "Call of {date}, ready"
-    },
-    "consistency": {
-      "title": "Consistency",
-      "onTrack": "On track",
-      "spare": "Spare week",
-      "paused": "Paused",
-      "other": "Other weeks",
-      "range": "Oldest first",
-      "note": "A missed week never resets your record.",
-      "spoken": "Last {count} weeks, oldest first: {onTrack} on track, {spare} spare, {paused} paused, {other} other weeks."
+      "rowLabelLocked": "Call of {date}, ready",
+      "more": "and {count} more"
     }
   },
   "strength": {

@@ -11,6 +11,7 @@ import CallScreen from '@/app/call';
 import { t } from '@/copy';
 import { ThemeProvider } from '@/theme/theme';
 
+import { answerSheet } from './support/systemChoices';
 import { budget, consistency, decision, decisionPage, lift, liftWeeks, muscle, program, summary, training, trendPoints, weeks } from './support/progressFixtures';
 
 type Route = { pathname: string; params?: { id?: string; from?: string } };
@@ -103,7 +104,10 @@ test('pick a lift, open a call that was not applied (read only), come back to Pr
   );
   await act(async () => {});
 
-  await fireEvent.press(screen.getByRole('button', { name: t('exercises.bench_press.name') }));
+  // The lift is picked from the system's list its name opens (ADR-094 Ek 3 #4).
+  const sheet = answerSheet(t('exercises.bench_press.name'));
+  await fireEvent.press(screen.getByTestId('strength-pick'));
+  sheet.mockRestore();
   expect(screen.getByTestId('strength-best')).toHaveTextContent('60 kg × 10');
 
   await act(async () => fireEvent.press(screen.getByTestId('call-c1')));

@@ -43,7 +43,7 @@ ekranda, sheet'te, pop-up'ta ve gelecekteki her ekranda aynen. Sıradaki: 9c'nin
 2. Karar detayı ("Bu karar neden"): cümle yığını değil, tasarlanmış sayfa.
 3. Koç: AI merkezde (ücretli), sohbet ve klavye düzeni, "işi senin yerine yapar" hissi.
 4. Antrenman sekmesi + set, dinlenme, süperset, bitiş ekranı, **paylaş** (pazarlanabilir kart), alttaki düğmeler.
-5. Gelişim: kısalt; "Düzen" kartı kalkar; kas başına set küçülür; bu haftanın kasları etkileşimli; kararlar listesi kısalır; fotoğraf girişi öne çıkar.
+5. Gelişim: kısalt; "Düzen" kartı kalkar; kas başına set küçülür; bu haftanın kasları etkileşimli; kararlar listesi kısalır; fotoğraf girişi öne çıkar. **BİTTİ (27 Kas, K-1246):** A · Kısa defter (ADR-094 Ek 3).
 6. Yemek: öğün kaydetme (font kayması), arama, ev ölçüleri.
 7. Yürüyüş haritası: Ayarlar'dan çıkar, kardiyo ve günlük yürüyüş akışına, ücretli.
 8. Abonelik ekranı (önizleme modunda tasarlanır, TestFlight'ta gerçek).

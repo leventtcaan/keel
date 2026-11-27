@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { components } from '@/api/schema';
@@ -16,11 +17,14 @@ import type { UnitSystem } from '@/units/units';
 /**
  * Calls (ADR-078 #2, Ek 3, prototype `#progress`): the latest calls the server listed, newest first. A row opens that call on
  * the call screen, read only (`?id=`, back to Progress); one that was not applied says so, in plain words (U7: no blame). The
- * ledger screen is off the surface (ADR-069 #3), so no way leads to it from here: the card lists the latest calls_shown.
+ * ledger screen is off the surface (ADR-069 #3), so no way leads to it from here: the card lists the latest calls_shown,
+ * the first `folded` of them at first and "and N more" for the rest, opened in the same card (ADR-094 Ek 3 #7).
  */
-export function CallsCard({ items, units }: { items: components['schemas']['CallView'][]; units: UnitSystem }) {
+export function CallsCard({ items, units, folded }: { items: components['schemas']['CallView'][]; units: UnitSystem; folded: number }) {
   const { color } = useTheme();
-  const rows = items.map((call, index) => {
+  const [open, setOpen] = useState(false);
+  const hidden = open ? 0 : Math.max(0, items.length - folded);
+  const rows = items.slice(0, items.length - hidden).map((call, index) => {
     // A call not unlocked (ADR-091 Ek 1) is its day and that it is ready; it opens the call screen's locked view.
     if (isLocked(call)) {
       const date = shortDate(call.madeOn);
@@ -73,9 +77,24 @@ export function CallsCard({ items, units }: { items: components['schemas']['Call
       </Pressable>
     );
   });
+  // Built outside the JSX below (the raw-text guard reads JSX children).
+  const more =
+    hidden === 0 ? null : (
+      <Pressable
+        testID="calls-more"
+        accessibilityRole="button"
+        accessibilityState={{ expanded: false }}
+        accessibilityLabel={t('progress.calls.more', { count: hidden })}
+        onPress={() => setOpen(true)}
+        style={({ pressed }) => [styles.more, pressed && styles.dim]}>
+        <Text style={[styles.moreText, { color: color.accent }]}>{t('progress.calls.more', { count: hidden })}</Text>
+        <SymbolView name="chevron.down" size={tokens.type.bodySmall} tintColor={color.accent} />
+      </Pressable>
+    );
   return (
     <Section card testID="section-calls" title={t('progress.calls.title')}>
       <Card testID="calls-list">{rows}</Card>
+      {more}
     </Section>
   );
 }
@@ -89,4 +108,6 @@ const styles = StyleSheet.create({
   title: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
   fine: { fontSize: tokens.type.bodySmall },
   dim: { opacity: tokens.opacity.dim },
+  more: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.xs, minHeight: tokens.size.touch },
+  moreText: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
 });

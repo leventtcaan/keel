@@ -234,3 +234,33 @@ süresi bir yere bağlanır ya da kalkar (bu son ikisi ayrıca görselle sorulur
    yok). Kartta küçük harfli hareket adı ve "PR" yok: rekor kendi satırında "Yeni rekor · Hareket · 28 kg × 6", set bölünmez.
    K1 (8 madde: kart/düzen/önizleme/model/ekran/seçici/bitiş testleri, Story ve video testlerinin silinmesi, görüntü içindeki metin için
    `allowFontScaling` istisnası) Levent onaylı (26 Kas). Görseller `9c7/paylas-sonra.jpg`, tam boy PNG `9c7/paylas-kart.png`.
+
+## Ek 3 · Gelişim ekranı: kısa defter (9c-5, 2026-11-27, Levent)
+Bugünkü Gelişim simülatörde çekildi ve sorunları işaretlendi (`prototip/gorsel-yon/9c5/gelisim-simdi.jpg`): sayfa 3,6 ekran boyu, grafik
+çizgisi siyah ve noktalı, güç seçimi kutulu ve kesik haplar, kas haritası büyük ve dokunulmuyor, kas başına set 12 satır, "Düzen" kartı,
+12 karar (çoğu "Değişiklik yok"), fotoğraf en dipte. Agent üç yönü gerçek veriyle simülatörde çizdi (`9c5/gelisim-varyantlar.jpg`,
+aynı ölçekte): A · Kısa defter (2,1 ekran), B · Liste (2,4), C · Sekmeli (1,4). **Levent A'yı seçti.** B'nin büyük fotoğraf kartı ve
+iki sütun kas listesi, C'nin "aynı anda tek panel"i seçilmedi.
+
+**Uygulama (K-1246):**
+1. **Sıra:** karar cümlesi (altında "8/10 hafta hedefte"), ilk günlerde hedef kutuları, **Fotoğraflar**, Kilo, Güç, Bu haftanın kasları,
+   Kararlar, Paylaş. Hedef kutuları ilk günlerde kararın hemen altında kalır, çünkü karar cümlesi onlara dokunmayı söyler.
+2. **Fotoğraflar tek satır:** serif başlık, pencere cümlesi, sağda küçük petrol "Fotoğraf çek". Pencere açıkken zemin `tintSuggest`
+   (uygulamanın önerdiği eylem), açılmamışken `tintDay`. Fotoğraf sayısı, "Karşılaştır" ve "Tüm fotoğrafları sil" yalnız fotoğraf varken,
+   aynı kartta satırın altında.
+3. **Grafikler (kilo, güç):** çizgi petrol ve ince, ara noktalar yok, son nokta mercan ("buradasın", §1). Kararın tuttuğu haftanın halkası kalır.
+4. **Güç seçimi:** kutulu haplar kalkar. Hareketin adı petrol serif ve yanında aşağı ok; dokununca sistemin seçim listesi programın
+   sırasıyla açılır. Sağda soluk "N hareket". Tek hareket varsa ok ve liste yok.
+5. **Bu haftanın kasları dokunulur:** harita daha küçük; haritada bir kasa dokununca altındaki satır o kasın bu haftaki setini gösterir
+   ("Göğüs · 4 / 10 set", mercan ilerleme çubuğu). Açılışta sunucunun listesindeki ilk kas. Bir alanda birden çok kas varsa (omuzlar)
+   hepsi alt alta. "Planlanan" işaretinin kenarı görünür (WCAG 1.4.11). **"Kas başına set" kartı kalkar.**
+6. **"Düzen" (12 hafta) kartı kalkar.** Haftaların sayısı karar cümlesinin altında ve ana ekranda kalır.
+7. **Kararlar kısalır:** son 3 karar; altında petrol "ve N karar daha", dokununca listenin geri kalanı aynı kartta açılır (Antrenman
+   sekmesindeki "ve N tane daha" ile aynı, Ek 2 › Uygulama #7). Kaç karar açık geldiği `data/parameters/progress.json`'da.
+8. **Kelime bütçesi 50 aynen kalır** (`data/copy/word-budgets.json`). Fotoğraf satırı ilk ekrana çıktığı için pencere cümleleri ikinci
+   cümlelerinden kısaldı ("Aynı yer, aynı ışık" ipucu çekim ekranında zaten var): "İlk fotoğraf: 4. hafta.", "İlk fotoğrafının zamanı geldi.",
+   "Hazır olunca ilk fotoğrafını çek.", "Sonraki fotoğraf … tarihinden itibaren.", "Fotoğraf penceresi … tarihinden beri açık."
+9. İlk günlerde güç kilidi kasların altında kalır (o gün güçte gösterilecek bir şey yok); ilk karardan sonra sıra #1'deki gibidir.
+10. Levent sonucu simülatörde gördü ve onayladı (27 Kas; `9c5/gelisim-sonra.jpg`: 3,6 → 2,2 ekran boyu). Sistem seçim listesi petrol
+    (§3). K1 (Düzen kartının 9 testi, kas başına setin 4 testi, güç haplarının 10 testi ve kaydırma testi, 5 grafik testi, sıra ve
+    yüzey testleri, harita çağrısı, iki testin yeni API'ye uyması) Levent onaylı (27 Kas).
