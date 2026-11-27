@@ -22,10 +22,11 @@ type Props = {
 /**
  * What the meal already holds on the day being logged (Evre 7 A): a small card under the search with the foods as chips (name and
  * calories; a press changes it), and the way to the whole day — "View day ›" — which was too hidden in build 9. The first few items are
- * chips; the rest are one "+N" chip that opens the day. An empty meal says so in one short line.
+ * chips; the rest are one "+N" chip that opens the day. An empty meal has no card: the title above says it holds nothing yet (ADR-094 Ek 4 #3).
  */
 export function MealTray({ title, items, onEdit, onViewDay }: Props) {
   const { color } = useTheme();
+  if (items.length === 0) return null;
   const shown = items.slice(0, foodParams.trayItemsMax);
   const rest = items.length - shown.length;
   // Built outside the JSX children (the raw-text guard reads them).
@@ -57,10 +58,7 @@ export function MealTray({ title, items, onEdit, onViewDay }: Props) {
           <Icon name="chevron.right" size="small" tone="accent" />
         </Pressable>
       </View>
-      {items.length === 0 ? (
-        <Text style={[styles.empty, { color: color.muted }]}>{t('meal.tray.empty')}</Text>
-      ) : (
-        <View style={styles.chips}>
+      <View style={styles.chips}>
           {shown.map((item) => (
             <Pressable
               key={item.key}
@@ -77,8 +75,7 @@ export function MealTray({ title, items, onEdit, onViewDay }: Props) {
             </Pressable>
           ))}
           {moreChip}
-        </View>
-      )}
+      </View>
     </View>
   );
 }
@@ -89,7 +86,6 @@ const styles = StyleSheet.create({
   title: { flexShrink: 1, fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.semibold },
   view: { flexDirection: 'row', alignItems: 'center', gap: 2, minHeight: tokens.size.touch },
   viewText: { fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.semibold },
-  empty: { fontSize: tokens.type.bodySmall },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm },
   chip: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.xs, maxWidth: '100%', borderRadius: tokens.radius.chip, paddingHorizontal: tokens.space.sm + 2, paddingVertical: tokens.space.sm, minHeight: tokens.size.touch - tokens.space.sm },
   chipName: { flexShrink: 1, fontSize: tokens.type.bodySmall },

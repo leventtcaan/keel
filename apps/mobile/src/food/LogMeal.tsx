@@ -240,7 +240,8 @@ export function LogMeal({ day, slotParam }: Props) {
   const viewDay = () => router.dismissTo({ pathname: '/food', params: targetDay === today ? {} : { day: targetDay } });
 
   const asked = shownEstimate?.question;
-  const question = item !== undefined && asked !== undefined && has(asked.copyKey) ? t('meal.estimate.question', { name: item.name, question: t(asked.copyKey) }) : null;
+  // The question stands under the food's own name in the step: it does not say the name again (ADR-094 Ek 4 #6).
+  const question = item !== undefined && asked !== undefined && has(asked.copyKey) ? t(asked.copyKey) : null;
   const canFavorite = item !== undefined && item.quick === undefined && item.unit !== PORTION;
   const total = kcalBySlot[slot];
 
@@ -254,7 +255,7 @@ export function LogMeal({ day, slotParam }: Props) {
         {...(knownRecipes === undefined ? {} : { recipes: knownRecipes })}
         {...(shownEstimate?.items[0] === undefined ? {} : { estimate: shownEstimate.items[0] })}
         waiting={waiting}
-        slotName={slotName}
+        slot={slot}
         mode="add"
         question={question}
         {...(canFavorite
@@ -272,7 +273,7 @@ export function LogMeal({ day, slotParam }: Props) {
       <KeyboardFrame>
       <View style={styles.fill}>
         <FormScroll contentContainerStyle={styles.body}>
-          <MealPicker value={slot} onChange={setPicked} kcal={kcalBySlot} />
+          <MealPicker value={slot} onChange={setPicked} kcal={kcalBySlot} day={dayLabel(targetDay, today)} />
           <FoodPicker
             full={false}
             autoFocus

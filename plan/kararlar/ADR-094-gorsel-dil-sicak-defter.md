@@ -264,3 +264,36 @@ iki sütun kas listesi, C'nin "aynı anda tek panel"i seçilmedi.
 10. Levent sonucu simülatörde gördü ve onayladı (27 Kas; `9c5/gelisim-sonra.jpg`: 3,6 → 2,2 ekran boyu). Sistem seçim listesi petrol
     (§3). K1 (Düzen kartının 9 testi, kas başına setin 4 testi, güç haplarının 10 testi ve kaydırma testi, 5 grafik testi, sıra ve
     yüzey testleri, harita çağrısı, iki testin yeni API'ye uyması) Levent onaylı (27 Kas).
+
+## Ek 4 · Öğün kaydet: başlık öğün (9c-6, 2026-11-27, Levent)
+Bugünkü öğün kaydet, arama ve porsiyon adımı simülatörde çekildi ve sorunları işaretlendi (`prototip/gorsel-yon/9c6/yemek-simdi.jpg`):
+- "Akşam yemeği" hapta iki satıra kırılıyor, kalori gelince seçili hapın yazısı kayıyor (Levent'in "font kayması").
+- Seçili hap siyah.
+- Türkçe kalıplar bozuk: "Genelde öğle yemeği öğününde", "Son öğle yemeği öğünün, 25 Kas Çar", "Öğle yemeği öğününe ekle".
+- "Hızlı ekle" ve "Yiyecek oluştur" iki büyük hap, boş tepsi kartı "Henüz yok" yer kaplıyor.
+- Makro noktaları mor ve kahve (rol tablosunda yok); porsiyonda ad serif değil, yalnız g ve oz, soru cümlesi uzun.
+- Simülatörde Türkçe arama boş (fikstürde Türk yemeği yoktu; gerçek sunucuda 57 yemek var).
+Agent üç yönü gerçek Türk yemekleriyle simülatörde çizdi (`9c6/yemek-varyantlar.jpg`): A · Sade haplar, B · Başlık öğün, C · Sekmeler ve
+ölçü listesi. **Levent B'yi seçti.**
+
+**Uygulama (K-1247):**
+1. **Başlık öğünün kendisi:** yeni öğünde ekranın başlığı "Öğün kaydet" değil, seçili öğünün adıdır (serif, yanında petrol aşağı ok). Altında
+   soluk "Bugün · 610 kcal" ya da "Bugün · henüz boş" (geçmiş günde günün adı). Dokununca sistemin seçim listesi açılır, her öğün bu günkü
+   kalorisiyle; tint petrol (§3, Ek 3 #4 ile aynı). Dört hap kalkar; seçim dar alana sıkışmaz, yazı kaymaz. Düzeltme ekranı başlığı aynen kalır.
+2. **Türkçe kalıplar öğün başına:** "Akşam yemeğine ekle · 140 kcal", "Genelde akşam yemeğinde", "Dünkü akşam yemeği", "25 Kas Çar · akşam
+   yemeği". Her öğünün kendi metni copy dosyasında (Türkçenin ekleri öğün adına göre değişir).
+3. **Tepsi yalnız doluyken:** boş öğünde "Henüz yok" kartı yok; başlıktaki "henüz boş" yeter.
+4. **"Hızlı ekle" ve "Yiyecek oluştur"** listenin altında iki petrol metin düğmesi (seyrek kullanılır, Ek 2 › Uygulama #8 ile aynı ilke).
+5. **Makrolar renksiz:** satırda "P 8 · K 20 · Y 4" soluk harf ve sayı, porsiyon adımında renkli çubuk yok, üç ad ve sayı. Rol tablosu dışında
+   renk yok (§1). Günün yemek sayfasının çubukları ayrı parçada.
+6. **Porsiyon adımı:** yemeğin adı serif; ev ölçüleri haplar (yemeğin kendi porsiyonu, çorba kepçesi, servis kepçesi, su bardağı, yemek kaşığı,
+   g); Türkçe gösterilirken oz yok; tahmin sorusu yemeğin adını tekrar etmez.
+7. Yemek adları kesilmez (erişilebilirlik testi `numberOfLines`'ı yasaklar, Dynamic Type büyüdükçe metin sarar); satırlar kısa
+   kalıplarla kısalır (#2).
+8. Levent sonucu simülatörde gördü (`9c6/yemek-sonra.jpg`). K1 (15 beklenti: öğün haptan değil başlık ve listeden, boş öğünde tepsi
+   yok, Hızlı ekle ve Yiyecek oluştur metin düğmesi, soru adı tekrar etmez; aynı İngilizce metinle anahtar adları) Levent onaylı (27 Kas).
+Seçilmeyen: A'nın dört kısa hapı ("Öğle", "Ara öğün"), C'nin alt çizgili sekmeleri ve porsiyonda gram ve kalorili ölçü listesi.
+
+**Ayrı işler (mantık, sunucu):** yemeklerin porsiyon adı İngilizce geliyor ("1 bowl (250 g)"); ev ölçüsü kuralı "Pirinç pilavı", "Bulgur
+pilavı", "Kuru fasulye" ve "Mercimek köftesi"ne ölçü vermiyor, "Su böreği"ni sıvı sayıyor (K-1248). Temel yiyecekler yalnız İngilizce adlı:
+"yumurta", "süt", "ekmek" aramada çıkmıyor; Türkçe adlar kaynak ister (K-1249).

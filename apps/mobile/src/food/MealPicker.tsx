@@ -1,83 +1,73 @@
-import { formatNumber } from '@/copy/format';
-import type { SFSymbol } from 'expo-symbols';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { SymbolView } from 'expo-symbols';
+import { ActionSheetIOS, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { components } from '@/api/schema';
-import { Icon } from '@/components/Icon';
 import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 
+import { kcalText } from './single';
 import { ALL_SLOTS } from './slots';
 
 type Slot = components['schemas']['MealSlot'];
-
-const ICON: Record<Slot, SFSymbol> = {
-  BREAKFAST: 'sunrise.fill',
-  LUNCH: 'sun.max.fill',
-  DINNER: 'moon.fill',
-  SNACK: 'carrot.fill',
-};
 
 type Props = {
   value: Slot;
   onChange: (slot: Slot) => void;
   /** What each meal came to on the day being logged, as one number; a meal with nothing in it is absent. */
   kcal: Partial<Record<Slot, number>>;
+  /** The day being logged, already worded ("Today", "Fri, Sep 25"). */
+  day: string;
 };
 
 /**
- * Which meal this is for (Evre 7 A): four equal pills in one track, each with the meal's icon, its name and what it holds so far on the
- * day being logged. The chosen one is filled in the text colour, as every segmented choice of the app is. The calories update as foods are
- * added, so the control is also a quiet running total per meal.
+ * Which meal this is for, as the screen's title (ADR-094 Ek 4 #1): the meal's name in the serif with a petrol chevron, and under it the
+ * day and what the meal holds so far ("Today · 610 kcal", "Today · nothing yet"). A press opens the system's list of the four meals, each
+ * with its calories on that day, tinted petrol as every system choice of the app (Ek 3 #4). Nothing is squeezed into a narrow pill, so
+ * no name wraps and no line moves when a number arrives.
  */
-export function MealPicker({ value, onChange, kcal }: Props) {
+export function MealPicker({ value, onChange, kcal, day }: Props) {
   const { color } = useTheme();
+  const name = t(`food.slot.${value}`);
+  const amount = kcal[value];
+  const state = amount === undefined ? t('meal.picker.dayEmpty', { day }) : t('meal.picker.day', { day, kcal: kcalText(amount) });
+
+  const choose = () => {
+    const options = ALL_SLOTS.map((slot) => {
+      const held = kcal[slot];
+      return held === undefined ? t(`food.slot.${slot}`) : t('meal.picker.option', { slot: t(`food.slot.${slot}`), kcal: kcalText(held) });
+    });
+    ActionSheetIOS.showActionSheetWithOptions(
+      { options: [...options, t('meal.picker.cancel')], cancelButtonIndex: ALL_SLOTS.length, tintColor: color.accent },
+      (index) => {
+        if (index >= 0 && index < ALL_SLOTS.length) onChange(ALL_SLOTS[index]);
+      },
+    );
+  };
+
   return (
-    <View testID="meal-picker" style={[styles.track, { backgroundColor: color.surface }]}>
-      {ALL_SLOTS.map((slot) => {
-        const selected = slot === value;
-        const ink = selected ? color.background : color.text;
-        const amount = kcal[slot];
-        const name = t(`food.slot.${slot}`);
-        return (
-          <Pressable
-            key={slot}
-            testID={`slot-${slot}`}
-            accessibilityRole="button"
-            accessibilityLabel={amount === undefined ? t('meal.picker.spokenEmpty', { slot: name }) : t('meal.picker.spoken', { slot: name, kcal: t('food.single.kcal', { value: formatNumber(amount) }) })}
-            accessibilityState={{ selected }}
-            onPress={() => onChange(slot)}
-            style={[styles.pill, selected && { backgroundColor: color.text }]}>
-            <Icon name={ICON[slot]} size="small" tone={selected ? 'background' : 'muted'} />
-            <Text style={[styles.name, { color: ink }]}>
-              {name}
-            </Text>
-            {amount === undefined ? (
-              <View style={styles.kcalSlot} />
-            ) : (
-              <Text style={[styles.kcal, { color: selected ? color.background : color.muted }]}>{formatNumber(amount)}</Text>
-            )}
-          </Pressable>
-        );
-      })}
-    </View>
+    <Pressable
+      testID="meal-picker"
+      accessibilityRole="button"
+      accessibilityLabel={amount === undefined ? t('meal.picker.spokenEmpty', { slot: name }) : t('meal.picker.spoken', { slot: name, kcal: kcalText(amount) })}
+      accessibilityHint={t('meal.picker.change')}
+      onPress={choose}
+      style={({ pressed }) => [styles.head, pressed && styles.dim]}>
+      <View style={styles.nameLine}>
+        <Text accessibilityRole="header" style={[styles.name, { color: color.text }]}>
+          {name}
+        </Text>
+        <SymbolView name="chevron.down" size={tokens.type.bodySmall} tintColor={color.accent} />
+      </View>
+      <Text style={[styles.state, { color: color.muted }]}>{state}</Text>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  track: { flexDirection: 'row', padding: tokens.space.xs, gap: tokens.space.xs, borderRadius: tokens.radius.card },
-  pill: {
-    flex: 1,
-    minHeight: tokens.size.primaryButton + tokens.space.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-    paddingHorizontal: tokens.space.xs,
-    borderRadius: tokens.radius.button,
-  },
-  name: { fontSize: tokens.type.label, fontWeight: tokens.weight.semibold },
-  kcal: { fontSize: tokens.type.label, fontVariant: ['tabular-nums'] },
-  // An empty meal keeps the line its number would take, so the four pills stay one height.
-  kcalSlot: { height: tokens.type.label + tokens.space.xs },
+  head: { alignSelf: 'flex-start', gap: 2, minHeight: tokens.size.touch },
+  nameLine: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
+  name: { ...tokens.face.display, fontSize: tokens.type.screenTitle, flexShrink: 1 },
+  state: { fontSize: tokens.type.bodySmall, fontVariant: ['tabular-nums'] },
+  dim: { opacity: tokens.opacity.dim },
 });

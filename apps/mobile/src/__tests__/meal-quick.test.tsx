@@ -14,6 +14,7 @@ import { t } from '@/copy';
 import { foodParams } from '@/food/params';
 import { ThemeProvider } from '@/theme/theme';
 
+import { chooseSlot } from './support/mealPicker';
 import { WithSaved, banner, undoButton } from './support/saved';
 
 type Schemas = components['schemas'];
@@ -151,7 +152,7 @@ const eatenAtLunch = (...foods: Schemas['Suggestion'][]): Schemas['Meal'] => ({
 describe("a past meal of this meal as one row (\"Same as yesterday's lunch\")", () => {
   test("yesterday's lunch, its foods and one calorie number; one tap logs it again as it was, and the screen stays open", async () => {
     await show();
-    expect(screen.getByText(t('meal.again.yesterday', { slot: t('food.slot.LUNCH').toLowerCase() }))).toBeOnTheScreen();
+    expect(screen.getByText(t('meal.forSlot.LUNCH.yesterday'))).toBeOnTheScreen();
     expect(screen.getByText('Chicken rice bowl')).toBeOnTheScreen();
     expect(screen.getByText(single(610, 720))).toBeOnTheScreen();
 
@@ -169,7 +170,7 @@ describe("a past meal of this meal as one row (\"Same as yesterday's lunch\")", 
   test('a meal that is not from yesterday says its day', async () => {
     mockHistory = [THREE_DAYS_AGO_LUNCH];
     await show();
-    expect(screen.getByText(t('meal.again.other', { slot: t('food.slot.LUNCH').toLowerCase(), day: 'Sat, Sep 26' }))).toBeOnTheScreen();
+    expect(screen.getByText(t('meal.forSlot.LUNCH.other', { day: 'Sat, Sep 26' }))).toBeOnTheScreen();
   });
 
   test('only the meal being logged: the dinner of yesterday is not offered at lunch', async () => {
@@ -179,7 +180,7 @@ describe("a past meal of this meal as one row (\"Same as yesterday's lunch\")", 
 
   test('changing the meal changes the offer', async () => {
     await show();
-    await press(/^Dinner/);
+    await chooseSlot('DINNER');
     expect(screen.getByRole('button', { name: againLabel('DINNER') })).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: againLabel('LUNCH') })).toBeNull();
   });
@@ -228,7 +229,7 @@ describe('usually at this meal, and recent', () => {
     mockUsual = [YOGURT, BANANA];
     await show();
     expect(mockGET).toHaveBeenCalledWith('/v1/foods/frequent', { params: { query: { slot: 'LUNCH' } } });
-    expect(screen.getByText(t('meal.home.usual', { slot: t('food.slot.LUNCH').toLowerCase() }))).toBeOnTheScreen();
+    expect(screen.getByText(t('meal.forSlot.LUNCH.usual'))).toBeOnTheScreen();
     const rows = within(screen.getByTestId('browse-usual')).getAllByRole('button', { name: /^Log / });
     expect(rows.map((row) => row.props.accessibilityLabel)).toEqual([logName('Greek yogurt'), logName('Banana')]);
 
@@ -250,9 +251,9 @@ describe('usually at this meal, and recent', () => {
     mockUsual = [YOGURT];
     await show();
     mockUsual = [OATS];
-    await press(/^Snack/);
+    await chooseSlot('SNACK');
     expect(mockGET).toHaveBeenCalledWith('/v1/foods/frequent', { params: { query: { slot: 'SNACK' } } });
-    expect(screen.getByText(t('meal.home.usual', { slot: t('food.slot.SNACK').toLowerCase() }))).toBeOnTheScreen();
+    expect(screen.getByText(t('meal.forSlot.SNACK.usual'))).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: logName('Greek yogurt') })).toBeNull();
     expect(screen.getByRole('button', { name: logName('Oats') })).toBeOnTheScreen();
   });
@@ -260,14 +261,14 @@ describe('usually at this meal, and recent', () => {
   test('a meal nobody ate in has no "Usually at" section at all', async () => {
     mockUsual = [];
     await show();
-    expect(screen.queryByText(t('meal.home.usual', { slot: t('food.slot.LUNCH').toLowerCase() }))).toBeNull();
+    expect(screen.queryByText(t('meal.forSlot.LUNCH.usual'))).toBeNull();
   });
 
   test("Recent is the meal's own: a food last had at breakfast is not under Snack", async () => {
     mockHistory = [{ ...eatenAtLunch(YOGURT), slot: 'BREAKFAST' }, { ...eatenAtLunch(BANANA), id: 'm-snack', clientId: 'c-snack', slot: 'SNACK' }];
     mockRecent = [YOGURT, BANANA];
     await show();
-    await press(/^Snack/);
+    await chooseSlot('SNACK');
     const recent = within(screen.getByTestId('browse-recent'));
     expect(recent.getByRole('button', { name: logName('Banana') })).toBeOnTheScreen();
     expect(recent.queryByRole('button', { name: logName('Greek yogurt') })).toBeNull();
@@ -426,7 +427,8 @@ describe('logged: the light confirmation, with Undo (K-1029, K-1044)', () => {
     expect(mockTakeBack).toHaveBeenCalledWith(logged, expect.any(Function));
     expect(mockServices.api.DELETE).toHaveBeenCalledWith('/v1/meals/{id}', { params: { path: { id: 'srv-meal-1' } } });
     expect(banner()).toBeNull();
-    expect(within(screen.getByTestId('tray')).queryByText('Greek yogurt')).toBeNull();
+    // K1 (K-1247, ADR-094 Ek 4 #3): the meal is empty again, so it has no tray card at all.
+    expect(screen.queryByTestId('tray')).toBeNull();
   });
 
   test('a food logged again after Undo is a new meal (a new clientId)', async () => {

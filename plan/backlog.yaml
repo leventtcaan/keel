@@ -6369,6 +6369,56 @@ tasks:
     tests: ["jest", "simülatör"]
     refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md", "plan/evre-9-tasarim.md", "plan/tasarim-gezinti-notlari.md"]
 
+  - id: K-1247
+    title: "Öğün kaydet: başlık öğün (sistem listesi), Türkçe öğün kalıpları, renksiz makrolar, porsiyonda serif ad ve ev ölçüleri"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: M
+    status: done
+    depends_on: [K-1246]
+    why: "Levent 25 Kas gezinti (Durak 5): öğün kaydette fontlar kayıyor, fazla yazı; Türkçe aramada bir şey çıkmıyor; logic, UX ve UI üçüne de el atılmalı. 27 Kas: simülatörde üç yönden B · Başlık öğün'ü seçti (ADR-094 Ek 4)"
+    acceptance:
+      - "Yeni öğünde başlık seçili öğünün adı (serif + petrol aşağı ok), altında gün ve öğünün kalorisi ya da 'henüz boş'; dokununca sistem listesi her öğünün kalorisiyle, tint petrol; dört hap yok"
+      - "Öğün başına Türkçe kalıplar: ekle düğmesi, 'Genelde … de', 'Dünkü …', geçmiş gün satırı (copy dosyasında, öğün başına anahtar)"
+      - "Boş öğünde tepsi kartı yok; Hızlı ekle ve Yiyecek oluştur listenin altında metin düğmesi"
+      - "Makrolar renksiz: satırda harf + sayı, porsiyon adımında çubuk yok"
+      - "Porsiyon adımında ad serif, Türkçe gösterilirken oz yok, soru adı tekrar etmez"
+      - "Kelime bütçesi aşılmaz; simülatörde Levent'e gösterilir; K1 listesi birleştirmeden önce Levent'e sorulur"
+    tests: ["jest", "simülatör"]
+    refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md", "plan/evre-9-tasarim.md", "plan/tasarim-gezinti-notlari.md"]
+
+  - id: K-1248
+    title: "Türk yemeklerinin porsiyon adı Türkçe, ev ölçüsü kuralı pilav/kuru baklagil yemeklerini tanır, su böreği sıvı sayılmaz"
+    milestone: M12
+    module: backend
+    type: fix
+    size: S
+    status: todo
+    depends_on: [K-1213]
+    why: "9c-6 sunucu taraması (ADR-094 Ek 4 › Ayrı işler): yemek porsiyonu '1 bowl (250 g)' İngilizce geliyor; TurkishMeasures 'pilavı' adına ölçü vermiyor (also: pilav), 'Kuru fasulye' ve 'Mercimek köftesi' cooked istiyor; 'Su böreği' su kelimesiyle sıvı sınıfına düşüyor"
+    acceptance:
+      - "Türkçe gösterilen uygulamada yemeğin kendi porsiyonu Türkçe ('1 kase (250 g)', '1 tabak', '1 adet', '1 bardak', '1 porsiyon', '1 dilim')"
+      - "Pirinç pilavı ve Bulgur pilavı pişmiş tahıl ölçülerini, Kuru fasulye ve Nohut yemeği pişmiş baklagil ölçülerini alır; Su böreği sıvı ölçüsü almaz (test)"
+      - "Aramada 'pilav', 'tavuk', 'çorba', 'ayran' sorguları yemeği ilk sırada bulur (test)"
+    tests: ["gradle test"]
+    refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md", "data/food/tr-measures.json", "data/food/tr-dishes.json"]
+
+  - id: K-1249
+    title: "Temel yiyeceklere Türkçe ad (yumurta, süt, ekmek…): kaynaklı veri, aramada bulunur"
+    milestone: M12
+    module: backend
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-1248]
+    why: "9c-6 sunucu taraması: temel yiyecekler yalnız İngilizce adlı; 'yumurta', 'süt', 'ekmek', 'elma', 'muz' aramada hiçbir şey bulmuyor. Türkçe adların kaynağı (TÜRKOMP ya da benzeri) K6 ile doğrulanır"
+    acceptance:
+      - "Kaynağı yazılı bir Türkçe ad listesi (data/food/), takma ad olarak aranır; Türkçe gösterilirken ad Türkçe görünür"
+      - "En sık 100 temel yiyecek Türkçe sorguyla ilk 3'te (test)"
+    tests: ["gradle test"]
+    refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md", "arastirma/ham/tur3-openai-turkomp-yayin-2026-11-25.md"]
+
   - id: K-1227
     title: "Yerler arası yürüme rotası haritada (noktalı), adım karşılığı"
     milestone: M12

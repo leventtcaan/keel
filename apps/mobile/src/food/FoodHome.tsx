@@ -106,7 +106,7 @@ export function FoodHome({ slot, favorites, favoriteIds, usual, recent, again, t
     again.length === 0 ? null : (
       <View testID="again" style={styles.group}>
         {again.map((log) => (
-          <AgainRow key={`${log.day}-${log.slot}`} log={log} today={today} slotName={slotName} onLog={() => onLogAgain(log)} />
+          <AgainRow key={`${log.day}-${log.slot}`} log={log} today={today} slot={slot} slotName={slotName} onLog={() => onLogAgain(log)} />
         ))}
       </View>
     );
@@ -123,7 +123,7 @@ export function FoodHome({ slot, favorites, favoriteIds, usual, recent, again, t
         <Text style={[styles.hintText, { color: color.muted }]}>{t('meal.home.favoritesEmpty')}</Text>
       </View>
     );
-  const usualBlock = usualShown.length === 0 ? null : <FoodList title={t('meal.home.usual', { slot: slotName })} rows={suggestionRows(usualShown, 'usual')} testID="browse-usual" />;
+  const usualBlock = usualShown.length === 0 ? null : <FoodList title={t(`meal.forSlot.${slot}.usual`)} rows={suggestionRows(usualShown, 'usual')} testID="browse-usual" />;
   const moreRecentAction = recentAll.length > recentShown.length ? { action: { label: t('meal.home.showMore'), onPress: () => setMoreRecent(true) } } : {};
   const recentBlock =
     recentShown.length === 0 ? null : (
@@ -147,10 +147,11 @@ export function FoodHome({ slot, favorites, favoriteIds, usual, recent, again, t
 }
 
 /** A whole past meal of this slot as one row: its foods, its calories as one number, a plus; the row itself logs it. */
-function AgainRow({ log, today, slotName, onLog }: { log: SlotLog; today: string; slotName: string; onLog: () => void }) {
+function AgainRow({ log, today, slot, slotName, onLog }: { log: SlotLog; today: string; slot: Schemas['MealSlot']; slotName: string; onLog: () => void }) {
   const { color } = useTheme();
   const yesterday = dayLabel(log.day, today) === t('food.day.yesterday');
-  const title = yesterday ? t('meal.again.yesterday', { slot: slotName }) : t('meal.again.other', { slot: slotName, day: dayLabel(log.day, today) });
+  // Each meal's own words: Turkish endings change with the meal's name (ADR-094 Ek 4 #2).
+  const title = yesterday ? t(`meal.forSlot.${slot}.yesterday`) : t(`meal.forSlot.${slot}.other`, { day: dayLabel(log.day, today) });
   const items = log.items.map((item) => item.name).join(' · ');
   return (
     <Pressable

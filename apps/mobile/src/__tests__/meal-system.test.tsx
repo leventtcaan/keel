@@ -16,6 +16,7 @@ import { foodParams } from '@/food/params';
 import { ThemeProvider } from '@/theme/theme';
 import { palettes, tokens } from '@/theme/tokens';
 
+import { titleSlot } from './support/mealPicker';
 import { WithSaved } from './support/saved';
 
 type Schemas = components['schemas'];
@@ -291,9 +292,10 @@ describe('units are a track of their own, not the slot chips', () => {
     expect(within(track).queryByRole('button', { name: t('food.slot.LUNCH') })).toBeNull();
   });
 
-  test('a unit and a slot both say which is selected', async () => {
+  // K1 (K-1247, ADR-094 Ek 4 #1): the slot is the screen's title now, not a selected pill.
+  test('a unit says which is selected, and the title says the slot', async () => {
     await show();
-    expect(screen.getByTestId('slot-LUNCH')).toBeSelected();
+    expect(titleSlot('LUNCH')).toBeOnTheScreen();
     await search('rice');
     await add(RICE);
     expect(button(t('meal.item.unitSpoken', { name: RICE.name, unit: '1 bowl' }))).toBeSelected();
@@ -321,12 +323,13 @@ describe('buttons by role', () => {
     expect(screen.queryByText(t('meal.barcode.scanShort'))).toBeNull();
   });
 
-  test('Quick add and Create food are icon buttons on a filled pill, not text links', async () => {
+  // K1 (K-1247, ADR-094 Ek 4 #4): the two rare ways in were filled pills above the list; they are petrol text buttons under it now.
+  test('Quick add and Create food are text buttons, with no fill and no outline', async () => {
     await show();
     for (const name of [t('meal.quickAdd.open'), t('meal.own.open')]) {
-      const pill = button(name);
-      expect(flat(pill).backgroundColor).toBe(p.surface);
-      expect(flat(pill).borderWidth ?? 0).toBe(0);
+      const link = button(name);
+      expect(flat(link).backgroundColor).toBeUndefined();
+      expect(flat(link).borderWidth ?? 0).toBe(0);
     }
   });
 
@@ -362,7 +365,7 @@ describe('buttons by role', () => {
   test('nothing is picked yet and nothing logged: no primary at all — the past meal is a row, not a button', async () => {
     mockYesterday = [YESTERDAY_LUNCH];
     await show();
-    expect(screen.getByText(t('meal.again.yesterday', { slot: t('food.slot.LUNCH').toLowerCase() }))).toBeOnTheScreen();
+    expect(screen.getByText(t('meal.forSlot.LUNCH.yesterday'))).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: /^Add to / })).toBeNull();
     expect(primaries()).toHaveLength(0);
   });

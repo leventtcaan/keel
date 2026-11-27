@@ -13,6 +13,7 @@ import { t } from '@/copy';
 import { handOffMeal, takeMeal } from '@/food/handoff';
 import { ThemeProvider } from '@/theme/theme';
 
+import { chooseSlot, titleSlot } from './support/mealPicker';
 import { WithSaved, banner, undoButton } from './support/saved';
 
 type Schemas = components['schemas'];
@@ -360,7 +361,8 @@ describe('the portion step: amounts and the estimate', () => {
     await search('chicken');
     await add(CHICKEN);
     await amount(CHICKEN, '150');
-    const question = t('meal.estimate.question', { name: CHICKEN.name, question: t('foodEstimate.question.grams') });
+    // K1 (K-1247, ADR-094 Ek 4 #6): the question stands under the food's name in the step, without saying the name again.
+    const question = t('foodEstimate.question.grams');
     expect(screen.getByText(question)).toBeOnTheScreen();
     await act(async () => fireEvent(screen.getByRole('switch', { name: t('meal.item.weighedSpoken', { name: CHICKEN.name }) }), 'valueChange', true));
     expect(estimates().at(-1)?.[1]).toEqual({ body: { items: [{ foodId: 'fdc-4', amount: { quantity: 150, unit: 'g', certainty: 'WEIGHED' } }] } });
@@ -413,7 +415,7 @@ describe('the portion step: amounts and the estimate', () => {
 describe('adding: the screen stays, the tray grows', () => {
   test('on the phone first, in the slot the clock suggests, into the day; the sheet closes and the screen stays open', async () => {
     await show();
-    expect(screen.getByTestId('slot-LUNCH')).toBeSelected();
+    expect(titleSlot('LUNCH')).toBeOnTheScreen();
     await search('rice');
     await add(RICE);
     await amount(RICE, '1');
@@ -467,18 +469,19 @@ describe('adding: the screen stays, the tray grows', () => {
     expect(tray.getByText(CHICKEN.name)).toBeOnTheScreen();
   });
 
-  test('the slot chosen is the slot logged, and the tray and the pills follow it', async () => {
+  // K1 (K-1247, ADR-094 Ek 4 #1, #3): the meal is chosen from the title's list; an empty meal has no tray card.
+  test('the slot chosen is the slot logged, and the tray and the title follow it', async () => {
     await show();
-    await act(async () => fireEvent.press(screen.getByTestId('slot-SNACK')));
-    expect(screen.getByTestId('slot-SNACK')).toBeSelected();
+    await chooseSlot('SNACK');
+    expect(titleSlot('SNACK')).toBeOnTheScreen();
     await search('rice');
     await add(RICE);
     await pressAdd();
     expect(mockRecord).toHaveBeenCalledWith(expect.objectContaining({ body: expect.objectContaining({ slot: 'SNACK' }) }));
     expect(within(screen.getByTestId('tray')).getByText(RICE.name)).toBeOnTheScreen();
-    await act(async () => fireEvent.press(screen.getByTestId('slot-LUNCH')));
-    expect(within(screen.getByTestId('tray')).queryByText(RICE.name)).toBeNull();
-    expect(within(screen.getByTestId('tray')).getByText(t('meal.tray.empty'))).toBeOnTheScreen();
+    await chooseSlot('LUNCH');
+    expect(screen.queryByTestId('tray')).toBeNull();
+    expect(screen.getByText(t('meal.picker.dayEmpty', { day: t('food.day.today') }))).toBeOnTheScreen();
   });
 
   test('a plus on a result logs it in one tap, without the sheet', async () => {
