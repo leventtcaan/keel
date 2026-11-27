@@ -1484,7 +1484,6 @@
         "src/food/FoodList.tsx",
         "src/food/FoodPicker.tsx",
         "src/food/SearchField.tsx",
-        "src/food/ActionPill.tsx",
         "src/food/SectionHeader.tsx",
         "src/food/PortionSheet.tsx",
         "src/food/MacroChips.tsx",
@@ -1497,16 +1496,11 @@
         "src/food/tray.ts"
       ],
       "keys": [
-        "meal.title",
-        "food.slot.BREAKFAST",
-        "food.slot.LUNCH",
-        "food.slot.DINNER",
-        "food.slot.SNACK",
+        ["food.slot.BREAKFAST", "food.slot.LUNCH", "food.slot.DINNER", "food.slot.SNACK"],
+        "meal.picker.dayEmpty",
         "meal.search.placeholder",
         "meal.quickAdd.open",
         "meal.own.short",
-        "meal.tray.viewDay",
-        "meal.tray.empty",
         "meal.home.empty"
       ],
       "notFirstView": [
@@ -1522,7 +1516,10 @@
         "food.single.kcal",
         "food.single.lineKcalProtein",
         "food.suggestions.log",
-        "meal.again.other",
+        "meal.forSlot.BREAKFAST.other",
+        "meal.forSlot.LUNCH.other",
+        "meal.forSlot.DINNER.other",
+        "meal.forSlot.SNACK.other",
         "meal.again.spoken",
         "meal.barcode.addIt",
         "meal.barcode.badNumber",
@@ -1566,6 +1563,10 @@
         "meal.logNow",
         "meal.own.open",
         "meal.photo.why",
+        "meal.picker.cancel",
+        "meal.picker.change",
+        "meal.picker.day",
+        "meal.picker.option",
         "meal.picker.spoken",
         "meal.picker.spokenEmpty",
         "meal.quick.undoFailed",
@@ -1596,15 +1597,23 @@
         "meal.search.serverError",
         "meal.search.tooShort",
         "meal.search.withBrand",
-        "meal.sheet.add",
-        "meal.sheet.addKcal",
+        "meal.forSlot.BREAKFAST.add",
+        "meal.forSlot.BREAKFAST.addKcal",
+        "meal.forSlot.LUNCH.add",
+        "meal.forSlot.LUNCH.addKcal",
+        "meal.forSlot.DINNER.add",
+        "meal.forSlot.DINNER.addKcal",
+        "meal.forSlot.SNACK.add",
+        "meal.forSlot.SNACK.addKcal",
         "meal.sheet.closeSpoken",
         "meal.sheet.weighed",
         "meal.toast.added",
         "meal.tray.edit",
         "meal.tray.more",
         "meal.tray.moreSpoken",
+        "meal.title",
         "meal.tray.title",
+        "meal.tray.viewDay",
         "meal.tray.viewDaySpoken",
         "undoBanner.failed"
       ],
@@ -1612,29 +1621,21 @@
         {
           "face": "what the person eats",
           "keys": [
-            "meal.title",
-            "food.slot.BREAKFAST",
-            "food.slot.LUNCH",
-            "food.slot.DINNER",
-            "food.slot.SNACK",
+            ["food.slot.BREAKFAST", "food.slot.LUNCH", "food.slot.DINNER", "food.slot.SNACK"],
+            "meal.picker.dayEmpty",
             "meal.search.placeholder",
             "meal.quickAdd.open",
             "meal.own.short",
-            "meal.tray.viewDay",
-            "meal.again.yesterday",
+            ["meal.forSlot.BREAKFAST.yesterday", "meal.forSlot.LUNCH.yesterday", "meal.forSlot.DINNER.yesterday", "meal.forSlot.SNACK.yesterday"],
             "meal.home.favorites",
-            "meal.home.usual",
+            ["meal.forSlot.BREAKFAST.usual", "meal.forSlot.LUNCH.usual", "meal.forSlot.DINNER.usual", "meal.forSlot.SNACK.usual"],
             "meal.home.recent",
             "meal.home.showMore"
           ],
           "dynamic": [
             {
-              "what": "the tray title: the day (Today) and the meal chosen again",
-              "words": 2
-            },
-            {
-              "what": "the meal in \"Same as yesterday's breakfast\" and in \"Usually at breakfast\"",
-              "words": 2
+              "what": "the day under the meal's name (Today)",
+              "words": 1
             },
             {
               "what": "three food rows: the portion (1 large), the macros (P, C, F) and the calories (kcal)",
@@ -1645,8 +1646,8 @@
       ],
       "dynamic": [
         {
-          "what": "the tray title: the meal chosen again and the day (Today)",
-          "words": 2
+          "what": "the day under the meal's name (Today)",
+          "words": 1
         }
       ]
     },

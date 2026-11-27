@@ -1336,7 +1336,18 @@
     "logNow": "Log now",
     "picker": {
       "spoken": "{slot}, {kcal} so far",
-      "spokenEmpty": "{slot}, nothing yet"
+      "spokenEmpty": "{slot}, nothing yet",
+      "day": "{day} · {kcal}",
+      "dayEmpty": "{day} · nothing yet",
+      "option": "{slot} · {kcal}",
+      "cancel": "Cancel",
+      "change": "Choose another meal"
+    },
+    "forSlot": {
+      "BREAKFAST": { "add": "Add to Breakfast", "addKcal": "Add to Breakfast · {kcal}", "usual": "Usually at breakfast", "yesterday": "Same as yesterday's breakfast", "other": "Your last breakfast, {day}" },
+      "LUNCH": { "add": "Add to Lunch", "addKcal": "Add to Lunch · {kcal}", "usual": "Usually at lunch", "yesterday": "Same as yesterday's lunch", "other": "Your last lunch, {day}" },
+      "DINNER": { "add": "Add to Dinner", "addKcal": "Add to Dinner · {kcal}", "usual": "Usually at dinner", "yesterday": "Same as yesterday's dinner", "other": "Your last dinner, {day}" },
+      "SNACK": { "add": "Add to Snack", "addKcal": "Add to Snack · {kcal}", "usual": "Usually at snack", "yesterday": "Same as yesterday's snack", "other": "Your last snack, {day}" }
     },
     "tray": {
       "title": "{slot} · {day}",
@@ -1352,14 +1363,11 @@
       "favorites": "Favorites",
       "favoritesEmpty": "Tap the heart on a food to keep it here.",
       "empty": "Search for a food, or scan a barcode.",
-      "usual": "Usually at {slot}",
       "recent": "Recent",
       "showAll": "Show all {count}",
       "showMore": "Show more"
     },
     "again": {
-      "yesterday": "Same as yesterday's {slot}",
-      "other": "Your last {slot}, {day}",
       "line": "{items}",
       "spoken": "Log {slot} again: {items}"
     },
@@ -1372,8 +1380,6 @@
       "heartOff": "Make {name} a favorite"
     },
     "sheet": {
-      "add": "Add to {slot}",
-      "addKcal": "Add to {slot} · {kcal}",
       "close": "Close",
       "closeSpoken": "Close the portion step",
       "detail": "Details",

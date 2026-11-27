@@ -289,7 +289,7 @@ export function MealItems({ edit, day, item: itemParam }: Props) {
         {...(estimatedItems?.[openIndex] === undefined ? {} : { estimate: estimatedItems[openIndex] })}
         {...(logged === undefined ? {} : { logged })}
         waiting={waiting}
-        slotName={t(`food.slot.${slot}`)}
+        slot={slot}
         mode={focused ? 'save' : 'done'}
         question={openIndex !== null && shown?.question?.foodId === open.foodId ? question : null}
         busy={busy}

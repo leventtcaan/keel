@@ -24,6 +24,7 @@ import { MacroBar } from './MacroBar';
 import { foodParams } from './params';
 import { isCounted, isWeight, portionOf, quantityInPortion, stepOf } from './portions';
 import { kcalText, rangeText } from './single';
+import { isShownUnit } from './turkishMeasures';
 
 type Schemas = components['schemas'];
 
@@ -40,8 +41,8 @@ type Props = {
   estimate?: Schemas['EstimatedItem'];
   /** The meal's items as they were logged (a correction): an item still at its logged amount shows the very numbers the day shows for it. */
   logged?: Schemas['EstimatedItem'][];
-  /** "Breakfast": what the one button adds to. Already translated. */
-  slotName: string;
+  /** The meal the one button adds to: its own words ("Add to Dinner", "Akşam yemeğine ekle", ADR-094 Ek 4 #2). */
+  slot: Schemas['MealSlot'];
   /** `add`: a food for the meal; `save`: a logged item being corrected; `done`: an item of a meal still being put together. */
   mode: 'add' | 'save' | 'done';
   /** The heart: absent for a recipe, a quick add. */
@@ -68,7 +69,7 @@ type Props = {
  * the keyboard: "Add to Breakfast · 220 kcal". The numbers follow every choice. A quick add is the same sheet with its calories and macros
  * as fields. Closing it (the x, a tap outside) adds nothing.
  */
-export function PortionSheet({ item, index, known, recipes, estimate, logged, slotName, mode, favorite, question, waiting = false, busy, blocked, onChange, onSubmit, onClose, onRemove }: Props) {
+export function PortionSheet({ item, index, known, recipes, estimate, logged, slot, mode, favorite, question, waiting = false, busy, blocked, onChange, onSubmit, onClose, onRemove }: Props) {
   const { color } = useTheme();
   const reduce = useReduceMotion();
   const insets = useContext(SafeAreaInsetsContext);
@@ -98,7 +99,7 @@ export function PortionSheet({ item, index, known, recipes, estimate, logged, sl
   const numbers = numbersOf(item, estimate, logged, waiting);
   const food = known.get(item.foodId);
   const quick = item.quick;
-  const label = numbers === null || quick !== undefined ? t('meal.sheet.add', { slot: slotName }) : t('meal.sheet.addKcal', { slot: slotName, kcal: kcalText(numbers.kcal) });
+  const label = numbers === null || quick !== undefined ? t(`meal.forSlot.${slot}.add`) : t(`meal.forSlot.${slot}.addKcal`, { kcal: kcalText(numbers.kcal) });
 
   const bottom = Math.max(lift, insets?.bottom ?? 0);
   const motion = reduce ? {} : { opacity: rise, transform: [{ translateY: rise.interpolate({ inputRange: [0, 1], outputRange: [tokens.space.xl, 0] }) }] };
@@ -147,7 +148,7 @@ export function PortionSheet({ item, index, known, recipes, estimate, logged, sl
   const chips =
     quick !== undefined ? null : (
       <View style={styles.chips} testID={`units-${index}`}>
-        {item.units.map((unit) => (
+        {item.units.filter((unit) => isShownUnit(unit) || unit === item.unit).map((unit) => (
           <Chip
             key={unit}
             label={portionLabel(item.portions, unit)}
@@ -282,7 +283,8 @@ const styles = StyleSheet.create({
   dock: { paddingHorizontal: tokens.space.lg, paddingTop: tokens.space.sm },
   head: { flexDirection: 'row', alignItems: 'flex-start', gap: tokens.space.xs },
   name: { flex: 1, minWidth: 0, gap: 2 },
-  title: { fontSize: tokens.type.number, fontWeight: tokens.weight.bold },
+  // The food's name speaks in the serif, as every heading of a sheet (ADR-094 §3, Ek 4 #6).
+  title: { ...tokens.face.display, fontSize: tokens.type.heading },
   headButton: { width: tokens.size.touch, height: tokens.size.touch, alignItems: 'center', justifyContent: 'center' },
   part: { gap: tokens.space.sm },
   bigLine: { flexDirection: 'row', alignItems: 'baseline', gap: tokens.space.sm },

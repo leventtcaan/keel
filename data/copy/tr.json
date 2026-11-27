@@ -1539,7 +1539,42 @@
     "logNow": "Şimdi kaydet",
     "picker": {
       "spoken": "{slot}, şimdilik {kcal}",
-      "spokenEmpty": "{slot}, henüz boş"
+      "spokenEmpty": "{slot}, henüz boş",
+      "day": "{day} · {kcal}",
+      "dayEmpty": "{day} · henüz boş",
+      "option": "{slot} · {kcal}",
+      "cancel": "Vazgeç",
+      "change": "Başka bir öğün seç"
+    },
+    "forSlot": {
+      "BREAKFAST": {
+        "add": "Kahvaltıya ekle",
+        "addKcal": "Kahvaltıya ekle · {kcal}",
+        "usual": "Genelde kahvaltıda",
+        "yesterday": "Dünkü kahvaltı",
+        "other": "{day} · kahvaltı"
+      },
+      "LUNCH": {
+        "add": "Öğle yemeğine ekle",
+        "addKcal": "Öğle yemeğine ekle · {kcal}",
+        "usual": "Genelde öğle yemeğinde",
+        "yesterday": "Dünkü öğle yemeği",
+        "other": "{day} · öğle yemeği"
+      },
+      "DINNER": {
+        "add": "Akşam yemeğine ekle",
+        "addKcal": "Akşam yemeğine ekle · {kcal}",
+        "usual": "Genelde akşam yemeğinde",
+        "yesterday": "Dünkü akşam yemeği",
+        "other": "{day} · akşam yemeği"
+      },
+      "SNACK": {
+        "add": "Atıştırmalığa ekle",
+        "addKcal": "Atıştırmalığa ekle · {kcal}",
+        "usual": "Genelde atıştırmalıkta",
+        "yesterday": "Dünkü atıştırmalık",
+        "other": "{day} · atıştırmalık"
+      }
     },
     "tray": {
       "title": "{slot} · {day}",
@@ -1555,16 +1590,13 @@
       "favorites": "Favoriler",
       "favoritesEmpty": "Burada tutmak için bir yiyeceğin kalbine dokun.",
       "empty": "Bir yiyecek ara ya da barkod tara.",
-      "usual": "Genelde {slot} öğününde",
       "recent": "Son kullanılanlar",
       "showAll": "{count} tanesini göster",
       "showMore": "Daha fazla göster"
     },
     "again": {
-      "yesterday": "Dünkü {slot} ile aynı",
-      "other": "Son {slot} öğünün, {day}",
       "line": "{items}",
-      "spoken": "{slot} öğününü yeniden kaydet: {items}"
+      "spoken": "Yeniden kaydet, {slot}: {items}"
     },
     "row": {
       "added": "Eklendi",
@@ -1575,8 +1607,6 @@
       "heartOff": "{name} favori yap"
     },
     "sheet": {
-      "add": "{slot} öğününe ekle",
-      "addKcal": "{slot} öğününe ekle · {kcal}",
       "close": "Kapat",
       "closeSpoken": "Porsiyon adımını kapat",
       "detail": "Ayrıntı",

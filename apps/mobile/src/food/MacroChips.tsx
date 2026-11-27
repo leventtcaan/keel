@@ -2,10 +2,9 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
-import { type Palette, tokens } from '@/theme/tokens';
+import { tokens } from '@/theme/tokens';
 
 type Macro = 'protein' | 'carbs' | 'fat';
-const TONE: Record<Macro, keyof Palette> = { protein: 'macroProtein', carbs: 'macroCarbs', fat: 'macroFat' };
 
 type Props = {
   protein: number;
@@ -16,8 +15,8 @@ type Props = {
 };
 
 /**
- * A food's macros as three small marks (Evre 7 A): a dot in the macro's own colour (the same three everywhere in the app) and its letter
- * and grams ("P 7"). The colour is never alone: the letter says which, and a screen reader hears the whole line in words.
+ * A food's macros as three quiet figures (Evre 7 A, ADR-094 Ek 4 #5): the macro's letter and its grams ("P 7 · K 20 · Y 4"), in the muted
+ * text colour. No coloured mark: colour belongs to the roles of ADR-094 §1. A screen reader hears the whole line in words.
  */
 export function MacroChips({ protein, carbs, fat, testID }: Props) {
   const { color } = useTheme();
@@ -33,10 +32,9 @@ export function MacroChips({ protein, carbs, fat, testID }: Props) {
   return (
     <View testID={testID} accessible accessibilityLabel={spoken} style={styles.row}>
       {parts.map(({ macro, value }) => (
-        <View key={macro} style={styles.part}>
-          <View style={[styles.dot, { backgroundColor: color[TONE[macro]] }]} />
-          <Text style={[styles.text, { color: color.muted }]}>{t(`food.macro.${macro}`, { value })}</Text>
-        </View>
+        <Text key={macro} style={[styles.text, { color: color.muted }]}>
+          {t(`food.macro.${macro}`, { value })}
+        </Text>
       ))}
     </View>
   );
@@ -44,7 +42,5 @@ export function MacroChips({ protein, carbs, fat, testID }: Props) {
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.md },
-  part: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.xs },
-  dot: { width: tokens.size.swatch - 2, height: tokens.size.swatch - 2, borderRadius: (tokens.size.swatch - 2) / 2 },
   text: { fontSize: tokens.type.label, fontVariant: ['tabular-nums'] },
 });

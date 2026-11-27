@@ -11,6 +11,7 @@ import { t } from '@/copy';
 import { foodParams } from '@/food/params';
 import { ThemeProvider } from '@/theme/theme';
 
+import { chooseSlot, slotOptions, titleSlot } from './support/mealPicker';
 import { WithSaved, banner } from './support/saved';
 
 type Schemas = components['schemas'];
@@ -134,10 +135,11 @@ const search = async (text: string) => {
 const lastMeal = () => (mockRecord.mock.calls.at(-1)?.[0] as { body: Record<string, unknown> }).body;
 
 describe('into a day', () => {
-  test('a past day: the tray says so, and a meal is given that day, at the slot\'s usual hour; the screen stays open', async () => {
+  // K1 (K-1247, ADR-094 Ek 4 #3): an empty meal has no tray card; the day is said under the title.
+  test('a past day: the title says so, and a meal is given that day, at the slot\'s usual hour; the screen stays open', async () => {
     mockParams = { day: '2026-09-25' };
     await show();
-    expect(screen.getByText(t('meal.tray.title', { slot: t('food.slot.LUNCH'), day: 'Fri, Sep 25' }))).toBeOnTheScreen();
+    expect(screen.getByText(t('meal.picker.dayEmpty', { day: 'Fri, Sep 25' }))).toBeOnTheScreen();
     await press(t('food.suggestions.log', { name: 'Rice' }));
     expect(lastMeal()).toMatchObject({ slot: 'LUNCH', eatenAt: new Date(2026, 8, 25, foodParams.pastDaySlotHours.LUNCH).toISOString() });
     expect(mockBack).not.toHaveBeenCalled();
@@ -146,7 +148,7 @@ describe('into a day', () => {
 
   test('today is the default and says Today; a meal is given the moment it is logged', async () => {
     await show();
-    expect(screen.getByText(t('meal.tray.title', { slot: t('food.slot.LUNCH'), day: t('food.day.today') }))).toBeOnTheScreen();
+    expect(screen.getByText(t('meal.picker.dayEmpty', { day: t('food.day.today') }))).toBeOnTheScreen();
     await press(t('food.suggestions.log', { name: 'Rice' }));
     expect(lastMeal()).toMatchObject({ eatenAt: new Date(2026, 8, 29, 13, 0).toISOString() });
   });
@@ -154,7 +156,7 @@ describe('into a day', () => {
   test('the slot asked for is the slot chosen', async () => {
     mockParams = { day: '2026-09-29', slot: 'DINNER' };
     await show();
-    expect(screen.getByTestId('slot-DINNER')).toBeSelected();
+    expect(titleSlot('DINNER')).toBeOnTheScreen();
   });
 
   test('a food from the portion step is given the day too', async () => {
@@ -182,9 +184,10 @@ describe('into a day', () => {
 describe('the meals of the user\'s own day', () => {
   // K1 (Evre 7 A): the slots shown followed the user's pattern ("three meals a day sees three" and an "Other" chip); the four meals are one
   // segmented control now, always whole, and the pattern chooses which one is open.
+  // K1 (K-1247, ADR-094 Ek 4 #1): the four meals are the system's list behind the title, not four pills.
   test('all four are always there, with no "Other"', async () => {
     await show();
-    for (const slot of ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK'] as const) expect(screen.getByTestId(`slot-${slot}`)).toBeOnTheScreen();
+    expect(await slotOptions()).toEqual([t('food.slot.BREAKFAST'), t('food.slot.LUNCH'), t('food.slot.DINNER'), t('food.slot.SNACK'), t('meal.picker.cancel')]);
     expect(screen.queryByRole('button', { name: t('meal.slots.moreSpoken') })).toBeNull();
   });
 
@@ -194,7 +197,7 @@ describe('the meals of the user\'s own day', () => {
     jest.setSystemTime(new Date(2026, 8, 29, 14, 30));
     try {
       await show();
-      expect(screen.getByTestId('slot-LUNCH')).toBeSelected();
+      expect(titleSlot('LUNCH')).toBeOnTheScreen();
     } finally {
       jest.setSystemTime(new Date(2026, 8, 29, 13, 0));
     }
@@ -204,7 +207,7 @@ describe('the meals of the user\'s own day', () => {
     jest.setSystemTime(new Date(2026, 8, 29, 18, 0));
     try {
       await show();
-      expect(screen.getByTestId('slot-DINNER')).toBeSelected();
+      expect(titleSlot('DINNER')).toBeOnTheScreen();
     } finally {
       jest.setSystemTime(new Date(2026, 8, 29, 13, 0));
     }
@@ -215,22 +218,20 @@ describe('the meals of the user\'s own day', () => {
     await show();
     await press(t('food.suggestions.log', { name: 'Rice' }));
     expect(screen.getByRole('button', { name: t('meal.picker.spoken', { slot: t('food.slot.LUNCH'), kcal: t('food.single.kcal', { value: 190 }) }) })).toBeOnTheScreen();
-    expect(screen.getByRole('button', { name: t('meal.picker.spokenEmpty', { slot: t('food.slot.DINNER') }) })).toBeOnTheScreen();
+    expect((await slotOptions())[1]).toBe(t('meal.picker.option', { slot: t('food.slot.LUNCH'), kcal: t('food.single.kcal', { value: 190 }) }));
   });
 
   test('a meal with nothing in it shows its name and nothing else, no dash (Evre 7)', async () => {
     mockLocal = [];
     await show();
-    const dinner = screen.getByTestId('slot-DINNER');
-    expect(within(dinner).queryByText('-')).toBeNull();
-    expect(within(dinner).getAllByText(/./)).toHaveLength(1);
+    expect((await slotOptions())[2]).toBe(t('food.slot.DINNER'));
   });
 });
 
 describe('what can be logged without typing', () => {
   test('Usually at lunch: the most logged foods in their usual amount, the plus logs one', async () => {
     await show();
-    expect(screen.getByText(t('meal.home.usual', { slot: t('food.slot.LUNCH').toLowerCase() }))).toBeOnTheScreen();
+    expect(screen.getByText(t('meal.forSlot.LUNCH.usual'))).toBeOnTheScreen();
     expect(screen.getByText('Rice')).toBeOnTheScreen();
     await press(t('food.suggestions.log', { name: 'Rice' }));
     expect(lastMeal()).toMatchObject({ items: [{ foodId: 'fdc-rice', amount: { quantity: 150, unit: 'g' } }] });
@@ -255,7 +256,7 @@ describe('what can be logged without typing', () => {
     mockHistory = [meal('a', 1, 'LUNCH', 'Chicken bowl'), meal('b', 2, 'LUNCH', 'Chicken bowl'), meal('c', 3, 'DINNER', 'Soup')];
     await show();
     expect(screen.getAllByText(/Chicken bowl/)).toHaveLength(1);
-    await press(/^Dinner/);
+    await chooseSlot('DINNER');
     await press(t('meal.again.spoken', { slot: t('food.slot.DINNER').toLowerCase(), items: 'Soup' }));
     expect(lastMeal()).toMatchObject({ repeatOf: 'c', slot: 'DINNER' });
     expect(screen.getByText(t('meal.toast.added'))).toBeOnTheScreen();

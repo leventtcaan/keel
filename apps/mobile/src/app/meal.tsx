@@ -68,8 +68,9 @@ export default function MealScreen() {
         problem={problem}
       />
     ) : null;
+  const logging = step === 'entry' && edit === undefined && !handed;
   const entry =
-    step !== 'entry' ? null : edit !== undefined || handed ? (
+    step !== 'entry' ? null : !logging ? (
       <MealItems {...(edit === undefined ? {} : { edit })} {...(day === undefined ? {} : { day })} {...(item === undefined ? {} : { item })} />
     ) : (
       <LogMeal {...(day === undefined ? {} : { day })} {...(slot === undefined ? {} : { slotParam: slot })} />
@@ -77,7 +78,8 @@ export default function MealScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
-      <ModalClose title={t(edit === undefined ? 'meal.title' : 'meal.editTitle')} accessibilityLabel={t('meal.closeLabel')} />
+      {/* A new meal's title is the meal itself (MealPicker, ADR-094 Ek 4 #1): the bar holds only Close then. */}
+      <ModalClose {...(logging ? {} : { title: t(edit === undefined ? 'meal.title' : 'meal.editTitle') })} accessibilityLabel={t('meal.closeLabel')} />
       {consent}
       {entry}
     </SafeAreaView>

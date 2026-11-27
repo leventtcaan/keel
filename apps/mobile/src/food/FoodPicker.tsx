@@ -12,7 +12,6 @@ import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { load } from '@/today/today';
 
-import { ActionPill } from './ActionPill';
 import { BarcodeScanner } from './BarcodeScanner';
 import { FoodList, type FoodRowData } from './FoodList';
 import { foodRow } from './foodRows';
@@ -244,12 +243,13 @@ export function FoodPicker({ full, onFood, onLogNow, onQuickAdd, idle, belowSear
         </View>
       </Card>
     ) : null;
-  const quickPill = onQuickAdd === undefined ? null : <ActionPill label={t('meal.quickAdd.open')} icon="bolt.fill" onPress={onQuickAdd} />;
-  const tools =
+  // The rare ways in, as two petrol text buttons under the list (ADR-094 Ek 4 #4): they take no room above what is eaten every day.
+  const quickLink = onQuickAdd === undefined ? null : <Button label={t('meal.quickAdd.open')} variant="text" size="sm" onPress={onQuickAdd} />;
+  const links =
     full || found.state !== 'idle' ? null : (
-      <View style={styles.buttons} testID="food-tools">
-        {quickPill}
-        <ActionPill label={t('meal.own.short')} accessibilityLabel={t('meal.own.open')} icon="plus.square.fill" onPress={() => setCreating({})} />
+      <View style={styles.links} testID="food-links">
+        {quickLink}
+        <Button label={t('meal.own.short')} accessibilityLabel={t('meal.own.open')} variant="text" size="sm" onPress={() => setCreating({})} />
       </View>
     );
   const empty = noMatch ? (
@@ -295,12 +295,12 @@ export function FoodPicker({ full, onFood, onLogNow, onQuickAdd, idle, belowSear
         {...(full ? {} : { onScan: () => setScanning(true) })}
       />
       {belowSearch}
-      {tools}
       {missed}
       {recipeList}
       {resultList}
       {empty}
       {idleView}
+      {links}
       {scanner}
     </View>
   );
@@ -335,6 +335,7 @@ const styles = StyleSheet.create({
   search: { gap: tokens.space.md },
   group: { gap: tokens.space.xs },
   buttons: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.space.sm },
+  links: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: tokens.space.lg },
   empty: { alignItems: 'center', gap: tokens.space.sm, paddingVertical: tokens.space.lg },
   text: { fontSize: tokens.type.body },
 });
