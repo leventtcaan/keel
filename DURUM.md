@@ -1,11 +1,20 @@
 ---
-guncelleme: 2026-11-27
+guncelleme: 2026-11-28
 ---
 # DURUM
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (27 Kas — K-1252: yürüyüş haritası düzenleme ekranı rota fişi, #818, PR #819 otomatik birleşmede; 9c-7 bitti)
+## ▶ DEVAM NOKTASI (28 Kas — K-1253: abonelik ekranı Sıcak defter, #820, PR otomatik birleşmede; 9c-8 bitti)
+**K-1252 birleşti (#819).** **9c-8 (Abonelik):** önce **önizleme modu** (yalnız `__DEV__` + `EXPO_PUBLIC_PAYWALL_PREVIEW=1`; örnek planlar `subscription.json` ›
+`paywall_preview_plans`, hiçbir şey satmaz; sim `.env`'i yasal iki adresi de ister). Bugünkü ekran çekildi ve işaretlendi (`prototip/gorsel-yon/9c8-abonelik/abonelik-simdi.jpg`);
+A/B/C sonra B+C karışımı D/E/F; kilo vaadi U12 + ADR-050 yüzünden yok, kendi geçmiş kilo çizgisi var. **Levent F + E'yi seçti → ADR-094 Ek 8.** K-1253: bant ve kart yok,
+kilitli karar kartı paywall'ı haftasıyla açar (`/paywall?week=`) → "Kararın hazır" + kendi kilo trendi; başka girişte kilo dilinde örnek (kişinin birimiyle); takvim adaçayında,
+başlığı ekranın başlığı, fiyattan önce; fiyat kutuları yan yana, tasarruf yazı; iki değer satırı bir. Fiyat, deneme ve yasal metin aynen. K1 (8) Levent onaylı. Sonra fotosu `abonelik-sonra.jpg`.
+**Açık:** K-1254 (#821) uygulama içi puan isteme (önce araştırma + ADR, K6); Ayarlar'daki seçili segment hâlâ siyah (9c-9); K-1216/K-1227 backlog'da hâlâ `todo` (kod var).
+**Sıradaki:** Evre 9 › 9c-9 Ayarlar, ya da K-1254 / K-1248 — Levent seçer.
+
+## (önceki) ▶ DEVAM NOKTASI (27 Kas — K-1252: yürüyüş haritası düzenleme ekranı rota fişi, #818, PR #819 otomatik birleşmede; 9c-7 bitti)
 **K-1251 birleşti (#817).** **9c-7 harita düzenleme:** bugünkü ekran çekildi (`prototip/gorsel-yon/9c7-yuruyus/harita-simdi.jpg`, 6 sorun); ilk tur üç yön
 Levent'e "LLM'den çıkan ilk görsel" geldi; ikinci tur (`harita-varyantlar-2.jpg`: sessiz harita, kendi işaretler) → **Levent A · Rota fişi'ni seçti → ADR-094 Ek 7.**
 K-1252: mutedStandard harita (işletme/bina/pusula yok), başlangıç halka · varış dolu nokta · gri nokta + kâğıt etiket, kâğıt kenarlı düz petrol rota (Bugünün

@@ -63,6 +63,60 @@
       "tag": "urun",
       "source": "plan/kararlar/ADR-091-evre-8-kararlari.md#Ek 2",
       "note": "The upgrade moment of the meal log (ADR-091 #1, K-1202): from this many meals typed by hand in one day, a line suggests logging by photo or text, only while the server says the AI is on. Off in production today, so nothing shows."
+    },
+    {
+      "key": "paywall_preview_plans",
+      "value": [
+        {
+          "id": "preview_annual",
+          "period": "annual",
+          "price": "$59.99",
+          "amount": 59.99,
+          "currency": "USD",
+          "pricePerMonth": "$4.99",
+          "trial": {
+            "count": 2,
+            "unit": "week"
+          }
+        },
+        {
+          "id": "preview_monthly",
+          "period": "monthly",
+          "price": "$12.99",
+          "amount": 12.99,
+          "currency": "USD",
+          "pricePerMonth": null,
+          "trial": {
+            "count": 2,
+            "unit": "week"
+          }
+        }
+      ],
+      "unit": "plans",
+      "tag": "urun",
+      "source": "plan/evre-9-tasarim.md#9b",
+      "note": "Sample plans for the paywall's preview (src/subscription/preview.ts): only a development build with EXPO_PUBLIC_PAYWALL_PREVIEW=1 shows them, so the paywall can be designed on the simulator, where the App Store is not. A release build never reads them; there the store's own plans and prices are shown (ADR-057 D3). The prices are ADR-012's ($59.99 a year, $12.99 a month), the trial ADR-071's (two weeks); changing them here changes nothing anyone is charged."
+    },
+    {
+      "key": "paywall_example_weight_kg",
+      "value": [
+        85.6,
+        85.4,
+        85.3,
+        85.1,
+        85.0,
+        84.8,
+        84.6,
+        84.4,
+        84.25,
+        84.2,
+        84.2,
+        84.2
+      ],
+      "unit": "kg",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md#Ek 8",
+      "note": "The paywall's example call, told in weight (ADR-094 Ek 8 #2): a weekly trend that came down and has held for the last three weeks (the change shown is the last four points'), drawn as the app draws a trend and shown in the person's units, marked Example. It is not anyone's data and never a forecast (U1, U12): only shown when there is no locked call of the person's own."
     }
   ]
 }

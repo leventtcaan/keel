@@ -248,11 +248,15 @@ export const tokens = {
     optionIcon: 40,
     /** The paywall (ADR-072 Ek 3, prototype paywall-v2): the app icon in its header, a value's icon tile, a timeline's dot, a plan's radio. */
     brandMark: 30,
-    valueTile: 36,
     timelineDot: 16,
     planRadio: 24,
     /** The progress photo's camera (K-1055, prototype yeniden-yapim §10): the shutter. */
     shutter: 78,
+    /** The paywall hero's own weight line (ADR-094 Ek 8 #2): wider than This week's, the call's one picture. */
+    heroTrendWidth: 170,
+    heroTrendHeight: 56,
+    /** The paywall's benefit tick (ADR-094 Ek 8 #5): a petrol check, no tile. */
+    valueTick: 18,
     /** The weight's small trend line on This week (9c-3): its box, and the latest point's dot. */
     trendWidth: 120,
     trendHeight: 36,

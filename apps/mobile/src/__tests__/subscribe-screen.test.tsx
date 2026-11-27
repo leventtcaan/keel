@@ -59,6 +59,7 @@ let mockPreview: PlanPreview | null = null;
 jest.mock('@/services/ServicesProvider', () => ({
   useAppServices: () => mockServices,
   useSubscriptionGate: () => mockGateState,
+  useUnits: () => 'METRIC',
 }));
 jest.mock('expo-router', () => ({ router: { back: () => {}, push: () => {} } }));
 jest.mock('@/subscription/paywall', () => ({ ...jest.requireActual('@/subscription/paywall'), wait: async () => {} }));
@@ -205,10 +206,11 @@ describe('#paywall after the plan (ADR-072 #7)', () => {
     expect(screen.getAllByText(weekdayDate(FIRST_CALL))).toHaveLength(2);
   });
 
-  test('three values with calls: the call on its day, that each call after the first is this, the coach to ask about the week (ADR-092)', async () => {
+  test('two values with calls: the call on its day after the first one, and the coach to ask about the week (ADR-092, ADR-094 Ek 8 #5)', async () => {
     mockPreview = PREVIEW;
     await show();
-    for (const key of ['subscription.values.after', 'subscription.values.coach']) expect(screen.getByText(t(key))).toBeOnTheScreen();
+    expect(screen.getByText(t('subscription.values.coach'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('subscription.values.after'))).toBeNull();
     expect(screen.getByText(t('subscription.values.call', { day: t('onboarding.schedule.dayName.MONDAY') }))).toBeOnTheScreen();
     expect(screen.queryByText(t('subscription.values.built'))).toBeNull();
   });

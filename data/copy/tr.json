@@ -3581,8 +3581,8 @@
     "values": {
       "built": "Günlerine göre kurulan program",
       "own": "Programın, ince ayarlı",
-      "call": "Her {day} bir karar, gerekçesiyle",
-      "weeklyCall": "Her hafta bir karar, gerekçesiyle",
+      "call": "İlk kararından sonra her {day} bir karar, gerekçesiyle",
+      "weeklyCall": "İlk kararından sonra her hafta bir karar, gerekçesiyle",
       "after": "İlk kararından sonraki her karar",
       "coach": "Haftanı sormak için koç",
       "adjust": "Haftana göre ayarlanan kardiyo ve beslenme",
@@ -3598,20 +3598,22 @@
       "workoutDay": "İlk antrenman",
       "callNote": "sonra her {day}, gerekçesiyle"
     },
+    "ready": {
+      "week": "{date} haftası",
+      "label": "{date} haftası için kararın hazır",
+      "line": "Senin haftandan çıktı. Neyin değiştiği içinde.",
+      "change": "{span} içinde {change}"
+    },
     "example": {
       "tag": "Örnek",
       "arrow": "→",
-      "call": {
-        "label": "Haftalık karar örneği",
+      "weight": {
+        "label": "Haftalık karar örneği: kilon 3 haftadır yerinde, günde 250 kcal daha az",
         "eyebrow": "Bu haftanın kararı",
-        "title": "Yeni kalori hedefi",
-        "row": "Kalori",
-        "from": "2.050",
-        "to": "1.800",
-        "unit": "kcal",
-        "spoken": "Kalori: 2.050 kcal'den 1.800 kcal'e.",
-        "why": "3 hafta boyunca haftada -0,3 kg, hedefine doğru değil.",
-        "step": "Tek adım: günde 250 kcal daha az."
+        "title": "Kilon 3 haftadır yerinde",
+        "change": "3 haftada {change}",
+        "call": "Karar",
+        "step": "Günde 250 kcal daha az"
       },
       "set": {
         "label": "Set hedefi örneği",

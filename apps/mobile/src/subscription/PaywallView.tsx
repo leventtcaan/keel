@@ -5,7 +5,6 @@ import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
-import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
 import { coachAvailable } from '@/food/aiLogging';
 import { useAppServices } from '@/services/ServicesProvider';
@@ -13,6 +12,7 @@ import { stateWords } from '@/settings/SubscriptionSection';
 import { AccountButton, AccountSheet } from '@/subscription/AccountSheet';
 import { BrandMark } from '@/subscription/BrandMark';
 import { ExampleCard } from '@/subscription/ExampleCard';
+import { type ReadyCall, ReadyCallHero, WeightExample } from '@/subscription/PaywallHero';
 import { YourPlanCard } from '@/subscription/YourPlanCard';
 import { configuredLegalLinks } from '@/subscription/links';
 import { type Opened, confirmActive, openPaywall, restorePurchases, subscribe, wait } from '@/subscription/paywall';
@@ -24,6 +24,7 @@ import { TrialReminderOffer } from '@/subscription/TrialReminderOffer';
 import { paywallTimeline, paywallWords, planWords } from '@/subscription/words';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
+import { loadWeight } from '@/today/numbers';
 import { localDay } from '@/today/today';
 
 /** A line above the button: what came of the last thing tried. */
@@ -52,18 +53,21 @@ type Props = {
   onActive?: () => void;
   /** The plan just shown at the end of onboarding (#ob-plan): what its program has (the values), and whether it has calls (K-967). */
   preview?: PlanPreview | null;
+  /** The week of the person's locked call, when its "See plans" opened the paywall (ADR-094 Ek 8 #2): the hero is theirs. */
+  lockedWeek?: string | null;
 };
 
 /**
- * The paywall (K-702, K-1033; prototype paywall-v2, ADR-057, ADR-072 #7 and Ek 3). The example call as the hero, marked as one;
- * the headline; the store's plans right under it (above the fold), annual chosen first, each with the store's price (K2) and, when it is real, the
- * saving; three values; the timeline — today, the first call, the reminder, the charge — for the chosen plan, the trial as long as the store's
- * offer; the chosen plan's terms in full, the trial only for someone who can have it (Apple 3.1.2). The button, the price in a
- * line and Restore, Terms, Privacy stay at the bottom. Bought, the server is asked until it sees it (D2): subscribed, or "it can
- * take a minute" with a way to look again — never a second purchase. Opened only when the user asks (D5): from a feature that
- * needs it, or Settings.
+ * The paywall (K-702, K-1033, K-1253; ADR-057, ADR-072 #7 and Ek 3, ADR-094 Ek 8): the page is the paper, no band and no card.
+ * The hero first — the plan just shown, or the person's own call waiting locked with their weight, or an example told in
+ * weight, marked as one; then what happens when, under the screen's heading (today, the first call, the reminder, the charge)
+ * for the chosen plan, the trial as long as the store's offer; then the store's plans side by side, annual chosen first, each
+ * with the store's price (K2) and, when it is real, the saving; the benefits; the chosen plan's terms in full, the trial only
+ * for someone who can have it (Apple 3.1.2). The button, the price in a line and Restore, Terms, Privacy stay at the bottom.
+ * Bought, the server is asked until it sees it (D2): subscribed, or "it can take a minute" with a way to look again — never a
+ * second purchase. Opened only when the user asks (D5): from a feature that needs it, or Settings.
  */
-export function Paywall({ required = false, onActive, preview = null }: Props) {
+export function Paywall({ required = false, onActive, preview = null, lockedWeek = null }: Props) {
   const { api, purchases, report } = useAppServices();
   const { color } = useTheme();
   const insets = useContext(SafeAreaInsetsContext);
@@ -74,6 +78,21 @@ export function Paywall({ required = false, onActive, preview = null }: Props) {
   const [links] = useState(configuredLegalLinks);
   // One purchase or restore at a time: a second tap while Apple's sheet is up does nothing (a ref both taps share).
   const running = useRef(false);
+
+  // Opened from the person's locked call (ADR-094 Ek 8 #2): their call, then their weight once it is read; not read is no line.
+  const [ready, setReady] = useState<ReadyCall | null>(lockedWeek === null ? null : { weekOf: lockedWeek, weight: null });
+  useEffect(() => {
+    if (lockedWeek === null) return;
+    let live = true;
+    void loadWeight(api, localDay(new Date()))
+      .catch(() => null)
+      .then((weight) => {
+        if (live) setReady({ weekOf: lockedWeek, weight });
+      });
+    return () => {
+      live = false;
+    };
+  }, [api, lockedWeek]);
 
   const opening = useCallback(() => openPaywall({ api, store: purchases, report, links }).then(stepOf), [api, purchases, report, links]);
   useEffect(() => {
@@ -139,7 +158,7 @@ export function Paywall({ required = false, onActive, preview = null }: Props) {
   const corner = required ? (
     <AccountButton onPress={() => setAccount(true)} />
   ) : (
-    <Button label={t('subscription.close')} variant="ghost" size="sm" onPress={() => router.back()} />
+    <Button label={t('subscription.close')} variant="text" size="sm" onPress={() => router.back()} />
   );
 
   let hero: React.ReactNode = null;
@@ -185,39 +204,36 @@ export function Paywall({ required = false, onActive, preview = null }: Props) {
     const timeline = paywallTimeline(chosen, { today, firstCall: preview?.firstCall ?? null });
     // Without the health data consent there are no calls (ADR-074): the example is a set's target, and another value takes the call's place.
     const calls = preview === null || preview.firstCall !== null;
-    // Right after onboarding, with calls: the plan the person just saw is the hero, tagged Yours (K-1058). Met later (Settings), or
-    // without calls, the example stays: it is not this person's call, and says so.
-    hero = preview !== null && preview.firstCall !== null ? <YourPlanCard preview={{ ...preview, firstCall: preview.firstCall }} /> : <ExampleCard kind={calls ? 'call' : 'set'} />;
-    // Three concrete lines. With calls: the call on the profile's own day (met later, with no plan just shown, without a day), the
-    // weights from last time, and the cardio and food that adjust. Without calls (no health data consent): the program, the weights,
-    // and the cardio only when the program sets some.
-    // What the subscription is now (ADR-091 #1): the weekly call, every week after the first. Logging, programs and weights are free,
-    // so they are not sold here; the coach only once it is on (aiLogging.ts), never as a promise.
-    const after: ValueRow = { icon: 'sets', words: t('subscription.values.after') };
+    // The hero (ADR-094 Ek 8 #2): right after onboarding, with calls, the plan the person just saw, tagged Yours (K-1058); else their
+    // own call waiting locked, with their weight; else an example told in weight. Without calls, the set's example.
+    if (preview !== null && preview.firstCall !== null) hero = <YourPlanCard preview={{ ...preview, firstCall: preview.firstCall }} />;
+    else if (!calls) hero = <ExampleCard />;
+    else hero = ready === null ? <WeightExample /> : <ReadyCallHero ready={ready} />;
+    // Concrete lines (ADR-094 Ek 8 #5). With calls: the call every week after the first, on the profile's own day (met later,
+    // with no plan just shown, without a day), and the coach once it is on (aiLogging.ts, never as a promise) or the cardio and
+    // food that adjust. Without calls (no health data consent): the program, the weights, and the cardio only when the program
+    // sets some. Logging, programs and weights are free, so they are not sold here (ADR-091 #1).
     let values: ValueRow[];
     if (preview !== null && preview.firstCall === null) {
-      const program: ValueRow = { icon: 'program', words: t(preview.own ? 'subscription.values.own' : 'subscription.values.built') };
-      const other: ValueRow = { icon: 'call', words: t(preview.hasCardio ? 'subscription.values.cardio' : 'subscription.values.swap') };
-      values = [program, after, other];
+      const program: ValueRow = { words: t(preview.own ? 'subscription.values.own' : 'subscription.values.built') };
+      const other: ValueRow = { words: t(preview.hasCardio ? 'subscription.values.cardio' : 'subscription.values.swap') };
+      values = [program, { words: t('subscription.values.after') }, other];
     } else {
       const call = preview === null ? t('subscription.values.weeklyCall') : t('subscription.values.call', { day: t(`onboarding.schedule.dayName.${preview.checkInDay}`) });
-      const third: ValueRow = coachAvailable() ? { icon: 'program', words: t('subscription.values.coach') } : { icon: 'program', words: t('subscription.values.adjust') };
-      values = [{ icon: 'call', words: call }, after, third];
+      const second: ValueRow = { words: t(coachAvailable() ? 'subscription.values.coach' : 'subscription.values.adjust') };
+      values = [{ words: call }, second];
     }
     const choose = (id: string) => setStep((now) => (now.at === 'plans' && now.busy === null ? { ...now, chosen: id, note: null } : now));
     body = (
       <View style={styles.part}>
-        <ScreenTitle accent={words.accent ?? undefined} label={words.title}>
-          {words.lead}
-        </ScreenTitle>
-        {/* The plans first, above the fold; the benefits and the timeline under them. */}
+        {/* What happens when, under the screen's heading, before the prices (ADR-094 Ek 8 #3; arastirma M2 › K3). */}
+        <TimelineCard rows={timeline} title={words.title} lead={words.lead} accent={words.accent} />
         <View accessibilityRole="radiogroup" style={styles.plans}>
           {step.plans.map((plan) => (
-            <PlanOption key={plan.id} line={planWords(plan, saving)} selected={plan.id === chosen.id} disabled={step.busy !== null} onPress={() => choose(plan.id)} />
+            <PlanOption key={plan.id} line={planWords(plan, saving)} price={plan.price} selected={plan.id === chosen.id} disabled={step.busy !== null} onPress={() => choose(plan.id)} />
           ))}
         </View>
         <Values rows={values} />
-        <TimelineCard rows={timeline} />
         {/* The full terms (Apple 3.1.2): the line at the bottom says them in short. */}
         <View style={styles.terms}>{words.terms.map((line) => <Text key={line} style={[styles.fine, { color: color.muted }]}>{line}</Text>)}</View>
       </View>
@@ -244,13 +260,15 @@ export function Paywall({ required = false, onActive, preview = null }: Props) {
     );
   }
 
+  const statusBand = required ? <View testID="status-bar-band" style={{ height: insets?.top ?? 0, backgroundColor: color.background }} /> : null;
   return (
     <View testID="paywall" style={[styles.safe, { backgroundColor: color.background }]}>
-      {/* The status bar's own place, outside the scroll (ADR-087 #2): in the band's colour, so at rest it is the band's top, and
-          scrolled, the page stops under it instead of passing under the clock. */}
-      <View testID="status-bar-band" style={{ height: insets?.top ?? 0, backgroundColor: color.accentSoft }} />
+      {/* The status bar's own place, outside the scroll (ADR-087 #2), only where the page fills the screen (the gate): scrolled,
+          the page stops under the clock instead of passing under it. A sheet starts below the clock already, so it has none
+          (ADR-094 Ek 8 #1). The paper's colour: no band, no card (ADR-094 §1). */}
+      {statusBand}
       <ScrollView testID="paywall-scroll" contentContainerStyle={[styles.scroll, dockHeight > 0 && { paddingBottom: dockHeight }]}>
-        <View style={[styles.band, { backgroundColor: color.accentSoft, paddingTop: tokens.space.sm }]}>
+        <View style={styles.top}>
           <View style={styles.head}>
             <View style={styles.brand}>
               <BrandMark />
@@ -268,12 +286,12 @@ export function Paywall({ required = false, onActive, preview = null }: Props) {
   );
 }
 
-/** Restore, Terms, Privacy: quiet, underlined, a touch target of their own. */
+/** Restore, Terms, Privacy: links in petrol (ADR-094 §3), a touch target of their own. */
 function QuietLink({ label, onPress, disabled = false }: { label: string; onPress: () => void; disabled?: boolean }) {
   const { color } = useTheme();
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled }} disabled={disabled} onPress={onPress} hitSlop={tokens.space.sm}>
-      <Text style={[styles.link, { color: color.muted }, disabled && styles.dim]}>{label}</Text>
+      <Text style={[styles.link, { color: color.accent }, disabled && styles.dim]}>{label}</Text>
     </Pressable>
   );
 }
@@ -283,13 +301,13 @@ const nameOf = (error: unknown) => (error instanceof Error ? error.name : 'Unkno
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { flexGrow: 1 },
-  band: { borderBottomLeftRadius: tokens.radius.card * 2, borderBottomRightRadius: tokens.radius.card * 2, paddingHorizontal: tokens.space.lg, paddingBottom: tokens.space.md, gap: tokens.space.xs },
+  top: { paddingHorizontal: tokens.space.lg, paddingTop: tokens.space.sm, gap: tokens.space.md },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: tokens.size.touch },
   brand: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm },
-  brandName: { ...tokens.face.display, fontSize: tokens.type.heading },
+  brandName: { fontSize: tokens.type.body, fontWeight: tokens.weight.semibold },
   body: { padding: tokens.space.lg, gap: tokens.space.md },
   part: { gap: tokens.space.md },
-  plans: { gap: tokens.space.sm },
+  plans: { flexDirection: 'row', gap: tokens.space.md },
   terms: { gap: tokens.space.sm },
   text: { fontSize: tokens.type.body },
   bold: { fontWeight: tokens.weight.bold },
@@ -297,6 +315,6 @@ const styles = StyleSheet.create({
   dock: { paddingHorizontal: tokens.space.lg, paddingTop: tokens.space.md, gap: tokens.space.sm, borderTopWidth: tokens.border.hairline },
   line: { fontSize: tokens.type.label, textAlign: 'center' },
   links: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', columnGap: tokens.space.lg },
-  link: { fontSize: tokens.type.label, fontWeight: tokens.weight.semibold, textDecorationLine: 'underline', paddingVertical: tokens.space.sm },
+  link: { fontSize: tokens.type.label, fontWeight: tokens.weight.semibold, paddingVertical: tokens.space.sm },
   dim: { opacity: tokens.opacity.dim },
 });

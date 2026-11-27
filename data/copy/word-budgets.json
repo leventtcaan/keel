@@ -344,13 +344,13 @@
         "src/subscription/AccountSheet.tsx"
       ],
       "keys": [
-        ["subscription.example.call.eyebrow", "subscription.example.set.eyebrow"],
+        ["subscription.example.weight.eyebrow", "subscription.example.set.eyebrow"],
         "subscription.example.tag",
-        ["subscription.example.call.title", "subscription.example.set.title"],
-        ["subscription.example.call.row", "subscription.example.set.row"],
-        ["subscription.example.call.unit", "subscription.example.set.unit"],
-        ["subscription.example.call.why", "subscription.example.set.why"],
-        ["subscription.example.call.step", "subscription.example.set.step"],
+        ["subscription.example.weight.title", "subscription.example.set.title"],
+        ["subscription.example.weight.change", "subscription.example.set.row"],
+        ["subscription.example.weight.call", "subscription.example.set.unit"],
+        "subscription.example.set.why",
+        ["subscription.example.weight.step", "subscription.example.set.step"],
         "subscription.titleLead",
         "subscription.titleFor",
         "subscription.trialSpan.week",
@@ -371,7 +371,6 @@
         "subscription.plan.monthly",
         "subscription.plan.monthlyPrice",
         "subscription.plan.monthlyBilled",
-        "subscription.timeline.heading",
         "subscription.timeline.today",
         "subscription.timeline.free",
         "subscription.timeline.firstCall",
@@ -381,6 +380,7 @@
         "subscription.trial.week"
       ],
       "dynamic": [
+        { "what": "the example's weight (84.2 kg)", "words": 2 },
         { "what": "the day nothing is charged until (Tue, Oct 27)", "words": 2 },
         { "what": "the timeline's first call date (Mon, Oct 19)", "words": 2 },
         { "what": "the timeline's reminder date (Sat, Oct 24)", "words": 2 },
@@ -413,8 +413,7 @@
             "subscription.plan.monthly",
             "subscription.plan.monthlyPrice",
             "subscription.plan.monthlyBilled",
-            "subscription.timeline.heading",
-            "subscription.timeline.today",
+                "subscription.timeline.today",
             "subscription.timeline.free",
             "subscription.timeline.firstCall",
             "subscription.timeline.reminder",
@@ -429,13 +428,47 @@
             {"what": "the timeline's charge date (Mon, Oct 26)", "words": 2},
             {"what": "the own-plan card's first call date (Mon, Nov 2)", "words": 2}
           ]
+        },
+        {
+          "face": "own call waiting locked, with the weight's trend (ADR-094 Ek 8, K-1253)",
+          "keys": [
+            "subscription.ready.week",
+            "lockedCall.title",
+            "subscription.ready.change",
+            "thisWeek.numbers.down",
+            "thisWeek.numbers.spanWeeks",
+            "subscription.ready.line",
+            "subscription.titleLead",
+            "subscription.titleFor",
+            "subscription.trialSpan.week",
+            "subscription.timeline.today",
+            "subscription.timeline.free",
+            "subscription.timeline.reminder",
+            ["subscription.timeline.charge.annual", "subscription.timeline.charge.monthly"],
+            "subscription.plan.annual",
+            "subscription.plan.save",
+            "subscription.plan.perMonth",
+            "subscription.plan.monthly",
+            "subscription.plan.monthlyBilled",
+            ["subscription.values.call", "subscription.values.weeklyCall"],
+            ["subscription.values.coach", "subscription.values.adjust"],
+            "subscription.startTrial",
+            "subscription.trial.week"
+          ],
+          "dynamic": [
+            {"what": "the call's week (Wed, Nov 25)", "words": 2},
+            {"what": "the weight (87.4 kg)", "words": 2},
+            {"what": "the store's two prices ($59.99, $12.99)", "words": 2},
+            {"what": "the timeline's reminder date (Sat, Oct 24)", "words": 2},
+            {"what": "the timeline's charge date (Mon, Oct 26)", "words": 2}
+          ]
         }
       ],
       "uncounted": ["app.name", "subscription.example.arrow"],
       "notFirstView": [
         "settings.account.footer",
-        "subscription.example.call.label",
-        "subscription.example.call.spoken",
+        "subscription.example.weight.label",
+        "subscription.ready.label",
         "subscription.example.set.label",
         "subscription.example.set.spoken",
         "subscription.yours.label",
