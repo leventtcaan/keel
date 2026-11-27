@@ -6406,6 +6406,24 @@ tasks:
     tests: ["jest", "simülatör"]
     refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md"]
 
+  - id: K-1251
+    title: "Yürüyüş haritası Ayarlar'dan çıkar: Bugünün yürüyüşü sayfası (kalan adım, harita, hangisi kapatır), harita ücretli"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: M
+    status: done
+    depends_on: [K-1227]
+    why: "9c madde 7 (Levent, gezinti Durak 6): harita Ayarlar'ın 5 dokunuş derinliğinde, ana ekran satırı Apple Health'i açıyor, kardiyoyla bağı yok. 27 Kas: Levent simülatörde A · Kendi sayfası'nı ve ücretsiz sınırında 1 · Harita ücretli'yi seçti (ADR-094 Ek 6)"
+    acceptance:
+      - "/walk sayfası: serif başlık, kalan adım + mercan çubuk + dakika, kapatan yürüyüşün rotası haritada, 'Hangisi kapatır' listesi (motorun önerisi işaretli, eksik sayısı yok)"
+      - "Bu hafta'daki yürüyüş satırı petrol, sayfayı açar; Kardiyo penceresinde satır; Ayarlar › Aktivite'de Yürüyüşlerim satırı yok"
+      - "Abonelik yokken harita yerine kilit kartı + Planları gör; harita ekranı da kilitli; abonelik okunamazsa kilit değil hata satırı"
+      - "Haritadan kaydedilen yürüyüş adı sığmazsa varış yeri; yürüyüş iki yerini saklar; harita ekranı rotaya sığar"
+      - "Simülatörde Levent'e gösterilir; K1 varsa birleştirmeden önce Levent'e sorulur"
+    tests: ["jest", "simülatör"]
+    refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md", "plan/tasarim-gezinti-notlari.md"]
+
   - id: K-1248
     title: "Türk yemeklerinin porsiyon adı Türkçe, ev ölçüsü kuralı pilav/kuru baklagil yemeklerini tanır, su böreği sıvı sayılmaz"
     milestone: M12

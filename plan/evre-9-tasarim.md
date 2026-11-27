@@ -45,7 +45,7 @@ ekranda, sheet'te, pop-up'ta ve gelecekteki her ekranda aynen. Sıradaki: 9c'nin
 4. Antrenman sekmesi + set, dinlenme, süperset, bitiş ekranı, **paylaş** (pazarlanabilir kart), alttaki düğmeler.
 5. Gelişim: kısalt; "Düzen" kartı kalkar; kas başına set küçülür; bu haftanın kasları etkileşimli; kararlar listesi kısalır; fotoğraf girişi öne çıkar. **BİTTİ (27 Kas, K-1246):** A · Kısa defter (ADR-094 Ek 3).
 6. Yemek: öğün kaydetme (font kayması), arama, ev ölçüleri. **BİTTİ (27 Kas, K-1247, K-1250):** B · Başlık öğün (ADR-094 Ek 4), A · Hafta şeridi (Ek 5); sunucu işleri K-1248, K-1249.
-7. Yürüyüş haritası: Ayarlar'dan çıkar, kardiyo ve günlük yürüyüş akışına, ücretli.
+7. Yürüyüş haritası: Ayarlar'dan çıkar, kardiyo ve günlük yürüyüş akışına, ücretli. **BİTTİ (27 Kas, K-1251):** A · Kendi sayfası, 1 · Harita ücretli (ADR-094 Ek 6).
 8. Abonelik ekranı (önizleme modunda tasarlanır, TestFlight'ta gerçek).
 9. Ayarlar (gezilmedi).
 

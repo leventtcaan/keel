@@ -2866,6 +2866,28 @@
     "label": {
       "route": "{steps} steps left today. {name} and back is about {minutes} minutes of walking.",
       "minutes": "{steps} steps left today. That is about {minutes} minutes of walking."
+    },
+    "today": {
+      "title": "Today's walk",
+      "hint": "Opens today's walk",
+      "left": "{steps} steps left",
+      "of": "{steps} of {target} · about {minutes} min of walking",
+      "progress": "{steps} of {target} steps",
+      "done": "Today's steps are in",
+      "doneOf": "{steps} of {target}",
+      "noCount": "Your target is {target} steps. With Apple Health on, this shows what is left.",
+      "unread": "Couldn't load your step target. Try again later.",
+      "covers": "Which walk covers it",
+      "row": "{steps} steps there and back · {minutes} min",
+      "coversIt": "Covers it",
+      "rowLabel": "{name}: {steps} steps there and back, about {minutes} minutes.",
+      "coversLabel": "{name} covers today’s steps: {steps} steps there and back, about {minutes} minutes.",
+      "none": "No walks yet. Add the ones you really take.",
+      "edit": "Add or change walks",
+      "locked": "The map and routes come with a subscription.",
+      "mapUnread": "Couldn't load the map. Try again later.",
+      "noPlaces": "Add your places to see the walk on the map.",
+      "addPlaces": "Add places"
     }
   },
   "walkMap": {

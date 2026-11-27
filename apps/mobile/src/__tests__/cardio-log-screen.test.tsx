@@ -55,6 +55,7 @@ const toLocal = (record: { kind: string; body: { clientId: string } }): LocalRec
   errorCode: null,
 });
 const mockBack = jest.fn();
+const mockReplace = jest.fn();
 const mockServices = {
   api: { DELETE: jest.fn(async (_path: string, _init?: unknown) => ({ response: new Response(null, { status: 204 }) })) },
   training: {
@@ -81,7 +82,7 @@ const mockServices = {
 };
 jest.mock('expo-crypto', () => ({ randomUUID: () => jest.requireActual<typeof import('node:crypto')>('node:crypto').randomUUID() }));
 jest.mock('expo-router', () => ({
-  router: { back: () => mockBack() },
+  router: { back: () => mockBack(), replace: (...args: unknown[]) => mockReplace(...args) },
   useFocusEffect: (effect: () => void) => {
     const React = jest.requireActual<typeof import('react')>('react');
     React.useEffect(() => effect(), [effect]);
@@ -390,4 +391,11 @@ test('Done leaves', async () => {
   await show();
   await press(t('cardioLog.done'));
   expect(mockBack).toHaveBeenCalled();
+});
+
+// K-1251 (ADR-094 Ek 6): walking is in the cardio flow: the sheet has a row to today's walk.
+test("the sheet opens today's walk", async () => {
+  await show();
+  await fireEvent.press(screen.getByRole('button', { name: "Today's walk" }));
+  expect(mockReplace).toHaveBeenCalledWith('/walk');
 });

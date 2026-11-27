@@ -313,3 +313,26 @@ A · Hafta şeridi, B · Yalnız oklar, C · Katlı öğünler. **Levent A'yı s
 5. **Öneriler öğünlerden sonra**, başlığı "Kalana uyanlar".
 6. Levent sonucu simülatörde gördü (`9c6/gun-sonra.jpg`). K1 (9 beklenti: oklar yerine şeridin günü, başlık "Today") Levent onaylı (27 Kas).
 Seçilmeyen: B'nin oklu başlığı (kayıtlı günler görünmüyordu), C'nin katlı öğünleri (miktar ve kalori bir dokunuş uzakta).
+
+## Ek 6 · Yürüyüş haritası: Bugünün yürüyüşü sayfası, harita ücretli (9c madde 7, 2026-11-27, Levent)
+Bugünkü yol simülatörde çekildi ve işaretlendi (`prototip/gorsel-yon/9c7-yuruyus/yuruyus-simdi.jpg`): harita Ayarlar › Senin hakkında › Aktivite ›
+Yürüyüşlerim › Haritayı aç'ta (5 dokunuş); ana ekrandaki yürüyüş satırı gri ve Apple Health'i açıyor; haritadan kaydedilen yürüyüşün adı 24 harfte
+kesiliyor ("Akdeniz Üniversitesi ile gidiş dönüş"); harita ekranında rota haritadan taşıyor ve sonuç bugünkü açığa bağlanmıyor; kardiyo yalnız dakika.
+Agent üç yönü simülatörde gerçek rotayla çizdi (`9c7-yuruyus/yuruyus-varyantlar.jpg`): A · Kendi sayfası, B · Ana ekranda harita, C · Hareket
+penceresi (Kardiyo ve Yürüyüş sekmeleri). Ücretsiz sınırı için üç kilit (`9c7-yuruyus/yuruyus-ucretli.jpg`): 1 · Harita ücretli, 2 · İlk rota
+ücretsiz, 3 · Hepsi ücretli. **Levent A'yı ve 1'i seçti** (para kararı, 9d para haritasının ilk satırı).
+
+**Uygulama (K-1251):**
+1. **Bugünün yürüyüşü sayfası** (`/walk`): serif başlık; kum grupta kalan adım (yuvarlak rakam), mercan ilerleme çubuğu ve "4.200 / 10.000 ·
+   yaklaşık 53 dk yürüyüş"; altında harita (kapatan yürüyüşün rotası noktalı petrol); "Hangisi kapatır" sistem listesi: her yürüyüşün gidiş dönüş
+   adımı ve dakikası, motorun önerdiği (K-1216 `suggestWalk`) "Kapatır" ve petrol tikle; kapatmayan satırda eksik sayısı yazılmaz (U7);
+   altta petrol metin düğmesi "Yürüyüş ekle ya da değiştir" (Yürüyüşlerim sayfası).
+2. **Girişler:** Bu hafta'daki yürüyüş satırı petrol metin düğmesi olur ve bu sayfayı açar (Apple Health'i değil); + › Kardiyo penceresinde
+   "Bugünün yürüyüşü" satırı. **Ayarlar › Aktivite'deki "Yürüyüşlerim" satırı kalkar.**
+3. **Ücretli (seçenek 1):** ücretsiz: kalan adım, dakika, elle yazılan yürüyüşler ve hangisinin kapattığı. Ücretli: harita, yer arama, rota ve adım
+   ölçümü. Abonelik yokken haritanın yerinde kum kilit kartı ("Harita ve rota abonelikle gelir" + "Planları gör"); yürüyüş haritası ekranı da
+   abonelik ister. Abonelik okunamazsa kilit değil, "harita yüklenemedi" denir (ödeyen kişi kilit görmez).
+4. **Yan düzeltmeler:** haritadan kaydedilen yürüyüş adı sığmıyorsa yalnız varış yeri ("MACFit"); kayıtlı yürüyüş iki yerini bilir ki sayfa rotasını
+   çizsin; harita ekranı rotayı çizince haritayı rotaya sığdırır.
+Seçilmeyen: B (ana ekran 130 pt uzar, rota o boyda okunmaz), C (alttan gelen pencere ve bir sekme dokunuşu daha); 2 ve 3. Harita düzenleme ekranının
+kendisi (arama önce, tam boy "sil" düğmeleri) ayrı kart.

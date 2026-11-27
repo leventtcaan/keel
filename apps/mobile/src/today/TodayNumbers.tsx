@@ -154,11 +154,12 @@ export function TodayNumbers({ protein, steps, weight, walk = null, units }: Pro
   }
   if (tiles.length === 0 && weightLine === null) return null;
   const row = tiles.length === 0 ? null : <View style={styles.row}>{tiles}</View>;
-  // The steps left as a walk (K-1216), under the numbers (first screen, budget 74, K-1216): an offer in one line, never a debt (U7).
+  // The steps left as a walk (K-1216), under the numbers (first screen, budget 74, K-1216): an offer in one line, never a debt (U7). A text
+  // button in the accent (ADR-094 §3) that opens Today's walk (K-1251, Ek 6), where the map and which walk covers it are.
   const walkText =
     walk === null || steps?.steps == null ? null : (
-      <Pressable testID="walk-line" accessibilityRole="button" accessibilityLabel={walkLabel(walk.remaining, walk.suggestion)} accessibilityHint={t('progress.targets.hint.health')} onPress={openHealth}>
-        <Text style={[styles.walk, { color: color.textSecondary }]}>{walkLine(walk.remaining, walk.suggestion)}</Text>
+      <Pressable testID="walk-line" accessibilityRole="button" accessibilityLabel={walkLabel(walk.remaining, walk.suggestion)} accessibilityHint={t('walks.today.hint')} onPress={() => router.push('/walk')}>
+        <Text style={[styles.walk, { color: color.accent }]}>{walkLine(walk.remaining, walk.suggestion)}</Text>
       </Pressable>
     );
   return (

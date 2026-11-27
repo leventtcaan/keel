@@ -5,6 +5,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
+import { ListGroup, ListRow } from '@/components/ListGroup';
 import { ProblemText, announce, useProblem } from '@/components/ProblemText';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { Stepper } from '@/components/Stepper';
@@ -161,6 +162,10 @@ export default function CardioScreen() {
       <ScrollView contentContainerStyle={styles.body}>
         <ScreenTitle>{t('cardioLog.title')}</ScreenTitle>
         {body}
+        {/* Walking is in the cardio flow (K-1251, ADR-094 Ek 6): the steps left and the walk that covers them are a tap away. */}
+        <ListGroup>
+          <ListRow icon="figure.walk" label={t('walks.today.title')} navigates onPress={() => router.replace('/walk')} />
+        </ListGroup>
         <Button label={t('cardioLog.done')} variant="ghost" onPress={() => router.back()} />
       </ScrollView>
     </SafeAreaView>
