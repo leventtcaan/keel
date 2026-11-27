@@ -311,4 +311,5 @@ A · Hafta şeridi, B · Yalnız oklar, C · Katlı öğünler. **Levent A'yı s
 3. **Makrolar mercan çubuk:** üç makronun çubuğu "ne kadar ilerledin" rengiyle (§1), renkli nokta yok, ad ve "yenen / hedef g".
 4. **Öğün başlıkları serif** (§2, bölüm başlığı).
 5. **Öneriler öğünlerden sonra**, başlığı "Kalana uyanlar".
+6. Levent sonucu simülatörde gördü (`9c6/gun-sonra.jpg`). K1 (9 beklenti: oklar yerine şeridin günü, başlık "Today") Levent onaylı (27 Kas).
 Seçilmeyen: B'nin oklu başlığı (kayıtlı günler görünmüyordu), C'nin katlı öğünleri (miktar ve kalori bir dokunuş uzakta).

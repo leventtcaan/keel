@@ -6394,7 +6394,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: in_progress
+    status: done
     depends_on: [K-1247]
     why: "9c-6'nın kalanı: günün yemek sayfası 'Bugünün beslenmesi' + 'Bugün' iki kez, siyah seçim, renkli makrolar, öneriler öğünlerden önce. 27 Kas: Levent simülatörde üç yönden A · Hafta şeridi'ni seçti (ADR-094 Ek 5)"
     acceptance:
