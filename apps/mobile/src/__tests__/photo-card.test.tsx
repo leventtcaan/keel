@@ -3,13 +3,14 @@
  * (U7, H1 §2.5) — how many photo days are on the phone, and a way to delete them all (onboarding: "Delete them here and
  * they're gone"). The reminder is this card: no fourth notification (ADR-036). Nothing here touches the network.
  */
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
-import { Alert, type AlertButton } from 'react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
+import { Alert, type AlertButton, StyleSheet } from 'react-native';
 
 import { t } from '@/copy';
 import type { PhotoCheck } from '@/photos/library';
 import { PhotoCard } from '@/photos/PhotoCard';
 import { ThemeProvider } from '@/theme/theme';
+import { palettes, tokens } from '@/theme/tokens';
 
 let mockChecks: PhotoCheck[] = [];
 const mockServices = {
@@ -178,4 +179,37 @@ test('two days, but in different poses: no comparison to offer, so no way to it'
   ];
   await show('over');
   expect(screen.queryByRole('button', { name: t('photos.compare') })).toBeNull();
+});
+
+// K-1246 (ADR-094 Ek 3 #2): one row near the top of Progress; its ground says whether a photo is asked for now.
+describe('one row (ADR-094 Ek 3 #2)', () => {
+  const ground = () => StyleSheet.flatten(screen.getByTestId('photo-card').props.style).backgroundColor;
+
+  test.each([
+    ['due', 'over' as const, [] as PhotoCheck[]],
+    ['offered any time', null, [] as PhotoCheck[]],
+    ['open since a day', 'over' as const, [check('2026-08-01')]],
+  ])('the window %s: on the suggested action ground', async (_, flowWeek, checks) => {
+    mockChecks = checks;
+    await show(flowWeek);
+    expect(ground()).toBe(palettes.light.tintSuggest);
+  });
+
+  test.each([
+    ['before week 4', 2, [] as PhotoCheck[]],
+    ['not open yet', 'over' as const, [check('2026-09-20')]],
+  ])('the window %s: on the quiet ground', async (_, flowWeek, checks) => {
+    mockChecks = checks;
+    await show(flowWeek);
+    expect(ground()).toBe(palettes.light.tintDay);
+  });
+
+  test('the title in the serif, the sentence and a small Take photos on the same row', async () => {
+    await show('over');
+    expect(StyleSheet.flatten(screen.getByText(t('photos.title')).props.style).fontFamily).toBe(tokens.face.display.fontFamily);
+    const row = screen.getByTestId('photo-row');
+    expect(StyleSheet.flatten(row.props.style).flexDirection).toBe('row');
+    expect(within(row).getByText(t('photos.firstDue'))).toBeOnTheScreen();
+    expect(within(row).getByRole('button', { name: t('photos.take') })).toBeOnTheScreen();
+  });
 });

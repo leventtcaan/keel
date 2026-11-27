@@ -5,13 +5,14 @@
  * empty. Every number is the server's; the screen counts nothing.
  */
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
-import { Linking, ScrollView, StyleSheet } from 'react-native';
+import { Linking, StyleSheet } from 'react-native';
 
 import ProgressScreen from '@/app/(tabs)/progress';
 import { t } from '@/copy';
 import { ThemeProvider } from '@/theme/theme';
 import { palettes, tokens } from '@/theme/tokens';
 
+import { answerSheet } from './support/systemChoices';
 import { budget, consistency, decision, decisionPage, lift, liftWeeks, muscle, program, starting, summary, trendPoints, training, weeks } from './support/progressFixtures';
 
 const mockPush = jest.fn();
@@ -127,6 +128,11 @@ const box = (kind: string) => screen.getByTestId(`target-${kind}`);
 type Node = ReturnType<typeof screen.getByTestId>;
 /** Every word under an element, in order, nested texts included. */
 const words = (el: Node): string => el.children.map((child) => (typeof child === 'string' ? child : words(child))).join(' ');
+/** A chart line's corners, in order, as drawn (the polyline's path): each week or day joined, dot or none (ADR-094 Ek 3 #3). */
+const vertices = (id: string): { x: number; y: number }[] => {
+  const numbers = (String(screen.getByTestId(id).props.d).match(/-?\d+(\.\d+)?/g) ?? []).map(Number);
+  return Array.from({ length: numbers.length / 2 }, (_, i) => ({ x: numbers[2 * i], y: numbers[2 * i + 1] }));
+};
 
 // K-1051: a meal logged from this tab's "+" waits in the queue; the read sends it first, so the day it reads counts it.
 test('what waits on the phone is sent before the server is asked', async () => {
@@ -229,7 +235,16 @@ describe('the first days (ADR-078 #1)', () => {
     await show();
     expect(screen.getByText(t('progress.muscles.title'))).toBeOnTheScreen();
     expect(screen.getByText(t('progress.muscles.planned'))).toBeOnTheScreen();
-    expect(mockMap).toHaveBeenLastCalledWith({ muscles: [muscle('quads', 10, 0), muscle('chest', 8, 0)], figure: 'female' });
+    expect(mockMap).toHaveBeenLastCalledWith(expect.objectContaining({ muscles: [muscle('quads', 10, 0), muscle('chest', 8, 0)], figure: 'female', small: true }));
+  });
+
+  test('under the map, the first muscle the server lists with its sets this week (ADR-094 Ek 3 #5)', async () => {
+    await show();
+    const row = screen.getByTestId('muscle-picked-quads');
+    expect(within(row).getByText(t('demo.muscle.quads'))).toBeOnTheScreen();
+    expect(within(row).getByText(t('progress.muscles.pickedSets', { done: 0, target: 10 }))).toBeOnTheScreen();
+    expect(row.props.accessibilityLabel).toBe(t('progress.muscles.barLabel', { muscle: t('demo.muscle.quads'), done: 0, target: 10 }));
+    expect(screen.queryByTestId('muscle-picked-chest')).toBeNull();
   });
 
   test('no muscles planned (no program): no map, nothing empty', async () => {
@@ -369,25 +384,6 @@ describe('the 12th week (ADR-078 #2)', () => {
     expect(screen.getByText('Stronger on 4 of 5 lifts. Down 8.4 lb.')).toBeOnTheScreen();
   });
 
-  test('the 12 weeks: a cell each, in the order sent, the spare week and the paused week told apart', async () => {
-    await show();
-    const grid = screen.getByTestId('consistency-grid');
-    const cells = within(grid).getAllByTestId(/^consistency-cell-/);
-    expect(cells).toHaveLength(12);
-    expect(cells.map((c) => c.props.testID.split('-')[2])).toEqual(['ON_TRACK', 'ON_TRACK', 'ON_TRACK', 'SPARE', 'ON_TRACK', 'ON_TRACK', 'ON_TRACK', 'ON_TRACK', 'MISSED', 'PAUSED', 'ON_TRACK', 'ON_TRACK']);
-    expect(grid.props.accessibilityLabel).toBe(t('progress.consistency.spoken', { count: 12, onTrack: 9, spare: 1, paused: 1, other: 1 }));
-    expect(screen.getByText('Spare week')).toBeOnTheScreen();
-    expect(screen.getByText('Paused')).toBeOnTheScreen();
-    expect(screen.getByText('A missed week never resets your record.')).toBeOnTheScreen();
-  });
-
-  test('a missed week is in the spoken summary only as "other weeks", never named', async () => {
-    await show();
-    const said = screen.getByTestId('consistency-grid').props.accessibilityLabel as string;
-    expect(said).toContain('1 other weeks');
-    expect(said).not.toMatch(/miss/i);
-  });
-
   test('the trend not ready yet: the weigh-ins toward it stay after the first call too', async () => {
     answers['/v1/weigh-ins/summary'] = ok(summary(3));
     await show();
@@ -395,41 +391,19 @@ describe('the 12th week (ADR-078 #2)', () => {
     expect(screen.getByText('Shows after 7 weigh-ins.')).toBeOnTheScreen();
   });
 
-  test('a missed week is not named (U7): the legend says "Other weeks", never "missed", and there is no red', async () => {
-    await show();
-    expect(screen.queryByText(/missed$/i)).toBeNull();
-    expect(screen.queryByText(/Missed/)).toBeNull();
-    expect(screen.getByText(t('progress.consistency.other'))).toBeOnTheScreen();
-  });
-
-  test('a short history is a short row, never padded or filled', async () => {
-    answers['/v1/consistency'] = ok(consistency({ weeks: weeks(['ON_TRACK', 'MISSED', 'ON_TRACK']), record: { onTrackWeeks: 2, countedWeeks: 3, currentRun: 1, forgivenWeeks: 0 } }));
-    await show();
-    expect(within(screen.getByTestId('consistency-grid')).getAllByTestId(/^consistency-cell-/)).toHaveLength(3);
-    expect(screen.queryByText('Spare week')).toBeNull();
-    expect(screen.queryByText('Paused')).toBeNull();
-  });
-
-  test('no week over yet: no grid, no empty row', async () => {
-    answers['/v1/consistency'] = ok(consistency({ weeks: [], record: { onTrackWeeks: 0, countedWeeks: 0, currentRun: 0, forgivenWeeks: 0 } }));
+  test('no 12 weeks card (ADR-094 Ek 3 #6): the record stays under the decision', async () => {
     await show();
     expect(screen.queryByTestId('consistency-grid')).toBeNull();
     expect(screen.queryByText(t('progress.consistency.title'))).toBeNull();
+    expect(screen.getByText('11/12 weeks on track')).toBeOnTheScreen();
   });
 
-  test('the spare cells and the forgiven weeks need not agree: the grid shows what it is sent', async () => {
-    answers['/v1/consistency'] = ok(consistency({ weeks: weeks(['SPARE', 'ON_TRACK']), record: { onTrackWeeks: 40, countedWeeks: 52, currentRun: 2, forgivenWeeks: 5 } }));
+  test('no sets per muscle card (ADR-094 Ek 3 #5): the sets are under the map that stays (K-1065)', async () => {
     await show();
-    expect(screen.getByText('40/52 weeks on track')).toBeOnTheScreen();
-    expect(screen.getByTestId('consistency-grid').props.accessibilityLabel).toBe(t('progress.consistency.spoken', { count: 2, onTrack: 1, spare: 1, paused: 0, other: 0 }));
-  });
-
-  test('sets per muscle: a bar each, this week against the target, under the map that stays (K-1065)', async () => {
-    await show();
-    expect(screen.getByText(t('progress.muscles.setsTitle'))).toBeOnTheScreen();
-    expect(screen.getByTestId('muscle-bar-quads').props.accessibilityLabel).toBe(t('progress.muscles.barLabel', { muscle: t('demo.muscle.quads'), done: 6, target: 10 }));
+    expect(screen.queryByText(t('progress.muscles.setsTitle'))).toBeNull();
+    expect(screen.queryAllByTestId(/^muscle-bar-/)).toHaveLength(0);
     expect(screen.getByText(t('progress.muscles.title'))).toBeOnTheScreen();
-    expect(mockMap).toHaveBeenCalled();
+    expect(within(screen.getByTestId('muscle-picked-quads')).getByText(t('progress.muscles.pickedSets', { done: 6, target: 10 }))).toBeOnTheScreen();
   });
 
   test('the trend ready: the 3 of 7 card is gone', async () => {
@@ -545,26 +519,19 @@ describe.each(['light', 'dark'] as const)('in the %s theme', (scheme) => {
     expect(flat(screen.getByTestId('progress-hero')).backgroundColor).toBe(palettes[scheme].decisionBackground);
   });
 
-  test("the charts draw on the theme: the latest point on the accent, the held ring on the accent, the line in the text colour", async () => {
+  test("the charts draw on the theme (ADR-094 §3, Ek 3 #3): the line in petrol, the latest point in coral (you are here), the held ring in petrol", async () => {
     withLifts();
     await show(scheme);
     // react-native-svg keeps a colour as its processed value: opaque ARGB of the hex.
     const colour = (hex: string) => ({ payload: 0xff000000 + parseInt(hex.slice(1), 16), type: 0 });
     const props = (id: string) => screen.getByTestId(id).props as { fill?: unknown; stroke?: unknown };
-    expect(props('strength-point-2026-09-21').fill).toEqual(colour(palettes[scheme].accent));
+    expect(props('strength-point-2026-09-21').fill).toEqual(colour(palettes[scheme].progress));
     expect(props('strength-held-2026-09-14').stroke).toEqual(colour(palettes[scheme].accent));
-    expect(props('strength-line').stroke).toEqual(colour(palettes[scheme].text));
-    expect(props('weight-point-2026-10-15').fill).toEqual(colour(palettes[scheme].accent));
+    expect(props('strength-line').stroke).toEqual(colour(palettes[scheme].accent));
+    expect(props('weight-line').stroke).toEqual(colour(palettes[scheme].accent));
+    expect(props('weight-point-2026-10-15').fill).toEqual(colour(palettes[scheme].progress));
   });
 
-  test('the 12 weeks draw on the theme\'s accent, spare and missed apart', async () => {
-    answers = weekTwelve();
-    await show(scheme);
-    const cell = (state: string) => flat(screen.getAllByTestId(new RegExp(`^consistency-cell-${state}-`))[0]) as { backgroundColor?: string; borderColor?: string };
-    expect(cell('ON_TRACK').backgroundColor).toBe(palettes[scheme].accent);
-    expect(cell('SPARE').backgroundColor).toBe(palettes[scheme].accentSoft);
-    expect(cell('MISSED').backgroundColor).toBe(palettes[scheme].weekMissed);
-  });
 });
 
 describe('the tab keeps its other ways in', () => {
@@ -611,17 +578,35 @@ const withLifts = () => {
   answers['/v1/training-progress'] = ok({ ...training(1, 2, [muscle('quads', 10, 6)]), lifts: [squat, bench] });
 };
 const chart = () => screen.getByTestId('strength-chart');
+/** The lift's name opens the system's list (ADR-094 Ek 3 #4); the list is answered with this lift. */
+const pick = async (name: string) => {
+  const sheet = answerSheet(name);
+  await fireEvent.press(screen.getByTestId('strength-pick'));
+  // What the list was opened with, read before the spy is put back (restoring clears it).
+  const asked = sheet.mock.calls.map(([options]) => options);
+  sheet.mockRestore();
+  return asked;
+};
 const svgText = (el: Node): string => el.children.map((child) => (typeof child === 'string' ? child : ((child.props.content as string | undefined) ?? svgText(child)))).join('');
 
 describe('strength: the lifts, the best set, the effort (ADR-078 #2, Ek 3)', () => {
   beforeEach(withLifts);
 
-  test("a chip for each lift in the program's order; the first is picked", async () => {
+  test("no chips (ADR-094 Ek 3 #4): the lift shown is a name to tap, the list it opens is the system's, every lift in the program's order", async () => {
     await show();
-    const chips = within(screen.getByTestId('strength-chips')).getAllByRole('button');
-    expect(chips.map((c) => c.props.accessibilityState.selected)).toEqual([true, false]);
-    expect(screen.getByRole('button', { name: t('exercises.squat.name') })).toBeOnTheScreen();
-    expect(screen.getByRole('button', { name: t('exercises.bench_press.name') })).toBeOnTheScreen();
+    expect(screen.queryByTestId('strength-chips')).toBeNull();
+    const name = screen.getByTestId('strength-pick');
+    expect(name.props.accessibilityRole).toBe('button');
+    expect(name.props.accessibilityLabel).toBe(t('progress.strength.pickLabel', { move: t('exercises.squat.name') }));
+    expect(within(name).getByText(t('exercises.squat.name'))).toBeOnTheScreen();
+    expect(screen.getByText(t('progress.strength.count', { count: 2 }))).toBeOnTheScreen();
+    const [options] = await pick(t('progress.strength.pickCancel'));
+    expect(options.options).toEqual([t('exercises.squat.name'), t('exercises.bench_press.name'), t('progress.strength.pickCancel')]);
+    expect(options.cancelButtonIndex).toBe(2);
+    // The system's list in petrol, as every system question (ADR-094 §3).
+    expect(options.tintColor).toBe(palettes.light.accent);
+    // Cancel keeps the lift shown.
+    expect(screen.getByTestId('strength-best')).toHaveTextContent('105 kg × 8');
   });
 
   test('the real best set large, where it started (nothing worked out), and no estimated max', async () => {
@@ -631,14 +616,14 @@ describe('strength: the lifts, the best set, the effort (ADR-078 #2, Ek 3)', () 
     expect(screen.queryByText(/estimated|1RM/i)).toBeNull();
   });
 
-  test('the chart: a point for each week, joined in order, labelled with the lowest and highest week', async () => {
+  test('the chart: the line joins each week in order, only the latest is a dot; labelled with the lowest and highest week', async () => {
     await show();
-    const points = within(chart()).getAllByTestId(/^strength-point-/);
-    expect(points).toHaveLength(3);
-    expect(within(chart()).getAllByTestId('strength-tick').map(svgText)).toEqual(['100 kg', '105 kg']);
-    const xs = points.map((p) => (p.props as { cx: number }).cx);
+    const xs = vertices('strength-line').map((v) => v.x);
+    expect(xs).toHaveLength(3);
     expect(xs[0]).toBeLessThan(xs[1]);
     expect(xs[1]).toBeLessThan(xs[2]);
+    expect(within(chart()).getAllByTestId(/^strength-point-/).map((p) => p.props.testID)).toEqual(['strength-point-2026-09-21']);
+    expect(within(chart()).getAllByTestId('strength-tick').map(svgText)).toEqual(['100 kg', '105 kg']);
   });
 
   test('the weeks the call held the load are ringed, and said', async () => {
@@ -663,21 +648,21 @@ describe('strength: the lifts, the best set, the effort (ADR-078 #2, Ek 3)', () 
 
   test("a lift with no effort has no line (the prototype's extra sentences are not here)", async () => {
     await show();
-    await fireEvent.press(screen.getByRole('button', { name: t('exercises.bench_press.name') }));
+    await pick(t('exercises.bench_press.name'));
     expect(screen.queryByTestId('strength-effort')).toBeNull();
   });
 
-  test('picking another lift changes the set and the pick (flow D)', async () => {
+  test('picking another lift from the list changes the set and the name (flow D)', async () => {
     await show();
-    await fireEvent.press(screen.getByRole('button', { name: t('exercises.bench_press.name') }));
+    await pick(t('exercises.bench_press.name'));
     expect(screen.getByTestId('strength-best')).toHaveTextContent('60 kg × 10');
-    expect(screen.getByRole('button', { name: t('exercises.bench_press.name') }).props.accessibilityState.selected).toBe(true);
-    expect(screen.getByRole('button', { name: t('exercises.squat.name') }).props.accessibilityState.selected).toBe(false);
+    expect(within(screen.getByTestId('strength-pick')).getByText(t('exercises.bench_press.name'))).toBeOnTheScreen();
+    expect(screen.getByTestId('strength-pick').props.accessibilityLabel).toBe(t('progress.strength.pickLabel', { move: t('exercises.bench_press.name') }));
   });
 
   test('a lift with one week is not drawn as a chart (a point is not a line)', async () => {
     await show();
-    await fireEvent.press(screen.getByRole('button', { name: t('exercises.bench_press.name') }));
+    await pick(t('exercises.bench_press.name'));
     expect(screen.queryByTestId('strength-chart')).toBeNull();
     expect(screen.getByTestId('strength-best')).toBeOnTheScreen();
   });
@@ -694,57 +679,34 @@ describe('strength: the lifts, the best set, the effort (ADR-078 #2, Ek 3)', () 
     const bench = lift('bench_press', true, { weeks: liftWeeks([60, 62.5]) });
     answers['/v1/training-progress'] = ok({ ...training(1, 2), lifts: [squat, bench] });
     await show();
-    expect(screen.getByRole('button', { name: t('exercises.bench_press.name') }).props.accessibilityState.selected).toBe(true);
+    expect(within(screen.getByTestId('strength-pick')).getByText(t('exercises.bench_press.name'))).toBeOnTheScreen();
     expect(screen.getByTestId('strength-chart')).toBeOnTheScreen();
   });
 
-  test('25 lifts: one horizontal row of chips, never a wrapped block, and the chart is still there (K-1028, B1)', async () => {
+  test('25 lifts: one name to tap, the list holds all 25, the chart is still there (K-1028, B1)', async () => {
     const ids = Array.from({ length: 25 }, (_, i) => `lift_${i}`);
     const lifts = ids.map((id, i) => lift(id, i === 0, { weeks: liftWeeks([100, 102.5, 105]) }));
     answers['/v1/training-progress'] = ok({ ...training(1, 25), lifts });
     await show();
-    const row = screen.getByTestId('strength-chips');
-    expect(row.props.horizontal).toBe(true);
-    expect(row.props.showsHorizontalScrollIndicator).toBe(false);
-    expect(within(row).getAllByRole('button')).toHaveLength(25);
+    expect(screen.getByText(t('progress.strength.count', { count: 25 }))).toBeOnTheScreen();
+    const [options] = await pick(t('progress.strength.pickCancel'));
+    expect(options.options).toHaveLength(26);
     expect(chart()).toBeOnTheScreen();
     expect(screen.getByTestId('strength-best')).toBeOnTheScreen();
   });
 
-  test('the row opens scrolled to the lift shown, so it is never out of sight (K-1028)', async () => {
-    const scrolls = jest.spyOn(ScrollView.prototype, 'scrollTo');
-    try {
-      const squat = lift('squat', false, { weeks: liftWeeks([100]) });
-      const bench = lift('bench_press', true, { weeks: liftWeeks([60, 62.5]) });
-      answers['/v1/training-progress'] = ok({ ...training(1, 2), lifts: [squat, bench] });
-      await show();
-      // The shown lift is bench (the first with a chart); its chip's wrapper gets its place from layout.
-      const wrapper = screen.getByRole('button', { name: t('exercises.bench_press.name') }).parent as NonNullable<Node['parent']>;
-      const other = screen.getByRole('button', { name: t('exercises.squat.name') }).parent as NonNullable<Node['parent']>;
-      scrolls.mockClear();
-      await fireEvent(other, 'layout', { nativeEvent: { layout: { x: 0, y: 0, width: 90, height: 44 } } });
-      expect(scrolls).not.toHaveBeenCalled();
-      await fireEvent(wrapper, 'layout', { nativeEvent: { layout: { x: 400, y: 0, width: 90, height: 44 } } });
-      expect(scrolls).toHaveBeenCalledTimes(1);
-      expect(scrolls).toHaveBeenCalledWith({ x: 400 - tokens.space.md, animated: false });
-      // Near the start it never scrolls to a negative place.
-      await fireEvent(wrapper, 'layout', { nativeEvent: { layout: { x: 4, y: 0, width: 90, height: 44 } } });
-      expect(scrolls).toHaveBeenLastCalledWith({ x: 0, animated: false });
-    } finally {
-      scrolls.mockRestore();
-    }
-  });
-
-  test('one lift: no chips to pick from', async () => {
+  test('one lift: its name, nothing to pick from', async () => {
     answers['/v1/training-progress'] = ok({ ...training(1, 1), lifts: [lift('squat', true, { weeks: liftWeeks([100, 105]) })] });
     await show();
-    expect(screen.queryByTestId('strength-chips')).toBeNull();
+    expect(screen.queryByTestId('strength-pick')).toBeNull();
+    expect(screen.getByText(t('exercises.squat.name'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('progress.strength.count', { count: 1 }))).toBeNull();
     expect(chart()).toBeOnTheScreen();
   });
 
   test('a picked lift gone from the next read: the first lift shown, no crash', async () => {
     await show();
-    await fireEvent.press(screen.getByRole('button', { name: t('exercises.bench_press.name') }));
+    await pick(t('exercises.bench_press.name'));
     answers['/v1/training-progress'] = ok({ ...training(1, 1), lifts: [lift('squat', true, { weeks: liftWeeks([100, 105]) })] });
     await act(async () => mockFocus());
     expect(chart()).toBeOnTheScreen();
@@ -755,7 +717,7 @@ describe('strength: the lifts, the best set, the effort (ADR-078 #2, Ek 3)', () 
     await show();
     expect(screen.getAllByTestId(/^strength-row-/)).toHaveLength(2);
     expect(screen.queryByTestId('strength-chart')).toBeNull();
-    expect(screen.queryByTestId('strength-chips')).toBeNull();
+    expect(screen.queryByTestId('strength-pick')).toBeNull();
   });
 });
 
@@ -769,7 +731,8 @@ describe('weight: the 7-day average (ADR-078 #2, Ek 3)', () => {
     expect(screen.getByText(t('progress.weight.chartTitle'))).toBeOnTheScreen();
     expect(screen.getByText(t('progress.weight.average'))).toBeOnTheScreen();
     expect(screen.getByTestId('weight-latest')).toHaveTextContent('80.2 kg');
-    expect(within(screen.getByTestId('weight-chart')).getAllByTestId(/^weight-point-/)).toHaveLength(7);
+    expect(vertices('weight-line')).toHaveLength(7);
+    expect(within(screen.getByTestId('weight-chart')).getAllByTestId(/^weight-point-/)).toHaveLength(1);
     expect(screen.queryByTestId('weight-dots')).toBeNull();
   });
 
@@ -876,7 +839,8 @@ describe('weight: the 7-day average (ADR-078 #2, Ek 3)', () => {
     await show();
     const weightChart = screen.getByTestId('weight-chart');
     expect(within(weightChart).getAllByTestId('weight-tick')).toHaveLength(1);
-    const ys = within(weightChart).getAllByTestId(/^weight-point-/).map((p) => (p.props as { cy: number }).cy);
+    const ys = vertices('weight-line').map((v) => v.y);
+    expect(ys).toHaveLength(5);
     expect(new Set(ys).size).toBe(1);
     expect(ys[0]).toBe(66); // half way between the chart's top (14) and bottom (118)
   });
@@ -884,7 +848,7 @@ describe('weight: the 7-day average (ADR-078 #2, Ek 3)', () => {
   test('a range of a step or more is drawn as it is', async () => {
     answers['/v1/weight-trend'] = ok(trendPoints([80.2, 80.3, 80.5]));
     await show();
-    const ys = within(screen.getByTestId('weight-chart')).getAllByTestId(/^weight-point-/).map((p) => (p.props as { cy: number }).cy);
+    const ys = vertices('weight-line').map((v) => v.y);
     expect(new Set(ys).size).toBe(3);
     expect(within(screen.getByTestId('weight-chart')).getAllByTestId('weight-tick')).toHaveLength(2);
   });
@@ -901,20 +865,47 @@ describe('weight: the 7-day average (ADR-078 #2, Ek 3)', () => {
   });
 });
 
-describe('sets per muscle (ADR-078 #4)', () => {
-  test("a bar for each muscle the server lists, with this week's sets of the target", async () => {
+describe('the map takes a touch (ADR-094 Ek 3 #5)', () => {
+  const lastMap = () => mockMap.mock.calls.at(-1)?.[0] as { onPress: (muscles: string[]) => void };
+  beforeEach(() => {
     answers = weekTwelve();
-    answers['/v1/training-progress'] = ok(training(4, 5, [muscle('quads', 10, 6), muscle('chest', 8, 12)]));
-    await show();
-    expect(screen.getAllByTestId(/^muscle-bar-/).map((b) => b.props.testID)).toEqual(['muscle-bar-quads', 'muscle-bar-chest']);
-    expect(within(screen.getByTestId('muscle-bar-quads')).getByText('6/10')).toBeOnTheScreen();
-    expect(within(screen.getByTestId('muscle-bar-chest')).getByText('12/10')).toBeOnTheScreen();
+    answers['/v1/training-progress'] = ok(training(4, 5, [muscle('quads', 10, 6), muscle('front_delts', 10, 2), muscle('side_delts', 10, 12)]));
   });
 
-  test("before the first call the map stays (the first days' form)", async () => {
+  test('a muscle touched shows its sets in place of the one before; an area of several shows each, in the order sent', async () => {
     await show();
-    expect(screen.queryByText(t('progress.muscles.setsTitle'))).toBeNull();
-    expect(mockMap).toHaveBeenCalled();
+    await act(async () => lastMap().onPress(['front_delts', 'side_delts']));
+    expect(screen.queryByTestId('muscle-picked-quads')).toBeNull();
+    expect(screen.getAllByTestId(/^muscle-picked-/).map((r) => r.props.testID)).toEqual(['muscle-picked-front_delts', 'muscle-picked-side_delts']);
+    expect(within(screen.getByTestId('muscle-picked-side_delts')).getByText(t('progress.muscles.pickedSets', { done: 12, target: 10 }))).toBeOnTheScreen();
+  });
+
+  test('the sets as a coral bar of the target, full past it', async () => {
+    await show();
+    await act(async () => lastMap().onPress(['side_delts']));
+    const bar = within(screen.getByTestId('muscle-picked-side_delts')).getByTestId('progress-fill');
+    expect(StyleSheet.flatten(bar.props.style).backgroundColor).toBe(palettes.light.progress);
+  });
+
+  test('a muscle with no target this week: its sets said, the bar empty (never full of nothing)', async () => {
+    answers['/v1/training-progress'] = ok(training(4, 5, [{ ...muscle('calves', 0, 4), targetSets: 0, plannedShare: 0, doneShare: 0 }]));
+    await show();
+    const row = screen.getByTestId('muscle-picked-calves');
+    expect(within(row).getByText(t('progress.muscles.pickedSets', { done: 4, target: 0 }))).toBeOnTheScreen();
+    expect(StyleSheet.flatten(within(row).getByTestId('progress-fill').props.style).width).toBe('0%');
+  });
+
+  test('a touched muscle gone from the next read: the first muscle shown, no crash', async () => {
+    await show();
+    await act(async () => lastMap().onPress(['front_delts']));
+    answers['/v1/training-progress'] = ok(training(4, 5, [muscle('quads', 10, 6)]));
+    await act(async () => mockFocus());
+    expect(screen.getByTestId('muscle-picked-quads')).toBeOnTheScreen();
+  });
+
+  test('the planned swatch of the legend is outlined in the control edge (WCAG 1.4.11)', async () => {
+    await show();
+    expect(StyleSheet.flatten(screen.getByTestId('legend-planned').props.style)).toMatchObject({ backgroundColor: palettes.light.accentSoft, borderColor: palettes.light.edge });
   });
 });
 
@@ -950,6 +941,27 @@ describe('calls (ADR-078 #2, Ek 3)', () => {
     await show();
     expect(screen.getAllByText(t('decision.continue.toward_goal.title'))).toHaveLength(1);
     expect(screen.getAllByText(t('progress.calls.noChange'))).toHaveLength(2);
+  });
+
+  test('the latest 3, then "and N more" opens the rest in the same card (ADR-094 Ek 3 #7)', async () => {
+    answers['/v1/decisions'] = ok(
+      decisionPage(['2026-10-12', '2026-10-05', '2026-09-28', '2026-09-21', '2026-09-14'].map((day, i) => decision(`c${5 - i}`, day))),
+    );
+    await show();
+    expect(screen.getAllByTestId(/^call-c/).map((r) => r.props.testID)).toEqual(['call-c5', 'call-c4', 'call-c3']);
+    const more = screen.getByRole('button', { name: t('progress.calls.more', { count: 2 }) });
+    expect(more.props.accessibilityState).toEqual({ expanded: false });
+    expect(within(screen.getByTestId('section-calls')).getByText(t('progress.calls.more', { count: 2 }))).toBeOnTheScreen();
+    await fireEvent.press(more);
+    expect(screen.getAllByTestId(/^call-c/)).toHaveLength(5);
+    expect(screen.queryByText(t('progress.calls.more', { count: 2 }))).toBeNull();
+  });
+
+  test('three calls or fewer: all of them, no "more"', async () => {
+    answers['/v1/decisions'] = ok(decisionPage([decision('c3', '2026-10-19'), decision('c2', '2026-10-12'), decision('c1', '2026-10-05')]));
+    await show();
+    expect(screen.getAllByTestId(/^call-c/)).toHaveLength(3);
+    expect(screen.queryByTestId('calls-more')).toBeNull();
   });
 
   test('asked for as many as progress.json shows', async () => {
@@ -1077,11 +1089,17 @@ describe('the order of the cards (Evre 7: the weight trend is the headline of a 
     answers = weekTwelve();
   });
 
-  test('after the first call: weight first, then strength, the map and the sets, consistency, calls', async () => {
+  test('after the first call (ADR-094 Ek 3 #1): the photos first, then weight, strength, the map, calls', async () => {
     await show();
-    const order = screen.getAllByTestId(/^section-/).map((node) => node.props.testID as string);
-    expect(order.slice(0, 3)).toEqual(['section-weight', 'section-strength', 'section-muscles']);
-    expect(order.indexOf('section-calls')).toBeGreaterThan(order.indexOf('section-consistency'));
+    const order = screen.getAllByTestId(/^(section-|photo-card$)/).map((node) => node.props.testID as string);
+    expect(order).toEqual(['photo-card', 'section-weight', 'section-strength', 'section-muscles', 'section-calls']);
+  });
+
+  test('in the first days the targets stay right under the decision, the photos after them', async () => {
+    answers = firstDay();
+    await show();
+    const order = screen.getAllByTestId(/^(target-calories|photo-card|section-weight)$/).map((node) => node.props.testID as string);
+    expect(order).toEqual(['target-calories', 'photo-card', 'section-weight']);
   });
 });
 
@@ -1093,39 +1111,26 @@ describe('on the system (K-1045, T-8, ADR-070 Ek 2 #7, #8)', () => {
     mockPhotoChecks = [{ takenOn: '2026-09-20', photos: { front: 'file:///docs/2026-09-20-front.jpg' } }];
   });
 
-  test('the sections are surface cards, as the target boxes above them (ADR-070 Ek 4, K-1054): strength, sets, weight, consistency, photos', async () => {
+  test('the sections are surface cards, as the target boxes above them (ADR-070 Ek 4, K-1054): strength, weight, muscles (photos have their own ground, ADR-094 Ek 3 #2)', async () => {
     await show();
-    for (const id of ['section-strength', 'section-sets', 'section-weight', 'section-consistency', 'photo-card']) {
+    for (const id of ['section-strength', 'section-weight', 'section-muscles']) {
       expect(flatten(screen.getByTestId(id)).backgroundColor).toBe(palettes.light.surface);
     }
   });
 
-  test('every section heading is the same type, Photos too (it was in another)', async () => {
+  test('every section heading is the same type (Photos is one serif row, ADR-094 Ek 3 #2)', async () => {
     await show();
     const heading = (id: string) => flatten(within(screen.getByTestId(id)).getAllByRole('header')[0]);
     const first = heading('section-strength');
     // Inside the card, the target boxes' title (ADR-070 Ek 4, K-1054).
     expect(first).toMatchObject({ fontSize: tokens.type.bodySmall, fontWeight: tokens.weight.bold, color: palettes.light.muted });
-    for (const id of ['section-sets', 'section-weight', 'section-consistency', 'section-calls', 'photo-card']) expect(heading(id)).toEqual(first);
+    for (const id of ['section-weight', 'section-muscles', 'section-calls']) expect(heading(id)).toEqual(first);
   });
 
   test('the decision block and the calls list keep their surfaces; they have a role (Ek 2 #8)', async () => {
     await show();
     expect(screen.getByTestId('progress-hero')).toBeOnTheScreen();
     expect(flatten(screen.getByTestId('calls-list')).backgroundColor).toBe(palettes.light.surface);
-  });
-
-  test('the 12 weeks say in words what a filled and an empty square mean, not by colour alone', async () => {
-    await show();
-    const grid = within(screen.getByTestId('section-consistency'));
-    expect(grid.getByText(t('progress.consistency.range'))).toBeOnTheScreen();
-    expect(grid.getByText(t('progress.consistency.onTrack'))).toBeOnTheScreen();
-    expect(grid.getByText(t('progress.consistency.other'))).toBeOnTheScreen();
-    expect(grid.getByText(t('progress.consistency.spare'))).toBeOnTheScreen();
-    expect(grid.getByText(t('progress.consistency.paused'))).toBeOnTheScreen();
-    // The legend swatches draw the cells' own looks.
-    expect(flatten(grid.getByTestId('legend-swatch-ON_TRACK')).backgroundColor).toBe(palettes.light.accent);
-    expect(flatten(grid.getByTestId('legend-swatch-MISSED')).backgroundColor).toBe(palettes.light.weekMissed);
   });
 
   test('Delete all photos is a destructive text button after the primary, not beside it', async () => {

@@ -36,7 +36,7 @@ beforeEach(() => jest.clearAllMocks());
 test('Progress › Calls: a locked row is its date and "ready", and opens that call', async () => {
   await render(
     <ThemeProvider scheme="light">
-      <CallsCard items={[LOCKED, FULL]} units="METRIC" />
+      <CallsCard items={[LOCKED, FULL]} units="METRIC" folded={3} />
     </ThemeProvider>,
   );
   expect(screen.getByText(t('lockedCall.ledger'))).toBeOnTheScreen();

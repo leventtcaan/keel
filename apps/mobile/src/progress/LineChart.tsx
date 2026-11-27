@@ -13,7 +13,6 @@ const HEIGHT = 150;
 const BOX = { left: 58, right: 284, top: 14, bottom: 118 };
 const DATE_Y = 140;
 const LABEL_GAP = 6;
-const DOT = 3;
 const LAST = 5;
 const RING = 7;
 const LINE_WIDTH = 2.2;
@@ -30,7 +29,8 @@ type Props = {
 /**
  * A line over calendar days (K-979: a lift's best set by week, the weight's 7-day average). The two labels on the left are
  * the lowest and the highest point, each at its own height (lineScale): values that happened, never a rounded tick. The
- * latest point is filled; a marked point (a week the call held the load) has a ring. The first and last day sit under it.
+ * line is petrol and only the latest point is a dot, in coral ("you are here", ADR-094 §1, Ek 3 #3); a marked point (a week
+ * the call held the load) has a ring. The first and last day sit under it.
  */
 export function LineChart({ prefix, points, summary }: Props) {
   const { color } = useTheme();
@@ -60,13 +60,11 @@ export function LineChart({ prefix, points, summary }: Props) {
           testID={`${prefix}-line`}
           points={points.map((p) => `${at(p).cx},${at(p).cy}`).join(' ')}
           fill="none"
-          stroke={color.text}
+          stroke={color.accent}
           strokeWidth={LINE_WIDTH}
           strokeLinejoin="round"
         />
-        {points.map((p) => (
-          <Circle key={p.day} testID={`${prefix}-point-${p.day}`} {...at(p)} r={p === last ? LAST : DOT} fill={p === last ? color.accent : color.text} />
-        ))}
+        <Circle testID={`${prefix}-point-${last.day}`} {...at(last)} r={LAST} fill={color.progress} />
         {points
           .filter((p) => p.marked === true)
           .map((p) => (

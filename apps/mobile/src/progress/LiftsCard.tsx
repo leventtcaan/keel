@@ -1,8 +1,8 @@
-import { useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SymbolView } from 'expo-symbols';
+import { useState } from 'react';
+import { ActionSheetIOS, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { components } from '@/api/schema';
-import { Chip } from '@/components/Chip';
 import { Section } from '@/components/Section';
 import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
@@ -19,9 +19,10 @@ import { liftSet } from './Parts';
 type Lift = components['schemas']['LiftProgress'];
 
 /**
- * Strength once a lift has weeks to draw or an effort to tell (ADR-078 #2, Ek 3): a chip for each lift in the program's order,
- * the real best set large and where it started (the phone subtracts nothing), the best set of each week as a line (no
- * estimated max, B10; a week the call held the load ringed), and the effort line. A lift with one week shows its set and no
+ * Strength once a lift has weeks to draw or an effort to tell (ADR-078 #2, Ek 3): the lift shown is its name, which opens
+ * the system's list of every lift in the program's order (ADR-094 Ek 3 #4: no chips); the real best set large and where it
+ * started (the phone subtracts nothing), the best set of each week as a line (no estimated max, B10; a week the call held
+ * the load ringed), and the effort line. A lift with one week shows its set and no
  * chart: a point is not a line.
  */
 export function LiftsCard({ lifts, moves, units }: { lifts: Lift[]; moves: ReadonlyMap<string, Move>; units: UnitSystem }) {
@@ -45,20 +46,32 @@ export function LiftsCard({ lifts, moves, units }: { lifts: Lift[]; moves: Reado
         ].join(' ');
   const effort = effortLine(lift.effort, units);
 
-  // One row that scrolls sideways (prototype `.liftchips`): 25 lifts must not push the chart off the first screen. It opens
-  // on the lift shown, so that one is never scrolled out of sight (the lift opens on is the first with a chart, not the first).
-  const row = useRef<ScrollView>(null);
-
+  // The lift's name in petrol with a chevron: the system's list of the lifts, in the program's order, and Cancel (ADR-094 Ek 3 #4).
+  const choose = () => {
+    const names = lifts.map((l) => exerciseName(l.exerciseId, moves));
+    const options = [...names, t('progress.strength.pickCancel')];
+    ActionSheetIOS.showActionSheetWithOptions({ options, cancelButtonIndex: names.length, tintColor: color.accent }, (index) => {
+      if (index >= 0 && index < names.length) setPicked(lifts[index].exerciseId);
+    });
+  };
   // Built outside the JSX below (the raw-text guard reads JSX children).
-  const chips =
-    lifts.length < 2 ? null : (
-      <ScrollView ref={row} testID="strength-chips" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-        {lifts.map((l) => (
-          <View key={l.exerciseId} onLayout={(e) => l === lift && row.current?.scrollTo({ x: Math.max(0, e.nativeEvent.layout.x - tokens.space.md), animated: false })}>
-            <Chip label={exerciseName(l.exerciseId, moves)} selected={l === lift} onPress={() => setPicked(l.exerciseId)} touch />
-          </View>
-        ))}
-      </ScrollView>
+  const name =
+    lifts.length < 2 ? (
+      <Text style={[styles.move, { color: color.text }]}>{move}</Text>
+    ) : (
+      <View style={styles.pickRow}>
+        <Pressable
+          testID="strength-pick"
+          accessibilityRole="button"
+          accessibilityLabel={t('progress.strength.pickLabel', { move })}
+          onPress={choose}
+          hitSlop={tokens.space.sm}
+          style={({ pressed }) => [styles.pick, pressed && styles.dim]}>
+          <Text style={[styles.move, { color: color.accent }]}>{move}</Text>
+          <SymbolView name="chevron.down" size={tokens.type.bodySmall} tintColor={color.accent} />
+        </Pressable>
+        <Text style={[styles.count, { color: color.muted }]}>{t('progress.strength.count', { count: lifts.length })}</Text>
+      </View>
     );
   const chart = points.length < 2 ? null : <LineChart prefix="strength" points={points} summary={summary} />;
   const legend = held.length === 0 ? null : <Text style={[styles.fine, { color: color.muted }]}>{t('progress.strength.legendHeld')}</Text>;
@@ -71,7 +84,7 @@ export function LiftsCard({ lifts, moves, units }: { lifts: Lift[]; moves: Reado
 
   return (
     <Section card testID="section-strength" title={t('progress.strength.title')} aside={t('progress.strength.bestSet')}>
-      {chips}
+      {name}
       <View style={styles.top}>
         <Text testID="strength-best" style={[styles.big, { color: color.text }]}>
           {liftSet(lift.best, moves.get(lift.exerciseId), units)}
@@ -86,7 +99,11 @@ export function LiftsCard({ lifts, moves, units }: { lifts: Lift[]; moves: Reado
 }
 
 const styles = StyleSheet.create({
-  chips: { flexDirection: 'row', gap: tokens.space.xs },
+  pickRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space.sm },
+  pick: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.xs, minHeight: tokens.size.touch, flexShrink: 1 },
+  move: { ...tokens.face.display, fontSize: tokens.type.body },
+  count: { fontSize: tokens.type.bodySmall },
+  dim: { opacity: tokens.opacity.dim },
   top: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: tokens.space.sm },
   big: { ...tokens.face.display, fontSize: tokens.type.heading, fontVariant: ['tabular-nums'] },
   fine: { fontSize: tokens.type.bodySmall, flexShrink: 1, textAlign: 'right' },

@@ -1183,7 +1183,7 @@
       "source": "ADR-078 #5",
       "task": "K-979",
       "file": "src/app/(tabs)/progress.tsx",
-      "parts": ["src/progress/sections.ts", "src/progress/TargetsGrid.tsx", "src/progress/Parts.tsx", "src/progress/ConsistencyGrid.tsx", "src/progress/LiftsCard.tsx", "src/progress/effort.ts", "src/progress/WeightCard.tsx", "src/progress/CallsCard.tsx"],
+      "parts": ["src/progress/sections.ts", "src/progress/TargetsGrid.tsx", "src/progress/Parts.tsx", "src/progress/LiftsCard.tsx", "src/photos/PhotoCard.tsx", "src/progress/effort.ts", "src/progress/WeightCard.tsx", "src/progress/CallsCard.tsx"],
       "keys": [
         "screens.progress.title",
         "progress.hero.targets",
@@ -1202,8 +1202,12 @@
         "progress.muscles.planned",
         "progress.muscles.legendPlanned",
         "progress.muscles.legendDone",
+        "progress.muscles.pickedSets",
         "progress.strength.title",
         "progress.strength.locked",
+        "photos.title",
+        "photos.first",
+        "photos.take",
         "progress.weight.title",
         "progress.weight.count",
         "progress.weight.after"
@@ -1241,16 +1245,6 @@
         "progress.strength.rowLabel",
         "progress.strength.rowLabelBodyweight",
         "progress.weight.spoken",
-        "progress.consistency.title",
-        "progress.consistency.onTrack",
-        "progress.consistency.spare",
-        "progress.consistency.paused",
-        "progress.consistency.note",
-        "progress.consistency.other",
-        "progress.consistency.range",
-        "progress.consistency.spoken",
-        "progress.muscles.setsTitle",
-        "progress.muscles.legendTarget",
         "progress.muscles.barLabel",
         "progress.strength.bestSet",
         "progress.strength.started",
@@ -1278,6 +1272,22 @@
         "progress.calls.moved",
         "progress.calls.rowLabel",
         "progress.calls.rowLabelNotApplied",
+        "progress.calls.more",
+        "progress.strength.pickLabel",
+        "progress.strength.pickCancel",
+        "photos.firstDue",
+        "photos.anytime",
+        "photos.next",
+        "photos.open",
+        "photos.count.one",
+        "photos.count.other",
+        "photos.compare",
+        "photos.delete",
+        "photos.deleteTitle",
+        "photos.deleteBody",
+        "photos.deleteConfirm",
+        "photos.deleteKeep",
+        "photos.deleteFailed",
         "thisWeek.food.locked",
         "thisWeek.food.allow",
         "thisWeek.food.allowLabel"
@@ -1302,7 +1312,11 @@
             "progress.muscles.title",
             "progress.muscles.thisWeek",
             "progress.muscles.legendPlanned",
-            "progress.muscles.legendDone"
+            "progress.muscles.legendDone",
+            "progress.muscles.pickedSets",
+            "photos.title",
+            "photos.first",
+            "photos.take"
           ]
         },
         {
@@ -1321,7 +1335,10 @@
             "progress.muscles.legendPlanned",
             "progress.muscles.legendDone",
             "progress.strength.title",
-            "progress.strength.locked"
+            "progress.strength.locked",
+            "photos.title",
+            "photos.anytime",
+            "photos.take"
           ]
         },
         {
@@ -1331,7 +1348,11 @@
             "progress.result.stronger",
             "progress.result.down",
             "thisWeek.onTrack",
+            "photos.title",
+            "photos.open",
+            "photos.take",
             "progress.strength.title",
+            "progress.strength.count",
             "progress.strength.bestSet",
             "progress.strength.started",
             "progress.strength.legendHeld",
@@ -1339,7 +1360,7 @@
           ],
           "dynamic": [
             { "what": "the weight change's unit (Down 3.8 kg)", "words": 1 },
-            { "what": "the lift chips (Squat, Bench press, Deadlift)", "words": 5 },
+            { "what": "the lift shown, a name to tap (Bench press)", "words": 2 },
             { "what": "the best set and where it started (105 kg x 8, 100 kg x 8)", "words": 2 },
             { "what": "the chart's labels and dates (100 kg, 105 kg, Sep 7, Oct 5)", "words": 6 }
           ]
@@ -1354,9 +1375,9 @@
             "progress.strength.title",
             "progress.strength.baseline",
             "progress.strength.next",
-            "progress.muscles.setsTitle",
-            "progress.muscles.thisWeek",
-            "progress.muscles.legendTarget"
+            "photos.title",
+            "photos.open",
+            "photos.take"
           ],
           "dynamic": [
             { "what": "the weight change's unit (Down 3.8 kg)", "words": 1 },

@@ -11,4 +11,5 @@ function param<T>(key: string): T {
 export const progressParams = {
   weightChartDays: param<number>('weight_chart_days'),
   callsShown: param<number>('calls_shown'),
+  callsFolded: param<number>('calls_folded'),
 };

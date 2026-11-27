@@ -1,14 +1,13 @@
-/** The Progress tab's cards (K-979, ADR-078): this week's muscles, strength, the weigh-ins toward the trend, the lock line. */
+/** The Progress tab's cards (K-979, ADR-078, ADR-094 Ek 3): this week's muscles, strength, the weigh-ins toward the trend, the lock line. */
 import { SymbolView } from 'expo-symbols';
-import type { ReactNode } from 'react';
+import { type ReactNode, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { components } from '@/api/schema';
 import { MuscleMap } from '@/components/MuscleMap';
+import { ProgressBar } from '@/components/ProgressBar';
 import { Section } from '@/components/Section';
 import { t } from '@/copy';
-import { AnimatedFill } from '@/motion/AnimatedFill';
-import { CountUp } from '@/motion/CountUp';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import type { Figure } from '@/train/demo';
@@ -36,21 +35,57 @@ export function LockLine() {
   );
 }
 
-function Swatch({ fill }: { fill: string }) {
-  return <View style={[styles.swatch, { backgroundColor: fill }]} />;
+/** A legend's square; one as light as the planned fill keeps the control edge, else it is lost on the card (WCAG 1.4.11). */
+function Swatch({ fill, outlined = false, testID }: { fill: string; outlined?: boolean; testID?: string }) {
+  const { color } = useTheme();
+  return <View testID={testID} style={[styles.swatch, { backgroundColor: fill }, outlined && { borderColor: color.edge, borderWidth: tokens.border.hairline }]} />;
 }
 
-/** This week's muscles (ADR-078 #4): the one map, planned first, filling as the user trains. Nothing planned, no map. */
-export function MusclesCard({ muscles, figure }: { muscles: Schemas['MuscleSets'][]; figure: Figure }) {
+type MuscleSets = Schemas['MuscleSets'];
+
+/** A muscle's sets this week under the map: its name, the sets of the target, a coral bar of the target (full past it). */
+function PickedMuscle({ m }: { m: MuscleSets }) {
   const { color } = useTheme();
+  const name = t(`demo.muscle.${m.muscle}`);
+  return (
+    <View
+      testID={`muscle-picked-${m.muscle}`}
+      accessible
+      accessibilityLabel={t('progress.muscles.barLabel', { muscle: name, done: m.doneSets, target: m.targetSets })}
+      style={styles.picked}>
+      <View style={styles.pickedTop}>
+        <Text style={[styles.pickedName, { color: color.text }]}>{name}</Text>
+        <Text style={[styles.pickedSets, { color: color.text }]}>{t('progress.muscles.pickedSets', { done: m.doneSets, target: m.targetSets })}</Text>
+      </View>
+      {/* One element for VoiceOver: its label says the sets of the target, so the bar inside is not a second stop. */}
+      <ProgressBar value={m.targetSets > 0 ? m.doneSets / m.targetSets : 0} label={name} />
+    </View>
+  );
+}
+
+/**
+ * This week's muscles (ADR-078 #4, ADR-094 Ek 3 #5): the one map, planned first, filling as the user trains, drawn smaller and
+ * taking a touch; under it the sets of the muscle touched (the first the server lists until one is), each muscle of an area
+ * of several. The sets and the target are the server's. VoiceOver reaches the map as one image whose label says every
+ * muscle's sets, so nothing is behind the touch for it; a muscle with no target has an empty bar. Nothing planned, no map.
+ */
+export function MusclesCard({ muscles, figure }: { muscles: MuscleSets[]; figure: Figure }) {
+  const { color } = useTheme();
+  const [touched, setTouched] = useState<string[] | null>(null);
   if (muscles.length === 0) return null;
   const trained = muscles.some((m) => m.doneSets > 0);
+  // A touched muscle gone from the next read falls back to the first one.
+  const shown = muscles.filter((m) => touched?.includes(m.muscle));
+  const picked = shown.length > 0 ? shown : [muscles[0]];
   return (
     <Section card testID="section-muscles" title={t('progress.muscles.title')} aside={t(trained ? 'progress.muscles.thisWeek' : 'progress.muscles.planned')}>
-      <MuscleMap muscles={muscles} figure={figure} />
+      <MuscleMap muscles={muscles} figure={figure} small onPress={setTouched} />
+      {picked.map((m) => (
+        <PickedMuscle key={m.muscle} m={m} />
+      ))}
       <View style={styles.legend} accessible={false}>
         <View style={styles.legendItem}>
-          <Swatch fill={color.accentSoft} />
+          <Swatch testID="legend-planned" fill={color.accentSoft} outlined />
           <Text style={[styles.fine, { color: color.muted }]}>{t('progress.muscles.legendPlanned')}</Text>
         </View>
         <View style={styles.legendItem}>
@@ -58,37 +93,6 @@ export function MusclesCard({ muscles, figure }: { muscles: Schemas['MuscleSets'
           <Text style={[styles.fine, { color: color.muted }]}>{t('progress.muscles.legendDone')}</Text>
         </View>
       </View>
-    </Section>
-  );
-}
-
-/**
- * Sets per muscle (ADR-078 #4, prototype `.bars`): this week's working sets against the week's target, a bar each, the target
- * a line on it. The sets and the target are the server's; past the target the bar is full and the line is where it was.
- */
-export function MuscleBars({ muscles }: { muscles: Schemas['MuscleSets'][] }) {
-  const { color } = useTheme();
-  if (muscles.length === 0) return null;
-  return (
-    <Section card testID="section-sets" title={t('progress.muscles.setsTitle')} aside={t('progress.muscles.thisWeek')}>
-      {muscles.map((m) => {
-        const scale = Math.max(m.doneSets, m.targetSets);
-        const name = t(`demo.muscle.${m.muscle}`);
-        return (
-          <View key={m.muscle} testID={`muscle-bar-${m.muscle}`} accessible accessibilityLabel={t('progress.muscles.barLabel', { muscle: name, done: m.doneSets, target: m.targetSets })} style={styles.barRow}>
-            <Text style={[styles.barName, styles.fine, { color: color.text }]}>{name}</Text>
-            <View style={[styles.barTrack, { backgroundColor: color.track, borderColor: color.edge }]}>
-              <AnimatedFill percent={(m.doneSets / scale) * 100} style={[styles.barFill, { backgroundColor: color.accent }]} />
-              <AnimatedFill edge="left" percent={(m.targetSets / scale) * 100} style={[styles.barTarget, { backgroundColor: color.text }]} />
-            </View>
-            <Text style={[styles.barCount, styles.fine, { color: color.muted }]}>
-              <CountUp value={m.doneSets} />
-              {`/${m.targetSets}`}
-            </Text>
-          </View>
-        );
-      })}
-      <Text style={[styles.fine, { color: color.muted }]}>{t('progress.muscles.legendTarget')}</Text>
     </Section>
   );
 }
@@ -170,12 +174,10 @@ const styles = StyleSheet.create({
   legend: { flexDirection: 'row', justifyContent: 'center', gap: tokens.space.md },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.xs },
   swatch: { width: tokens.size.swatch, height: tokens.size.swatch, borderRadius: tokens.radius.track },
-  barRow: { flexDirection: 'row', alignItems: 'center', gap: tokens.space.sm, minHeight: tokens.size.touch },
-  barName: { width: tokens.size.barName },
-  barTrack: { flex: 1, height: tokens.size.dot, borderRadius: tokens.radius.track, borderWidth: tokens.border.hairline, justifyContent: 'center' },
-  barFill: { position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: tokens.radius.track },
-  barTarget: { position: 'absolute', top: -tokens.space.xs, bottom: -tokens.space.xs, width: tokens.border.outline },
-  barCount: { width: tokens.size.barCount, textAlign: 'right', fontVariant: ['tabular-nums'] },
+  picked: { gap: tokens.space.xs },
+  pickedTop: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: tokens.space.sm },
+  pickedName: { ...tokens.face.display, fontSize: tokens.type.body },
+  pickedSets: { ...tokens.face.displaySemiBold, fontSize: tokens.type.body, fontVariant: ['tabular-nums'] },
   // The weigh-ins toward the trend as one segmented bar across the card (K-1054), a segment for each; one not yet made keeps
   // the control edge (WCAG 1.4.11, K-816).
   dots: { flexDirection: 'row', gap: tokens.space.xs },

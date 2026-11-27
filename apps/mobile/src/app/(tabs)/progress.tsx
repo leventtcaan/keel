@@ -11,10 +11,10 @@ import { PLUS_CLEARANCE, PlusEntry } from '@/components/PlusEntry';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
 import { PhotoCard } from '@/photos/PhotoCard';
-import { ConsistencyGrid } from '@/progress/ConsistencyGrid';
 import { CallsCard } from '@/progress/CallsCard';
 import { LiftsCard } from '@/progress/LiftsCard';
-import { LockLine, MuscleBars, MusclesCard, StrengthCard } from '@/progress/Parts';
+import { LockLine, MusclesCard, StrengthCard } from '@/progress/Parts';
+import { progressParams } from '@/progress/params';
 import { WeightCard } from '@/progress/WeightCard';
 import { TargetsGrid } from '@/progress/TargetsGrid';
 import { type ProgressRead, loadProgress } from '@/progress/read';
@@ -38,8 +38,9 @@ function flowWeek(read: Loaded<Schemas['FirstWeeks']>): number | 'over' | null {
 }
 
 /**
- * Progress (K-979, ADR-078, prototype `#progress`): the first days are four tappable targets, this week's planned muscles, a
- * locked strength and the weigh-ins toward the trend; after the first call, one sentence of results and the 12 weeks. Each part
+ * Progress (K-979, ADR-078, prototype `#progress`; ADR-094 Ek 3): the first days are four tappable targets, this week's planned
+ * muscles, a locked strength and the weigh-ins toward the trend; after the first call, one sentence of results. The photos
+ * row comes right after the call (and the targets), the calls fold to the latest few. Each part
  * opens when its own data arrives (the first workout, 7 weigh-ins, the first call); no chart is drawn empty. Every number is
  * the server's, every condition a field it sent; the phone counts nothing and works out no week. Photos stay on this phone
  * and the way to share is the user's.
@@ -81,7 +82,6 @@ export default function ProgressScreen() {
     const calls = callsOf(progress);
     const lifts = progress.training.state === 'ready' ? progress.training.value.lifts : [];
     const muscles = progress.training.state === 'ready' ? progress.training.value.muscles : [];
-    const weeks = progress.consistency.state === 'ready' ? progress.consistency.value.weeks : [];
     const failed = [progress.training, progress.consistency, progress.summary, progress.budget, progress.program, progress.calls, progress.trend].some((part) => part?.state === 'failed');
 
     // Built outside the JSX below (the raw-text guard reads JSX children).
@@ -91,11 +91,10 @@ export default function ProgressScreen() {
     else if (strength !== null) strengthCard = <StrengthCard part={strength} lifts={lifts} moves={progress.moves} units={units} />;
     // The weigh-ins toward the trend, or the average once the server says it is ready (before the first call and after it).
     const weightCard = weight === null ? null : <WeightCard part={weight} units={units} />;
-    // The map stays on this tab for good (K-1065): it fills as the user trains in the first days, and after the first call the
-    // sets of each muscle against its target follow it as bars, so the view is the same one before and after.
+    // The map stays on this tab for good (K-1065): it fills as the user trains, and a muscle touched on it shows its sets under
+    // it (ADR-094 Ek 3 #5), so the view is the same one before the first call and after.
     const musclesCard = <MusclesCard muscles={muscles} figure={figure} />;
-    const barsCard = running ? <MuscleBars muscles={muscles} /> : null;
-    const callsCard = calls === null ? null : <CallsCard items={calls.items} units={units} />;
+    const callsCard = calls === null ? null : <CallsCard items={calls.items} units={units} folded={progressParams.callsFolded} />;
     // The first days' targets only while there is no first call (or no consent to read one); not while it is unknown.
     const first = phase === 'first' || phase === 'locked';
     const targetsGrid = first && targets.length > 0 ? <TargetsGrid targets={targets} /> : null;
@@ -118,8 +117,6 @@ export default function ProgressScreen() {
         {weightCard}
         {strengthCard}
         {musclesCard}
-        {barsCard}
-        <ConsistencyGrid weeks={weeks} />
         {callsCard}
       </>
     ) : (
@@ -136,8 +133,8 @@ export default function ProgressScreen() {
         {top}
         {lock}
         {targetsGrid}
-        {parts}
         <PhotoCard today={day} flowWeek={flowWeek(firstWeeks)} />
+        {parts}
         {hasShareable(progress, units) ? <ShareEntry /> : null}
       </>
     );

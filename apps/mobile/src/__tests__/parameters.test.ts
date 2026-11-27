@@ -220,6 +220,11 @@ describe('Progress reads the period of the 12 weeks grid, within what the contra
     expect(value('weight_chart_days')).toBeLessThanOrEqual(days);
   });
 
+  test('the calls open folded to fewer than are listed, at least one (ADR-094 Ek 3 #7)', () => {
+    expect(value('calls_folded')).toBeGreaterThan(0);
+    expect(value('calls_folded')).toBeLessThan(value('calls_shown') as number);
+  });
+
   test('the calls are asked for no more than the page limit the contract allows', () => {
     const from = contract.indexOf('    Limit:\n      name: limit');
     const maximum = Number(/maximum:\s*(\d+)/.exec(contract.slice(from, from + 200))?.[1]);

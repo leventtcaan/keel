@@ -3927,11 +3927,11 @@
   },
   "photos": {
     "title": "Fotoğraflar",
-    "first": "İlk fotoğrafın {week}. haftada. Her seferinde aynı yer, aynı ışık.",
-    "firstDue": "İlk fotoğrafının zamanı geldi. 1. gün olacak.",
-    "anytime": "Hazır olunca ilk fotoğrafını çek. 1. gün olacak.",
-    "next": "Sonraki fotoğraf {date} tarihinden itibaren. Haftalık değişim görülemeyecek kadar küçük.",
-    "open": "Fotoğraf penceresi {date} tarihinden beri açık. Aynı yer, aynı ışık, sabah.",
+    "first": "İlk fotoğraf: {week}. hafta.",
+    "firstDue": "İlk fotoğrafının zamanı geldi.",
+    "anytime": "Hazır olunca ilk fotoğrafını çek.",
+    "next": "Sonraki fotoğraf {date} tarihinden itibaren.",
+    "open": "Fotoğraf penceresi {date} tarihinden beri açık.",
     "count": {
       "one": "Bu telefonda {count} fotoğraf günü var. Hiç yüklenmedi, yedeklere bile.",
       "other": "Bu telefonda {count} fotoğraf günü var. Hiç yüklenmedi, yedeklere bile."
@@ -4165,9 +4165,8 @@
       "thisWeek": "bu hafta",
       "legendPlanned": "Planlanan",
       "legendDone": "Yapılan",
-      "setsTitle": "Kas başına set",
-      "legendTarget": "Hedef",
-      "barLabel": "{muscle}, {done} / {target} set"
+      "barLabel": "{muscle}, {done} / {target} set",
+      "pickedSets": "{done}/{target} set"
     },
     "strength": {
       "title": "Güç",
@@ -4190,7 +4189,10 @@
         "rising": "{date} tarihinden beri {load} ile {gained} arttı.",
         "repOne": "1 tekrar",
         "repMany": "{count} tekrar"
-      }
+      },
+      "pickLabel": "{move}, başka bir hareket seç",
+      "count": "{count} hareket",
+      "pickCancel": "Vazgeç"
     },
     "weight": {
       "title": "Kilo trendi",
@@ -4213,17 +4215,8 @@
       "moved": "{label}: {to}",
       "rowLabel": "{title}, {date}",
       "rowLabelNotApplied": "{title}, {date}, uygulanmadı",
-      "rowLabelLocked": "{date} kararı, hazır"
-    },
-    "consistency": {
-      "title": "Düzen",
-      "onTrack": "Yolunda",
-      "spare": "Sayılmayan hafta",
-      "paused": "Duraklatıldı",
-      "other": "Diğer haftalar",
-      "range": "En eskiden başlayarak",
-      "note": "Kaçırılan bir hafta kaydını asla sıfırlamaz.",
-      "spoken": "Son {count} hafta, en eskiden başlayarak: {onTrack} yolunda, {spare} sayılmayan, {paused} duraklatılmış, {other} diğer hafta."
+      "rowLabelLocked": "{date} kararı, hazır",
+      "more": "ve {count} karar daha"
     }
   },
   "strength": {

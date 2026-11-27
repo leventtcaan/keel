@@ -23,8 +23,9 @@ import { workoutParams as P } from '@/train/params';
 type MuscleSets = components['schemas']['MuscleSets'];
 
 const SIDES = ['front', 'back'] as const;
-/** The drawing's size: the move screen's (exercise.tsx), two figures side by side. */
+/** The drawing's size: the move screen's (exercise.tsx), two figures side by side; smaller on Progress (ADR-094 Ek 3 #5). */
 const MAP_SCALE = 0.75;
+const SMALL_SCALE = 0.6;
 
 type Fill = 'full' | 'part' | 'planned';
 const RANK: Record<Fill, number> = { planned: 0, part: 1, full: 2 };
@@ -51,19 +52,38 @@ export function areaFills(muscles: readonly MuscleSets[]): Map<string, Fill> {
 
 type Drawn = { slug: Slug; color: string }[];
 
+type Press = (part: { slug?: string }) => void;
+
 /** One drawing of the figure, front and back, each area in the colour it is given. */
-function Figures({ data, figure }: { data: Drawn; figure: Figure }) {
+function Figures({ data, figure, scale, onBodyPartPress }: { data: Drawn; figure: Figure; scale: number; onBodyPartPress?: Press }) {
   return (
     <>
       {SIDES.map((side) => (
-        <Body key={side} data={data} side={side} gender={figure} scale={MAP_SCALE} border="none" />
+        <Body key={side} data={data} side={side} gender={figure} scale={scale} border="none" onBodyPartPress={onBodyPartPress} />
       ))}
     </>
   );
 }
 
-export function MuscleMap({ muscles, figure }: { muscles: readonly MuscleSets[]; figure: Figure }) {
+type Props = {
+  muscles: readonly MuscleSets[];
+  figure: Figure;
+  /** An area touched (Progress, ADR-094 Ek 3 #5): the muscles sent that are on it, in their order; an area with none says nothing. */
+  onPress?: (muscles: MuscleSets['muscle'][]) => void;
+  /** Drawn smaller (Progress); the workout's end keeps the move screen's size. */
+  small?: boolean;
+};
+
+export function MuscleMap({ muscles, figure, onPress, small = false }: Props) {
   const { color } = useTheme();
+  const scale = small ? SMALL_SCALE : MAP_SCALE;
+  const press: Press | undefined =
+    onPress === undefined
+      ? undefined
+      : ({ slug }) => {
+          const on = muscles.filter((m) => slug !== undefined && (P.muscleMapAreas[m.muscle] ?? []).includes(slug)).map((m) => m.muscle);
+          if (on.length > 0) onPress(on);
+        };
   const reduce = useReduceMotion();
   const fills = areaFills(muscles);
   const colours: Record<Fill, string> = { full: color.accent, part: color.accentMid, planned: color.accentSoft };
@@ -97,13 +117,13 @@ export function MuscleMap({ muscles, figure }: { muscles: readonly MuscleSets[];
   const old =
     drawn.before === null ? null : (
       <Animated.View pointerEvents="none" style={[styles.over, over]}>
-        <Figures data={drawn.before} figure={figure} />
+        <Figures data={drawn.before} figure={figure} scale={scale} />
       </Animated.View>
     );
   return (
     <View style={styles.map} accessible accessibilityLabel={t('muscleMap.label', { muscles: said })}>
       {old}
-      <Figures data={data} figure={figure} />
+      <Figures data={data} figure={figure} scale={scale} onBodyPartPress={press} />
     </View>
   );
 }

@@ -134,7 +134,7 @@ const scaled =
 /** A body text's size and its line. */
 const body = (u: Scale, size: number) => ({ fontSize: u(size), lineHeight: u(size * 1.25) });
 
-/** A week as on Progress (ConsistencyGrid): on track filled, a spare week soft with a ring, a missed one plain, a paused one empty (U7: none is a mark of blame). */
+/** A week on the sticker: on track filled, a spare week soft with a ring, a missed one plain, a paused one empty (U7: none is a mark of blame). */
 const LOOK: Record<WeekCell, object> = {
   ON_TRACK: { backgroundColor: ink.accent },
   SPARE: { backgroundColor: ink.accentSoft, borderColor: ink.accent, borderWidth: tokens.border.ring },

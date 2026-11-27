@@ -21,7 +21,7 @@ const light = {
   muted: '#6B665E',
   /** The empty part of a bar: light enough that the coral fill on it reaches 3:1. */
   track: '#EEE9E0',
-  /** A week the 12 weeks grid draws plainly (Progress): neutral, never the warning or the progress colour (U7), 3:1 against the card. */
+  /** A missed week on the share sticker, drawn plainly: neutral, never the warning or the progress colour (U7), 3:1 against the card. */
   weekMissed: '#837C70',
   /** Petrol: the decision and the action (the call's accent, links and text buttons, a selection, a done mark, the chart's line). */
   accent: '#1F6B73',
@@ -238,9 +238,8 @@ export const tokens = {
     introArt: 200,
     /** The iOS tab bar above the home indicator, which the banner at the root of the app sits over (prototype `.bnr.up`). */
     tabBar: 49,
-    /** Progress (ADR-078, prototype `.tgt`): a target box's least height; a week of the 12 weeks grid; a weigh-in dot; a legend swatch. */
+    /** Progress (ADR-078, prototype `.tgt`): a target box's least height; a weigh-in dot; a legend swatch. */
     targetBox: 104,
-    weekCell: 24,
     dot: 14,
     /** The share screen's page dots under the cards (one per card, the one shown filled). */
     pageDot: 8,
@@ -260,9 +259,6 @@ export const tokens = {
     trendDot: 6,
     /** The call screen's chart of the weeks the call read (9c-4a): full width, this tall. */
     callChartHeight: 72,
-    /** Sets per muscle: the muscle's name column and the count column beside its bar. */
-    barName: 92,
-    barCount: 44,
   },
   /** SF Symbols (ADR-070 Ek 2 #3): one weight, two sizes. */
   icon: {

@@ -6349,6 +6349,26 @@ tasks:
     tests: ["jest", "simülatör (yeni dev build)"]
     refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md"]
 
+  - id: K-1246
+    title: "Gelişim: kısa defter (fotoğraf öne, dokunulan kas haritası, güç listeden, son 3 karar, Düzen ve kas başına set kalkar)"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: M
+    status: done
+    depends_on: [K-1244]
+    why: "Levent 25 Kas gezinti (Durak 4): sayfa çok uzun, güç düğmeleri kötü, kaslar etkileşimli olsun, kas başına set bu kadar yer almasın, Düzen kartı kalksın, kararlar listesi uzuyor, fotoğraf çok uzakta. 27 Kas: simülatörde üç yönden A · Kısa defter'i seçti (ADR-094 Ek 3)"
+    acceptance:
+      - "Sıra: karar, (ilk günlerde hedef kutuları), Fotoğraflar, Kilo, Güç, Bu haftanın kasları, Kararlar, Paylaş"
+      - "Fotoğraflar tek satır, pencere açıkken tintSuggest, değilken tintDay; sayı, Karşılaştır ve Sil yalnız fotoğraf varken"
+      - "Grafik çizgisi petrol ve ince, ara nokta yok, son nokta mercan"
+      - "Güç: haplar yok; hareket adı + aşağı ok sistemin seçim listesini açar; tek harekette liste yok"
+      - "Kas haritasında dokunulan kasın bu haftaki seti altta; açılışta sunucunun ilk kası; kas başına set kartı yok"
+      - "Düzen kartı yok; son 3 karar + 've N karar daha' (parametre dosyasında)"
+      - "Simülatörde Levent'e gösterilir; K1 listesi birleştirmeden önce Levent'e sorulur"
+    tests: ["jest", "simülatör"]
+    refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md", "plan/evre-9-tasarim.md", "plan/tasarim-gezinti-notlari.md"]
+
   - id: K-1227
     title: "Yerler arası yürüme rotası haritada (noktalı), adım karşılığı"
     milestone: M12

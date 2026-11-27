@@ -6,7 +6,7 @@
       "unit": "days",
       "tag": "urun",
       "source": "plan/kararlar/ADR-078-ilerleme.md#Ek 3",
-      "note": "How far back Progress's weight chart reads the 7-day average (K-979): twelve weeks, the same period as the 12 weeks grid (progress_grid_weeks, windows.yaml). The chart is drawn only from the points the server has in this window."
+      "note": "How far back Progress's weight chart reads the 7-day average (K-979): twelve weeks (progress_grid_weeks, windows.yaml: the weeks the record is read over). The chart is drawn only from the points the server has in this window."
     },
     {
       "key": "calls_shown",
@@ -14,7 +14,15 @@
       "unit": "count",
       "tag": "urun",
       "source": "plan/kararlar/ADR-078-ilerleme.md#Ek 3",
-      "note": "How many of the latest calls Progress's Calls card lists (K-979): twelve, the same period as the 12 weeks grid (one call a week). The ledger screen is off the surface (ADR-069 #3), so Progress is where calls are read."
+      "note": "How many of the latest calls Progress's Calls card lists (K-979): twelve, one call a week over the same weeks (progress_grid_weeks, windows.yaml). The ledger screen is off the surface (ADR-069 #3), so Progress is where calls are read."
+    },
+    {
+      "key": "calls_folded",
+      "value": 3,
+      "unit": "count",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md#Ek 3",
+      "note": "How many of the calls Progress lists open at first (K-1246, ADR-094 Ek 3 #7): the latest three; 'and N more' opens the rest of calls_shown in the same card, as the Train tab's today card does (Ek 2 › Uygulama #7)."
     }
   ]
 }

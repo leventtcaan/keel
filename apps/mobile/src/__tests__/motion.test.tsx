@@ -12,7 +12,6 @@ import { ProgressBar } from '@/components/ProgressBar';
 import { CountUp } from '@/motion/CountUp';
 import * as library from '@/motion/reanimated';
 import { useTween } from '@/motion/useTween';
-import { MuscleBars } from '@/progress/Parts';
 import { ThemeProvider } from '@/theme/theme';
 import { palettes } from '@/theme/tokens';
 
@@ -44,13 +43,6 @@ describe('a bar fills to its share', () => {
     expect(StyleSheet.flatten(screen.getByTestId('progress-fill').props.style).width).toBe('40%');
     await view.rerender(inTheme(<ProgressBar value={0.75} label="Protein" />));
     expect(StyleSheet.flatten(screen.getByTestId('progress-fill').props.style).width).toBe('75%');
-  });
-
-  test('sets per muscle: a fill and a count each, and the target line where the scale puts it', async () => {
-    await render(inTheme(<MuscleBars muscles={[sets('quads', 6), sets('chest', 14, 10)]} />));
-    expect(screen.getByTestId('muscle-bar-quads')).toBeOnTheScreen();
-    expect(screen.getByText('6')).toBeOnTheScreen();
-    expect(screen.getByText('14')).toBeOnTheScreen();
   });
 });
 
