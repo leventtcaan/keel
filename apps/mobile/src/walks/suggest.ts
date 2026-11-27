@@ -5,7 +5,8 @@
  */
 import { walkParams as W } from './params';
 
-export type WalkRoute = { id: string; name: string; km: number };
+/** A walk the user takes: a name and a one-way km; one kept from the map also knows its two places' ids (K-1251), so it can be drawn. */
+export type WalkRoute = { id: string; name: string; km: number; from?: string; to?: string };
 
 export type Suggestion =
   | { kind: 'route'; route: WalkRoute; roundTripSteps: number; minutes: number }
@@ -37,4 +38,17 @@ export function suggestWalk({ remaining, routes, stepsPerKm: perKm }: { remainin
     if (best === null || (best.kind === 'route' && roundTripSteps < best.roundTripSteps)) best = { kind: 'route', route, roundTripSteps, minutes };
   }
   return best ?? { kind: 'minutes', minutes };
+}
+
+/** A walk as Today's walk lists it (K-1251): its steps there and back, its own minutes, and whether it is the one `suggestWalk` picks. */
+export type WalkOption = { route: WalkRoute; roundTripSteps: number; minutes: number; covers: boolean };
+
+/** Every walk with its steps there and back and its minutes; `covers` only on the one `suggestWalk` picks for `remaining` (none when none). */
+export function walkOptions({ remaining, routes, stepsPerKm: perKm }: { remaining: number; routes: WalkRoute[]; stepsPerKm: number }): WalkOption[] {
+  const picked = suggestWalk({ remaining, routes, stepsPerKm: perKm });
+  const coversId = picked?.kind === 'route' ? picked.route.id : null;
+  return routes.map((route) => {
+    const roundTripSteps = Math.round(2 * route.km * perKm);
+    return { route, roundTripSteps, minutes: Math.max(1, Math.round(roundTripSteps / W.cadence)), covers: route.id === coversId };
+  });
 }

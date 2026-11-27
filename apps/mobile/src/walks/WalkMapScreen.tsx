@@ -88,7 +88,11 @@ export function WalkMapScreen() {
   }, [geo, from, to, pair]);
   const ready = pair !== null && measured?.pair === pair ? measured.leg : null;
 
-  const points = useMemo(() => [...places, ...(draft === null ? [] : [draft])].map((p) => ({ latitude: p.lat, longitude: p.lng })), [places, draft]);
+  // The places and, once measured, the walk's own line: the map is fitted to all of it, so a route that leaves the places' box stays in view.
+  const points = useMemo(
+    () => [...places, ...(draft === null ? [] : [draft]), ...(ready?.path ?? [])].map((p) => ({ latitude: p.lat, longitude: p.lng })),
+    [places, draft, ready],
+  );
   useEffect(() => {
     if (points.length > 0) map.current?.fitToCoordinates?.(points, { edgePadding: MAP_PADDING, animated: false });
   }, [points]);
@@ -139,9 +143,9 @@ export function WalkMapScreen() {
     await store.remove(place.id).catch((error: unknown) => report({ name: nameOf(error) }));
   }
 
-  async function saveWalk(name: string, km: number) {
+  async function saveWalk(name: string, km: number, ends: { from: string; to: string }) {
     try {
-      await walks.add({ name, km: Math.round(km * 1000) / 1000 });
+      await walks.add({ name, km: Math.round(km * 1000) / 1000, ...ends });
       setNotice('walkMap.walkSaved');
     } catch (error) {
       if (nameOf(error) === 'WalkLimit') setNotice('walkMap.walkFull');
@@ -152,7 +156,9 @@ export function WalkMapScreen() {
     }
   }
 
-  const routeName = from !== null && to !== null ? clip(t('walkMap.routeName', { from: from.name, to: to.name })) : '';
+  // "Home to Gym"; when the two names do not fit a walk's name, the place it goes to alone (K-1251: a clipped "Campus to" read as nonsense).
+  const fullName = from !== null && to !== null ? t('walkMap.routeName', { from: from.name, to: to.name }) : '';
+  const routeName = to === null ? '' : Array.from(fullName).length <= W.nameMaxChars ? fullName : clip(to.name);
   const full = places.length >= W.placesMax;
   const row = (place: Place) => {
     const role = place.id === fromId ? t('walkMap.from') : place.id === toId ? t('walkMap.to') : undefined;
@@ -176,7 +182,7 @@ export function WalkMapScreen() {
       <View style={styles.stack}>
         <Text accessibilityLiveRegion={POLITE} style={[styles.leg, { color: color.text }]}>{t(approximate ? 'walkMap.legApprox' : 'walkMap.leg', values)}</Text>
         <Text style={[styles.note, { color: color.muted }]}>{t('walkMap.round', { steps: num(2 * km * perKm) })}</Text>
-        <Button label={t('walkMap.saveWalk')} accessibilityLabel={t('walkMap.saveWalkLabel', { name: routeName })} variant="secondary" onPress={() => void saveWalk(routeName, km)} />
+        <Button label={t('walkMap.saveWalk')} accessibilityLabel={t('walkMap.saveWalkLabel', { name: routeName })} variant="secondary" onPress={() => from !== null && to !== null && void saveWalk(routeName, km, { from: from.id, to: to.id })} />
       </View>
     );
   }
@@ -255,6 +261,35 @@ export function WalkMapScreen() {
         {notice !== null && <Text accessibilityLiveRegion={POLITE} style={[styles.note, { color: color.text }]}>{t(notice)}</Text>}
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+/**
+ * A walk on the map, to look at (K-1251, Today's walk): the places, and the walk's dotted line when it is measured, fitted to the view. It is
+ * here, beside the map screen, so react-native-maps stays in this one file, which never shows where the phone is.
+ */
+export function RouteMap({ places, path, height }: { places: Place[]; path: Leg['path'] | null; height: number }) {
+  const { color } = useTheme();
+  const map = useRef<MapView>(null);
+  const points = (path ?? places).map((p) => ({ latitude: p.lat, longitude: p.lng }));
+  const fit = () => {
+    if (points.length > 0) map.current?.fitToCoordinates?.(points, { edgePadding: MAP_PADDING, animated: false });
+  };
+  // Fitted again only when the points do: the parent draws again on every read and store change (K-1251 review).
+  const key = points.map((p) => `${p.latitude},${p.longitude}`).join(';');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(fit, [key]);
+  return (
+    <View accessible accessibilityLabel={t('walkMap.mapLabel')} style={[styles.map, { height }]}>
+      <MapView ref={map} style={StyleSheet.absoluteFill} showsUserLocation={false} showsMyLocationButton={false} scrollEnabled={false} zoomEnabled={false} onMapReady={fit}>
+        {places.map((p) => (
+          <Marker key={p.id} coordinate={{ latitude: p.lat, longitude: p.lng }} title={p.name} pinColor={color.accent} />
+        ))}
+        {path !== null && (
+          <Polyline coordinates={path.map((p) => ({ latitude: p.lat, longitude: p.lng }))} strokeColor={color.accent} strokeWidth={4} lineCap={ROUND} lineDashPattern={DOTS} />
+        )}
+      </MapView>
+    </View>
   );
 }
 

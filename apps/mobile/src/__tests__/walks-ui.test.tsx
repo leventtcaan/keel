@@ -1,5 +1,6 @@
 /** The walk line under today's numbers and the "My walks" page (K-1216). */
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { router } from 'expo-router';
 
 import type { components } from '@/api/schema';
 import { WalksEditor } from '@/settings/WalksEditor';
@@ -66,6 +67,15 @@ describe('the line under the numbers, on the first screen (home budget 74, K-121
   test('never without the count from Health, whatever walk it was handed', async () => {
     await render(block({ stepsToday: null, walk: { remaining: 4000, suggestion: { kind: 'minutes', minutes: 36 } } }));
     expect(screen.queryByTestId('walk-line')).toBeNull();
+  });
+});
+
+describe("the line opens today's walk (K-1251, ADR-094 Ek 6)", () => {
+  test("a tap opens Today's walk, not Apple Health, and says so", async () => {
+    await render(block({ walk: { remaining: 4000, suggestion: { kind: 'minutes', minutes: 36 } } }));
+    expect(screen.getByTestId('walk-line').props.accessibilityHint).toBe("Opens today's walk");
+    await fireEvent.press(screen.getByTestId('walk-line'));
+    expect(router.push).toHaveBeenCalledWith('/walk');
   });
 });
 

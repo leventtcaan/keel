@@ -129,7 +129,7 @@ export function ListRow({ label, icon, value: given, detail, trailing, onPress, 
     return (
       <View
         testID={testID}
-        {...(toggle === undefined ? { accessible: true, accessibilityLabel: spokenSecond === undefined ? label : `${label}, ${spokenSecond}` } : {})}
+        {...(toggle === undefined ? { accessible: true, accessibilityLabel: accessibilityLabel ?? (spokenSecond === undefined ? label : `${label}, ${spokenSecond}`) } : {})}
         style={styles.row}>
         {body}
       </View>

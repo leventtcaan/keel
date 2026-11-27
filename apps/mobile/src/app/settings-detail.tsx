@@ -16,7 +16,6 @@ import { ImportSection } from '@/settings/ImportSection';
 import { RestSection } from '@/settings/RestSection';
 import { RoutineEditor } from '@/settings/RoutineEditor';
 import { WalksEditor } from '@/settings/WalksEditor';
-import { WalksGroup } from '@/settings/WalksGroup';
 import { useHealthConsent } from '@/settings/useHealthConsent';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
@@ -40,12 +39,8 @@ export default function SettingsDetailScreen() {
     goal: <GoalEditor />,
     checkin: <CheckInEditor />,
     height: <HeightEditor />,
-    activity: (
-      <View style={styles.activity}>
-        <ActivityEditor />
-        <WalksGroup />
-      </View>
-    ),
+    // My walks left Settings (K-1251, ADR-094 Ek 6): they are reached from Today's walk.
+    activity: <ActivityEditor />,
     walks: <WalksEditor />,
     born: <BornEditor />,
     food: <FoodEditor />,
@@ -82,5 +77,4 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: tokens.space.lg, paddingVertical: tokens.space.md, gap: tokens.space.xl },
   note: { fontSize: tokens.type.bodySmall },
   locked: { gap: tokens.space.md },
-  activity: { gap: tokens.space.xl },
 });

@@ -144,3 +144,18 @@ test('a blank name is not kept, and a removed place leaves the walk', async () =
   await fireEvent.press(screen.getByText('Remove Home'));
   await waitFor(() => expect(screen.queryByTestId('marker-Home')).toBeNull());
 });
+
+// K-1251 (ADR-094 Ek 6): a walk kept from the map knows its two places, so Today's walk can draw it; a name too long for "From to To" is the place it goes to.
+test('a walk kept from the map keeps its two places, and a name too long to fit is the place it goes to', async () => {
+  walk.mockResolvedValue({ km: 3.2, approximate: false, path: [{ lat: 36.89, lng: 30.65 }, { lat: 36.9, lng: 30.67 }] });
+  await open();
+  await addByHold('Akdeniz Universitesi', 36.89, 30.65);
+  await addByHold('MACFit', 36.9, 30.67);
+  await fireEvent.press(screen.getByLabelText('Akdeniz Universitesi. Tap to use it as the start or the end.'));
+  await fireEvent.press(screen.getByLabelText('MACFit. Tap to use it as the start or the end.'));
+  await screen.findByText(/one way/);
+  await fireEvent.press(screen.getByLabelText('Save MACFit in My walks'));
+  await screen.findByText(/Saved in My walks/);
+  const places = (mockServices.places as { current: () => { id: string; name: string }[] }).current();
+  expect((mockServices.walks as { current: () => unknown[] }).current()).toEqual([{ id: '1', name: 'MACFit', km: 3.2, from: places[0].id, to: places[1].id }]);
+});

@@ -3110,6 +3110,28 @@
     "label": {
       "route": "Bugün {steps} adım kaldı. {name} gidiş dönüş yaklaşık {minutes} dakikalık yürüyüş.",
       "minutes": "Bugün {steps} adım kaldı. Bu yaklaşık {minutes} dakikalık yürüyüş."
+    },
+    "today": {
+      "title": "Bugünün yürüyüşü",
+      "hint": "Bugünün yürüyüşünü açar",
+      "left": "{steps} adım kaldı",
+      "of": "{steps} / {target} · yaklaşık {minutes} dk yürüyüş",
+      "progress": "{steps} / {target} adım",
+      "done": "Bugünün adımı tamam",
+      "doneOf": "{steps} / {target}",
+      "noCount": "Hedefin {target} adım. Apple Health açıkken kalanı burada görürsün.",
+      "unread": "Adım hedefin yüklenemedi. Sonra tekrar dene.",
+      "covers": "Hangisi kapatır",
+      "row": "Gidiş dönüş {steps} adım · {minutes} dk",
+      "coversIt": "Kapatır",
+      "rowLabel": "{name}: gidiş dönüş {steps} adım, yaklaşık {minutes} dakika.",
+      "coversLabel": "{name} bugünün adımını kapatır: gidiş dönüş {steps} adım, yaklaşık {minutes} dakika.",
+      "none": "Henüz yürüyüş yok. Gerçekten yaptıklarını ekle.",
+      "edit": "Yürüyüş ekle ya da değiştir",
+      "locked": "Harita ve rota abonelikle gelir.",
+      "mapUnread": "Harita yüklenemedi. Sonra tekrar dene.",
+      "noPlaces": "Yürüyüşü haritada görmek için yerlerini ekle.",
+      "addPlaces": "Yer ekle"
     }
   },
   "walkMap": {
