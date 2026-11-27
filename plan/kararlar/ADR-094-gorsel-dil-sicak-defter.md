@@ -290,6 +290,8 @@ Agent üç yönü gerçek Türk yemekleriyle simülatörde çizdi (`9c6/yemek-va
    g); Türkçe gösterilirken oz yok; tahmin sorusu yemeğin adını tekrar etmez.
 7. Yemek adları kesilmez (erişilebilirlik testi `numberOfLines`'ı yasaklar, Dynamic Type büyüdükçe metin sarar); satırlar kısa
    kalıplarla kısalır (#2).
+8. Levent sonucu simülatörde gördü (`9c6/yemek-sonra.jpg`). K1 (15 beklenti: öğün haptan değil başlık ve listeden, boş öğünde tepsi
+   yok, Hızlı ekle ve Yiyecek oluştur metin düğmesi, soru adı tekrar etmez; aynı İngilizce metinle anahtar adları) Levent onaylı (27 Kas).
 Seçilmeyen: A'nın dört kısa hapı ("Öğle", "Ara öğün"), C'nin alt çizgili sekmeleri ve porsiyonda gram ve kalorili ölçü listesi.
 
 **Ayrı işler (mantık, sunucu):** yemeklerin porsiyon adı İngilizce geliyor ("1 bowl (250 g)"); ev ölçüsü kuralı "Pirinç pilavı", "Bulgur

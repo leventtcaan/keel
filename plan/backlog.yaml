@@ -6375,7 +6375,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: in_progress
+    status: done
     depends_on: [K-1246]
     why: "Levent 25 Kas gezinti (Durak 5): öğün kaydette fontlar kayıyor, fazla yazı; Türkçe aramada bir şey çıkmıyor; logic, UX ve UI üçüne de el atılmalı. 27 Kas: simülatörde üç yönden B · Başlık öğün'ü seçti (ADR-094 Ek 4)"
     acceptance:

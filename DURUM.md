@@ -5,7 +5,15 @@ guncelleme: 2026-11-27
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (27 Kas — K-1246: Gelişim kısa defter, #808, PR otomatik birleşmede; 9c-5 bitti)
+## ▶ DEVAM NOKTASI (27 Kas — K-1247: öğün kaydet başlık öğün, #810, PR #813 otomatik birleşmede; 9c-6 öğün kaydı bitti)
+**K-1246 birleşti (#809).** **9c-6 (Yemek):** öğün kaydet, arama ve porsiyon simülatörde çekildi, 12 sorun işaretlendi (`prototip/gorsel-yon/9c6/yemek-simdi.jpg`);
+fikstüre 12 Türk yemeği + ev ölçüleri + sunucu gibi katlamalı arama eklendi (keel-sim/.sim, git dışı); üç yön çizildi, **Levent B · Başlık öğün'ü seçti → ADR-094 Ek 4.**
+K-1247: başlık öğünün kendisi (serif + petrol ok, altında gün · kalori, sistem listesi), öğün başına Türkçe kalıplar (`meal.forSlot.*`), boş öğünde tepsi yok,
+Hızlı ekle/Yiyecek oluştur metin düğmesi, makrolar renksiz, porsiyonda serif ad, Türkçede oz yok. Adlar kesilmez (erişilebilirlik testi). K1 (15) Levent onaylı.
+**Sunucu bulguları → kartlar:** K-1248 (#811) yemek porsiyon adı İngilizce ("1 bowl"), ölçü kuralı pilav/kuru fasulye/su böreği; K-1249 (#812) temel yiyecek Türkçe adı (yumurta, süt, ekmek aramada yok).
+**Sıradaki:** 9c-6'nın kalanı: günün yemek sayfası ("Bugünün beslenmesi": siyah gün seçimi, renkli makro çubukları, kart düzeni) aynı yöntemle; ya da K-1248 — Levent seçer.
+
+## (önceki) ▶ DEVAM NOKTASI (27 Kas — K-1246: Gelişim kısa defter, #808, PR otomatik birleşmede; 9c-5 bitti)
 **K-1244 birleşti (#807).** **9c-5 (Gelişim):** bugünkü sayfa simülatörde çekildi ve işaretlendi (3,6 ekran boyu), üç yön gerçek veriyle çizildi;
 **Levent A · Kısa defter'i seçti → ADR-094 Ek 3.** K-1246: fotoğraf tek satır kararın (ilk günlerde hedeflerin) altında, grafik petrol çizgi +
 mercan son nokta, güç hapları yerine hareket adı + sistem listesi (petrol), kas haritası küçük ve dokunulur (dokunulan kasın seti altta),
