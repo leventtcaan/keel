@@ -6388,6 +6388,24 @@ tasks:
     tests: ["jest", "simülatör"]
     refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md", "plan/evre-9-tasarim.md", "plan/tasarim-gezinti-notlari.md"]
 
+  - id: K-1250
+    title: "Günün yemek sayfası: başlık günün kendisi, haftalık şerit (petrol seçim), mercan makro çubukları, serif öğün başlıkları, öneriler sonda"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: S
+    status: in_progress
+    depends_on: [K-1247]
+    why: "9c-6'nın kalanı: günün yemek sayfası 'Bugünün beslenmesi' + 'Bugün' iki kez, siyah seçim, renkli makrolar, öneriler öğünlerden önce. 27 Kas: Levent simülatörde üç yönden A · Hafta şeridi'ni seçti (ADR-094 Ek 5)"
+    acceptance:
+      - "Başlık serif gün adı (Bugün, Dün, tarih); oklar ve ikinci etiket yok"
+      - "Şerit ayın günlerini kaydırır, bir anda 7 gün (parametre); seçili gün petrol; başka gün seçiliyken bugünün harfi mercan"
+      - "Makro çubukları mercan, renkli nokta yok"
+      - "Öğün başlıkları serif; öneriler öğünlerden sonra, 'Kalana uyanlar'"
+      - "Simülatörde Levent'e gösterilir; K1 listesi birleştirmeden önce Levent'e sorulur"
+    tests: ["jest", "simülatör"]
+    refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md"]
+
   - id: K-1248
     title: "Türk yemeklerinin porsiyon adı Türkçe, ev ölçüsü kuralı pilav/kuru baklagil yemeklerini tanır, su böreği sıvı sayılmaz"
     milestone: M12

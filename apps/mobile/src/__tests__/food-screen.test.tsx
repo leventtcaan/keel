@@ -167,7 +167,8 @@ test('without the health data consent: one line and the way to Settings', async 
 
 test("today's food: the title, the day's budget and the way to log a meal into today (ADR-086, K-1063)", async () => {
   await show();
-  expect(screen.getByRole('header', { name: t('screens.food.title') })).toBeOnTheScreen();
+  // K1 (K-1250, ADR-094 Ek 5 #1): the title is the day itself ("Today"), not "Today's food".
+  expect(screen.getByRole('header', { name: t('food.day.today') })).toBeOnTheScreen();
   expect(screen.getByText(t('food.totals.left', { value: '865', unit: t('food.budget.kcalUnit') }))).toBeOnTheScreen();
   await act(async () => fireEvent.press(screen.getByRole('button', { name: t('food.log') })));
   expect(jest.mocked(router.push)).toHaveBeenCalledWith({ pathname: '/meal', params: { day: '2026-09-29' } });
@@ -202,7 +203,8 @@ describe("the coach's line (K-1237)", () => {
 
   test('a day before today: no line (the coach speaks of today)', async () => {
     await show();
-    await act(async () => fireEvent.press(screen.getByRole('button', { name: t('food.day.before') })));
+    // K1 (K-1250, ADR-094 Ek 5 #2): no chevrons; the day before is a day of the strip.
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: new RegExp(`^${t('food.day.yesterday')}`) })));
     expect(line()).toBeNull();
   });
 

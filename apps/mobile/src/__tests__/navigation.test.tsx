@@ -258,7 +258,8 @@ test("today's food is a route, not a tab and not retired (ADR-086): a link opens
     jest.runAllTimers();
   });
   expect(router.getPathname()).toBe('/food');
-  expect(screen.getByRole('header', { name: t('screens.food.title') })).toBeOnTheScreen();
+  // K1 (K-1250, ADR-094 Ek 5 #1): the food page's title is the day itself.
+  expect(screen.getByRole('header', { name: t('food.day.today') })).toBeOnTheScreen();
   // The tabs sit underneath (the anchor): back lands on This week.
   await act(async () => {
     appRouter.back();

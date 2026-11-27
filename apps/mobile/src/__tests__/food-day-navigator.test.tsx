@@ -171,18 +171,18 @@ describe('the day navigator', () => {
     expect(screen.queryByTestId('day-2026-08-30')).toBeNull();
     expect(screen.getByRole('button', { name: `${t('food.day.yesterday')}` })).toBeOnTheScreen();
     expect(screen.getAllByRole('button', { name: new RegExp(t('food.day.hasMeals')) })).toHaveLength(2); // the 25th and today
-    // Nothing after today.
-    expect(screen.getByTestId('day-after')).toBeDisabled();
+    // Nothing after today: the strip ends on it (K1, K-1250: the chevrons are gone).
+    expect(screen.queryByTestId('day-2026-09-30')).toBeNull();
   });
 
-  test('the chevron goes a day back: that day is read (its budget, its meals, the day before it) and named', async () => {
+  test('the strip goes a day back: that day is read (its budget, its meals, the day before it) and named', async () => {
     await show();
-    await press(screen.getByTestId('day-before'));
+    await press(screen.getByTestId('day-2026-09-28')); // K1 (K-1250, Ek 5 #2): no chevrons, the strip's day before
     expect(screen.getByTestId('day-label')).toHaveTextContent(t('food.day.yesterday'));
     expect(mockGET).toHaveBeenCalledWith('/v1/days/{day}/budget', { params: { path: { day: '2026-09-28' } } });
     expect(mockGET).toHaveBeenCalledWith('/v1/meals', { params: { query: { day: '2026-09-28' } } });
     expect(mockGET).toHaveBeenCalledWith('/v1/meals', { params: { query: { day: '2026-09-27' } } });
-    expect(screen.getByTestId('day-after')).toBeEnabled();
+    expect(screen.getByTestId('day-2026-09-29')).not.toBeSelected();
   });
 
   test("the training day is today's alone (K-1217): another day shows no line, and today's program is not read for it", async () => {
@@ -191,7 +191,7 @@ describe('the day navigator', () => {
     await show();
     expect(screen.getByText('Training day: Full body A')).toBeOnTheScreen();
     calls.length = 0;
-    await press(screen.getByTestId('day-before'));
+    await press(screen.getByTestId('day-2026-09-28')); // K1 (K-1250, Ek 5 #2): no chevrons, the strip's day before
     expect(screen.queryByText(/Training day/)).toBeNull();
     expect(calls).not.toContain('/v1/program');
   });
@@ -236,7 +236,7 @@ describe('the day navigator', () => {
     expect(screen.getAllByRole('button', { name: new RegExp(t('food.day.hasMeals')) })).toHaveLength(1);
     // The strip says the 28th has a meal, the page's own list for it is empty: the dot goes once the day is opened (day 24 of the walk).
     mockDays = [{ day: '2026-09-28', meals: 1, eaten: NUTRIENTS([100, 110], [4, 5], [10, 12], [3, 4]) }, ...mockDays];
-    await press(screen.getByTestId('day-before'));
+    await press(screen.getByTestId('day-2026-09-28')); // K1 (K-1250, Ek 5 #2): no chevrons, the strip's day before
     expect(screen.getByText(t('food.meals.noneDay'))).toBeOnTheScreen();
     expect(screen.getAllByRole('button', { name: new RegExp(t('food.day.hasMeals')) })).toHaveLength(1); // only today's
     expect(screen.getByTestId('day-2026-09-28')).toBeSelected();
@@ -263,7 +263,7 @@ describe('the day navigator', () => {
   test('a day without meals says so in its own words; the slots of the user\'s day each offer an add', async () => {
     mockMeals = {};
     await show();
-    await press(screen.getByTestId('day-before'));
+    await press(screen.getByTestId('day-2026-09-28')); // K1 (K-1250, Ek 5 #2): no chevrons, the strip's day before
     expect(screen.getByText(t('food.meals.noneDay'))).toBeOnTheScreen();
     await press(screen.getByTestId('empty-DINNER'));
     expect(mockPush).toHaveBeenLastCalledWith({ pathname: '/meal', params: { day: '2026-09-28', slot: 'DINNER' } });
@@ -447,16 +447,15 @@ describe('first-day rough edges (K-1066)', () => {
     expect(mockRecord).toHaveBeenCalledWith(expect.objectContaining({ body: expect.objectContaining({ eatenAt: at(29, 10), slot: 'BREAKFAST' }) }));
   });
 
-  test('the title is the day: "Today\'s food", "Yesterday\'s food", else "Food" (the navigator names the date)', async () => {
+  // K1 (K-1250, ADR-094 Ek 5 #1): the title was "Today's food" / "Yesterday's food" / "Food" over the navigator's own label; the day itself is
+  // the one title now.
+  test('the title is the day itself, once: Today, Yesterday, else the date', async () => {
     await show();
-    expect(screen.getByRole('header', { name: t('screens.food.title') })).toBeOnTheScreen();
-    await press(screen.getByTestId('day-before'));
-    expect(screen.getByRole('header', { name: t('food.day.titleYesterday') })).toBeOnTheScreen();
-    expect(screen.queryByRole('header', { name: t('screens.food.title') })).toBeNull();
+    expect(screen.getByRole('header', { name: t('food.day.today') })).toBeOnTheScreen();
+    await press(screen.getByTestId('day-2026-09-28'));
+    expect(screen.getByRole('header', { name: t('food.day.yesterday') })).toBeOnTheScreen();
     await press(screen.getByTestId('day-2026-09-25'));
-    // The navigator's own label names the day; the title does not say it a second time.
     expect(screen.getAllByRole('header', { name: 'Fri, Sep 25' })).toHaveLength(1);
-    expect(screen.getByRole('header', { name: t('food.day.titleOther') })).toBeOnTheScreen();
   });
 
   test('a quick add says its name once', async () => {

@@ -106,9 +106,6 @@
     "train": {
       "title": "Antrenman"
     },
-    "food": {
-      "title": "Bugünün beslenmesi"
-    },
     "progress": {
       "title": "Gelişim"
     },
@@ -1401,10 +1398,6 @@
     "day": {
       "today": "Bugün",
       "yesterday": "Dün",
-      "titleYesterday": "Dünün yiyecekleri",
-      "titleOther": "Beslenme",
-      "before": "Önceki gün",
-      "after": "Sonraki gün",
       "hasMeals": "öğün var"
     },
     "logDay": "Bu güne yiyecek ekle",
@@ -1446,7 +1439,7 @@
     "suggestions": {
       "times": "{quantity} × {unit}",
       "amount": "{quantity} {unit}",
-      "title": "Bugün kalana uyar",
+      "title": "Kalana uyanlar",
       "item": "{name} · {quantity} {unit}",
       "itemServing": "{name} · {unit}",
       "itemServings": "{name} · {quantity} × {unit}",

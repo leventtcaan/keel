@@ -7,14 +7,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { ProblemText } from '@/components/ProblemText';
-import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
 import { CopyDay } from '@/food/CopyDay';
 import { DayStrip } from '@/food/DayStrip';
 import { DayTotals } from '@/food/DayTotals';
 import { copiedAt, changeMeal, deleteMeal, deletedMeal, deletedMeals, logMealAgain, removedItem, requestsOfMeal } from '@/food/mealActions';
 import { aiLoggingAvailable, photoSuggested } from '@/food/aiLogging';
-import { dayTitle, eatenAtFor } from '@/food/dayLabel';
+import { eatenAtFor } from '@/food/dayLabel';
 import { FoodList, type FoodRowData } from '@/food/FoodList';
 import { suggestionRow } from '@/food/foodRows';
 import { defaultSlot, dayBefore } from '@/food/meals';
@@ -282,7 +281,6 @@ export default function FoodScreen() {
   return (
     <SafeAreaView testID="screen" style={[styles.safe, { backgroundColor: color.background }]} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.body}>
-        <ScreenTitle>{dayTitle(day, today)}</ScreenTitle>
         <DayStrip day={day} today={today} logged={data?.loggedDays ?? new Set<string>()} onChange={(next) => setSelected(next === today ? null : next)} />
         {training}
         {retry}
@@ -290,8 +288,8 @@ export default function FoodScreen() {
         {totals}
         {coach}
         {noBudget}
-        {fits}
         {meals}
+        {fits}
         {suggestPhoto}
         {offers}
         {copy}

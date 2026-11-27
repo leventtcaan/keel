@@ -35,6 +35,7 @@ export const foodParams = {
   quickRecentMax: param<number>('quick_recent_max'),
   pastDaySlotHours: param<Record<components['schemas']['MealSlot'], number>>('past_day_slot_hours'),
   dayStripDays: param<number>('day_strip_days'),
+  dayStripVisible: param<number>('day_strip_visible'),
   logAgainDays: param<number>('log_again_days'),
   logAgainMax: param<number>('log_again_max'),
   slotsUsedWindowDays: param<number>('slots_used_window_days'),
