@@ -6540,7 +6540,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: done
     depends_on: [K-1257]
     why: "ADR-094 Ek 9 › Uygulama #3: seçili segment siyah, sistem ikonları, koyu gri kapalı düğmeler, 'İngiliz birimleri (lb, ft, in)' kutuyu eziyor, yıkıcı eylem sıradan satır"
     acceptance:
