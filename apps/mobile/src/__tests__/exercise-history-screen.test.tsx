@@ -61,13 +61,34 @@ const WORKOUTS: Schemas['Workout'][] = [
   },
 ];
 
-let mockHistory: Loaded<Schemas['Workout'][]>;
+// The server's records for WORKOUTS' bench press (K-1259: the server works them out over all time).
+const BENCH: Schemas['MoveRecord'][] = [
+  { kind: 'HEAVIEST', loadKg: 85, reps: 4, on: '2026-09-28T17:00:00Z' },
+  { kind: 'ESTIMATED_MAX', kg: 104, on: '2026-09-21T17:00:00Z' },
+  { kind: 'REPS_AT', loadKg: 85, reps: 4, on: '2026-09-28T17:00:00Z' },
+  { kind: 'REPS_AT', loadKg: 80, reps: 8, on: '2026-09-21T17:00:00Z' },
+];
+const page = (sessions: Schemas['Workout'][], records: Schemas['MoveRecord'][] = [], next?: string): Schemas['MoveHistory'] => ({
+  sessions,
+  records,
+  ...(next === undefined ? {} : { next }),
+});
+
+let mockHistory: Loaded<Schemas['MoveHistory']>;
+let mockOlder: Record<string, Loaded<Schemas['MoveHistory']>> = {};
+async function answer(_api: unknown, _move: string, before?: string): Promise<{ read: Loaded<Schemas['MoveHistory']>; kept: boolean }> {
+  return { read: before === undefined ? mockHistory : (mockOlder[before] ?? { state: 'failed', problem: 'NoConnection' }), kept: false };
+}
 let mockRecords: LocalRecord[] = [];
 let mockData: TrainData;
 let mockOwn: Move[] = [];
 const mockServices = {
   api: {},
-  training: { read: async () => mockData, own: async () => mockOwn, history: jest.fn(async () => mockHistory) },
+  training: {
+    read: async () => mockData,
+    own: async () => mockOwn,
+    moveHistory: jest.fn(answer),
+  },
   workoutRecords: async () => mockRecords,
   report: jest.fn(),
 };
@@ -76,11 +97,12 @@ jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServ
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockServices.training.history.mockImplementation(async () => mockHistory);
+  mockOlder = {};
+  mockServices.training.moveHistory.mockImplementation(answer);
   mockUnits = 'METRIC';
   mockData = { program: { state: 'none' }, exercises: { state: 'ready', value: EXERCISES }, kept: false };
   mockParams = { exercise: 'bench_press' };
-  mockHistory = { state: 'ready', value: WORKOUTS };
+  mockHistory = { state: 'ready', value: page(WORKOUTS, BENCH) };
   mockRecords = [];
   mockOwn = [];
 });
@@ -114,6 +136,7 @@ test('then each session, newest first, every set as it was done — a warm-up ma
 
 test('an isolation move shows no weight record (G6 K-33)', async () => {
   mockParams = { exercise: 'lateral_raise' };
+  mockHistory = { state: 'ready', value: page(WORKOUTS, [{ kind: 'REPS_AT', loadKg: 12.5, reps: 12, on: '2026-09-28T17:00:00Z' }]) };
   await show();
   expect(await screen.findByText('Most reps at 12.5 kg · 12')).toBeTruthy();
   expect(screen.queryByText(/^Heaviest/)).toBeNull();
@@ -156,7 +179,7 @@ test("offline with nothing kept: the phone's own sessions, and the screen says s
 });
 
 test('nothing logged for the move yet', async () => {
-  mockHistory = { state: 'ready', value: [] };
+  mockHistory = { state: 'ready', value: page([]) };
   await show();
   expect(await screen.findByText('Nothing logged for this exercise yet.')).toBeTruthy();
 });
@@ -173,10 +196,16 @@ test('in lb, two loads written alike are one weight: one "140 lb" row', async ()
   mockUnits = 'IMPERIAL';
   mockHistory = {
     state: 'ready',
-    value: [
-      { id: 'a', clientId: 'w1', startedAt: '2026-09-21T17:00:00Z', sets: [set('s1', 'bench_press', 62.5, 6, 1)] },
-      { id: 'b', clientId: 'w2', startedAt: '2026-09-28T17:00:00Z', sets: [set('s2', 'bench_press', 62.51, 6, 1)] },
-    ],
+    value: page(
+      [
+        { id: 'a', clientId: 'w1', startedAt: '2026-09-21T17:00:00Z', sets: [set('s1', 'bench_press', 62.5, 6, 1)] },
+        { id: 'b', clientId: 'w2', startedAt: '2026-09-28T17:00:00Z', sets: [set('s2', 'bench_press', 62.51, 6, 1)] },
+      ],
+      [
+        { kind: 'REPS_AT', loadKg: 62.51, reps: 6, on: '2026-09-28T17:00:00Z' },
+        { kind: 'REPS_AT', loadKg: 62.5, reps: 6, on: '2026-09-21T17:00:00Z' },
+      ],
+    ),
   };
   await show();
   expect(await screen.findAllByText('Most reps at 140 lb · 6')).toHaveLength(1);
@@ -190,7 +219,7 @@ test("the exercises unread (offline, nothing kept): the screen says it couldn't 
 });
 
 test('a read that throws is reported by its name only, and the screen stays', async () => {
-  mockServices.training.history.mockImplementation(async () => {
+  mockServices.training.moveHistory.mockImplementation(async () => {
     throw Object.assign(new Error('disk'), { name: 'StoreFailed' });
   });
   await show();
@@ -198,7 +227,7 @@ test('a read that throws is reported by its name only, and the screen stays', as
   expect(mockServices.report).toHaveBeenCalledWith({ name: 'StoreFailed' });
 });
 
-test("the phone's own workouts from before the window are not counted: a new phone would not show them", async () => {
+test("a set the server already has counts from the server's records, not again from the phone's copy", async () => {
   mockRecords = [
     {
       seq: 1,
@@ -230,7 +259,7 @@ test("the phone's own workouts from before the window are not counted: a new pho
 test("a set's note and the session's note are shown with them", async () => {
   mockHistory = {
     state: 'ready',
-    value: [
+    value: page([
       {
         id: 'a',
         clientId: 'w1',
@@ -238,7 +267,7 @@ test("a set's note and the session's note are shown with them", async () => {
         note: 'Slept 5 hours',
         sets: [{ ...set('s1', 'bench_press', 80, 8, 1), note: 'grip slipped' }],
       },
-    ],
+    ]),
   };
   await show();
   expect(await screen.findByText('Slept 5 hours')).toBeTruthy();
@@ -260,14 +289,14 @@ describe('editing a past session (K-416)', () => {
   });
 
   test('a session still under way has no edit: it is edited in the session itself (review)', async () => {
-    mockHistory = { state: 'ready', value: [WORKOUTS[0], { ...WORKOUTS[1], endedAt: undefined }] };
+    mockHistory = { state: 'ready', value: page([WORKOUTS[0], { ...WORKOUTS[1], endedAt: undefined }], BENCH) };
     await show();
     await screen.findAllByText(/^Sep (21|28)$/);
     expect(screen.queryByRole('button', { name: t('sessionEdit.openSpoken', { day: 'Sep 28' }) })).toBeNull();
   });
 
   test('a session only on the phone (not sent yet) has no edit: the server does not have it', async () => {
-    mockHistory = { state: 'ready', value: [] };
+    mockHistory = { state: 'ready', value: page([]) };
     mockRecords = [
       {
         seq: 1,
@@ -300,9 +329,9 @@ describe('editing a past session (K-416)', () => {
   test('coming back to the screen reads the history again, so an edit shows at once', async () => {
     await show();
     await screen.findAllByText(/^Sep (21|28)$/);
-    const reads = mockServices.training.history.mock.calls.length;
+    const reads = mockServices.training.moveHistory.mock.calls.length;
     await act(async () => mockFocus?.());
-    expect(mockServices.training.history.mock.calls.length).toBeGreaterThan(reads);
+    expect(mockServices.training.moveHistory.mock.calls.length).toBeGreaterThan(reads);
   });
 });
 
@@ -311,10 +340,78 @@ test("the user's own move's history under the name they gave", async () => {
   mockParams = { exercise: 'custom:1' };
   mockHistory = {
     state: 'ready',
-    value: [{ id: 'c', clientId: 'w5', startedAt: '2026-09-29T17:00:00Z', endedAt: '2026-09-29T18:00:00Z', sets: [set('s9', 'custom:1', 30, 10, 1)] }],
+    value: page([{ id: 'c', clientId: 'w5', startedAt: '2026-09-29T17:00:00Z', endedAt: '2026-09-29T18:00:00Z', sets: [set('s9', 'custom:1', 30, 10, 1)] }]),
   };
   await show();
   expect(await screen.findByText('Landmine press')).toBeOnTheScreen();
   expect(screen.getByText('30 kg × 10 · 1 rep left')).toBeOnTheScreen();
   expect(screen.queryByText(t('history.loadFailed'))).toBeNull();
+});
+
+describe('the whole log, a page at a time, with no limit in time (K-1266, ADR-096: free)', () => {
+  const scrolledToEnd = { nativeEvent: { layoutMeasurement: { height: 800 }, contentOffset: { y: 1200 }, contentSize: { height: 2000 } } };
+
+  test("a record of long ago is the server's, kept whatever the year: Heaviest from two years back", async () => {
+    mockHistory = { state: 'ready', value: page(WORKOUTS, [{ kind: 'HEAVIEST', loadKg: 110, reps: 3, on: '2024-10-01T17:00:00Z' }, ...BENCH.slice(1)]) };
+    await show();
+    expect(await screen.findByText('Heaviest · 110 kg × 3')).toBeOnTheScreen();
+    expect(screen.getByText('Oct 1')).toBeOnTheScreen();
+  });
+
+  test('nearing the end of the list asks for the older page by its cursor and shows a session from more than a year back', async () => {
+    mockHistory = { state: 'ready', value: page(WORKOUTS, BENCH, 'a') };
+    mockOlder = {
+      a: {
+        state: 'ready',
+        value: page([{ id: 'z', clientId: 'w0', startedAt: '2025-02-03T17:00:00Z', endedAt: '2025-02-03T18:00:00Z', sets: [set('s0', 'bench_press', 60, 12, 2)] }]),
+      },
+    };
+    await show();
+    await screen.findAllByText(/^Sep (21|28)$/);
+    expect(screen.queryByText('Feb 3')).toBeNull();
+    await act(async () => fireEvent.scroll(screen.getByTestId('history-list'), scrolledToEnd));
+    expect(mockServices.training.moveHistory).toHaveBeenCalledWith(mockServices.api, 'bench_press', 'a');
+    expect(await screen.findByText('Feb 3')).toBeOnTheScreen();
+    expect(screen.getByText('60 kg × 12 · 2 reps left')).toBeOnTheScreen();
+    // The last page has no cursor: nothing more is asked.
+    const asked = mockServices.training.moveHistory.mock.calls.length;
+    await act(async () => fireEvent.scroll(screen.getByTestId('history-list'), scrolledToEnd));
+    expect(mockServices.training.moveHistory.mock.calls.length).toBe(asked);
+  });
+
+  test("the phone's own workout older than the pages read waits for its page, in its place", async () => {
+    mockHistory = { state: 'ready', value: page(WORKOUTS, BENCH, 'a') };
+    mockOlder = { a: { state: 'ready', value: page([]) } };
+    mockRecords = [
+      { seq: 1, clientId: 'w0', kind: 'workout', parentClientId: null, body: { clientId: 'w0', startedAt: '2025-01-06T17:00:00Z' }, state: 'PENDING', serverId: null, serverBody: null, errorCode: null },
+      { seq: 2, clientId: 's0', kind: 'set', parentClientId: 'w0', body: { clientId: 's0', exerciseId: 'bench_press', setType: 'WORKING', loadKg: 50, reps: 15, rir: 2 }, state: 'PENDING', serverId: null, serverBody: null, errorCode: null },
+    ];
+    await show();
+    await screen.findAllByText(/^Sep (21|28)$/);
+    // Its set counts toward the records at once; its session waits for its page.
+    expect(screen.queryByText('50 kg × 15 · 2 reps left')).toBeNull();
+    await act(async () => fireEvent.scroll(screen.getByTestId('history-list'), scrolledToEnd));
+    expect(await screen.findByText('50 kg × 15 · 2 reps left')).toBeOnTheScreen();
+  });
+
+  test('an older page that fails is not asked again on every scroll, only once the list leaves its end and comes back', async () => {
+    mockHistory = { state: 'ready', value: page(WORKOUTS, BENCH, 'a') };
+    await show();
+    await screen.findAllByText(/^Sep (21|28)$/);
+    const list = screen.getByTestId('history-list');
+    await act(async () => fireEvent.scroll(list, scrolledToEnd));
+    await act(async () => fireEvent.scroll(list, scrolledToEnd));
+    const older = () => mockServices.training.moveHistory.mock.calls.filter((call) => call[2] === 'a').length;
+    expect(older()).toBe(1);
+    await act(async () => fireEvent.scroll(list, { nativeEvent: { layoutMeasurement: { height: 800 }, contentOffset: { y: 0 }, contentSize: { height: 2000 } } }));
+    await act(async () => fireEvent.scroll(list, scrolledToEnd));
+    expect(older()).toBe(2);
+  });
+
+  test('without a subscription it is all there: the subscription is not read', async () => {
+    await show();
+    await screen.findByText('Heaviest · 85 kg × 4');
+    expect(JSON.stringify(mockServices.training.moveHistory.mock.calls)).not.toContain('subscription');
+    expect(mockServices.api).toEqual({});
+  });
 });

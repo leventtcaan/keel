@@ -7,13 +7,13 @@
  */
 import type { ApiClient } from '@/api/client';
 import type { components } from '@/api/schema';
-import { type Loaded, load, localDay } from '@/today/today';
+import { type Loaded, load } from '@/today/today';
 import type { GymWeights } from '@/train/loadSteps';
-import { workoutParams } from '@/train/params';
 import { programChanged } from '@/train/programChanges';
 import type { KeyValue } from '@/units/preference';
 
 type Schemas = components['schemas'];
+type MoveHistory = Schemas['MoveHistory'];
 
 /**
  * A move as the session, the summary and the history read it: the catalog's, or the user's own (K-416, ADR-035) with
@@ -68,11 +68,6 @@ function gymInUse(read: Loaded<Schemas['Gym'][]>): Loaded<GymWeights> {
 
 export type TrainingCache = ReturnType<typeof createTrainingCache>;
 
-/** The first day of a move's history: history_days days, today included (ADR-033). */
-export function historyFrom(now: Date): string {
-  return localDay(new Date(now.getFullYear(), now.getMonth(), now.getDate() - (workoutParams.historyDays - 1)));
-}
-
 /**
  * The reads and the kept copies. A sign-out bumps the generation: a read still on its way then keeps nothing — the
  * program it brings is the last account's (the same guard as the unit preference's, K-310).
@@ -99,6 +94,19 @@ export function createTrainingCache(kv: KeyValue, onProgram?: (program: Schemas[
       return { read: { state: 'ready', value: JSON.parse(copy) as T }, kept: true };
     } catch {
       return { read, kept: false }; // a copy that cannot be read is no copy
+    }
+  }
+
+  /** Every move's kept first page of history, by move id; a copy that cannot be read is none. */
+  async function histories(): Promise<Record<string, MoveHistory>> {
+    const copy = await kv.getItemAsync(HISTORY);
+    if (copy === null) return {};
+    try {
+      const kept: unknown = JSON.parse(copy);
+      // Before K-1266 the key held a year of workouts (an array): that copy is none.
+      return typeof kept === 'object' && kept !== null && !Array.isArray(kept) ? (kept as Record<string, MoveHistory>) : {};
+    } catch {
+      return {};
     }
   }
 
@@ -147,12 +155,26 @@ export function createTrainingCache(kv: KeyValue, onProgram?: (program: Schemas[
         kept: program.kept || exercises.kept,
       };
     },
-    /** The workouts behind a move's history (K-415, ADR-033). */
-    async history(api: ApiClient, now: Date): Promise<Loaded<Schemas['Workout'][]>> {
+    /**
+     * A move's history (K-1266, K-1259): a page of the server's sessions that have it, newest first, with no limit in time, and
+     * its records of all time. The first page is kept for the move (offline it answers from the copy); an older page, asked by
+     * the cursor `before`, is not.
+     */
+    async moveHistory(api: ApiClient, exerciseId: string, before?: string): Promise<{ read: Loaded<MoveHistory>; kept: boolean }> {
       const startedIn = generation;
-      const [from, to] = [historyFrom(now), localDay(now)];
-      const read = await load(() => api.GET('/v1/workouts', { params: { query: { from, to } } }));
-      return (await withCopy(HISTORY, read, startedIn)).read;
+      const read = await load(() =>
+        api.GET('/v1/exercises/{exerciseId}/history', { params: { path: { exerciseId }, query: before === undefined ? {} : { before } } }),
+      );
+      if (before !== undefined) return { read, kept: false };
+      const all = await histories();
+      if (read.state === 'ready' || read.state === 'none') {
+        if (startedIn !== generation) return { read, kept: false };
+        const { [exerciseId]: _, ...others } = all;
+        await kv.setItemAsync(HISTORY, JSON.stringify(read.state === 'ready' ? { ...others, [exerciseId]: read.value } : others));
+        return { read, kept: false };
+      }
+      const copy = read.state === 'failed' ? all[exerciseId] : undefined;
+      return copy === undefined ? { read, kept: false } : { read: { state: 'ready', value: copy }, kept: true };
     },
     /** The user's own moves (K-416), kept for offline like the catalog; none when unread and nothing kept. */
     async own(api: ApiClient): Promise<Move[]> {

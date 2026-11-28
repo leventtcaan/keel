@@ -1,6 +1,6 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useRef, useState } from 'react';
+import { type NativeScrollEvent, type NativeSyntheticEvent, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { components } from '@/api/schema';
@@ -13,13 +13,14 @@ import type { LocalRecord } from '@/sync/store';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { type Loaded, localDay } from '@/today/today';
-import { type PersonalRecord, type Session, historyOf, recordsOf, sessionsOf } from '@/train/history';
+import { type PersonalRecord, type Session, historyOf, joinRecords, recordsOf, serverRecords, sessionsOf, unsent } from '@/train/history';
 import { exerciseName, shortDate } from '@/train/program';
 import { setLeftText, setText } from '@/train/session';
-import { type Move, type TrainData, historyFrom, movesOf } from '@/train/trainData';
+import { type Move, type TrainData, movesOf } from '@/train/trainData';
 import { type UnitSystem, formatLoad, loadValue } from '@/units/units';
 
 type Schemas = components['schemas'];
+type MoveHistory = Schemas['MoveHistory'];
 
 /** A session's day on the phone's calendar, as "Sep 28". */
 const dayOf = (startedAt: string) => shortDate(localDay(new Date(startedAt)));
@@ -38,32 +39,81 @@ function recordText(record: PersonalRecord, move: Schemas['Exercise'], units: Un
 }
 
 /**
- * A move's history (K-415, ADR-033): its records, then every session that has it, newest first, each set as it was done.
- * The server's list (kept on the phone) joined with what the phone has not sent; without either, the phone's own.
+ * A move's history (K-415, ADR-033; K-1266): its records of all time, then every session that has it, newest first, each set as it
+ * was done. The server's pages (the first kept on the phone), an older page as the list nears its end, joined with what the phone has
+ * not sent; without either, the phone's own.
  */
 export default function ExerciseHistoryScreen() {
   const { api, training, workoutRecords, report } = useAppServices();
   const { exercise } = useLocalSearchParams<{ exercise: string }>();
   const units = useUnits();
   const { color } = useTheme();
-  const [read, setRead] = useState<{ data: TrainData; own: Move[]; history: Loaded<Schemas['Workout'][]>; records: LocalRecord[]; from: string } | null>(null);
+  const [read, setRead] = useState<{ data: TrainData; own: Move[]; first: Loaded<MoveHistory>; records: LocalRecord[] } | null>(null);
+  // The older pages read since the first, and the cursor of the next one (none: the list is whole).
+  const [older, setOlder] = useState<{ sessions: Schemas['Workout'][]; next: string | undefined }>({ sessions: [], next: undefined });
+  // The older page on its way (one at a time), the cursor it follows, and whether the last one failed: asked again only once the list
+  // leaves its end and comes back. `era` ties a request to the read that began it: a refocus or another move drops what comes late.
+  const reading = useRef(false);
+  const cursor = useRef<string | undefined>(undefined);
+  const failed = useRef(false);
+  const era = useRef(0);
 
   // Read whenever the screen comes into view: coming back from editing a session (K-416) shows the edit at once.
   useFocusEffect(
     useCallback(() => {
-      const now = new Date();
-      void Promise.all([training.read(api), training.own(api), training.history(api, now), workoutRecords()])
-        .then(([data, own, history, records]) => setRead({ data, own, history, records, from: historyFrom(now) }))
+      const mine = ++era.current;
+      [reading.current, cursor.current, failed.current] = [false, undefined, false];
+      setOlder({ sessions: [], next: undefined });
+      void Promise.all([training.read(api), training.own(api), training.moveHistory(api, exercise), workoutRecords()])
+        .then(([data, own, history, records]) => {
+          if (mine !== era.current) return;
+          const next = history.read.state === 'ready' ? history.read.value.next : undefined;
+          cursor.current = next;
+          setRead({ data, own, first: history.read, records });
+          setOlder({ sessions: [], next });
+        })
         .catch((error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' }));
-    }, [api, training, workoutRecords, report]),
+    }, [api, training, exercise, workoutRecords, report]),
   );
+
+  const more = useCallback(() => {
+    const before = cursor.current;
+    if (before === undefined || reading.current || failed.current) return;
+    const mine = era.current;
+    reading.current = true;
+    void training
+      .moveHistory(api, exercise, before)
+      .then(({ read: page }) => {
+        if (mine !== era.current) return;
+        if (page.state !== 'ready') {
+          failed.current = true;
+          return;
+        }
+        cursor.current = page.value.next;
+        setOlder((was) => ({ sessions: [...was.sessions, ...page.value.sessions], next: page.value.next }));
+      })
+      .catch((error: unknown) => report({ name: error instanceof Error ? error.name : 'Unknown' }))
+      .finally(() => {
+        if (mine === era.current) reading.current = false;
+      });
+  }, [api, training, exercise, report]);
 
   const moves = movesOf(read?.data ?? null, read?.own ?? []);
   const move = read === null ? undefined : moves.get(exercise);
-  const server = read?.history.state === 'ready' ? read.history.value : null;
+  const page = read?.first.state === 'ready' ? read.first.value : null;
+  const server = page === null ? null : [...page.sessions, ...older.sessions];
+  // While older pages remain, the phone's own from before the last session shown wait for their page: each workout once, in its place.
+  const oldest = server?.at(-1);
+  const from = oldest !== undefined && older.next !== undefined ? localDay(new Date(oldest.startedAt)) : '';
   // Without the catalog the move's sets cannot be written (its load model): no history rather than an empty one.
-  const sessions = read === null || move === undefined ? [] : historyOf(sessionsOf(server, read.records, read.from), exercise);
-  const records = move === undefined ? [] : recordsOf(move, sessions, (kg) => loadValue(kg, units));
+  const sessions = read === null || move === undefined ? [] : historyOf(sessionsOf(server, read.records, from), exercise);
+  const shown = (kg: number) => loadValue(kg, units);
+  const mine = read === null || move === undefined ? [] : recordsOf(move, historyOf(sessionsOf(null, unsent(read.records)), exercise), shown);
+  const records = move === undefined ? [] : page === null ? mine : joinRecords(serverRecords(page.records), mine, shown);
+  const nearEnd = ({ nativeEvent: e }: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (e.layoutMeasurement.height + e.contentOffset.y >= e.contentSize.height - e.layoutMeasurement.height) more();
+    else failed.current = false;
+  };
 
   const phoneOnly = read !== null && server === null ? <Text style={[styles.small, { color: color.muted }]}>{t('history.phoneOnly')}</Text> : null;
   const unread =
@@ -126,7 +176,7 @@ export default function ExerciseHistoryScreen() {
 
   return (
     <SafeAreaView testID="screen" style={[styles.safe, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
-      <ScrollView contentContainerStyle={styles.body}>
+      <ScrollView testID="history-list" contentContainerStyle={styles.body} onScroll={nearEnd} scrollEventThrottle={16}>
         <ScreenTitle>{exerciseName(exercise, moves)}</ScreenTitle>
         {phoneOnly}
         {recordCard}
