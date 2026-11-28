@@ -146,6 +146,7 @@ ikinci tam karar 403/okuma/uygulanmama, abone olunca açılma; veritabanı, CI),
 1. **Kapı kalkar.** `subscription/gate.ts` hiç abone olmamış hesabı artık kapatmaz (`required` üretilmez); onboarding sonrası sekmeler açılır.
    **Yumuşak teklif (ADR-072 #7):** onboarding biter bitmez kapatılabilir `/paywall` bir kez, kullanıcının az önce gördüğü plan önizlemesiyle açılır
    (`planPreviews.takeOffer`, yalnız bellekte); Kapat → sekmeler; kendiliğinden bir daha açılmaz, yeni açılışta hiç açılmaz.
+   *(YERİNİ ALDI → Ek 7 #1, 28 Kas 2026: kendiliğinden teklif yok, deneme ilk kilitli kararda.)*
    Gate yalnız "hesabın aboneliği ne" sorusunu sorar (deneme hatırlatması okur, K-707). Kök yerleşimde `subscribe` ekranı emekli grupta;
    `/paywall` sıradan, kapatılabilir ekran, deneme teklifi aynı.
 2. **Başlık tek yerde:** `api/client.ts` her isteğe `X-Keel-Features: locked-calls` koyar (fetch sarmalayıcısında; 401 sonrası yeniden denemede de).
@@ -168,7 +169,7 @@ Hukuk sitesi `terms.md` "Coaching needs a subscription" diyor; ücretsiz katmanl
 - Ücretsiz katmanda ilk tam haftalık karardan sonraki kararlar saklanır ama plana **uygulanmaz** (plan donar); abone olunca yalnız bu haftanın kararı açılır ve uygulanır (Ek 1). **KABUL.**
 - Yükü azaltan kararlar (deload, tam dinlenme, yük artışını durdur, toparlanmayı düzelt) ücretsizde de açık, kilitlenmez ve ücretsiz hakkı harcamaz (#1'deki "deload ücretli" ifadesinin yerine). **KABUL.**
 - `legacy_clients_unlocked_until: "2027-01-15"`. **KABUL.**
-- Onboarding sonunda kullanıcının kendi plan önizlemesiyle kapatılabilir teklif bir kez (ADR-072 #7 yumuşak hâli); ana ekran sözcük bütçesi 68 → 70. **KABUL.**
+- Onboarding sonunda kullanıcının kendi plan önizlemesiyle kapatılabilir teklif bir kez (ADR-072 #7 yumuşak hâli); ana ekran sözcük bütçesi 68 → 70. **KABUL.** *(Teklif kısmı YERİNİ ALDI → Ek 7 #1.)*
 - Agent kararı (bilgi için): dışa aktarma kilitli kararları da içerir (kullanıcının kendi verisine erişim hakkı). Bekleyen: `terms.md` taslağı (`plan/evre-8-terms-taslak.diff`) 1.0.1 gönderiminde (K-1209) Levent'e.
 
 ## Ek 4 · Motor kararları (Levent, 2026-11-24; öneri `plan/evre-8-motor-onerisi.md`)
@@ -195,3 +196,62 @@ Hukuk sitesi `terms.md` "Coaching needs a subscription" diyor; ücretsiz katmanl
   olamaz. Ham ızgaralar depoya girmez (`~/Documents/keel-media/loops/`).
 - **Uygulamada:** `expo-video` (SDK 57 listesinde ~57.0.5, 25 Kas doğrulandı), sessiz döngü, durdur/oynat düğmesi (WCAG 2.2.2: 5 sn'den
   uzun hareket durdurulabilmeli), Hareketi Azalt açıkken yalnız görsel.
+
+## Ek 7 · Deneme ilk kilitli kararda başlar (Levent, 28 Kas 2026; K-1255, #827)
+- **Durum:** KABUL (para kararı Levent'in, 28 Kas sohbet: seçenek A; teknik ayrıntı agent, ADR-019) · **Tarih:** 2026-11-28
+
+### Bağlam
+Karar penceresi erkekte 21, kadında 28 gün (`data/parameters/windows.yaml › decision_window_days`), deneme 14 gün (ADR-071 #1), ilk tam karar
+ücretsiz (`quota.yaml › free_full_calls: 1`). Deneme bugün onboarding'in sonunda teklif ediliyor (Ek 2 #1, ADR-072 #7): orada başlayan deneme
+ilk tam karar gelmeden biter, ilk ücretli karar 4-5. haftaya düşer. Kişi ücretli hiçbir şey görmeden ödemeye başlar (iade ve şikâyet riski,
+dönüşüm kaybı). Bulgu 28 Kas dış göz raporunda (Codex + agy, ayrı ayrı), Opus repo dosyalarıyla doğruladı.
+
+### Karar
+Deneme, satılan şeyin ilk göründüğü anda teklif edilir: **ilk kilitli karar**. Onboarding sonunda kendiliğinden teklif yok.
+1. **Onboarding sonu sakin:** kendiliğinden açılan paywall (`?offer=1`, `planPreviews.takeOffer`, `FirstOffer`) kalkar; plan ekranından sonra
+   sekmeler açılır. Paywall bir daha kendiliğinden açılmaz (Ek 2 #1'in "kendiliğinden bir daha açılmaz" çizgisi şimdi ilk kez için de geçerli).
+   **Kişinin planı (YourPlanCard, ADR-094 Ek 8 #2) kaybolmaz:** aynı açılışta paywall nereden açılırsa açılsın (Ayarlar, bir özellik) kahraman
+   o plandır; yalnız kilitli karardan açılınca kahraman "Kararın hazır" olur.
+2. **Kilitli karar kartı denemeyi söyler** (`LockedCallView`, Bu hafta ve karar ekranı aynı blok): mağaza bu kişiye deneme veriyorsa
+   (`purchases.plans()` › varsayılan seçili planın `trial`'ı, paywall'ın açılışta gösterdiği plan) satır "Ücretsiz deneme onu hemen açar",
+   düğme "2 hafta ücretsiz dene" (süre mağazanın). Okunamazsa, mağaza yoksa, yasal adresler eksikse ya da kişi denemesini kullanmışsa bugünkü
+   satır ve "Planları gör" kalır. Düğme yine paywall'ı haftasıyla açar: satın alma, fiyat ve şartlar yalnız paywall'da (Apple 3.1.2).
+3. **Paywall takviminin ilk satırı** kilitli karardan açılıp sunucu kararı doğrulayınca: denemeyle "Kararın açılır. Ücret yok.", denemesiz
+   "Kararın açılır. {fiyat}, bugün alınır." Hatırlatma (K-707, `trial_reminder_days_before`) ve ücret günü satırları aynen.
+4. **Satın alınca:** ADR-057 D2 döngüsü sunucuda aboneliği görünce o haftanın kararı bir kez daha okunur (okuma `releaseHeld`'i tetikler,
+   Ek 1 › Abone olunca); **yalnız sunucu kararı kilitsiz ve aynı haftayla döndürürse** "{tarih} haftasının kararı açıldı" + "Kararını gör"
+   (ekranı kapatır). Dönmezse yalnız abonelik satırı (iddia yok, U1). Karar ekranı kilitli kararı odakta yeniden okur, kapanınca açılmış hâli gelir.
+5. **Yan düzeltme:** abonelik onayı "Koç ve öğün okuma açık" demez, koç kapalıyken (`coachAvailable()`, Ek 2 #6 ile aynı kural).
+
+### Neden
+Deneme satılan şeyi (ikinci ve sonraki tam karar) en az bir kez göstermeli; 14 gün, ilk kilitli kararı ve ondan sonraki bir ya da iki kararı
+kapsar (pencere ne olursa olsun karar haftalık gelir, ADR-072 #1). Kilitli kart "Kararın hazır" diyor (K-1253): merak ve sahiplik orada; teklifi
+oraya koymak baskı değil, bilgi (U7: kayıp dili, geri sayım yok). Apple tarafı: kişi bir abonelik grubunda bir kez giriş teklifi alabilir
+[resmî: developer.apple.com/help/app-store-connect/manage-subscriptions/set-up-introductory-offers-for-auto-renewable-subscriptions, 28 Kas okundu:
+"each person is only eligible to redeem one introductory offer per subscription group"]; teklifin ilk satın almada kendiliğinden uygulandığı
+resmî sayfada bulunamadı **[doğrulanmadı]**, uygulama bunu varsaymaz: denemeyi yalnız mağaza "uygun" dediğinde söyler (ADR-057 D3). Yani denemenin
+ne zaman başlayacağını uygulama seçemez, yalnız **teklifin ne zaman yapılacağını** seçer; bu karar o zamanı seçer. Ayarlar'dan erken abone olan
+kişi denemesini o an alır (yasak değil, öne çıkarılmaz).
+
+### Seçilmeyenler
+| Seçenek | Neden değil |
+|---|---|
+| B · deneme 1 ay (Apple sabit süreleri: 3 gün, 1 hafta, 2 hafta, 1 ay…) | Kadında 28 günlük pencereyle yine sınırda; ücretsiz süre uzar, ilk tam karar zaten ücretsiz |
+| C · olduğu gibi | Deneme ilk tam karardan önce biter; kişi ücretli bir şey görmeden öder |
+| (a) içinde: onboarding sonunda denemeyi anmayan sakin bir plan ekranı | Plan ekranı (`ob-plan`) planı az önce gösterdi; aynı kart ikinci kez bir adım ekler, satın alma olmadan bir şey satmaz. Denemeyi gizleyen ama satın almaya izin veren ekran ise olamaz: uygun kişide deneme yine başlar ve 3.1.2 şartları söylenmemiş olur |
+| Kilitli kartta doğrudan satın alma | Fiyat ve yenileme şartı satın almadan önce görünmeli (Apple 3.1.2, "In the purchase flow for a free trial, clearly indicate how long the free trial lasts and the price billed once the free trial is over", developer.apple.com/app-store/subscriptions, 28 Kas) |
+
+### Sonuçlar
+Olumlu: kişi ödemeye başlamadan en az bir ücretli kararı görür; deneme ilk kilitli kararla birlikte açılır. Olumsuz (kabul): onboarding'den
+hemen sonra abone olacak az sayıda kişi artık teklifi kendiliğinden görmez (Ayarlar'da yol açık); ölçüm yok (analitik yok, dış göz #4).
+Geri dönmenin maliyeti düşük: tek kök bileşen ve kart metni.
+
+### Etkilenen
+Ek 2 #1 (yumuşak teklif) ve Ek 3'ün dördüncü maddesi ("onboarding sonunda kapatılabilir teklif bir kez") **YERİNİ ALDI → Ek 7 #1**; ADR-072 #7
+(paywall'ın onboarding sonundaki yeri) aynı. Kod: `app/_layout.tsx`, `app/paywall.tsx`, `subscription/planPreview.ts`, `subscription/paywall.ts`,
+`subscription/words.ts`, `subscription/PaywallView.tsx`, `today/LockedCallView.tsx`, `app/call.tsx`; `data/copy/en.json`, `tr.json`, `word-budgets.json`.
+
+### Doğrulama
+`navigation.test.tsx` (onboarding sonrası sekmeler, paywall kendiliğinden yok), `locked-call-trial.test.tsx` (kart: deneme okununca süreyle,
+okunamazsa "Planları gör"), `paywall-timeline.test.ts` (ilk satır), `paywall-warm-notebook.test.tsx` (plan kahramanı aynı açılışta; satın alınca
+yalnız sunucu açık dönerse "açıldı"), `call-screen.test.tsx` (odakta yeniden okuma), kopya ve bütçe testleri; simülatörde önce/sonra fotosu.

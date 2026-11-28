@@ -40,6 +40,7 @@ okumuyor. Profilde deneyim alanı yok (`contracts/openapi.yaml` Profile). Health
 7. **Paywall:** sert (ADR-058), **2 hafta deneme** (ADR-071 #1) ve zaman çizelgesi: bugün ücret yok · ilk karar tarihi · hatırlatma (isteğe
    bağlı, `trial_reminder_days_before`) · ücret günü. Plan önizlemesi, üç değer satırı, yıllık/aylık. Restore, Terms, Privacy, Account
    (5.1.1(v)) yerinde.
+   *(28 Kas 2026: onboarding sonundaki teklif kalktı, deneme ilk kilitli kararda teklif edilir → ADR-091 Ek 7.)*
 8. **Apple Health izni anında** (ADR-018 Ek 1): ilk tartıda ya da ilk antrenmanda bir kez (`health-jit`), "Not now" serbest. Onboarding'in
    photos, foods, expectations ve apple-health ekranları iner (ADR-069 #3); yiyecek kısıtı Ayarlar'da.
 9. **Kelime hedefleri** (prototipte ölçüldü): soru ekranları ≤25-30, plan ≤55, paywall ≤70 (yasal satırlar sayılmaz).

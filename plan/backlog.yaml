@@ -6481,6 +6481,25 @@ tasks:
     tests: ["jest", "simülatör"]
     refs: ["plan/kararlar/ADR-095-puan-isteme.md", "arastirma/ham/puan-isteme-2026-11-28.md"]
 
+  - id: K-1255
+    title: "Deneme ilk kilitli kararda başlar: onboarding sonunda teklif yok, kilitli kart denemeyi söyler"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: S
+    status: doing
+    depends_on: [K-1253]
+    why: "Levent 28 Kas, seçenek A: karar penceresi 21/28 gün, deneme 14 gün; onboarding'de başlayan deneme ilk tam karardan önce biter, kişi ücretli hiçbir şey görmeden öder (dış göz raporu bulgu 1, doğrulandı)"
+    acceptance:
+      - "Onboarding sonrası paywall kendiliğinden açılmaz; kişinin planı (YourPlanCard) aynı açılışta paywall'ın kahramanı kalır"
+      - "Kilitli karar kartı (Bu hafta, karar ekranı) mağaza denemeye uygun diyorsa denemeyi süresiyle söyler; okunamazsa 'Planları gör' kalır"
+      - "Kilitli karardan açılan paywall'da takvimin ilk satırı kararın bugün açıldığını söyler"
+      - "Satın alma ya da geri yükleme sonrası 'kararın açıldı' yalnız sunucu kararı kilitsiz döndürünce (ADR-057 D2)"
+      - "Deneme hatırlatması (K-707) ve Apple 3.1.2 metinleri aynen; yeni metin en.json + tr.json, kelime bütçesi içinde"
+      - "Simülatörde önce/sonra Levent'e; K1 varsa birleştirmeden önce Levent'e"
+    tests: ["jest", "simülatör"]
+    refs: ["plan/kararlar/ADR-091-evre-8-kararlari.md", "plan/kararlar/ADR-057-paywall-telefonda.md", "plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md"]
+
   - id: K-1248
     title: "Türk yemeklerinin porsiyon adı Türkçe, ev ölçüsü kuralı pilav/kuru baklagil yemeklerini tanır, su böreği sıvı sayılmaz"
     milestone: M12
