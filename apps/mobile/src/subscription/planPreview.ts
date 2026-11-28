@@ -2,9 +2,11 @@
  * The plan just shown at the end of onboarding (#ob-plan), for a paywall opened later in the same run (ADR-091 Ek 7 #1: none
  * opens by itself): its preview and the first call on its timeline, and the paywall's own-plan card (K-1058: where the food
  * starts, the first workout). Kept in memory only, for this run of the app: the paywall met after the app opened again shows
- * its plans and timeline without them. It belongs to the account: a sign-out forgets it.
+ * its plans and timeline without them. Kept for the rest of the day it was shown only: on a later day its "today" workout and its
+ * first call date would be stale. It belongs to the account: a sign-out forgets it.
  */
 import type { components } from '@/api/schema';
+import { localDay } from '@/today/today';
 
 type Weekday = components['schemas']['Weekday'];
 
@@ -33,13 +35,13 @@ export type PlanPreview = {
 
 export type PlanPreviews = ReturnType<typeof createPlanPreviews>;
 
-export function createPlanPreviews() {
-  let kept: PlanPreview | null = null;
+export function createPlanPreviews(now: () => Date = () => new Date()) {
+  let kept: { preview: PlanPreview; day: string } | null = null;
   return {
     keep: (preview: PlanPreview) => {
-      kept = preview;
+      kept = { preview, day: localDay(now()) };
     },
-    current: (): PlanPreview | null => kept,
+    current: (): PlanPreview | null => (kept !== null && kept.day === localDay(now()) ? kept.preview : null),
     forget: () => {
       kept = null;
     },

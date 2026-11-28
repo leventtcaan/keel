@@ -210,12 +210,13 @@ dönüşüm kaybı). Bulgu 28 Kas dış göz raporunda (Codex + agy, ayrı ayrı
 Deneme, satılan şeyin ilk göründüğü anda teklif edilir: **ilk kilitli karar**. Onboarding sonunda kendiliğinden teklif yok.
 1. **Onboarding sonu sakin:** kendiliğinden açılan paywall (`?offer=1`, `planPreviews.takeOffer`, `FirstOffer`) kalkar; plan ekranından sonra
    sekmeler açılır. Paywall bir daha kendiliğinden açılmaz (Ek 2 #1'in "kendiliğinden bir daha açılmaz" çizgisi şimdi ilk kez için de geçerli).
-   **Kişinin planı (YourPlanCard, ADR-094 Ek 8 #2) kaybolmaz:** aynı açılışta paywall nereden açılırsa açılsın (Ayarlar, bir özellik) kahraman
-   o plandır; yalnız kilitli karardan açılınca kahraman "Kararın hazır" olur.
+   **Kişinin planı (YourPlanCard, ADR-094 Ek 8 #2) kaybolmaz:** aynı açılışta ve aynı gün paywall nereden açılırsa açılsın (Ayarlar, bir özellik)
+   kahraman o plandır (ertesi gün planın "bugün" antrenmanı ve ilk karar tarihi bayatlar, plan bırakılır); yalnız sunucu kilitli kararı doğrulayınca
+   kahraman "Kararın hazır" olur, doğrulanmayan bir `?week=` planı silmez.
 2. **Kilitli karar kartı denemeyi söyler** (`LockedCallView`, Bu hafta ve karar ekranı aynı blok): mağaza bu kişiye deneme veriyorsa
    (`purchases.plans()` › varsayılan seçili planın `trial`'ı, paywall'ın açılışta gösterdiği plan) satır "Ücretsiz deneme onu hemen açar",
    düğme "2 hafta ücretsiz dene" (süre mağazanın). Okunamazsa, mağaza yoksa, yasal adresler eksikse ya da kişi denemesini kullanmışsa bugünkü
-   satır ve "Planları gör" kalır. Düğme yine paywall'ı haftasıyla açar: satın alma, fiyat ve şartlar yalnız paywall'da (Apple 3.1.2).
+   satır ve "Planları gör" kalır. Ekran her odağa geldiğinde yeniden sorulur (arada kullanılmış deneme vaat edilmez). Düğme yine paywall'ı haftasıyla açar: satın alma, fiyat ve şartlar yalnız paywall'da (Apple 3.1.2).
 3. **Paywall takviminin ilk satırı** kilitli karardan açılıp sunucu kararı doğrulayınca: denemeyle "Kararın açılır. Ücret yok.", denemesiz
    "Kararın açılır. {fiyat}, bugün alınır." Hatırlatma (K-707, `trial_reminder_days_before`) ve ücret günü satırları aynen.
 4. **Satın alınca:** ADR-057 D2 döngüsü sunucuda aboneliği görünce o haftanın kararı bir kez daha okunur (okuma `releaseHeld`'i tetikler,
@@ -251,6 +252,6 @@ Ek 2 #1 (yumuşak teklif) ve Ek 3'ün dördüncü maddesi ("onboarding sonunda k
 `subscription/words.ts`, `subscription/PaywallView.tsx`, `today/LockedCallView.tsx`, `app/call.tsx`; `data/copy/en.json`, `tr.json`, `word-budgets.json`.
 
 ### Doğrulama
-`navigation.test.tsx` (onboarding sonrası sekmeler, paywall kendiliğinden yok), `locked-call-trial.test.tsx` (kart: deneme okununca süreyle,
+`navigation.test.tsx` (onboarding sonrası sekmeler, paywall kendiliğinden yok), `plan-preview.test.ts` (plan yalnız o gün), `trial-at-locked-call.test.tsx` (kart: deneme okununca süreyle,
 okunamazsa "Planları gör"), `paywall-timeline.test.ts` (ilk satır), `paywall-warm-notebook.test.tsx` (plan kahramanı aynı açılışta; satın alınca
 yalnız sunucu açık dönerse "açıldı"), `call-screen.test.tsx` (odakta yeniden okuma), kopya ve bütçe testleri; simülatörde önce/sonra fotosu.

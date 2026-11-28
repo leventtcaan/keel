@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
 import { Button } from '@/components/Button';
@@ -16,23 +16,26 @@ import { tokens } from '@/theme/tokens';
 import { type LockedCall, weekdayDate } from './today';
 
 /**
- * The free trial this person can still have, as the store says it (ADR-091 Ek 7 #2), asked once the card is shown; none while it
- * is asked and none when it cannot be read: the card then says what it always said, never a trial it cannot promise.
+ * The free trial this person can still have, as the store says it (ADR-091 Ek 7 #2), asked each time the screen comes into
+ * focus (a trial used meanwhile, a first read that failed offline); none while it is first asked and none when it cannot be
+ * read: the card then says what it always said, never a trial the paywall would not offer (Apple 3.1.2).
  */
 function useTrialOnOffer(): Plan['trial'] {
   const { api, purchases } = useAppServices();
   const [trial, setTrial] = useState<Plan['trial']>(null);
-  useEffect(() => {
-    let live = true;
-    void trialOnOffer({ api, store: purchases, links: configuredLegalLinks() })
-      .catch(() => null)
-      .then((found) => {
-        if (live) setTrial(found);
-      });
-    return () => {
-      live = false;
-    };
-  }, [api, purchases]);
+  useFocusEffect(
+    useCallback(() => {
+      let live = true;
+      void trialOnOffer({ api, store: purchases, links: configuredLegalLinks() })
+        .catch(() => null)
+        .then((found) => {
+          if (live) setTrial(found);
+        });
+      return () => {
+        live = false;
+      };
+    }, [api, purchases]),
+  );
   return trial;
 }
 

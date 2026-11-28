@@ -72,7 +72,19 @@ const mockServices = {
   planPreviews: { current: () => mockKept, keep: () => {}, forget: jest.fn() },
 };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useSubscriptionGate: () => 'open', useUnits: () => 'METRIC' }));
-jest.mock('expo-router', () => ({ router: { back: (...a: unknown[]) => mockBack(...a), push: (...a: unknown[]) => mockPush(...a) }, useLocalSearchParams: () => mockParams }));
+let mockRefocus: (() => void)[] = [];
+jest.mock('expo-router', () => {
+  const react = jest.requireActual<typeof import('react')>('react');
+  return {
+    router: { back: (...a: unknown[]) => mockBack(...a), push: (...a: unknown[]) => mockPush(...a) },
+    useLocalSearchParams: () => mockParams,
+    // Run on mount as a focus is; the test runs the latest ones again for the screen coming back into focus.
+    useFocusEffect: (effect: () => void | (() => void)) => {
+      mockRefocus.push(effect as () => void);
+      react.useEffect(effect, [effect]);
+    },
+  };
+});
 jest.mock('@/subscription/paywall', () => ({ ...jest.requireActual('@/subscription/paywall'), wait: async () => {} }));
 jest.mock('@/subscription/links', () => ({
   ...jest.requireActual('@/subscription/links'),
@@ -84,6 +96,7 @@ jest.mock('@/subscription/links', () => ({
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockRefocus = [];
   jest.useFakeTimers({ now: new Date(2026, 10, 28, 12, 0), advanceTimers: true });
   mockParams = {};
   mockSubscription = NONE;
@@ -120,6 +133,15 @@ describe('the locked call says the trial (ADR-091 Ek 7 #2)', () => {
     mockPlans = [{ ...ANNUAL, trial: { count: 1, unit: 'week' } }, MONTHLY];
     await show(<LockedCallView call={LOCKED} />);
     expect(screen.getByRole('button', { name: t('lockedCall.tryFree', { trial: t('subscription.trialSpanOne.week') }) })).toBeOnTheScreen();
+  });
+
+  test('back on the screen, the store is asked again: a trial used meanwhile is no longer promised (Apple 3.1.2)', async () => {
+    await show(<LockedCallView call={LOCKED} />);
+    expect(screen.getByRole('button', { name: TRY })).toBeOnTheScreen();
+    mockPlans = [{ ...ANNUAL, trial: null }, MONTHLY];
+    await act(async () => mockRefocus[mockRefocus.length - 1]());
+    expect(screen.getByRole('button', { name: t('subscription.seePlans') })).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: TRY })).toBeNull();
   });
 
   test.each([
@@ -163,6 +185,25 @@ describe('the paywall opened from the locked call (ADR-091 Ek 7 #3, #4)', () => 
     expect(mockBack).toHaveBeenCalled();
   });
 
+  test('bought, and the server returns another call unlocked: no "open" claim for this one (U1)', async () => {
+    (mockStore.buy as jest.Mock).mockImplementationOnce(async () => {
+      mockSubscription = TRIAL;
+      mockCall = { ...OPEN, id: 'd10' };
+      return 'bought';
+    });
+    await show(<PaywallScreen />);
+    await fireEvent.press(screen.getByRole('button', { name: t('subscription.startTrial', { trial: t('subscription.trial.week', { count: '2' }) }) }));
+    await act(async () => {});
+    expect(await screen.findByText(t('subscription.active'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('subscription.callOpen', { date: weekdayDate(WEEK) }))).toBeNull();
+  });
+
+  test('without a trial: the first line says the call opens and what is charged today', async () => {
+    mockPlans = [{ ...ANNUAL, trial: null }, MONTHLY];
+    await show(<PaywallScreen />);
+    expect(screen.getByText(t('subscription.timeline.callOpensCharged.annual', { price: '$59.99' }))).toBeOnTheScreen();
+  });
+
   test('bought, but the server still returns it locked: no "open" claim, only the subscription', async () => {
     (mockStore.buy as jest.Mock).mockImplementationOnce(async () => {
       mockSubscription = TRIAL;
@@ -180,6 +221,14 @@ describe('the paywall opened from the locked call (ADR-091 Ek 7 #3, #4)', () => 
 describe('right after onboarding (ADR-091 Ek 7 #1)', () => {
   test('the plan just shown is the hero of a paywall opened in the same run, from anywhere but a locked call', async () => {
     mockKept = PLAN;
+    await show(<PaywallScreen />);
+    expect(screen.getByLabelText(t('subscription.yours.label'))).toBeOnTheScreen();
+  });
+
+  test('a link to a week with no call locked for it: the plan just shown, not the example (U1)', async () => {
+    mockKept = PLAN;
+    mockParams = { week: WEEK };
+    mockCall = { ...LOCKED, weekOf: '2026-11-18' };
     await show(<PaywallScreen />);
     expect(screen.getByLabelText(t('subscription.yours.label'))).toBeOnTheScreen();
   });
