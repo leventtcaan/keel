@@ -26,7 +26,14 @@ const TRIAL: Subscription = { active: true, appUserId: ID, status: 'TRIAL', acce
 const PLANS: Plan[] = [{ id: '$rc_annual', period: 'annual', price: '$59.99', amount: 59.99, currency: 'USD', pricePerMonth: '$5.00', trial: { count: 7, unit: 'day' } }];
 
 let mockAnswers: unknown[] = [];
-const mockGET = jest.fn(async () => (mockAnswers.length > 1 ? mockAnswers.shift() : mockAnswers[0]));
+// The coach's AI offer is its own read (K-1268): the server has a model here, and the queue stays the subscription's.
+const mockGET = jest.fn(async (path?: string) =>
+  path === '/v1/consents/ai-offer'
+    ? { data: { provider: 'OpenAI', dataTypes: ['messages'] }, response: new Response(null, { status: 200 }) }
+    : mockAnswers.length > 1
+      ? mockAnswers.shift()
+      : mockAnswers[0],
+);
 let mockGateState: GateState = 'required';
 let mockAnswered = true;
 const mockGate = { refresh: jest.fn(async () => mockAnswered), current: () => mockGateState, subscribe: () => () => {} };

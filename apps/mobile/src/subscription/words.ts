@@ -5,7 +5,7 @@
  */
 import { formatDate } from '@/copy/format';
 import { t } from '@/copy';
-import { aiLoggingAvailable, coachAvailable } from '@/food/aiLogging';
+import { aiLoggingAvailable, coachSold } from '@/food/aiLogging';
 import { RETIRED } from '@/navigation/tabs';
 import { weekdayDate } from '@/today/today';
 
@@ -146,9 +146,10 @@ export function paywallTimeline(
 /**
  * The line once the server sees the subscription (K-1256): the weekly calls, and the coach and meal reading only while their screens
  * are on the surface (`retired`, navigation/tabs RETIRED), as the paywall names them (ADR-091 Ek 2 #6): never a feature that is not there.
+ * The coach also needs the server's model on (`coachOffered`, K-1268).
  */
-export function subscribedLine(retired: readonly string[] = RETIRED): string {
-  const coach = coachAvailable(retired);
+export function subscribedLine(coachOffered: boolean, retired: readonly string[] = RETIRED): string {
+  const coach = coachSold(coachOffered, retired);
   const meals = aiLoggingAvailable(retired);
   return t(`subscription.subscribed.${coach ? (meals ? 'all' : 'coach') : meals ? 'meals' : 'calls'}`);
 }

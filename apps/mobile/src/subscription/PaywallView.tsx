@@ -6,7 +6,7 @@ import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import type { components } from '@/api/schema';
 import { Button } from '@/components/Button';
 import { t } from '@/copy';
-import { coachAvailable } from '@/food/aiLogging';
+import { coachSold, readCoachOffered } from '@/food/aiLogging';
 import { useAppServices } from '@/services/ServicesProvider';
 import { stateWords } from '@/settings/SubscriptionSection';
 import { AccountButton, AccountSheet } from '@/subscription/AccountSheet';
@@ -115,6 +115,20 @@ export function Paywall({ required = false, onActive, preview = null, lockedWeek
     };
   }, [api, openingCall]);
 
+  // The coach is named only while the server's model is on (K-1268): off until it answers, never as a promise.
+  const [coachOffered, setCoachOffered] = useState(false);
+  useEffect(() => {
+    let live = true;
+    void readCoachOffered(api)
+      .catch(() => false)
+      .then((offered) => {
+        if (live) setCoachOffered(offered);
+      });
+    return () => {
+      live = false;
+    };
+  }, [api]);
+
   // A day the plans were on screen asks for no rating (K-1254, ADR-095): money and a rating prompt never meet.
   useEffect(() => {
     void reviewPrompt.notePaywall().catch(() => undefined);
@@ -207,7 +221,7 @@ export function Paywall({ required = false, onActive, preview = null, lockedWeek
     const callIsOpen = readyCall !== null && opened === readyCall.id;
     body = (
       <View style={styles.part}>
-        {text(subscribedLine())}
+        {text(subscribedLine(coachOffered))}
         {callIsOpen && text(t('subscription.callOpen', { date: weekdayDate(readyCall.weekOf) }))}
         {callIsOpen && <Button label={t('subscription.seeCall')} onPress={() => router.back()} />}
         {/* What the server already says of it: the status and the day it renews or ends (as Settings says it). */}
@@ -243,7 +257,7 @@ export function Paywall({ required = false, onActive, preview = null, lockedWeek
     else if (plan !== null && plan.firstCall !== null) hero = <YourPlanCard preview={{ ...plan, firstCall: plan.firstCall }} />;
     else hero = calls ? <WeightExample /> : <ExampleCard />;
     // Concrete lines (ADR-094 Ek 8 #5). With calls: the call every week after the first, on the profile's own day (met later,
-    // with no plan just shown, without a day), and the coach once it is on (aiLogging.ts, never as a promise) or the cardio and
+    // with no plan just shown, without a day), and the coach once the server's model is on (aiLogging.ts › coachSold, K-1268; never as a promise) or the cardio and
     // food that adjust. Without calls (no health data consent): the program, the weights, and the cardio only when the program
     // sets some. Logging, programs and weights are free, so they are not sold here (ADR-091 #1).
     let values: ValueRow[];
@@ -253,7 +267,7 @@ export function Paywall({ required = false, onActive, preview = null, lockedWeek
       values = [program, { words: t('subscription.values.after') }, other];
     } else {
       const call = plan === null ? t('subscription.values.weeklyCall') : t('subscription.values.call', { day: t(`onboarding.schedule.dayName.${plan.checkInDay}`) });
-      const second: ValueRow = { words: t(coachAvailable() ? 'subscription.values.coach' : 'subscription.values.adjust') };
+      const second: ValueRow = { words: t(coachSold(coachOffered) ? 'subscription.values.coach' : 'subscription.values.adjust') };
       values = [{ words: call }, second];
     }
     const choose = (id: string) => setStep((now) => (now.at === 'plans' && now.busy === null ? { ...now, chosen: id, note: null } : now));

@@ -6619,6 +6619,21 @@ tasks:
     tests: ["jest", "simülatör"]
     refs: ["plan/kararlar/ADR-096-para-haritasi.md"]
 
+  - id: K-1268
+    title: "Paywall koçu yalnız sunucunun modeli açıkken satar (1.0.1 inceleme riski)"
+    milestone: M12
+    module: mobile
+    type: fix
+    size: S
+    status: done
+    depends_on: []
+    why: "1.0.1 hazırlığı (28 Kas): üretimde koç modeli kapalı (application-prod.yml provider off, ai-offer 404) ama paywall 'The coach, to ask about your week' satıyordu; coachAvailable yalnız ekranın yüzeyde olup olmadığına bakıyor. Apple 3.1.2 / 2.3.1: olmayan özellik satılmaz (ADR-091 Ek 2 #6 'never a feature that is not there')"
+    acceptance:
+      - "Paywall'ın ikinci değer satırı ve abone satırı koçu yalnız GET /v1/consents/ai-offer okununca söyler; 404 ya da okunamazsa 'Cardio and food that adjust' (test)"
+      - "Koç açılınca (sunucuda sağlayıcı) hiçbir kod değişmeden koç satırı döner (test)"
+    tests: ["jest paywall-coach-offer subscribed-line paywall-screen", "npm run check"]
+    refs: ["plan/kararlar/ADR-091-evre-8-kararlari.md", "plan/kararlar/ADR-092-konusan-koc.md"]
+
   - id: K-1261
     title: "Fotoğraf: istediğin iki günü karşılaştırma ve zaman şeridi abonelikle; çekim, görme, silme ve bugünkü karşılaştırma ücretsiz"
     milestone: M12

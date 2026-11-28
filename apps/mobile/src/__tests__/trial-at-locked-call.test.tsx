@@ -59,6 +59,8 @@ const mockStore: SubscriptionStore = {
   manage: jest.fn(async () => {}),
 };
 const mockGet = jest.fn(async (path: string) => {
+  // The server has a coach model (its AI offer, K-1268), so the subscribed line names the coach as before.
+  if (path === '/v1/consents/ai-offer') return ok({ provider: 'OpenAI', dataTypes: ['messages'] });
   if (path === '/v1/subscription') return mockSubscription === null ? failed() : ok(mockSubscription);
   if (path === '/v1/decisions/current') return mockCall === null ? failed() : ok(mockCall);
   return failed();
