@@ -237,6 +237,28 @@ class EntitlementGuardTests {
     }
 
     @Test
+    void anIntroductoryQuestionIsSpentOnlyOnAValidModelReplyARejectedOneGivesItAndTheDaysUseBack() throws Exception {
+        // ADR-096 #3: the validator turned the model's reply down, the person sees the engine's words, so nothing of theirs is spent.
+        AccountId account = withACall();
+        fake.answer("not the shape the coach must answer in");
+
+        MvcTestResult rejected = ask(account);
+
+        assertThat(rejected).hasStatusOk();
+        assertThat(JSON.readValue(rejected.getResponse().getContentAsString(), Map.class).get("mode")).isEqualTo("DETERMINISTIC");
+        assertThat(fake.requests()).hasSize(1);
+        assertThat(jdbc.sql("select coalesce(sum(used), 0) from subscription.coach_trial_use where account_id = :a").param("a", account.value())
+                .query(Integer.class).single()).isZero();
+        assertThat(used(account)).isZero();
+
+        // A subscriber's day of questions is given back the same way.
+        TestWebhooks.subscribe(mvc, context, account);
+        fake.answer("not the shape the coach must answer in");
+        assertThat(ask(account)).hasStatusOk();
+        assertThat(used(account)).isZero();
+    }
+
+    @Test
     void theIntroductoryQuestionsAreAnAccountsForLifeAndGoOnlyWithIt() throws Exception {
         AccountId account = withACall();
         fake.answer("{\"reply\":\"The call stands this week.\",\"topic\":\"WHY\",\"numbersUsed\":[]}");

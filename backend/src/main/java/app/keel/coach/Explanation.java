@@ -171,9 +171,18 @@ class Explanation {
             giveBack(account, taken.get(), onTrial, notAsked);
             throw notAsked;
         }
-        return Optional.of(validator.read(said.text(), call, facts)
-                .map(valid -> new Answer(Mode.MODEL, valid.topic(), valid.rule(), valid.reply(), null, told))
-                .orElseGet(() -> new Answer(Mode.DETERMINISTIC, null, null, null, CALL_WORDS, told)));
+        Optional<ReplyValidator.Valid> valid = validator.read(said.text(), call, facts);
+        if (valid.isEmpty()) {
+            // The validator turned the reply down (ADR-096 #3): the person sees the engine's words, so neither the day's use nor an
+            // introductory question is spent. The month's budget keeps what the model cost.
+            try {
+                giveBack(account, taken.get(), onTrial);
+            } catch (RuntimeException notGivenBack) {
+                SafeLog.failure(UUID.randomUUID(), ErrorCode.SERVICE_UNAVAILABLE, notGivenBack); // the engine's words all the same
+            }
+            return Optional.of(new Answer(Mode.DETERMINISTIC, null, null, null, CALL_WORDS, told));
+        }
+        return Optional.of(new Answer(Mode.MODEL, valid.get().topic(), valid.get().rule(), valid.get().reply(), null, told));
     }
 
     /**
@@ -196,12 +205,16 @@ class Explanation {
 
     private void giveBack(AccountId account, LocalDate day, boolean onTrial, RuntimeException failure) {
         try {
-            quota.giveBack(account, Quota.Use.COACH_MESSAGE, day);
-            if (onTrial) {
-                trial.giveBack(account);
-            }
+            giveBack(account, day, onTrial);
         } catch (RuntimeException alsoFailed) {
             failure.addSuppressed(alsoFailed);
+        }
+    }
+
+    private void giveBack(AccountId account, LocalDate day, boolean onTrial) {
+        quota.giveBack(account, Quota.Use.COACH_MESSAGE, day);
+        if (onTrial) {
+            trial.giveBack(account);
         }
     }
 

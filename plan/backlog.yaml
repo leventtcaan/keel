@@ -6641,7 +6641,7 @@ tasks:
     module: backend
     type: fix
     size: S
-    status: todo
+    status: done
     depends_on: []
     why: "ADR-096 #3: Explanation.java doğrulayıcı reddinde motorun cümlesini döner ama TrialQuestions hakkı düşmüş kalıyor; model ulaşılamazken geri veriliyor"
     acceptance:
