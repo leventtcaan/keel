@@ -3412,7 +3412,12 @@
     "tryAgain": "Try again",
     "buying": "Waiting for the App Store…",
     "confirming": "Confirming your subscription…",
-    "active": "You're subscribed. The coach and meal reading are on.",
+    "subscribed": {
+      "all": "You're subscribed. Your weekly calls, the coach and meal reading are on.",
+      "coach": "You're subscribed. Your weekly calls and the coach are on.",
+      "meals": "You're subscribed. Your weekly calls and meal reading are on.",
+      "calls": "You're subscribed. Your weekly calls are on."
+    },
     "callOpen": "Your call for the week of {date} is open.",
     "seeCall": "See your call",
     "waiting": "The App Store confirmed it. It can take a minute to reach us.",

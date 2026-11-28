@@ -21,7 +21,7 @@ import type { PlanPreview } from '@/subscription/planPreview';
 import { savingPercent } from '@/subscription/saving';
 import type { Plan } from '@/subscription/store';
 import { TrialReminderOffer } from '@/subscription/TrialReminderOffer';
-import { paywallTimeline, paywallWords, planWords } from '@/subscription/words';
+import { paywallTimeline, paywallWords, planWords, subscribedLine } from '@/subscription/words';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { localDay, weekdayDate } from '@/today/today';
@@ -207,7 +207,7 @@ export function Paywall({ required = false, onActive, preview = null, lockedWeek
     const callIsOpen = readyCall !== null && opened === readyCall.id;
     body = (
       <View style={styles.part}>
-        {text(t('subscription.active'))}
+        {text(subscribedLine())}
         {callIsOpen && text(t('subscription.callOpen', { date: weekdayDate(readyCall.weekOf) }))}
         {callIsOpen && <Button label={t('subscription.seeCall')} onPress={() => router.back()} />}
         {/* What the server already says of it: the status and the day it renews or ends (as Settings says it). */}

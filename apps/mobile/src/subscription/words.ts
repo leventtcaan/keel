@@ -5,6 +5,8 @@
  */
 import { formatDate } from '@/copy/format';
 import { t } from '@/copy';
+import { aiLoggingAvailable, coachAvailable } from '@/food/aiLogging';
+import { RETIRED } from '@/navigation/tabs';
 import { weekdayDate } from '@/today/today';
 
 import { subscriptionParams } from './params';
@@ -139,4 +141,14 @@ export function paywallTimeline(
   }
   // Stable: on one day, the first call comes before the charge.
   return rows.sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0));
+}
+
+/**
+ * The line once the server sees the subscription (K-1256): the weekly calls, and the coach and meal reading only while their screens
+ * are on the surface (`retired`, navigation/tabs RETIRED), as the paywall names them (ADR-091 Ek 2 #6): never a feature that is not there.
+ */
+export function subscribedLine(retired: readonly string[] = RETIRED): string {
+  const coach = coachAvailable(retired);
+  const meals = aiLoggingAvailable(retired);
+  return t(`subscription.subscribed.${coach ? (meals ? 'all' : 'coach') : meals ? 'meals' : 'calls'}`);
 }

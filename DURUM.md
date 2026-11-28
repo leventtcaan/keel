@@ -12,7 +12,7 @@ aynı açılışta paywall nereden açılırsa açılsın kahraman kalır, kilit
 yalnız sunucu aynı kararı kilitsiz döndürürse "Your call for the week of … is open" + "See your call"; karar ekranı kilitli kararı odakta yeniden okur. K-707 ve 3.1.2 metinleri aynen.
 Simülatörde önce/sonra: `prototip/gorsel-yon/9c8-abonelik/deneme-kilitli-karar.jpg` (Levent'e gönderildi). **K1 (1) Levent onaylı:** `navigation.test.tsx` "yumuşak teklif bir kez açılır" → "sekmeler açılır, paywall kendiliğinden yok". İnceleme: plan yalnız o gün tutulur, deneme odakta yeniden sorulur.
 **Açık:** abonelik onayı "The coach and meal reading are on" diyor, öğün okuma kapalı (ayrı iş). Simülatör notu: dev launcher `--initialUrl http://localhost:<port>` ile onay penceresiz açılır.
-**Sıradaki:** 9c-9 Ayarlar (Levent'in yön seçimi bekleniyor); ayrı iş: abonelik onayındaki "meal reading" sözü.
+**Sıradaki:** 9c-9 Ayarlar (Levent'in yön seçimi bekleniyor); K-1256 (#829, PR #832): abonelik onayı yalnız açık olanı söyler; K1 (7 beklenti, aynı ekranın anahtarı) Levent onaylı.
 
 ## (önceki) ▶ DEVAM NOKTASI (28 Kas — K-1254: uygulama içi puan isteme, #821, PR #823 birleşti; dış göz ve sunucu raporları geldi)
 **K-1253 birleşti (#822).** **K-1254 (ADR-095 KABUL):** `expo-store-review` ~57.0.3; antrenman bitişinde sunucu yeni rekor listelediyse 1,5 sn sonra Apple'ın penceresi,
