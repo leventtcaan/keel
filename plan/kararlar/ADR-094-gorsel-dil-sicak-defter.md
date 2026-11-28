@@ -439,3 +439,6 @@ B taslağındaki kardiyo o gruptan çıkar.
    "kg, cm · lb, ft, in"; ana hatırlatıcı kapalıyken alt düğmeler yok, tek cümle; "Hesabı sil" `warn` yazı, ayrı.
 Seçilmeyen: A (tek uzun sayfa, 2,2 ekran), B tek sayfa olarak. Bedeli: her değişiklik bir dokunuş fazla.
 Sonuç simülatörde (`ayarlar-sonra.jpg`). K-1257 K1 (9 madde: bölümlere taşınan grupların testleri, sıra, başlıklar, kelime bütçesinin ilk görünümü) Levent onaylı (28 Kas).
+K-1258 (`ayarlar-sonra-2.jpg`): `OnPaper` bağlamı Ayarlar sayfalarında ListGroup'u kartsız ve ikonsuz çizer (başka ekranlar değişmez), grup başlığı
+serif; seçim `WordChoice` (birim kısa yazı, ekran okuyucu tam adı); kapalı hatırlatıcıda öğün ve yürüyüş satırı yok, tek cümle; "Hesabı sil" kendi
+grubunda `warn` yazı: evre 7 §A'nın "kırmızı yalnız uyarıda" düz satırı §3 ile kalkar. K1 (7 madde) Levent onaylı (28 Kas).

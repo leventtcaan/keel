@@ -1,7 +1,7 @@
 import { StyleSheet, Text } from 'react-native';
 
 import { ProblemText } from '@/components/ProblemText';
-import { Segmented } from '@/components/Segmented';
+import { WordChoice } from '@/components/WordChoice';
 import { t } from '@/copy';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
@@ -11,9 +11,9 @@ import type { UnitSystem } from '@/units/units';
 import { Section } from './Section';
 import { useAction } from './useAction';
 
-const SYSTEMS: { value: UnitSystem; key: string }[] = [
-  { value: 'METRIC', key: 'settings.units.metric' },
-  { value: 'IMPERIAL', key: 'settings.units.imperial' },
+const SYSTEMS: { value: UnitSystem; key: string; short: string }[] = [
+  { value: 'METRIC', key: 'settings.units.metric', short: 'settings.units.metricShort' },
+  { value: 'IMPERIAL', key: 'settings.units.imperial', short: 'settings.units.imperialShort' },
 ];
 
 /** The unit system, stored on the profile (K-310): a choice that does not reach the server is not half-made. */
@@ -25,7 +25,7 @@ export function UnitsSection() {
   const choose = (next: UnitSystem) => void run(() => units.set(next).then(() => undefined), {}, 'settings.units.failed');
   return (
     <Section title={t('settings.units.title')}>
-      <Segmented options={SYSTEMS.map((s) => ({ value: s.value, label: t(s.key) }))} value={system} onChange={choose} />
+      <WordChoice options={SYSTEMS.map((s) => ({ value: s.value, label: t(s.short), spoken: t(s.key) }))} value={system} onChange={choose} />
       {problem === null ? (
         <Text style={[styles.note, { color: color.muted }]}>{t('settings.units.note')}</Text>
       ) : (

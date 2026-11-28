@@ -3531,6 +3531,7 @@
     "reminders": {
       "title": "Reminders",
       "kinds": "Training day, check-in morning, your meals, a note after a quiet week.",
+      "offLine": "Turn on for training days, check-in mornings, meals and quiet weeks.",
       "routine": "Your routine",
       "what": "Four reminders: training ({minutes} minutes before), the check-in morning, your usual meal times, and a note after a quiet week. All stay on this phone.",
       "meals": "Meal reminders",

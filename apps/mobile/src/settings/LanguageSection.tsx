@@ -3,7 +3,7 @@ import { StyleSheet } from 'react-native';
 import { t } from '@/copy';
 import { LANGUAGES, type Language } from '@/copy/locales';
 import { ProblemText } from '@/components/ProblemText';
-import { Segmented } from '@/components/Segmented';
+import { WordChoice } from '@/components/WordChoice';
 import { useAppServices, useLanguage } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
@@ -23,7 +23,7 @@ export function LanguageSection() {
   const choose = (next: Language) => void run(() => language.set(next), {}, 'settings.language.failed');
   return (
     <Section title={t('settings.language.title')}>
-      <Segmented options={LANGUAGES.map((choice) => ({ value: choice, label: t(`settings.language.${choice}`) }))} value={chosen} onChange={choose} />
+      <WordChoice options={LANGUAGES.map((choice) => ({ value: choice, label: t(`settings.language.${choice}`) }))} value={chosen} onChange={choose} />
       {problem !== null && <ProblemText style={[styles.note, { color: color.text }]}>{problem}</ProblemText>}
     </Section>
   );

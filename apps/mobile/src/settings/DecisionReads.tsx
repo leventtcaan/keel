@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { components } from '@/api/schema';
-import { ListRows } from '@/components/ListGroup';
+import { ListRows, OnPaper } from '@/components/ListGroup';
 import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
@@ -24,7 +24,10 @@ export function DecisionReads({ above, children }: { above?: ReactNode; children
         {t('settings.section.reads')}
       </Text>
       {above}
-      <ListRows>{children}</ListRows>
+      {/* Its own ground: the rows keep their inset on it, even on a Settings page's paper. */}
+      <OnPaper.Provider value={false}>
+        <ListRows>{children}</ListRows>
+      </OnPaper.Provider>
     </View>
   );
 }

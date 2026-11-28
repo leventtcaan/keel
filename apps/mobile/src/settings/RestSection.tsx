@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
-import { Segmented } from '@/components/Segmented';
+import { WordChoice } from '@/components/WordChoice';
 import { t } from '@/copy';
 import { useAppServices, useRestChoice } from '@/services/ServicesProvider';
 import { type RestChoice, type RestKind, clampCustom, recommendedBand } from '@/train/restBand';
@@ -39,7 +39,7 @@ export function RestSection() {
   const move = (kind: RestKind, by: number) => save({ ...choice, custom: { ...choice.custom, [kind]: clampCustom(choice.custom[kind] + by) } });
   return (
     <View style={styles.section}>
-      <Segmented
+      <WordChoice
         testID="rest-mode"
         options={MODES.map((mode) => ({ value: mode, label: t(MODE_KEYS[mode]) }))}
         value={choice.mode}
