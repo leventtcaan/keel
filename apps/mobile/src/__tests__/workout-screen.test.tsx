@@ -3636,6 +3636,18 @@ describe('a move with no target: pick a weight, then the weight is found (K-973)
     expect(sets()[1].body).toMatchObject({ loadKg: 42.5 });
   });
 
+  test('taking the heavier weight offered is no "too heavy" mark (K-1263)', async () => {
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    await type('40', '8', '2+');
+    await screen.findByText(t('workout.calibrate.light', { load: '42.5 kg' }));
+    await backToCard();
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.tooHeavy.use', { load: '42.5 kg' }) }));
+    await fireEvent.press(logButton(2));
+    expect(sets()[1].body).toMatchObject({ loadKg: 42.5 });
+    expect(sets()[1].body).not.toHaveProperty('wentLighter');
+  });
+
   test('keeping the weight puts the offer away, and the set is logged at it', async () => {
     await show();
     await screen.findByText(t('workout.log', { number: 1 }));
@@ -3861,6 +3873,58 @@ describe('"Too heavy?": the server\'s lighter load, to take or keep (K-973, G1 d
     expect(sets()[0].body).toMatchObject({ loadKg: 60 });
     await toSet(t('workout.log', { number: 2 }));
     expect(load().props.value).toBe('60');
+  });
+
+  test('Use: the set logged at the lighter weight carries the mark for the next session; the set after it does not (K-1262, K-1263)', async () => {
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    await ask();
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.tooHeavy.use', { load: '60 kg' }) }));
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.log', { number: 1 }) }));
+    expect(sets()[0].body).toMatchObject({ loadKg: 60, wentLighter: true });
+    await toSet(t('workout.log', { number: 2 }));
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.log', { number: 2 }) }));
+    expect(sets()[1].body).toMatchObject({ loadKg: 60 });
+    expect(sets()[1].body).not.toHaveProperty('wentLighter');
+  });
+
+  test('a marked set deleted: the set logged again in its place carries no mark (K-1263 review)', async () => {
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    await ask();
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.tooHeavy.use', { load: '60 kg' }) }));
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.log', { number: 1 }) }));
+    expect(sets()[0].body).toMatchObject({ wentLighter: true });
+    await toSet(t('workout.log', { number: 2 }));
+    await openDone();
+    await fireEvent.press(screen.getByRole('button', { name: new RegExp(`^${t('workout.doneSet', { number: '1', set: '60 kg × ', left: '' }).split('60 kg × ')[0]}`) }));
+    await fireEvent.press(within(screen.getByTestId('edit-set')).getByRole('button', { name: t('workout.edit.delete') }));
+    await screen.findByText(t('workout.setDeleted'));
+    await toSet(t('workout.log', { number: 1 }));
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.log', { number: 1 }) }));
+    expect(sets().at(-1)?.body).not.toHaveProperty('wentLighter');
+  });
+
+  test('Keep sends no mark: the weight shown was the person\'s answer', async () => {
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    await ask();
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.tooHeavy.keep', { load: '62.5 kg' }) }));
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.log', { number: 1 }) }));
+    expect(sets()[0].body).not.toHaveProperty('wentLighter');
+  });
+
+  test('free: no subscription is read, and going lighter shows no lock and no plans (ADR-096, ADR-091 Ek 3)', async () => {
+    // The screen's services have no subscription at all: reading one would fail the screen. A load cut is never a selling moment.
+    await show();
+    await screen.findByText(t('workout.log', { number: 1 }));
+    await ask();
+    expect(screen.queryByText(t('subscription.seePlans'))).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.tooHeavy.use', { load: '60 kg' }) }));
+    expect(screen.queryByText(t('subscription.seePlans'))).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: t('workout.log', { number: 1 }) }));
+    expect(sets()[0].body).toMatchObject({ wentLighter: true });
+    expect(screen.queryByText(t('subscription.seePlans'))).toBeNull();
   });
 
   test('Keep leaves the weight as it is and puts the question away', async () => {
