@@ -3874,7 +3874,17 @@
     "slider": "Slide between the two photos",
     "empty": "Two photo days in the same pose make a comparison.",
     "onPhone": "Both photos are on this phone only.",
-    "close": "Close"
+    "close": "Close",
+    "days": "Every day",
+    "dayPhoto": "Photo of {date}",
+    "later": "Later",
+    "pickTwo": "Compare any two days",
+    "pickHint": "Tap two days to set them side by side.",
+    "play": "Play the timeline",
+    "stop": "Stop",
+    "locked": "Any two days side by side, and the timeline, come with a subscription.",
+    "unread": "Couldn't check your subscription. Try again later.",
+    "checking": "Checking your subscription…"
   },
   "sessionEdit": {
     "title": "Edit session",

@@ -4131,7 +4131,17 @@
     "slider": "İki fotoğraf arasında kaydır",
     "empty": "Karşılaştırma için aynı pozda iki fotoğraf günü gerekir.",
     "onPhone": "İki fotoğraf da yalnızca bu telefonda.",
-    "close": "Kapat"
+    "close": "Kapat",
+    "days": "Her gün",
+    "dayPhoto": "{date} fotoğrafı",
+    "later": "Sonraki",
+    "pickTwo": "İstediğin iki günü karşılaştır",
+    "pickHint": "Yan yana koymak için iki güne dokun.",
+    "play": "Zaman şeridini oynat",
+    "stop": "Durdur",
+    "locked": "İstediğin iki günü yan yana koymak ve zaman şeridi abonelikle gelir.",
+    "unread": "Aboneliğin kontrol edilemedi. Sonra tekrar dene.",
+    "checking": "Aboneliğin kontrol ediliyor…"
   },
   "sessionEdit": {
     "title": "Antrenmanı düzenle",

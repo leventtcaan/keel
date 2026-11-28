@@ -19,4 +19,5 @@ export const photoParams = {
   timerOptions: param<number[]>('photo_timer_options'),
   timerHandSeconds: param<number>('photo_timer_hand_seconds'),
   compareSlideStep: param<number>('compare_slide_step'),
+  timelineFrameMs: param<number>('compare_timeline_frame_ms'),
 };
