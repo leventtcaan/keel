@@ -173,12 +173,15 @@ class Explanation {
         }
         Optional<ReplyValidator.Valid> valid = validator.read(said.text(), call, facts);
         if (valid.isEmpty()) {
-            // The validator turned the reply down (ADR-096 #3): the person sees the engine's words, so neither the day's use nor an
-            // introductory question is spent. The month's budget keeps what the model cost.
-            try {
-                giveBack(account, taken.get(), onTrial);
-            } catch (RuntimeException notGivenBack) {
-                SafeLog.failure(UUID.randomUUID(), ErrorCode.SERVICE_UNAVAILABLE, notGivenBack); // the engine's words all the same
+            // The validator turned the reply down (ADR-096 #3): the person sees the engine's words, so an introductory question is not
+            // spent. The day's use is: the model was asked and cost, and the day's limit is what keeps replies the person could make the
+            // validator refuse from being free without end (with the month's caps).
+            if (onTrial) {
+                try {
+                    trial.giveBack(account);
+                } catch (RuntimeException notGivenBack) {
+                    SafeLog.failure(UUID.randomUUID(), ErrorCode.SERVICE_UNAVAILABLE, notGivenBack); // the engine's words all the same
+                }
             }
             return Optional.of(new Answer(Mode.DETERMINISTIC, null, null, null, CALL_WORDS, told));
         }
@@ -205,16 +208,12 @@ class Explanation {
 
     private void giveBack(AccountId account, LocalDate day, boolean onTrial, RuntimeException failure) {
         try {
-            giveBack(account, day, onTrial);
+            quota.giveBack(account, Quota.Use.COACH_MESSAGE, day);
+            if (onTrial) {
+                trial.giveBack(account);
+            }
         } catch (RuntimeException alsoFailed) {
             failure.addSuppressed(alsoFailed);
-        }
-    }
-
-    private void giveBack(AccountId account, LocalDate day, boolean onTrial) {
-        quota.giveBack(account, Quota.Use.COACH_MESSAGE, day);
-        if (onTrial) {
-            trial.giveBack(account);
         }
     }
 

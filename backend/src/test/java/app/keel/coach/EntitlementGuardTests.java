@@ -237,8 +237,9 @@ class EntitlementGuardTests {
     }
 
     @Test
-    void anIntroductoryQuestionIsSpentOnlyOnAValidModelReplyARejectedOneGivesItAndTheDaysUseBack() throws Exception {
-        // ADR-096 #3: the validator turned the model's reply down, the person sees the engine's words, so nothing of theirs is spent.
+    void anIntroductoryQuestionIsSpentOnlyOnAValidModelReplyTheDaysUseIsSpentOnAnyReply() throws Exception {
+        // ADR-096 #3: the validator turned the model's reply down, the person sees the engine's words, so the introductory question is
+        // given back. The day's use is not: the model was asked, and the day's limit bounds replies made to be refused.
         AccountId account = withACall();
         fake.answer("not the shape the coach must answer in");
 
@@ -249,13 +250,7 @@ class EntitlementGuardTests {
         assertThat(fake.requests()).hasSize(1);
         assertThat(jdbc.sql("select coalesce(sum(used), 0) from subscription.coach_trial_use where account_id = :a").param("a", account.value())
                 .query(Integer.class).single()).isZero();
-        assertThat(used(account)).isZero();
-
-        // A subscriber's day of questions is given back the same way.
-        TestWebhooks.subscribe(mvc, context, account);
-        fake.answer("not the shape the coach must answer in");
-        assertThat(ask(account)).hasStatusOk();
-        assertThat(used(account)).isZero();
+        assertThat(used(account)).isEqualTo(1);
     }
 
     @Test
