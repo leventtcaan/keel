@@ -156,16 +156,16 @@
     {
       "id": "unread-cause",
       "rule": "U1/U3",
-      "pattern": "\\b(because|due\\s+to|caused\\s+by|(a\\s+)?result\\s+of|thanks\\s+to|probably|likely|might\\s+be|may\\s+be|could\\s+be)\\b[^.!?]{0,40}?\\b(sleep\\w*|slept|stress\\w*|ate|eating|eaten|food|nutrition|hydrat\\w*|dehydrat\\w*|water|alcohol|drinking|caffeine|hormones?|period)\\b|\\b(poor|bad|little|less|lack\\s+of|not\\s+enough|short\\s+on)\\s+(sleep|rest|food|eating)\\b|\\b(you('|\\s)?re|you\\s+are|you('|\\s)?ve\\s+been|you\\s+were)\\s+(stressed|under-?slept|underfed|dehydrated|run\\s+down)\\b|\\b(uyku\\w*|uyu\\w*|stres\\w*|yemek\\w*|ye(me)?diğin\\w*|beslen\\w*|susuz\\w*|alkol\\w*|kafein\\w*|hormon\\w*|regl\\w*)\\b[^.!?]{0,30}?\\b(yüzünden|nedeniyle|sebebiyle|dolayı|için|kaynaklı)\\b|\\bçünkü\\b[^.!?]{0,40}?\\b(uyku\\w*|uyu\\w*|stres\\w*|yemek\\w*|ye(me)?di\\w*|beslen\\w*|alkol\\w*|kafein\\w*)",
+      "pattern": "(?:^|[.!?;])(?=[^.!?;]*\\b(?:heav\\w*|struggl\\w*|grind\\w*|effort\\w*|tired\\w*|fatigu\\w*|weak\\w*|sluggish|drained|ağır(?!l[ıi][kğ])\\w*|zorlan\\w*|yorgun\\w*|güçsüz\\w*|halsiz\\w*)\\b)(?=[^.!?;]*\\b(?:sleep\\w*|slept|stress\\w*|ate|eating|eaten|food|meals?|diet\\w*|nutrition|hydrat\\w*|dehydrat\\w*|alcohol|drinking|caffeine|hormon\\w*|uyku\\w*|uyu\\w*|stres\\w*|yemek\\w*|yedi\\w*|yeme\\w*|beslen\\w*|susuz\\w*|alkol\\w*|kafein\\w*)\\b)",
       "examples": [
         "It felt heavy because you slept badly this week.",
-        "Probably the stress at work, so take it easy.",
-        "That is likely due to not eating enough yesterday.",
+        "Maybe you slept badly, so the bar felt heavy.",
+        "The squat was a grind since stress was high.",
         "Poor sleep makes the bar feel heavier.",
-        "You are stressed, so the weight felt heavy.",
+        "You are tired from not eating enough.",
         "Az uyuduğun için ağır gelmiş olabilir.",
         "Stres yüzünden ağır gelmiş.",
-        "Çünkü dün az yemek yedin."
+        "Dün az yemek yediğin için yorgunsun."
       ],
       "nonExamples": [
         "Sleep and food are not in your log, so the call reads your sets only.",
@@ -173,7 +173,15 @@
         "You went lighter in 1 workout, and the next session starts there.",
         "Eating enough protein supports training.",
         "Because the weight has not moved, the cut stays at 500 kcal a day.",
+        "The call holds because you are eating under your target, so the cut stays.",
+        "Protein may be low because the food log has few meals.",
+        "The scale is likely water weight.",
+        "The call will probably stay the same for the whole review period.",
+        "Less rest between sets may be why.",
         "Uyku ve yemek kayıtta yok; karar yalnız setlerini okuyor.",
+        "Yemek kaydın az olduğu için karar aynı kalıyor.",
+        "Çünkü beslenme kaydın 4 gün, karar aynı.",
+        "Ağırlığın düşüyor, yemek planı aynı.",
         "Squat'ta zorlanma 28 günde arttı, yük aynı kalıyor."
       ]
     }

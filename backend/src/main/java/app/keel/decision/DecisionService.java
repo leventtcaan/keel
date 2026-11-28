@@ -751,16 +751,12 @@ class DecisionService {
         return last.isBefore(today) ? today : last;
     }
 
-    /**
-     * This week's consistency and the record since the first call (K-420): health data (weigh-ins, protein), so with the
-     * consent; NOT_FOUND before the first call, when nothing is planned yet.
-     */
-    @Transactional(readOnly = true)
     /** The moves' efforts and the days they were read over (trend_window_days). */
     record Efforts(List<TrainingStatusReader.MoveEffort> moves, int windowDays) {
     }
 
     /** Each program move's effort and workouts gone lighter over the trend window, read as the recovery reads the log (K-1265). */
+    @Transactional(readOnly = true)
     Efforts efforts(AccountId account) {
         consent.require(account, ConsentKind.HEALTH_DATA);
         Week week = week(account);
@@ -768,6 +764,11 @@ class DecisionService {
                 states.daysUpTo(account, week.today()), week.parameters()), week.parameters().wholeNumber(ParameterKey.TREND_WINDOW_DAYS));
     }
 
+    /**
+     * This week's consistency and the record since the first call (K-420): health data (weigh-ins, protein), so with the
+     * consent; NOT_FOUND before the first call, when nothing is planned yet.
+     */
+    @Transactional(readOnly = true)
     ConsistencyNow consistency(AccountId account) {
         consent.require(account, ConsentKind.HEALTH_DATA);
         CallStore.Plan plan = calls.plan(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));

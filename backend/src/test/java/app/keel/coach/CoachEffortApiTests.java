@@ -121,7 +121,7 @@ class CoachEffortApiTests {
                 .exchange().getResponse().getContentAsString(), Map.class);
         String day = (String) ((List<Map<String, Object>>) program.get("days")).getFirst().get("id");
         MvcTestResult started = send(account, "/v1/workouts", "POST", Map.of("clientId", UUID.randomUUID(),
-                "startedAt", Instant.now().minusSeconds(1800).toString(), "programDayId", day));
+                "startedAt", Instant.now().toString(), "programDayId", day)); // after the program was made: the log is read from then
         assertThat(started).hasStatus(201);
         String workout = (String) JSON.readValue(started.getResponse().getContentAsString(), Map.class).get("id");
         assertThat(send(account, "/v1/workouts/" + workout + "/sets", "POST", Map.of("clientId", UUID.randomUUID(), "exerciseId", "squat",
