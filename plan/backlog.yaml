@@ -6558,7 +6558,7 @@ tasks:
     module: backend
     type: fix
     size: M
-    status: todo
+    status: done
     depends_on: []
     why: "ADR-096 haritasının ücretsiz yanı: tam kayıt listesi ve tüm zaman rekorları herkese. Bugün geçmiş bir yılın bütün hareketlerini tek seferde indiriyor, 365 günden eskisi (rekor dahil) düşüyor (plan/evre-9-tasarim.md 9b, gezinti notları Durak 3)"
     acceptance:
@@ -6567,6 +6567,23 @@ tasks:
       - "Sözleşme contracts/openapi.yaml'da önce değişir; abonelik okunmaz (ücretsiz)"
     tests: ["gradle test"]
     refs: ["plan/kararlar/ADR-096-para-haritasi.md"]
+
+  - id: K-1266
+    title: "Hareket geçmişi ekranı sayfalı uçtan okur: kayıtlar süresiz, rekorlar sunucudan"
+    milestone: M12
+    module: mobile
+    type: fix
+    size: S
+    status: todo
+    depends_on: [K-1259]
+    why: "K-1259 sunucuda GET /v1/exercises/{id}/history'yi açtı; ekran hâlâ bir yılın bütün antrenmanlarını indirip rekoru telefonda hesaplıyor (exercise-history.tsx, train/history.ts recordsOf). ADR-096: tam kayıt listesi ve tüm zaman rekorları ücretsiz"
+    acceptance:
+      - "Ekran ilk sayfayı yeni uçtan okur, aşağı kaydırınca sonraki sayfa gelir; 365 günden eski oturum görünür (test)"
+      - "Rekorlar sunucunun records alanından; aynı birimde aynı okunan iki yük tek satır (lb) (test)"
+      - "Gönderilmemiş telefon kayıtları eskisi gibi birleşir; çevrimdışı saklı kopya çalışır (test)"
+      - "Abonelik okunmaz (test)"
+    tests: ["jest"]
+    refs: ["plan/kararlar/ADR-096-para-haritasi.md", "plan/kararlar/ADR-033-hareket-gecmisi-ve-rekorlar.md"]
 
   - id: K-1260
     title: "Uzun aralık grafikleri abonelikle: bugünkü kilo ve güç aralığı ücretsiz, 6 ay / 1 yıl / tümü ve yan yana karşılaştırma ücretli"

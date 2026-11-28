@@ -8,10 +8,13 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -124,6 +127,46 @@ class WorkoutStore {
                 order by started_at, id""")
                 .param("account", account.value()).param("from", from.atOffset(ZoneOffset.UTC)).param("to", to.atOffset(ZoneOffset.UTC))
                 .query((row, n) -> workout(row)).list();
+    }
+
+    /**
+     * A page of the account's sessions that have the move, newest first: {@code limit} of them before the session {@code before}
+     * (by its start, then its id), or the newest when none is given (K-1259).
+     */
+    List<Workout> withMove(AccountId account, String exerciseId, Workout before, int limit) {
+        // The cursor's own start and id: a session started at the same moment as it still comes, after it (the id breaks the tie).
+        String older = before == null ? "" : "and (w.started_at, w.id) < (:at, :id)";
+        var query = jdbc.sql("""
+                select w.* from training.workout w where w.account_id = :account
+                  and exists (select 1 from training.workout_set s where s.workout_id = w.id and s.exercise_id = :move)
+                  %s
+                order by w.started_at desc, w.id desc limit :limit""".formatted(older))
+                .param("account", account.value()).param("move", exerciseId).param("limit", limit);
+        if (before != null) {
+            query = query.param("at", before.startedAt().atOffset(ZoneOffset.UTC)).param("id", before.id());
+        }
+        return query.query((row, n) -> workout(row)).list();
+    }
+
+    /** The move's sets of these workouts, by workout, each in the order logged. */
+    Map<UUID, List<LoggedSet>> setsOf(List<UUID> workouts, String exerciseId) {
+        if (workouts.isEmpty()) {
+            return Map.of();
+        }
+        return jdbc.sql("select * from training.workout_set where workout_id in (:workouts) and exercise_id = :move order by seq")
+                .param("workouts", workouts).param("move", exerciseId).query((row, n) -> loggedSet(row)).list().stream()
+                .collect(Collectors.groupingBy(LoggedSet::workoutId, LinkedHashMap::new, Collectors.toList()));
+    }
+
+    /** The move's working sets of all time, imported too, oldest first: what its records are made of (K-1259). */
+    List<MoveRecords.Done> workingSetsOf(AccountId account, String exerciseId) {
+        return jdbc.sql("""
+                select s.load_kg, s.reps, s.rir, w.started_at from training.workout_set s join training.workout w on w.id = s.workout_id
+                where s.account_id = :account and s.exercise_id = :move and s.set_type = 'WORKING'
+                order by w.started_at, w.id, s.seq""")
+                .param("account", account.value()).param("move", exerciseId)
+                .query((row, n) -> new MoveRecords.Done(Decimals.plain(row.getBigDecimal("load_kg")), row.getInt("reps"),
+                        row.getObject("rir", Integer.class), row.getObject("started_at", OffsetDateTime.class).toInstant())).list();
     }
 
     /** Every workout of the account (the export: whatever date it was stored with, K-214). */
