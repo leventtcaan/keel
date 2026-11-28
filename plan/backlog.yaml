@@ -6641,11 +6641,11 @@ tasks:
     module: backend
     type: fix
     size: S
-    status: todo
+    status: done
     depends_on: []
     why: "ADR-096 #3: Explanation.java doğrulayıcı reddinde motorun cümlesini döner ama TrialQuestions hakkı düşmüş kalıyor; model ulaşılamazken geri veriliyor"
     acceptance:
-      - "Doğrulayıcı reddi: deneme hakkı ve günlük kullanım geri verilir (test)"
+      - "Doğrulayıcı reddi: deneme hakkı geri verilir; günlük kullanım düşer (model çağrıldı; günlük tavan reddettirilen cevabı sınırlar, güvenlik incelemesi 28 Kas) (test)"
       - "Geçerli model cevabında hak düşer (mevcut test aynen)"
     tests: ["gradle test"]
     refs: ["plan/kararlar/ADR-096-para-haritasi.md", "plan/kararlar/ADR-092-konusan-koc.md"]
