@@ -92,7 +92,9 @@ export default function CallScreen() {
   // Back from the plans (ADR-091 Ek 7 #4): a call shown locked is read again, so one just bought shows as the call. A ref, so the
   // first focus (nothing read yet) reads nothing extra.
   const lockedShown = useRef(false);
-  lockedShown.current = call?.state === 'locked';
+  useEffect(() => {
+    lockedShown.current = call?.state === 'locked';
+  }, [call]);
   useFocusEffect(
     useCallback(() => {
       if (lockedShown.current) read();
