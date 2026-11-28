@@ -6659,7 +6659,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: doing
+    status: done
     depends_on: [K-1262]
     why: "ADR-096 › Çok ağır mı; 9b: 1-2 denemeden sonra ve set sonrası hissiyatla sorulabilsin"
     acceptance:
@@ -6689,7 +6689,7 @@ tasks:
     module: backend
     type: feature
     size: S
-    status: doing
+    status: done
     depends_on: [K-1262]
     why: "ADR-096 › Çok ağır mı (ücretli yan) ve #4: motor uyku ve yemeği okumaz, RIR eğilimini okur (K-1218); koç desteklenmeyen neden söylemez (U1, U3). Koçun üretimde açılmasına bağlı"
     acceptance:
