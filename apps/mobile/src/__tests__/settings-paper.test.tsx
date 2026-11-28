@@ -13,6 +13,7 @@ import { ListGroup, ListRow } from '@/components/ListGroup';
 import type { components } from '@/api/schema';
 import SettingsSectionScreen from '@/app/settings-section';
 import { t } from '@/copy';
+import { RestSection } from '@/settings/RestSection';
 import { SECTIONS } from '@/settings/sections';
 import { storeUnavailable } from '@/subscription/store';
 import { ThemeProvider } from '@/theme/theme';
@@ -204,6 +205,12 @@ describe('a choice of a few, as words', () => {
   });
 });
 
+test('the rest between sets is a choice in words too: no filled segment', async () => {
+  await show(<RestSection />);
+  expect(grounds()).not.toContain(palettes.light.text);
+  expect(screen.getByRole('button', { name: t('settings.rest.recommended') })).toBeSelected();
+});
+
 describe('the reminders, turned off', () => {
   test('the meal and the walk switches are not there; one line says what turning them on brings', async () => {
     await showSection('reminders');
@@ -211,6 +218,13 @@ describe('the reminders, turned off', () => {
     expect(switches).toEqual([t('settings.reminders.title')]);
     expect(screen.getByText(t('settings.reminders.offLine'))).toBeTruthy();
     expect(screen.queryByText(t('settings.reminders.kinds'))).toBeNull();
+  });
+
+  test('while iOS has not answered yet, the line does not say off', async () => {
+    mockReminders = { enabled: true, cue: '' };
+    mockServices.reminders.permission.mockImplementationOnce(() => new Promise(() => {}));
+    await showSection('reminders');
+    expect(screen.queryByText(t('settings.reminders.offLine'))).toBeNull();
   });
 
   test('turned on, the two switches are back and the line names the kinds', async () => {

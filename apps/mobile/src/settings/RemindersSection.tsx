@@ -86,8 +86,8 @@ export function RemindersSection() {
     step = { label: t('settings.reminders.turnOnAll'), opensSettings: false };
   }
 
-  // Off with nothing to fix: the two switches that ride on it are not drawn, and one line says what turning it on brings (ADR-094 Ek 9).
-  if (!on && step === null) footer = t('settings.reminders.offLine');
+  // Off (once iOS has answered) with nothing to fix: the two switches that ride on it are not drawn, and one line says what turning it on brings (ADR-094 Ek 9).
+  if (permission !== null && !on && step === null) footer = t('settings.reminders.offLine');
 
   // Built before the JSX: a literal inside a JSX child is read as text by the copy guard (copy-literals.test.ts).
   const stepButton =
