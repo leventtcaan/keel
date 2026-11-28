@@ -255,3 +255,18 @@ Ek 2 #1 (yumuşak teklif) ve Ek 3'ün dördüncü maddesi ("onboarding sonunda k
 `navigation.test.tsx` (onboarding sonrası sekmeler, paywall kendiliğinden yok), `plan-preview.test.ts` (plan yalnız o gün), `trial-at-locked-call.test.tsx` (kart: deneme okununca süreyle,
 okunamazsa "Planları gör"), `paywall-timeline.test.ts` (ilk satır), `paywall-warm-notebook.test.tsx` (plan kahramanı aynı açılışta; satın alınca
 yalnız sunucu açık dönerse "açıldı"), `call-screen.test.tsx` (odakta yeniden okuma), kopya ve bütçe testleri; simülatörde önce/sonra fotosu.
+
+## Ek 8 · 1.0.1 onayları (Levent, 25 Kas 2026: "hepsi onay")
+- **Durum:** BEKLİYOR. 25 Kas akşamı simülatör gezintisinde Levent "körlemesine onaylama yok" dedi; maddeler 1.0.1 derlemesinde
+  gerçek bir bakışla yeniden onaylanır (`plan/evre-9-tasarim.md` › Levent'i bekleyen kararlar). Bu ek o bakıştan sonra KABUL olur.
+
+Onay sayfasındaki (1.0.1 Onay Defteri) her madde önerildiği gibi onaylandı:
+- **40 form görseli ve 40 döngü klibi:** `image_review` ve `loop_review` kayıtları (`by: levent`, `checklist: pass`); sunucu artık hepsini verir.
+  Denetimde not düşülen küçük kusurlar (pec deck 8→9 sıçrama, birkaç karede duraksama) bilinerek kabul edildi; yeniden üretim gerekirse
+  `tools/media_loop.sh` ile tek hareket.
+- **26 Türkçe madde:** bugünkü çeviriler kalır (okuma listesindeki iki alternatif öneri seçilmedi).
+- **AI rıza metni:** sürüm `2-draft` → `2` (en, tr, `keel.consent.versions`). Koç üretimde yine kapalı (`provider: off`): açılışı OpenAI fiyatı
+  resmî sayfada doğrulanınca ve proje bütçe tavanı panelde konunca (ADR-092 #4, `application-prod.yml`).
+- **Kullanım şartları:** "kayıt ve ilk tam karar ücretsiz, sonrası abonelik" maddesi (`docs/yasal/site/terms.md`).
+- **K-1218:** seçenek (a): kayıt yeterli ve cevapla çelişiyorsa kayıt kazanır, gerekçe ikisini de söyler; kayıt yoksa cevap geçerli
+  (`plan/k1218-oneri.md` §7).

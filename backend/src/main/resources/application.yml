@@ -340,7 +340,7 @@ keel:
     versions:
       HEALTH_DATA: 5
       APPLE_HEALTH: 1-draft
-      THIRD_PARTY_AI: 2-draft
+      THIRD_PARTY_AI: 2
 # V3 (K-215): failures are logged by SafeLog, by type and code location only. The container's and Spring MVC's own
 # loggers would print an exception's message, which may hold what the request carried; and the fallback error body
 # never repeats the path.

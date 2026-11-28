@@ -14,6 +14,14 @@ clips:
   last_rep: clips/close_grip_lat_pulldown/last-rep.mp4
 review: pending
 image: exercises/close_grip_lat_pulldown/form.webp
-image_review: pending
+image_review:
+  date: "2026-11-25"
+  by: levent
+  checklist: pass
+  notes: "form image approved on the 1.0.1 review page"
 loop: exercises/close_grip_lat_pulldown/loop.mp4
-loop_review: pending
+loop_review:
+  date: "2026-11-25"
+  by: levent
+  checklist: pass
+  notes: "loop clip approved on the 1.0.1 review page"

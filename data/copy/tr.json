@@ -2519,7 +2519,7 @@
       "body": "Adımları, uyku saatlerini, tartından kiloyu, aktif enerjiyi ve başka uygulamalarda yaptığın antrenmanları okuruz; böylece daha az yazarsın ve definasyon asla fazla ileri gitmez. Kalp verini, döngü verini, ilaçlarını, sağlık kayıtlarını ya da konumunu okumayız. Kaydettiğin antrenmanları Apple Health'e eklemek Ayarlar'da ayrı bir seçimdir. Bunu istediğin zaman geri çekebilirsin."
     },
     "third_party_ai": {
-      "version": "2-draft",
+      "version": "2",
       "title": "Bir öğünü analiz etmeden önce",
       "body": "Sana kelimelerle cevap verebilmek için koç, {provider} sağlayıcısına şunları gönderir: ona yazdıkların, bu haftanın kararı ve arkasındaki kurallarla sayılar, bu haftanın planının nasıl gittiği (yapılan / planlanan), hedefin, deneyimin ve antrenman günlerin, konuşmanın son birkaç mesajı ve hatırlamasını istediğin her şey. Bir öğünü analiz etmeyi seçersen o fotoğraf ve eklediğin metin de gider. Gelişim fotoğrafların, kilo kayıtların, Apple Health verin, adın ya da e-postan asla gitmez. {provider}, API üzerinden aldıklarını modellerini eğitmek için kullanmaz; kötüye kullanımı denetlemek için sınırlı bir süre (en fazla 30 gün) saklayabilir. Koç anlatır, karar vermez: haftalık kararlar her \"Bu karar neden\" ekranında okuyabileceğin sabit kurallardan gelir ve söylediği her sayı bunlarla karşılaştırılır. Konuşman sunucumuzda en fazla 30 gün kalır, hatırlamasını istediklerin ise sen silene kadar. Bunu Ayarlar'dan istediğin zaman geri çekebilirsin; geri çekmek ikisini de siler."
     }
