@@ -35,8 +35,16 @@ let mockParams: Record<string, string> = {};
 jest.mock('expo-router', () => ({
   router: { push: (...args: unknown[]) => mockPush(...args), back: jest.fn(), dismissTo: jest.fn() },
   useLocalSearchParams: () => mockParams,
-  useFocusEffect: (effect: () => void) => jest.requireActual<typeof import('react')>('react').useEffect(effect, [effect]),
+  useFocusEffect: (effect: () => void) => {
+    mockFocusEffects.add(effect);
+    jest.requireActual<typeof import('react')>('react').useEffect(effect, [effect]);
+  },
 }));
+/** The screen's focus reads: called again as when the screen comes back into view from a page pushed over it. */
+const mockFocusEffects = new Set<() => void>();
+async function comeBack() {
+  await act(async () => mockFocusEffects.forEach((effect) => effect()));
+}
 
 const day = (id: string, weekday?: Schemas['Weekday']): Schemas['ProgramDay'] => ({ id, nameKey: 'full_body_a', ...(weekday ? { weekday } : {}), exercises: [] });
 const PROGRAM: Schemas['Program'] = {
@@ -115,6 +123,7 @@ jest.mock('@/services/ServicesProvider', () => ({
 beforeEach(() => {
   jest.clearAllMocks();
   mockParams = {};
+  mockFocusEffects.clear();
   mockReminders = { enabled: false, cue: '' };
   mockPermission = { granted: false, canAskAgain: true };
 });
@@ -188,6 +197,15 @@ describe('the contents page', () => {
     mockReminders = { enabled: true, cue: '' };
     await show(<SettingsScreen />);
     expect(chapter('reminders').props.accessibilityLabel).toBe(`${TITLES.reminders}, ${t('settings.section.off')}`);
+  });
+
+  test('reminders allowed on their page say On when Settings is in view again, without leaving the app', async () => {
+    mockReminders = { enabled: true, cue: '' };
+    await show(<SettingsScreen />);
+    expect(chapter('reminders').props.accessibilityLabel).toBe(`${TITLES.reminders}, ${t('settings.section.off')}`);
+    mockPermission = { granted: true, canAskAgain: false };
+    await comeBack();
+    expect(chapter('reminders').props.accessibilityLabel).toBe(`${TITLES.reminders}, ${t('settings.section.on')}`);
   });
 
   test('the chapters sit on the paper: no sand card, no sage group, no icon but the chevron', async () => {

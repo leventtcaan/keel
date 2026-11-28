@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { AppState, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
@@ -13,24 +14,30 @@ import { contentsLines } from './contentsLines';
 import { remindersOn } from './RemindersSection';
 import { openSection, SECTIONS, sectionTitle } from './sections';
 
-/** iOS's answer on notifications, read on arrival and each time the app comes back to the front (the way back from iOS Settings). */
+/**
+ * iOS's answer on notifications, read whenever Settings comes into view (back from the Reminders page, where it may just have
+ * been given) and whenever the app comes back to the front (back from iOS Settings). An older, slower read never overwrites a
+ * newer one; a read that fails leaves what is shown.
+ */
 function useNotificationPermission(): NotificationPermission | null {
   const { reminders } = useAppServices();
   const [permission, setPermission] = useState<NotificationPermission | null>(null);
+  const reads = useRef(0);
+  const read = useCallback(() => {
+    const mine = ++reads.current;
+    reminders.permission().then(
+      (answer) => mine === reads.current && setPermission(answer),
+      () => undefined,
+    );
+  }, [reminders]);
+  useFocusEffect(read);
   useEffect(() => {
-    let live = true;
-    const read = () =>
-      reminders.permission().then(
-        (answer) => live && setPermission(answer),
-        () => undefined,
-      );
-    void read();
-    const subscription = AppState.addEventListener('change', (state) => state === 'active' && void read());
+    const subscription = AppState.addEventListener('change', (state) => state === 'active' && read());
     return () => {
-      live = false;
+      reads.current += 1; // a read still on its way lands on nothing
       subscription.remove();
     };
-  }, [reminders]);
+  }, [read]);
   return permission;
 }
 
