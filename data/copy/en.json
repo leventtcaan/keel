@@ -3955,6 +3955,16 @@
     }
   },
   "progress": {
+    "range": {
+      "weeks": "12 weeks",
+      "months": "3 months",
+      "halfYear": "6 months",
+      "year": "1 year",
+      "all": "All",
+      "locked": "Longer ranges come with a subscription.",
+      "unread": "Couldn't check your subscription. Try again later.",
+      "failed": "This range couldn't load. Try again when you're online."
+    },
     "failed": "Some of this didn't load.",
     "retry": "Try again",
     "hero": {

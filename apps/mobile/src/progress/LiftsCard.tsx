@@ -1,9 +1,11 @@
 import { SymbolView } from 'expo-symbols';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { ActionSheetIOS, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { components } from '@/api/schema';
 import { Section } from '@/components/Section';
+import { useAppServices } from '@/services/ServicesProvider';
+import { localDay } from '@/today/today';
 import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
@@ -11,7 +13,11 @@ import { exerciseName, shortDate } from '@/train/program';
 import type { Move } from '@/train/trainData';
 import { type UnitSystem, formatLoad, loadValue } from '@/units/units';
 
+import { RangeNoteLine, RangeWords } from './ChartRanges';
 import { effortLine } from './effort';
+import { joinWeeks, rangeFrom, readLiftWeeks } from './longRange';
+import { type ChartRange, progressParams } from './params';
+import { useChartRange } from './useChartRange';
 import { LineChart } from './LineChart';
 import type { ChartPoint } from './lineScale';
 import { liftSet } from './Parts';
@@ -31,8 +37,16 @@ export function LiftsCard({ lifts, moves, units }: { lifts: Lift[]; moves: Reado
   // Opens on the first lift that has a chart to show, else the first.
   const lift = lifts.find((l) => l.exerciseId === picked) ?? lifts.find((l) => l.weeks.length >= 2) ?? lifts[0];
   const move = exerciseName(lift.exerciseId, moves);
+  // A longer range (K-1260, ADR-096 Ek 1: with a subscription): the lift's weeks from its paged history, the server's weeks kept.
+  const { api, training } = useAppServices();
+  const read = useCallback(
+    (range: ChartRange) => readLiftWeeks(training, api, lift.exerciseId, range.days === null ? null : rangeFrom(localDay(new Date()), range.days)),
+    [api, training, lift.exerciseId],
+  );
+  const range = useChartRange(progressParams.strengthRanges, read);
+  const weeks = range.data === null ? lift.weeks : joinWeeks(lift.weeks, range.data);
 
-  const points: ChartPoint[] = lift.weeks.map((w) => ({ day: w.weekOf, value: loadValue(w.loadKg, units), label: formatLoad(w.loadKg, units), marked: w.held }));
+  const points: ChartPoint[] = weeks.map((w) => ({ day: w.weekOf, value: loadValue(w.loadKg, units), label: formatLoad(w.loadKg, units), marked: w.held }));
   const held = points.filter((p) => p.marked === true).map((p) => shortDate(p.day));
   const [first, last] = [points[0], points[points.length - 1]];
   const low = points.reduce((a, b) => (b.value < a.value ? b : a), first);
@@ -51,7 +65,10 @@ export function LiftsCard({ lifts, moves, units }: { lifts: Lift[]; moves: Reado
     const names = lifts.map((l) => exerciseName(l.exerciseId, moves));
     const options = [...names, t('progress.strength.pickCancel')];
     ActionSheetIOS.showActionSheetWithOptions({ options, cancelButtonIndex: names.length, tintColor: color.accent }, (index) => {
-      if (index >= 0 && index < names.length) setPicked(lifts[index].exerciseId);
+      if (index >= 0 && index < names.length) {
+        setPicked(lifts[index].exerciseId);
+        range.reset(); // another lift starts at the server's weeks
+      }
     });
   };
   // Built outside the JSX below (the raw-text guard reads JSX children).
@@ -91,7 +108,9 @@ export function LiftsCard({ lifts, moves, units }: { lifts: Lift[]; moves: Reado
         </Text>
         {start}
       </View>
+      <RangeWords testID="strength-range" ranges={progressParams.strengthRanges} value={range.key} onChange={(key) => void range.choose(key)} />
       {chart}
+      <RangeNoteLine note={range.note} />
       {legend}
       {effortText}
     </Section>

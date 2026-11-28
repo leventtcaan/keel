@@ -23,6 +23,72 @@
       "tag": "urun",
       "source": "plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md#Ek 3",
       "note": "How many of the calls Progress lists open at first (K-1246, ADR-094 Ek 3 #7): the latest three; 'and N more' opens the rest of calls_shown in the same card, as the Train tab's today card does (Ek 2 › Uygulama #7)."
+    },
+    {
+      "key": "weight_chart_ranges",
+      "value": [
+        {
+          "key": "weeks",
+          "days": 84,
+          "free": true
+        },
+        {
+          "key": "halfYear",
+          "days": 182,
+          "free": true
+        },
+        {
+          "key": "year",
+          "days": 365,
+          "free": true
+        },
+        {
+          "key": "all",
+          "days": null,
+          "free": false
+        }
+      ],
+      "unit": "days",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-096-para-haritasi.md#Ek 1",
+      "note": "The weight chart's ranges on Progress (K-1260): the first is weight_chart_days (the default, read with the rest of Progress); a year is free as the weigh-in screen's Year already was (health.json weigh_in_history_days); 'all' (days null: everything) comes with a subscription. ADR-096 Ek 1."
+    },
+    {
+      "key": "strength_chart_ranges",
+      "value": [
+        {
+          "key": "months",
+          "days": 90,
+          "free": true
+        },
+        {
+          "key": "halfYear",
+          "days": 182,
+          "free": false
+        },
+        {
+          "key": "year",
+          "days": 365,
+          "free": false
+        },
+        {
+          "key": "all",
+          "days": null,
+          "free": false
+        }
+      ],
+      "unit": "days",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-096-para-haritasi.md#Ek 1",
+      "note": "The strength chart's ranges (K-1260): the first is the server's weeks over the evaluation window (workout.json evaluation_window_days, 90), free as today; six months, a year and all come with a subscription, read from the move's paged history (K-1259)."
+    },
+    {
+      "key": "weight_all_window_days",
+      "value": 399,
+      "unit": "days",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-096-para-haritasi.md#Ek 1",
+      "note": "'All' of the weight trend is read back in windows of this many days (the server answers fewer than keel.api.max-range-days, 400, per request), until a window has no point."
     }
   ]
 }

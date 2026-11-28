@@ -1,13 +1,20 @@
+import { useCallback, useEffect } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
 import { Section } from '@/components/Section';
 import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
+import { useAppServices } from '@/services/ServicesProvider';
+import { localDay } from '@/today/today';
 import { shortDate } from '@/train/program';
 import { type UnitSystem, formatWeight, weightChange, weightStepKg } from '@/units/units';
 
+import { RangeNoteLine, RangeWords } from './ChartRanges';
 import { LineChart } from './LineChart';
+import { readTrend } from './longRange';
+import { type ChartRange, progressParams } from './params';
+import { useChartRange } from './useChartRange';
 import type { ChartPoint } from './lineScale';
 import { WeighInDots } from './Parts';
 import type { WeightPart } from './sections';
@@ -32,9 +39,21 @@ function changeLine(points: { day: string; kg: number }[], units: UnitSystem): s
  */
 export function WeightCard({ part, units }: { part: WeightPart; units: UnitSystem }) {
   const { color } = useTheme();
+  const { api } = useAppServices();
+  // A longer range (K-1260, ADR-096 Ek 1): read from the server when chosen; the first is the points Progress already has.
+  const read = useCallback(
+    (range: ChartRange) => readTrend(api, localDay(new Date()), range.days, progressParams.weightAllWindowDays),
+    [api],
+  );
+  const range = useChartRange(progressParams.weightRanges, read);
+  // Progress read again (a new weigh-in): back to the points it has, so a longer range never shows an older read.
+  const stamp = part.kind === 'chart' ? part.points.map((p) => `${p.day}:${p.kg}`).join() : '';
+  const { reset } = range;
+  useEffect(() => reset(), [stamp, reset]);
   if (part.kind === 'dots') return <WeighInDots count={part.count} min={part.min} note={part.note} />;
 
-  const shown: ChartPoint[] = part.points.map((p) => ({ day: p.day, value: p.kg, label: formatWeight(p.kg, units) }));
+  const drawn = range.data !== null && range.data.length > 0 ? range.data : part.points;
+  const shown: ChartPoint[] = drawn.map((p) => ({ day: p.day, value: p.kg, label: formatWeight(p.kg, units) }));
   const [first, last] = [shown[0], shown[shown.length - 1]];
   const low = shown.reduce((a, b) => (b.value < a.value ? b : a), first);
   const high = shown.reduce((a, b) => (b.value > a.value ? b : a), first);
@@ -56,7 +75,7 @@ export function WeightCard({ part, units }: { part: WeightPart; units: UnitSyste
         {shortDate(last.day)}
       </Text>
     );
-  const text = changeLine(part.points, units);
+  const text = changeLine(drawn, units);
   // Built outside the JSX (the raw-text guard reads JSX children).
   const change =
     text === null ? null : (
@@ -71,7 +90,9 @@ export function WeightCard({ part, units }: { part: WeightPart; units: UnitSyste
       </Text>
       {change}
       {day}
+      <RangeWords testID="weight-range" ranges={progressParams.weightRanges} value={range.key} onChange={(key) => void range.choose(key)} />
       {chart}
+      <RangeNoteLine note={range.note} />
     </Section>
   );
 }
