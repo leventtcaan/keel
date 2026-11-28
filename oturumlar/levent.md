@@ -322,3 +322,10 @@
 - takıldım: sözleşme kontrolü üretilmiş mobil tipleri istedi (schema.ts K-1262'ye taşındı), göç yorumundaki çift tırnak "quoted names"; bir koşuda yerel Postgres testleri istemeden koştu (sonra dışarıda tutuldu)
 - sıradaki: iz A bitti; iz B (K-1259 → K-1260 → K-1261) sürüyor
 - AI: kod, test, PR agent; üç incelemeyi Sonnet alt ajan yaptı, bulgular (iki kez hafifleme max→min, 0 kg işaret, silinen setin işareti, test saati, @Transactional kayması, geniş regex, hak yakan hata) doğrulanıp düzeltildi
+
+## 2026-11-28 · Evre 9d iz B — geçmiş, fotoğraf, grafik, koç denemesi (K-1264, K-1259, K-1266, K-1261, K-1260), otonom, Remote Control açık
+- yaptım: #842 koç denemesi reddde geri, #844 hareket geçmişi sayfalı uç + tüm zaman rekorları sunucuda, #846 ekran yeni uçtan (yeni kart K-1266), #849 fotoğraf her gün ücretsiz / iki gün + zaman şeridi abonelikle, K-1260 uzun grafik aralıkları
+- karar: Levent — kiloda 1 yıl ücretsiz (ADR-096 Ek 1). Agent — reddde günlük kullanım düşer (güvenlik, Ek 2); K-1260'tan yan yana ayrıldı (K-1267); fotoğraf ekranı ağ istemcisi tutmaz (paidAccess servisi)
+- takıldım: tartı ekranının ücretsiz 'Yıl'ı ADR'de görülmemişti (sordum); yan yana fotoğraflar main'de hiç çizilmiyordu (düzeldi); sync_backlog XS seçeneği yüzünden duruyor
+- sıradaki: K-1267
+- AI: kod, test, PR agent; beş incelemeyi Sonnet alt ajan yaptı, bulgular (give-back 500, sayfa yarışı, kilit önbelleği, hafta Pazartesi kesimi, eski grafik) doğrulanıp düzeltildi

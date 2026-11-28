@@ -6591,7 +6591,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-1259]
     why: "ADR-096 › Geçmiş ve grafik + Ek 1 (Levent 28 Kas: tartı ekranının 'Yıl' grafiği bugün ücretsiz, kiloda 1 yıl ücretsiz kalır). Güç derinliği aboneye (Hevy kalıbı)"
     acceptance:
