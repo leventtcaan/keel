@@ -6619,6 +6619,21 @@ tasks:
     tests: ["jest", "simülatör"]
     refs: ["plan/kararlar/ADR-096-para-haritasi.md"]
 
+  - id: K-1269
+    title: "Geri düğmesi uygulamanın dilinde: adı olmayan önceki ekranda iOS'un 'Back'i telefonun dilini konuşuyordu"
+    milestone: M12
+    module: mobile
+    type: fix
+    size: S
+    status: done
+    depends_on: []
+    why: "1.0.1 mağaza çekimi (28 Kas): Türkçe telefonda uygulama İngilizceyken hareket sayfasının geri düğmesi 'Geri' diyordu; adı bilinmeyen önceki ekranda (antrenman, koç, yemek…) sistemin generic Back'i kullanılıyor, o da cihaz dilinden geliyor"
+    acceptance:
+      - "Adı olmayan önceki ekranda geri düğmesi copy 'navigation.back' (en Back, tr Geri), uygulamanın seçili dilinde (test)"
+      - "Adı olan ekranlarda bugünkü ad aynen (test)"
+    tests: ["jest pushed-screens", "simülatör: İngilizce uygulama, Türkçe cihaz, antrenman › More › How to"]
+    refs: ["plan/kararlar/ADR-070-gorsel-dil-turkuaz.md"]
+
   - id: K-1268
     title: "Paywall koçu yalnız sunucunun modeli açıkken satar (1.0.1 inceleme riski)"
     milestone: M12

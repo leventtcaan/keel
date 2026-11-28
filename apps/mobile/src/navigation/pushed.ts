@@ -21,8 +21,8 @@ const NAMED: Record<string, string> = {
 
 /**
  * The name the back button carries on the screen `key`: the one before it in the stack. The tabs are one screen of the stack,
- * so it is the tab in view that gives the name (This week, Train, Progress). A screen with no name of its own to give leaves the
- * system to say "Back".
+ * so it is the tab in view that gives the name (This week, Train, Progress). A screen with no name of its own to give gets "Back"
+ * (pushedScreen).
  */
 export function previousScreenName(state: { routes: RouteState[] }, key: string): string | undefined {
   const at = state.routes.findIndex((route) => route.key === key);
@@ -40,7 +40,10 @@ export function previousScreenName(state: { routes: RouteState[] }, key: string)
   return named === undefined ? undefined : t(named);
 }
 
-/** The header of a pushed screen: the back button on the page's own background, no title, no hairline. */
+/**
+ * The header of a pushed screen: the back button on the page's own background, no title, no hairline. With no name to give it
+ * says "Back" in the app's language (K-1269): iOS's own generic "Back" follows the phone's language, not the one set in the app.
+ */
 export function pushedScreen(color: Palette, backTitle: string | undefined) {
   return {
     headerShown: true,
@@ -48,6 +51,6 @@ export function pushedScreen(color: Palette, backTitle: string | undefined) {
     headerShadowVisible: false,
     headerStyle: { backgroundColor: color.background },
     headerTintColor: color.accent,
-    ...(backTitle === undefined ? { headerBackButtonDisplayMode: 'generic' as const } : { headerBackTitle: backTitle }),
+    headerBackTitle: backTitle ?? t('navigation.back'),
   };
 }
