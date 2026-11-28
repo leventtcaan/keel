@@ -6487,7 +6487,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: doing
+    status: done
     depends_on: [K-1253]
     why: "Levent 28 Kas, seçenek A: karar penceresi 21/28 gün, deneme 14 gün; onboarding'de başlayan deneme ilk tam karardan önce biter, kişi ücretli hiçbir şey görmeden öder (dış göz raporu bulgu 1, doğrulandı)"
     acceptance:
