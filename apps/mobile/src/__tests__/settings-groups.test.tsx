@@ -254,20 +254,21 @@ describe('the groups', () => {
     }
   });
 
-  test('Sign out and Delete account are neutral rows like Export: red is only inside their system alerts', async () => {
+  test('Sign out is a neutral row like Export; Delete account is the warning colour as words, apart (ADR-094 §3, Ek 9)', async () => {
     await show();
     const ink = (name: string) => within(button(name)).getByText(name);
     expect(ink(t('settings.signOut.title'))).toHaveStyle({ color: palettes.light.text });
-    expect(ink(t('settings.delete.title'))).toHaveStyle({ color: palettes.light.text });
+    expect(ink(t('settings.delete.title'))).toHaveStyle({ color: palettes.light.warn });
     expect(ink(t('settings.export.title'))).toHaveStyle({ color: palettes.light.text });
   });
 
   test('under a row there is one line at most: a group has a footer of one short line or none', async () => {
     await show();
-    // The long reminders paragraph is on the routine page; the line under the switch names the three kinds in one line.
+    // The long reminders paragraph is on the routine page; the line under the switch, off, says what turning it on brings
+    // (ADR-094 Ek 9, K-1258), and on it names the kinds: one short line either way.
     expect(screen.queryByText(/Three kinds, never more/)).toBeNull();
-    expect(screen.getByText(t('settings.reminders.kinds'))).toBeOnTheScreen();
-    expect(t('settings.reminders.kinds').split(/\s+/).length).toBeLessThanOrEqual(12);
+    expect(screen.getByText(t('settings.reminders.offLine'))).toBeOnTheScreen();
+    for (const key of ['settings.reminders.kinds', 'settings.reminders.offLine']) expect(t(key).split(/\s+/).length).toBeLessThanOrEqual(12);
   });
 });
 

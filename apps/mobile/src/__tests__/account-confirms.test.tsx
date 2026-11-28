@@ -149,6 +149,8 @@ describe.each([
 // "Done" as a text button on the right, then Export my data, Sign out and Delete account, the last two in the warning colour.
 describe('the paywall account sheet', () => {
   const rowsOf = (group: ReturnType<typeof screen.getByTestId>) => within(group).getAllByRole('button').map((row) => row.props.accessibilityLabel as string);
+  /** The account's rows: Export and Sign out in one group, Delete account in its own under it (ADR-094 Ek 9, K-1258). */
+  const accountRows = () => [...rowsOf(screen.getByTestId('group-account-card')), ...rowsOf(screen.getByTestId('group-delete-card'))];
 
   test('Done is a text button at the top right, on the same line as the title; it closes the sheet', async () => {
     const close = jest.fn();
@@ -176,17 +178,17 @@ describe('the paywall account sheet', () => {
         <AccountSheet visible onClose={() => {}} />
       </ThemeProvider>,
     );
-    const sheet = rowsOf(screen.getByTestId('group-account-card')).filter((name) => name !== t('subscription.accountDone'));
+    const sheet = accountRows().filter((name) => name !== t('subscription.accountDone'));
     await screen.unmount();
     await render(
       <ThemeProvider scheme="light">
         <AccountSection title={t('settings.account.title')} />
       </ThemeProvider>,
     );
-    expect(rowsOf(screen.getByTestId('group-account-card'))).toEqual(sheet);
+    expect(accountRows()).toEqual(sheet);
     expect(sheet).toEqual([t('settings.export.title'), t('settings.signOut.title'), t('settings.delete.title')]);
     expect(within(screen.getByRole('button', { name: t('settings.signOut.title') })).getByText(t('settings.signOut.title'))).toHaveStyle({ color: palettes.light.text });
-    expect(within(screen.getByRole('button', { name: t('settings.delete.title') })).getByText(t('settings.delete.title'))).toHaveStyle({ color: palettes.light.text });
+    expect(within(screen.getByRole('button', { name: t('settings.delete.title') })).getByText(t('settings.delete.title'))).toHaveStyle({ color: palettes.light.warn });
     expect(screen.queryByText(t('settings.account.footer'))).toBeNull(); // Settings has the title, the sheet the footer
   });
 

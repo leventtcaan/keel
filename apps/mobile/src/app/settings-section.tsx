@@ -2,6 +2,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { OnPaper } from '@/components/ListGroup';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { isSection, sectionTitle } from '@/settings/sections';
 import { SettingsSection } from '@/settings/SettingsSection';
@@ -11,7 +12,7 @@ import { tokens } from '@/theme/tokens';
 
 /**
  * A chapter of Settings (K-1257, ADR-094 Ek 9): the page a row of the contents opens, named by the chapter in the serif title,
- * the chapter's groups under it. The way back is the system's, in the header, named "Settings"; a page opened from here names
+ * the chapter's groups under it, on the paper: no sand card, no system icon (ADR-094 Ek 9, K-1258). The way back is the system's, in the header, named "Settings"; a page opened from here names
  * this chapter on its way back (navigation/pushed.ts).
  */
 export default function SettingsSectionScreen() {
@@ -23,7 +24,9 @@ export default function SettingsSectionScreen() {
       {isSection(section) && (
         <ScrollView contentContainerStyle={styles.body}>
           <ScreenTitle>{sectionTitle(section)}</ScreenTitle>
-          <SettingsSection section={section} granted={granted} />
+          <OnPaper.Provider value>
+            <SettingsSection section={section} granted={granted} />
+          </OnPaper.Provider>
         </ScrollView>
       )}
     </SafeAreaView>

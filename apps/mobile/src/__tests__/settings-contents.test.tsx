@@ -260,6 +260,9 @@ describe('a chapter page', () => {
   });
 
   test('every row Settings had is on one of the pages', async () => {
+    // Reminders on: the meal and the walk switches are drawn only then (K-1258).
+    mockReminders = { enabled: true, cue: '' };
+    mockPermission = { granted: true, canAskAgain: false };
     const seen = new Set<string>();
     await show(
       <>

@@ -3788,6 +3788,7 @@
     "reminders": {
       "title": "Hatırlatıcılar",
       "kinds": "Antrenman günü, haftalık kontrol sabahı, öğünlerin, sessiz bir haftadan sonra bir not.",
+      "offLine": "Açınca antrenman günü, kontrol sabahı, öğünler ve sessiz haftalar için.",
       "routine": "Rutinin",
       "what": "Dört hatırlatıcı: antrenman ({minutes} dakika önce), haftalık kontrol sabahı, alışılmış öğün saatlerin ve sessiz bir haftadan sonra bir not. Hepsi bu telefonda kalır.",
       "meals": "Öğün hatırlatıcıları",

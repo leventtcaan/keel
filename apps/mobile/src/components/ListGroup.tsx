@@ -9,6 +9,13 @@ import { tokens } from '@/theme/tokens';
 /** Whether the row being drawn is the first in its group (it has no line above it); a row outside a group has none either. */
 const FirstRow = createContext(true);
 
+/**
+ * Lists on the paper (ADR-094 Ek 9, K-1258): Settings' pages draw their groups with no sand card and their rows with no system
+ * icon, split by hairlines, the group's title in the serif voice. Every other list keeps its card; a ground of its own (Settings'
+ * "Your call reads these") turns it back off for its rows.
+ */
+export const OnPaper = createContext(false);
+
 type GroupProps = {
   /** The section title: small, semibold, ink (not grey), above the card. Already translated. */
   title?: string;
@@ -21,9 +28,10 @@ type GroupProps = {
 /** A section of a grouped list: a title, then one surface card whose rows are split by a hairline (ADR-070 Ek 2 #2). */
 export function ListGroup({ title, footer, children, testID }: GroupProps) {
   const { color } = useTheme();
+  const paper = useContext(OnPaper);
   // Built outside the JSX children (the raw-text guard reads them).
   const heading = title === undefined ? null : (
-    <Text accessibilityRole="header" style={[styles.title, { color: color.text }]}>
+    <Text accessibilityRole="header" style={[paper ? styles.paperTitle : styles.title, { color: color.text }]}>
       {title}
     </Text>
   );
@@ -31,10 +39,10 @@ export function ListGroup({ title, footer, children, testID }: GroupProps) {
   return (
     <View testID={testID} style={styles.group}>
       {heading}
-      <View testID={cardId} style={[styles.card, { backgroundColor: color.surface }]}>
+      <View testID={cardId} style={paper ? null : [styles.card, { backgroundColor: color.surface }]}>
         <ListRows>{children}</ListRows>
       </View>
-      {footer !== undefined && <Text style={[styles.footer, { color: color.muted }]}>{footer}</Text>}
+      {footer !== undefined && <Text style={[paper ? styles.paperFooter : styles.footer, { color: color.muted }]}>{footer}</Text>}
     </View>
   );
 }
@@ -82,9 +90,12 @@ type RowProps = {
 const INSET_PAST_ICON = tokens.space.md + tokens.icon.regular + tokens.space.md;
 
 /** One row of a ListGroup: icon, label, value, and a chevron, a switch or nothing at the end. */
-export function ListRow({ label, icon, value: given, detail, trailing, onPress, navigates = false, destructive = false, switch: toggle, accessibilityLabel, accessibilityHint, disabled = false, testID }: RowProps) {
+export function ListRow({ label, icon: givenIcon, value: given, detail, trailing, onPress, navigates = false, destructive = false, switch: toggle, accessibilityLabel, accessibilityHint, disabled = false, testID }: RowProps) {
   const { color } = useTheme();
   const first = useContext(FirstRow);
+  const paper = useContext(OnPaper);
+  // On the paper a row has no icon: the label says it (ADR-094 Ek 9).
+  const icon = paper ? undefined : givenIcon;
   // A value still being read is no value: the row is named by its label alone.
   const value = given === '' ? undefined : given;
   const ink = destructive ? color.warn : color.text;
@@ -93,7 +104,7 @@ export function ListRow({ label, icon, value: given, detail, trailing, onPress, 
   const separator = first ? null : (
     <View
       testID={testID === undefined ? undefined : `${testID}-separator`}
-      style={[styles.separator, { backgroundColor: color.line, left: icon === undefined ? tokens.space.md : INSET_PAST_ICON }]}
+      style={[styles.separator, { backgroundColor: color.line, left: paper ? 0 : icon === undefined ? tokens.space.md : INSET_PAST_ICON }]}
     />
   );
   const chevron =
@@ -139,7 +150,7 @@ export function ListRow({ label, icon, value: given, detail, trailing, onPress, 
       <View
         testID={testID}
         {...(toggle === undefined ? { accessible: true, accessibilityLabel: accessibilityLabel ?? (spokenSecond === undefined ? label : `${label}, ${spokenSecond}`) } : {})}
-        style={styles.row}>
+        style={[styles.row, paper && styles.paperRow]}>
         {body}
       </View>
     );
@@ -153,7 +164,7 @@ export function ListRow({ label, icon, value: given, detail, trailing, onPress, 
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [styles.row, (pressed || disabled) && styles.dim]}>
+      style={({ pressed }) => [styles.row, paper && styles.paperRow, (pressed || disabled) && styles.dim]}>
       {body}
     </Pressable>
   );
@@ -164,6 +175,9 @@ const styles = StyleSheet.create({
   title: { marginLeft: tokens.space.xs, fontSize: tokens.type.label, fontWeight: tokens.weight.semibold },
   card: { borderRadius: tokens.radius.card, overflow: 'hidden' },
   footer: { marginHorizontal: tokens.space.xs, fontSize: tokens.type.label },
+  paperTitle: { ...tokens.face.display, fontSize: tokens.type.groupTitle },
+  paperFooter: { fontSize: tokens.type.label },
+  paperRow: { paddingHorizontal: 0 },
   row: {
     minHeight: tokens.size.row,
     flexDirection: 'row',

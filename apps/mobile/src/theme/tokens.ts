@@ -147,6 +147,8 @@ export const tokens = {
     screenTitle: 34,
     decisionTitle: 30,
     heading: 24,
+    /** A group's title on a Settings page (ADR-094 Ek 9): the serif voice, under the page's own title. */
+    groupTitle: 20,
     number: 22,
     /** The paywall's headline and the example call's number (prototype paywall-v2 `h1`, `.hnums b`), and the number it replaces (`.hnums s`). */
     display: 44,
@@ -203,6 +205,8 @@ export const tokens = {
   border: {
     hairline: 1,
     outline: 1.5,
+    /** The line under the chosen word of a choice on the paper (ADR-094 Ek 9). */
+    underline: 2,
     /** The chosen recommended answer's accent ring (prototype `.opt.hero[aria-pressed]`). */
     ring: 3,
     /** The shutter's ring (prototype `.sh`). */

@@ -80,15 +80,17 @@ const flip = async (to: boolean) => {
   await act(async () => {});
 };
 
-test('off: the switch is off and one line names the three kinds; turning it on asks iOS and shows it on', async () => {
+test('off: the switch is off and one line says what turning it on brings; turning it on asks iOS and shows it on, the kinds named', async () => {
   await show();
   expect(reminders()).toHaveProp('value', false);
-  expect(screen.getByText(t('settings.reminders.kinds'))).toBeTruthy();
+  // Off, one line says what turning it on brings (ADR-094 Ek 9, K-1258); on, the line names the kinds.
+  expect(screen.getByText(t('settings.reminders.offLine'))).toBeTruthy();
   // The paragraph is on the routine page, not under the switch.
   expect(screen.queryByText(t('settings.reminders.what', { minutes: P.trainingLeadMinutes }))).toBeNull();
   await flip(true);
   expect(mockServices.reminders.turnOn).toHaveBeenCalledTimes(1);
   expect(reminders()).toHaveProp('value', true);
+  expect(screen.getByText(t('settings.reminders.kinds'))).toBeTruthy();
 });
 
 test('Your routine is a row that opens the routine page, showing the sentence on its right', async () => {
@@ -251,6 +253,9 @@ describe('the meal reminder, the fourth kind', () => {
   const meals = () => screen.getByRole('switch', { name: t('settings.reminders.meals') });
 
   test('the list says four kinds in one line, and the meal reminder has its own row', async () => {
+    // On: the line names the kinds and the meal row is there (off, neither is; ADR-094 Ek 9, K-1258).
+    mockSettings = { enabled: true, cue: '' };
+    mockPermission = { granted: true, canAskAgain: false };
     await show();
     expect(screen.getByText(t('settings.reminders.kinds'))).toBeTruthy();
     expect(t('settings.reminders.kinds')).toMatch(/meals/);
@@ -258,10 +263,9 @@ describe('the meal reminder, the fourth kind', () => {
     expect(meals()).toBeTruthy();
   });
 
-  test('with reminders off the meal row is off and cannot be switched; it waits for the rest', async () => {
+  test('with reminders off there is no meal row to switch; it waits for the rest (ADR-094 Ek 9, K-1258)', async () => {
     await show();
-    expect(meals()).toHaveProp('value', false);
-    expect(meals()).toHaveProp('disabled', true);
+    expect(screen.queryByRole('switch', { name: t('settings.reminders.meals') })).toBeNull();
   });
 
   test('with reminders on it is on with them, and off on its own it leaves the other kinds alone', async () => {

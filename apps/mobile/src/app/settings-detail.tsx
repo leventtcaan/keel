@@ -3,6 +3,7 @@ import { type ReactNode, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { OnPaper } from '@/components/ListGroup';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { t } from '@/copy';
 import { CoachSettings } from '@/settings/CoachSettings';
@@ -66,7 +67,8 @@ export default function SettingsDetailScreen() {
     <SafeAreaView testID="screen" style={[styles.safe, { backgroundColor: color.background }]} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         <ScreenTitle>{detailTitle(part)}</ScreenTitle>
-        {body[part]}
+        {/* On the paper, as the chapter pages (ADR-094 Ek 9, K-1258). */}
+        <OnPaper.Provider value>{body[part]}</OnPaper.Provider>
       </ScrollView>
     </SafeAreaView>
   );

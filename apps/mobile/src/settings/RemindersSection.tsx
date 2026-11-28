@@ -86,11 +86,32 @@ export function RemindersSection() {
     step = { label: t('settings.reminders.turnOnAll'), opensSettings: false };
   }
 
+  // Off with nothing to fix: the two switches that ride on it are not drawn, and one line says what turning it on brings (ADR-094 Ek 9).
+  if (!on && step === null) footer = t('settings.reminders.offLine');
+
   // Built before the JSX: a literal inside a JSX child is read as text by the copy guard (copy-literals.test.ts).
   const stepButton =
     step === null ? null : (
       <Button label={step.label} variant="text" size="sm" disabled={busy} onPress={step.opensSettings ? () => void Linking.openSettings() : turnOn} />
     );
+  // The meal reminder (ADR-090 #2, the fourth kind): on with the rest, and off on its own. The evening walk nudge (K-1216, the
+  // fifth kind): its own switch, off until the user turns it on. Neither is there while reminders are off (ADR-094 Ek 9).
+  const mealRow = on ? (
+    <ListRow
+      icon="fork.knife"
+      label={t('settings.reminders.meals')}
+      switch={{ value: settings.mealsOff !== true, onValueChange: (next) => void run(() => reminders.setMeals(next), {}, 'settings.reminders.failed') }}
+      disabled={busy}
+    />
+  ) : null;
+  const walkRow = on ? (
+    <ListRow
+      icon="figure.walk"
+      label={t('settings.reminders.walk')}
+      switch={{ value: settings.walkOn === true, onValueChange: (next) => void run(() => reminders.setWalk(next), {}, 'settings.reminders.failed') }}
+      disabled={busy}
+    />
+  ) : null;
   return (
     <View style={styles.stack}>
       <ListGroup footer={footer} testID="group-reminders">
@@ -101,20 +122,8 @@ export function RemindersSection() {
           disabled={busy}
         />
         <ListRow icon="clock" label={t('settings.reminders.routine')} value={settings.cue} navigates onPress={() => openDetail('routine')} />
-        {/* The meal reminder (ADR-090 #2, the fourth kind): on with the rest, and off on its own. Nothing to switch while reminders are off. */}
-        <ListRow
-          icon="fork.knife"
-          label={t('settings.reminders.meals')}
-          switch={{ value: on && settings.mealsOff !== true, onValueChange: (next) => void run(() => reminders.setMeals(next), {}, 'settings.reminders.failed') }}
-          disabled={busy || !on}
-        />
-        {/* The evening walk nudge (K-1216, the fifth kind): its own switch, off until the user turns it on. */}
-        <ListRow
-          icon="figure.walk"
-          label={t('settings.reminders.walk')}
-          switch={{ value: on && settings.walkOn === true, onValueChange: (next) => void run(() => reminders.setWalk(next), {}, 'settings.reminders.failed') }}
-          disabled={busy || !on}
-        />
+        {mealRow}
+        {walkRow}
         <TrialReminderRow />
       </ListGroup>
       {stepButton}
