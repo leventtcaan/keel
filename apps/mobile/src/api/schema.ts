@@ -3225,6 +3225,14 @@ export interface components {
              *     exported training data (V3 inventory: training.workout_set.rest_seconds).
              */
             restSeconds?: number;
+            /**
+             * @description The set was logged after "Too heavy?" took the user to a lighter load (K-1262, ADR-096): the load before it felt
+             *     wrong. Absent is false; a LoggedSet carries it only when true. The next session's target reads it: the sets above
+             *     the marked load are not progressed from, and that session adds no load (data/parameters/training.yaml
+             *     too_heavy_marked_sets_min). Free: no subscription is read. Part of the exported training data (V3 inventory:
+             *     training.workout_set.went_lighter).
+             */
+            wentLighter?: boolean;
         };
         NewCustomExercise: {
             clientId: components["schemas"]["ClientId"];
