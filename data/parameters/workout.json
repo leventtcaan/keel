@@ -248,6 +248,14 @@
       "note": "How far back a move's history and records reach (ADR-033 §1): a year of training; the server answers at most 400 days (keel.api.max-range-days)."
     },
     {
+      "key": "move_history_page",
+      "value": 20,
+      "unit": "sessions",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-096-para-haritasi.md#Karar",
+      "note": "A move's history, sessions per page (K-1259, ADR-096: the full log, paged, with no limit in time; free). The server reads it (MoveHistoryController); twenty sessions of one move is a few months of training, one screen and a little more."
+    },
+    {
       "key": "note_max_chars",
       "value": 500,
       "unit": "characters",

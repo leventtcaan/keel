@@ -987,6 +987,38 @@ paths:
                   $ref: "#/components/schemas/Exercise"
         default:
           $ref: "#/components/responses/Error"
+  /v1/exercises/{exerciseId}/history:
+    get:
+      tags: [training]
+      operationId: getMoveHistory
+      summary: A move's history, a page at a time, and its records of all time (K-1259, ADR-096, ADR-033)
+      description: |
+        Every session that has the move, newest first, a page of move_history_page sessions (data/parameters/workout.json)
+        at a time, with no limit in time: each with the move's sets only, warm-ups too (what was done). Imported sessions
+        are history and listed. `records` are the move's records of all time from its working sets, whatever page is
+        asked, oldest first wins a tie: a compound move with an external load its heaviest set, its highest estimated max
+        (Epley with RIR, as the engine) and its most reps at each load; an isolation move only its most reps at each load;
+        a bodyweight move its most reps; a weighted bodyweight move its heaviest added load and its most reps with the
+        body alone. Loads in kg as logged, one record per distinct kg (the phone joins loads that read the same in its
+        unit). Free for everyone: the subscription is not read. A move of neither the catalog nor the user's own is
+        NOT_FOUND; a cursor that is not one of the account's sessions with the move is VALIDATION_FAILED.
+      parameters:
+        - name: exerciseId
+          in: path
+          required: true
+          description: A catalog move's id or "custom:<uuid>" for the user's own
+          schema:
+            type: string
+        - $ref: "#/components/parameters/Before"
+      responses:
+        "200":
+          description: The page and the records
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MoveHistory"
+        default:
+          $ref: "#/components/responses/Error"
   /v1/program:
     get:
       tags: [training]
@@ -5467,6 +5499,42 @@ components:
       oneOf:
         - $ref: "#/components/schemas/Decision"
         - $ref: "#/components/schemas/LockedDecision"
+    MoveHistory:
+      type: object
+      required: [sessions, records]
+      properties:
+        sessions:
+          type: array
+          description: Newest first; each session's `sets` are this move's only. `setsNextTargets` is not given here.
+          items:
+            $ref: "#/components/schemas/Workout"
+        next:
+          type: string
+          description: The cursor for the next (older) page; absent on the last page.
+        records:
+          type: array
+          items:
+            $ref: "#/components/schemas/MoveRecord"
+    MoveRecord:
+      type: object
+      required: [kind, on]
+      description: |
+        HEAVIEST: the heaviest working set (`loadKg`, `reps`; at one load the most reps). ESTIMATED_MAX: the highest Epley
+        estimate (`kg`). REPS_AT: the most reps at one load (`loadKg`, `reps`), heaviest load first. MOST_REPS: the most
+        reps (`reps`). `on`: when the session that holds it began.
+      properties:
+        kind:
+          type: string
+          enum: [HEAVIEST, ESTIMATED_MAX, REPS_AT, MOST_REPS]
+        loadKg:
+          type: number
+        reps:
+          type: integer
+        kg:
+          type: number
+        "on":
+          type: string
+          format: date-time
     DecisionPage:
       type: object
       required: [items]
