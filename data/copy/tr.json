@@ -3685,6 +3685,20 @@
     "restoreFailed": "Satın alımlar geri yüklenemedi. Birazdan tekrar dene."
   },
   "settings": {
+    "section": {
+      "week": "Haftan",
+      "you": "Sen",
+      "app": "Uygulama",
+      "about": "Hakkında",
+      "reads": "Kararın bunlara bakar",
+      "checkIn": "kontrol {day}",
+      "on": "Açık",
+      "off": "Kapalı",
+      "healthLine": "Sağlık verisi, Apple Health, içe aktarma",
+      "coachLine": "Yapay zekâ izni, ne hatırladığı",
+      "aboutLine": "Nasıl çalışır, puanla, yasal",
+      "accountLine": "Dışa aktar, çıkış, hesabı sil"
+    },
     "coach": {
       "title": "Koç",
       "row": "Koç ve yapay zekâ",
@@ -3766,6 +3780,8 @@
       "title": "Birimler",
       "metric": "Metrik (kg, cm)",
       "imperial": "İngiliz birimleri (lb, ft, in)",
+      "metricShort": "kg, cm",
+      "imperialShort": "lb, ft, in",
       "note": "Geçmişin kaydedildiği gibi kalır.",
       "failed": "Birimler değiştirilemedi. Bağlantını kontrol edip tekrar dene."
     },

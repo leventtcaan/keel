@@ -3428,6 +3428,20 @@
     "restoreFailed": "Couldn't restore purchases. Try again in a moment."
   },
   "settings": {
+    "section": {
+      "week": "Your week",
+      "you": "You",
+      "app": "App",
+      "about": "About",
+      "reads": "Your call reads these",
+      "checkIn": "check-in {day}",
+      "on": "On",
+      "off": "Off",
+      "healthLine": "Health data, Apple Health, imports",
+      "coachLine": "The AI consent, what it remembers",
+      "aboutLine": "How it works, rate the app, legal",
+      "accountLine": "Export, sign out, delete account"
+    },
     "coach": {
       "title": "Coach",
       "row": "Coach and AI",
@@ -3509,6 +3523,8 @@
       "title": "Units",
       "metric": "Metric (kg, cm)",
       "imperial": "Imperial (lb, ft, in)",
+      "metricShort": "kg, cm",
+      "imperialShort": "lb, ft, in",
       "note": "Your history stays as logged.",
       "failed": "Couldn't change units. Check your connection and try again."
     },

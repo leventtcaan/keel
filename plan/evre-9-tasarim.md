@@ -47,7 +47,7 @@ ekranda, sheet'te, pop-up'ta ve gelecekteki her ekranda aynen. Sıradaki: 9c'nin
 6. Yemek: öğün kaydetme (font kayması), arama, ev ölçüleri. **BİTTİ (27 Kas, K-1247, K-1250):** B · Başlık öğün (ADR-094 Ek 4), A · Hafta şeridi (Ek 5); sunucu işleri K-1248, K-1249.
 7. Yürüyüş haritası: Ayarlar'dan çıkar, kardiyo ve günlük yürüyüş akışına, ücretli. **BİTTİ (27 Kas, K-1251):** A · Kendi sayfası, 1 · Harita ücretli (ADR-094 Ek 6).
 8. Abonelik ekranı (önizleme modunda tasarlanır, TestFlight'ta gerçek). **BİTTİ (28 Kas, K-1253):** F + E · önce senin kararın (kilitliyse kendi kilo çizginle), sonra takvim, sonra fiyat (ADR-094 Ek 8); puan isteme K-1254.
-9. Ayarlar (gezilmedi).
+9. Ayarlar. **YÖN SEÇİLDİ (28 Kas):** C · İçindekiler, bölüm sayfaları B düzeniyle (ADR-094 Ek 9); K-1257, K-1258.
 
 ### 9d · Para haritası
 Her özellik için "ücretsiz nerede biter, dahası ne" tablosu: koç, fotoğraf (aralık + ücretli), harita, geçmiş/grafik derinliği, "Çok ağır mı" gibi zeki

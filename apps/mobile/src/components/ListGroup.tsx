@@ -32,14 +32,23 @@ export function ListGroup({ title, footer, children, testID }: GroupProps) {
     <View testID={testID} style={styles.group}>
       {heading}
       <View testID={cardId} style={[styles.card, { backgroundColor: color.surface }]}>
-        {Children.toArray(children).map((child, index) => (
-          <FirstRow.Provider key={index} value={index === 0}>
-            {child}
-          </FirstRow.Provider>
-        ))}
+        <ListRows>{children}</ListRows>
       </View>
       {footer !== undefined && <Text style={[styles.footer, { color: color.muted }]}>{footer}</Text>}
     </View>
+  );
+}
+
+/** Rows split by a hairline, on whatever ground holds them: a ListGroup's card, or a group of its own (Settings' "Your call reads these"). */
+export function ListRows({ children }: { children: ReactNode }) {
+  return (
+    <>
+      {Children.toArray(children).map((child, index) => (
+        <FirstRow.Provider key={index} value={index === 0}>
+          {child}
+        </FirstRow.Provider>
+      ))}
+    </>
   );
 }
 

@@ -5,8 +5,8 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
 import type { components } from '@/api/schema';
-import { CoachGroup } from '@/settings/CoachGroup';
 import { CoachSettings } from '@/settings/CoachSettings';
+import { openSection } from '@/settings/sections';
 import { consentVersion } from '@/consent/consents';
 import { t } from '@/copy';
 import { ThemeProvider } from '@/theme/theme';
@@ -74,14 +74,9 @@ const press = async (name: string) => {
   await act(async () => fireEvent.press(screen.getByRole('button', { name })));
 };
 
-test('Settings has one row for the coach, which opens its page', async () => {
-  await render(
-    <ThemeProvider scheme="light">
-      <CoachGroup />
-    </ThemeProvider>,
-  );
-  await press(t('settings.coach.row'));
-  expect(mockPush).toHaveBeenCalledWith({ pathname: '/settings-detail', params: { part: 'coach' } });
+test('Settings has a chapter for the coach, which opens its page (K-1257)', async () => {
+  openSection('coach');
+  expect(mockPush).toHaveBeenCalledWith({ pathname: '/settings-section', params: { section: 'coach' } });
 });
 
 test('the consent text names the provider the server offers; allowing grants exactly that provider and data, to the text shown', async () => {

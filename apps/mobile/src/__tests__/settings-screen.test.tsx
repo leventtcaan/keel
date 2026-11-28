@@ -9,10 +9,11 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { Alert, type AlertButton } from 'react-native';
 
 import SettingsDetailScreen from '@/app/settings-detail';
-import SettingsScreen from '@/app/settings';
 import { t } from '@/copy';
 import { ThemeProvider } from '@/theme/theme';
 import { palettes } from '@/theme/tokens';
+
+import { AllChapters } from './support/allChapters';
 
 type Status = 'GRANTED' | 'WITHDRAWN' | 'NEVER_ASKED';
 let mockConsents: Record<string, Status> = {};
@@ -77,8 +78,10 @@ jest.mock('@/services/ServicesProvider', () => ({
 jest.mock('@/settings/SubscriptionSection', () => ({ SubscriptionSection: () => null }));
 // The training group, the food row and the About you rows (K-982, K-1062) read the program and the profile on their own; their
 // behaviour is settings-groups.test.tsx. Here they would take this file's consent answers out of their order too.
-jest.mock('@/settings/TrainingGroup', () => ({ TrainingGroup: () => null }));
-jest.mock('@/settings/ProfileGroup', () => ({ ProfileGroup: () => null }));
+jest.mock('@/settings/WeekSection', () => ({ WeekSection: () => null }));
+jest.mock('@/settings/YouSection', () => ({ YouSection: () => null }));
+// The coach's chapter (K-1257) reads its consent on its own; its behaviour is coach-settings.test.tsx.
+jest.mock('@/settings/CoachSettings', () => ({ CoachSettings: () => null }));
 // The trial's reminder row reads the subscription on its own (subscription-section and trial-reminder-offer tests).
 jest.mock('@/settings/TrialReminderRow', () => ({ TrialReminderRow: () => null }));
 jest.mock('@/settings/FoodGroup', () => ({ FoodGroup: () => null }));
@@ -95,7 +98,7 @@ beforeEach(() => {
 async function show() {
   await render(
     <ThemeProvider scheme="light">
-      <SettingsScreen />
+      <AllChapters />
     </ThemeProvider>,
   );
   await act(async () => {});
@@ -149,10 +152,10 @@ jest.mock('expo-router', () => ({
   useFocusEffect: (effect: () => void) => jest.requireActual<typeof import('react')>('react').useEffect(effect, [effect]),
 }));
 
+// The screen's title and the chapters' (Health and data, Account) are the pages' own now (K-1257): settings-contents.test.tsx.
 test('the sections are there, and nothing is in the warn colour until a destructive step asks', async () => {
   await show();
-  expect(screen.getByRole('header', { name: t('settings.title') })).toBeOnTheScreen();
-  for (const key of ['units.title', 'health.title', 'import.title', 'account.title', 'export.title', 'delete.title', 'signOut.title']) {
+  for (const key of ['units.title', 'import.title', 'export.title', 'delete.title', 'signOut.title']) {
     expect(screen.getAllByText(t(`settings.${key}`)).length).toBeGreaterThan(0);
   }
   expect(warnButtons()).toEqual([]);

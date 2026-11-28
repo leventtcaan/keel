@@ -5,7 +5,7 @@ import { Button } from '@/components/Button';
 import { ListGroup, ListRow } from '@/components/ListGroup';
 import { ProblemText } from '@/components/ProblemText';
 import { t } from '@/copy';
-import type { NotificationPermission } from '@/notifications/reminders';
+import type { NotificationPermission, ReminderSettings } from '@/notifications/reminders';
 import { useAppServices } from '@/services/ServicesProvider';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
@@ -13,6 +13,13 @@ import { tokens } from '@/theme/tokens';
 import { openDetail } from './detail';
 import { TrialReminderRow } from './TrialReminderRow';
 import { useAction } from './useAction';
+
+/** The check-in morning alone while the server makes no calls (K-992): nothing rings, so it is never shown as on. */
+const waitingForCalls = (settings: ReminderSettings) => settings.enabled && settings.only === 'check_in' && settings.noCalls === true;
+
+/** Whether the reminders ring: turned on, allowed by iOS, and not waiting for calls. Settings' contents say it the same way (K-1257). */
+export const remindersOn = (settings: ReminderSettings, permission: NotificationPermission | null): boolean =>
+  settings.enabled && permission?.granted === true && !waitingForCalls(settings);
 
 /**
  * The reminders (K-410, ADR-036) as one grouped list, all of them in this one place (K-1062): the switch "Reminders" for the four
@@ -60,9 +67,8 @@ export function RemindersSection() {
     );
   const turnOff = () => void run(() => reminders.turnOff(), {}, 'settings.reminders.failed');
 
-  // The check-in morning alone while the server makes no calls (K-992): nothing rings, so it is never shown as on.
-  const waiting = settings.enabled && settings.only === 'check_in' && settings.noCalls === true;
-  const on = settings.enabled && permission?.granted === true && !waiting;
+  const waiting = waitingForCalls(settings);
+  const on = remindersOn(settings, permission);
   const blocked = permission !== null && !permission.granted && !permission.canAskAgain;
 
   // What the line under the switch says, and the one step that goes with it. The switch cannot do these two things.
@@ -87,7 +93,7 @@ export function RemindersSection() {
     );
   return (
     <View style={styles.stack}>
-      <ListGroup title={t('settings.reminders.title')} footer={footer} testID="group-reminders">
+      <ListGroup footer={footer} testID="group-reminders">
         <ListRow
           icon="bell"
           label={t('settings.reminders.title')}

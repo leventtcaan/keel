@@ -5,15 +5,17 @@
  */
 import { t } from '@/copy';
 import { TABS } from '@/navigation/tabs';
+import { isSection, sectionTitle } from '@/settings/sections';
 import type { Palette } from '@/theme/tokens';
 
 /** A route in the stack's state, with the state of the navigator inside it, if it has one (the tabs). */
-type RouteState = { key: string; name: string; state?: { index?: number; routes: { name: string }[] } };
+type RouteState = { key: string; name: string; params?: object; state?: { index?: number; routes: { name: string }[] } };
 
 /** What a screen is called when another names it as the one it came from. Tabs are named by the tab in view. */
 const NAMED: Record<string, string> = {
   settings: 'settings.title',
   'settings-detail': 'settings.title',
+  'settings-section': 'settings.title',
   'edit-program': 'editProgram.title',
 };
 
@@ -31,6 +33,9 @@ export function previousScreenName(state: { routes: RouteState[] }, key: string)
     const tab = TABS.find((candidate) => candidate.name === inView);
     return tab === undefined ? undefined : t(tab.titleKey);
   }
+  // A chapter of Settings (K-1257) is named by its chapter: "‹ Your week".
+  const section = previous.name === 'settings-section' ? (previous.params as { section?: unknown } | undefined)?.section : undefined;
+  if (isSection(section)) return sectionTitle(section);
   const named = NAMED[previous.name];
   return named === undefined ? undefined : t(named);
 }
