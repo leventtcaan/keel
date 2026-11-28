@@ -48,6 +48,7 @@ const mockStore: SubscriptionStore = {
   manage: jest.fn(async () => {}),
 };
 const mockServices = {
+  reviewPrompt: { noteFinish: async () => {}, notePaywall: async () => {}, maybeAsk: async () => false },
   api: { GET: jest.fn(async () => ok(NONE)) },
   purchases: mockStore,
   gate: { refresh: jest.fn(async () => true), current: () => 'required', subscribe: () => () => {} },

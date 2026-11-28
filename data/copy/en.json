@@ -3434,6 +3434,10 @@
     "guide": {
       "row": "How it works"
     },
+    "rate": {
+      "row": "Rate the app",
+      "hint": "Opens the App Store"
+    },
     "subscription": {
       "title": "Subscription",
       "none": "Not subscribed. Your log and your first full call work without one. Each call after that comes with a subscription.",

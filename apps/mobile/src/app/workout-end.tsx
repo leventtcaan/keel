@@ -11,6 +11,7 @@ import { Button } from '@/components/Button';
 import { MuscleMap } from '@/components/MuscleMap';
 import { announce } from '@/components/ProblemText';
 import { t } from '@/copy';
+import { reviewParams } from '@/review/reviewPrompt';
 import { useAppServices, useUnits } from '@/services/ServicesProvider';
 import { FocusMode, useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
@@ -45,6 +46,17 @@ export default function WorkoutEndScreen() {
   const [end, setEnd] = useState<WorkoutEnd | null>(null);
   const [figure, setFigure] = useState<Figure>('male');
   const felt = useRef(false);
+  // The finish is counted once (K-1254); the rating request waits a moment, and leaving the screen cancels it.
+  const counted = useRef(false);
+  const rating = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const shown = useRef(true);
+  useEffect(() => {
+    shown.current = true;
+    return () => {
+      shown.current = false;
+      if (rating.current !== null) clearTimeout(rating.current);
+    };
+  }, []);
   // One read at a time: Try again tapped twice reads once.
   const reading = useRef(false);
 
@@ -62,11 +74,20 @@ export default function WorkoutEndScreen() {
           if (quiet) return;
           // VoiceOver hears what came: the numbers, or why they wait.
           announce(t(answer.kind === 'ready' ? 'workoutEnd.ready' : answer.kind === 'pending' ? 'workoutEnd.pending' : 'workoutEnd.failed'));
+          if (answer.kind !== 'ready' || counted.current) return;
+          counted.current = true;
+          const newBest = answer.summary.marks.some((m) => m.kind === 'RECORD');
           // The record is felt once, when it is first shown.
-          if (answer.kind === 'ready' && !felt.current && answer.summary.marks.some((m) => m.kind === 'RECORD')) {
+          if (newBest && !felt.current) {
             felt.current = true;
             haptics.record();
           }
+          // The finish counts toward asking for a rating; with a new best, Apple's prompt may be asked for a moment after the
+          // screen is seen, never from a tap (K-1254, ADR-095). Whether it shows is Apple's.
+          void services.reviewPrompt.noteFinish(workout).then(() => {
+            if (!newBest || !shown.current) return;
+            rating.current = setTimeout(() => void services.reviewPrompt.maybeAsk({ newBest }).catch(() => undefined), reviewParams.promptDelayMs);
+          }).catch(() => undefined);
         });
     },
     [services, workout],

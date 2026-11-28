@@ -57,7 +57,9 @@ const mockGet = jest.fn(async (path: string) => {
   if (path === '/v1/weight-trend') return ok(TREND);
   return failed();
 });
+const mockReview = { noteFinish: jest.fn(async () => {}), notePaywall: jest.fn(async () => {}), maybeAsk: jest.fn(async () => false) };
 const mockServices = {
+  reviewPrompt: mockReview,
   api: { GET: mockGet },
   purchases: mockStore,
   gate: { refresh: jest.fn(async () => true), current: () => 'required', subscribe: () => () => {} },
@@ -160,6 +162,11 @@ describe('the page is the paper', () => {
     expect(saving).toHaveStyle({ color: palettes.light.accent });
     expect(StyleSheet.flatten(saving.props.style).backgroundColor).toBeUndefined();
   });
+});
+
+test('the plans opened today: the day is kept, so no rating is asked for today (K-1254, ADR-095)', async () => {
+  await show();
+  expect(mockReview.notePaywall).toHaveBeenCalledTimes(1);
 });
 
 describe('the hero', () => {

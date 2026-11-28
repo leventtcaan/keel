@@ -21,6 +21,7 @@ import { type StateService, createStateService } from '@/state/stateService';
 import { type SubscriptionGate, createSubscriptionGate } from '@/subscription/gate';
 import type { LegalLink } from '@/subscription/links';
 import { type PlanPreviews, createPlanPreviews } from '@/subscription/planPreview';
+import { type ReviewPrompt, createReviewPrompt, noStoreReview } from '@/review/reviewPrompt';
 import { type TrialReminder, createTrialReminder } from '@/subscription/trialReminder';
 import { type SubscriptionStore, storeUnavailable } from '@/subscription/store';
 import { localDay } from '@/today/today';
@@ -82,6 +83,8 @@ type Deps = {
   photoCache?: PhotoCache;
   /** The App Store through RevenueCat (K-702, revenueCat.ts); none where there is none (Expo Go, tests). */
   purchases?: SubscriptionStore;
+  /** Apple's rating prompt (expo-store-review on the phone, K-1254); none where there is no prompt (tests): it throws, and nothing is counted as asked. */
+  storeReview?: () => Promise<void>;
   /** The Terms of Use and Privacy Policy set in the build (links.ts): without both nothing is sold, and the gate stays open. */
   links?: LegalLink[];
   now?: () => Date;
@@ -179,6 +182,8 @@ export type AppServices = {
   gate: SubscriptionGate;
   /** The trial reminder the user asked for (K-707): a billing notice under its own id, on this phone only. */
   trialReminder: TrialReminder;
+  /** When to ask for an App Store rating (K-1254, ADR-095): after a finish with a new best, once the app has been used. */
+  reviewPrompt: ReviewPrompt;
   /** The plan just shown at the end of onboarding, for the paywall after it (K-967): in memory only. */
   planPreviews: PlanPreviews;
   /** Whether the first-use guide was shown on this phone (K-1065). */
@@ -206,6 +211,7 @@ export async function createAppServices({
   photoCache = noPhotoCache,
   appleReauth,
   purchases = storeUnavailable,
+  storeReview = noStoreReview,
   links = [],
   now = () => new Date(),
 }: Deps): Promise<AppServices> {
@@ -253,6 +259,7 @@ export async function createAppServices({
   const photos = createPhotoLibrary(photoFiles);
   // iOS is asked only on the user's tap ("Remind me before it ends"), through the reminders' own access.
   const trialReminder = createTrialReminder({ kv, alerts, ask: () => notifications.request(), now });
+  const reviewPrompt = await createReviewPrompt({ kv, now, ask: storeReview });
   const planPreviews = createPlanPreviews();
   const guide = createGuideMark({ kv });
   const walks = await createWalks({ kv });
@@ -335,6 +342,7 @@ export async function createAppServices({
     sessionSkips.forget().catch(reportError); // and what was skipped in it
     sessionSwaps.forget().catch(reportError); // and what was swapped in it
     healthAsk.forget().catch(reportError); // and whether Apple Health was asked about: the next person is asked afresh (K-980)
+    reviewPrompt.forget().catch(reportError); // and the rating prompt's counts and days (K-1254)
     healthWriting.forget().catch(reportError); // and the Apple Health switches (K-412); what was written stays the user's
     trialReminder.forget().catch(reportError); // and the trial reminder: the account's, not the next person's (K-707)
     planPreviews.forget(); // and the plan just shown, kept in memory for the paywall (K-967)
@@ -369,6 +377,7 @@ export async function createAppServices({
     purchases,
     gate,
     trialReminder,
+    reviewPrompt,
     planPreviews,
     guide,
     walks,

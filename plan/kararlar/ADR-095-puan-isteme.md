@@ -14,7 +14,7 @@ süzgeçli geri bildirim manipülasyon sayılır (Business giriş paragrafı). P
 - Kişinin gerçekten iyi hissettiği an (HIG: "demonstrated engagement"), kesinti anı değil (set, dinlenme, kayıt).
 - Veri telefonda kalır (V1-V3): "en son ne zaman sorduk" yalnız cihazda.
 
-## Karar
+## Karar · Apple'ın penceresi, rekorlu bitişte
 1. **API:** `expo-store-review` `~57.0.3` (Expo'nun kendi paketi; alternatif: kendi yerel modülümüz → bakım yükü, gerekçe yok). `app.config.ts` › `ios.appStoreUrl`.
 2. **An (önerilen A):** antrenman bitiş ekranında, sunucu bu oturumda en az bir **yeni rekor** (`RECORD`) listelediyse, ekran açıldıktan kısa süre sonra.
    Şartlar parametre dosyasında (`data/parameters/review.json`): en az N bitmiş antrenman (öneri 3), ilk kullanımdan en az M gün (öneri 7), iki istek

@@ -28,6 +28,7 @@ import type { GateState } from '@/subscription/gate';
 import { useGateState } from '@/subscription/useGate';
 import { configuredLegalLinks } from '@/subscription/links';
 import { purchasesFor } from '@/subscription/preview';
+import { deviceStoreReview } from '@/review/deviceStoreReview';
 import { revenueCatStore } from '@/subscription/revenueCat';
 import { keychainStorage } from '@/session/keychain';
 import { exportAccount } from '@/settings/exportData';
@@ -97,6 +98,7 @@ async function build(): Promise<PhoneServices> {
     links: configuredLegalLinks(), // without both, nothing is sold and the gate stays open (ADR-057 D3, K-706)
     // Not available in Expo Go or without the SDK key; set up only when first needed (ADR-057 D1). A development build with
     // EXPO_PUBLIC_PAYWALL_PREVIEW=1 shows sample plans instead (preview.ts); a release build never does.
+    storeReview: deviceStoreReview, // Apple's rating prompt, after a finish with a new best (K-1254, ADR-095)
     purchases: purchasesFor({ dev: __DEV__, flag: process.env.EXPO_PUBLIC_PAYWALL_PREVIEW, real: () => revenueCatStore({ report: reportProblem }) }),
   });
   // Offline: the kept answers (units, onboarding done) stay; an unknown onboarding state offers to try again.

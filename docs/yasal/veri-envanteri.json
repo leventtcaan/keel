@@ -1440,7 +1440,7 @@
     "policy": "data-on-phone"
    },
    {
-    "what": "Settings and states on the phone: appearance (light, dark or system), language (system, English or Türkçe; never sent), units, the rest the timer aims for (the recommended band or your own value per kind of move; never sent), consents, reminders (all four, or the check-in morning alone), your reminder sentence, the weekdays of your program (the training reminders go by them; never sent) and the week's weigh-in count (the training reminder's extra line; never sent), your usual meal times and which meals today has (learned on the phone from your own logs for the meal reminder; never sent) and whether the meal reminder is switched off, declared state, eating-pattern check result (answers never stored), projection, subscription gate, trial reminder, training cache (program, exercises, gym, history, own moves, setups), the open workout's pause and what was skipped or swapped in it, Apple Health write switches, whether Apple Health was asked about yet (once, at the first weigh-in or workout), and the steps, sleep and active energy of the recent days sent (up to 28, so none is sent twice), onboarding done or still open (plan not yet seen), whether the account met the subscription screen, the profile's sex (for the muscle map's figure), whether the first-use guide was shown (never sent), the last days the app was opened (never sent: a long gap, reminders' timing), your named walks (a name and a one-way distance you typed, for the steps-left line, and for a walk kept from the map which two of your saved places it joins; never sent), your saved places (a name and the point on the map you picked, for the walk between two; never sent, and the phone's own location is never read), the evening walk nudge's switch (off by default) and its last facts (the day, the steps left, its line; never sent), and the day the coach's Add to plan set that walk for (today only; never sent)",
+    "what": "Settings and states on the phone: appearance (light, dark or system), language (system, English or Türkçe; never sent), units, the rest the timer aims for (the recommended band or your own value per kind of move; never sent), consents, reminders (all four, or the check-in morning alone), your reminder sentence, the weekdays of your program (the training reminders go by them; never sent) and the week's weigh-in count (the training reminder's extra line; never sent), your usual meal times and which meals today has (learned on the phone from your own logs for the meal reminder; never sent) and whether the meal reminder is switched off, declared state, eating-pattern check result (answers never stored), projection, subscription gate, trial reminder, training cache (program, exercises, gym, history, own moves, setups), the open workout's pause and what was skipped or swapped in it, Apple Health write switches, whether Apple Health was asked about yet (once, at the first weigh-in or workout), and the steps, sleep and active energy of the recent days sent (up to 28, so none is sent twice), onboarding done or still open (plan not yet seen), whether the account met the subscription screen, the profile's sex (for the muscle map's figure), whether the first-use guide was shown (never sent), the last days the app was opened (never sent: a long gap, reminders' timing), your named walks (a name and a one-way distance you typed, for the steps-left line, and for a walk kept from the map which two of your saved places it joins; never sent), your saved places (a name and the point on the map you picked, for the walk between two; never sent, and the phone's own location is never read), the evening walk nudge's switch (off by default) and its last facts (the day, the steps left, its line; never sent), the day the coach's Add to plan set that walk for (today only; never sent), and when to ask for an App Store rating (how many workouts were finished, the last one's id, the day of first use, of the last request and of the last paywall; never sent)",
     "policy": "data-on-phone",
     "kv_keys": [
      "appearance",
@@ -1472,6 +1472,11 @@
      "reminders.walkOn",
      "reminders.walkToday",
      "reminders.weighIns",
+     "review.finishedWorkouts",
+     "review.firstUseDay",
+     "review.lastAskedDay",
+     "review.lastFinishedWorkout",
+     "review.paywallDay",
      "state.current",
      "subscription.gate",
      "subscription.trialReminder",
@@ -1546,6 +1551,7 @@
    "expo-splash-screen": null,
    "expo-sqlite": null,
    "expo-status-bar": null,
+   "expo-store-review": null,
    "expo-symbols": null,
    "expo-system-ui": null,
    "expo-video": null,

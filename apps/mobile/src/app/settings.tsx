@@ -12,6 +12,7 @@ import { FoodGroup } from '@/settings/FoodGroup';
 import { CoachGroup } from '@/settings/CoachGroup';
 import { HealthGroup } from '@/settings/HealthGroup';
 import { LegalGroup } from '@/settings/LegalGroup';
+import { RateGroup } from '@/settings/RateGroup';
 import { ProfileGroup } from '@/settings/ProfileGroup';
 import { RemindersSection } from '@/settings/RemindersSection';
 import { SubscriptionSection } from '@/settings/SubscriptionSection';
@@ -27,7 +28,7 @@ import { tokens } from '@/theme/tokens';
  * page: Appearance and Units (segmented), Training (days, cardio, the workout import), Food (what the user avoids: chips),
  * About you (goal, check-in day, height, activity, birth year: buttons and wheels), Reminders (ADR-036: a switch, the routine,
  * the trial's), Health and data (the consents, Apple Health, the import), Coach (the AI consent, what it remembers; ADR-092), Subscription (K-702), Data sources (ADR-088 #3),
- * Legal (the privacy policy and the terms) and Account (export, sign out, delete). Under a row there is one line at most;
+ * Legal (the privacy policy and the terms), How it works, Rate the app (K-1254) and Account (export, sign out, delete). Under a row there is one line at most;
  * whatever is longer is on the page the row opens (`settings-detail`). The way back is the system's, in the header. Food and
  * Health and data follow the health data consent.
  */
@@ -51,6 +52,7 @@ export default function SettingsScreen() {
         <DataSourcesGroup />
         <LegalGroup />
         <GuideGroup />
+        <RateGroup />
         <AccountSection title={t('settings.account.title')} />
       </ScrollView>
     </SafeAreaView>

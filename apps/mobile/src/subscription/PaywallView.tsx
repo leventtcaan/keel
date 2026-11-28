@@ -67,7 +67,7 @@ type Props = {
  * second purchase. Opened only when the user asks (D5): from a feature that needs it, or Settings.
  */
 export function Paywall({ required = false, onActive, preview = null, lockedWeek = null }: Props) {
-  const { api, purchases, report } = useAppServices();
+  const { api, purchases, report, reviewPrompt } = useAppServices();
   const { color } = useTheme();
   const insets = useContext(SafeAreaInsetsContext);
   const [step, setStep] = useState<Step>({ at: 'loading' });
@@ -95,6 +95,11 @@ export function Paywall({ required = false, onActive, preview = null, lockedWeek
     };
   }, [api, lockedWeek]);
   const ready: ReadyCall | null | 'asking' = lockedWeek === null ? null : answer?.week === lockedWeek ? answer.found : 'asking';
+
+  // A day the plans were on screen asks for no rating (K-1254, ADR-095): money and a rating prompt never meet.
+  useEffect(() => {
+    void reviewPrompt.notePaywall().catch(() => undefined);
+  }, [reviewPrompt]);
 
   const opening = useCallback(() => openPaywall({ api, store: purchases, report, links }).then(stepOf), [api, purchases, report, links]);
   useEffect(() => {

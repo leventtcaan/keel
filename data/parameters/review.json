@@ -1,0 +1,44 @@
+{
+  "parameters": [
+    {
+      "key": "review_min_finished_workouts",
+      "value": 3,
+      "unit": "count",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-095-puan-isteme.md#Karar",
+      "note": "Apple's rating prompt is asked for only once the person has finished at least this many workouts on this phone (K-1254, ADR-095): HIG asks for it only after people have demonstrated engagement."
+    },
+    {
+      "key": "review_min_days_since_first_use",
+      "value": 7,
+      "unit": "days",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-095-puan-isteme.md#Karar",
+      "note": "Never in the first week of use on this phone (HIG: not on first launch or during onboarding)."
+    },
+    {
+      "key": "review_min_days_between_requests",
+      "value": 14,
+      "unit": "days",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-095-puan-isteme.md#Karar",
+      "note": "At least this long between two requests (HIG: a week or two). Apple itself shows the prompt at most three times in 365 days."
+    },
+    {
+      "key": "review_prompt_delay_ms",
+      "value": 1500,
+      "unit": "ms",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-095-puan-isteme.md#Karar",
+      "note": "The finish screen with a new best is seen first; the request comes this long after it opens, never as the result of a tap (StoreKit: not in response to a user action)."
+    },
+    {
+      "key": "review_write_query",
+      "value": "action=write-review",
+      "unit": "url_query",
+      "tag": "urun",
+      "source": "arastirma/ham/puan-isteme-2026-11-28.md#3",
+      "note": "Added to the App Store address (app.config.ts ios.appStoreUrl) for Settings' rate row: Apple's write-review page, the persistent link StoreKit allows in settings."
+    }
+  ]
+}

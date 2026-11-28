@@ -29,6 +29,7 @@ let mockReturn: { awayDays: number; shouldPrompt: boolean; suggested: 'EASE_BACK
 const mockAnswers: unknown[] = [];
 const mockRemindersOff = { enabled: false, cue: '' };
 const mockServices = {
+  reviewPrompt: { noteFinish: async () => {}, notePaywall: async () => {}, maybeAsk: async () => false, forget: async () => {} },
   signInWithApple: jest.fn(),
   appleAvailable: async () => false,
   // What the settings screen reads on arrival (K-309); Today's parts (K-401) are not there yet, as for a new account.
