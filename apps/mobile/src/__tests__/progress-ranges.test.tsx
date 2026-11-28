@@ -139,3 +139,69 @@ describe('strength', () => {
     expect(screen.getByLabelText(/70 kg in the week of/)).toBeOnTheScreen();
   });
 });
+
+describe('side by side (K-1267, ADR-096: with a subscription)', () => {
+  const part = { kind: 'chart' as const, points: [{ day: rangeFrom(today(), 84), kg: 88 }, { day: today(), kg: 85 }] };
+  const showWeight = () =>
+    render(
+      <ThemeProvider scheme="light">
+        <WeightCard part={part} units="METRIC" />
+      </ThemeProvider>,
+    );
+
+  test('without a subscription: the sand lock, one chart, nothing read', async () => {
+    await showWeight();
+    await word(t('progress.compare.period'));
+    expect(screen.getByText(t('progress.compare.locked'))).toBeOnTheScreen();
+    expect(screen.getAllByTestId('weight-chart')).toHaveLength(1);
+    expect(mockServices.api.GET).not.toHaveBeenCalled();
+  });
+
+  test('with one: the period before, as long as the one shown, drawn under it with its dates; hidden again on a tap', async () => {
+    mockServices.paidAccess.mockImplementation(async () => 'open');
+    await showWeight();
+    await word(t('progress.compare.period'));
+    const to = rangeFrom(rangeFrom(today(), 84), 2); // the day before the shown range began
+    expect(mockServices.api.GET).toHaveBeenCalledWith('/v1/weight-trend', { params: { query: { from: rangeFrom(to, 84), to } } });
+    expect(screen.getAllByTestId('weight-chart')).toHaveLength(2);
+    expect(screen.getByText(t('progress.compare.span', { from: shortDate(rangeFrom(to, 84)), to: shortDate(to) }))).toBeOnTheScreen();
+    await word(t('progress.compare.hide'));
+    expect(screen.getAllByTestId('weight-chart')).toHaveLength(1);
+  });
+
+  test('a subscription that cannot be read is no lock', async () => {
+    mockServices.paidAccess.mockImplementation(async () => 'unread');
+    await showWeight();
+    await word(t('progress.compare.period'));
+    expect(screen.getByText(t('progress.range.unread'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('progress.compare.locked'))).toBeNull();
+  });
+
+  test('strength: another lift of the program under the first, chosen from the system list; locked without a subscription', async () => {
+    const week = (w: number) => rangeFrom(today(), 7 * w + 1);
+    const lift = (exerciseId: string, kg: number) =>
+      ({
+        exerciseId,
+        baseline: { loadKg: kg, reps: 5, day: week(4) },
+        best: { loadKg: kg + 10, reps: 5, day: week(1) },
+        stronger: true,
+        weeks: [
+          { weekOf: week(4), loadKg: kg, reps: 5, held: false },
+          { weekOf: week(1), loadKg: kg + 10, reps: 5, held: false },
+        ],
+      }) as Schemas['LiftProgress'];
+    const sheet = jest.spyOn(require('react-native').ActionSheetIOS, 'showActionSheetWithOptions').mockImplementation((...args: unknown[]) => (args[1] as (i: number) => void)(0));
+    await render(
+      <ThemeProvider scheme="light">
+        <LiftsCard lifts={[lift('squat', 100), lift('bench_press', 60)]} moves={new Map()} units="METRIC" />
+      </ThemeProvider>,
+    );
+    await word(t('progress.compare.lift'));
+    expect(screen.getByText(t('progress.compare.locked'))).toBeOnTheScreen();
+    mockServices.paidAccess.mockImplementation(async () => 'open');
+    await word(t('progress.compare.lift'));
+    expect(screen.getAllByTestId('strength-chart')).toHaveLength(2);
+    expect(screen.getByLabelText(/60 kg in the week of/)).toBeOnTheScreen();
+    sheet.mockRestore();
+  });
+});

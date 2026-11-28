@@ -1,20 +1,21 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
 import { Section } from '@/components/Section';
 import { t } from '@/copy';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
+import { Button } from '@/components/Button';
 import { useAppServices } from '@/services/ServicesProvider';
-import { localDay } from '@/today/today';
+import { load, localDay } from '@/today/today';
 import { shortDate } from '@/train/program';
 import { type UnitSystem, formatWeight, weightChange, weightStepKg } from '@/units/units';
 
 import { RangeNoteLine, RangeWords } from './ChartRanges';
 import { LineChart } from './LineChart';
-import { readTrend } from './longRange';
+import { rangeFrom, readTrend } from './longRange';
 import { type ChartRange, progressParams } from './params';
-import { useChartRange } from './useChartRange';
+import { useChartRange, usePaidPart } from './useChartRange';
 import type { ChartPoint } from './lineScale';
 import { WeighInDots } from './Parts';
 import type { WeightPart } from './sections';
@@ -49,7 +50,17 @@ export function WeightCard({ part, units }: { part: WeightPart; units: UnitSyste
   // Progress read again (a new weigh-in): back to the points it has, so a longer range never shows an older read.
   const stamp = part.kind === 'chart' ? part.points.map((p) => `${p.day}:${p.kg}`).join() : '';
   const { reset } = range;
-  useEffect(() => reset(), [stamp, reset]);
+  // Side by side (K-1267, with a subscription): the period before the one shown, as long, under it.
+  const paid = usePaidPart();
+  // Kept with the read it was asked over: once Progress reads again, it is gone.
+  const [asked, setBefore] = useState<{ stamp: string; from: string; to: string; points: { day: string; kg: number }[] } | null>(null);
+  const before = asked !== null && asked.stamp === stamp ? asked : null;
+  const { clear } = paid;
+  useEffect(() => {
+    reset();
+    clear();
+  }, [stamp, reset, clear]);
+  const days = progressParams.weightRanges.find((r) => r.key === range.key)?.days ?? null;
   if (part.kind === 'dots') return <WeighInDots count={part.count} min={part.min} note={part.note} />;
 
   const drawn = range.data !== null && range.data.length > 0 ? range.data : part.points;
@@ -83,6 +94,41 @@ export function WeightCard({ part, units }: { part: WeightPart; units: UnitSyste
         {text}
       </Text>
     );
+  const askBefore = () =>
+    paid.ask(async () => {
+      if (days === null) return false;
+      const to = rangeFrom(drawn[0]?.day ?? localDay(new Date()), 2);
+      const from = rangeFrom(to, days);
+      const read = await load(() => api.GET('/v1/weight-trend', { params: { query: { from, to } } }));
+      if (read.state !== 'ready') return false;
+      setBefore({ stamp, from, to, points: read.value });
+      return true;
+    });
+  // Built outside the JSX below (the raw-text guard reads JSX children).
+  const beforeChart =
+    before === null || before.points.length < 2 ? null : (
+      <>
+        <Text style={[styles.fine, { color: color.muted }]}>{t('progress.compare.span', { from: shortDate(before.from), to: shortDate(before.to) })}</Text>
+        <LineChart
+          prefix="weight"
+          points={before.points.map((p) => ({ day: p.day, value: p.kg, label: formatWeight(p.kg, units) }))}
+          summary={t('progress.compare.span', { from: shortDate(before.from), to: shortDate(before.to) })}
+        />
+      </>
+    );
+  const toggle =
+    days === null ? null : before === null ? (
+      <Button label={t('progress.compare.period')} variant="text" size="sm" onPress={() => void askBefore()} />
+    ) : (
+      <Button label={t('progress.compare.hide')} variant="text" size="sm" onPress={() => setBefore(null)} />
+    );
+  const compare = (
+    <>
+      {beforeChart}
+      {toggle}
+      <RangeNoteLine note={paid.note} lockLine={t('progress.compare.locked')} />
+    </>
+  );
   return (
     <Section card testID="section-weight" title={t('progress.weight.chartTitle')} aside={t('progress.weight.average')}>
       <Text testID="weight-latest" style={[styles.big, { color: color.text }]}>
@@ -93,6 +139,7 @@ export function WeightCard({ part, units }: { part: WeightPart; units: UnitSyste
       <RangeWords testID="weight-range" ranges={progressParams.weightRanges} value={range.key} onChange={(key) => void range.choose(key)} />
       {chart}
       <RangeNoteLine note={range.note} />
+      {compare}
     </Section>
   );
 }
