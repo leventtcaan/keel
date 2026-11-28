@@ -119,4 +119,21 @@ public class TrainingLog {
                         row.getString("side") == null ? null : Side.valueOf(row.getString("side"))))
                 .list();
     }
+
+    /**
+     * How many workouts logged in the app (not imported) between {@code from} and {@code to} each move went lighter in: a working
+     * set marked after "Too heavy?" (K-1262). Moves never marked are not in it.
+     */
+    public java.util.Map<String, Integer> wentLighterWorkouts(AccountId account, Instant from, Instant to) {
+        java.util.Map<String, Integer> counts = new java.util.LinkedHashMap<>();
+        jdbc.sql("""
+                select s.exercise_id, count(distinct s.workout_id) as workouts from training.workout_set s
+                join training.workout w on w.id = s.workout_id
+                where s.account_id = :account and s.went_lighter and s.set_type = 'WORKING' and w.imported_from is null
+                  and w.started_at >= :from and w.started_at < :to
+                group by s.exercise_id order by s.exercise_id""")
+                .param("account", account.value()).param("from", from.atOffset(ZoneOffset.UTC)).param("to", to.atOffset(ZoneOffset.UTC))
+                .query((row, n) -> counts.put(row.getString("exercise_id"), row.getInt("workouts"))).list();
+        return counts;
+    }
 }

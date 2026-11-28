@@ -39,4 +39,16 @@ class CoachFactsTests {
         assertThat(CoachFacts.of(bare).json()).contains("CONTINUE").doesNotContain("\"week\"", "\"profile\"");
         assertThat(CoachFacts.of(bare).numbers()).isEmpty();
     }
+
+    @Test
+    void whyAMoveFeltHeavyIsToldAsTheEngineReadsIt() {
+        // K-1265 (ADR-096 #4): each move's effort and the workouts it went lighter in; their counts are numbers the reply may say.
+        Map<String, Object> effort = Map.of("windowDays", 28, "moves", List.of(Map.of("move", "squat", "effort", "RISING", "wentLighterWorkouts", 2)));
+
+        CoachFacts facts = CoachFacts.of(ReplyValidatorTests.CUT, List.of(), effort);
+
+        assertThat(facts.json()).contains("\"effort\":{", "\"move\":\"squat\"", "\"effort\":\"RISING\"", "\"wentLighterWorkouts\":2", "\"windowDays\":28");
+        assertThat(facts.numbers()).extracting(BigDecimal::toPlainString).contains("28", "2");
+        assertThat(CoachFacts.of(ReplyValidatorTests.CUT, List.of(), Map.of()).json()).as("nothing read: nothing told").doesNotContain("\"effort\"");
+    }
 }

@@ -206,6 +206,23 @@ class TrainingTrendTests {
     }
 
     @Test
+    void eachLiftsEffortIsTheTirednessTheRecoveryReadsLiftByLift() {
+        // K-1265 (ADR-096 #4): what the coach may say about "why it felt heavy" is what the engine reads, lift by lift — effort
+        // rising at the same load and reps (G7 K-67) with the e1RM not up, or steady; a lift with nothing to compare is not told.
+        Lift tired = rirs("squat", 3, 3, 1, 1);
+        Lift steady = rirs("bench_press", 2, 2, 2, 2);
+        Lift moving = new Lift("deadlift", List.of(at(26, "100", 5, 3), at(19, "102.5", 5, 3), at(12, "105", 5, 1), at(5, "107.5", 5, 1)));
+
+        assertThat(TrainingTrend.efforts(List.of(tired, steady, moving), TODAY, Set.of(), P)).containsExactly(
+                new TrainingTrend.LiftEffort("squat", TrainingTrend.Effort.RISING), new TrainingTrend.LiftEffort("bench_press", TrainingTrend.Effort.STEADY));
+        // Half a rep is under the drift: steady.
+        assertThat(TrainingTrend.efforts(List.of(rirs("squat", 3, 3, 3, 2)), TODAY, Set.of(), P))
+                .containsExactly(new TrainingTrend.LiftEffort("squat", TrainingTrend.Effort.STEADY));
+        // A declared or lighter week this week: nothing is read, as for the recovery.
+        assertThat(TrainingTrend.efforts(List.of(tired), TODAY, Set.of(TODAY.minusDays(2)), P)).isEmpty();
+    }
+
+    @Test
     void halfOfTheComparableLiftsTiredIsPoor() {
         Lift tired = rirs("squat", 3, 3, 1, 1);
         Lift fresh = rirs("bench", 2, 2, 2, 2);

@@ -152,6 +152,38 @@
         "Karar bu hafta aynı kalıyor.",
         "Yağsız protein seç."
       ]
+    },
+    {
+      "id": "unread-cause",
+      "rule": "U1/U3",
+      "pattern": "(?:^|[.!?;])(?=[^.!?;]*\\b(?:heav\\w*|struggl\\w*|grind\\w*|effort\\w*|tired\\w*|fatigu\\w*|weak\\w*|sluggish|drained|ağır(?!l[ıi][kğ])\\w*|zorlan\\w*|yorgun\\w*|güçsüz\\w*|halsiz\\w*)\\b)(?=[^.!?;]*\\b(?:sleep\\w*|slept|stress\\w*|ate|eating|eaten|food|meals?|diet\\w*|nutrition|hydrat\\w*|dehydrat\\w*|alcohol|drinking|caffeine|hormon\\w*|uyku\\w*|uyu\\w*|stres\\w*|yemek\\w*|yedi\\w*|yeme\\w*|beslen\\w*|susuz\\w*|alkol\\w*|kafein\\w*)\\b)",
+      "examples": [
+        "It felt heavy because you slept badly this week.",
+        "Maybe you slept badly, so the bar felt heavy.",
+        "The squat was a grind since stress was high.",
+        "Poor sleep makes the bar feel heavier.",
+        "You are tired from not eating enough.",
+        "Az uyuduğun için ağır gelmiş olabilir.",
+        "Stres yüzünden ağır gelmiş.",
+        "Dün az yemek yediğin için yorgunsun."
+      ],
+      "nonExamples": [
+        "Sleep and food are not in your log, so the call reads your sets only.",
+        "Effort on squat has been rising over 28 days, so the load holds.",
+        "You went lighter in 1 workout, and the next session starts there.",
+        "Eating enough protein supports training.",
+        "Because the weight has not moved, the cut stays at 500 kcal a day.",
+        "The call holds because you are eating under your target, so the cut stays.",
+        "Protein may be low because the food log has few meals.",
+        "The scale is likely water weight.",
+        "The call will probably stay the same for the whole review period.",
+        "Less rest between sets may be why.",
+        "Uyku ve yemek kayıtta yok; karar yalnız setlerini okuyor.",
+        "Yemek kaydın az olduğu için karar aynı kalıyor.",
+        "Çünkü beslenme kaydın 4 gün, karar aynı.",
+        "Ağırlığın düşüyor, yemek planı aynı.",
+        "Squat'ta zorlanma 28 günde arttı, yük aynı kalıyor."
+      ]
     }
   ]
 }

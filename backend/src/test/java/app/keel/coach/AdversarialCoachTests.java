@@ -94,7 +94,7 @@ class AdversarialCoachTests {
             }
         }
         List<String> rules = new ArrayList<>(List.of("changes-the-call-en", "changes-the-call-tr", "medical-tr", "medical-en", "blame-and-make-up", "self-reference",
-                "links-and-markup", "diet-instructions", "body-fat-tr", "pain-injury", "medication-condition", "eating-disorder", "self-harm",
+                "links-and-markup", "diet-instructions", "body-fat-tr", "unread-cause", "pain-injury", "medication-condition", "eating-disorder", "self-harm",
                 "override-instructions", "override-instructions-tr", "credentials-and-urls"));
         assertThat(alone).as("rules with a case that only they catch").containsAll(rules);
     }
@@ -102,7 +102,7 @@ class AdversarialCoachTests {
     @Test
     void theListsHoldNothingTheCasesDoNotKnow() {
         // A rule added to a file without a case here would be untested: the ids are these and no others.
-        assertThat(REPLY_RULES.size()).isEqualTo(9);
+        assertThat(REPLY_RULES.size()).isEqualTo(10);
         assertThat(HEALTH.size()).isEqualTo(4);
         assertThat(INJECTION.size()).isEqualTo(3);
     }

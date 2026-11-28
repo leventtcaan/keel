@@ -6,6 +6,7 @@ import app.keel.profile.ProfileFacts;
 import app.keel.profile.Profiles;
 import app.keel.shared.AccountId;
 import app.keel.shared.ApiException;
+import app.keel.training.TrainingStatusReader;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -52,6 +53,36 @@ public class CallReader {
                 || reasons.stream().anyMatch(reason -> SafetyHold.CYCLE_CHECK_NEEDED.value().equals(reason.rule()));
         return new CallFacts(call.id(), call.madeOn(), (Map<String, Object>) sent.get("action"), reasons, (String) sent.get("confidence"),
                 LocalDate.parse((String) sent.get("nextReview")), nextCallOn, (String) sent.get("copyKey"), !untellable, context(account));
+    }
+
+    /**
+     * Why a move may have felt heavy, as the engine reads it (K-1265, ADR-096 #4): for the coach to tell to a subscriber, never a
+     * cause the log does not hold. Nothing before there is a profile or a program.
+     */
+    public Map<String, Object> effort(AccountId account) {
+        try {
+            DecisionService.Efforts efforts = decisions.efforts(account);
+            return effortFacts(efforts.moves(), efforts.windowDays());
+        } catch (ApiException noProfileYet) {
+            return Map.of();
+        }
+    }
+
+    /** The facts as the coach is told them: each move with what was read of it — its effort, the workouts it went lighter in. */
+    static Map<String, Object> effortFacts(List<TrainingStatusReader.MoveEffort> efforts, int windowDays) {
+        if (efforts.isEmpty()) {
+            return Map.of();
+        }
+        List<Map<String, Object>> moves = efforts.stream().map(move -> {
+            Map<String, Object> told = new LinkedHashMap<>();
+            told.put("move", move.exerciseId());
+            move.effort().ifPresent(effort -> told.put("effort", effort.name()));
+            if (move.wentLighterWorkouts() > 0) {
+                told.put("wentLighterWorkouts", move.wentLighterWorkouts());
+            }
+            return told;
+        }).toList();
+        return Map.of("windowDays", windowDays, "moves", moves);
     }
 
     /** What surrounds the call (CallFacts): counts of this week and the profile's summary; a part that is not there yet is left out. */

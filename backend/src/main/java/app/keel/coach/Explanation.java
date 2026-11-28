@@ -156,7 +156,9 @@ class Explanation {
             quota.giveBack(account, Quota.Use.COACH_MESSAGE, taken.get());
             throw new ApiException(ErrorCode.ENTITLEMENT_REQUIRED);
         }
-        CoachFacts facts = CoachFacts.of(call, memories);
+        // Why a move felt heavy, as the engine reads it (K-1265, ADR-096: the paid side of "Too heavy?"): a subscriber's coach is told
+        // it; the introductory questions are not.
+        CoachFacts facts = CoachFacts.of(call, memories, subscribed ? effort(account) : Map.of());
         List<Turn> turns = sendable(conversation.turns(account));
         turns.add(Turn.user(question));
         ModelReply said;
@@ -196,6 +198,19 @@ class Explanation {
     private List<Turn> sendable(List<Turn> earlier) {
         boolean clean = earlier.stream().allMatch(turn -> health.found(turn.text()).isEmpty() && injection.found(turn.text()).isEmpty());
         return clean ? new java.util.ArrayList<>(earlier) : new java.util.ArrayList<>();
+    }
+
+    /**
+     * Why a move felt heavy (K-1265): an addition to the facts, never a reason the answer fails — the day's use and the
+     * introductory question are already taken here. A failure to read it is logged and nothing of it is told.
+     */
+    private Map<String, Object> effort(AccountId account) {
+        try {
+            return calls.effort(account);
+        } catch (RuntimeException unread) {
+            SafeLog.failure(UUID.randomUUID(), ErrorCode.INTERNAL, unread);
+            return Map.of();
+        }
     }
 
     private boolean touchesHealth(String question, List<String> memories) {

@@ -60,6 +60,18 @@ class ReplyValidatorTests {
     }
 
     @Test
+    void aCauseTheEngineDoesNotReadIsNotShown() {
+        // K-1265 (ADR-096 #4, U1 U3): the engine reads the sets, not sleep, food or stress; a reply that gives one as the cause of a
+        // heavy session is not shown, the engine's sentence is. Saying the log does not hold them is fine.
+        assertThat(problems(reply("It felt heavy because you slept badly this week.", "WHY"))).contains("rule:unread-cause");
+        assertThat(problems(reply("Probably the stress at work made it feel heavy.", "WHY"))).contains("rule:unread-cause");
+        assertThat(problems(reply("Az uyuduğun için ağır gelmiş olabilir.", "WHY"))).contains("rule:unread-cause");
+        assertThat(problems(reply("Sleep and food are not in your log, so the call reads your sets only.", "WHY"))).isEmpty();
+        // A plain telling of a nutrition call is no cause of a heavy session: the rule asks for both in one sentence.
+        assertThat(problems(reply("The call holds because you are eating under your target, so the cut stays.", "WHY"))).isEmpty();
+    }
+
+    @Test
     void aReplyWithNoNumberNeedsNone() {
         assertThat(CHECK.read(reply("The call stays as it is, and the reason is that the trend is flat.", "LESS"), CUT, FACTS)).isPresent();
     }

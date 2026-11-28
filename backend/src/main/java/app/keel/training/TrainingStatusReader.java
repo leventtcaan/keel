@@ -150,18 +150,56 @@ public class TrainingStatusReader {
         if (program.isEmpty() || made.isEmpty()) {
             return TrainingTrend.Reading.UNKNOWN;
         }
+        TrendLog read = trendLog(account, program.get(), made.get(), today, zone, bodyWeightKg, declaredDays, parameters);
+        return TrainingTrend.read(read.lifts(), today, read.excluded(), parameters);
+    }
+
+    /**
+     * A move of the program as the coach may tell why it felt heavy (K-1265, ADR-096 #4): its effort over the trend window as the
+     * recovery reads it (compound lifts only, where it can be read) and the workouts in that window it went lighter in ("Too
+     * heavy?", K-1262). Nothing the log does not hold — no sleep, no food.
+     */
+    public record MoveEffort(String exerciseId, Optional<TrainingTrend.Effort> effort, int wentLighterWorkouts) {
+    }
+
+    /**
+     * Each move of the program with an effort read or a workout gone lighter, in the program's order, read as {@link #trend}
+     * reads the log. Nothing without a program.
+     */
+    public List<MoveEffort> efforts(AccountId account, LocalDate today, ZoneId zone, Optional<BigDecimal> bodyWeightKg, Set<LocalDate> declaredDays,
+            Parameters parameters) {
+        Optional<ProgramStore.Program> program = programs.current(account);
+        Optional<Instant> made = programs.createdAt(account);
+        if (program.isEmpty() || made.isEmpty()) {
+            return List.of();
+        }
+        TrendLog read = trendLog(account, program.get(), made.get(), today, zone, bodyWeightKg, declaredDays, parameters);
+        Map<String, TrainingTrend.Effort> efforts = new LinkedHashMap<>();
+        TrainingTrend.efforts(read.lifts(), today, read.excluded(), parameters).forEach(lift -> efforts.put(lift.exerciseId(), lift.effort()));
+        Map<String, Integer> lighter = log.wentLighterWorkouts(account, read.since(), read.to());
+        return program.get().days().stream().flatMap(day -> day.exercises().stream()).map(ProgramStore.PlannedExercise::exerciseId).distinct()
+                .filter(id -> efforts.containsKey(id) || lighter.containsKey(id))
+                .map(id -> new MoveEffort(id, Optional.ofNullable(efforts.get(id)), lighter.getOrDefault(id, 0))).toList();
+    }
+
+    /** The compound lifts' sessions in the trend window since the program was made, and the days not read (see {@link #trend}). */
+    private record TrendLog(List<TrainingTrend.Lift> lifts, Set<LocalDate> excluded, Instant since, Instant to) {
+    }
+
+    private TrendLog trendLog(AccountId account, ProgramStore.Program program, Instant made, LocalDate today, ZoneId zone,
+            Optional<BigDecimal> bodyWeightKg, Set<LocalDate> declaredDays, Parameters parameters) {
         LocalDate first = today.minusDays(parameters.wholeNumber(ParameterKey.TREND_WINDOW_DAYS) - 1L);
         Instant from = first.atStartOfDay(zone).toInstant();
-        Instant since = made.get().isAfter(from) ? made.get() : from;
+        Instant since = made.isAfter(from) ? made : from;
         Instant to = today.plusDays(1).atStartOfDay(zone).toInstant();
-        List<TrainingTrend.Lift> lifts = program.get().days().stream().flatMap(day -> day.exercises().stream()).map(ProgramStore.PlannedExercise::exerciseId)
+        List<TrainingTrend.Lift> lifts = program.days().stream().flatMap(day -> day.exercises().stream()).map(ProgramStore.PlannedExercise::exerciseId)
                 .distinct().filter(id -> catalog.find(id).filter(TrainingStatusReader::compound).isPresent())
                 .map(id -> new TrainingTrend.Lift(id, trendSessions(log.workingSets(account, id, since, to), zone, bodyWeightKg))).toList();
         Set<LocalDate> excluded = new HashSet<>(declaredDays);
         Breaks breaks = breaks(account, first.minusDays(DAYS_AFTER_A_BREAK), today);
         Stream.concat(breaks.rest().stream(), breaks.lighter().stream())
                 .forEach(day -> day.datesUntil(day.plusDays(DAYS_AFTER_A_BREAK + 1L)).forEach(excluded::add));
-        return TrainingTrend.read(lifts, today, excluded, parameters);
+        return new TrendLog(lifts, excluded, since, to);
     }
 
     /** The week after a rest or lighter week is not read either (G7 K-72). */
