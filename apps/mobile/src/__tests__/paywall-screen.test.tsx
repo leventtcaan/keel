@@ -29,7 +29,9 @@ const PLANS: Plan[] = [
 ];
 
 let mockAnswers: (Answer | 'offline')[] = [];
-const mockGET = jest.fn(async (_path: string) => {
+const mockGET = jest.fn(async (path: string) => {
+  // The coach's AI offer is its own read (K-1268): the server has a model here, and the queue stays the subscription's.
+  if (path === '/v1/consents/ai-offer') return ok({ provider: 'OpenAI', dataTypes: ['messages'] });
   const answer = mockAnswers.length > 1 ? mockAnswers.shift()! : mockAnswers[0];
   if (answer === 'offline') throw new TypeError('Network request failed');
   return answer;
