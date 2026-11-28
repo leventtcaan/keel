@@ -6574,7 +6574,7 @@ tasks:
     module: mobile
     type: fix
     size: S
-    status: todo
+    status: done
     depends_on: [K-1259]
     why: "K-1259 sunucuda GET /v1/exercises/{id}/history'yi açtı; ekran hâlâ bir yılın bütün antrenmanlarını indirip rekoru telefonda hesaplıyor (exercise-history.tsx, train/history.ts recordsOf). ADR-096: tam kayıt listesi ve tüm zaman rekorları ücretsiz"
     acceptance:
