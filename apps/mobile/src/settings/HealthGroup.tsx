@@ -43,7 +43,7 @@ export function HealthGroup({ granted }: { granted: boolean | null }) {
     />
   );
   return (
-    <ListGroup title={t('settings.health.title')} testID="group-health">
+    <ListGroup testID="group-health">
       <ListRow
         icon="lock"
         label={t('settings.health.consent')}

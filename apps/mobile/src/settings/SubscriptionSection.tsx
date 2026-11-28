@@ -65,7 +65,7 @@ export function SubscriptionSection() {
 
   if (read.state !== 'ready') {
     const failed = read.state === 'failed' ? note(t('settings.subscription.failed'), 'text') : null;
-    return <Section title={t('settings.subscription.title')}>{failed}</Section>;
+    return <Section>{failed}</Section>;
   }
   const { subscription } = read;
   const manageable = hasStoreSubscription(subscription);
@@ -102,7 +102,6 @@ export function SubscriptionSection() {
   return (
     <View style={styles.stack}>
       <ListGroup
-        title={t('settings.subscription.title')}
         footer={manageable && !purchases.available ? t('settings.subscription.unavailable') : undefined}
         testID="group-subscription">
         <ListRow icon="star" label={stateWords(subscription)} />

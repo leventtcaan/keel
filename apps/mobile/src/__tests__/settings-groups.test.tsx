@@ -13,12 +13,14 @@ import { Alert, Linking } from 'react-native';
 import { createApiClient } from '@/api/client';
 import type { components } from '@/api/schema';
 import SettingsDetailScreen from '@/app/settings-detail';
-import SettingsScreen from '@/app/settings';
+import SettingsSectionScreen from '@/app/settings-section';
 import { t } from '@/copy';
 import { storeUnavailable } from '@/subscription/store';
 import type { Appearance } from '@/theme/appearance';
 import { ThemeProvider } from '@/theme/theme';
 import { palettes } from '@/theme/tokens';
+
+import { AllChapters } from './support/allChapters';
 
 type Schemas = components['schemas'];
 
@@ -176,7 +178,7 @@ function Themed({ children }: { children: React.ReactNode }) {
 async function show() {
   await render(
     <Themed>
-      <SettingsScreen />
+      <AllChapters />
     </Themed>,
   );
   await act(async () => {});
@@ -196,23 +198,21 @@ async function press(name: string) {
   await fireEvent.press(button(name));
   await act(async () => {});
 }
-const GROUPS = ['appearance', 'units', 'training', 'food', 'profile', 'reminders', 'health', 'subscription', 'sources', 'account'] as const;
+// The groups that keep a title inside their chapter (K-1257): Food under You, Appearance and Units under App, Data sources under
+// About. Training, About you, Reminders, Health and data, Subscription and Account are the chapters' own titles now.
+const GROUPS = ['food', 'appearance', 'units', 'sources'] as const;
 const GROUP_TITLE: Record<(typeof GROUPS)[number], string> = {
+  food: t('settings.food.title'),
   appearance: t('settings.appearance.title'),
   units: t('settings.units.title'),
   sources: t('settings.sources.title'),
-  training: t('settings.training.title'),
-  food: t('settings.food.title'),
-  profile: t('settings.profile.title'),
-  reminders: t('settings.reminders.title'),
-  health: t('settings.health.title'),
-  subscription: t('settings.subscription.title'),
-  account: t('settings.account.title'),
 };
+/** The group of what the call reads that holds the profile's answers (You's; Your week's holds the days and the check-in day). */
+const profileReads = () => screen.getAllByTestId('decision-reads').find((group) => within(group).queryByText(t('settings.profile.goal')) !== null)!;
 const headers = () => screen.getAllByRole('header').map((h) => within(h).queryByText(/./)?.props.children ?? h.props.children);
 
 describe('the groups', () => {
-  test('the groups, in this order: Appearance, Units, Training, Food, About you, Reminders, Health and data, Subscription, Data sources, Account', async () => {
+  test('the groups, in their chapters\' order: Food (You), Appearance and Units (App), Data sources (About)', async () => {
     await show();
     const seen = headers().filter((name) => (Object.values(GROUP_TITLE) as string[]).includes(name));
     expect(seen).toEqual(GROUPS.map((g) => GROUP_TITLE[g]));
@@ -280,7 +280,14 @@ describe('theme', () => {
   });
 
   test('choosing Dark keeps the choice and the whole screen takes the dark palette at once', async () => {
-    await show();
+    // The choice is on the App chapter's page (K-1257).
+    mockParams = { section: 'app' };
+    await render(
+      <Themed>
+        <SettingsSectionScreen />
+      </Themed>,
+    );
+    await act(async () => {});
     expect(screen.getByTestId('screen')).toHaveStyle({ backgroundColor: palettes.light.background });
     await press(t('settings.appearance.dark'));
     expect(mockServices.appearance.set).toHaveBeenCalledWith('dark');
@@ -296,7 +303,10 @@ describe('training', () => {
     await show();
     const line = ['MONDAY', 'WEDNESDAY', 'FRIDAY'].map((d) => t(`programEditor.weekdayShort.${d}`)).join(t('editProgram.dayList'));
     expect(button(`${t('settings.training.days')}, ${line}`)).toBeOnTheScreen();
-    expect(screen.queryByText(new RegExp(t('programEditor.weekdayShort.TUESDAY')))).toBeNull();
+    // The week drawn above the rows marks the program's days, not the profile's Tuesday and Thursday (K-1257).
+    expect(screen.getByTestId('week-day-MONDAY')).toBeSelected();
+    expect(screen.getByTestId('week-day-TUESDAY')).not.toBeSelected();
+    expect(screen.getByTestId('week-day-THURSDAY')).not.toBeSelected();
     await press(`${t('settings.training.days')}, ${line}`);
     expect(mockPush).toHaveBeenCalledWith('/edit-program');
   });
@@ -459,14 +469,15 @@ describe('about you (K-1062)', () => {
 
   test('five rows, each with its answer from the profile, each opening a page of its own', async () => {
     await show();
-    const group = within(screen.getByTestId('group-profile-card'));
+    // Four under You, the check-in day under Your week, each in the group of what the call reads (K-1257).
+    const group = within(profileReads());
     expect(group.getAllByRole('button').map((row) => row.props.accessibilityLabel)).toEqual([
       rowName('goal', t('onboarding.goal.build_muscle.title')),
-      rowName('checkIn', t('onboarding.schedule.dayName.MONDAY')),
       rowName('height', '180 cm'),
       rowName('activity', t('onboarding.activity.LOW_ACTIVE')),
       rowName('born', '1990'),
     ]);
+    expect(button(rowName('checkIn', t('onboarding.schedule.dayName.MONDAY')))).toBeOnTheScreen();
     await press(rowName('checkIn', t('onboarding.schedule.dayName.MONDAY')));
     expect(mockPush).toHaveBeenCalledWith({ pathname: '/settings-detail', params: { part: 'checkin' } });
   });
@@ -486,7 +497,7 @@ describe('about you (K-1062)', () => {
     const failing = jest.spyOn(api, 'GET').mockResolvedValue({ data: undefined, error: {}, response: new Response(null, { status: 500 }) } as never);
     try {
       await show();
-      expect(within(screen.getByTestId('group-profile-card')).getByText(t('settings.profile.unread'))).toBeOnTheScreen();
+      expect(within(screen.getAllByTestId('decision-reads')[1]).getByText(t('settings.profile.unread'))).toBeOnTheScreen();
       expect(screen.queryByText(t('onboarding.goal.build_muscle.title'))).toBeNull();
     } finally {
       failing.mockRestore();

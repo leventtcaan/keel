@@ -55,6 +55,7 @@ function AppStack() {
         <Stack.Screen name="build-program" options={pushed} />
         <Stack.Screen name="settings" options={pushed} />
         <Stack.Screen name="settings-detail" options={pushed} />
+        <Stack.Screen name="settings-section" options={pushed} />
         <Stack.Screen name="walk" options={pushed} />
         <Stack.Screen name="walk-map" options={pushed} />
         <Stack.Screen name="weigh-in" options={{ presentation: 'modal' }} />
