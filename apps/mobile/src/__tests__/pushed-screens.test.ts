@@ -4,6 +4,7 @@
  * view that gives it. navigation.test.tsx has the real stack; this is the rule.
  */
 import { t } from '@/copy';
+import { setActiveLocale } from '@/copy/locales';
 import { previousScreenName, pushedScreen } from '@/navigation/pushed';
 import { palettes } from '@/theme/tokens';
 
@@ -45,8 +46,15 @@ describe('pushedScreen', () => {
     });
   });
 
-  test('with no name to give, the back button says "Back" (generic) rather than the name of a route', () => {
-    expect(pushedScreen(palettes.dark, undefined)).toMatchObject({ headerBackButtonDisplayMode: 'generic' });
-    expect(pushedScreen(palettes.dark, undefined)).not.toHaveProperty('headerBackTitle');
+  test('with no name to give, the back button says "Back" in the app\'s language rather than the name of a route (K-1269)', () => {
+    // iOS's own "Back" follows the phone's language, not the app's: the English app on a Turkish phone said "Geri".
+    expect(pushedScreen(palettes.dark, undefined)).toMatchObject({ headerBackTitle: t('navigation.back') });
+    expect(t('navigation.back')).toBe('Back');
+    setActiveLocale('tr');
+    try {
+      expect(pushedScreen(palettes.dark, undefined)).toMatchObject({ headerBackTitle: 'Geri' });
+    } finally {
+      setActiveLocale('en');
+    }
   });
 });

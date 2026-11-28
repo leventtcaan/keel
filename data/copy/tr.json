@@ -4471,5 +4471,8 @@
       "title": "{exercise}: {toMin}-{toMax} tekrar",
       "body": "Tek eklemli hareketler {toMin}-{toMax} tekrarda en iyi çalışır. Bunun çok ötesi büyüme değil, süre ekler."
     }
+  },
+  "navigation": {
+    "back": "Geri"
   }
 }

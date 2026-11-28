@@ -4191,5 +4191,8 @@
       "title": "{exercise}: {toMin}-{toMax} reps",
       "body": "Single-joint moves work best at {toMin}-{toMax} reps. Far past that adds time, not growth."
     }
+  },
+  "navigation": {
+    "back": "Back"
   }
 }
