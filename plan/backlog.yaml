@@ -6627,7 +6627,7 @@ tasks:
     module: backend
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: []
     why: "ADR-096 › Çok ağır mı (ücretsiz yan) ve 9b: bugün düğme yalnız alandaki kiloyu düşürüyor, sonucu hiçbir yere gitmiyor (tasarim-antrenman-dugme-denetimi). Yük azaltma kilitlenmez (ADR-091 Ek 3)"
     acceptance:
@@ -6643,7 +6643,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: doing
     depends_on: [K-1262]
     why: "ADR-096 › Çok ağır mı; 9b: 1-2 denemeden sonra ve set sonrası hissiyatla sorulabilsin"
     acceptance:
@@ -6673,7 +6673,7 @@ tasks:
     module: backend
     type: feature
     size: S
-    status: todo
+    status: doing
     depends_on: [K-1262]
     why: "ADR-096 › Çok ağır mı (ücretli yan) ve #4: motor uyku ve yemeği okumaz, RIR eğilimini okur (K-1218); koç desteklenmeyen neden söylemez (U1, U3). Koçun üretimde açılmasına bağlı"
     acceptance:

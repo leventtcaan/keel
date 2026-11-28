@@ -315,3 +315,10 @@
 - takıldım: agy başsız modda komut izni isteyip boş döndü (iki kez); boş klasörde, bağlam istemde, araçsız koşunca çalıştı. Brifte V6'yı erişim diye yanlış atfetmişim, Codex düzeltti (erişim notu ADR-091 Ek 3)
 - sıradaki: uygulama kartları (bağımsızlar K-1259, K-1261, K-1262, K-1264) ya da 1.0.1 hazırlığı (#770)
 - AI: envanter Sonnet, dış göz Codex gpt-6.1-sol + agy Gemini 3.8 Flash, rakip iddiaları resmî sayfadan Sonnet web-fetch; sentez ve ADR agent; Levent 2 seçim yaptı
+
+## 2026-11-28 · Evre 9d iz A — "Çok ağır mı?" (K-1262, K-1263, K-1265), otonom, Remote Control açık
+- yaptım: K-1262 #843 (set `wentLighter`, V66, kural G1 karar noktası 61: en hafif işaretli yükten oku, o seans yük ekleme; `too_heavy_marked_sets_min`), K-1263 #847 (Use işaretler, Keep/kalibrasyon işaretlemez, kayıtta temizlenir), K-1265 #848 (motor `TrainingTrend.efforts`, koça yalnız abonede zorlanma + hafifleme sayısı, `unread-cause` kuralı)
+- karar: agent — işaret yükü tutar (aralık tepesi), sonraki işaretsiz seans normal ilerler; çapa bölüm başlığı (madde 61 numaralı liste satırı, arastirma salt okunur); neden kuralı aynı cümlede ağır + okunmayan neden ister (beslenme cevapları geçer)
+- takıldım: sözleşme kontrolü üretilmiş mobil tipleri istedi (schema.ts K-1262'ye taşındı), göç yorumundaki çift tırnak "quoted names"; bir koşuda yerel Postgres testleri istemeden koştu (sonra dışarıda tutuldu)
+- sıradaki: iz A bitti; iz B (K-1259 → K-1260 → K-1261) sürüyor
+- AI: kod, test, PR agent; üç incelemeyi Sonnet alt ajan yaptı, bulgular (iki kez hafifleme max→min, 0 kg işaret, silinen setin işareti, test saati, @Transactional kayması, geniş regex, hak yakan hata) doğrulanıp düzeltildi
