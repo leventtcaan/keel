@@ -22,16 +22,16 @@ fikstürleri MoveHistory şekline, "pencereden eski telefon kayıtları sayılma
 boyu değişir); K-1266/K-1267 issue'ları elle açıldı (#845, #850).
 **Sıradaki:** K-1267 (yan yana karşılaştırma, K-1260'a bağlı).
 
-## (önceki) ▶ DEVAM NOKTASI (28 Kas — 9d iz A: "Çok ağır mı?" K-1262 birleşti (#843), K-1263 PR #847, K-1265 PR #848 otomatik birleşmede)
+## (önceki) ▶ DEVAM NOKTASI (28 Kas — 9d iz A BİTTİ: "Çok ağır mı?" K-1262 #843, K-1263 #847, K-1265 #848 birleşti)
 **K-1262 (#838 → PR #843, birleşti):** `NewSet.wentLighter` (V66 `training.workout_set.went_lighter`, envanterde, dışa aktarımda). Kural G1 karar noktası 61
 (`training.yaml` too_heavy_marked_sets_min 1, çapa `#KARAR` bölümü): işaretli seans sonraki hedefi en hafif işaretli yükten okur, üstündeki setler okunmaz,
 o seans yük eklenmez; sonraki işaretsiz seans normal ilerler; 0 kg işaret sayılmaz. Abonelik okunmaz (ArchUnit).
-**K-1263 (#839 → PR #847):** "Too heavy?" › Use sonrası set işaretle gider; Keep ve kalibrasyon teklifi işaretlemez; işaret kayıtta ve yeni soruda temizlenir
+**K-1263 (#839 → PR #847, birleşti):** "Too heavy?" › Use sonrası set işaretle gider; Keep ve kalibrasyon teklifi işaretlemez; işaret kayıtta ve yeni soruda temizlenir
 (silinen setin yerine kaydedilen set işaret taşımaz). Ekranda görünen değişiklik yok.
-**K-1265 (#841 → PR #848):** abonenin koçu hareket başına zorlanma eğilimini (K-1218 yorgunluğu, `TrainingTrend.efforts`) ve hafiflenen antrenman sayısını
+**K-1265 (#841 → PR #848, birleşti):** abonenin koçu hareket başına zorlanma eğilimini (K-1218 yorgunluğu, `TrainingTrend.efforts`) ve hafiflenen antrenman sayısını
 gerçek olarak alır; ücretsiz deneme sorularında yok. Yeni cevap kuralı `unread-cause`: aynı cümlede ağır/zorlanma + uyku/stres/yemek → gösterilmez.
 **K1 (agent kararı, ADR-096'dan, gevşetmeyen):** `AdversarialCoachTests` kural sayısı 9 → 10 ve tek başına yakalayan kurallar listesine `unread-cause`.
-**Sıradaki:** iz A bitti (#847, #848 birleşince). İz B: K-1259 → K-1260 → K-1261.
+**Sıradaki:** iz A bitti. İz B: K-1259 → K-1260 → K-1261.
 
 ## (önceki) ▶ DEVAM NOKTASI (28 Kas — 9d Para haritası: ADR-096 KABUL, kartlar K-1259…K-1265 açıldı)
 **9d (Para haritası):** envanter kodda doğrulandı (kilitli: sonraki kararlar, koç model soruları + hafıza, yazıdan/fotoğraftan öğün, yürüyüş haritası;
