@@ -51,7 +51,7 @@
       "unit": "days",
       "tag": "urun",
       "source": "plan/kararlar/ADR-096-para-haritasi.md#Ek 1",
-      "note": "The weight chart's ranges on Progress (K-1260): the first is weight_chart_days (the default, read with the rest of Progress); a year is free as the weigh-in screen's Year already was (health.json weigh_in_history_days); 'all' (days null: everything) comes with a subscription. ADR-096 Ek 1, Levent 28 Nov."
+      "note": "The weight chart's ranges on Progress (K-1260): the first is weight_chart_days (the default, read with the rest of Progress); a year is free as the weigh-in screen's Year already was (health.json weigh_in_history_days); 'all' (days null: everything) comes with a subscription. ADR-096 Ek 1."
     },
     {
       "key": "strength_chart_ranges",
