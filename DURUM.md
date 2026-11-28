@@ -5,17 +5,17 @@ guncelleme: 2026-11-28
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (28 Kas — 9c-9 Ayarlar: K-1257 birleşti (#833), K-1258 PR #834 K1 onayı bekliyor)
+## ▶ DEVAM NOKTASI (28 Kas — 9c-9 Ayarlar: K-1257 birleşti (#833), K-1258 PR #834 otomatik birleşmede)
 **9c-9 (Ayarlar):** bugünkü ekran çekildi (2,8 ekran, 15 kum kart, 10 sorun; `prototip/gorsel-yon/9c9-ayarlar/ayarlar-simdi.jpg`); üç yön (`ayarlar-varyantlar.jpg`):
 A Defter sayfası, B Önce kararı değiştirenler, C İçindekiler. **Levent C'yi seçti, bölüm sayfaları B düzeniyle → ADR-094 Ek 9.** Motor kodda doğrulandı: kararı okuyan ayarlar
 antrenman günleri, kontrol günü, hedef, boy, aktivite, doğum yılı; **kardiyo, setler arası dinlenme, uzak durulan yiyecekler okumaz** (B taslağındaki kardiyo gruptan çıktı).
 **K-1257 (#830 → PR #833, birleşti):** Ayarlar dokuz bölümlük içindekiler (serif ad + bugünkü değerleri), `settings-section` sayfaları, Haftan ve Sen'de adaçayı
 "Kararın bunlara bakar", geri düğmesi bölümü adlandırır; inceleme izin okumasının dönüşte eskidiğini yakaladı → düzeltildi. K1 (9) Levent onaylı.
 **K-1258 (#831 → PR #834):** `OnPaper` ile Ayarlar sayfalarında kart ve ikon yok, `WordChoice` (seçili petrol alt çizgi; görünüm, dil, birim, dinlenme), kapalı
-hatırlatıcıda tek cümle, Hesabı sil ayrı ve kırmızı (evre 7 §A düz satırı kalktı). **K1 (7 madde) Levent'e soruldu**; onaydan sonra auto-merge.
+hatırlatıcıda tek cümle, Hesabı sil ayrı ve kırmızı (evre 7 §A düz satırı kalktı). K1 (7 madde) Levent onaylı (28 Kas); auto-merge açık.
 **Açık:** `/settings`'e giden yönlendirmeler (yemek fotoğrafı izni, koç izni, yürüyüş hatırlatması, kaçan antrenman sorusu) içindekilere düşüyor (eski kadar dokunuş);
 bölümüne bağlamak ayrı iş. `Segmented` hâlâ tartı ve foto girişinde siyah seçili. Yerel tam jest koşusunda onboarding dosyaları yükte zaman aşımına düşüyor (CI yeşil).
-**Sıradaki:** K1 onayı → #834 birleşir → 9c-9 bitti; Evre 9'un sıradaki parçası (`plan/evre-9-tasarim.md`).
+**Sıradaki:** #834 birleşince 9c-9 bitti; Evre 9'un sıradaki parçası (`plan/evre-9-tasarim.md`).
 
 ## (önceki) ▶ DEVAM NOKTASI (28 Kas — K-1255: deneme ilk kilitli kararda, #827, PR #828 otomatik birleşmede)
 **Levent 28 Kas kararı A → ADR-091 Ek 7 KABUL.** Onboarding sonunda paywall kendiliğinden açılmaz (FirstOffer, takeOffer kalktı); kişinin planı (YourPlanCard)
