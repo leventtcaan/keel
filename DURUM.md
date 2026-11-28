@@ -5,7 +5,7 @@ guncelleme: 2026-11-28
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (28 Kas — 9d iz B: K-1264, K-1259, K-1266, K-1261 birleşti; K-1260 PR'da; K-1267 sırada)
+## ▶ DEVAM NOKTASI (28 Kas — 9d iz B bitti: K-1264, K-1259, K-1266, K-1261, K-1260 birleşti; K-1267 PR'da)
 **K-1264 (#840 → PR #842):** doğrulayıcı reddinde deneme sorusu geri verilir; **günün koç kullanımı düşer** (güvenlik incelemesi: ikisi geri verilseydi
 reddettirilen cevaplar yalnız $2/ay hesap tavanıyla sınırlı kalırdı). ADR-096 Ek 2.
 **K-1259 (#835 → PR #844):** `GET /v1/exercises/{id}/history?before=` sayfalı (`workout.json` move_history_page 20), süresiz; rekorlar sunucuda tüm zamandan
@@ -20,7 +20,9 @@ Ortak: `components/SandLock`, `subscription/access.readPaidAccess`.
 fikstürleri MoveHistory şekline, "pencereden eski telefon kayıtları sayılmaz" → "sunucudaki set telefondan ikinci kez sayılmaz" (beklenti aynı: Heaviest 85).
 **Açık iş:** `tools/sync_backlog.py --apply` başka bir karttaki 'XS' boyu yüzünden duruyor (Project alanında XS seçeneği yok; Levent panelden ekler ya da kart
 boyu değişir); K-1266/K-1267 issue'ları elle açıldı (#845, #850).
-**Sıradaki:** K-1267 (yan yana karşılaştırma, K-1260'a bağlı).
+**K-1267 (#850):** abonelikle kiloda önceki dönem (gösterilen aralık kadar, ilk noktadan önceki günle biter; Tümü'de yok), güçte başka bir hareket alta çizilir; aboneliksiz kum kilit, okunamazsa kilit yok.
+**Açık not (Levent'in hesabı):** GitHub Project'in Size alanına 'XS' seçeneği eklenmeli; yoksa `tools/sync_backlog.py --apply` çalışmaz.
+**Sıradaki:** ADR-096 kartları bitti; Evre 9'un kalanı ya da 1.0.1 hazırlığı (#770).
 
 ## (önceki) ▶ DEVAM NOKTASI (28 Kas — 9d iz A BİTTİ: "Çok ağır mı?" K-1262 #843, K-1263 #847, K-1265 #848 birleşti)
 **K-1262 (#838 → PR #843, birleşti):** `NewSet.wentLighter` (V66 `training.workout_set.went_lighter`, envanterde, dışa aktarımda). Kural G1 karar noktası 61
