@@ -60,12 +60,14 @@ Yeni konuda ilk hamle kod değildir: **araştır → planla → karar ver (ADR) 
 - **Motor kuralı** eklerken skill `kural-ekle` (kaynak + parametre dosyası + test).
 - **Disiplin skill'leri** (vendor, kaynak notlu): `test-driven-development` · `systematic-debugging` (hata/kırmızı test) ·
   `verification-before-completion` ("bitti" demeden) · `property-based-testing` (motor). İnceleme: `/pr-review-toolkit:review-pr`.
+- **Dış göz:** pahalı ürün, para, pazarlama ya da mimari kararından önce Codex CLI ve agy (Antigravity) aynı brifle **ayrı ayrı**
+  inceler; çıktıyı Opus doğrular, doğrulanmayan karara girmez. Onların yönergesi `AGENTS.md` (bu dosyayı gösterir).
 - **Oturum sonu** (skill `oturum-kapat`): kontrol komutlarının çıktısı görünür · `oturumlar/levent.md`'ye 5 satır ·
   DURUM güncel.
 
 ## Kod kuralları (özet — tam metin `docs/anayasa.md` §K)
 - **Önce test.** Testi koda uydurmak, silmek, `@Disabled` yapmak, beklentisini değiştirmek → sorulmadan yok.
-- **Bir görev = bir modül = bir dal**, küçük değişiklik (≈≤400 satır; üretilmiş kod, lockfile hariç). Görev dışına
+- **Bir görev = bir modül = bir dal**, küçük değişiklik (≈≤400 satır üretim kodu; test, üretilmiş kod, lockfile hariç). Görev dışına
   taşman gerekiyorsa dur.
 - **Sözleşme önce:** API `contracts/openapi.yaml`'dan; mobil tipler üretilir, elle yazılmaz.
 - **Gerekçeyle sen karar verirsin:** yeni bağımlılık · şema/migration · modül sınırı · sözleşme (PR'da gerekçe; kalıcıysa ADR).

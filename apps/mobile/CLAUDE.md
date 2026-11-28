@@ -28,5 +28,11 @@ dokunmadan önce:
   `apps/mobile/.env` → `EXPO_PUBLIC_API_URL=http://localhost:8080` (gitignore'da; `src/api/config.ts` okur, yoksa hata).
 - `ios/` ve `android/` klasörleri üretilir (Continuous Native Generation); elle oluşturulmaz, düzenlenmez. Native ayar
   `app.json` ve config plugin'lerle yapılır.
-- Native kodlu bir kütüphane eklenince Expo Go yetmez; development build gerekir.
+- Native kodlu bir kütüphane eklenince Expo Go yetmez; development build ve mağaza ikilisi gerekir (OTA yetmez). Eski dev build
+  çökmesin diye modülü `requireOptionalNativeModule` ile sorup tembel yükle (örnek `src/review/deviceStoreReview.ts`); üst düzey
+  `import`, modülü olmayan ikilide açılışta hata verir.
+- Worktree'de `node_modules` keel-main'e bağlıysa `npx expo install` bağı gerçek klasöre çevirir (~860 MB): Metro'yu `--clear`
+  ile yeniden başlat, birleşince klasörü sil ve bağı geri kur.
+- Abonelik ekranı simülatörde: `.env`'e `EXPO_PUBLIC_PAYWALL_PREVIEW=1` ve iki yasal adres (`eas.json` production değerleri);
+  yalnız geliştirme derlemesinde örnek planlar (`src/subscription/preview.ts`).
 - TypeScript 6: `@types/*` otomatik dahil edilmez; test tipleri `tsconfig.json › types`'ta.
