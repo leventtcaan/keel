@@ -226,36 +226,45 @@ describe('the gym in use (K-417): its weights kept on the phone, for the warm-up
   });
 });
 
-describe("the workouts behind a move's history (K-415): the server's last year, kept on the phone", () => {
-  const WORKOUTS = [{ id: 'srv-1', clientId: 'w1', startedAt: '2026-09-21T17:00:00Z', sets: [] }];
-  let asked: URL | null = null;
-  const listing = api((path) => (path === '/v1/workouts' ? json(WORKOUTS) : json([])));
+describe("a move's history (K-1266, K-1259): the server's pages without a time limit, the first kept on the phone", () => {
+  const PAGE = {
+    sessions: [{ id: 'srv-1', clientId: 'w1', startedAt: '2026-09-21T17:00:00Z', sets: [] }],
+    next: 'srv-1',
+    records: [{ kind: 'MOST_REPS', reps: 12, on: '2025-01-06T17:00:00Z' }],
+  };
+  let asked: URL[] = [];
   const watching = createApiClient({
     baseUrl: BASE,
     accessToken: async () => 'tok',
     fetch: async (request: Request) => {
-      asked = new URL(request.url);
-      return json(WORKOUTS);
+      asked.push(new URL(request.url));
+      return json(PAGE);
     },
   });
+  beforeEach(() => (asked = []));
 
-  test('read online: the last history_days days, ending today on the phone; kept', async () => {
+  test("read online: the move's first page, kept; offline that move's copy, and not another's", async () => {
     const kv = memoryKv();
-    expect(await createTrainingCache(kv).history(watching, new Date(2026, 9, 1, 9))).toEqual({ state: 'ready', value: WORKOUTS });
-    expect(asked?.searchParams.get('to')).toBe('2026-10-01');
-    expect(asked?.searchParams.get('from')).toBe('2025-10-02'); // 365 days, today included
-    expect(
-      await createTrainingCache(kv).history(
-        api(() => 'offline'),
-        new Date(2026, 9, 1, 9),
-      ),
-    ).toEqual({ state: 'ready', value: WORKOUTS });
+    expect(await createTrainingCache(kv).moveHistory(watching, 'bench_press')).toEqual({ read: { state: 'ready', value: PAGE }, kept: false });
+    expect(asked[0].pathname).toBe('/v1/exercises/bench_press/history');
+    expect(asked[0].searchParams.has('before')).toBe(false);
+    expect(asked[0].searchParams.has('from')).toBe(false);
+    const offline = api(() => 'offline');
+    expect(await createTrainingCache(kv).moveHistory(offline, 'bench_press')).toEqual({ read: { state: 'ready', value: PAGE }, kept: true });
+    expect((await createTrainingCache(kv).moveHistory(offline, 'squat')).read.state).toBe('failed');
+  });
+
+  test('an older page is asked by its cursor and not kept', async () => {
+    const kv = memoryKv();
+    await createTrainingCache(kv).moveHistory(watching, 'bench_press', 'srv-1');
+    expect(asked[0].searchParams.get('before')).toBe('srv-1');
+    expect(kv.map.size).toBe(0);
   });
 
   test('signing out forgets it', async () => {
     const kv = memoryKv();
     const cache = createTrainingCache(kv);
-    await cache.history(listing, new Date(2026, 9, 1, 9));
+    await cache.moveHistory(watching, 'bench_press');
     await cache.forget();
     expect(kv.map.size).toBe(0);
   });
@@ -271,10 +280,10 @@ test("a history read still on its way when the user signs out keeps nothing: the
     accessToken: async () => 'tok',
     fetch: async () => {
       await gate;
-      return json([{ id: 'srv-1', clientId: 'w1', startedAt: '2026-09-21T17:00:00Z', sets: [] }]);
+      return json({ sessions: [{ id: 'srv-1', clientId: 'w1', startedAt: '2026-09-21T17:00:00Z', sets: [] }], records: [] });
     },
   });
-  const reading = cache.history(slow, new Date(2026, 9, 1, 9));
+  const reading = cache.moveHistory(slow, 'bench_press');
   await cache.forget();
   answer();
   await reading;

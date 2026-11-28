@@ -7,7 +7,7 @@ import type { components } from '@/api/schema';
 import { type LocalRecord, openRecordStore } from '@/sync/store';
 
 import { nodeSqlite } from './support/nodeSqlite';
-import { historyOf, recordsOf, sessionsOf } from '@/train/history';
+import { historyOf, joinRecords, recordsOf, serverRecords, sessionsOf, unsent } from '@/train/history';
 
 type Schemas = components['schemas'];
 type NewSet = Schemas['NewSet'];
@@ -271,5 +271,68 @@ describe('records', () => {
 
   test('no work sets, no records', () => {
     expect(recordsOf(BENCH, sessionsWith([set('bench_press', 40, 10, undefined, 'WARM_UP')]))).toEqual([]);
+  });
+});
+
+describe("the server's records of all time joined with the phone's sets not sent yet (K-1259, K-1266)", () => {
+  const sessionsWith = (...days: NewSet[][]) => sessionsOf(days.map((sets, i) => workout(`w${i}`, `2026-09-1${i}T17:00:00Z`, sets)), []);
+  const OLD = '2025-05-01T17:00:00Z';
+  const NOW = '2026-11-20T17:00:00Z';
+  const server: Schemas['MoveRecord'][] = [
+    { kind: 'HEAVIEST', loadKg: 100, reps: 5, on: OLD },
+    { kind: 'ESTIMATED_MAX', kg: 116.7, on: OLD },
+    { kind: 'REPS_AT', loadKg: 100, reps: 5, on: OLD },
+    { kind: 'REPS_AT', loadKg: 80, reps: 8, on: NOW },
+  ];
+
+  test("the server's records read as the phone's", () => {
+    expect(serverRecords(server)).toEqual([
+      { kind: 'heaviest', loadKg: 100, reps: 5, on: OLD },
+      { kind: 'estimatedMax', kg: 116.7, on: OLD },
+      { kind: 'repsAt', loadKg: 100, reps: 5, on: OLD },
+      { kind: 'repsAt', loadKg: 80, reps: 8, on: NOW },
+    ]);
+  });
+
+  test('a record of long ago holds against a lighter set today; a better set not sent yet takes its place', () => {
+    const later = '2026-11-27T17:00:00Z';
+    const local = recordsOf(BENCH, sessionsWith([set('bench_press', 80, 10, 0)]).map((s) => ({ ...s, startedAt: later })));
+    expect(joinRecords(serverRecords(server), local)).toEqual([
+      { kind: 'heaviest', loadKg: 100, reps: 5, on: OLD },
+      // 80 × 10 at RIR 0 is 106.7: under the old max.
+      { kind: 'estimatedMax', kg: 116.7, on: OLD },
+      { kind: 'repsAt', loadKg: 100, reps: 5, on: OLD },
+      { kind: 'repsAt', loadKg: 80, reps: 10, on: later },
+    ]);
+    const heavier = recordsOf(BENCH, sessionsWith([set('bench_press', 105, 3, 1)]).map((s) => ({ ...s, startedAt: later })));
+    expect(joinRecords(serverRecords(server), heavier)[0]).toEqual({ kind: 'heaviest', loadKg: 105, reps: 3, on: later });
+  });
+
+  test('a tie keeps the earlier day, wherever it came from', () => {
+    const local = recordsOf(BENCH, sessionsWith([set('bench_press', 100, 5)]).map((s) => ({ ...s, startedAt: NOW })));
+    expect(joinRecords(serverRecords(server), local)[0]).toEqual({ kind: 'heaviest', loadKg: 100, reps: 5, on: OLD });
+  });
+
+  test('in lb, two loads the server keeps apart that read the same are one row: the most reps, then the first day', () => {
+    const lb = (kg: number) => Math.round((kg / 0.45359237) * 10) / 10;
+    const apart: Schemas['MoveRecord'][] = [
+      { kind: 'REPS_AT', loadKg: 62.51, reps: 6, on: NOW },
+      { kind: 'REPS_AT', loadKg: 62.5, reps: 6, on: OLD },
+    ];
+    expect(joinRecords(serverRecords(apart), [], lb)).toEqual([{ kind: 'repsAt', loadKg: 62.5, reps: 6, on: OLD }]);
+  });
+
+  test('without the server, the phone alone', () => {
+    const local = recordsOf(PUSH_UP, sessionsWith([set('push_up', 0, 20, 1)]));
+    expect(joinRecords([], local)).toEqual(local);
+  });
+
+  test("only what the server does not have yet counts from the phone: a sent set is the server's", () => {
+    const records = [
+      record('workout', 'w1', { clientId: 'w1', startedAt: NOW }, null, 'SYNCED'),
+      record('set', 's1', set('bench_press', 140, 1, 0), 'w1', 'SYNCED'),
+      record('set', 's2', set('bench_press', 90, 2, 1), 'w1', 'PENDING'),
+    ];
+    expect(unsent(records).map((r) => r.clientId)).toEqual(['w1', 's2']);
   });
 });

@@ -140,3 +140,55 @@ function estimatedMax(done: Done[]): PersonalRecord[] {
   for (const s of scored) if (s.kg > top.kg) top = s;
   return top === undefined ? [] : [{ kind: 'estimatedMax', kg: top.kg, on: top.on }];
 }
+
+const KINDS: Record<Schemas['MoveRecord']['kind'], PersonalRecord['kind']> = {
+  HEAVIEST: 'heaviest',
+  ESTIMATED_MAX: 'estimatedMax',
+  REPS_AT: 'repsAt',
+  MOST_REPS: 'mostReps',
+};
+
+/** The server's records of all time (K-1259) in the phone's words; a record missing what its kind needs is left out. */
+export function serverRecords(records: Schemas['MoveRecord'][]): PersonalRecord[] {
+  return records.flatMap((r): PersonalRecord[] => {
+    const kind = KINDS[r.kind];
+    if (kind === 'estimatedMax') return r.kg === undefined ? [] : [{ kind, kg: r.kg, on: r.on }];
+    if (kind === 'mostReps') return r.reps === undefined ? [] : [{ kind, reps: r.reps, on: r.on }];
+    return r.loadKg === undefined || r.reps === undefined ? [] : [{ kind, loadKg: r.loadKg, reps: r.reps, on: r.on }];
+  });
+}
+
+/**
+ * The server's records of all time joined with the phone's own from what it has not sent yet (K-1266), by the rules recordsOf keeps:
+ * the heaviest by the weight as `shown` then the reps, the highest estimated max, the most reps at each weight as `shown` (two loads the
+ * server keeps apart that read the same are one), the most reps. A tie keeps the earlier day, wherever it came from.
+ */
+export function joinRecords(server: PersonalRecord[], local: PersonalRecord[], shown: (kg: number) => number = (kg) => kg): PersonalRecord[] {
+  const all = [...server, ...local];
+  const earlier = (a: PersonalRecord, b: PersonalRecord) => a.on.localeCompare(b.on) < 0;
+  const best = <R extends PersonalRecord>(of: R[], score: (r: R) => number[]): R | null => {
+    let found: R | null = null;
+    for (const r of of) {
+      if (found === null) found = r;
+      else {
+        const [x, y] = [score(r), score(found)];
+        const i = x.findIndex((v, k) => v !== y[k]);
+        if ((i >= 0 && x[i] > y[i]) || (i < 0 && earlier(r, found))) found = r;
+      }
+    }
+    return found;
+  };
+  const kind = <K extends PersonalRecord['kind']>(k: K) => all.filter((r): r is Extract<PersonalRecord, { kind: K }> => r.kind === k);
+  const heaviest = best(kind('heaviest'), (r) => [shown(r.loadKg), r.reps]);
+  const max = best(kind('estimatedMax'), (r) => [r.kg]);
+  const at = kind('repsAt');
+  const weights = [...new Set(at.map((r) => shown(r.loadKg)))].sort((a, b) => b - a);
+  const repsAt = weights.flatMap((w) => best(at.filter((r) => shown(r.loadKg) === w), (r) => [r.reps]) ?? []);
+  const most = best(kind('mostReps'), (r) => [r.reps]);
+  return [...(heaviest === null ? [] : [heaviest]), ...(max === null ? [] : [max]), ...repsAt, ...(most === null ? [] : [most])];
+}
+
+/** The phone's records the server does not have yet: every workout (a new set can hang under one sent), sets not sent; none refused. */
+export function unsent(records: LocalRecord[]): LocalRecord[] {
+  return records.filter((r) => r.kind === 'workout' || (r.state !== 'SYNCED' && r.state !== 'REJECTED'));
+}

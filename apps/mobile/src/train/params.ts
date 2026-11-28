@@ -46,7 +46,6 @@ export const workoutParams = {
   e1rmEpleyDivisor: param<number>('e1rm_epley_divisor'),
   e1rmMaxRepsToFailure: param<number>('e1rm_max_reps_to_failure'),
   targetRirMax: param<number>('target_rir_max'),
-  historyDays: param<number>('history_days'),
   noteMaxChars: param<number>('note_max_chars'),
   moveSearchResults: param<number>('move_search_results'),
   /** The "Add a move" picker (Evre 7 B2): the muscle groups of its chips, the popular moves of each, how many groups open the list. */
