@@ -6586,22 +6586,38 @@ tasks:
     refs: ["plan/kararlar/ADR-096-para-haritasi.md", "plan/kararlar/ADR-033-hareket-gecmisi-ve-rekorlar.md"]
 
   - id: K-1260
-    title: "Uzun aralık grafikleri abonelikle: bugünkü kilo ve güç aralığı ücretsiz, 6 ay / 1 yıl / tümü ve yan yana karşılaştırma ücretli"
+    title: "Uzun aralık grafikleri: kiloda 12 hafta, 6 ay, 1 yıl ücretsiz, tümü abonelikle; güçte 90 gün ücretsiz, 6 ay / 1 yıl / tümü abonelikle"
     milestone: M12
     module: mobile
     type: feature
     size: M
     status: todo
     depends_on: [K-1259]
-    why: "ADR-096 › Geçmiş ve grafik: ücretsiz kilo 84 gün, güç 90 gün aynen; derinlik aboneye (Hevy kalıbı: ücretsiz 3 ay)"
+    why: "ADR-096 › Geçmiş ve grafik + Ek 1 (Levent 28 Kas: tartı ekranının 'Yıl' grafiği bugün ücretsiz, kiloda 1 yıl ücretsiz kalır). Güç derinliği aboneye (Hevy kalıbı)"
     acceptance:
-      - "Ücretsizde bugünkü aralıklar değişmeden çalışır; aralık seçimi 6 ay / 1 yıl / tümü abonelik yokken kum kilit grubunu gösterir ('Planları gör'), grafik kaybolmaz (test)"
+      - "İlerleme'nin kilo kartında aralık seçimi kelimelerle (12 hafta · 6 ay · 1 yıl · Tümü); ilk üçü ücretsiz, 'Tümü' abonelik yokken kum kilit grubu ('Planları gör'), grafik kaybolmaz (test)"
+      - "Güç kartında 3 ay (sunucunun haftaları) ücretsiz; 6 ay / 1 yıl / tümü abonelikle, hareketin sayfalı geçmişinden (GET /v1/exercises/{id}/history) haftalık en iyi set (sunucunun kuralı: en ağır, sonra en çok tekrar, sonra en az kalan) (test)"
       - "Abonelik okunamazsa kilit değil 'yüklenemedi' (ödeyen kilit görmez) (test)"
-      - "Ücretsiz aralıklar ve seçenekler parametrede (progress.json), koda gömülü değil (K2)"
-      - "İki dönemi ya da iki hareketi yan yana gösterme abonelikle (test)"
+      - "Aralıklar ve ücretsiz olanlar parametrede (progress.json), koda gömülü değil (K2); kilo 'tümü' 400 günlük pencerelerle geriye okunur"
       - "Simülatörde Levent'e gösterilir (önizleme modu)"
     tests: ["jest", "simülatör"]
     refs: ["plan/kararlar/ADR-096-para-haritasi.md", "plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md"]
+
+  - id: K-1267
+    title: "İki dönemi ya da iki hareketi yan yana gösterme abonelikle (kilo ve güç grafiği)"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-1260]
+    why: "ADR-096 › Geçmiş ve grafik (abonelik): K-1260'tan ayrıldı (≤400 satır kuralı)"
+    acceptance:
+      - "Abonelikle kilo grafiğinde bir dönem bir öncekiyle, güçte bir hareket bir başkasıyla yan yana (test)"
+      - "Abonelik yokken kum kilit grubu; okunamazsa kilit görünmez (test)"
+      - "Simülatörde Levent'e gösterilir"
+    tests: ["jest", "simülatör"]
+    refs: ["plan/kararlar/ADR-096-para-haritasi.md"]
 
   - id: K-1261
     title: "Fotoğraf: istediğin iki günü karşılaştırma ve zaman şeridi abonelikle; çekim, görme, silme ve bugünkü karşılaştırma ücretsiz"

@@ -89,3 +89,14 @@ Düşük-orta. Ücretsiz aralıklar parametrede; kilidi kaldırmak kolay. Kilitl
   okunamazsa kilit görünmez; güvenlik ve yük azaltan yollar abonelik okumaz.
 - `tools/anayasa-denetimi.sh` (K2: aralıklar koda gömülü değil).
 - Simülatörde Levent'e gösterilir (önizleme modu, K-1253).
+
+## Ek 1 · Kiloda bir yıl ücretsiz (28 Kas 2026, Levent)
+K-1260 başlarken görüldü: tartı ekranının "Yıl" kilo grafiği (K-616, `health.json` weigh_in_history_days 365) bugün herkese ücretsiz.
+Sürücü "bugün ücretsiz olan hiçbir şey kilitlenmez" olduğu için Levent seçti: **kiloda 12 hafta, 6 ay ve 1 yıl ücretsiz**; abonelikle gelen
+kiloda "tümü" (bir yıldan eskisi). Güçte bugün yalnız 90 gün var; 6 ay, 1 yıl ve tümü abonelikle (aynen). İki dönemi ya da iki hareketi
+yan yana koymak abonelikle (aynen). Haritanın "Geçmiş ve grafik" satırı bu ekle okunur. Uygulama K-1260 (aralıklar) ve K-1267 (yan yana).
+
+## Ek 2 · Koç denemesi: günlük kullanım düşer (28 Kas 2026, agent; güvenlik incelemesi)
+#3 uygulanırken (K-1264, PR #842) doğrulayıcı reddinde yalnız **deneme sorusu** geri verilir; günün koç kullanımı düşer. Model çağrıldı ve
+para harcandı; kişi soruyu doğrulayıcının reddedeceği biçimde yazarsa ikisi birden geri verilseydi çağrılar yalnız hesap başı aylık tavanla
+($2) sınırlı kalırdı. Günlük tavan (25) sınırdır. Ürün kuralı (#3) değişmedi: hak yalnız geçerli model cevabında düşer.
