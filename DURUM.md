@@ -5,7 +5,16 @@ guncelleme: 2026-11-28
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (28 Kas — K-1254: uygulama içi puan isteme, #821, PR #823 birleşti; dış göz ve sunucu raporları geldi)
+## ▶ DEVAM NOKTASI (28 Kas — K-1255: deneme ilk kilitli kararda, #827, PR açık, K1 onayı bekliyor)
+**Levent 28 Kas kararı A → ADR-091 Ek 7 KABUL.** Onboarding sonunda paywall kendiliğinden açılmaz (FirstOffer, takeOffer kalktı); kişinin planı (YourPlanCard)
+aynı açılışta paywall nereden açılırsa açılsın kahraman kalır, kilitli karardan açılınca "Kararın hazır". Kilitli kart (Bu hafta + karar ekranı) mağaza deneme veriyorsa
+"A free trial opens it now" + "Try 2 weeks free" (süre `plans()[0].trial`, okunamazsa "See plans"); takvimin ilk satırı "Your call opens. No charge."; satın alınca
+yalnız sunucu aynı kararı kilitsiz döndürürse "Your call for the week of … is open" + "See your call"; karar ekranı kilitli kararı odakta yeniden okur. K-707 ve 3.1.2 metinleri aynen.
+Simülatörde önce/sonra: `prototip/gorsel-yon/9c8-abonelik/deneme-kilitli-karar.jpg` (Levent'e gönderildi). **K1 (1):** `navigation.test.tsx` "yumuşak teklif bir kez açılır" → "sekmeler açılır, paywall kendiliğinden yok".
+**Açık:** abonelik onayı "The coach and meal reading are on" diyor, öğün okuma kapalı (ayrı iş). Simülatör notu: dev launcher `--initialUrl http://localhost:<port>` ile onay penceresiz açılır.
+**Sıradaki:** Levent K1'i onaylarsa auto-merge; sonra 9c-9 Ayarlar.
+
+## (önceki) ▶ DEVAM NOKTASI (28 Kas — K-1254: uygulama içi puan isteme, #821, PR #823 birleşti; dış göz ve sunucu raporları geldi)
 **K-1253 birleşti (#822).** **K-1254 (ADR-095 KABUL):** `expo-store-review` ~57.0.3; antrenman bitişinde sunucu yeni rekor listelediyse 1,5 sn sonra Apple'ın penceresi,
 şartlar `data/parameters/review.json` (3 antrenman, 7 gün, 14 gün ara, o gün paywall açılmadıysa); Ayarlar'da "Uygulamayı puanla" (`…?action=write-review`, uygulama
 ID'si `eas.json`'dan). Yerel modül tembel ve `requireOptionalNativeModule` ile korumalı: eski dev build çökmez (simülatörde doğrulandı), pencere ve satır **yeni dev build/mağaza
