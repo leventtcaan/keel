@@ -5,14 +5,16 @@ guncelleme: 2026-11-28
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (28 Kas — K-1254: uygulama içi puan isteme, #821, PR otomatik birleşmede; dış göz ve sunucu raporları geldi)
+## ▶ DEVAM NOKTASI (28 Kas — K-1254: uygulama içi puan isteme, #821, PR #823 birleşti; dış göz ve sunucu raporları geldi)
 **K-1253 birleşti (#822).** **K-1254 (ADR-095 KABUL):** `expo-store-review` ~57.0.3; antrenman bitişinde sunucu yeni rekor listelediyse 1,5 sn sonra Apple'ın penceresi,
 şartlar `data/parameters/review.json` (3 antrenman, 7 gün, 14 gün ara, o gün paywall açılmadıysa); Ayarlar'da "Uygulamayı puanla" (`…?action=write-review`, uygulama
 ID'si `eas.json`'dan). Yerel modül tembel ve `requireOptionalNativeModule` ile korumalı: eski dev build çökmez (simülatörde doğrulandı), pencere ve satır **yeni dev build/mağaza
 ikilisi ister** (pencere TestFlight'ta hiç çıkmaz). Çıkışta sayaçlar silinir, envanterde. Kart `doing`: pencere yeni derlemede görülünce `done`.
 **Raporlar (notes klasörü, repo dışı):** `dis-goz-rapor.md` (Codex gpt-6.1-sol + agy Gemini 3.8 Flash High, ayrı ayrı; reklam: YAPMA) ve `sunucu-denetim.md` (salt okunur).
 **Doğrulanan büyük bulgu:** karar penceresi 21/28 gün > deneme 14 gün → deneme ilk tam karardan önce biter, ücretli ilk karar 4-5. haftada (para kararı Levent'te).
-**Sıradaki:** Levent'e: deneme zamanlaması, sunucu yeniden başlatma, K-1035 Caddy bloğu; sonra 9c-9 Ayarlar.
+**Gece turu (28 Kas):** #823 birleşti · **PR #824** (Caddy: API `api.getlure.xyz`'de de, K-1035) **Levent onayı bekliyor** (birleşince canlıya gider) ·
+#825 AGENTS.md + CLAUDE.md notları · kararlar listesi notes klasöründe `levent-kararlar-28kas.md` (deneme zamanlaması, reboot, restore provası, izleme, mağaza tezi).
+**Sıradaki:** Levent'in deneme zamanlaması kararı (A önerilen: deneme ilk kilitli kararda başlar); sonra 9c-9 Ayarlar.
 
 ## (önceki) ▶ DEVAM NOKTASI (28 Kas — K-1253: abonelik ekranı Sıcak defter, #820, PR #822 otomatik birleşmede; 9c-8 bitti)
 **K-1252 birleşti (#819).** **9c-8 (Abonelik):** önce **önizleme modu** (yalnız `__DEV__` + `EXPO_PUBLIC_PAYWALL_PREVIEW=1`; örnek planlar `subscription.json` ›
