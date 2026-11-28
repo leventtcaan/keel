@@ -92,6 +92,55 @@ class SessionProgressApiTests {
     }
 
     @Test
+    void aLoadSaidToBeTooHeavyIsNotProgressedFromTheNextSessionStartsWhereTheUserWentLighter() throws Exception {
+        // K-1262 (G1 karar noktası 61, ADR-096): the first bench set at 60 felt wrong; "Too heavy?" took the user to 57.5 and the
+        // set logged there carries the mark. Without it the day's top (60, one set) would be the next start again.
+        AccountId account = withAProgram();
+        String workout = start(account, recently);
+        set(account, workout, "bench_press", 60, 5, 0, "BOTH");
+        markedSet(account, workout, "bench_press", 57.5, 8);
+        set(account, workout, "bench_press", 57.5, 8, 1, "BOTH");
+
+        assertThat(finish(account, workout, List.of())).hasStatusOk();
+
+        assertThat(next(account, 0)).isEqualTo(target(57.5, 9));
+    }
+
+    @Test
+    void aSessionMarkedTooHeavyAddsNoLoadTheNextOneProgressesAsUsual() throws Exception {
+        // K-1262: every set at the top of the range, but the user said the load was too heavy and went lighter: the load is
+        // repeated at the top of the range, not added back toward the one that felt wrong. The session after, unmarked, adds it.
+        AccountId account = withAProgram();
+        String marked = start(account, recently);
+        markedSet(account, marked, "bench_press", 57.5, 10);
+        set(account, marked, "bench_press", 57.5, 10, 1, "BOTH");
+        set(account, marked, "bench_press", 57.5, 10, 1, "BOTH");
+        assertThat(finish(account, marked, List.of())).hasStatusOk();
+
+        assertThat(next(account, 0)).isEqualTo(target(57.5, 10));
+
+        String after = start(account, clock.instant().minus(java.time.Duration.ofDays(1)));
+        sets(account, after, "bench_press", 3, 57.5, 10, "BOTH");
+        assertThat(finish(account, after, List.of())).hasStatusOk();
+
+        assertThat(next(account, 0)).isEqualTo(target(new BigDecimal("57.5").add(step(ParameterKey.LOAD_INCREMENT_UPPER_KG)), 6));
+    }
+
+    @Test
+    void theMarkIsKeptAndReturnedAndAbsentWhenNotGiven() throws Exception {
+        // K-1262 contract: NewSet.wentLighter true is kept and comes back on the LoggedSet; a set without it says nothing.
+        AccountId account = withAProgram();
+        String workout = start(account, recently);
+        Map<String, Object> marked = new HashMap<>(Map.of("clientId", UUID.randomUUID(), "exerciseId", "bench_press", "setType", "WORKING",
+                "loadKg", 57.5, "reps", 8, "side", "BOTH", "wentLighter", true));
+        Map<String, Object> plain = new HashMap<>(Map.of("clientId", UUID.randomUUID(), "exerciseId", "bench_press", "setType", "WORKING",
+                "loadKg", 57.5, "reps", 8, "side", "BOTH"));
+
+        assertThat(map(send("POST", account, "/v1/workouts/" + workout + "/sets", marked))).containsEntry("wentLighter", true);
+        assertThat(map(send("POST", account, "/v1/workouts/" + workout + "/sets", plain))).doesNotContainKey("wentLighter");
+    }
+
+    @Test
     void backAfterALongBreakTheTargetIsAStepLighterFromTheBottomOfTheRange() throws Exception {
         // K-531 (ADR-043 #75, G7 K-72): the targets came from a session three weeks and more ago — one of the region's steps
         // under the last load, from the bottom of the range; the program says why.
@@ -840,6 +889,13 @@ class SessionProgressApiTests {
         if (rir != null) {
             body.put("rir", rir);
         }
+        assertThat(send("POST", account, "/v1/workouts/" + workout + "/sets", body)).hasStatus(201);
+    }
+
+    /** A work set logged after "Too heavy?" took the user lighter (K-1262): it carries the mark. */
+    private void markedSet(AccountId account, String workout, String exercise, double kg, int reps) {
+        Map<String, Object> body = new HashMap<>(Map.of("clientId", UUID.randomUUID(), "exerciseId", exercise, "setType", "WORKING", "loadKg", kg,
+                "reps", reps, "rir", 1, "side", "BOTH", "wentLighter", true));
         assertThat(send("POST", account, "/v1/workouts/" + workout + "/sets", body)).hasStatus(201);
     }
 

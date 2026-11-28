@@ -202,7 +202,7 @@ class SessionAutoCloseTests {
         CompletableFuture<Void> logging = CompletableFuture.runAsync(() -> new TransactionTemplate(transactions).executeWithoutResult(status -> {
             store.findForWrite(account, id).orElseThrow();
             store.log(account, id, new WorkoutStore.LoggedSet(null, UUID.randomUUID(), "bench_press", SetType.WORKING, new BigDecimal("60"), 10,
-                    1, Side.BOTH, null, id, null, null));
+                    1, Side.BOTH, null, id, null, null, false));
             logged.countDown();
             await(release);
         }));

@@ -103,9 +103,10 @@ class WorkoutController {
     /**
      * {@code supersetId}: the superset the set belongs to, made by the phone (K-424, ADR-035). {@code restSeconds}: the rest the user
      * took before the set, measured by the phone; none for a move's first set, after a pause, or from an older phone (K-1214).
+     * {@code wentLighter}: the set was logged after "Too heavy?" took the user to a lighter load (K-1262); absent is false.
      */
     record NewSet(UUID clientId, String exerciseId, SetType setType, BigDecimal loadKg, Integer reps, Integer rir,
-            Side side, String note, UUID supersetId, Integer restSeconds) {
+            Side side, String note, UUID supersetId, Integer restSeconds, Boolean wentLighter) {
     }
 
     /**
@@ -120,11 +121,12 @@ class WorkoutController {
     /** Contract LoggedSet. */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record LoggedSet(UUID id, UUID clientId, String exerciseId, SetType setType, BigDecimal loadKg, int reps,
-            Integer rir, Side side, String note, UUID supersetId, Integer restSeconds) {
+            Integer rir, Side side, String note, UUID supersetId, Integer restSeconds, Boolean wentLighter) {
 
+        /** The mark only where it is: an unmarked set says nothing (K-1262). */
         static LoggedSet of(WorkoutStore.LoggedSet set) {
             return new LoggedSet(set.id(), set.clientId(), set.exerciseId(), set.setType(), set.loadKg(), set.reps(), set.rir(), set.side(),
-                    set.note(), set.supersetId(), set.restSeconds());
+                    set.note(), set.supersetId(), set.restSeconds(), set.wentLighter() ? Boolean.TRUE : null);
         }
     }
 
@@ -233,7 +235,7 @@ class WorkoutController {
         require(SetRules.accepts(move.orElseThrow(), set.setType(), set.loadKg(), set.rir(), set.side()));
         WorkoutStore.Stored<WorkoutStore.LoggedSet> stored = store.log(account, id, new WorkoutStore.LoggedSet(null, set.clientId(),
                 set.exerciseId(), set.setType(), set.loadKg(), set.reps(), set.rir(), set.side(), TrainingLimits.note(set.note()), id,
-                set.supersetId(), set.restSeconds()));
+                set.supersetId(), set.restSeconds(), Boolean.TRUE.equals(set.wentLighter())));
         if (!stored.record().workoutId().equals(id)) {
             // The clientId is already a set of another workout: not a replay of this one (ADR-024 §11).
             throw new ApiException(ErrorCode.CONFLICT);
