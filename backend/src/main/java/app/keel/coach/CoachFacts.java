@@ -38,6 +38,14 @@ final class CoachFacts {
      * numbers — the reply check lets the coach say none of theirs.
      */
     static CoachFacts of(CallFacts call, List<String> memory) {
+        return of(call, memory, Map.of());
+    }
+
+    /**
+     * With why a move may have felt heavy as the engine reads it (K-1265, ADR-096 #4; a subscriber's only): each move's effort and
+     * the workouts it went lighter in, counts the reply may say. None: nothing is told.
+     */
+    static CoachFacts of(CallFacts call, List<String> memory, Map<String, Object> effort) {
         Map<String, Object> callPart = new LinkedHashMap<>();
         callPart.put("action", clean(call.action()));
         callPart.put("reasons", call.reasons().stream().map(rule -> {
@@ -53,6 +61,9 @@ final class CoachFacts {
         Map<String, Object> facts = new LinkedHashMap<>();
         facts.put("call", callPart);
         facts.putAll(clean(call.context()));
+        if (!effort.isEmpty()) {
+            facts.put("effort", clean(effort));
+        }
         List<ReplyNumbers.Fact> numbers = new ArrayList<>();
         collect("", "", facts, numbers);
         if (!memory.isEmpty()) {

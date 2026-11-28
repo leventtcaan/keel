@@ -756,6 +756,18 @@ class DecisionService {
      * consent; NOT_FOUND before the first call, when nothing is planned yet.
      */
     @Transactional(readOnly = true)
+    /** The moves' efforts and the days they were read over (trend_window_days). */
+    record Efforts(List<TrainingStatusReader.MoveEffort> moves, int windowDays) {
+    }
+
+    /** Each program move's effort and workouts gone lighter over the trend window, read as the recovery reads the log (K-1265). */
+    Efforts efforts(AccountId account) {
+        consent.require(account, ConsentKind.HEALTH_DATA);
+        Week week = week(account);
+        return new Efforts(statuses.efforts(account, week.today(), week.profile().timeZone(), bodyweight(account, week),
+                states.daysUpTo(account, week.today()), week.parameters()), week.parameters().wholeNumber(ParameterKey.TREND_WINDOW_DAYS));
+    }
+
     ConsistencyNow consistency(AccountId account) {
         consent.require(account, ConsentKind.HEALTH_DATA);
         CallStore.Plan plan = calls.plan(account).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));

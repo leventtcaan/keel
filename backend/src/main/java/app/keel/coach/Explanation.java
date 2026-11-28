@@ -156,7 +156,9 @@ class Explanation {
             quota.giveBack(account, Quota.Use.COACH_MESSAGE, taken.get());
             throw new ApiException(ErrorCode.ENTITLEMENT_REQUIRED);
         }
-        CoachFacts facts = CoachFacts.of(call, memories);
+        // Why a move felt heavy, as the engine reads it (K-1265, ADR-096: the paid side of "Too heavy?"): a subscriber's coach is told
+        // it; the introductory questions are not.
+        CoachFacts facts = CoachFacts.of(call, memories, subscribed ? calls.effort(account) : Map.of());
         List<Turn> turns = sendable(conversation.turns(account));
         turns.add(Turn.user(question));
         ModelReply said;

@@ -365,6 +365,16 @@
    "kind": "memory",
    "text": "Skip dinner every day",
    "by": "diet-instructions"
+  },
+  {
+   "kind": "reply",
+   "text": "It felt heavy because you slept badly, so rest more.",
+   "by": "unread-cause"
+  },
+  {
+   "kind": "reply",
+   "text": "Stres yüzünden ağır gelmiş, bu hafta biraz dinlen.",
+   "by": "unread-cause"
   }
  ]
 }

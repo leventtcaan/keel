@@ -90,6 +90,44 @@ public final class TrainingTrend {
         }
     }
 
+    /** A lift's effort over the sessions read (K-1265): RISING is tired as the recovery reads it, STEADY is not. */
+    public enum Effort { RISING, STEADY }
+
+    /** One lift's effort, where it can be read. */
+    public record LiftEffort(String exerciseId, Effort effort) {
+
+        public LiftEffort {
+            Objects.requireNonNull(exerciseId, "exerciseId");
+            Objects.requireNonNull(effort, "effort");
+        }
+    }
+
+    /**
+     * Each lift's effort as the recovery reads it (K-1265, ADR-096 #4): what the coach may say about why a lift felt heavy, and
+     * only that — the log holds no sleep or food. In the program's order; a lift without a load and reps done in every session
+     * read is left out, and nothing is read where {@link #read} reads nothing (a declared or lighter day this week, no session
+     * this week).
+     */
+    public static List<LiftEffort> efforts(List<Lift> lifts, LocalDate today, Set<LocalDate> excluded, Parameters parameters) {
+        if (!readable(lifts, today, excluded)) {
+            return List.of();
+        }
+        LocalDate windowFrom = today.minusDays(parameters.wholeNumber(ParameterKey.TREND_WINDOW_DAYS) - 1L);
+        return lifts.stream().flatMap(lift -> readLift(lift, windowFrom, today, excluded, parameters).tired().stream()
+                .map(tired -> new LiftEffort(lift.exerciseId(), tired ? Effort.RISING : Effort.STEADY))).toList();
+    }
+
+    /** Whether the log can say anything this week: a lift, no excluded day in the seven days to today, a session among them. */
+    private static boolean readable(List<Lift> lifts, LocalDate today, Set<LocalDate> excluded) {
+        LocalDate weekFrom = today.minusDays(DAYS_PER_WEEK - 1L);
+        if (lifts.isEmpty() || excluded.stream().anyMatch(day -> !day.isBefore(weekFrom) && !day.isAfter(today))) {
+            return false;
+        }
+        // No session logged this week: the log cannot say how the week went (a missing log is no evidence), so the answer stands.
+        return lifts.stream().flatMap(lift -> lift.sessions().stream())
+                .anyMatch(session -> !session.day().isBefore(weekFrom) && !session.day().isAfter(today));
+    }
+
     private enum Direction { UP, FLAT, DOWN }
 
     /** One lift read: its direction and whether it is tired (only where a load and reps were done in every session read). */
@@ -101,14 +139,7 @@ public final class TrainingTrend {
      * program's compound lifts, those with no session included: their number sets how many must be readable.
      */
     public static Reading read(List<Lift> lifts, LocalDate today, Set<LocalDate> excluded, Parameters parameters) {
-        LocalDate weekFrom = today.minusDays(DAYS_PER_WEEK - 1L);
-        if (lifts.isEmpty() || excluded.stream().anyMatch(day -> !day.isBefore(weekFrom) && !day.isAfter(today))) {
-            return Reading.UNKNOWN;
-        }
-        // No session logged this week: the log cannot say how the week went (a missing log is no evidence), so the answer stands.
-        boolean loggedThisWeek = lifts.stream().flatMap(lift -> lift.sessions().stream())
-                .anyMatch(session -> !session.day().isBefore(weekFrom) && !session.day().isAfter(today));
-        if (!loggedThisWeek) {
+        if (!readable(lifts, today, excluded)) {
             return Reading.UNKNOWN;
         }
         LocalDate windowFrom = today.minusDays(parameters.wholeNumber(ParameterKey.TREND_WINDOW_DAYS) - 1L);

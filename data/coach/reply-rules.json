@@ -152,6 +152,30 @@
         "Karar bu hafta aynı kalıyor.",
         "Yağsız protein seç."
       ]
+    },
+    {
+      "id": "unread-cause",
+      "rule": "U1/U3",
+      "pattern": "\\b(because|due\\s+to|caused\\s+by|(a\\s+)?result\\s+of|thanks\\s+to|probably|likely|might\\s+be|may\\s+be|could\\s+be)\\b[^.!?]{0,40}?\\b(sleep\\w*|slept|stress\\w*|ate|eating|eaten|food|nutrition|hydrat\\w*|dehydrat\\w*|water|alcohol|drinking|caffeine|hormones?|period)\\b|\\b(poor|bad|little|less|lack\\s+of|not\\s+enough|short\\s+on)\\s+(sleep|rest|food|eating)\\b|\\b(you('|\\s)?re|you\\s+are|you('|\\s)?ve\\s+been|you\\s+were)\\s+(stressed|under-?slept|underfed|dehydrated|run\\s+down)\\b|\\b(uyku\\w*|uyu\\w*|stres\\w*|yemek\\w*|ye(me)?diğin\\w*|beslen\\w*|susuz\\w*|alkol\\w*|kafein\\w*|hormon\\w*|regl\\w*)\\b[^.!?]{0,30}?\\b(yüzünden|nedeniyle|sebebiyle|dolayı|için|kaynaklı)\\b|\\bçünkü\\b[^.!?]{0,40}?\\b(uyku\\w*|uyu\\w*|stres\\w*|yemek\\w*|ye(me)?di\\w*|beslen\\w*|alkol\\w*|kafein\\w*)",
+      "examples": [
+        "It felt heavy because you slept badly this week.",
+        "Probably the stress at work, so take it easy.",
+        "That is likely due to not eating enough yesterday.",
+        "Poor sleep makes the bar feel heavier.",
+        "You are stressed, so the weight felt heavy.",
+        "Az uyuduğun için ağır gelmiş olabilir.",
+        "Stres yüzünden ağır gelmiş.",
+        "Çünkü dün az yemek yedin."
+      ],
+      "nonExamples": [
+        "Sleep and food are not in your log, so the call reads your sets only.",
+        "Effort on squat has been rising over 28 days, so the load holds.",
+        "You went lighter in 1 workout, and the next session starts there.",
+        "Eating enough protein supports training.",
+        "Because the weight has not moved, the cut stays at 500 kcal a day.",
+        "Uyku ve yemek kayıtta yok; karar yalnız setlerini okuyor.",
+        "Squat'ta zorlanma 28 günde arttı, yük aynı kalıyor."
+      ]
     }
   ]
 }
