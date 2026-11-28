@@ -12,7 +12,6 @@ import { type Anchor, type Shot, comparison, picked as pickedPair, shotsOf } fro
 import { type PhotoCheck, type Pose, POSES } from '@/photos/library';
 import { photoParams } from '@/photos/params';
 import { useAppServices } from '@/services/ServicesProvider';
-import { type PaidAccess, readPaidAccess } from '@/subscription/access';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
 import { shortDate } from '@/train/program';
@@ -36,14 +35,14 @@ const clamp = (value: number) => Math.min(1, Math.max(0, value));
  * without one the sand lock, unread no lock.
  */
 export default function CompareScreen() {
-  const { photos, report, api } = useAppServices();
+  const { photos, report, paidAccess } = useAppServices();
   const { color } = useTheme();
   const [checks, setChecks] = useState<PhotoCheck[] | null>(null);
   const [pose, setPose] = useState<Pose>('front');
   const [picked, setPicked] = useState<Anchor['kind']>('day1');
   const [sliding, setSliding] = useState(false);
   // The paid parts: the subscription once asked (null: not yet), what was asked for, the days picked, the timeline's frame.
-  const [access, setAccess] = useState<PaidAccess | null>(null);
+  const [access, setAccess] = useState<Awaited<ReturnType<typeof paidAccess>> | 'checking' | null>(null);
   const [asked, setAsked] = useState(false);
   const [picking, setPicking] = useState(false);
   const [days, setDays] = useState<string[]>([]);
@@ -78,13 +77,13 @@ export default function CompareScreen() {
    * A paid part asked for: the subscription read (again unless open: back from the paywall with one, the part opens), then the part
    * opened, or the lock (or the unread line) shown. A tap while a read is on its way waits for that read.
    */
-  const reading = useRef<Promise<Exclude<PaidAccess, 'checking'>> | null>(null);
+  const reading = useRef<ReturnType<typeof paidAccess> | null>(null);
   const ask = async (open: () => void) => {
     setAsked(true);
     let now = access;
     if (now !== 'open') {
       setAccess('checking');
-      reading.current ??= readPaidAccess(api).finally(() => (reading.current = null));
+      reading.current ??= paidAccess().finally(() => (reading.current = null));
       now = await reading.current;
       setAccess(now);
     }
@@ -209,7 +208,7 @@ export default function CompareScreen() {
                 accessibilityState={{ selected: on }}
                 onPress={() => tapDay(shot.takenOn)}
                 style={styles.day}>
-                <Image source={{ uri: shot.uri }} resizeMode="cover"
+                <Image accessible={false} source={{ uri: shot.uri }} resizeMode="cover"
                   style={[styles.thumb, { borderColor: on ? color.accent : color.background }]} />
                 <Text style={[styles.small, { color: on ? color.accent : color.muted }]}>{shortDate(shot.takenOn)}</Text>
               </Pressable>

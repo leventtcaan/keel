@@ -22,6 +22,7 @@ let mockChecks: PhotoCheck[] = [];
 const mockServices = {
   photos: { checks: jest.fn(async () => mockChecks) },
   report: jest.fn(),
+  paidAccess: jest.fn(async (): Promise<'open' | 'locked' | 'unread'> => 'locked'),
   api: { GET: jest.fn(), POST: jest.fn(), PUT: jest.fn(), PATCH: jest.fn(), DELETE: jest.fn() },
 };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices }));
@@ -219,19 +220,17 @@ test('no "before" or "after" anywhere in its words, nor in the way to it', () =>
 
 describe('every day, any two days and the timeline (K-1261, ADR-096: seeing free, picking and playing with a subscription)', () => {
   const subscription = (active: boolean | 'unread') =>
-    mockServices.api.GET.mockImplementation(async () =>
-      active === 'unread' ? { error: { code: 'X' }, response: { status: 500 } } : { data: { active }, response: { status: 200 } },
-    );
-  /** The only request the screen may make: the subscription, with nothing of the photos (V1). Cleared so the check after each test holds. */
-  const askedOnlyTheSubscription = () => {
-    expect(mockServices.api.GET.mock.calls).toEqual([['/v1/subscription']]);
-    mockServices.api.GET.mockClear();
+    mockServices.paidAccess.mockImplementation(async () => (active === 'unread' ? 'unread' : active ? 'open' : 'locked'));
+  /** The screen asks only whether the paid parts are open, giving nothing (V1); the API client it never holds (checked after each test). */
+  const askedOnlyTheSubscription = (times = 1) => {
+    expect(mockServices.paidAccess.mock.calls).toEqual(Array.from({ length: times }, () => []));
   };
   const dayButton = (date: string) => screen.getByRole('button', { name: t('compare.dayPhoto', { date }) });
 
   test('every photo day of the pose is there to see, one tap shows it large: free, the server not asked', async () => {
     await show();
     for (const date of ['Jul 6', 'Aug 3', 'Sep 2', 'Oct 5']) expect(dayButton(date)).toBeOnTheScreen();
+    expect(mockServices.paidAccess).not.toHaveBeenCalled();
     await fireEvent.press(dayButton('Aug 3'));
     await act(async () => {});
     expect(uri('compare-one')).toBe('file:///docs/2026-08-03-front.jpg');
@@ -309,8 +308,7 @@ describe('every day, any two days and the timeline (K-1261, ADR-096: seeing free
     await press(t('compare.pickTwo'));
     expect(screen.queryByText(t('compare.locked'))).toBeNull();
     expect(screen.getByText(t('compare.pickHint'))).toBeOnTheScreen();
-    expect(mockServices.api.GET.mock.calls).toEqual([['/v1/subscription'], ['/v1/subscription']]);
-    mockServices.api.GET.mockClear();
+    askedOnlyTheSubscription(2);
   });
 
   test('a subscription that cannot be read is no lock: it says so, and the free comparison stays', async () => {
