@@ -58,6 +58,7 @@ let mockPhotoChecks: { takenOn: string; photos: { front?: string } }[] = [];
 /** The catalog the training service reads: empty unless a test needs a move's load model. */
 let mockExercises: unknown[] = [];
 const mockServices = {
+  paidAccess: async () => 'locked' as const, // K-1260: a longer range asks; this account has no subscription
   api: mockApi,
   photos: { checks: jest.fn(async () => mockPhotoChecks), forget: jest.fn(async () => {}) },
   training: {

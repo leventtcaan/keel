@@ -4215,6 +4215,16 @@
     }
   },
   "progress": {
+    "range": {
+      "weeks": "12 hafta",
+      "months": "3 ay",
+      "halfYear": "6 ay",
+      "year": "1 yıl",
+      "all": "Tümü",
+      "locked": "Daha uzun aralıklar abonelikle gelir.",
+      "unread": "Aboneliğin kontrol edilemedi. Sonra tekrar dene.",
+      "failed": "Bu aralık yüklenemedi. Çevrimiçi olunca tekrar dene."
+    },
     "failed": "Bir kısmı yüklenmedi.",
     "retry": "Tekrar dene",
     "hero": {
