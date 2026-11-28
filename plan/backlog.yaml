@@ -6515,6 +6515,43 @@ tasks:
     tests: ["jest"]
     refs: ["plan/kararlar/ADR-091-evre-8-kararlari.md"]
 
+  - id: K-1257
+    title: "Ayarlar içindekiler: dokuz bölüm, bugünkü değerleri, her bölüm kendi sayfası; Haftan ve Sen'de 'Kararın bunlara bakar'"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: []
+    why: "9c madde 9: Ayarlar 2,8 ekran, 15 kum kart (ADR-094 §1 en çok üç renkli grup), en az dokunulan seçimler en üstte, kararı değiştiren ayar sıradan satır. Levent C · İçindekiler'i seçti, bölüm sayfaları B'nin düzeniyle (ADR-094 Ek 9)"
+    acceptance:
+      - "Ayarlar tek ekran: serif başlık, dokuz bölüm satırı sırayla (Haftan, Sen, Hatırlatıcılar, Sağlık ve veri, Koç, Abonelik, Uygulama, Hakkında, Hesap), kart yok (test)"
+      - "Her satırın altında bugünkü değerleri: Haftan günler + kontrol günü + kardiyo, Sen hedef + boy + doğum yılı, Hatırlatıcılar açık/kapalı, Abonelik sunucunun durumu, Uygulama görünüm + dil + birim; diğerleri içindekileri adıyla (test)"
+      - "Bölüm satırı settings-section sayfasını açar, başlığı bölüm adı; geri düğmesi 'Ayarlar' (test)"
+      - "Haftan ve Sen'in üstünde tek adaçayı grup 'Kararın bunlara bakar', yalnız motorun okuduğu ayarlarla (Haftan: gün noktaları + antrenman günleri + kontrol günü; Sen: hedef, boy, aktivite, doğum yılı); kardiyo, dinlenme, yiyecekler altında (test)"
+      - "Bugünkü her satır, sayfa ve eylem yerinde kalır: hiçbir ayar kaybolmaz (test)"
+      - "Simülatörde Levent'e gösterilir; K1 listesi birleştirmeden önce Levent'e sorulur"
+    tests: ["jest", "simülatör"]
+    refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md", "plan/evre-9-tasarim.md", "prototip/gorsel-yon/9c9-ayarlar/ayarlar-varyantlar.jpg"]
+
+  - id: K-1258
+    title: "Ayarlar satırları kâğıtta: kart ve sistem ikonu yok, seçim petrol alt çizgi, kapalı hatırlatıcı tek cümle, Hesabı sil kırmızı yazı"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-1257]
+    why: "ADR-094 Ek 9 › Uygulama #3: seçili segment siyah, sistem ikonları, koyu gri kapalı düğmeler, 'İngiliz birimleri (lb, ft, in)' kutuyu eziyor, yıkıcı eylem sıradan satır"
+    acceptance:
+      - "Ayarlar bölüm sayfalarında kum kart yok, satırlar ince çizgiyle; Ayarlar satırlarında ikon yok; başka ekranların listeleri değişmez (test)"
+      - "Görünüm, dil, birim kelime seçimi: seçili petrol yazı + petrol alt çizgi, siyah dolgu yok; erişilebilirlikte seçili durumu söyler (test)"
+      - "Ana hatırlatıcı kapalıyken öğün ve yürüyüş düğmeleri görünmez, yerine tek cümle (test)"
+      - "Hesabı sil warn renkli yazı, öteki iki satırdan ayrı (test)"
+      - "Simülatörde Levent'e gösterilir"
+    tests: ["jest", "simülatör"]
+    refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md"]
+
   - id: K-1248
     title: "Türk yemeklerinin porsiyon adı Türkçe, ev ölçüsü kuralı pilav/kuru baklagil yemeklerini tanır, su böreği sıvı sayılmaz"
     milestone: M12

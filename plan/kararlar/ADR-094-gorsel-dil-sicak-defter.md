@@ -407,3 +407,34 @@ Cal AI, BetterMe, Ladder önce deneme takvimi, sonra plan; kahraman kişinin ken
    (yıllık seçili, ayda fiyat, tasarruf), tek düğme. Sahte geri sayım, sahte yorum, gizli kapatma, ikinci paywall yok.
 Seçilmeyen: A, B, C (ilk tur), D (fiyat takvimden önce). **Ayrı iş:** uygulama içi puan isteme (K-1254): yalnız Apple'ın kendi penceresi
 (App Store Review Guidelines 5.6.1: özel puan penceresi yasak; ödüllü puan isteme de yasak, madde numarası **[doğrulanmadı]**), olumlu bir anda.
+
+## Ek 9 · Ayarlar: içindekiler, her bölüm kendi sayfası (9c madde 9, 2026-11-28, Levent)
+Bugünkü ekran simülatörde tam boy çekildi ve işaretlendi (`prototip/gorsel-yon/9c9-ayarlar/ayarlar-simdi.jpg`, 2,8 ekran, 15 grup, 30 satır):
+- sayfa en az dokunulan üç seçimle açılıyor (görünüm, dil, birim); seçili kutu siyah dolgu (rol tablosunda siyah yok);
+- "İngiliz birimleri (lb, ft, in)" kutuyu eziyor; grup başlıkları küçük kalın sistem yazısı;
+- 15 kum kart: §1'in "bir ekranda en çok üç renkli grup" kuralı çiğneniyor; tek satırlık beş kart üst üste;
+- her satır aynı (sistem ikonu, ad, gri değer, ok); kararı değiştiren ayar boy ve doğum yılıyla aynı ağırlıkta;
+- ana hatırlatıcı kapalıyken alttaki iki düğme koyu gri (bozuk mu kapalı mı belli değil), ne yaptıkları altta paragrafta;
+- "Hesabı sil" çıkış ve dışa aktarmayla aynı mürekkepte.
+Üç yön simülatörde bugünkü değerlerle çizildi (`ayarlar-varyantlar.jpg`): A · Defter sayfası (kartsız, ikonsuz satırlar, seçim petrol alt
+çizgi), B · Önce kararı değiştirenler (A + üstte tek adaçayı grup "Kararın bunlara bakar"), C · İçindekiler (tek ekran bölüm listesi, her bölüm
+kendi sayfası). **Levent C'yi seçti, bölüm sayfaları B'nin düzeniyle** ("C daha derli toplu, sonrasında B'deki şeyleri bölüm bölüm gösterir").
+
+**Motor gerçeği (agent kodda doğruladı, 28 Kas):** haftalık kararın okuduğu ayarlar antrenman günleri (program yoksa; `DecisionService` ilk
+hafta, `PlannedSessions`), kontrol günü (`CheckInWeek.weekOf`: hangi haftanın kararı, ne zaman açılır), hedef (yalnız ilk planın evresi),
+boy, aktivite ve doğum yılı (dinlenme enerjisi, yaş). **Okumadıkları:** kardiyo (motor kardiyoya evreyi verir, tersi yok), setler arası
+dinlenme (zamanlayıcı ayarı), uzak durulan yiyecekler (yalnız öneriler). Bu yüzden "Kararın bunlara bakar" grubu yalnız okunanları tutar;
+B taslağındaki kardiyo o gruptan çıkar.
+
+**Uygulama:**
+1. **Ayarlar içindekiler (K-1257):** serif ekran başlığı, altında dokuz bölüm satırı kâğıt üstünde, ince çizgiyle: serif bölüm adı, altında bugünkü
+   değerleri tek muted satırda, petrol olmayan ok. Bölümler sırayla: Haftan, Sen, Hatırlatıcılar, Sağlık ve veri, Koç, Abonelik, Uygulama,
+   Hakkında, Hesap. Özet satırı yalnız ekranın zaten okuduklarından (program, profil, abonelik, telefon ayarları); başka bölümler içindekileri
+   adıyla söyler. Değer kesilmez, sarar.
+2. **Bölüm sayfası:** `settings-section?section=…`, başlığı bölüm adı (serif). Haftan ve Sen'de üstte tek adaçayı grup "Kararın bunlara bakar"
+   (Haftan: haftanın günleri petrol noktayla + antrenman günleri + kontrol günü; Sen: hedef, boy, aktivite, doğum yılı); geri kalanı altında.
+   Diğer bölümler bugünkü gruplarını taşır; Koç bölümü doğrudan koç ayarlarıdır.
+3. **Satırlar kâğıtta (K-1258):** Ayarlar sayfalarında kum kart yok, satırlar ince çizgiyle; sistem ikonu yok; seçimler (görünüm, dil, birim)
+   kelime olarak, seçili olan petrol yazı + petrol alt çizgi (siyah dolgu yok; Ek 7'deki "Haritada | Mesafesini yazarak" dili), birimler
+   "kg, cm · lb, ft, in"; ana hatırlatıcı kapalıyken alt düğmeler yok, tek cümle; "Hesabı sil" `warn` yazı, ayrı.
+Seçilmeyen: A (tek uzun sayfa, 2,2 ekran), B tek sayfa olarak. Bedeli: her değişiklik bir dokunuş fazla.
