@@ -285,3 +285,9 @@ parameters:
     tag: tecrube
     source: "arastirma/ham/guray/G7-whisper-arsiv.md#K-67"
     note: "K-1218. G7 K-67: 'aynı işte zorlanmanın (RPE) belirgin yükselmesi' yorgunluk işaretidir; Güray SAYI VERMİYOR [kaynak yok: eşik]. Aynı yük ve tekrarda son iki seansın ortalama RIR'ı öncekilerden bu kadar ya da fazla düştüyse (zorlanma yükseldi) ve e1RM yukarı değilse hareket 'yorgun' sayılır; yorgunlar okunan hareketlerin trend_majority payına ulaşırsa Recovery.POOR. Veri GOOD demez (uyku ve yemek kayıtta görünmez). Sayı ürün seçimi (RIR tahmin hatası ≈ 1 tekrar, Helms 2016). RIR düşüşü deload merdivenine girmez (K-67 deload'u erken tetikleyebilir; ayrı karar)."
+  - key: too_heavy_marked_sets_min
+    value: 1
+    unit: sets
+    tag: tecrube
+    source: "arastirma/ham/guray/G1-antrenman.md#KARAR"
+    note: "K-1262 (ADR-096). Kaynak çapası bölüm başlığıdır (madde 61 numaralı liste satırı, çapa olamaz; #K-61 başka kural). G1 karar noktası 61: set içinde kilo yanlış seçildiyse (form bozuk) seti başında bırak, kiloyu düşür. Kişi 'Too heavy?' ile hafifleyip seti kaydettiğinde set işaret taşır. Hareketin bu kadar ya da fazla iş seti işaretliyse sonraki seans en hafif işaretli yükten okunur (iki kez hafifleyen sonuncuda kalmıştır; üstündeki setler yanlış bulunan yüktür; 0 kg işaret sayılmaz) ve o seans yük eklenmez (aralığın tepesi hedef). Güray sayı vermiyor [kaynak yok: eşik]; tek işaret yeter, kişi formun bozulduğunu kendisi söyledi. Bir sonraki işaretsiz seans normal ilerler. Abonelik okunmaz (ADR-091 Ek 3)."

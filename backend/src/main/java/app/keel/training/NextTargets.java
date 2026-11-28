@@ -125,6 +125,28 @@ final class NextTargets {
     }
 
     /**
+     * The load the user went lighter to (K-1262, G1 karar noktası 61): the lightest load of the sets logged after "Too heavy?" —
+     * gone lighter twice, the last is where the user ended — once at least {@code marksNeeded} sets carry the mark
+     * (too_heavy_marked_sets_min); none under it. A mark at 0 kg (an added load dropped to none) leaves no load to progress
+     * from and is no mark.
+     */
+    static Optional<BigDecimal> wentLighterTo(List<BigDecimal> markedLoadsKg, int marksNeeded) {
+        List<BigDecimal> loads = markedLoadsKg.stream().filter(kg -> kg.signum() > 0).toList();
+        return loads.size() < marksNeeded ? Optional.empty() : loads.stream().min(Comparator.naturalOrder());
+    }
+
+    /**
+     * The session as {@link #session(LiftKind, BodyRegion, RepRange, List, int, boolean)} reads it, but where the user went
+     * lighter (K-1262): the sets above that load are the load said to be wrong, not the one progressed from.
+     */
+    static Optional<LiftSession> session(LiftKind kind, BodyRegion region, RepRange range, List<TrainingLog.WorkSet> sets, int plannedRir,
+            boolean techniqueClean, Optional<BigDecimal> wentLighterTo) {
+        List<TrainingLog.WorkSet> read = wentLighterTo.map(kg -> sets.stream().filter(set -> set.loadKg().compareTo(kg) <= 0).toList())
+                .orElse(sets);
+        return session(kind, region, range, read, plannedRir, techniqueClean);
+    }
+
+    /**
      * The target as shown today: a load added while the deload ladder now holds the load is the last load at the top of
      * the range — the hold may have begun after the target was set (K-217 review). So is a rep past the top, which stands
      * in for a load the gym could not add (K-414 review). A starting weight ({@code lastLoadKg} null) was never lifted:

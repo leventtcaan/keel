@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import app.keel.engine.BodyRegion;
 import app.keel.engine.LiftKind;
 import app.keel.engine.LiftSession;
+import app.keel.engine.ParameterKey;
 import app.keel.engine.RepositoryParameters;
 import app.keel.engine.Sex;
 import app.keel.engine.Progression;
@@ -18,6 +19,7 @@ import app.keel.engine.SourceTag;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -172,6 +174,45 @@ class NextTargetsTests {
         assertThat(found.loadKg()).isEqualByComparingTo("42.5");
         assertThat(NextTargets.after(found, Progression.next(found, RepositoryParameters.forSex(Sex.MALE)), false, 2))
                 .contains(new NextTargets.Target(new BigDecimal("42.5"), 9));
+    }
+
+    @Test
+    void theLoadTheUserWentLighterToIsTheSessionsTopNotTheOneThatFeltWrong() {
+        // K-1262 (G1 karar noktası 61): the first set at 60 felt wrong, the user went lighter to 57.5 ("Too heavy?") and the
+        // set logged there carries the mark. The set above the mark is the load said to be wrong: it is not progressed from.
+        int marksNeeded = RepositoryParameters.forSex(Sex.MALE).wholeNumber(ParameterKey.TOO_HEAVY_MARKED_SETS_MIN);
+        List<TrainingLog.WorkSet> sets = List.of(set("60", 5, 0), set("57.5", 8, 1), set("57.5", 8, 1));
+        Optional<BigDecimal> wentLighterTo = NextTargets.wentLighterTo(Collections.nCopies(marksNeeded, new BigDecimal("57.5")), marksNeeded);
+
+        assertThat(wentLighterTo).hasValueSatisfying(kg -> assertThat(kg).isEqualByComparingTo("57.5"));
+        assertThat(NextTargets.session(LiftKind.COMPOUND, BodyRegion.UPPER, SIX_TO_TEN, sets, 1, true, wentLighterTo)).contains(new LiftSession(
+                LiftKind.COMPOUND, BodyRegion.UPPER, SIX_TO_TEN, new BigDecimal("57.5"), List.of(new SetResult(8, 1), new SetResult(8, 1)), true));
+        assertThat(NextTargets.session(LiftKind.COMPOUND, BodyRegion.UPPER, SIX_TO_TEN, sets, 1, true, Optional.empty()))
+                .as("no mark: the day's top load, as before").hasValueSatisfying(found -> assertThat(found.loadKg()).isEqualByComparingTo("60"));
+    }
+
+    @Test
+    void goneLighterTwiceTheLastLighterLoadIsWhereTheSessionIsRead() {
+        // K-1262 review: 60 felt wrong, then 57.5 did too; the marks at 57.5 and 55 say the user ended at 55. A mark at 0 kg (an
+        // added load dropped to none) leaves no load to progress from: it is no mark, the session is read as before.
+        int marksNeeded = RepositoryParameters.forSex(Sex.MALE).wholeNumber(ParameterKey.TOO_HEAVY_MARKED_SETS_MIN);
+        List<BigDecimal> twice = new java.util.ArrayList<>(Collections.nCopies(marksNeeded, new BigDecimal("57.5")));
+        twice.addAll(Collections.nCopies(marksNeeded, new BigDecimal("55")));
+
+        assertThat(NextTargets.wentLighterTo(twice, marksNeeded)).hasValueSatisfying(kg -> assertThat(kg).isEqualByComparingTo("55"));
+        assertThat(NextTargets.wentLighterTo(Collections.nCopies(marksNeeded, BigDecimal.ZERO), marksNeeded)).isEmpty();
+    }
+
+    @Test
+    void fewerMarksThanTheThresholdAreNoMark() {
+        // The threshold's edge: one mark under it is none; at it, the marked load.
+        int marksNeeded = RepositoryParameters.forSex(Sex.MALE).wholeNumber(ParameterKey.TOO_HEAVY_MARKED_SETS_MIN);
+        List<BigDecimal> under = Collections.nCopies(marksNeeded - 1, new BigDecimal("57.5"));
+        List<BigDecimal> at = Collections.nCopies(marksNeeded, new BigDecimal("57.5"));
+
+        assertThat(NextTargets.wentLighterTo(under, marksNeeded)).isEmpty();
+        assertThat(NextTargets.wentLighterTo(List.of(), marksNeeded)).isEmpty();
+        assertThat(NextTargets.wentLighterTo(at, marksNeeded)).hasValueSatisfying(kg -> assertThat(kg).isEqualByComparingTo("57.5"));
     }
 
     @ParameterizedTest(name = "{0}")

@@ -110,10 +110,10 @@ class SessionProgress {
                     LocalDate on = workout.startedAt().atZone(zone).toLocalDate();
                     Optional<GymStore.Gym> gym = gyms.current(account);
                     Optional<TrainingChanges.Change> lighter = TrainingChanges.inForce(calls.changes(account), TrainingChanges.Kind.LIGHTER_WEEK, on);
-                    Map<String, List<TrainingLog.WorkSet>> worked = workouts.sets(workout.id()).stream()
+                    Map<String, List<WorkoutStore.LoggedSet>> worked = workouts.sets(workout.id()).stream()
                             .filter(set -> set.setType() == SetType.WORKING)
-                            .map(set -> new TrainingLog.WorkSet(set.exerciseId(), workout.startedAt(), null, set.loadKg(), set.reps(), set.rir(), set.side()))
-                            .collect(Collectors.groupingBy(TrainingLog.WorkSet::exerciseId));
+                            .collect(Collectors.groupingBy(WorkoutStore.LoggedSet::exerciseId));
+                    int marksNeeded = p.wholeNumber(ParameterKey.TOO_HEAVY_MARKED_SETS_MIN);
                     for (ProgramStore.PlannedExercise planned : day.exercises()) {
                         catalog.find(planned.exerciseId()).ifPresent(exercise -> {
                             LiftKind kind = LiftKind.valueOf(exercise.kind().name());
@@ -124,14 +124,21 @@ class SessionProgress {
                             BigDecimal maxJump = LoadSteps.wholeLoad(exercise.equipment())
                                     ? BigDecimal.valueOf(p.number(ParameterKey.LOAD_JUMP_MAX_STEPS)) : null;
                             // Each side is its own set (SetRules): one session per side; both sides of a two-sided move are one.
+                            // "Too heavy?" (K-1262, G1 karar noktası 61): a side gone lighter is read from that load and adds no load.
                             List<Next> sides = worked.getOrDefault(planned.exerciseId(), List.of()).stream()
                                     .collect(Collectors.groupingBy(set -> String.valueOf(set.side()))).values().stream()
-                                    .flatMap(sets -> NextTargets.session(kind, region, range, sets, planned.targetRir(),
-                                                    !uncleanExerciseIds.contains(planned.exerciseId())).stream())
-                                    .flatMap(session -> next(session, p, thisWeeksSets, planned.targetRir(), load -> gym
-                                            .map(inUse -> LoadSteps.round(exercise.equipment(), exercise.id(), inUse, session.loadKg(), load,
-                                                    maxJump))
-                                            .orElse(new LoadSteps.Rounding.Unknown())).stream())
+                                    .flatMap(sets -> {
+                                        Optional<BigDecimal> wentLighterTo = NextTargets.wentLighterTo(sets.stream()
+                                                .filter(WorkoutStore.LoggedSet::wentLighter).map(WorkoutStore.LoggedSet::loadKg).toList(), marksNeeded);
+                                        return NextTargets.session(kind, region, range, sets.stream().map(set -> new TrainingLog.WorkSet(set.exerciseId(),
+                                                                workout.startedAt(), null, set.loadKg(), set.reps(), set.rir(), set.side())).toList(),
+                                                        planned.targetRir(), !uncleanExerciseIds.contains(planned.exerciseId()), wentLighterTo)
+                                                .flatMap(session -> next(session, p, wentLighterTo.isPresent(), thisWeeksSets, planned.targetRir(),
+                                                        load -> gym.map(inUse -> LoadSteps.round(exercise.equipment(), exercise.id(), inUse,
+                                                                        session.loadKg(), load, maxJump))
+                                                                .orElse(new LoadSteps.Rounding.Unknown())))
+                                                .stream();
+                                    })
                                     .toList();
                             NextTargets.weaker(sides.stream().map(Next::target).toList())
                                     .flatMap(target -> sides.stream().filter(side -> side.target().equals(target)).findFirst())
@@ -142,9 +149,10 @@ class SessionProgress {
                 });
     }
 
-    private static Optional<Next> next(LiftSession session, Parameters parameters, int thisWeeksSets, int plannedRir,
+    /** {@code loadHeld}: the user went lighter in this session (K-1262) — the load is repeated, not added. */
+    private static Optional<Next> next(LiftSession session, Parameters parameters, boolean loadHeld, int thisWeeksSets, int plannedRir,
             Function<BigDecimal, LoadSteps.Rounding> rounding) {
-        return NextTargets.after(session, Progression.next(session, parameters), false, thisWeeksSets, plannedRir, rounding, parameters)
+        return NextTargets.after(session, Progression.next(session, parameters), loadHeld, thisWeeksSets, plannedRir, rounding, parameters)
                 .map(target -> new Next(target, session.loadKg()));
     }
 }

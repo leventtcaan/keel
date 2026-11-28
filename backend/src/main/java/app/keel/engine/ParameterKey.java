@@ -130,6 +130,7 @@ public enum ParameterKey {
     TREND_MIN_LIFTS(ParameterDomain.TRAINING, Unit.MOVES),
     TREND_MAJORITY(ParameterDomain.TRAINING, Unit.RATIO),
     RIR_DRIFT_POOR(ParameterDomain.TRAINING, Unit.REPS_IN_RESERVE),
+    TOO_HEAVY_MARKED_SETS_MIN(ParameterDomain.TRAINING, Unit.SETS),
     TRAINING_DAYS_MIN(ParameterDomain.WINDOWS, Unit.DAYS_PER_WEEK),
     TRAINING_DAYS_IDEAL_MIN(ParameterDomain.WINDOWS, Unit.DAYS_PER_WEEK),
     MISSED_SESSIONS_IN_A_ROW(ParameterDomain.WINDOWS, Unit.SESSIONS),
