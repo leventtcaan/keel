@@ -438,3 +438,4 @@ B taslağındaki kardiyo o gruptan çıkar.
    kelime olarak, seçili olan petrol yazı + petrol alt çizgi (siyah dolgu yok; Ek 7'deki "Haritada | Mesafesini yazarak" dili), birimler
    "kg, cm · lb, ft, in"; ana hatırlatıcı kapalıyken alt düğmeler yok, tek cümle; "Hesabı sil" `warn` yazı, ayrı.
 Seçilmeyen: A (tek uzun sayfa, 2,2 ekran), B tek sayfa olarak. Bedeli: her değişiklik bir dokunuş fazla.
+Sonuç simülatörde (`ayarlar-sonra.jpg`). K-1257 K1 (9 madde: bölümlere taşınan grupların testleri, sıra, başlıklar, kelime bütçesinin ilk görünümü) Levent onaylı (28 Kas).

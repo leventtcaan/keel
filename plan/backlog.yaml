@@ -6521,7 +6521,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: []
     why: "9c madde 9: Ayarlar 2,8 ekran, 15 kum kart (ADR-094 §1 en çok üç renkli grup), en az dokunulan seçimler en üstte, kararı değiştiren ayar sıradan satır. Levent C · İçindekiler'i seçti, bölüm sayfaları B'nin düzeniyle (ADR-094 Ek 9)"
     acceptance:
