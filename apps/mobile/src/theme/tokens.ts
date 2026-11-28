@@ -229,6 +229,8 @@ export const tokens = {
     /** The rest's dial (ADR-094 Ek 2): the coral arc round the clock, and its stroke. */
     restArc: 280,
     restArcStroke: 12,
+    /** A photo day in the comparison's strip of every day (K-1261): wide enough to tell the pose, five or so in a row. */
+    photoThumb: 64,
     /** The set row's "Set 2" column (ADR-094 Ek 2): the loads of the rows line up under each other. */
     setRowName: 96,
     setRowNameSided: 136,

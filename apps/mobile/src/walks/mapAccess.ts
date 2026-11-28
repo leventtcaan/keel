@@ -7,15 +7,12 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 
 import type { ApiClient } from '@/api/client';
-import { load } from '@/today/today';
+import { type PaidAccess, readPaidAccess } from '@/subscription/access';
 
-export type MapAccess = 'checking' | 'open' | 'locked' | 'unread';
+export type MapAccess = PaidAccess;
 
-export async function readMapAccess(api: ApiClient): Promise<Exclude<MapAccess, 'checking'>> {
-  const read = await load(() => api.GET('/v1/subscription'));
-  if (read.state !== 'ready') return 'unread';
-  return read.value.active ? 'open' : 'locked';
-}
+/** The map's access is the subscription's (src/subscription/access.ts, shared with the other paid parts, ADR-096 #2). */
+export const readMapAccess = readPaidAccess;
 
 /** Read whenever the screen comes into view: back from the paywall with a subscription, the map is there (K-1251 review). */
 export function useMapAccess(api: ApiClient): MapAccess {

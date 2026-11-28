@@ -3,7 +3,7 @@
  * past point the user picks: Day 1 (the first photo), or the photo day before the latest ("N weeks earlier"). Always the
  * same pose; a day without that pose is skipped. Fewer than two days of a pose: nothing to compare.
  */
-import { comparison } from '@/photos/compare';
+import { comparison, picked, shotsOf } from '@/photos/compare';
 import type { PhotoCheck } from '@/photos/library';
 
 const day = (takenOn: string, poses: ('front' | 'side')[] = ['front', 'side']): PhotoCheck => ({
@@ -51,4 +51,29 @@ test('under a week the gap is in days, never a week that did not pass; from a we
   expect(gap('2026-09-28', '2026-10-05')).toEqual({ days: 7, weeks: 1 });
   expect(gap('2026-07-06', '2026-07-30')).toEqual({ days: 24, weeks: 3 });
   expect(gap('2026-07-06', '2026-08-01')).toEqual({ days: 26, weeks: 4 });
+});
+
+describe('two days the user picked (K-1261, ADR-096)', () => {
+  const at = (takenOn: string, poses: ('front' | 'side')[] = ['front', 'side']) => ({
+    takenOn,
+    photos: Object.fromEntries(poses.map((pose) => [pose, `${takenOn}-${pose}`])),
+  });
+  const checks = [at('2026-07-06'), at('2026-08-03', ['side']), at('2026-09-02')];
+
+  test('every day of the pose, oldest first', () => {
+    expect(shotsOf(checks, 'front').map((s) => s.takenOn)).toEqual(['2026-07-06', '2026-09-02']);
+  });
+
+  test('in either order, the later is the latest and the earlier its one anchor, with the gap between them', () => {
+    expect(picked(checks, 'front', ['2026-09-02', '2026-07-06'])).toEqual({
+      latest: { takenOn: '2026-09-02', uri: '2026-09-02-front' },
+      anchors: [{ kind: 'picked', takenOn: '2026-07-06', uri: '2026-07-06-front', days: 58, weeks: 8 }],
+    });
+  });
+
+  test('one day, the same day twice, or a day without the pose is no pair', () => {
+    expect(picked(checks, 'front', ['2026-07-06'])).toBeNull();
+    expect(picked(checks, 'front', ['2026-07-06', '2026-07-06'])).toBeNull();
+    expect(picked(checks, 'front', ['2026-07-06', '2026-08-03'])).toBeNull();
+  });
 });

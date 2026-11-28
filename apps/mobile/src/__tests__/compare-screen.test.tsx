@@ -15,12 +15,14 @@ import { photoParams } from '@/photos/params';
 import { ThemeProvider } from '@/theme/theme';
 
 const mockBack = jest.fn();
-jest.mock('expo-router', () => ({ router: { back: () => mockBack() } }));
+const mockPush = jest.fn();
+jest.mock('expo-router', () => ({ router: { back: () => mockBack(), push: (to: unknown) => mockPush(to) } }));
 
 let mockChecks: PhotoCheck[] = [];
 const mockServices = {
   photos: { checks: jest.fn(async () => mockChecks) },
   report: jest.fn(),
+  paidAccess: jest.fn(async (): Promise<'open' | 'locked' | 'unread'> => 'locked'),
   api: { GET: jest.fn(), POST: jest.fn(), PUT: jest.fn(), PATCH: jest.fn(), DELETE: jest.fn() },
 };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices }));
@@ -214,4 +216,108 @@ test('no "before" or "after" anywhere in its words, nor in the way to it', () =>
   };
   expect(JSON.stringify(copy.compare)).not.toMatch(/\b(before|after)\b/i);
   expect(copy.photos.compare).not.toMatch(/\b(before|after)\b/i);
+});
+
+describe('every day, any two days and the timeline (K-1261, ADR-096: seeing free, picking and playing with a subscription)', () => {
+  const subscription = (active: boolean | 'unread') =>
+    mockServices.paidAccess.mockImplementation(async () => (active === 'unread' ? 'unread' : active ? 'open' : 'locked'));
+  /** The screen asks only whether the paid parts are open, giving nothing (V1); the API client it never holds (checked after each test). */
+  const askedOnlyTheSubscription = (times = 1) => {
+    expect(mockServices.paidAccess.mock.calls).toEqual(Array.from({ length: times }, () => []));
+  };
+  const dayButton = (date: string) => screen.getByRole('button', { name: t('compare.dayPhoto', { date }) });
+
+  test('every photo day of the pose is there to see, one tap shows it large: free, the server not asked', async () => {
+    await show();
+    for (const date of ['Jul 6', 'Aug 3', 'Sep 2', 'Oct 5']) expect(dayButton(date)).toBeOnTheScreen();
+    expect(mockServices.paidAccess).not.toHaveBeenCalled();
+    await fireEvent.press(dayButton('Aug 3'));
+    await act(async () => {});
+    expect(uri('compare-one')).toBe('file:///docs/2026-08-03-front.jpg');
+    // Day 1 beside the latest stays as it was (free, aynen).
+    expect(uri('compare-past')).toBe('file:///docs/2026-07-06-front.jpg');
+    expect(screen.queryByText(t('compare.locked'))).toBeNull();
+  });
+
+  test('without a subscription, any two days shows the sand lock and "See plans"; the comparison stays', async () => {
+    subscription(false);
+    await show();
+    await press(t('compare.pickTwo'));
+    expect(screen.getByText(t('compare.locked'))).toBeOnTheScreen();
+    await press(t('subscription.seePlans'));
+    expect(mockPush).toHaveBeenCalledWith('/paywall');
+    expect(uri('compare-past')).toBe('file:///docs/2026-07-06-front.jpg');
+    askedOnlyTheSubscription();
+  });
+
+  test('without a subscription, the timeline shows the same lock', async () => {
+    subscription(false);
+    await show();
+    await press(t('compare.play'));
+    expect(screen.getByText(t('compare.locked'))).toBeOnTheScreen();
+    expect(screen.queryByTestId('compare-one')).toBeNull();
+    askedOnlyTheSubscription();
+  });
+
+  test('with a subscription, the two days tapped are side by side, the earlier on the left, in either order', async () => {
+    subscription(true);
+    await show();
+    await press(t('compare.pickTwo'));
+    expect(screen.getByText(t('compare.pickHint'))).toBeOnTheScreen();
+    await press(t('compare.dayPhoto', { date: 'Sep 2' }));
+    await press(t('compare.dayPhoto', { date: 'Aug 3' }));
+    expect(uri('compare-past')).toBe('file:///docs/2026-08-03-front.jpg');
+    expect(uri('compare-latest')).toBe('file:///docs/2026-09-02-front.jpg');
+    expect(screen.getByText(t('compare.caption', { label: t('compare.later'), date: 'Sep 2' }))).toBeOnTheScreen();
+    expect(screen.getByText(t('compare.between.other', { count: 4 }))).toBeOnTheScreen();
+    expect(screen.queryByText(t('compare.locked'))).toBeNull();
+    // Day 1 again: back to the free comparison.
+    await press(t('compare.day1'));
+    expect(uri('compare-latest')).toBe('file:///docs/2026-10-05-front.jpg');
+    askedOnlyTheSubscription();
+  });
+
+  test('with a subscription, the timeline plays every day of the pose in order, compare_timeline_frame_ms each, and stops', async () => {
+    subscription(true);
+    await show();
+    // The subscription read first, on real timers (a pick); the timeline then opens at once.
+    await press(t('compare.pickTwo'));
+    jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate', 'queueMicrotask'] });
+    try {
+      await press(t('compare.play'));
+      expect(uri('compare-one')).toBe('file:///docs/2026-07-06-front.jpg');
+      await act(async () => jest.advanceTimersByTime(photoParams.timelineFrameMs));
+      expect(uri('compare-one')).toBe('file:///docs/2026-08-03-front.jpg');
+      await act(async () => jest.advanceTimersByTime(photoParams.timelineFrameMs));
+      expect(uri('compare-one')).toBe('file:///docs/2026-09-02-front.jpg');
+      await press(t('compare.stop'));
+      await act(async () => jest.advanceTimersByTime(photoParams.timelineFrameMs * 3));
+      expect(uri('compare-one')).toBe('file:///docs/2026-09-02-front.jpg');
+      askedOnlyTheSubscription();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  test('locked, then back from the paywall with a subscription: the next tap reads it again and the part opens', async () => {
+    subscription(false);
+    await show();
+    await press(t('compare.pickTwo'));
+    expect(screen.getByText(t('compare.locked'))).toBeOnTheScreen();
+    subscription(true);
+    await press(t('compare.pickTwo'));
+    expect(screen.queryByText(t('compare.locked'))).toBeNull();
+    expect(screen.getByText(t('compare.pickHint'))).toBeOnTheScreen();
+    askedOnlyTheSubscription(2);
+  });
+
+  test('a subscription that cannot be read is no lock: it says so, and the free comparison stays', async () => {
+    subscription('unread');
+    await show();
+    await press(t('compare.pickTwo'));
+    expect(screen.getByText(t('compare.unread'))).toBeOnTheScreen();
+    expect(screen.queryByText(t('compare.locked'))).toBeNull();
+    expect(uri('compare-past')).toBe('file:///docs/2026-07-06-front.jpg');
+    askedOnlyTheSubscription();
+  });
 });

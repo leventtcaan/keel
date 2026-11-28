@@ -6625,7 +6625,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: []
     why: "ADR-096 › İlerleme fotoğrafı (Levent: çekim sınırsız). Bugün karşılaştırma son seti Gün 1 ya da bir önceki setle koyar (photos/compare.ts); bu ücretsiz kalır"
     acceptance:

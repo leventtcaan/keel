@@ -83,6 +83,14 @@
       "tag": "urun",
       "source": "arastirma/ham/H1-olcum.md#2.4",
       "note": "The timer the capture screen starts with when someone else holds the phone (K-1055): off, 0 seconds. The stand's start is photo_timer_seconds. Product choice."
+    },
+    {
+      "key": "compare_timeline_frame_ms",
+      "value": 800,
+      "unit": "milliseconds",
+      "tag": "urun",
+      "source": "plan/kararlar/ADR-096-para-haritasi.md#Karar",
+      "note": "The timeline (K-1261, ADR-096: with a subscription): how long each photo day of the pose stays before the next. Long enough to see the body in each, short enough that a change runs as one movement. Product choice, no source for the number."
     }
   ]
 }

@@ -3,6 +3,7 @@
  * through it (K-311), the record store and the queue that sends with that client (K-304). Everything the device gives —
  * database, keychain, fetch — is passed in, so this runs in tests on node:sqlite and a fake server.
  */
+import { type PaidAccess, readPaidAccess } from '@/subscription/access';
 import { type ApiClient, createApiClient } from '@/api/client';
 import type { components } from '@/api/schema';
 import { type ConsentState, createConsentState } from '@/consent/consentState';
@@ -176,6 +177,11 @@ export type AppServices = {
   opens: Opens;
   /** Progress photos, on this phone only (K-614, V1). */
   photos: PhotoLibrary;
+  /**
+   * Whether the paid parts are open (ADR-096 #2), for a screen that must not hold the API client (the comparison, V1): asks the
+   * server about the subscription and takes nothing, so nothing of the photos can go with it.
+   */
+  paidAccess: () => Promise<Exclude<PaidAccess, 'checking'>>;
   /** The App Store's side of the subscription (K-702); whether it is on is the server's answer (GET /v1/subscription). */
   purchases: SubscriptionStore;
   /** After onboarding, an account that never subscribed meets the paywall first (K-706, ADR-058 › 107). */
@@ -374,6 +380,7 @@ export async function createAppServices({
     state,
     opens,
     photos,
+    paidAccess: () => readPaidAccess(api),
     purchases,
     gate,
     trialReminder,
