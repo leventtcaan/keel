@@ -5,7 +5,18 @@ guncelleme: 2026-11-28
 
 > Oturum başında ilk okunan dosya (skill `oturum-baslat`). Oturum sonunda güncellenir (skill `oturum-kapat`).
 
-## ▶ DEVAM NOKTASI (28 Kas — 9c-9 Ayarlar: K-1257 birleşti (#833), K-1258 PR #834 otomatik birleşmede)
+## ▶ DEVAM NOKTASI (28 Kas — 9d Para haritası: ADR-096 KABUL, kartlar K-1259…K-1265 açıldı)
+**9d (Para haritası):** envanter kodda doğrulandı (kilitli: sonraki kararlar, koç model soruları + hafıza, yazıdan/fotoğraftan öğün, yürüyüş haritası;
+kilitsiz: fotoğraf, grafik/geçmiş, paylaş, "Too heavy?"). Üç yön (A Derinlik ücretli, B Yalnız akıl ücretli, C Geniş kilit) claude.ai panosunda
+("keel Para Haritası", özel). Dış göz Codex (gpt-6.1-sol max) + agy (Gemini 3.8 Flash): ikisi de C'yi reddetti, fotoğrafta ayrıştı; ham cevaplar
+paylaşılan not klasöründe `9d-dis-goz/`. **Levent A'yı ve "fotoğraf çekimi sınırsız"ı seçti → ADR-096 (KABUL).** Bugün ücretsiz olan kilitlenmez;
+ücretli derinlik: 6 ay+ grafik ve yan yana karşılaştırma, serbest fotoğraf karşılaştırması + zaman şeridi, koçun "neden ağır geldi" açıklaması.
+**Kartlar:** K-1259 #835 (geçmiş sayfalı, rekor düşmez, backend) · K-1260 #836 (uzun aralık grafik, mobil) · K-1261 #837 (fotoğraf serbest karşılaştırma,
+mobil) · K-1262 #838 / K-1263 #839 ("Çok ağır mı?" sonraki öneriye) · K-1264 #840 (koç denemesi doğrulayıcı reddinde geri verilir; bugün hak yanıyor)
+· K-1265 #841 (koç açıklaması, koçun açılışına bağlı). K-1245 notu: temel video da ücretsiz.
+**Sıradaki:** Evre 9 tasarım parçaları bitti; uygulama kartları (önce bağımsızlar: K-1259, K-1261, K-1262, K-1264) ya da 1.0.1 hazırlığı (#770).
+
+## (önceki) ▶ DEVAM NOKTASI (28 Kas — 9c-9 Ayarlar: K-1257 birleşti (#833), K-1258 PR #834 otomatik birleşmede)
 **9c-9 (Ayarlar):** bugünkü ekran çekildi (2,8 ekran, 15 kum kart, 10 sorun; `prototip/gorsel-yon/9c9-ayarlar/ayarlar-simdi.jpg`); üç yön (`ayarlar-varyantlar.jpg`):
 A Defter sayfası, B Önce kararı değiştirenler, C İçindekiler. **Levent C'yi seçti, bölüm sayfaları B düzeniyle → ADR-094 Ek 9.** Motor kodda doğrulandı: kararı okuyan ayarlar
 antrenman günleri, kontrol günü, hedef, boy, aktivite, doğum yılı; **kardiyo, setler arası dinlenme, uzak durulan yiyecekler okumaz** (B taslağındaki kardiyo gruptan çıktı).

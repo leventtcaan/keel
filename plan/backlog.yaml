@@ -6340,7 +6340,7 @@ tasks:
     size: M
     status: todo
     depends_on: [K-1244]
-    why: "Levent 26 Kas (K-1244 revizesi): 'kendinden foto-video ekleyebilsin'; bu turda yalnız foto. Tek Paylaş düğmesiyle video ancak kart videonun üstüne telefonda birleştirilerek tek dosya gider. Instagram Story yolu (src/share/story.ts, deviceStory.ts, storyConfig.ts, shareStory servisi) ekranda artık kullanılmıyor"
+    why: "Levent 26 Kas (K-1244 revizesi): 'kendinden foto-video ekleyebilsin'; bu turda yalnız foto. Tek Paylaş düğmesiyle video ancak kart videonun üstüne telefonda birleştirilerek tek dosya gider. Instagram Story yolu (src/share/story.ts, deviceStory.ts, storyConfig.ts, shareStory servisi) ekranda artık kullanılmıyor. ADR-096: temel video da ücretsiz (yalnız ileride ek şablonlar ücretli)"
     acceptance:
       - "Önce yön: telefonda birleştirme (AVFoundation, yeni yerel modül ya da hazır paket, K6 doğrulaması) mı, Story yolu yalnız video için mi; karar ADR'de"
       - "Video telefonda kalır (V1); süre sınırı parametre dosyasında"
@@ -6551,6 +6551,120 @@ tasks:
       - "Simülatörde Levent'e gösterilir"
     tests: ["jest", "simülatör"]
     refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md"]
+
+  - id: K-1259
+    title: "Antrenman geçmişi sayfalı ve süresiz, tüm zaman rekorları 365 günde düşmez"
+    milestone: M12
+    module: backend
+    type: fix
+    size: M
+    status: todo
+    depends_on: []
+    why: "ADR-096 haritasının ücretsiz yanı: tam kayıt listesi ve tüm zaman rekorları herkese. Bugün geçmiş bir yılın bütün hareketlerini tek seferde indiriyor, 365 günden eskisi (rekor dahil) düşüyor (plan/evre-9-tasarim.md 9b, gezinti notları Durak 3)"
+    acceptance:
+      - "Geçmiş uç noktası sayfalı (sayfa boyu parametrede), 365 günden eski kayıtlar da okunur (test)"
+      - "Rekorlar tüm zamandan hesaplanır; 400 günden eski bir rekor görünür kalır (test)"
+      - "Sözleşme contracts/openapi.yaml'da önce değişir; abonelik okunmaz (ücretsiz)"
+    tests: ["gradle test"]
+    refs: ["plan/kararlar/ADR-096-para-haritasi.md"]
+
+  - id: K-1260
+    title: "Uzun aralık grafikleri abonelikle: bugünkü kilo ve güç aralığı ücretsiz, 6 ay / 1 yıl / tümü ve yan yana karşılaştırma ücretli"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: [K-1259]
+    why: "ADR-096 › Geçmiş ve grafik: ücretsiz kilo 84 gün, güç 90 gün aynen; derinlik aboneye (Hevy kalıbı: ücretsiz 3 ay)"
+    acceptance:
+      - "Ücretsizde bugünkü aralıklar değişmeden çalışır; aralık seçimi 6 ay / 1 yıl / tümü abonelik yokken kum kilit grubunu gösterir ('Planları gör'), grafik kaybolmaz (test)"
+      - "Abonelik okunamazsa kilit değil 'yüklenemedi' (ödeyen kilit görmez) (test)"
+      - "Ücretsiz aralıklar ve seçenekler parametrede (progress.json), koda gömülü değil (K2)"
+      - "İki dönemi ya da iki hareketi yan yana gösterme abonelikle (test)"
+      - "Simülatörde Levent'e gösterilir (önizleme modu)"
+    tests: ["jest", "simülatör"]
+    refs: ["plan/kararlar/ADR-096-para-haritasi.md", "plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md"]
+
+  - id: K-1261
+    title: "Fotoğraf: istediğin iki günü karşılaştırma ve zaman şeridi abonelikle; çekim, görme, silme ve bugünkü karşılaştırma ücretsiz"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: M
+    status: todo
+    depends_on: []
+    why: "ADR-096 › İlerleme fotoğrafı (Levent: çekim sınırsız). Bugün karşılaştırma son seti Gün 1 ya da bir önceki setle koyar (photos/compare.ts); bu ücretsiz kalır"
+    acceptance:
+      - "Çekim sayısı sınırsız, abonelik okunmaz; tüm fotoğrafları görmek ve silmek ücretsiz (test)"
+      - "Gün 1 ve bir önceki set karşılaştırması ücretsiz aynen (test)"
+      - "İki günü serbest seçme ve zaman şeridi abonelik yokken kum kilit grubu; abonelik okunamazsa kilit görünmez (test)"
+      - "Fotoğraf cihazda kalır, sunucuya istek yok (V1) (test)"
+      - "Simülatörde Levent'e gösterilir; Levent'in gerçek fotoğrafları açılmaz, örnek fotoğrafla"
+    tests: ["jest", "simülatör"]
+    refs: ["plan/kararlar/ADR-096-para-haritasi.md"]
+
+  - id: K-1262
+    title: "'Çok ağır mı?' cevabı sunucuya gider, sonraki antrenmanın önerisi onu hesaba katar"
+    milestone: M12
+    module: backend
+    type: feature
+    size: M
+    status: todo
+    depends_on: []
+    why: "ADR-096 › Çok ağır mı (ücretsiz yan) ve 9b: bugün düğme yalnız alandaki kiloyu düşürüyor, sonucu hiçbir yere gitmiyor (tasarim-antrenman-dugme-denetimi). Yük azaltma kilitlenmez (ADR-091 Ek 3)"
+    acceptance:
+      - "Set kaydı 'çok ağır, hafifledi' işaretini taşır (sözleşme önce) (test)"
+      - "Sonraki seansın başlangıç yükü bu işareti kural olarak okur; kural kaynaklı (G1 #61, kural-ekle), eşik parametrede (test)"
+      - "Abonelik okunmaz (test)"
+    tests: ["gradle test"]
+    refs: ["plan/kararlar/ADR-096-para-haritasi.md", "plan/tasarim-antrenman-dugme-denetimi.md"]
+
+  - id: K-1263
+    title: "Telefon 'Çok ağır mı?' cevabını setle gönderir; ne zaman çıkacağı 9b kurgusuyla"
+    milestone: M12
+    module: mobile
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-1262]
+    why: "ADR-096 › Çok ağır mı; 9b: 1-2 denemeden sonra ve set sonrası hissiyatla sorulabilsin"
+    acceptance:
+      - "'Use' sonrası kaydedilen set işareti taşır (test)"
+      - "Abonelik yokken de aynen çalışır; düğme yükseltme anı değildir, kilit ya da 'Planları gör' göstermez (test)"
+    tests: ["jest"]
+    refs: ["plan/kararlar/ADR-096-para-haritasi.md"]
+
+  - id: K-1264
+    title: "Koç deneme sorusu yalnız geçerli model cevabında düşer: doğrulayıcı reddederse hak geri verilir"
+    milestone: M12
+    module: backend
+    type: fix
+    size: S
+    status: todo
+    depends_on: []
+    why: "ADR-096 #3: Explanation.java doğrulayıcı reddinde motorun cümlesini döner ama TrialQuestions hakkı düşmüş kalıyor; model ulaşılamazken geri veriliyor"
+    acceptance:
+      - "Doğrulayıcı reddi: deneme hakkı ve günlük kullanım geri verilir (test)"
+      - "Geçerli model cevabında hak düşer (mevcut test aynen)"
+    tests: ["gradle test"]
+    refs: ["plan/kararlar/ADR-096-para-haritasi.md", "plan/kararlar/ADR-092-konusan-koc.md"]
+
+  - id: K-1265
+    title: "Koç 'neden ağır geldi'yi yalnız motorun okuduğu zorlanma eğiliminden anlatır (abonelikle)"
+    milestone: M12
+    module: backend
+    type: feature
+    size: S
+    status: todo
+    depends_on: [K-1262]
+    why: "ADR-096 › Çok ağır mı (ücretli yan) ve #4: motor uyku ve yemeği okumaz, RIR eğilimini okur (K-1218); koç desteklenmeyen neden söylemez (U1, U3). Koçun üretimde açılmasına bağlı"
+    acceptance:
+      - "Koç gerçeklerine hareketin son seanslardaki zorlanma eğilimi ve 'çok ağır' işaretleri girer (test)"
+      - "Uyku, yemek, stres gibi motorun okumadığı nedenler cevapta geçerse doğrulayıcı reddeder (test)"
+      - "Abonelik ister; ücretsizde motorun kendi cümlesi (test)"
+    tests: ["gradle test"]
+    refs: ["plan/kararlar/ADR-096-para-haritasi.md", "plan/kararlar/ADR-092-konusan-koc.md"]
 
   - id: K-1248
     title: "Türk yemeklerinin porsiyon adı Türkçe, ev ölçüsü kuralı pilav/kuru baklagil yemeklerini tanır, su böreği sıvı sayılmaz"

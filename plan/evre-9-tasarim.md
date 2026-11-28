@@ -53,10 +53,12 @@ ekranda, sheet'te, pop-up'ta ve gelecekteki her ekranda aynen. Sıradaki: 9c'nin
 Her özellik için "ücretsiz nerede biter, dahası ne" tablosu: koç, fotoğraf (aralık + ücretli), harita, geçmiş/grafik derinliği, "Çok ağır mı" gibi zeki
 eklentiler. Levent onaylar.
 
+**BİTTİ (28 Kas):** Levent "A · Derinlik ücretli" ve "fotoğraf çekimi sınırsız"ı seçti → **ADR-096** (KABUL). Dış göz Codex + agy (ikisi de C'yi reddetti). Kartlar K-1259…K-1265.
+
 ## Levent'i bekleyen kararlar
 - **Görsel dil** (9a sonunda): ADR-070'in yerine.
 - **Fotoğrafa AI:** anayasa **V1 "fotoğraf cihazda kalır"** ile çelişir; değişirse ADR + sağlayıcıyı adıyla söyleyen ayrı onay + Apple kuralları; kısıt ve maliyet tavanı.
-- **Para haritası** (9d).
+- ~~**Para haritası** (9d).~~ ADR-096 (28 Kas).
 - **Koçun açılışı:** OpenAI fiyatı resmî sayfada doğrulanır, panelde proje tavanı ($25) konur; sonra üretimde açılır.
 - **Onaylar (#770):** görseller, döngüler, rıza metni, şartlar, Türkçe metinler gerçek bir bakışla yeniden.
 
