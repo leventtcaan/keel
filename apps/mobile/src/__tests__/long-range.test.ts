@@ -3,7 +3,8 @@
  * best set of each Monday week from its paged history, by the server's rule, the server's own weeks kept where it has them.
  */
 import type { components } from '@/api/schema';
-import { joinWeeks, rangeFrom, readAllTrend, weekBests } from '@/progress/longRange';
+import { joinWeeks, rangeFrom, readAllTrend, readLiftWeeks, weekBests } from '@/progress/longRange';
+import type { TrainingCache } from '@/train/trainData';
 
 type Schemas = components['schemas'];
 const set = (exerciseId: string, loadKg: number, reps: number, rir?: number, setType: Schemas['SetType'] = 'WORKING') => ({
@@ -68,4 +69,25 @@ test('everything of the trend: windows back from today until one has no point, j
 test('a window that fails fails the whole: no half a history drawn as all of it', async () => {
   const read = await readAllTrend(async (_from, to) => (to === '2026-11-28' ? { state: 'ready', value: [{ day: '2026-11-27', kg: 80 }] } : { state: 'failed', problem: 'NoConnection' }), '2026-11-28', 399);
   expect(read.state).toBe('failed');
+});
+
+test("a lift's pages are read back to the Monday of the range's first week: that week is whole", async () => {
+  // The range begins on Wednesday 2026-06-03; page 1 ends on Tuesday 06-02, page 2 holds Monday 06-01 of the same week.
+  const pages: Record<string, Schemas['MoveHistory']> = {
+    first: { sessions: [session('2026-06-10T17:00:00Z', [set('squat', 100, 5)]), session('2026-06-02T17:00:00Z', [set('squat', 90, 5)])], next: 'p2', records: [] },
+    p2: { sessions: [session('2026-06-01T17:00:00Z', [set('squat', 95, 5)]), session('2026-05-20T17:00:00Z', [set('squat', 80, 5)])], next: 'p3', records: [] },
+  };
+  const asked: (string | undefined)[] = [];
+  const training = {
+    moveHistory: async (_api: unknown, _move: string, before?: string) => {
+      asked.push(before);
+      return { read: { state: 'ready' as const, value: pages[before ?? 'first'] }, kept: false };
+    },
+  } as unknown as TrainingCache;
+  const read = await readLiftWeeks(training, {} as never, 'squat', '2026-06-03');
+  expect(asked).toEqual([undefined, 'p2']);
+  expect(read).toEqual({ state: 'ready', value: [
+    { weekOf: '2026-06-01', loadKg: 95, reps: 5, held: false },
+    { weekOf: '2026-06-08', loadKg: 100, reps: 5, held: false },
+  ] });
 });

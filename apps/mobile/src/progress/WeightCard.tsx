@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
 import { Section } from '@/components/Section';
@@ -46,6 +46,10 @@ export function WeightCard({ part, units }: { part: WeightPart; units: UnitSyste
     [api],
   );
   const range = useChartRange(progressParams.weightRanges, read);
+  // Progress read again (a new weigh-in): back to the points it has, so a longer range never shows an older read.
+  const stamp = part.kind === 'chart' ? part.points.map((p) => `${p.day}:${p.kg}`).join() : '';
+  const { reset } = range;
+  useEffect(() => reset(), [stamp, reset]);
   if (part.kind === 'dots') return <WeighInDots count={part.count} min={part.min} note={part.note} />;
 
   const drawn = range.data !== null && range.data.length > 0 ? range.data : part.points;

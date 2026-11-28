@@ -81,7 +81,7 @@ export async function readLiftWeeks(training: TrainingCache, api: ApiClient, exe
     sessions.push(...read.value.sessions);
     const oldest = read.value.sessions.at(-1);
     before = read.value.next;
-    if (before === undefined || oldest === undefined || (from !== null && localDay(new Date(oldest.startedAt)) < from)) break;
+    if (before === undefined || oldest === undefined || (from !== null && localDay(new Date(oldest.startedAt)) < weekOf(from))) break; // the first week whole, from its Monday
   }
   const weeks = weekBests(sessions, exerciseId);
   return { state: 'ready', value: from === null ? weeks : weeks.filter((w) => w.weekOf >= weekOf(from)) };
