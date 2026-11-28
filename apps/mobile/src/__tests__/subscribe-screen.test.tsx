@@ -41,6 +41,7 @@ const mockStore: SubscriptionStore = {
 };
 const mockApi = { GET: mockGET };
 const mockServices = {
+  reviewPrompt: { noteFinish: async () => {}, notePaywall: async () => {}, maybeAsk: async () => false },
   api: mockApi,
   purchases: mockStore,
   gate: mockGate,

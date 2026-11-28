@@ -11,6 +11,7 @@ import { AccessibilityInfo, StyleSheet } from 'react-native';
 import WorkoutEndScreen from '@/app/workout-end';
 import type { components } from '@/api/schema';
 import { t } from '@/copy';
+import { reviewParams } from '@/review/reviewPrompt';
 import { ThemeProvider } from '@/theme/theme';
 import { focusPalette, tokens } from '@/theme/tokens';
 import type { Move } from '@/train/trainData';
@@ -55,7 +56,8 @@ let mockReduce = false;
 jest.mock('@/theme/useReduceMotion', () => ({ useReduceMotion: () => mockReduce }));
 const mockMap = jest.fn((_props: unknown) => null);
 jest.mock('@/components/MuscleMap', () => ({ MuscleMap: (props: unknown) => mockMap(props) }));
-const mockServices = { bodyFigure: async () => 'female' };
+const mockReview = { noteFinish: jest.fn(async () => {}), notePaywall: jest.fn(async () => {}), maybeAsk: jest.fn(async () => true) };
+const mockServices = { bodyFigure: async () => 'female', reviewPrompt: mockReview };
 jest.mock('@/services/ServicesProvider', () => ({ useAppServices: () => mockServices, useUnits: () => 'METRIC' }));
 const mockPush = jest.fn();
 const mockDismiss = jest.fn();
@@ -145,6 +147,48 @@ test('a record: the haptic once (ADR-075 #7, Ek 5); none without a record', asyn
   await show();
   expect(await screen.findByText(t('workoutEnd.title'))).toBeTruthy();
   expect(mockHaptic).toHaveBeenCalledTimes(1);
+});
+
+describe('asking for a rating (K-1254, ADR-095)', () => {
+  afterEach(() => jest.useRealTimers());
+
+  test('every finish is counted once, by its workout; with a new best, Apple\'s prompt is asked for a moment after the screen is seen', async () => {
+    jest.useFakeTimers({ advanceTimers: true });
+    await show();
+    expect(await screen.findByText(t('workoutEnd.title'))).toBeTruthy();
+    expect(mockReview.noteFinish).toHaveBeenCalledTimes(1);
+    expect(mockReview.noteFinish).toHaveBeenCalledWith('w1');
+    expect(mockReview.maybeAsk).not.toHaveBeenCalled();
+    await act(async () => jest.advanceTimersByTime(reviewParams.promptDelayMs));
+    expect(mockReview.maybeAsk).toHaveBeenCalledWith({ newBest: true });
+  });
+
+  test('no new best: counted, never asked', async () => {
+    jest.useFakeTimers({ advanceTimers: true });
+    mockEnd = { ...READY, summary: { ...SUMMARY, marks: [{ exerciseId: 'squat', kind: 'BASELINE', loadKg: 60, reps: 8 }] } };
+    await show();
+    expect(await screen.findByText(t('workoutEnd.baseline'))).toBeTruthy();
+    await act(async () => jest.advanceTimersByTime(reviewParams.promptDelayMs * 2));
+    expect(mockReview.noteFinish).toHaveBeenCalledTimes(1);
+    expect(mockReview.maybeAsk).not.toHaveBeenCalled();
+  });
+
+  test('the screen is left before the moment: nothing is asked', async () => {
+    jest.useFakeTimers({ advanceTimers: true });
+    await show();
+    expect(await screen.findByText(t('workoutEnd.title'))).toBeTruthy();
+    await act(async () => {});
+    await act(async () => screen.unmount());
+    await act(async () => jest.advanceTimersByTime(reviewParams.promptDelayMs * 2));
+    expect(mockReview.maybeAsk).not.toHaveBeenCalled();
+  });
+
+  test('not on the server yet: not counted', async () => {
+    mockEnd = { kind: 'pending' };
+    await show();
+    await act(async () => {});
+    expect(mockReview.noteFinish).not.toHaveBeenCalled();
+  });
 });
 
 test('no record (a baseline only): no haptic', async () => {

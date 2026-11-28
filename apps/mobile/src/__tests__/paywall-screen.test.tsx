@@ -41,6 +41,7 @@ let mockStore: SubscriptionStore;
 const mockApi = { GET: mockGET };
 const mockReport = jest.fn();
 const mockServices = {
+  reviewPrompt: { noteFinish: async () => {}, notePaywall: async () => {}, maybeAsk: async () => false },
   api: mockApi,
   planPreviews: { current: () => null },
   get purchases() {

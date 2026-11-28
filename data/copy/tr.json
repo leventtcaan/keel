@@ -3691,6 +3691,10 @@
     "guide": {
       "row": "Nasıl çalışır"
     },
+    "rate": {
+      "row": "Uygulamayı puanla",
+      "hint": "App Store'u açar"
+    },
     "subscription": {
       "title": "Abonelik",
       "none": "Abone değilsin. Kaydın ve ilk tam kararın aboneliksiz çalışır. Sonraki her karar abonelikle gelir.",

@@ -19,6 +19,8 @@ import type { ConfigContext, ExpoConfig } from 'expo/config';
 import en from '../../data/copy/en.json';
 import tr from '../../data/copy/tr.json';
 
+import eas from './eas.json';
+
 const TEMPORARY_BUNDLE_ID = 'dev.leventtcaan.keel';
 
 export default ({ config }: ConfigContext): ExpoConfig =>
@@ -32,6 +34,9 @@ export default ({ config }: ConfigContext): ExpoConfig =>
       bundleIdentifier: process.env.KEEL_IOS_BUNDLE_ID ?? TEMPORARY_BUNDLE_ID,
       // K-976: Instagram Stories. The app may ask whether Instagram is there (canOpenURL) by this one scheme and no other.
       // react-native-share's own plugin would write the same list but needs expo-build-properties, which the app does not use.
+      // K-1254: the App Store page, for Settings' rate row (expo-store-review's storeUrl reads it). The app's id is eas.json's
+      // submit id, one source for both.
+      appStoreUrl: `https://apps.apple.com/app/id${eas.submit.production.ios.ascAppId}`,
       infoPlist: { ...config.ios?.infoPlist, CFBundleAllowMixedLocalizations: true, LSApplicationQueriesSchemes: [...(config.ios?.infoPlist?.LSApplicationQueriesSchemes ?? []), 'instagram-stories'] },
     },
     locales: {

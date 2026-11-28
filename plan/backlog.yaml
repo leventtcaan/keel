@@ -4346,7 +4346,7 @@ tasks:
     depends_on: [K-502]
     why: "4,0 uçurumu; her yoruma cevap"
     acceptance:
-      - "requestReview değer anına bağlı (plan değişti ve kullanıcı kabul etti), açılışta değil"
+      - "İstem kısmı K-1254'te (ADR-095: rekorlu bitiş; 'plan değişti ve kabul etti' anı Levent 28 Kas'ta seçilmedi)"
       - "Yorum cevap rutini DURUM'da"
     tests:
       - "ReviewPromptTests"
@@ -6469,7 +6469,7 @@ tasks:
     module: mobile
     type: feature
     size: S
-    status: todo
+    status: doing
     depends_on: []
     why: "Levent (28 Kas, 9c-8): mağaza puanı uygulamadan istensin; App Store dünyasında yapılması gereken ne varsa yapılsın. Apple yalnız kendi API'sine izin verir (Guidelines 5.6.1, özel puan penceresi yasak); ödüllü ya da süzgeçli ('memnun musun?' sonra puan) isteme yasak ya da riskli"
     acceptance:
@@ -6479,7 +6479,7 @@ tasks:
       - "Ayarlar'da 'Uygulamayı puanla' satırı mağaza sayfasını açar"
       - "Simülatörde Levent'e gösterilir"
     tests: ["jest", "simülatör"]
-    refs: ["plan/kararlar/ADR-094-gorsel-dil-sicak-defter.md"]
+    refs: ["plan/kararlar/ADR-095-puan-isteme.md", "arastirma/ham/puan-isteme-2026-11-28.md"]
 
   - id: K-1248
     title: "Türk yemeklerinin porsiyon adı Türkçe, ev ölçüsü kuralı pilav/kuru baklagil yemeklerini tanır, su böreği sıvı sayılmaz"
