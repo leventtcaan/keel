@@ -806,6 +806,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/exercises/{exerciseId}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A move's history, a page at a time, and its records of all time (K-1259, ADR-096, ADR-033)
+         * @description Every session that has the move, newest first, a page of move_history_page sessions (data/parameters/workout.json)
+         *     at a time, with no limit in time: each with the move's sets only, warm-ups too (what was done). Imported sessions
+         *     are history and listed. `records` are the move's records of all time from its working sets, whatever page is
+         *     asked, oldest first wins a tie: a compound move with an external load its heaviest set, its highest estimated max
+         *     (Epley with RIR, as the engine) and its most reps at each load; an isolation move only its most reps at each load;
+         *     a bodyweight move its most reps; a weighted bodyweight move its heaviest added load and its most reps with the
+         *     body alone. Loads in kg as logged, one record per distinct kg (the phone joins loads that read the same in its
+         *     unit). Free for everyone: the subscription is not read. A move of neither the catalog nor the user's own is
+         *     NOT_FOUND; a cursor that is not one of the account's sessions with the move is VALIDATION_FAILED.
+         */
+        get: operations["getMoveHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/program": {
         parameters: {
             query?: never;
@@ -3878,6 +3906,27 @@ export interface components {
          *     not unlocked. Told apart by `locked: true`, which only the locked view has.
          */
         CallView: components["schemas"]["Decision"] | components["schemas"]["LockedDecision"];
+        MoveHistory: {
+            /** @description Newest first; each session's `sets` are this move's only. `setsNextTargets` is not given here. */
+            sessions: components["schemas"]["Workout"][];
+            /** @description The cursor for the next (older) page; absent on the last page. */
+            next?: string;
+            records: components["schemas"]["MoveRecord"][];
+        };
+        /**
+         * @description HEAVIEST: the heaviest working set (`loadKg`, `reps`; at one load the most reps). ESTIMATED_MAX: the highest Epley
+         *     estimate (`kg`). REPS_AT: the most reps at one load (`loadKg`, `reps`), heaviest load first. MOST_REPS: the most
+         *     reps (`reps`). `on`: when the session that holds it began.
+         */
+        MoveRecord: {
+            /** @enum {string} */
+            kind: "HEAVIEST" | "ESTIMATED_MAX" | "REPS_AT" | "MOST_REPS";
+            loadKg?: number;
+            reps?: number;
+            kg?: number;
+            /** Format: date-time */
+            on: string;
+        };
         DecisionPage: {
             items: components["schemas"]["CallView"][];
             /** @description The cursor for the next (older) page; absent on the last page. */
@@ -5483,6 +5532,33 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Exercise"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getMoveHistory: {
+        parameters: {
+            query?: {
+                /** @description The cursor of the last item already seen; omitted for the newest page */
+                before?: components["parameters"]["Before"];
+            };
+            header?: never;
+            path: {
+                /** @description A catalog move's id or "custom:<uuid>" for the user's own */
+                exerciseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The page and the records */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MoveHistory"];
                 };
             };
             default: components["responses"]["Error"];
