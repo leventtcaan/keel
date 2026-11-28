@@ -47,7 +47,7 @@ jest.mock('@/services/ServicesProvider', () => ({
   useSubscriptionGate: () => 'open', // the gate (K-706) is navigation.test.tsx's
   useAppearance: () => mockAppearance,
   // The first-use guide (K-1065) is held at the root: shown already, so it never opens here.
-  useAppServices: () => ({ guide: { seen: async () => true, markSeen: async () => {}, forget: async () => {} }, planPreviews: { takeOffer: () => null } }),
+  useAppServices: () => ({ guide: { seen: async () => true, markSeen: async () => {}, forget: async () => {} } }),
 }));
 
 const fonts = useFonts as jest.Mock;

@@ -19,7 +19,7 @@ export function dayWords(moment: string | Date): string {
 }
 
 /** "7 days", "1 week": the trial in the store's own unit. */
-function span(trial: NonNullable<Plan['trial']>): string {
+export function span(trial: NonNullable<Plan['trial']>): string {
   return trial.count === 1 ? t(`subscription.trialSpanOne.${trial.unit}`) : t(`subscription.trialSpan.${trial.unit}`, { count: String(trial.count) });
 }
 
@@ -111,14 +111,25 @@ const DAYS_A_WEEK = 7;
 /**
  * The timeline (ADR-072 #7, ADR-058 Ek 1; prototype `.tl`): today nothing charged · the first call · the reminder before
  * the trial ends, if wanted · the day it charges — in the order their days come, the trial as long as the store's offer.
- * Without an offer, today it charges. The first call only when there is one to name; the reminder only when it would come
+ * Without an offer, today it charges; opened from a locked call (`callOpens`), today also opens it. The first call only when there is one to name; the reminder only when it would come
  * after today. `today` and `firstCall` are days on the user's calendar. Short words: the full terms stay under the button
  * (paywallWords, Apple 3.1.2).
  */
-export function paywallTimeline(plan: Plan, { today, firstCall }: { today: string; firstCall: string | null }): TimelineRow[] {
+export function paywallTimeline(
+  plan: Plan,
+  { today, firstCall, callOpens = false }: { today: string; firstCall: string | null; callOpens?: boolean },
+): TimelineRow[] {
   const at = (day: string, words: string): TimelineRow => ({ day, when: day === today ? t('subscription.timeline.today') : weekdayDate(day), words });
   const price = { price: plan.price };
-  const rows = [at(today, plan.trial === null ? t(`subscription.timeline.chargedToday.${plan.period}`, price) : t('subscription.timeline.free'))];
+  // Opened from the person's locked call, the server having confirmed it (ADR-091 Ek 7 #3): today is the day it opens.
+  const first = callOpens
+    ? plan.trial === null
+      ? t(`subscription.timeline.callOpensCharged.${plan.period}`, price)
+      : t('subscription.timeline.callOpensFree')
+    : plan.trial === null
+      ? t(`subscription.timeline.chargedToday.${plan.period}`, price)
+      : t('subscription.timeline.free');
+  const rows = [at(today, first)];
   if (firstCall !== null) rows.push(at(firstCall, t('subscription.timeline.firstCall')));
   if (plan.trial !== null) {
     const ends = after(today, plan.trial.count, plan.trial.unit);

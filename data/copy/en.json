@@ -346,7 +346,9 @@
   "lockedCall": {
     "title": "Your call is ready",
     "line": "Week of {date}. It comes with a subscription.",
-    "ledger": "Ready. It comes with a subscription."
+    "ledger": "Ready. It comes with a subscription.",
+    "lineTrial": "Week of {date}. A free trial opens it now.",
+    "tryFree": "Try {trial} free"
   },
   "callScreen": {
     "inPlan": "This week's plan",
@@ -3319,6 +3321,11 @@
       "chargedToday": {
         "annual": "{price} a year, charged today.",
         "monthly": "{price} a month, charged today."
+      },
+      "callOpensFree": "Your call opens. No charge.",
+      "callOpensCharged": {
+        "annual": "Your call opens. {price} a year, charged today.",
+        "monthly": "Your call opens. {price} a month, charged today."
       }
     },
     "values": {
@@ -3406,6 +3413,8 @@
     "buying": "Waiting for the App Store…",
     "confirming": "Confirming your subscription…",
     "active": "You're subscribed. The coach and meal reading are on.",
+    "callOpen": "Your call for the week of {date} is open.",
+    "seeCall": "See your call",
     "waiting": "The App Store confirmed it. It can take a minute to reach us.",
     "lookAgain": "Check again",
     "pending": "Waiting for approval. Access starts once the purchase is approved.",

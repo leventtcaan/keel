@@ -65,6 +65,16 @@ export async function openPaywall(
   }
 }
 
+/**
+ * The free trial the paywall would open with (ADR-091 Ek 7 #2): the plan chosen first (annual), as the store gives it to this
+ * person, only where the paywall would sell at all (the store, both legal links, the server's account, not subscribed). Anything
+ * not read is no trial: the locked call then says what it always said. Problems are the paywall's to report, when it opens.
+ */
+export async function trialOnOffer(deps: Deps & { links: LegalLink[] }): Promise<Plan['trial']> {
+  const opened = await openPaywall({ ...deps, report: () => undefined });
+  return opened.state === 'plans' ? opened.plans[0].trial : null;
+}
+
 /** Asks the server up to `subscription_confirm_attempts` times, the interval apart, whether access is on. */
 export async function confirmActive(api: ApiClient, waitFor: Wait): Promise<boolean> {
   for (let look = 0; look < subscriptionParams.confirmAttempts; look++) {

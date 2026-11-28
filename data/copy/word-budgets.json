@@ -466,6 +466,11 @@
       ],
       "uncounted": ["app.name", "subscription.example.arrow"],
       "notFirstView": [
+        "subscription.timeline.callOpensFree",
+        "subscription.timeline.callOpensCharged.annual",
+        "subscription.timeline.callOpensCharged.monthly",
+        "subscription.callOpen",
+        "subscription.seeCall",
         "settings.account.footer",
         "subscription.example.weight.label",
         "subscription.ready.label",
@@ -690,6 +695,8 @@
       ],
       "uncounted": ["thisWeek.numbers.spanWeeks", "thisWeek.numbers.spanDays", "thisWeek.strip.letter.MONDAY", "thisWeek.strip.letter.TUESDAY", "thisWeek.strip.letter.WEDNESDAY", "thisWeek.strip.letter.THURSDAY", "thisWeek.strip.letter.FRIDAY", "thisWeek.strip.letter.SATURDAY", "thisWeek.strip.letter.SUNDAY"],
       "notFirstView": [
+        "lockedCall.lineTrial",
+        "lockedCall.tryFree",
         "lockedCall.title",
         "lockedCall.line",
         "subscription.seePlans",
@@ -1047,6 +1054,8 @@
       ],
       "uncounted": ["thisWeek.strip.letter.MONDAY", "thisWeek.strip.letter.TUESDAY", "thisWeek.strip.letter.WEDNESDAY", "thisWeek.strip.letter.THURSDAY", "thisWeek.strip.letter.FRIDAY", "thisWeek.strip.letter.SATURDAY", "thisWeek.strip.letter.SUNDAY"],
       "notFirstView": [
+        "lockedCall.lineTrial",
+        "lockedCall.tryFree",
         "walks.today.hint",
         "lockedCall.title",
         "lockedCall.line",
@@ -1786,6 +1795,8 @@
       ],
       "dynamic": [{"what": "the day the call was made (Mon, Dec 28)", "words": 2}, {"what": "the next call's date (Mon, Jan 4)", "words": 2}],
       "notFirstView": [
+        "lockedCall.lineTrial",
+        "lockedCall.tryFree",
         "callScreen.weeksSpoken",
         "lockedCall.title",
         "lockedCall.line",

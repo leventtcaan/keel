@@ -54,6 +54,7 @@ let mockParams: { id?: string; from?: string } = {};
 jest.mock('expo-router', () => ({
   router: { back: () => mockBack(), push: (to: unknown) => mockPush(to), dismissTo: (to: string) => mockDismiss(to) },
   useLocalSearchParams: () => mockParams,
+  useFocusEffect: () => {},
 }));
 jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
 let mockProjectionOn = false;

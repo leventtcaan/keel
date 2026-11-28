@@ -1,5 +1,4 @@
 import { useFonts } from 'expo-font';
-import { router } from 'expo-router';
 import { Stack } from 'expo-router/stack';
 import * as SplashScreen from 'expo-splash-screen';
 import { type ComponentProps, Fragment, type ReactNode, useEffect, useSyncExternalStore } from 'react';
@@ -29,22 +28,10 @@ export const unstable_settings = { anchor: '(tabs)' };
 // (tabs)/_layout.tsx; the app opens on the first one, This week. Signed out, the only screen is sign-in (K-305): when the
 // session ends (sign-out, a refused refresh) the guarded screens leave the history and sign-in takes their place.
 // Signed in without a profile, the only screens are onboarding's (K-306); not known yet, the one that asks the server.
-// Onboarded, the tabs: the paywall is a screen like any other, opened by a tap and closed again (ADR-091 #1, K-1202; it was the
-// only screen of an account that never subscribed, K-706, ADR-058 › 107).
+// Onboarded, the tabs: the paywall is a screen like any other, opened by a tap and closed again, never by itself (ADR-091 #1 and
+// Ek 7 #1, K-1202, K-1255; it was the only screen of an account that never subscribed, K-706, ADR-058 › 107).
 type ScreenOptions = ComponentProps<typeof Stack.Screen>['options'];
 type PushedOptions = Extract<ScreenOptions, (...args: never[]) => unknown>;
-
-/**
- * Right after onboarding, the plans once, closable, with the plan the user just saw (ADR-072 #7 as a soft offer, ADR-091 #1): over the
- * tabs, and never again by itself. The plan is kept in memory only, so a new launch has none and goes straight to the tabs.
- */
-function FirstOffer({ active }: { active: boolean }) {
-  const { planPreviews } = useAppServices();
-  useEffect(() => {
-    if (active && planPreviews.takeOffer() !== null) router.push({ pathname: '/paywall', params: { offer: '1' } });
-  }, [active, planPreviews]);
-  return null;
-}
 
 function AppStack() {
   const { color } = useTheme();
@@ -57,8 +44,6 @@ function AppStack() {
     void SplashScreen.hideAsync();
   }, []);
   return (
-    <>
-    <FirstOffer active={signedIn && onboarding === 'done'} />
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.background } }}>
       <Stack.Protected guard={signedIn && onboarding === 'done'}>
         <Stack.Screen name="(tabs)" />
@@ -121,7 +106,6 @@ function AppStack() {
         <Stack.Screen name="sign-in" />
       </Stack.Protected>
     </Stack>
-    </>
   );
 }
 

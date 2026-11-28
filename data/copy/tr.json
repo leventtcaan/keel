@@ -453,7 +453,9 @@
   "lockedCall": {
     "title": "Kararın hazır",
     "line": "{date} haftası. Abonelikle birlikte gelir.",
-    "ledger": "Hazır. Abonelikle birlikte gelir."
+    "ledger": "Hazır. Abonelikle birlikte gelir.",
+    "lineTrial": "{date} haftası. Ücretsiz deneme onu hemen açar.",
+    "tryFree": "{trial} ücretsiz dene"
   },
   "callScreen": {
     "inPlan": "Bu haftanın planında",
@@ -3576,6 +3578,11 @@
       "chargedToday": {
         "annual": "Yılda {price}, bugün tahsil edilir.",
         "monthly": "Ayda {price}, bugün tahsil edilir."
+      },
+      "callOpensFree": "Kararın açılır. Ücret yok.",
+      "callOpensCharged": {
+        "annual": "Kararın açılır. Yılda {price}, bugün tahsil edilir.",
+        "monthly": "Kararın açılır. Ayda {price}, bugün tahsil edilir."
       }
     },
     "values": {
@@ -3663,6 +3670,8 @@
     "buying": "App Store bekleniyor…",
     "confirming": "Aboneliğin onaylanıyor…",
     "active": "Abonesin. Koç ve öğün okuma açık.",
+    "callOpen": "{date} haftasının kararı açıldı.",
+    "seeCall": "Kararını gör",
     "waiting": "App Store onayladı. Bize ulaşması bir dakika sürebilir.",
     "lookAgain": "Tekrar bak",
     "pending": "Onay bekleniyor. Erişim, satın alma onaylanınca başlar.",

@@ -12,7 +12,7 @@ import { stateWords } from '@/settings/SubscriptionSection';
 import { AccountButton, AccountSheet } from '@/subscription/AccountSheet';
 import { BrandMark } from '@/subscription/BrandMark';
 import { ExampleCard } from '@/subscription/ExampleCard';
-import { type ReadyCall, ReadyCallHero, WeightExample, loadReadyCall } from '@/subscription/PaywallHero';
+import { type ReadyCall, ReadyCallHero, WeightExample, callOpened, loadReadyCall } from '@/subscription/PaywallHero';
 import { YourPlanCard } from '@/subscription/YourPlanCard';
 import { configuredLegalLinks } from '@/subscription/links';
 import { type Opened, confirmActive, openPaywall, restorePurchases, subscribe, wait } from '@/subscription/paywall';
@@ -24,7 +24,7 @@ import { TrialReminderOffer } from '@/subscription/TrialReminderOffer';
 import { paywallTimeline, paywallWords, planWords } from '@/subscription/words';
 import { useTheme } from '@/theme/theme';
 import { tokens } from '@/theme/tokens';
-import { localDay } from '@/today/today';
+import { localDay, weekdayDate } from '@/today/today';
 
 /** A line above the button: what came of the last thing tried. */
 type Note = 'pending' | 'purchaseFailed' | 'restoreWaiting' | 'restoreFailed';
@@ -95,6 +95,25 @@ export function Paywall({ required = false, onActive, preview = null, lockedWeek
     };
   }, [api, lockedWeek]);
   const ready: ReadyCall | null | 'asking' = lockedWeek === null ? null : answer?.week === lockedWeek ? answer.found : 'asking';
+  const readyCall = ready === null || ready === 'asking' ? null : ready;
+
+  // Subscribed with the person's call behind it (ADR-091 Ek 7 #4): the call is read once more, and said open only when the
+  // server returns it unlocked; kept with the call it is for.
+  const [opened, setOpened] = useState<string | null>(null);
+  const active = step.at === 'active';
+  const openingCall = active ? (readyCall?.id ?? null) : null;
+  useEffect(() => {
+    if (openingCall === null) return;
+    let live = true;
+    void callOpened(api, openingCall)
+      .catch(() => false)
+      .then((open) => {
+        if (live && open) setOpened(openingCall);
+      });
+    return () => {
+      live = false;
+    };
+  }, [api, openingCall]);
 
   // A day the plans were on screen asks for no rating (K-1254, ADR-095): money and a rating prompt never meet.
   useEffect(() => {
@@ -185,9 +204,12 @@ export function Paywall({ required = false, onActive, preview = null, lockedWeek
     );
   } else if (step.at === 'active') {
     const onward = required ? <Button label={t('subscription.continue')} onPress={() => onActive?.()} /> : null;
+    const callIsOpen = readyCall !== null && opened === readyCall.id;
     body = (
       <View style={styles.part}>
         {text(t('subscription.active'))}
+        {callIsOpen && text(t('subscription.callOpen', { date: weekdayDate(readyCall.weekOf) }))}
+        {callIsOpen && <Button label={t('subscription.seeCall')} onPress={() => router.back()} />}
         {/* What the server already says of it: the status and the day it renews or ends (as Settings says it). */}
         {step.subscription?.status !== undefined && text(stateWords(step.subscription), 'textSecondary')}
         <TrialReminderOffer />
@@ -208,26 +230,29 @@ export function Paywall({ required = false, onActive, preview = null, lockedWeek
     const words = paywallWords(chosen, today);
     const saving = savingPercent(step.plans);
     const buying = step.busy === 'buying';
-    const timeline = paywallTimeline(chosen, { today, firstCall: preview?.firstCall ?? null });
+    // The person's locked call, once the server confirms it, comes before the plan just shown (ADR-091 Ek 7 #1).
+    const plan = readyCall === null ? preview : null;
+    const timeline = paywallTimeline(chosen, { today, firstCall: plan?.firstCall ?? null, callOpens: readyCall !== null });
     // Without the health data consent there are no calls (ADR-074): the example is a set's target, and another value takes the call's place.
-    const calls = preview === null || preview.firstCall !== null;
-    // The hero (ADR-094 Ek 8 #2): right after onboarding, with calls, the plan the person just saw, tagged Yours (K-1058); else their
-    // own call waiting locked, with their weight; else an example told in weight. Without calls, the set's example.
-    if (preview !== null && preview.firstCall !== null) hero = <YourPlanCard preview={{ ...preview, firstCall: preview.firstCall }} />;
-    else if (!calls) hero = <ExampleCard />;
+    const calls = plan === null || plan.firstCall !== null;
+    // The hero (ADR-094 Ek 8 #2, ADR-091 Ek 7 #1): the person's own call waiting locked, once the server confirms it, with their
+    // weight (nothing while it is asked); else, on the day onboarding ended and with calls, the plan they just saw, tagged Yours
+    // (K-1058); else an example told in weight. Without calls, the set's example.
+    if (readyCall !== null) hero = <ReadyCallHero ready={readyCall} />;
     else if (ready === 'asking') hero = null;
-    else hero = ready === null ? <WeightExample /> : <ReadyCallHero ready={ready} />;
+    else if (plan !== null && plan.firstCall !== null) hero = <YourPlanCard preview={{ ...plan, firstCall: plan.firstCall }} />;
+    else hero = calls ? <WeightExample /> : <ExampleCard />;
     // Concrete lines (ADR-094 Ek 8 #5). With calls: the call every week after the first, on the profile's own day (met later,
     // with no plan just shown, without a day), and the coach once it is on (aiLogging.ts, never as a promise) or the cardio and
     // food that adjust. Without calls (no health data consent): the program, the weights, and the cardio only when the program
     // sets some. Logging, programs and weights are free, so they are not sold here (ADR-091 #1).
     let values: ValueRow[];
-    if (preview !== null && preview.firstCall === null) {
-      const program: ValueRow = { words: t(preview.own ? 'subscription.values.own' : 'subscription.values.built') };
-      const other: ValueRow = { words: t(preview.hasCardio ? 'subscription.values.cardio' : 'subscription.values.swap') };
+    if (plan !== null && plan.firstCall === null) {
+      const program: ValueRow = { words: t(plan.own ? 'subscription.values.own' : 'subscription.values.built') };
+      const other: ValueRow = { words: t(plan.hasCardio ? 'subscription.values.cardio' : 'subscription.values.swap') };
       values = [program, { words: t('subscription.values.after') }, other];
     } else {
-      const call = preview === null ? t('subscription.values.weeklyCall') : t('subscription.values.call', { day: t(`onboarding.schedule.dayName.${preview.checkInDay}`) });
+      const call = plan === null ? t('subscription.values.weeklyCall') : t('subscription.values.call', { day: t(`onboarding.schedule.dayName.${plan.checkInDay}`) });
       const second: ValueRow = { words: t(coachAvailable() ? 'subscription.values.coach' : 'subscription.values.adjust') };
       values = [{ words: call }, second];
     }
