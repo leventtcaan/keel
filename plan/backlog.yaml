@@ -6506,7 +6506,7 @@ tasks:
     module: mobile
     type: fix
     size: XS
-    status: doing
+    status: done
     depends_on: [K-1255]
     why: "Levent (28 Kas): satın alma sonrası 'The coach and meal reading are on' diyor; öğün okuma emekli (meal-photo RETIRED, AI kapalı, ADR-080 #4)"
     acceptance:
