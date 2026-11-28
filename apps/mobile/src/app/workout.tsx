@@ -406,6 +406,9 @@ function Session() {
   const [asked, setAsked] = useState<string | null>(null);
   const [putAway, setPutAway] = useState<string | null>(null);
   const [kept, setKept] = useState<string[]>([]);
+  // The row whose weight "Too heavy?" took lighter (K-1263): its set carries the mark the next session's target reads (K-1262).
+  // The heavier weight a first session offers (calibration) is no such mark.
+  const [wentLighter, setWentLighter] = useState<string | null>(null);
 
   /** Keeps the workout on the phone with its first set, started when the session was opened (its time runs on). */
   const start = async (programDayId: string): Promise<string> => {
@@ -461,9 +464,11 @@ function Session() {
       for (const warmup of held) await queue.record({ kind: 'set', workoutClientId, body: warmup });
       setHeld([]);
       const restSeconds = restSecondsOf(restSpan.current, new Date().getTime(), workoutParams.restRecordMaxSeconds);
-      const body = buildSet(newClientId(), move, row.side, parsed, entry.rir, entry.note ?? undefined, group?.[0], restSeconds);
+      const body = buildSet(newClientId(), move, row.side, parsed, entry.rir, entry.note ?? undefined, group?.[0], restSeconds, wentLighter === rowKey);
       await queue.record({ kind: 'set', workoutClientId, body });
       saved = true;
+      // The mark belonged to this set: a set logged later on the same row (this one deleted) went through no "Too heavy?" (K-1263).
+      setWentLighter(null);
       // That rest belonged to this set; the next one measures its own.
       restSpan.current = null;
     } catch (error) {
@@ -1088,13 +1093,15 @@ function Session() {
   })();
   const askTooHeavy = () => {
     setAsked(rowKey);
+    setWentLighter(null);
     // Said, not only shown (K-815).
     announce(t('workout.tooHeavy.ask'));
   };
-  const takeOffer = (toKg: number) => {
+  const takeOffer = (toKg: number, calibrating: boolean) => {
     setEntry({ load: loadText(toKg, units), loadKg: toKg });
     setAsked(null);
     setPutAway(rowKey);
+    if (!calibrating) setWentLighter(rowKey);
     announce(t('workout.tooHeavy.used', { load: formatLoad(toKg, units) }));
   };
   const keepOffer = (calibrating: boolean) => {
@@ -1124,7 +1131,7 @@ function Session() {
     offer === null || typedKg === null ? null : (
       <LoadNote
         text={offer.text}
-        use={{ label: t('workout.tooHeavy.use', { load: formatLoad(offer.toKg, units) }), onPress: () => takeOffer(offer.toKg) }}
+        use={{ label: t('workout.tooHeavy.use', { load: formatLoad(offer.toKg, units) }), onPress: () => takeOffer(offer.toKg, offer.calibrating) }}
         keep={{ label: t('workout.tooHeavy.keep', { load: formatLoad(typedKg, units) }), onPress: () => keepOffer(offer.calibrating) }}
       />
     );

@@ -224,7 +224,10 @@ export function rirChoice(rir: number): number {
   return Math.min(rir, workoutParams.rirChoices[workoutParams.rirChoices.length - 1]);
 }
 
-/** A work set with the row's side, the RIR picked, its note and the rest taken before it, if any (K-1214). */
+/**
+ * A work set with the row's side, the RIR picked, its note and the rest taken before it, if any (K-1214), and the mark of a weight
+ * "Too heavy?" took lighter (K-1263), sent only when set.
+ */
 export function buildSet(
   clientId: string,
   move: Schemas['Exercise'],
@@ -238,6 +241,7 @@ export function buildSet(
   note?: string,
   supersetId?: string,
   restSeconds?: number | null,
+  wentLighter?: boolean,
 ): Schemas['NewSet'] {
   const words = noteOf(note);
   return {
@@ -251,5 +255,6 @@ export function buildSet(
     ...(words === null ? {} : { note: words }),
     ...(supersetId === undefined ? {} : { supersetId }),
     ...(restSeconds == null ? {} : { restSeconds }),
+    ...(wentLighter === true ? { wentLighter: true } : {}),
   };
 }
