@@ -57,7 +57,12 @@ let mockParams: { id?: string; from?: string } = {};
 jest.mock('expo-router', () => ({
   router: { back: () => mockBack(), push: (to: unknown) => mockPush(to), dismissTo: (to: string) => mockDismiss(to) },
   useLocalSearchParams: () => mockParams,
+  // The screen coming back into focus (from the plans): the test calls the last effect handed over.
+  useFocusEffect: (effect: () => void) => {
+    mockFocus = effect;
+  },
 }));
+let mockFocus: () => void = () => {};
 const said = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
 // The projection is off (its default, ADR-050): the call screen asks nothing of it.
 const mockServices = { api: { GET: mockGET, POST: mockPOST }, report: jest.fn(), projectionSwitch: { on: () => false } };
@@ -287,6 +292,17 @@ describe("this week's call", () => {
       await press(t('subscription.seePlans'));
       // The plans open on this call's week: the paywall's hero is the person's own call (ADR-094 Ek 8 #2).
       expect(mockPush).toHaveBeenCalledWith({ pathname: '/paywall', params: { week: LOCKED.weekOf } });
+    });
+
+    test('back from the plans, a locked call is read again: bought, it is the call (ADR-091 Ek 7 #4)', async () => {
+      mockAnswers['/v1/decisions/current'] = ok(LOCKED);
+      await show();
+      expect(screen.getByText(t('lockedCall.title'))).toBeOnTheScreen();
+      const reads = mockGET.mock.calls.filter(([path]) => path === '/v1/decisions/current').length;
+      mockAnswers['/v1/decisions/current'] = ok(decision({ id: 'd9' }));
+      await act(async () => mockFocus());
+      expect(mockGET.mock.calls.filter(([path]) => path === '/v1/decisions/current').length).toBe(reads + 1);
+      expect(screen.queryByText(t('lockedCall.title'))).toBeNull();
     });
 
     test('a past locked call opened from Progress says the same', async () => {

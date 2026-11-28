@@ -139,20 +139,16 @@ const JUST_SHOWN = {
   workoutToday: false,
 } as const;
 
-describe('the soft offer right after onboarding (ADR-072 #7, ADR-091 #1, K-1202)', () => {
+describe('right after onboarding: the tabs, no paywall by itself (ADR-091 Ek 7 #1, K-1255; it was the soft offer, ADR-072 #7)', () => {
   beforeEach(() => mockServices.planPreviews.forget());
 
-  test('the plan just shown opens the closable paywall once; Close lands on the tabs; it does not come back by itself', async () => {
+  test('the plan just shown is kept, and the app opens on the tabs: the trial is offered at the first locked call', async () => {
     mockServices.planPreviews.keep(JUST_SHOWN);
     const router = renderRouter(APP, { initialUrl: '/' });
     await router;
-    expect(router.getPathname()).toBe('/paywall');
-    await fireEvent.press(await screen.findByRole('button', { name: t('subscription.close') }));
     expect(router.getPathname()).toBe('/');
     expect(router.getSegments()).toEqual(['(tabs)']);
-    await act(async () => appRouter.push('/settings'));
-    await act(async () => appRouter.back());
-    expect(router.getPathname()).toBe('/');
+    expect(mockServices.planPreviews.current()).toEqual(JUST_SHOWN);
   });
 
   test('a second launch (nothing kept in memory) goes straight to the tabs', async () => {

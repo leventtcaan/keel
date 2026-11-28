@@ -19,8 +19,8 @@ import { formatWeight, weightChange } from '@/units/units';
 import { FramedTag } from './PaywallParts';
 import { param } from './params';
 
-/** The person's locked call: its week, and their weight's reads (none until they are read, or when they were not). */
-export type ReadyCall = { weekOf: string; weight: Awaited<ReturnType<typeof loadWeight>> | null };
+/** The person's locked call: its id, its week, and their weight's reads (none until they are read, or when they were not). */
+export type ReadyCall = { id: string; weekOf: string; weight: Awaited<ReturnType<typeof loadWeight>> | null };
 
 /** A day as the locked call names its week (YYYY-MM-DD, a real calendar day), or null: a link's word is checked, never trusted. */
 export function lockedWeekOf(param: string | string[] | undefined): string | null {
@@ -37,7 +37,16 @@ export async function loadReadyCall(api: ApiClient, weekOf: string, today: strin
   const call = await load(() => api.GET('/v1/decisions/current'));
   if (call.state !== 'ready' || !isLocked(call.value) || call.value.weekOf !== weekOf) return null;
   const weight = await loadWeight(api, today).catch(() => null);
-  return { weekOf, weight };
+  return { id: call.value.id, weekOf, weight };
+}
+
+/**
+ * After a purchase or a restore the server sees (ADR-057 D2): whether it now returns that same call unlocked. The read itself is
+ * what releases it (ADR-091 Ek 1 › Abone olunca), so "open" is said only from the server's answer (U1, ADR-091 Ek 7 #4).
+ */
+export async function callOpened(api: ApiClient, callId: string): Promise<boolean> {
+  const call = await load(() => api.GET('/v1/decisions/current'));
+  return call.state === 'ready' && !isLocked(call.value) && call.value.id === callId;
 }
 
 /** The weight, its change in words and its line: the server's trend, or the example's points. */

@@ -1,8 +1,8 @@
 /**
- * The plan just shown at the end of onboarding (#ob-plan), handed to the paywall that follows it (#paywall, ADR-072 #7):
- * its preview and the first call on its timeline, and the paywall's own-plan card (K-1058: where the food starts, the
- * first workout). Kept in memory only, for this run of the app: the paywall met later (the app opened again) shows its
- * plans and timeline without them. It belongs to the account: a sign-out forgets it.
+ * The plan just shown at the end of onboarding (#ob-plan), for a paywall opened later in the same run (ADR-091 Ek 7 #1: none
+ * opens by itself): its preview and the first call on its timeline, and the paywall's own-plan card (K-1058: where the food
+ * starts, the first workout). Kept in memory only, for this run of the app: the paywall met after the app opened again shows
+ * its plans and timeline without them. It belongs to the account: a sign-out forgets it.
  */
 import type { components } from '@/api/schema';
 
@@ -35,25 +35,13 @@ export type PlanPreviews = ReturnType<typeof createPlanPreviews>;
 
 export function createPlanPreviews() {
   let kept: PlanPreview | null = null;
-  let offered = false;
   return {
     keep: (preview: PlanPreview) => {
       kept = preview;
-      offered = false;
     },
     current: (): PlanPreview | null => kept,
-    /**
-     * The soft offer right after onboarding (ADR-072 #7, ADR-091 #1): the plan just shown, once. Asked a second time it is null; kept
-     * in memory only, so a new launch never has one.
-     */
-    takeOffer: (): PlanPreview | null => {
-      if (kept === null || offered) return null;
-      offered = true;
-      return kept;
-    },
     forget: () => {
       kept = null;
-      offered = false;
     },
   };
 }

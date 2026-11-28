@@ -1,6 +1,6 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -89,6 +89,15 @@ export default function CallScreen() {
   // Read on arrival and again after a change or on asking; an answer landing after the screen left is dropped.
   const [reads, setReads] = useState(0);
   const read = () => setReads((n) => n + 1);
+  // Back from the plans (ADR-091 Ek 7 #4): a call shown locked is read again, so one just bought shows as the call. A ref, so the
+  // first focus (nothing read yet) reads nothing extra.
+  const lockedShown = useRef(false);
+  lockedShown.current = call?.state === 'locked';
+  useFocusEffect(
+    useCallback(() => {
+      if (lockedShown.current) read();
+    }, []),
+  );
   useEffect(() => {
     let live = true;
     void load(() => (id === undefined ? api.GET('/v1/decisions/current') : api.GET('/v1/decisions/{id}', { params: { path: { id } } }))).then((found) => {

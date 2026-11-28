@@ -221,7 +221,6 @@ Deneme, satılan şeyin ilk göründüğü anda teklif edilir: **ilk kilitli kar
 4. **Satın alınca:** ADR-057 D2 döngüsü sunucuda aboneliği görünce o haftanın kararı bir kez daha okunur (okuma `releaseHeld`'i tetikler,
    Ek 1 › Abone olunca); **yalnız sunucu kararı kilitsiz ve aynı haftayla döndürürse** "{tarih} haftasının kararı açıldı" + "Kararını gör"
    (ekranı kapatır). Dönmezse yalnız abonelik satırı (iddia yok, U1). Karar ekranı kilitli kararı odakta yeniden okur, kapanınca açılmış hâli gelir.
-5. **Yan düzeltme:** abonelik onayı "Koç ve öğün okuma açık" demez, koç kapalıyken (`coachAvailable()`, Ek 2 #6 ile aynı kural).
 
 ### Neden
 Deneme satılan şeyi (ikinci ve sonraki tam karar) en az bir kez göstermeli; 14 gün, ilk kilitli kararı ve ondan sonraki bir ya da iki kararı

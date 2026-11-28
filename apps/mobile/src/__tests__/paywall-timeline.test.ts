@@ -74,3 +74,25 @@ test('a trial too short for the reminder to come after today: no reminder line (
   const short: Plan = { ...ANNUAL, trial: { count: DAYS_BEFORE, unit: 'day' } };
   expect(rows(short, null).map((r) => r.words)).toEqual([FREE, CHARGE]);
 });
+
+describe('opened from the person locked call (ADR-091 Ek 7 #3, K-1255)', () => {
+  const opens = (plan: Plan) => paywallTimeline(plan, { today: TODAY, firstCall: null, callOpens: true });
+
+  test('with the trial: the first line says the call opens today, at no charge; the reminder and the charge stay as they were', () => {
+    const ends = plus(TODAY, 14);
+    expect(opens(ANNUAL)).toEqual([
+      row(TODAY, t('subscription.timeline.callOpensFree')),
+      row(plus(ends, -DAYS_BEFORE), REMINDER),
+      row(ends, CHARGE),
+    ]);
+  });
+
+  test('without a trial: the call opens today and the price is charged today, in the same line', () => {
+    const monthly: Plan = { ...ANNUAL, id: '$rc_monthly', period: 'monthly', price: '$12.99', pricePerMonth: null, trial: null };
+    expect(opens(monthly)).toEqual([row(TODAY, t('subscription.timeline.callOpensCharged.monthly', { price: '$12.99' }))]);
+  });
+
+  test('not from a locked call: the first line is the usual one', () => {
+    expect(paywallTimeline(ANNUAL, { today: TODAY, firstCall: null, callOpens: false })[0]).toEqual(row(TODAY, FREE));
+  });
+});
