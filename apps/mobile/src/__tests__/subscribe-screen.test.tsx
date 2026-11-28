@@ -107,7 +107,7 @@ test('bought and seen on the server: said, and Continue lets the gate ask again 
   mockAnswers = [ok(NONE), ok(TRIAL)];
   await show();
   await press(START);
-  expect(screen.getByText(t('subscription.active'))).toBeOnTheScreen();
+  expect(screen.getByText(t('subscription.subscribed.coach'))).toBeOnTheScreen();
   expect(mockGate.refresh).not.toHaveBeenCalled();
   await press(t('subscription.continue'));
   expect(mockGate.refresh).toHaveBeenCalledTimes(1);

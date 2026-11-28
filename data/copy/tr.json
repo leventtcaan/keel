@@ -3669,7 +3669,12 @@
     "tryAgain": "Tekrar dene",
     "buying": "App Store bekleniyor…",
     "confirming": "Aboneliğin onaylanıyor…",
-    "active": "Abonesin. Koç ve öğün okuma açık.",
+    "subscribed": {
+      "all": "Abonesin. Haftalık kararların, koç ve öğün okuma açık.",
+      "coach": "Abonesin. Haftalık kararların ve koç açık.",
+      "meals": "Abonesin. Haftalık kararların ve öğün okuma açık.",
+      "calls": "Abonesin. Haftalık kararların açık."
+    },
     "callOpen": "{date} haftasının kararı açıldı.",
     "seeCall": "Kararını gör",
     "waiting": "App Store onayladı. Bize ulaşması bir dakika sürebilir.",

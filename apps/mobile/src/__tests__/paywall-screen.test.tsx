@@ -124,7 +124,7 @@ test('bought, and the server sees it: subscribed, and a way back', async () => {
   await show();
   await press(START);
   expect(mockStore.buy).toHaveBeenCalledWith('$rc_annual');
-  expect(screen.getByText(t('subscription.active'))).toBeOnTheScreen();
+  expect(screen.getByText(t('subscription.subscribed.coach'))).toBeOnTheScreen();
   await press(t('subscription.close'));
   expect(mockBack).toHaveBeenCalled();
 });
@@ -142,7 +142,7 @@ test('bought, not seen in time: it can take a minute, and looking again asks the
   expect(screen.getByText(t('subscription.waiting'))).toBeOnTheScreen();
   mockAnswers = [ok(TRIAL)];
   await press(t('subscription.lookAgain'));
-  expect(screen.getByText(t('subscription.active'))).toBeOnTheScreen();
+  expect(screen.getByText(t('subscription.subscribed.coach'))).toBeOnTheScreen();
   expect(mockStore.buy).toHaveBeenCalledTimes(1);
 });
 
@@ -183,7 +183,7 @@ test('restore: restored and seen is subscribed; nothing seen says so', async () 
   await show();
   await press(t('subscription.restore'));
   expect(mockStore.restore).toHaveBeenCalled();
-  expect(screen.getByText(t('subscription.active'))).toBeOnTheScreen();
+  expect(screen.getByText(t('subscription.subscribed.coach'))).toBeOnTheScreen();
 });
 
 test('restore with nothing to restore: says so, the plans stay', async () => {
@@ -196,7 +196,7 @@ test('restore with nothing to restore: says so, the plans stay', async () => {
 test('already subscribed on the server: nothing to sell', async () => {
   mockAnswers = [ok(TRIAL)];
   await show();
-  expect(screen.getByText(t('subscription.active'))).toBeOnTheScreen();
+  expect(screen.getByText(t('subscription.subscribed.coach'))).toBeOnTheScreen();
   expect(mockStore.plans).not.toHaveBeenCalled();
 });
 

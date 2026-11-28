@@ -194,7 +194,7 @@ describe('the paywall opened from the locked call (ADR-091 Ek 7 #3, #4)', () => 
     await show(<PaywallScreen />);
     await fireEvent.press(screen.getByRole('button', { name: t('subscription.startTrial', { trial: t('subscription.trial.week', { count: '2' }) }) }));
     await act(async () => {});
-    expect(await screen.findByText(t('subscription.active'))).toBeOnTheScreen();
+    expect(await screen.findByText(t('subscription.subscribed.coach'))).toBeOnTheScreen();
     expect(screen.queryByText(t('subscription.callOpen', { date: weekdayDate(WEEK) }))).toBeNull();
   });
 
@@ -212,7 +212,7 @@ describe('the paywall opened from the locked call (ADR-091 Ek 7 #3, #4)', () => 
     await show(<PaywallScreen />);
     await fireEvent.press(screen.getByRole('button', { name: t('subscription.startTrial', { trial: t('subscription.trial.week', { count: '2' }) }) }));
     await act(async () => {});
-    expect(await screen.findByText(t('subscription.active'))).toBeOnTheScreen();
+    expect(await screen.findByText(t('subscription.subscribed.coach'))).toBeOnTheScreen();
     expect(screen.queryByText(t('subscription.callOpen', { date: weekdayDate(WEEK) }))).toBeNull();
     expect(screen.queryByRole('button', { name: t('subscription.seeCall') })).toBeNull();
   });
