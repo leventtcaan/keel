@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 import { ActionSheetIOS, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { components } from '@/api/schema';
+import { Button } from '@/components/Button';
 import { Section } from '@/components/Section';
 import { useAppServices } from '@/services/ServicesProvider';
 import { localDay } from '@/today/today';
@@ -17,7 +18,7 @@ import { RangeNoteLine, RangeWords } from './ChartRanges';
 import { effortLine } from './effort';
 import { joinWeeks, rangeFrom, readLiftWeeks } from './longRange';
 import { type ChartRange, progressParams } from './params';
-import { useChartRange } from './useChartRange';
+import { useChartRange, usePaidPart } from './useChartRange';
 import { LineChart } from './LineChart';
 import type { ChartPoint } from './lineScale';
 import { liftSet } from './Parts';
@@ -45,6 +46,10 @@ export function LiftsCard({ lifts, moves, units }: { lifts: Lift[]; moves: Reado
   );
   const range = useChartRange(progressParams.strengthRanges, read);
   const weeks = range.data === null ? lift.weeks : joinWeeks(lift.weeks, range.data);
+  // Side by side (K-1267, with a subscription): another lift of the program under this one, its server weeks.
+  const paid = usePaidPart();
+  const [other, setOther] = useState<string | null>(null);
+  const second = lifts.find((l) => l.exerciseId === other && l.exerciseId !== lift.exerciseId);
 
   const points: ChartPoint[] = weeks.map((w) => ({ day: w.weekOf, value: loadValue(w.loadKg, units), label: formatLoad(w.loadKg, units), marked: w.held }));
   const held = points.filter((p) => p.marked === true).map((p) => shortDate(p.day));
@@ -68,6 +73,7 @@ export function LiftsCard({ lifts, moves, units }: { lifts: Lift[]; moves: Reado
       if (index >= 0 && index < names.length) {
         setPicked(lifts[index].exerciseId);
         range.reset(); // another lift starts at the server's weeks
+        setOther(null);
       }
     });
   };
@@ -99,6 +105,53 @@ export function LiftsCard({ lifts, moves, units }: { lifts: Lift[]; moves: Reado
     </Text>
   );
 
+  const others = lifts.filter((l) => l.exerciseId !== lift.exerciseId);
+  const pickOther = () =>
+    paid.ask(() => {
+      const names = others.map((l) => exerciseName(l.exerciseId, moves));
+      ActionSheetIOS.showActionSheetWithOptions(
+        { options: [...names, t('progress.strength.pickCancel')], cancelButtonIndex: names.length, tintColor: color.accent },
+        (index) => {
+          if (index >= 0 && index < names.length) setOther(others[index].exerciseId);
+        },
+      );
+      return true;
+    });
+  const secondName = second === undefined ? '' : exerciseName(second.exerciseId, moves);
+  const secondPoints: ChartPoint[] = (second?.weeks ?? []).map((w) => ({ day: w.weekOf, value: loadValue(w.loadKg, units), label: formatLoad(w.loadKg, units) }));
+  // Built outside the JSX below (the raw-text guard reads JSX children).
+  const secondChart =
+    secondPoints.length < 2 ? null : (
+      <>
+        <Text style={[styles.move, { color: color.text }]}>{secondName}</Text>
+        <LineChart
+          prefix="strength"
+          points={secondPoints}
+          summary={t('progress.strength.spoken', {
+            move: secondName,
+            first: secondPoints[0].label,
+            firstDate: shortDate(secondPoints[0].day),
+            last: secondPoints[secondPoints.length - 1].label,
+            lastDate: shortDate(secondPoints[secondPoints.length - 1].day),
+            low: secondPoints.reduce((a, b) => (b.value < a.value ? b : a)).label,
+            high: secondPoints.reduce((a, b) => (b.value > a.value ? b : a)).label,
+          })}
+        />
+      </>
+    );
+  const toggle =
+    others.length === 0 ? null : second === undefined ? (
+      <Button label={t('progress.compare.lift')} variant="text" size="sm" onPress={() => void pickOther()} />
+    ) : (
+      <Button label={t('progress.compare.hide')} variant="text" size="sm" onPress={() => setOther(null)} />
+    );
+  const compare = (
+    <>
+      {secondChart}
+      {toggle}
+      <RangeNoteLine note={paid.note} lockLine={t('progress.compare.locked')} />
+    </>
+  );
   return (
     <Section card testID="section-strength" title={t('progress.strength.title')} aside={t('progress.strength.bestSet')}>
       {name}
@@ -111,6 +164,7 @@ export function LiftsCard({ lifts, moves, units }: { lifts: Lift[]; moves: Reado
       <RangeWords testID="strength-range" ranges={progressParams.strengthRanges} value={range.key} onChange={(key) => void range.choose(key)} />
       {chart}
       <RangeNoteLine note={range.note} />
+      {compare}
       {legend}
       {effortText}
     </Section>

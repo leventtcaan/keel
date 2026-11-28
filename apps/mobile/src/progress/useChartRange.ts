@@ -54,3 +54,21 @@ export function useChartRange<T>(ranges: ChartRange[], read: (range: ChartRange)
   }, [ranges]);
   return { key: chosen.key, data: chosen.data, note, choose, reset };
 }
+
+/** A paid part asked for on a tap (K-1267): opened with a subscription; otherwise the lock, or the unread line, is said. */
+export function usePaidPart() {
+  const { paidAccess } = useAppServices();
+  const [note, setNote] = useState<RangeNote>(null);
+  const ask = useCallback(
+    async (open: () => Promise<boolean> | boolean) => {
+      const access = await paidAccess();
+      if (access !== 'open') {
+        setNote(access);
+        return;
+      }
+      setNote((await open()) ? null : 'failed');
+    },
+    [paidAccess],
+  );
+  return { note, ask, clear: useCallback(() => setNote(null), []) };
+}

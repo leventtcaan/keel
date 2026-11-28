@@ -3955,6 +3955,13 @@
     }
   },
   "progress": {
+    "compare": {
+      "period": "Compare with the period before",
+      "lift": "Compare with another lift",
+      "hide": "Hide the comparison",
+      "span": "{from} to {to}",
+      "locked": "Side by side comes with a subscription."
+    },
     "range": {
       "weeks": "12 weeks",
       "months": "3 months",

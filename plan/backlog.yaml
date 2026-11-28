@@ -6609,7 +6609,7 @@ tasks:
     module: mobile
     type: feature
     size: M
-    status: todo
+    status: done
     depends_on: [K-1260]
     why: "ADR-096 › Geçmiş ve grafik (abonelik): K-1260'tan ayrıldı (≤400 satır kuralı)"
     acceptance:

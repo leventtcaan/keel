@@ -4215,6 +4215,13 @@
     }
   },
   "progress": {
+    "compare": {
+      "period": "Önceki dönemle karşılaştır",
+      "lift": "Başka bir hareketle karşılaştır",
+      "hide": "Karşılaştırmayı gizle",
+      "span": "{from} ile {to} arası",
+      "locked": "Yan yana karşılaştırma abonelikle gelir."
+    },
     "range": {
       "weeks": "12 hafta",
       "months": "3 ay",
