@@ -169,6 +169,15 @@ describe('side by side (K-1267, ADR-096: with a subscription)', () => {
     expect(screen.getAllByTestId('weight-chart')).toHaveLength(1);
   });
 
+  test('another range chosen: the comparison of the old one goes, and so does its note', async () => {
+    mockServices.paidAccess.mockImplementation(async () => 'open');
+    await showWeight();
+    await word(t('progress.compare.period'));
+    expect(screen.getAllByTestId('weight-chart')).toHaveLength(2);
+    await word(t('progress.range.halfYear'));
+    expect(screen.getAllByTestId('weight-chart')).toHaveLength(1);
+  });
+
   test('a subscription that cannot be read is no lock', async () => {
     mockServices.paidAccess.mockImplementation(async () => 'unread');
     await showWeight();

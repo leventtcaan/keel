@@ -53,8 +53,8 @@ export function WeightCard({ part, units }: { part: WeightPart; units: UnitSyste
   // Side by side (K-1267, with a subscription): the period before the one shown, as long, under it.
   const paid = usePaidPart();
   // Kept with the read it was asked over: once Progress reads again, it is gone.
-  const [asked, setBefore] = useState<{ stamp: string; from: string; to: string; points: { day: string; kg: number }[] } | null>(null);
-  const before = asked !== null && asked.stamp === stamp ? asked : null;
+  const [asked, setBefore] = useState<{ stamp: string; key: string; from: string; to: string; points: { day: string; kg: number }[] } | null>(null);
+  const before = asked !== null && asked.stamp === stamp && asked.key === range.key ? asked : null;
   const { clear } = paid;
   useEffect(() => {
     reset();
@@ -97,11 +97,12 @@ export function WeightCard({ part, units }: { part: WeightPart; units: UnitSyste
   const askBefore = () =>
     paid.ask(async () => {
       if (days === null) return false;
+      const key = range.key; // the range it is asked for: another chosen meanwhile drops it (the guard above)
       const to = rangeFrom(drawn[0]?.day ?? localDay(new Date()), 2);
       const from = rangeFrom(to, days);
       const read = await load(() => api.GET('/v1/weight-trend', { params: { query: { from, to } } }));
       if (read.state !== 'ready') return false;
-      setBefore({ stamp, from, to, points: read.value });
+      setBefore({ stamp, key, from, to, points: read.value });
       return true;
     });
   // Built outside the JSX below (the raw-text guard reads JSX children).
@@ -136,7 +137,15 @@ export function WeightCard({ part, units }: { part: WeightPart; units: UnitSyste
       </Text>
       {change}
       {day}
-      <RangeWords testID="weight-range" ranges={progressParams.weightRanges} value={range.key} onChange={(key) => void range.choose(key)} />
+      <RangeWords
+        testID="weight-range"
+        ranges={progressParams.weightRanges}
+        value={range.key}
+        onChange={(key) => {
+          paid.clear();
+          void range.choose(key);
+        }}
+      />
       {chart}
       <RangeNoteLine note={range.note} />
       {compare}
